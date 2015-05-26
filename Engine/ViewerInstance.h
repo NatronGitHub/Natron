@@ -271,7 +271,7 @@ private:
 
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::EffectInstance::eRenderSafetyFullySafe;
+        return Natron::eRenderSafetyFullySafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;

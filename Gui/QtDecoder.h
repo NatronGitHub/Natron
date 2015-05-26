@@ -101,7 +101,7 @@ public:
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
+        return Natron::eRenderSafetyInstanceSafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;

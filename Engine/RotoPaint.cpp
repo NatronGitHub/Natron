@@ -163,6 +163,7 @@ public:
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
+            (*it)->updateLastPaintStrokeData();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
         }
     }
@@ -170,6 +171,7 @@ public:
     ~RotoPaintParallelArgsSetter()
     {
         for (NodeList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            (*it)->invalidateLastStrokeData();
             (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }
@@ -271,4 +273,17 @@ RotoPaint::render(const RenderActionArgs& args)
     }
     
     return Natron::eStatusOK;
+}
+
+void
+RotoPaint::clearLastRenderedImage()
+{
+    EffectInstance::clearLastRenderedImage();
+    NodeList rotoPaintNodes;
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    assert(roto);
+    roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+        (*it)->clearLastRenderedImage();
+    }
 }

@@ -170,7 +170,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 , _created(false)
 , _initialized(false)
 , _renderButton()
-, _renderSafety(EffectInstance::eRenderSafetyUnsafe)
+, _renderSafety(Natron::eRenderSafetyUnsafe)
 , _wasRenderSafetySet(false)
 , _renderSafetyLock(new QReadWriteLock)
 , _context(eContextNone)
@@ -2108,18 +2108,18 @@ OfxEffectInstance::renderThreadSafety() const
         QWriteLocker writeL(_renderSafetyLock);
         const std::string & safety = _effect->getRenderThreadSafety();
         if (safety == kOfxImageEffectRenderUnsafe) {
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _renderSafety = EffectInstance::eRenderSafetyInstanceSafe;
+            _renderSafety = Natron::eRenderSafetyInstanceSafe;
         } else if (safety == kOfxImageEffectRenderFullySafe) {
             if ( _effect->getHostFrameThreading() ) {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafeFrame;
+                _renderSafety =  Natron::eRenderSafetyFullySafeFrame;
             } else {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafe;
+                _renderSafety =  Natron::eRenderSafetyFullySafe;
             }
         } else {
             qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         }
         _wasRenderSafetySet = true;
 

@@ -24,6 +24,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "Global/MemoryInfo.h"
 #include "Engine/RotoContextPrivate.h"
@@ -4368,18 +4369,18 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     assert(_imp->mergeNode);
     _imp->mergeNode->setWhileCreatingPaintStroke(true);
     _imp->mergeNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-    if (type != eRotoStrokeTypeSolid) {
-        int maxInp = _imp->mergeNode->getMaxInputCount();
-        for (int i = 0; i < maxInp; ++i) {
-            if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
-                
-                //Connect this rotopaint node as a mask
-                ok = _imp->mergeNode->connectInput(context->getNode(), i);
-                assert(ok);
-                break;
-            }
+    
+    int maxInp = _imp->mergeNode->getMaxInputCount();
+    for (int i = 0; i < maxInp; ++i) {
+        if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
+            
+            //Connect this rotopaint node as a mask
+            ok = _imp->mergeNode->connectInput(context->getNode(), i);
+            assert(ok);
+            break;
         }
     }
+    
     
     boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     assert(mergeOperatorKnob);
@@ -4403,6 +4404,8 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         //todo
     }
     
+    getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+
     refreshNodesConnections();
     
 }
@@ -4772,6 +4775,7 @@ RotoStrokeItem::setStrokeFinished()
     
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();
+    getContext()->getNode()->revertToPluginThreadSafety();
 }
 
 
@@ -4785,14 +4789,12 @@ RotoStrokeItem::resetNodesThreadSafety()
 }
 
 bool
-RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,unsigned int mipMapLevel)
+RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    ImagePtr image;
-    RectD bbox;
-    std::list<std::pair<Point,double> > points;
-    
+
+    RotoStrokeItemPrivate::StrokeTickData data;
     boost::shared_ptr<RotoStrokeItem> thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>(shared_from_this());
     assert(thisShared);
     {
@@ -4803,7 +4805,7 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,uns
         _imp->bbox.x2 = std::max(_imp->bbox.x2, rawPoints.first.x);
         _imp->bbox.y1 = std::min(_imp->bbox.y1, rawPoints.first.y);
         _imp->bbox.y2 = std::max(_imp->bbox.y2, rawPoints.first.y);
-        bbox = _imp->bbox;
+        data.wholeBbox = _imp->bbox;
         
         Curve tmpX,tmpY,tmpP;
         {
@@ -4856,49 +4858,105 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,uns
         if (_imp->xCurve.getKeyFramesCount() <= 1) {
             return false;
         }
-        if (_imp->effectNode) {
-            _imp->effectNode->incrementKnobsAge();
-        }
-        _imp->mergeNode->incrementKnobsAge();
-        
-        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), mipMapLevel, &points, &bbox);
+  
+        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), 0, &data.points, &data.tickBbox);
         
         double brushSize = _imp->brushSize->getValue() / 2.;
         
-        bbox.x1 -= brushSize;
-        bbox.x2 += brushSize;
-        bbox.y1 -= brushSize;
-        bbox.y2 += brushSize;
+        data.tickBbox.x1 -= brushSize;
+        data.tickBbox.x2 += brushSize;
+        data.tickBbox.y1 -= brushSize;
+        data.tickBbox.y2 += brushSize;
         
-        image = _imp->strokeCache;
+        data.wholeBbox.x1 -= brushSize;
+        data.wholeBbox.x2 += brushSize;
+        data.wholeBbox.y1 -= brushSize;
+        data.wholeBbox.y2 += brushSize;
+        
+        ++_imp->lastTickAge;
+        _imp->strokeTicks.insert(std::make_pair(_imp->lastTickAge, data));
+        
     } // QMutexLocker k(&itemMutex);
     
-    image = getContext()->renderSingleStroke(thisShared, image, bbox, points, mipMapLevel);
     
-    QMutexLocker k(&itemMutex);
-    _imp->strokeCache = image;
     
     return true;
 }
 
-ImagePtr
-RotoStrokeItem::getStrokeTimePreview() const
+bool
+RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
+                                        RectD* wholeBbox, int* newAge)
 {
     QMutexLocker k(&itemMutex);
-    return _imp->strokeCache;
+    if (lastAge != -1) {
+        std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator found = _imp->strokeTicks.find(lastAge);
+        if (found == _imp->strokeTicks.end()) {
+            return false;
+        }
+        ++found;
+        if (found == _imp->strokeTicks.end()) {
+            //nothing has changed so far
+            return false;
+        }
+        bool bboxSet = false;
+        bool wholeBboxSet = false;
+        for (std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator it = found; it!=_imp->strokeTicks.end(); ++it) {
+            points->insert(points->end(), it->second.points.begin(),it->second.points.end());
+            if (!bboxSet) {
+                *pointsBbox = it->second.tickBbox;
+                bboxSet = true;
+            } else {
+                pointsBbox->merge(it->second.tickBbox);
+            }
+            if (!wholeBboxSet) {
+                *wholeBbox = it->second.wholeBbox;
+                wholeBboxSet = true;
+            } else {
+                wholeBbox->merge(it->second.wholeBbox);
+            }
+            *newAge = it->first;
+        }
+        return true;
+    } else {
+        if (_imp->strokeTicks.empty()) {
+            return false;
+        }
+        bool bboxSet = false;
+        bool wholeBboxSet = false;
+        for (std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator it = _imp->strokeTicks.begin(); it!=_imp->strokeTicks.end(); ++it) {
+            points->insert(points->end(), it->second.points.begin(),it->second.points.end());
+            if (!bboxSet) {
+                *pointsBbox = it->second.tickBbox;
+                bboxSet = true;
+            } else {
+                pointsBbox->merge(it->second.tickBbox);
+            }
+            if (!wholeBboxSet) {
+                *wholeBbox = it->second.wholeBbox;
+                wholeBboxSet = true;
+            } else {
+                wholeBbox->merge(it->second.wholeBbox);
+            }
+            *newAge = it->first;
+        }
+        return true;
+    }
 }
 
 void
-RotoStrokeItem::invalidateStrokeTimePreview()
+RotoStrokeItem::clearChangesUpToAge(int age)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    {
-        QMutexLocker k(&itemMutex);
-        _imp->strokeCache.reset();
+    QMutexLocker k(&itemMutex);
+    std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator found = _imp->strokeTicks.find(age);
+    std::map<int,RotoStrokeItemPrivate::StrokeTickData> newDatas;
+    if (found == _imp->strokeTicks.end()) {
+        return;
     }
-    setStrokeFinished();
-}
 
+    newDatas.insert(found,_imp->strokeTicks.end());
+    _imp->strokeTicks = newDatas;
+
+}
 
 void
 RotoStrokeItem::clone(const RotoItem* other)
@@ -4998,7 +5056,10 @@ RotoStrokeItem::getBoundingBox(int time) const
     QMutexLocker k(&itemMutex);
     RectD bbox = _imp->bbox;
     double brushSize = _imp->brushSize->getValueAtTime(time) / 2.;
-    
+    bool isActivated = getActivatedKnob()->getValueAtTime(time);
+    if (!isActivated)  {
+        return RectD();
+    }
     bbox.x1 -= brushSize;
     bbox.x2 += brushSize;
     bbox.y1 -= brushSize;
@@ -5075,7 +5136,7 @@ RotoContext::isRotoPaint() const
 void
 RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
 {
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false);
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = items.begin(); it != items.end(); ++it) {
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
         if (!isStroke) {
@@ -5365,6 +5426,8 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName)
     {
         
         QMutexLocker l(&_imp->rotoContextMutex);
+        ++_imp->age; // increase age 
+        
         boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
         
         
@@ -6320,7 +6383,7 @@ RotoContext::getSelectedCurves() const
 }
 
 std::list< boost::shared_ptr<RotoDrawableItem> >
-RotoContext::getCurvesByRenderOrder() const
+RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > ret;
     
@@ -6329,7 +6392,7 @@ RotoContext::getCurvesByRenderOrder() const
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {
-            appendToSelectedCurvesRecursively(&ret, _imp->layers.front(), time, true, true);
+            appendToSelectedCurvesRecursively(&ret, _imp->layers.front(), time, onlyActivated, true);
         }
     }
 
@@ -6563,6 +6626,7 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
                 case 1:
                     assert(srcNComps == dstNComps);
                     dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;
+                    assert(!boost::math::isnan(dstPix[x]));
                     break;
                 case 3:
                     assert(srcNComps == dstNComps);
@@ -6670,6 +6734,7 @@ convertNatronImageToCairoImageForDstComponents(unsigned char* cairoImg,
                 case 1:
                     assert(srcNComps == dstNComps);
                     dstPix[x] = (float)srcPix[x] / maxValue * 255.f;
+                    assert(!boost::math::isnan(dstPix[x]));
                     break;
                 case 3:
                     assert(srcNComps == dstNComps);
@@ -6752,68 +6817,94 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                const boost::shared_ptr<Natron::Image>& image,
-                                const RectD& rod,
+                                const RectD& pointsBbox,
                                 const std::list<std::pair<Natron::Point,double> >& points,
-                                unsigned int mipmapLevel)
+                                unsigned int mipmapLevel,
+                                const Natron::ImageComponents& components,
+                                Natron::ImageBitDepthEnum depth,
+                                boost::shared_ptr<Natron::Image> *image)
 {
-    boost::shared_ptr<Natron::Image> ret = image;
-    RectI pixelRod;
-    rod.toPixelEnclosing(mipmapLevel, 1, &pixelRod);
+    boost::shared_ptr<Natron::Image> source = *image;
+    RectI pixelPointsBbox;
+    pointsBbox.toPixelEnclosing(mipmapLevel, 1, &pixelPointsBbox);
     
     bool copyFromImage = false;
-    RectI oldBounds;
-    if (!ret) {
-        ret.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
-                                    rod,
-                                    pixelRod,
+    if (!source) {
+        source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+                                    pointsBbox,
+                                    pixelPointsBbox,
                                     mipmapLevel,
                                     1.,
                                     Natron::eImageBitDepthFloat));
+        *image = source;
     } else {
         
-        if (ret->getMipMapLevel() > mipmapLevel) {
+        if ((*image)->getMipMapLevel() > mipmapLevel) {
             
-            RectD otherRoD = image->getRoD();
-            otherRoD.toPixelEnclosing(image->getMipMapLevel(), 1., &oldBounds);
-            RectD mergeRoD = rod;
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds;
+            otherRoD.toPixelEnclosing(mipmapLevel, 1., &oldBounds);
+            RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
-            mergeRoD.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
+            RectI mergeBounds;
+            mergeRoD.toPixelEnclosing(mipmapLevel, 1., &mergeBounds);
             
             
             //upscale the original image
-            ret.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+            source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
                                         mergeRoD,
-                                        pixelRod,
+                                        mergeBounds,
                                         mipmapLevel,
                                         1.,
                                         Natron::eImageBitDepthFloat));
-            image->upscaleMipMap(image->getBounds(), image->getMipMapLevel(), ret->getMipMapLevel(), ret.get());
-        } else if (ret->getMipMapLevel() < mipmapLevel) {
+            source->fill(pixelPointsBbox, 0., 0., 0., 0.);
+            (*image)->upscaleMipMap(oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get());
+            *image = source;
+        } else if ((*image)->getMipMapLevel() < mipmapLevel) {
             
-            RectD otherRoD = image->getRoD();
-            otherRoD.toPixelEnclosing(image->getMipMapLevel(), 1., &oldBounds);
-            RectD mergeRoD = rod;
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds;
+            otherRoD.toPixelEnclosing(mipmapLevel, 1., &oldBounds);
+            RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
-            mergeRoD.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
+            RectI mergeBounds;
+            mergeRoD.toPixelEnclosing(mipmapLevel, 1., &mergeBounds);
             
             //downscale the original image
-            ret.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+            source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
                                         mergeRoD,
-                                        pixelRod,
+                                        mergeBounds,
                                         mipmapLevel,
                                         1.,
                                         Natron::eImageBitDepthFloat));
-
-            image->downscaleMipMap(image->getRoD(), image->getBounds(), image->getMipMapLevel(), ret->getMipMapLevel(), false, ret.get());
+            source->fill(pixelPointsBbox, 0., 0., 0., 0.);
+            (*image)->downscaleMipMap(pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get());
+            *image = source;
         } else {
-            RectD otherRoD = image->getRoD();
-            oldBounds = image->getBounds();
-            RectD mergeRoD = rod;
+            RectD otherRoD = (*image)->getRoD();
+            RectI oldBounds = (*image)->getBounds();
+            RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
-            mergeRoD.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
-            ret->setRoD(mergeRoD);
-            ret->ensureBounds(pixelRod);
+            source->setRoD(mergeRoD);
+            source->ensureBounds(pixelPointsBbox,true);
+
+//            if (pixelPointsBbox.x1 < oldBounds.x1) {
+//                RectI r(pixelPointsBbox.x1,pixelPointsBbox.y1,oldBounds.x1,pixelPointsBbox.y2);
+//                source->fill(r, 0., 0., 0., 0.);
+//            }
+//            if (pixelPointsBbox.x2 > oldBounds.x2) {
+//                RectI r(oldBounds.x2,pixelPointsBbox.y1,pixelPointsBbox.x2,pixelPointsBbox.y2);
+//                source->fill(r, 0., 0., 0., 0.);
+//            }
+//            if (pixelPointsBbox.y1 < oldBounds.y1) {
+//                RectI r(pixelPointsBbox.x1, pixelPointsBbox.y1, pixelPointsBbox.x2, oldBounds.y1);
+//                source->fill(r, 0., 0., 0., 0.);
+//            }
+//            if (pixelPointsBbox.y2 > oldBounds.y2) {
+//                RectI r(pixelPointsBbox.x1, oldBounds.y2, pixelPointsBbox.x2, pixelPointsBbox.y2);
+//                source->fill(r, 0., 0., 0., 0.);
+//            }
+
         }
         copyFromImage = true;
     }
@@ -6826,22 +6917,22 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
     std::vector<unsigned char> buf;
     if (copyFromImage) {
-        std::size_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_A8, pixelRod.width());
-        std::size_t memSize = stride * pixelRod.height();
+        std::size_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_A8, pixelPointsBbox.width());
+        std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
         memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, ret.get(), oldBounds, pixelRod, 1);
-        cairoImg = cairo_image_surface_create_for_data(buf.data(), CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height(),
+        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, source.get(), pixelPointsBbox, pixelPointsBbox, 1);
+        cairoImg = cairo_image_surface_create_for_data(buf.data(), CAIRO_FORMAT_A8, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {
-        cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height() );
-        cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
+        cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelPointsBbox.width(), pixelPointsBbox.height() );
+        cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
     }
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
-        return ret;
+        return source;
     }
-    cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
+    cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
     cairo_t* cr = cairo_create(cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
@@ -6856,9 +6947,20 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     int srcNComps = 1;
 
+    std::list<std::pair<Natron::Point,double> > toScalePoints;
+    int pot = 1 << mipmapLevel;
+    if (mipmapLevel == 0) {
+        toScalePoints = points;
+    } else {
+        for (std::list<std::pair<Natron::Point,double> >::const_iterator it = points.begin(); it!=points.end(); ++it) {
+            std::pair<Natron::Point,double> p = *it;
+            p.first.x /= pot;
+            p.first.y /= pot;
+            toScalePoints.push_back(p);
+        }
+    }
     
-    
-    _imp->renderStroke(cr, points, stroke.get(), getTimelineCurrentTime(), mipmapLevel);
+    _imp->renderStroke(cr, toScalePoints, stroke.get(), getTimelineCurrentTime(), mipmapLevel);
     
     assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     
@@ -6867,14 +6969,26 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     cairo_surface_flush(cairoImg);
     
     
-    convertCairoImageToNatronImage<float, 1>(cairoImg, ret.get(), pixelRod,srcNComps);
     
-    
+    convertCairoImageToNatronImage<float, 1>(cairoImg, source.get(), pixelPointsBbox,srcNComps);
+
     
     cairo_destroy(cr);
     ////Free the buffer used by Cairo
     cairo_surface_destroy(cairoImg);
     
+    ImagePtr ret;
+    
+    if (components != source->getComponents() || depth != source->getBitDepth()) {
+        ret.reset(new Image(components, pointsBbox, pixelPointsBbox, mipmapLevel, 1., depth));
+        Natron::ViewerColorSpaceEnum colorspace = getNode()->getApp()->getDefaultColorSpaceForBitDepth(source->getBitDepth());
+        Natron::ViewerColorSpaceEnum dstColorspace = getNode()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+        source->convertToFormat(pixelPointsBbox, colorspace, dstColorspace, 0, false, false, ret.get());
+        
+    } else {
+        ret = source;
+    }
+    assert(ret);
     return ret;
 }
 
@@ -6893,24 +7007,24 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     
     
     
-    ImagePtr image = stroke->getStrokeTimePreview();
-    if (image) {
-        
-        //Todo handle different pixel scale if needed
-        
-        RectI bounds;
-        roi.intersect(image->getBounds(), &bounds);
-        
-        ImagePtr ret(new Image(components, image->getRoD(), bounds, mipmapLevel, 1., depth));
-        if (components != image->getComponents()) {
-            Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
-            Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
-            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, ret.get());
-        } else {
-            ret->pasteFrom(*image, bounds, false);
-        }
-        return ret;
-    }
+    ImagePtr image;// = stroke->getStrokeTimePreview();
+//    if (image) {
+//        
+//        //Todo handle different pixel scale if needed
+//        
+//        RectI bounds;
+//        roi.intersect(image->getBounds(), &bounds);
+//        
+//        ImagePtr ret(new Image(components, image->getRoD(), bounds, mipmapLevel, 1., depth));
+//        if (components != image->getComponents()) {
+//            Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
+//            Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
+//            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, ret.get());
+//        } else {
+//            ret->pasteFrom(*image, bounds, false);
+//        }
+//        return ret;
+//    }
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
     ///the output image of the roto node and the mask image.
     Hash64 hash;

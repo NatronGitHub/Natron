@@ -982,6 +982,8 @@ public:
 
     virtual void clearLastRenderedImage();
 
+    void clearActionsCache();
+
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
      * a dialog. The message can be of 4 types...

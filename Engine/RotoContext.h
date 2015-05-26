@@ -54,7 +54,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
-#define ROTO_ENABLE_PAINT
+//#define ROTO_ENABLE_PAINT
 
 namespace Natron {
 class Image;
@@ -1034,7 +1034,12 @@ public:
      * @brief Appends to the paint stroke the raw points list.
      * @returns True if the number of points is > 1
      **/
-    bool appendPoint(const std::pair<Natron::Point,double>& rawPoints, unsigned int mipMapLevel);
+    bool appendPoint(const std::pair<Natron::Point,double>& rawPoints);
+    
+    bool getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
+                                            RectD* wholeBbox, int* newAge);
+    
+    void clearChangesUpToAge(int age);
     
     void setStrokeFinished();
     
@@ -1078,8 +1083,6 @@ public:
     
     void refreshNodesConnections();
 
-    boost::shared_ptr<Natron::Image> getStrokeTimePreview() const;
-    void invalidateStrokeTimePreview();
     
 public Q_SLOTS:
     
@@ -1234,10 +1237,12 @@ public:
                                                           unsigned int mipmapLevel);
     
     boost::shared_ptr<Natron::Image> renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                                        const boost::shared_ptr<Natron::Image>& image,
                                                         const RectD& rod,
                                                         const std::list<std::pair<Natron::Point,double> >& points,
-                                                        unsigned int mipmapLevel);
+                                                        unsigned int mipmapLevel,
+                                                        const Natron::ImageComponents& components,
+                                                        Natron::ImageBitDepthEnum depth,
+                                                        boost::shared_ptr<Natron::Image> *wholeStrokeImage);
     
 private:
     
@@ -1322,7 +1327,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
     
     int getNCurves() const;
     

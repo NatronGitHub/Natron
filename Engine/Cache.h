@@ -477,35 +477,6 @@ public:
         
     } // get
     
-    /**
-     * @brief Same as get() except that it returns an entry that exactly matches the key
-     * *AND* the params.
-     **/
-    bool getByParam(const typename EntryType::key_type & key,
-                    const ParamsTypePtr& params,
-                    EntryTypePtr* returnValue) const
-    {
-        
-        ///Be atomic, so it cannot be created by another thread in the meantime
-        QMutexLocker getlocker(&_getLock);
-        
-        ///lock the cache before reading it.
-        std::list<EntryTypePtr> entries;
-        {
-            QMutexLocker locker(&_lock);
-            return getInternal(key,entries);
-        }
-        
-        
-        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-            if (*(*it)->getParams() == *params) {
-                *returnValue = *it;
-                return true;
-            }
-        }
-        return false;
-        
-    } // get
 
 private:
     

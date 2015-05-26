@@ -374,8 +374,14 @@ public:
     Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
-    void updateLastPaintStrokeBbox(const RectD& bbox);
-    void getLastPaintStrokeBboxAndClear(RectD* bbox);
+    void updateLastPaintStrokeData();
+    void invalidateLastStrokeData();
+    void getPaintStrokeRoD(int time,RectD* bbox) const;
+    void getLastPaintStrokeRoD(RectD* pointsBbox) ;
+    boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+                                                                const RectD& canonicalRoi,
+                                                                const Natron::ImageComponents& components,
+                                                                Natron::ImageBitDepthEnum depth) const;
     
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;

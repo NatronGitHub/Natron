@@ -65,7 +65,7 @@ public:
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return EffectInstance::eRenderSafetyFullySafeFrame;
+        return Natron::eRenderSafetyFullySafeFrame;
     }
 
     virtual Natron::StatusEnum getTransform(SequenceTime time,

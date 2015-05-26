@@ -831,11 +831,17 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Natron::Node> effectNode;
     boost::shared_ptr<Natron::Node> mergeNode;
     
-    /**
-     * @brief Used while building up the stroke so that we only draw the last portion between the rendered image
-     * and where the pen actually is currently.
-     **/
-    boost::shared_ptr<Natron::Image>  strokeCache;
+    
+    int lastTickAge;
+
+    struct StrokeTickData
+    {
+        RectD tickBbox;
+        RectD wholeBbox;
+        std::list<std::pair<Natron::Point,double> > points;
+    };
+    
+    std::map<int,StrokeTickData> strokeTicks;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
@@ -847,7 +853,8 @@ struct RotoStrokeItemPrivate
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
     , effectNode()
     , mergeNode()
-    , strokeCache()
+    , lastTickAge(-1)
+    , strokeTicks()
     {
         
         bbox.x1 = std::numeric_limits<double>::infinity();

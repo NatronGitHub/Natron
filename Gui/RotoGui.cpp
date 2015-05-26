@@ -1805,7 +1805,7 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 }
 
 bool
-RotoGui::penDown(double scaleX,
+RotoGui::penDown(double /*scaleX*/,
                  double /*scaleY*/,
                  const QPointF & /*viewportPos*/,
                  const QPointF & pos,
@@ -2202,8 +2202,7 @@ RotoGui::penDown(double scaleX,
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
-            unsigned int mipmapLevel = Image::getLevelFromScale(scaleX);
-            _imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.), mipmapLevel);
+            _imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.));
             _imp->state = eEventStateBuildingStroke;
             didSomething = true;
             break;
@@ -2262,7 +2261,7 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
 }
 
 bool
-RotoGui::penMotion(double scaleX,
+RotoGui::penMotion(double /*scaleX*/,
                    double /*scaleY*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
@@ -2590,8 +2589,7 @@ RotoGui::penMotion(double scaleX,
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
-            unsigned int mipMapLevel = Image::getLevelFromScale(scaleX);
-            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.),mipMapLevel)) {
+            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.))) {
                 _imp->context->evaluateChange();
                 didSomething = true;
             }
@@ -2677,7 +2675,7 @@ RotoGui::penUp(double /*scaleX*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
-        _imp->rotoData->strokeBeingPaint->invalidateStrokeTimePreview();
+        _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();
     }

@@ -203,7 +203,7 @@ namespace Natron {
          * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
          * a new buffer. This is not thread-safe and should be called only while under an ImageLocker 
          **/
-        void ensureBounds(const RectI& newBounds);
+        void ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false);
         
         /**
      * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
@@ -579,8 +579,9 @@ namespace Natron {
                 return;
             }
             QWriteLocker locker(&_entryLock);
-            
-            _bitmap.clear(roi);
+            RectI intersection;
+            _bounds.intersect(roi, &intersection);
+            _bitmap.clear(intersection);
         }
         
         /**

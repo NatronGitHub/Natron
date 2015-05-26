@@ -637,7 +637,7 @@ Image::onMemoryAllocated(bool diskRestoration)
 #ifdef DEBUG
     if (!diskRestoration) {
         ///fill with red, to recognize unrendered pixels
-        fill(_bounds,1.,0.,0.,1.);
+        //fill(_bounds,1.,0.,0.,1.);
     }
 #endif
     
@@ -792,7 +792,7 @@ Image::setRoD(const RectD& rod)
 }
 
 void
-Image::ensureBounds(const RectI& newBounds)
+Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant)
 {
     
     
@@ -815,6 +815,9 @@ Image::ensureBounds(const RectI& newBounds)
                                               getPixelAspectRatio(),
                                               getBitDepth(),
                                               usesBitMap()));
+    if (fillWithBlackAndTransparant) {
+        tmpImg->fill(merge, 0., 0., 0., 0.);
+    }
     
     Natron::ImageBitDepthEnum depth = getBitDepth();
     
