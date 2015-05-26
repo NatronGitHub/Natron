@@ -32,29 +32,6 @@ typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 namespace {
 
-/**
- * @brief nodeHasAnimation
- *
- * Returns true if 'node' contains at least one animated knob, otherwise
- * returns false.
- */
-bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &node)
-{
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getNode()->getKnobs();
-
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
-         it != knobs.end();
-         ++it) {
-        boost::shared_ptr<KnobI> knob = *it;
-
-        if (knob->hasAnimation()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool nodeCanAnimate(const boost::shared_ptr<NodeGui> &node)
 {
     const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getNode()->getKnobs();
@@ -65,28 +42,6 @@ bool nodeCanAnimate(const boost::shared_ptr<NodeGui> &node)
         boost::shared_ptr<KnobI> knob = *it;
 
         if (knob->canAnimate()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * @brief groupHasAnimation
- *
- *
- */
-bool groupHasAnimation(NodeGroup *nodeGroup)
-{
-    NodeList nodes = nodeGroup->getNodes();
-
-    for (NodeList::const_iterator it = nodes.begin();
-         it != nodes.end();
-         ++it) {
-        NodePtr n = (*it);
-
-        if (nodeHasAnimation(boost::dynamic_pointer_cast<NodeGui>(n->getNodeGui()))) {
             return true;
         }
     }
@@ -394,6 +349,25 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
     return ret;
 }
 
+DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
+{
+    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin(); it != _imp->nodesRows.end(); ++it) {
+        DSNode *dsNode = (*it).second;
+
+        DSKnobsRowsData knobsRows = dsNode->getChildData();
+
+        for (DSKnobsRowsData::const_iterator knobIt = knobsRows.begin(); knobIt != knobsRows.end(); ++knobIt) {
+            DSKnob *dsKnob = (*knobIt).second;
+
+            if (dsKnob->getKnobGui() == knobGui) {
+                return dsKnob;
+            }
+        }
+    }
+
+    return NULL;
+}
+
 DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
     boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
@@ -459,6 +433,23 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
     return ret;
 }
 
+bool DopeSheet::nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const
+{
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
+
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+         it != knobs.end();
+         ++it) {
+        boost::shared_ptr<KnobI> knob = *it;
+
+        if (knob->hasAnimation()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 {
     // Determinate the node type
@@ -491,6 +482,11 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
     if (nodeType != DSNode::CommonNodeType) {
         connect(dsNode, SIGNAL(clipRangeChanged()),
                 this, SIGNAL(modelChanged()));
+    }
+
+    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
+        QObject::connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+                         parentGroupDSNode, SLOT(computeGroupRange()));
     }
 
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
@@ -527,19 +523,10 @@ DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
     }
 
     connect(knobGui, SIGNAL(keyFrameSet()),
-            dsKnob, SLOT(checkVisibleState()));
+            this, SLOT(onKeyframeSetOrRemoved()));
 
     connect(knobGui, SIGNAL(keyFrameRemoved()),
-            dsKnob, SLOT(checkVisibleState()));
-
-    connect(knobGui, SIGNAL(keyFrameSet()),
-            this, SIGNAL(modelChanged()));
-
-    connect(knobGui, SIGNAL(keyFrameRemoved()),
-            this, SIGNAL(modelChanged()));
-
-    connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
-            dsNode, SLOT(checkVisibleState()));
+            this, SLOT(onKeyframeSetOrRemoved()));
 
     return dsKnob;
 }
@@ -561,11 +548,18 @@ void DopeSheet::refreshClipRects()
 
 void DopeSheet::onSettingsPanelCloseChanged(bool closed)
 {
-    if (closed) {
+    Q_UNUSED(closed);
+
+    DSNode *dsNode = findDSNode(qobject_cast<Natron::Node *>(sender()));
+
+    if (!dsNode) {
         return;
     }
 
-    if (DSNode *dsNode = findDSNode(qobject_cast<Natron::Node *>(sender()))) {
+    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
+        Q_EMIT groupNodeSettingsPanelCloseChanged(parentGroupDSNode);
+    }
+    else {
         Q_EMIT nodeSettingsPanelOpened(dsNode);
     }
 }
@@ -576,6 +570,16 @@ void DopeSheet::onNodeNameChanged(const QString &name)
     DSNode *dsNode = findDSNode(node);
 
     dsNode->getTreeItem()->setText(0, name);
+}
+
+void DopeSheet::onKeyframeSetOrRemoved()
+{
+
+    if (DSKnob *dsKnob = findDSKnob(qobject_cast<KnobGui *>(sender()))) {
+        Q_EMIT keyframeSetOrRemoved(dsKnob);
+    }
+
+    Q_EMIT modelChanged();
 }
 
 
@@ -628,8 +632,6 @@ DSKnob::DSKnob(QTreeWidgetItem *nameItem,
 {
     _imp->nameItem = nameItem;
     _imp->knobGui = knobGui;
-
-    checkVisibleState();
 }
 
 DSKnob::~DSKnob()
@@ -659,59 +661,6 @@ bool DSKnob::isMultiDim() const
 {
     return (_imp->knobGui->getKnob()->getDimension() > 1);
 }
-
-/**
- * @brief DSKnob::checkVisibleState
- *
- * Handles the visibility of the item and its parent(s).
- *
- * This slot is automatically called each time a keyframe is
- * set or removed for this knob.
- */
-void DSKnob::checkVisibleState()
-{
-    QTreeWidgetItem *nodeItem = _imp->nameItem->parent();
-
-    if (isMultiDim()) {
-        for (int i = 0; i < _imp->knobGui->getKnob()->getDimension(); ++i) {
-            if (_imp->knobGui->getCurve(i)->isAnimated()) {
-                if(_imp->nameItem->child(i)->isHidden()) {
-                    _imp->nameItem->child(i)->setHidden(false);
-                }
-            }
-            else {
-                if (!_imp->nameItem->child(i)->isHidden()) {
-                    _imp->nameItem->child(i)->setHidden(true);
-                }
-            }
-        }
-
-        if (itemHasNoChildVisible(_imp->nameItem)) {
-            _imp->nameItem->setHidden(true);
-        }
-        else {
-            _imp->nameItem->setHidden(false);
-        }
-    }
-    else {
-        if (_imp->knobGui->getCurve(0)->isAnimated()) {
-            _imp->nameItem->setHidden(false);
-        }
-        else {
-            _imp->nameItem->setHidden(true);
-        }
-    }
-
-    if (itemHasNoChildVisible(nodeItem)) {
-        nodeItem->setHidden(true);
-    }
-    else if (nodeItem->isHidden()) {
-        nodeItem->setHidden(false);
-    }
-
-    Q_EMIT needNodesVisibleStateChecking();
-}
-
 
 ////////////////////////// DSNode //////////////////////////
 
@@ -761,14 +710,6 @@ DSNodePrivate::~DSNodePrivate()
 void DSNodePrivate::createDSKnobs()
 {
     const KnobsAndGuis &knobs = nodeGui->getKnobs();
-
-    if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(q_ptr)) {
-        QObject::connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         parentGroupDSNode, SLOT(checkVisibleState()));
-
-        QObject::connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         parentGroupDSNode, SLOT(computeGroupRange()));
-    }
 
     for (KnobsAndGuis::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
@@ -834,7 +775,7 @@ void DSNodePrivate::initGroupNode()
         }
 
         QObject::connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         q_ptr, SLOT(checkVisibleState()));
+                         dopeSheetModel, SLOT(onSettingsPanelCloseChanged(bool)));
 
         QObject::connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
                          q_ptr, SLOT(computeGroupRange()));
@@ -872,26 +813,15 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
 
-    // Create the hierarchy
-    if (_imp->nodeType == DSNode::CommonNodeType) {
-        _imp->createDSKnobs();
-    }
-    else if (_imp->nodeType == DSNode::ReaderNodeType) {
+    if (_imp->nodeType == DSNode::ReaderNodeType) {
         _imp->initReaderNode();
-        _imp->createDSKnobs();
     }
-    else if (_imp->nodeType == DSNode::RetimeNodeType) {
-        _imp->createDSKnobs();
-    }
-    else if (_imp->nodeType == DSNode::TimeOffsetNodeType) {
-        _imp->createDSKnobs();
-    }
-    else if (_imp->nodeType == DSNode::FrameRangeNodeType) {
-        _imp->createDSKnobs();
-    }
+
+    _imp->createDSKnobs();
+
     // If some subnodes are already in the dope sheet, the connections must be set to update
     // the group's clip rect
-    else if (_imp->nodeType == DSNode::GroupNodeType) {
+    if (_imp->nodeType == DSNode::GroupNodeType) {
         _imp->initGroupNode();
     }
 }
@@ -1014,37 +944,6 @@ void DSNode::computeGroupRange()
     }
 
     Q_EMIT clipRangeChanged();
-}
-
-/**
- * @brief DSNode::checkVisibleState
- *
- * If the item and its set of keyframes must be hidden or not,
- * hides or shows them.
- *
- * This slot is automatically called when
- */
-void DSNode::checkVisibleState()
-{
-    _imp->nodeGui->setVisibleSettingsPanel(true);
-
-    bool showItem = _imp->nodeGui->isSettingsPanelVisible();
-
-    if (_imp->nodeType == DSNode::CommonNodeType) {
-        showItem = nodeHasAnimation(_imp->nodeGui);
-    }
-    else if (_imp->nodeType == DSNode::GroupNodeType) {
-        NodeGroup *group = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance());
-
-        showItem = showItem && !_imp->dopeSheetModel->groupSubNodesAreHidden(group);
-    }
-
-    _imp->nameItem->setHidden(!showItem);
-
-    // Hide the parent group item if there's no subnodes displayed
-    if (DSNode *parentGroupDSNode = _imp->dopeSheetModel->getGroupDSNode(this)) {
-        parentGroupDSNode->checkVisibleState();
-    }
 }
 
 /**

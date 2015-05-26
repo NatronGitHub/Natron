@@ -74,6 +74,7 @@ public:
     DSNode *findDSNode(Natron::Node *node) const;
 
     DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
+    DSKnob *findDSKnob(KnobGui *knobGui) const;
 
     DSNode *getGroupDSNode(DSNode *dsNode) const;
 
@@ -82,11 +83,15 @@ public:
     DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
 
+    bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const;
+
 Q_SIGNALS:
     void modelChanged();
     void nodeAdded(DSNode *dsNode);
     void nodeSettingsPanelOpened(DSNode *dsNode);
+    void groupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
+    void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
@@ -96,6 +101,7 @@ private Q_SLOTS:
     void refreshClipRects();
     void onSettingsPanelCloseChanged(bool closed);
     void onNodeNameChanged(const QString &name);
+    void onKeyframeSetOrRemoved();
 
 private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
@@ -121,12 +127,6 @@ public:
     KnobGui *getKnobGui() const;
 
     bool isMultiDim() const;
-
-public Q_SLOTS:
-    void checkVisibleState();
-
-Q_SIGNALS:
-    void needNodesVisibleStateChecking();
 
 private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
@@ -169,7 +169,6 @@ public:
     std::pair<double, double> getClipRange() const;
 
 public Q_SLOTS:
-    void checkVisibleState();
     void computeReaderRange();
     void computeGroupRange();
 

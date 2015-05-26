@@ -206,6 +206,9 @@ public:
     int indexInParent(QTreeWidgetItem *item) const;
     void moveChildTo(DSNode *child, DSNode *newParent);
 
+    void checkNodeVisibleState(DSNode *dsNode);
+    void checkKnobVisibleState(DSKnob *dsKnob);
+
     /* attributes */
     HierarchyView *q_ptr;
     DopeSheet *model;
@@ -288,7 +291,7 @@ void HierarchyViewPrivate::expandAndCheckKnobItems(DSNode *dsNode)
             knobItem->setExpanded(true);
         }
 
-        dsKnob->checkVisibleState();
+        checkKnobVisibleState(dsKnob);
     }
 }
 
@@ -338,6 +341,79 @@ void HierarchyViewPrivate::moveChildTo(DSNode *child, DSNode *newParent)
     }
 }
 
+void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
+{
+    boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
+    nodeGui->setVisibleSettingsPanel(true);
+
+    bool showItem = nodeGui->isSettingsPanelVisible();
+
+    DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
+
+    if (nodeType == DSNode::CommonNodeType) {
+        showItem = model->nodeHasAnimation(nodeGui);
+    }
+    else if (nodeType == DSNode::GroupNodeType) {
+        NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
+
+        showItem = showItem && !model->groupSubNodesAreHidden(group);
+    }
+
+    dsNode->getTreeItem()->setHidden(!showItem);
+
+    // Hide the parent group item if there's no subnodes displayed
+    if (DSNode *parentGroupDSNode = model->getGroupDSNode(dsNode)) {
+        checkNodeVisibleState(parentGroupDSNode);
+    }
+}
+
+void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
+{
+    QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
+    QTreeWidgetItem *nodeTreeItem = dsKnob->getTreeItem()->parent();
+
+    KnobGui *knobGui = dsKnob->getKnobGui();
+
+    if (dsKnob->isMultiDim()) {
+        for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
+            if (knobGui->getCurve(i)->isAnimated()) {
+                if(treeItem->child(i)->isHidden()) {
+                    treeItem->child(i)->setHidden(false);
+                }
+            }
+            else {
+                if (!treeItem->child(i)->isHidden()) {
+                    treeItem->child(i)->setHidden(true);
+                }
+            }
+        }
+
+        if (itemHasNoChildVisible(treeItem)) {
+            treeItem->setHidden(true);
+        }
+        else {
+            treeItem->setHidden(false);
+        }
+    }
+    else {
+        if (knobGui->getCurve(0)->isAnimated()) {
+            treeItem->setHidden(false);
+        }
+        else {
+            treeItem->setHidden(true);
+        }
+    }
+
+    if (itemHasNoChildVisible(nodeTreeItem)) {
+        nodeTreeItem->setHidden(true);
+    }
+    else if (nodeTreeItem->isHidden()) {
+        nodeTreeItem->setHidden(false);
+    }
+
+    checkNodeVisibleState(model->findDSNode(nodeTreeItem));
+}
+
 /**
  * @brief HierarchyView::HierarchyView
  *
@@ -352,6 +428,9 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 
     connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
             this, SLOT(onNodeAboutToBeRemoved(DSNode*)));
+
+    connect(model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
+            this, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
 
     connect(model, SIGNAL(nodeSettingsPanelOpened(DSNode*)),
             this, SLOT(onNodeSettingsPanelOpened(DSNode*)));
@@ -410,7 +489,6 @@ void HierarchyView::onNodeAdded(DSNode *dsNode)
     _imp->insertNodeItem(dsNode);
 
     dsNode->getTreeItem()->setExpanded(true);
-    dsNode->checkVisibleState();
 
     if (!dsNode->getTreeItem()->isHidden()) {
         _imp->expandAndCheckKnobItems(dsNode);
@@ -427,9 +505,21 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     }
 }
 
+void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
+{
+    _imp->checkKnobVisibleState(dsKnob);
+}
+
 void HierarchyView::onNodeSettingsPanelOpened(DSNode *dsNode)
 {
     _imp->expandAndCheckKnobItems(dsNode);
+}
+
+void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
+{
+    assert(dsNode->getDSNodeType() == DSNode::GroupNodeType);
+
+    _imp->checkNodeVisibleState(dsNode);
 }
 
 /**
