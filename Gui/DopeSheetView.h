@@ -114,12 +114,9 @@ public:
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
-private Q_SLOTS:
+public Q_SLOTS:
     void computeSelectedKeysBRect();
     void clearKeyframeSelection();
-    void selectAllKeyframes();
-    void deleteSelectedKeyframes();
-    void frame();
 
 protected:
     void initializeGL() OVERRIDE FINAL;
@@ -143,7 +140,16 @@ protected:
 private Q_SLOTS:
     void onTimeLineFrameChanged(SequenceTime sTime, int reason);
     void onTimeLineBoundariesChanged(int, int);
+    void onNodeAdded(DSNode *dsNode);
+    void onNodeAboutToBeRemoved(DSNode *dsNode);
+    void onKeyframeChanged();
+    void onReaderChanged();
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
+    void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
+
+    void selectAllKeyframes();
+    void deleteSelectedKeyframes();
+    void frame();
 
 private: /* functions */
     void renderText(double x, double y,

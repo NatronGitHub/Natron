@@ -62,7 +62,7 @@ public:
     DopeSheet();
     ~DopeSheet();
 
-    DSNodesRowsData getTopLevelData() const;
+    DSNodesRowsData getNodeRows() const;
 
     std::pair<double, double> getKeyframeRange() const;
 
@@ -72,6 +72,7 @@ public:
     DSNode *findParentDSNode(QTreeWidgetItem *treeItem) const;
     DSNode *findDSNode(QTreeWidgetItem *nodeTreeItem) const;
     DSNode *findDSNode(Natron::Node *node) const;
+    DSNode *findDSNode(const boost::shared_ptr<KnobI> knob) const;
 
     DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
     DSKnob *findDSKnob(KnobGui *knobGui) const;
@@ -98,7 +99,6 @@ private: /* functions */
     DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
 
 private Q_SLOTS:
-    void refreshClipRects();
     void onSettingsPanelCloseChanged(bool closed);
     void onNodeNameChanged(const QString &name);
     void onKeyframeSetOrRemoved();
@@ -165,15 +165,6 @@ public:
     DSKnobsRowsData getChildData() const;
 
     DSNode::DSNodeType getDSNodeType() const;
-
-    std::pair<double, double> getClipRange() const;
-
-public Q_SLOTS:
-    void computeReaderRange();
-    void computeGroupRange();
-
-Q_SIGNALS:
-    void clipRangeChanged();
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;

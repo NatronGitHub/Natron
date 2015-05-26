@@ -153,7 +153,7 @@ DopeSheet::~DopeSheet()
     _imp->nodesRows.clear();
 }
 
-DSNodesRowsData DopeSheet::getTopLevelData() const
+DSNodesRowsData DopeSheet::getNodeRows() const
 {
     return _imp->nodesRows;
 }
@@ -235,10 +235,6 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
     _imp->nodesRows.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
 
     Q_EMIT nodeAdded(dsNode);
-
-    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
-        parentGroupDSNode->computeGroupRange();
-    }
 }
 
 void DopeSheet::removeNode(NodeGui *node)
@@ -261,10 +257,6 @@ void DopeSheet::removeNode(NodeGui *node)
     }
 
     DSNode *dsNode = (*toRemove).second;
-
-    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
-        parentGroupDSNode->computeGroupRange();
-    }
 
     Q_EMIT nodeAboutToBeRemoved(dsNode);
 
@@ -311,6 +303,25 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
     }
 
     return 0;
+}
+
+DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
+{
+    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin(); it != _imp->nodesRows.end(); ++it) {
+        DSNode *dsNode = (*it).second;
+
+        DSKnobsRowsData knobsRows = dsNode->getChildData();
+
+        for (DSKnobsRowsData::const_iterator knobIt = knobsRows.begin(); knobIt != knobsRows.end(); ++knobIt) {
+            DSKnob *dsKnob = (*knobIt).second;
+
+            if (dsKnob->getKnobGui()->getKnob() == knob) {
+                return dsNode;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const
@@ -479,16 +490,6 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 
     DSNode *dsNode = new DSNode(this, nodeType, nameItem, nodeGui);
 
-    if (nodeType != DSNode::CommonNodeType) {
-        connect(dsNode, SIGNAL(clipRangeChanged()),
-                this, SIGNAL(modelChanged()));
-    }
-
-    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
-        QObject::connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         parentGroupDSNode, SLOT(computeGroupRange()));
-    }
-
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
             this, SLOT(onSettingsPanelCloseChanged(bool)));
 
@@ -531,21 +532,6 @@ DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
     return dsKnob;
 }
 
-void DopeSheet::refreshClipRects()
-{
-    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin();
-         it != _imp->nodesRows.end();
-         ++it) {
-        DSNode *dsNode = (*it).second;
-        if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
-            dsNode->computeReaderRange();
-        }
-        else if (dsNode->getDSNodeType() == DSNode::GroupNodeType) {
-            dsNode->computeGroupRange();
-        }
-    }
-}
-
 void DopeSheet::onSettingsPanelCloseChanged(bool closed)
 {
     Q_UNUSED(closed);
@@ -574,7 +560,6 @@ void DopeSheet::onNodeNameChanged(const QString &name)
 
 void DopeSheet::onKeyframeSetOrRemoved()
 {
-
     if (DSKnob *dsKnob = findDSKnob(qobject_cast<KnobGui *>(sender()))) {
         Q_EMIT keyframeSetOrRemoved(dsKnob);
     }
@@ -673,7 +658,6 @@ public:
     /* functions */
     void createDSKnobs();
 
-    void initReaderNode();
     void initGroupNode();
 
     /* attributes */
@@ -688,8 +672,6 @@ public:
     QTreeWidgetItem *nameItem;
 
     DSKnobsRowsData knobsRows;
-
-    std::pair<double, double> clipRange;
 
     bool isSelected;
 };
@@ -720,46 +702,10 @@ void DSNodePrivate::createDSKnobs()
             continue;
         }
 
-        if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(q_ptr)) {
-            QObject::connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
-                             parentGroupDSNode, SLOT(computeGroupRange()));
-
-            QObject::connect(knobGui, SIGNAL(keyFrameSet()),
-                             parentGroupDSNode, SLOT(computeGroupRange()));
-
-            QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
-                             parentGroupDSNode, SLOT(computeGroupRange()));
-        }
-
         DSKnob *dsKnob = dopeSheetModel->createDSKnob(knobGui, q_ptr);
 
         knobsRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
     }
-
-    if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(q_ptr)) {
-        parentGroupDSNode->computeGroupRange();
-    }
-}
-
-void DSNodePrivate::initReaderNode()
-{
-    NodePtr node = nodeGui->getNode();
-    // The dopesheet view must refresh if the user set some values in the settings panel
-    // so we connect some signals/slots
-    boost::shared_ptr<KnobSignalSlotHandler> firstFrameKnob = node->getKnobByName("firstFrame")->getSignalSlotHandler();
-    boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
-    boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName("startingTime")->getSignalSlotHandler();
-
-    QObject::connect(firstFrameKnob.get(), SIGNAL(valueChanged(int, int)),
-                     q_ptr, SLOT(computeReaderRange()));
-
-    QObject::connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
-                     q_ptr, SLOT(computeReaderRange()));
-
-    QObject::connect(startingTimeKnob.get(), SIGNAL(valueChanged(int, int)),
-                     q_ptr, SLOT(computeReaderRange()));
-
-    q_ptr->computeReaderRange();
 }
 
 void DSNodePrivate::initGroupNode()
@@ -776,29 +722,7 @@ void DSNodePrivate::initGroupNode()
 
         QObject::connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
                          dopeSheetModel, SLOT(onSettingsPanelCloseChanged(bool)));
-
-        QObject::connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         q_ptr, SLOT(computeGroupRange()));
-
-        const KnobsAndGuis &knobs = subNodeGui->getKnobs();
-
-        for (KnobsAndGuis::const_iterator knobIt = knobs.begin();
-             knobIt != knobs.end(); ++knobIt) {
-            boost::shared_ptr<KnobI> knob = knobIt->first.lock();
-            KnobGui *knobGui = knobIt->second;
-
-            QObject::connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
-                             q_ptr, SLOT(computeGroupRange()));
-
-            QObject::connect(knobGui, SIGNAL(keyFrameSet()),
-                             q_ptr, SLOT(computeGroupRange()));
-
-            QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
-                             q_ptr, SLOT(computeGroupRange()));
-        }
     }
-
-    q_ptr->computeGroupRange();
 }
 
 DSNode::DSNode(DopeSheet *model,
@@ -812,10 +736,6 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nodeType = nodeType;
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
-
-    if (_imp->nodeType == DSNode::ReaderNodeType) {
-        _imp->initReaderNode();
-    }
 
     _imp->createDSKnobs();
 
@@ -867,83 +787,6 @@ DSKnobsRowsData DSNode::getChildData() const
 DSNode::DSNodeType DSNode::getDSNodeType() const
 {
     return _imp->nodeType;
-}
-
-std::pair<double, double> DSNode::getClipRange() const
-{
-    return _imp->clipRange;
-}
-
-void DSNode::computeReaderRange()
-{
-    assert(_imp->nodeType == DSNode::ReaderNodeType);
-
-    NodePtr node = _imp->nodeGui->getNode();
-
-    int startingTime = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get())->getValue();
-    int firstFrame = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get())->getValue();
-    int lastFrame = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get())->getValue();
-
-    _imp->clipRange.first = startingTime;
-    _imp->clipRange.second = (startingTime + (lastFrame - firstFrame));
-
-    Q_EMIT clipRangeChanged();
-}
-
-void DSNode::computeGroupRange()
-{
-    assert(_imp->nodeType == DSNode::GroupNodeType);
-
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
-
-    NodeList nodes = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance())->getNodes();
-
-    for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr node = (*it);
-
-        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
-
-
-        if (!nodeGui->getSettingPanel() || !nodeGui->getSettingPanel()->isVisible()) {
-            continue;
-        }
-
-        const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getKnobs();
-
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
-             it != knobs.end();
-             ++it) {
-            boost::shared_ptr<KnobI> knob = (*it);
-
-            if (!knob->canAnimate() || !knob->hasAnimation()) {
-                continue;
-            }
-            else {
-                for (int i = 0; i < knob->getDimension(); ++i) {
-                    KeyFrameSet keyframes = knob->getCurve(i)->getKeyFrames_mt_safe();
-
-                    if (keyframes.empty()) {
-                        continue;
-                    }
-
-                    dimFirstKeys.push_back(keyframes.begin()->getTime());
-                    dimLastKeys.push_back(keyframes.rbegin()->getTime());
-                }
-            }
-        }
-    }
-
-    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
-        _imp->clipRange.first = 0;
-        _imp->clipRange.second = 0;
-    }
-    else {
-        _imp->clipRange.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-        _imp->clipRange.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
-    }
-
-    Q_EMIT clipRangeChanged();
 }
 
 /**

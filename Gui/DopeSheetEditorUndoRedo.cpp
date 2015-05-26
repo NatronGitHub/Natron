@@ -458,8 +458,6 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
         }
     }
 
-    _dsNodeGroup->computeGroupRange();
-
     _view->clearKeyframeSelection();
 
     _view->redraw();
