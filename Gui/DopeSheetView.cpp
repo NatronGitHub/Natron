@@ -2432,7 +2432,9 @@ void DopeSheetView::onNodeAboutToBeRemoved(DSNode *dsNode)
 
     std::map<DSNode *, FrameRange>::iterator toRemove = _imp->nodeRanges.find(dsNode);
 
-    _imp->nodeRanges.erase(toRemove);
+    if (toRemove != _imp->nodeRanges.end()) {
+        _imp->nodeRanges.erase(toRemove);
+    }
 
     redraw();
 }
