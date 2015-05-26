@@ -51,6 +51,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveEditor.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetView.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ZoomContext.h"
@@ -837,6 +839,7 @@ public:
 
     void insertSelectedKeyFrameConditionnaly(const KeyPtr & key);
 
+    void setProjectionToDopeSheetView();
 
 private:
 
@@ -3254,6 +3257,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingView:
         _imp->zoomOrPannedSinceLastFit = true;
         _imp->zoomCtx.translate(dx, dy);
+
+        // Synchronize the curve editor
+        if (_imp->_gui->isTripleSyncEnabled()) {
+            _imp->setProjectionToDopeSheetView();
+        }
         break;
 
     case eEventStateDraggingKeys:
@@ -3343,6 +3351,10 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
         refreshDisplayedTangents();
         
+        // Synchronize the curve editor
+        if (_imp->_gui->isTripleSyncEnabled()) {
+            _imp->setProjectionToDopeSheetView();
+        }
     } break;
     case eEventStateNone:
         assert(0);
@@ -3475,6 +3487,12 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     refreshDisplayedTangents();
 
     update();
+
+    // Synchronize the curve editor
+    if (_imp->_gui->isTripleSyncEnabled()) {
+        _imp->setProjectionToDopeSheetView();
+    }
+
 } // wheelEvent
 
 QPointF
@@ -3774,6 +3792,13 @@ CurveWidgetPrivate::insertSelectedKeyFrameConditionnaly(const KeyPtr &key)
     if (!alreadySelected) {
         _selectedKeyFrames.push_back(key);
     }
+}
+
+void CurveWidgetPrivate::setProjectionToDopeSheetView()
+{
+    DopeSheetView *dopeSheetView = _gui->getDopeSheetEditor()->getDopeSheetView();
+
+    dopeSheetView->frame(zoomCtx.left(), zoomCtx.right());
 }
 
 void

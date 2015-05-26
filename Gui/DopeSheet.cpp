@@ -3,6 +3,7 @@
 // Qt includes
 #include <QDebug> //REMOVEME
 #include <QHBoxLayout>
+#include <QPushButton>
 #include <QSplitter>
 #include <QtEvents>
 #include <QTreeWidget>
@@ -812,6 +813,7 @@ public:
     Gui *gui;
 
     QVBoxLayout *mainLayout;
+    QHBoxLayout *helpersLayout;
 
     DopeSheet *model;
 
@@ -824,6 +826,7 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
     q_ptr(qq),
     gui(gui),
     mainLayout(0),
+    helpersLayout(0),
     model(0),
     splitter(0),
     hierarchyView(0),
@@ -860,6 +863,19 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->setSpacing(0);
 
+    _imp->helpersLayout = new QHBoxLayout();
+    _imp->helpersLayout->setContentsMargins(0, 0, 0, 0);
+
+    QPushButton *toggleTripleSyncBtn = new QPushButton(tr("Sync"), this);
+    toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
+    toggleTripleSyncBtn->setCheckable(true);
+
+    connect(toggleTripleSyncBtn, SIGNAL(toggled(bool)),
+            this, SLOT(toggleTripleSync(bool)));
+
+    _imp->helpersLayout->addWidget(toggleTripleSyncBtn);
+    _imp->helpersLayout->addStretch();
+
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
 
     _imp->model = new DopeSheet;
@@ -875,6 +891,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->splitter->setStretchFactor(1, 5);
 
     _imp->mainLayout->addWidget(_imp->splitter);
+    _imp->mainLayout->addLayout(_imp->helpersLayout);
 }
 
 /**
@@ -884,6 +901,11 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
  */
 DopeSheetEditor::~DopeSheetEditor()
 {}
+
+DopeSheetView *DopeSheetEditor::getDopeSheetView() const
+{
+    return _imp->dopeSheetView;
+}
 
 /**
  * @brief DopeSheetEditor::addNode
@@ -907,4 +929,9 @@ void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
 void DopeSheetEditor::removeNode(NodeGui *node)
 {
     _imp->model->removeNode(node);
+}
+
+void DopeSheetEditor::toggleTripleSync(bool enabled)
+{
+    _imp->gui->setTripleSyncEnabled(enabled);
 }

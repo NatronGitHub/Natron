@@ -22,6 +22,8 @@
 #include "Engine/TimeLine.h"
 
 #include "Gui/ActionShortcuts.h"
+#include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
@@ -685,6 +687,8 @@ public:
     void pushUndoCommand(QUndoCommand *cmd);
 
     void createContextMenu();
+
+    void setProjectionToCurveWidget();
 
     /* attributes */
     DopeSheetView *q_ptr;
@@ -1964,6 +1968,16 @@ void DopeSheetViewPrivate::createContextMenu()
     viewMenu->addAction(frameSelectionAction);
 }
 
+void DopeSheetViewPrivate::setProjectionToCurveWidget()
+{
+    CurveWidget *curveWidget = gui->getCurveEditor()->getCurveWidget();
+
+    double zoomBottom, dummy01, dummy02, dummy03;
+    curveWidget->getProjection(&dummy01, &zoomBottom, &dummy02, &dummy03);
+
+    curveWidget->setProjection(zoomContext.left(), zoomBottom, zoomContext.factor(), zoomContext.aspectRatio());
+}
+
 /**
  * @brief DopeSheetView::DopeSheetView
  *
@@ -2027,6 +2041,23 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
 DopeSheetView::~DopeSheetView()
 {
 
+}
+
+void DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
+{
+    running_in_main_thread();
+
+    *zoomLeft = _imp->zoomContext.left();
+    *zoomBottom = _imp->zoomContext.bottom();
+    *zoomFactor = _imp->zoomContext.factor();
+    *zoomAspectRatio = _imp->zoomContext.aspectRatio();
+}
+
+void DopeSheetView::frame(double xMin, double xMax)
+{
+    _imp->zoomContext.fill(xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top());
+
+    redraw();
 }
 
 /**
@@ -2750,6 +2781,11 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
         _imp->zoomContext.translate(dx, 0);
 
         redraw();
+
+        // Synchronize the curve editor
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->setProjectionToCurveWidget();
+        }
     }
 
     _imp->lastPosOnMouseMove = e->pos();
@@ -2917,9 +2953,14 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 
-    computeSelectedKeysBRect();
+    computeSelectedKeysBRect();    
 
     redraw();
+
+    // Synchronize the curve editor
+    if (_imp->gui->isTripleSyncEnabled()) {
+        _imp->setProjectionToCurveWidget();
+    }
 }
 
 void DopeSheetView::enterEvent(QEvent *e)

@@ -25,6 +25,7 @@ class DopeSheetEditorPrivate;
 class DSKnobPrivate;
 class DopeSheetEditor;
 class DopeSheetPrivate;
+class DopeSheetView;
 class DSNodePrivate;
 class Gui;
 class HierarchyView;
@@ -184,8 +185,13 @@ public:
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetEditor();
 
+    DopeSheetView *getDopeSheetView() const;
+
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
+
+public Q_SLOTS:
+    void toggleTripleSync(bool enabled);
 
 private:
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;

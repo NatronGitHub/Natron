@@ -520,6 +520,8 @@ public:
 
     void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
 
+    void setTripleSyncEnabled(bool enabled);
+    bool isTripleSyncEnabled() const;
 
 Q_SIGNALS:
 

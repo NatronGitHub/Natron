@@ -226,6 +226,8 @@ struct GuiPrivate
     mutable QMutex _pyPanelsMutex;
     std::map<PyPanel*, std::string> _userPanels;
 
+    bool _isTripleSyncEnabled;
+
 
     ///all the menu actions
     ActionWithShortcut *actionNew_project;
@@ -396,6 +398,7 @@ struct GuiPrivate
         , _splitters()
         , _pyPanelsMutex()
         , _userPanels()
+        , _isTripleSyncEnabled(false)
         , actionNew_project(0)
         , actionOpen_project(0)
         , actionClose_project(0)
@@ -5406,4 +5409,16 @@ Gui::addMenuEntry(const QString & menuGrouping,
             _imp->pythonCommands.insert( std::make_pair(aws, script) );
         }
     }
+}
+
+void Gui::setTripleSyncEnabled(bool enabled)
+{
+    if (_imp->_isTripleSyncEnabled != enabled) {
+        _imp->_isTripleSyncEnabled = enabled;
+    }
+}
+
+bool Gui::isTripleSyncEnabled() const
+{
+    return _imp->_isTripleSyncEnabled;
 }

@@ -106,6 +106,10 @@ public:
                            QWidget *parent = 0);
     ~DopeSheetView();
 
+    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
+
+    void frame(double xMin, double xMax);
+
     void swapOpenGLBuffers() OVERRIDE FINAL;
     void redraw() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
