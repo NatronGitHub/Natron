@@ -880,7 +880,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                 DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
 
                 if (!keysUnderMouse.empty()) {
-                    ret = getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
+                    ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
                 }
             }
         }
@@ -892,7 +892,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords, knobDim);
 
             if (!keysUnderMouse.empty()) {
-                ret = getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
+                ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
             }
         }
     }
@@ -908,6 +908,9 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorForEventState(DopeSheetView::Even
     Qt::CursorShape cursorShape;
 
     switch (es) {
+    case DopeSheetView::esPickKeyframe:
+        cursorShape = Qt::CrossCursor;
+        break;
     case DopeSheetView::esClipRepos:
     case DopeSheetView::esGroupRepos:
     case DopeSheetView::esMoveKeyframeSelection:

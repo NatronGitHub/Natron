@@ -88,6 +88,7 @@ public:
     enum EventStateEnum
     {
         esNoEditingState,
+        esPickKeyframe,
         esClipRepos,
         esReaderLeftTrim,
         esReaderRightTrim,
