@@ -424,12 +424,13 @@ bool Knob<T>::getValueFromExpression(double time,int dimension,bool clamp,T* ret
     
     ///Check first if a value was already computed:
     
-    
-    QMutexLocker k(&_valueMutex);
-    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-    if (found != _exprRes[dimension].end()) {
-        *ret = found->second;
-        return true;
+    {
+        QMutexLocker k(&_valueMutex);
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            *ret = found->second;
+            return true;
+        }
     }
     
     
@@ -442,7 +443,7 @@ bool Knob<T>::getValueFromExpression(double time,int dimension,bool clamp,T* ret
         *ret =  clampToMinMax(*ret,dimension);
     }
     
-    //QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     _exprRes[dimension].insert(std::make_pair(time,*ret));
     return true;
 
