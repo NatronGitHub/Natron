@@ -39,20 +39,24 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/ZoomContext.h"
 
+////////////////////////// Helpers //////////////////////////
 
-// Some macros to ensure the following operations always running in the main thread
-#define RUNNING_IN_MAIN_THREAD() \
-    assert(qApp && qApp->thread() == QThread::currentThread())
+namespace {
 
-// Note : if you want to call the following functions from the pimpl of a class, ensure it have its
-// parent as attribute and pass its name as parameter, or pass 'this' if
-// it's called from a pimpled class.
-#define RUNNING_IN_MAIN_CONTEXT(glContextOwner) \
-    assert(QGLContext::currentContext() == glContextOwner->context())
+void running_in_main_thread() {
+    assert(qApp && qApp->thread() == QThread::currentThread());
+}
 
-#define RUNNING_IN_MAIN_THREAD_AND_CONTEXT(glContextOwner) \
-    RUNNING_IN_MAIN_THREAD();\
-    RUNNING_IN_MAIN_CONTEXT(glContextOwner)
+void running_in_main_context(const QGLWidget *glWidget) {
+    assert(glWidget->context() == QGLContext::currentContext());
+}
+
+void running_in_main_thread_and_context(const QGLWidget *glWidget) {
+    running_in_main_thread();
+    running_in_main_context(glWidget);
+}
+
+} // anon namespace
 
 
 typedef std::set<double> TimeSet;
@@ -1007,7 +1011,7 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPoi
  */
 void DopeSheetViewPrivate::drawScale() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     QPointF bottomLeft = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1);
     QPointF topRight = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0);
@@ -1120,7 +1124,7 @@ void DopeSheetViewPrivate::drawScale() const
  */
 void DopeSheetViewPrivate::drawRows() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     DSNodesRowsData treeItemsAndDSNodes = model->getTopLevelData();
 
@@ -1368,7 +1372,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
  */
 void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     // Perform drawing
     {
@@ -1493,7 +1497,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
 void DopeSheetViewPrivate::drawProjectBounds() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     double bottom = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1).y();
     double top = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0).y();
@@ -1528,7 +1532,7 @@ void DopeSheetViewPrivate::drawProjectBounds() const
  */
 void DopeSheetViewPrivate::drawCurrentFrameIndicator()
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     computeTimelinePositions();
 
@@ -1587,7 +1591,7 @@ void DopeSheetViewPrivate::drawCurrentFrameIndicator()
  */
 void DopeSheetViewPrivate::drawSelectionRect() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     QPointF topLeft = selectionRect.topLeft();
     QPointF bottomRight = selectionRect.bottomRight();
@@ -1633,7 +1637,7 @@ void DopeSheetViewPrivate::drawSelectionRect() const
  */
 void DopeSheetViewPrivate::drawSelectedKeysBRect() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
+    running_in_main_thread_and_context(q_ptr);
 
     QRectF bRect = rectToZoomCoordinates(selectedKeysBRect);
 
@@ -1684,7 +1688,7 @@ void DopeSheetViewPrivate::drawSelectedKeysBRect() const
 
 void DopeSheetViewPrivate::computeTimelinePositions()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     double polyHalfWidth = 7.5;
     double polyHeight = 7.5;
@@ -1797,7 +1801,7 @@ void DopeSheetViewPrivate::pushUndoCommand(QUndoCommand *cmd)
 
 void DopeSheetViewPrivate::createContextMenu()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     contextMenu->clear();
 
@@ -1901,7 +1905,7 @@ DopeSheetView::~DopeSheetView()
  */
 void DopeSheetView::swapOpenGLBuffers()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     swapBuffers();
 }
@@ -1913,9 +1917,7 @@ void DopeSheetView::swapOpenGLBuffers()
  */
 void DopeSheetView::redraw()
 {
-    RUNNING_IN_MAIN_THREAD();
-
-    qDebug() << "redraaaaaw";
+    running_in_main_thread();
 
     update();
 }
@@ -1927,7 +1929,7 @@ void DopeSheetView::redraw()
  */
 void DopeSheetView::getViewportSize(double &width, double &height) const
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     width = this->width();
     height = this->height();
@@ -1940,7 +1942,7 @@ void DopeSheetView::getViewportSize(double &width, double &height) const
  */
 void DopeSheetView::getPixelScale(double &xScale, double &yScale) const
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     xScale = _imp->zoomContext.screenPixelWidth();
     yScale = _imp->zoomContext.screenPixelHeight();
@@ -1953,7 +1955,7 @@ void DopeSheetView::getPixelScale(double &xScale, double &yScale) const
  */
 void DopeSheetView::getBackgroundColour(double &r, double &g, double &b) const
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     // use the same settings as the curve editor
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
@@ -1966,7 +1968,7 @@ void DopeSheetView::getBackgroundColour(double &r, double &g, double &b) const
  */
 void DopeSheetView::saveOpenGLContext()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
 
 }
@@ -1978,7 +1980,7 @@ void DopeSheetView::saveOpenGLContext()
  */
 void DopeSheetView::restoreOpenGLContext()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
 }
 
@@ -2134,7 +2136,7 @@ void DopeSheetView::selectAllKeyframes()
 
 void DopeSheetView::deleteSelectedKeyframes()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     if (_imp->selectedKeyframes.empty()) {
         return;
@@ -2156,7 +2158,7 @@ void DopeSheetView::deleteSelectedKeyframes()
 
 void DopeSheetView::frame()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     if (_imp->selectedKeyframes.size() == 1) {
         return;
@@ -2195,7 +2197,7 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
     Q_UNUSED(sTime);
     Q_UNUSED(reason);
 
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     if (_imp->gui->isGUIFrozen()) {
         return;
@@ -2208,7 +2210,7 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 
 void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     redraw();
 }
@@ -2229,7 +2231,7 @@ void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item
  */
 void DopeSheetView::initializeGL()
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     if ( !glewIsSupported("GL_ARB_vertex_array_object ")) {
         _imp->hasOpenGLVAOSupport = false;
@@ -2243,7 +2245,7 @@ void DopeSheetView::initializeGL()
  */
 void DopeSheetView::resizeGL(int w, int h)
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(this);
+    running_in_main_thread_and_context(this);
 
     if (h == 0) {
 
@@ -2271,7 +2273,7 @@ void DopeSheetView::resizeGL(int w, int h)
  */
 void DopeSheetView::paintGL()
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(this);
+    running_in_main_thread_and_context(this);
 
     glCheckError();
 
@@ -2331,7 +2333,7 @@ void DopeSheetView::paintGL()
 
 void DopeSheetView::mousePressEvent(QMouseEvent *e)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     if ( buttonDownIsRight(e) ) {
         _imp->createContextMenu();
@@ -2457,7 +2459,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
 void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     QPointF mouseZoomCoords = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
@@ -2607,7 +2609,7 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
 
 void DopeSheetView::wheelEvent(QWheelEvent *e)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
     if (e->orientation() != Qt::Vertical) {
@@ -2647,7 +2649,7 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
 void DopeSheetView::enterEvent(QEvent *e)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     setFocus();
 
@@ -2663,7 +2665,7 @@ void DopeSheetView::focusInEvent(QFocusEvent *e)
 
 void DopeSheetView::keyPressEvent(QKeyEvent *e)
 {
-    RUNNING_IN_MAIN_THREAD();
+    running_in_main_thread();
 
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = Qt::Key(e->key());
@@ -2689,7 +2691,7 @@ void DopeSheetView::renderText(double x, double y,
                                const QColor &color,
                                const QFont &font) const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(this);
+    running_in_main_thread_and_context(this);
 
     if ( text.isEmpty() ) {
         return;
