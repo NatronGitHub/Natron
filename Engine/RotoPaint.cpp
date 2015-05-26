@@ -21,14 +21,6 @@
 
 using namespace Natron;
 
-struct RotoPaintPrivate
-{
-    RotoPaintPrivate()
-    {
-        
-    }
-};
-
 std::string
 RotoPaint::getDescription() const
 {

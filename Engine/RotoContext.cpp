@@ -4322,6 +4322,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             //todo
             break;
         case Natron::eRotoStrokeTypeSmear:
+            pluginId = PLUGINID_NATRON_ROTOSMEAR;
             //hand-made
             break;
     }

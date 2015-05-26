@@ -117,6 +117,7 @@ SOURCES += \
     RotoContext.cpp \
     RotoPaint.cpp \
     RotoSerialization.cpp  \
+    RotoSmear.cpp \
     RotoWrapper.cpp \
     ScriptObject.cpp \
     Settings.cpp \
@@ -250,6 +251,7 @@ HEADERS += \
     RotoContextPrivate.h \
     RotoPaint.h \
     RotoSerialization.h \
+    RotoSmear.h \
     RotoWrapper.h \
     ScriptObject.h \
     Settings.h \
