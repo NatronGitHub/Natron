@@ -24,13 +24,14 @@ using namespace Natron;
 
 static Point getPointAt(const BezierCPs& cps, int time, double t)
 {
-    assert(cps.size());
+    int ncps = (int)cps.size();
+    assert(ncps);
     if (t < 0) {
-        t += (int)cps.size();
+        t += ncps;
     }
-    int t_i = (int)std::floor(t) % (int)cps.size();
-    int t_i_plus_1 = t_i % (int)cps.size();
-    assert(t_i >= 0 && t_i < (int)cps.size() && t_i_plus_1 >= 0 && t_i_plus_1 < (int)cps.size());
+    int t_i = (int)std::floor(t) % ncps;
+    int t_i_plus_1 = t_i % ncps;
+    assert(t_i >= 0 && t_i < ncps && t_i_plus_1 >= 0 && t_i_plus_1 < ncps);
     if (t == t_i) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
@@ -64,13 +65,14 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
 
 static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
 {
-    assert(cps.size());
+    int ncps = (int)cps.size();
+    assert(ncps);
     if (t < 0) {
-        t += (int)cps.size();
+        t += ncps;
     }
-    int t_i = (int)std::floor(t) % (int)cps.size();
-    int t_i_plus_1 = t_i % (int)cps.size();
-    assert(t_i >= 0 && t_i < (int)cps.size() && t_i_plus_1 >= 0 && t_i_plus_1 < (int)cps.size());
+    int t_i = (int)std::floor(t) % ncps;
+    int t_i_plus_1 = t_i % ncps;
+    assert(t_i >= 0 && t_i < ncps && t_i_plus_1 >= 0 && t_i_plus_1 < ncps);
     if (t == t_i) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
@@ -118,13 +120,14 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
 
 static Point getRightPointAt(const BezierCPs& cps, int time, double t)
 {
-    assert(cps.size());
+    int ncps = cps.size();
+    assert(ncps);
     if (t < 0) {
-        t += (int)cps.size();
+        t += ncps;
     }
-    int t_i = (int)std::floor(t) % (int)cps.size();
-    int t_i_plus_1 = t_i % (int)cps.size();
-    assert(t_i >= 0 && t_i < (int)cps.size() && t_i_plus_1 >= 0 && t_i_plus_1 < (int)cps.size());
+    int t_i = (int)std::floor(t) % ncps;
+    int t_i_plus_1 = t_i % ncps;
+    assert(t_i >= 0 && t_i < ncps && t_i_plus_1 >= 0 && t_i_plus_1 < ncps);
     if (t == t_i) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
@@ -562,10 +565,11 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
  **/
 static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time, int sign, std::list<BezierCPs>* ret)
 {
-    assert(cps.size() >= 3);
+    int ncps = (int)cps.size();
+    assert(ncps >= 3);
     
     
-    for (std::size_t i = 0; i < cps.size(); ++i) {
+    for (int i = 0; i < ncps; ++i) {
         Point negativeDir = dirVect(cps, time, i, -1);
         negativeDir.y = -negativeDir.y;
         Point positiveDir = dirVect(cps, time, i, 1);
@@ -854,6 +858,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         }
     }
     if (!degenerate) {
+#pragma message WARN("BUG: same code for if and else branches")
         if ((sign >= 0 && aligned == 1) || (sign < 0 && aligned == 2)) {
             fixedPatch->push_back(patch);
             return;

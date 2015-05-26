@@ -193,6 +193,8 @@ Natron::OfxHost::setProperties()
     ///Natron extensions
     _properties.setIntProperty(kNatronOfxHostIsNatron, 1);
     _properties.setIntProperty(kNatronOfxParamHostPropSupportsDynamicChoices, 1);
+    //_properties.setIntProperty(kNatronOfxParamPropChoiceCascading, 1);
+    _properties.setStringProperty(kNatronOfxImageEffectPropChannelSelector, kOfxImageComponentRGBA);
 #endif
     
 }

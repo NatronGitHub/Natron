@@ -7172,8 +7172,7 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
     // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
     // maybe the inner polygon should be made of mesh patterns too?
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-    
-  
+
     
     if (isSingleStroke) {
         _imp->renderStroke(cr, points, isSingleStroke, time, mipmapLevel);

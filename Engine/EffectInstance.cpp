@@ -3402,7 +3402,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if (getNode()->getAttachedStrokeItem() && inputEffect->isRotoPaintNode()) {
+        if (getNode()->getAttachedStrokeItem() && inputEffect && inputEffect->isRotoPaintNode()) {
             continue;
         }
 
@@ -4090,7 +4090,8 @@ EffectInstance::renderHandler(RenderArgs & args,
     RenderActionArgs actionArgs;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
-    
+    actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();
+    actionArgs.originalScale.y = actionArgs.originalScale.x;
     
     std::list<std::pair<ImageComponents,ImagePtr> > tmpPlanes;
     bool multiPlanar = isMultiPlanar();
@@ -4232,8 +4233,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     /// Render in the temporary image
     
-    actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();
-    actionArgs.originalScale.y = actionArgs.originalScale.x;
+    
     actionArgs.time = time;
     actionArgs.view = view;
     actionArgs.isSequentialRender = isSequentialRender;
