@@ -2349,7 +2349,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     NodePtr node = dsNode->getNodeGui()->getNode();
 
     if (nodeType == DSNode::CommonNodeType) {
-        if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
+        if (_imp->model->getGroupDSNode(dsNode)) {
             const KnobsAndGuis &knobs = dsNode->getNodeGui()->getKnobs();
 
             for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
