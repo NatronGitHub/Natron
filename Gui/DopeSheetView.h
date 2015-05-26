@@ -143,6 +143,7 @@ protected:
 private Q_SLOTS:
     void onTimeLineFrameChanged(SequenceTime sTime, int reason);
     void onTimeLineBoundariesChanged(int, int);
+    void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
 
 private: /* functions */
     void renderText(double x, double y,

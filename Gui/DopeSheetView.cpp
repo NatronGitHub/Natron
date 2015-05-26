@@ -1875,13 +1875,13 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
     }
 
     connect(_imp->model, SIGNAL(modelChanged()),
-            this, SLOT(update()));
+            this, SLOT(updateGL()));
 
     connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-            this, SLOT(computeSelectedKeysBRect()));
+            this, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
 
     connect(_imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-            this, SLOT(computeSelectedKeysBRect()));
+            this, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
 }
 
 /**
@@ -1914,6 +1914,8 @@ void DopeSheetView::swapOpenGLBuffers()
 void DopeSheetView::redraw()
 {
     RUNNING_IN_MAIN_THREAD();
+
+    qDebug() << "redraaaaaw";
 
     update();
 }
@@ -2207,6 +2209,15 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 {
     RUNNING_IN_MAIN_THREAD();
+
+    redraw();
+}
+
+void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
+{
+    Q_UNUSED(item);
+
+    computeSelectedKeysBRect();
 
     redraw();
 }
