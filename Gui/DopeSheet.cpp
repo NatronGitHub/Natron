@@ -82,12 +82,12 @@ public:
 
     /* attributes */
     DopeSheet *q_ptr;
-    DSNodesRowsData nodesRows;
+    DSNodeRows nodeRows;
 };
 
 DopeSheetPrivate::DopeSheetPrivate(DopeSheet *qq) :
     q_ptr(qq),
-    nodesRows()
+    nodeRows()
 {
 
 }
@@ -145,17 +145,17 @@ DopeSheet::DopeSheet() :
 
 DopeSheet::~DopeSheet()
 {
-    for (DSNodesRowsData::iterator it = _imp->nodesRows.begin();
-         it != _imp->nodesRows.end(); ++it) {
+    for (DSNodeRows::iterator it = _imp->nodeRows.begin();
+         it != _imp->nodeRows.end(); ++it) {
         delete (*it).second;
     }
 
-    _imp->nodesRows.clear();
+    _imp->nodeRows.clear();
 }
 
-DSNodesRowsData DopeSheet::getNodeRows() const
+DSNodeRows DopeSheet::getNodeRows() const
 {
-    return _imp->nodesRows;
+    return _imp->nodeRows;
 }
 
 std::pair<double, double> DopeSheet::getKeyframeRange() const
@@ -165,18 +165,18 @@ std::pair<double, double> DopeSheet::getKeyframeRange() const
     std::vector<double> dimFirstKeys;
     std::vector<double> dimLastKeys;
 
-    DSNodesRowsData dsNodeItems = _imp->nodesRows;
+    DSNodeRows dsNodeItems = _imp->nodeRows;
 
-    for (DSNodesRowsData::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
+    for (DSNodeRows::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
         if ((*it).first->isHidden()) {
             continue;
         }
 
         DSNode *dsNode = (*it).second;
 
-        DSKnobsRowsData dsKnobItems = dsNode->getChildData();
+        DSKnobRow dsKnobItems = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+        for (DSKnobRow::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
             if ((*itKnob).first->isHidden()) {
                 continue;
             }
@@ -232,17 +232,17 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 
     DSNode *dsNode = createDSNode(nodeGui);
 
-    _imp->nodesRows.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
+    _imp->nodeRows.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
 
     Q_EMIT nodeAdded(dsNode);
 }
 
 void DopeSheet::removeNode(NodeGui *node)
 {
-    DSNodesRowsData::iterator toRemove = _imp->nodesRows.end();
+    DSNodeRows::iterator toRemove = _imp->nodeRows.end();
 
-    for (DSNodesRowsData::iterator it = _imp->nodesRows.begin();
-         it != _imp->nodesRows.end();
+    for (DSNodeRows::iterator it = _imp->nodeRows.begin();
+         it != _imp->nodeRows.end();
          ++it)
     {
         if ((*it).second->getNodeGui().get() == node) {
@@ -252,7 +252,7 @@ void DopeSheet::removeNode(NodeGui *node)
         }
     }
 
-    if (toRemove == _imp->nodesRows.end()) {
+    if (toRemove == _imp->nodeRows.end()) {
         return;
     }
 
@@ -260,17 +260,17 @@ void DopeSheet::removeNode(NodeGui *node)
 
     Q_EMIT nodeAboutToBeRemoved(dsNode);
 
-    _imp->nodesRows.erase(toRemove);
+    _imp->nodeRows.erase(toRemove);
 
     delete (dsNode);
 }
 
 DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
 {
-    DSNodesRowsData::const_iterator clickedDSNode;
+    DSNodeRows::const_iterator clickedDSNode;
     QTreeWidgetItem *itemIt = treeItem;
 
-    while ( (clickedDSNode = _imp->nodesRows.find(itemIt)) == _imp->nodesRows.end() ) {
+    while ( (clickedDSNode = _imp->nodeRows.find(itemIt)) == _imp->nodeRows.end() ) {
         if (itemIt->parent()) {
             itemIt = itemIt->parent();
         }
@@ -281,9 +281,9 @@ DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
 
 DSNode *DopeSheet::findDSNode(QTreeWidgetItem *nodeTreeItem) const
 {
-    DSNodesRowsData::const_iterator dsNodeIt = _imp->nodesRows.find(nodeTreeItem);
+    DSNodeRows::const_iterator dsNodeIt = _imp->nodeRows.find(nodeTreeItem);
 
-    if (dsNodeIt != _imp->nodesRows.end()) {
+    if (dsNodeIt != _imp->nodeRows.end()) {
         return (*dsNodeIt).second;
     }
 
@@ -292,8 +292,8 @@ DSNode *DopeSheet::findDSNode(QTreeWidgetItem *nodeTreeItem) const
 
 DSNode *DopeSheet::findDSNode(Natron::Node *node) const
 {
-    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin();
-         it != _imp->nodesRows.end();
+    for (DSNodeRows::const_iterator it = _imp->nodeRows.begin();
+         it != _imp->nodeRows.end();
          ++it) {
         DSNode *dsNode = (*it).second;
 
@@ -307,12 +307,12 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
 
 DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
 {
-    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin(); it != _imp->nodesRows.end(); ++it) {
+    for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobsRowsData knobsRows = dsNode->getChildData();
+        DSKnobRow knobRows = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator knobIt = knobsRows.begin(); knobIt != knobsRows.end(); ++knobIt) {
+        for (DSKnobRow::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnob *dsKnob = (*knobIt).second;
 
             if (dsKnob->getKnobGui()->getKnob() == knob) {
@@ -332,12 +332,12 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
 
     DSNode *dsNode = findParentDSNode(knobTreeItem);
 
-    DSKnobsRowsData knobsRows = dsNode->getChildData();
+    DSKnobRow knobRows = dsNode->getChildData();
 
-    DSKnobsRowsData::const_iterator clickedDSKnob;
+    DSKnobRow::const_iterator clickedDSKnob;
     QTreeWidgetItem *itemIt = knobTreeItem;
 
-    while ( (clickedDSKnob = knobsRows.find(itemIt)) == knobsRows.end()) {
+    while ( (clickedDSKnob = knobRows.find(itemIt)) == knobRows.end()) {
         if (itemIt->parent()) {
             itemIt = itemIt->parent();
         }
@@ -362,12 +362,12 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
 
 DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
 {
-    for (DSNodesRowsData::const_iterator it = _imp->nodesRows.begin(); it != _imp->nodesRows.end(); ++it) {
+    for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobsRowsData knobsRows = dsNode->getChildData();
+        DSKnobRow knobRows = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator knobIt = knobsRows.begin(); knobIt != knobsRows.end(); ++knobIt) {
+        for (DSKnobRow::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnob *dsKnob = (*knobIt).second;
 
             if (dsKnob->getKnobGui() == knobGui) {
@@ -671,7 +671,7 @@ public:
 
     QTreeWidgetItem *nameItem;
 
-    DSKnobsRowsData knobsRows;
+    DSKnobRow knobRows;
 
     bool isSelected;
 };
@@ -682,7 +682,7 @@ DSNodePrivate::DSNodePrivate(DSNode *qq) :
     nodeType(),
     nodeGui(),
     nameItem(0),
-    knobsRows(),
+    knobRows(),
     isSelected(false)
 {}
 
@@ -704,7 +704,7 @@ void DSNodePrivate::createDSKnobs()
 
         DSKnob *dsKnob = dopeSheetModel->createDSKnob(knobGui, q_ptr);
 
-        knobsRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
+        knobRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
     }
 }
 
@@ -753,15 +753,15 @@ DSNode::DSNode(DopeSheet *model,
  */
 DSNode::~DSNode()
 {
-    for (DSKnobsRowsData::iterator it = _imp->knobsRows.begin();
-         it != _imp->knobsRows.end();
+    for (DSKnobRow::iterator it = _imp->knobRows.begin();
+         it != _imp->knobRows.end();
          ++it) {
         delete (*it).second;
     }
 
     delete _imp->nameItem;
 
-    _imp->knobsRows.clear();
+    _imp->knobRows.clear();
 }
 
 /**
@@ -779,9 +779,9 @@ boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
  *
  *
  */
-DSKnobsRowsData DSNode::getChildData() const
+DSKnobRow DSNode::getChildData() const
 {
-    return _imp->knobsRows;
+    return _imp->knobRows;
 }
 
 DSNode::DSNodeType DSNode::getDSNodeType() const

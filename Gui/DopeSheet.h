@@ -41,8 +41,8 @@ class Node;
 class DSKnob;
 class DSNode;
 
-typedef std::map<QTreeWidgetItem *, DSNode *> DSNodesRowsData;
-typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobsRowsData;
+typedef std::map<QTreeWidgetItem *, DSNode *> DSNodeRows;
+typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRow;
 // typedefs
 
 
@@ -62,7 +62,7 @@ public:
     DopeSheet();
     ~DopeSheet();
 
-    DSNodesRowsData getNodeRows() const;
+    DSNodeRows getNodeRows() const;
 
     std::pair<double, double> getKeyframeRange() const;
 
@@ -162,7 +162,7 @@ public:
 
     boost::shared_ptr<NodeGui> getNodeGui() const;
 
-    DSKnobsRowsData getChildData() const;
+    DSKnobRow getChildData() const;
 
     DSNode::DSNodeType getDSNodeType() const;
 

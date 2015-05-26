@@ -286,9 +286,9 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
 
 void HierarchyViewPrivate::expandAndCheckKnobItems(DSNode *dsNode)
 {
-    DSKnobsRowsData knobRows = dsNode->getChildData();
+    DSKnobRow knobRows = dsNode->getChildData();
 
-    for (DSKnobsRowsData::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
+    for (DSKnobRow::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
         DSKnob *dsKnob = (*it).second;
         QTreeWidgetItem *knobItem = (*it).first;
 
@@ -840,8 +840,8 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
     }
     // Or does he hovering on a row's element ?
     else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(0, widgetCoords.y())) {
-        DSNodesRowsData dsNodeItems = model->getNodeRows();
-        DSNodesRowsData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+        DSNodeRows dsNodeItems = model->getNodeRows();
+        DSNodeRows::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
         if (dsNodeIt != dsNodeItems.end()) {
             DSNode *dsNode = (*dsNodeIt).second;
@@ -987,9 +987,9 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPoi
 {
     DSSelectedKeys ret;
 
-    DSKnobsRowsData dsKnobs = dsNode->getChildData();
+    DSKnobRow dsKnobs = dsNode->getChildData();
 
-    for (DSKnobsRowsData::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
+    for (DSKnobRow::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
         DSKnob *dsKnob = (*it).second;
         KnobGui *knobGui = dsKnob->getKnobGui();
 
@@ -1136,13 +1136,13 @@ void DopeSheetViewPrivate::drawRows() const
 {
     running_in_main_thread_and_context(q_ptr);
 
-    DSNodesRowsData treeItemsAndDSNodes = model->getNodeRows();
+    DSNodeRows treeItemsAndDSNodes = model->getNodeRows();
 
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        for (DSNodesRowsData::const_iterator it = treeItemsAndDSNodes.begin();
+        for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
             DSNode *dsNode = (*it).second;
@@ -1156,8 +1156,8 @@ void DopeSheetViewPrivate::drawRows() const
 
             drawNodeRow(dsNode);
 
-            DSKnobsRowsData knobItems = dsNode->getChildData();
-            for (DSKnobsRowsData::const_iterator it2 = knobItems.begin();
+            DSKnobRow knobItems = dsNode->getChildData();
+            for (DSKnobRow::const_iterator it2 = knobItems.begin();
                  it2 != knobItems.end();
                  ++it2) {
 
@@ -1400,9 +1400,9 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
         glEnable(GL_POINT_SMOOTH);
 
-        DSKnobsRowsData knobItems = dsNode->getChildData();
+        DSKnobRow knobItems = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator it = knobItems.begin();
+        for (DSKnobRow::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
 
@@ -1742,9 +1742,9 @@ void DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin, const QPo
 
 void DopeSheetViewPrivate::computeRangesBelow(DSNode *dsNode)
 {
-    DSNodesRowsData nodeRows = model->getNodeRows();
+    DSNodeRows nodeRows = model->getNodeRows();
 
-    for (DSNodesRowsData::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
+    for (DSNodeRows::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
         QTreeWidgetItem *item = (*it).first;
         DSNode *toCompute = (*it).second;
 
@@ -1846,14 +1846,14 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
 {
     DSSelectedKeys ret;
 
-    DSNodesRowsData dsNodes = model->getNodeRows();
+    DSNodeRows dsNodes = model->getNodeRows();
 
-    for (DSNodesRowsData::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
+    for (DSNodeRows::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobsRowsData dsKnobs = dsNode->getChildData();
+        DSKnobRow dsKnobs = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
+        for (DSKnobRow::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
             DSKnob *dsKnob = (*it2).second;
             KnobGui *knobGui = dsKnob->getKnobGui();
 
@@ -2225,14 +2225,14 @@ void DopeSheetView::clearKeyframeSelection()
 
 void DopeSheetView::selectAllKeyframes()
 {
-    DSNodesRowsData dsNodeItems = _imp->model->getNodeRows();
+    DSNodeRows dsNodeItems = _imp->model->getNodeRows();
 
-    for (DSNodesRowsData::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
+    for (DSNodeRows::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobsRowsData dsKnobItems = dsNode->getChildData();
+        DSKnobRow dsKnobItems = dsNode->getChildData();
 
-        for (DSKnobsRowsData::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+        for (DSKnobRow::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
             DSKnob *dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
@@ -2624,8 +2624,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
         else if (QTreeWidgetItem *treeItem = _imp->hierarchyView->itemAt(0, e->y())) {
-            DSNodesRowsData dsNodeItems = _imp->model->getNodeRows();
-            DSNodesRowsData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+            DSNodeRows dsNodeItems = _imp->model->getNodeRows();
+            DSNodeRows::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
