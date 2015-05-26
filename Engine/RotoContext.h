@@ -55,7 +55,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintBurnBaseName "Burn"
 
 //#define ROTO_ENABLE_PAINT
-//#define ROTO_STROKE_USE_FIT_CURVE
 
 namespace Natron {
 class Image;
@@ -1015,11 +1014,7 @@ private:
  **/
 struct RotoStrokeItemPrivate;
 class RotoStrokeItem :
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-public Bezier
-#else
 public RotoDrawableItem
-#endif
 {
     Q_OBJECT
     
@@ -1032,19 +1027,23 @@ public:
     
     virtual ~RotoStrokeItem();
     
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-    virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
-#endif
-    
     
     Natron::RotoStrokeType getBrushType() const;
     
     /**
-     * @brief Initializes the paint stroke with the raw points list.
-     * It will be converted to a cubic bezier curve that fit the initial point list
+     * @brief Appends to the paint stroke the raw points list.
+     * @returns True if the number of points is > 1
      **/
-    void initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints);
+    bool appendPoint(const std::pair<Natron::Point,double>& rawPoints);
     
+    bool getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
+                                            RectD* wholeBbox, int* newAge);
+    
+    void clearChangesUpToAge(int age);
+    
+    void setStrokeFinished();
+    
+    void resetNodesThreadSafety(); 
        
     virtual void clone(const RotoItem* other) OVERRIDE FINAL;
     
@@ -1070,19 +1069,20 @@ public:
     boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
     boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
     
-#ifndef ROTO_STROKE_USE_FIT_CURVE
     
-    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points) const;
+    ///bbox is in canonical coords
+    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points,
+                        RectD* bbox = 0) const;
     
-#endif
     
     boost::shared_ptr<Natron::Node> getEffectNode() const;
     boost::shared_ptr<Natron::Node> getMergeNode() const;
     
+    void deactivateNodes();
+    void activateNodes();
+    
     void refreshNodesConnections();
 
-    boost::shared_ptr<Natron::Image> getMostRecentRenderedImage(int* nbPoints) const;
-    void addRenderedImage(int nbPoints,const boost::shared_ptr<Natron::Image>& image);
     
 public Q_SLOTS:
     
@@ -1090,6 +1090,8 @@ public Q_SLOTS:
     
 private:
     RotoStrokeItem* findPreviousStrokeInHierarchy();
+    
+    void refreshBoundingBox();
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
@@ -1224,13 +1226,23 @@ public:
     /**
      * @brief Same as renderMask(...) but does the render for a single stroke.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                                const RectI & roi,
-                                                const Natron::ImageComponents& components,
-                                                const RectD & nodeRoD,
-                                                SequenceTime time,
-                                                Natron::ImageBitDepthEnum depth,
-                                                unsigned int mipmapLevel);
+    boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                                          const RectI& roi,
+                                                          U64 rotoAge,
+                                                          U64 nodeHash,
+                                                          const Natron::ImageComponents& components,
+                                                          SequenceTime time,
+                                                          int view,
+                                                          Natron::ImageBitDepthEnum depth,
+                                                          unsigned int mipmapLevel);
+    
+    boost::shared_ptr<Natron::Image> renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                                        const RectD& rod,
+                                                        const std::list<std::pair<Natron::Point,double> >& points,
+                                                        unsigned int mipmapLevel,
+                                                        const Natron::ImageComponents& components,
+                                                        Natron::ImageBitDepthEnum depth,
+                                                        boost::shared_ptr<Natron::Image> *wholeStrokeImage);
     
 private:
     
@@ -1238,10 +1250,11 @@ private:
                                                         const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
                                                         const RectI & roi,
                                                         const Natron::ImageComponents& components,
-                                                        const RectD & nodeRoD,
                                                         SequenceTime time,
                                                         Natron::ImageBitDepthEnum depth,
-                                                        unsigned int mipmapLevel);
+                                                        unsigned int mipmapLevel,
+                                                        const std::list<std::pair<Natron::Point,double> >& points,
+                                                        const boost::shared_ptr<Natron::Image> &image);
     
 public:
     
@@ -1314,7 +1327,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
     
     int getNCurves() const;
     
@@ -1363,9 +1376,7 @@ public:
     void refreshRotoPaintTree();
     
     void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
-    
-    boost::shared_ptr<Natron::Node> getRotoPaintTreeConstantInput() const;
-    
+        
     void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
 Q_SIGNALS:

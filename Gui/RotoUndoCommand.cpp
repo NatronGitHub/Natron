@@ -1234,6 +1234,7 @@ MakeBezierUndoCommand::redo()
                 _lastPointAdded = lastIndex;
             }
         } else {
+            assert(_newCurve);
             _oldCurve->clone(_newCurve.get());
             int lastIndex = _newCurve->getControlPointsCount() - 1;
             assert(lastIndex >= 0);
@@ -1241,7 +1242,11 @@ MakeBezierUndoCommand::redo()
             _newCurve->moveLeftBezierPoint(lastIndex,_time, -_dx, -_dy);
             _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
         }
-        boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
+        
+        boost::shared_ptr<RotoItem> parentItem;
+        if (_newCurve->getParentLayer()) {
+            parentItem =  _roto->getContext()->getItemByName(_newCurve->getParentLayer()->getScriptName());
+        }
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_newCurve);

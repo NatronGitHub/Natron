@@ -470,7 +470,15 @@ enum MergingFunctionEnum
     eMergeUnder,
     eMergeXOR
 };
-    
+  
+enum RenderSafetyEnum
+{
+    eRenderSafetyUnsafe = 0,
+    eRenderSafetyInstanceSafe = 1,
+    eRenderSafetyFullySafe = 2,
+    eRenderSafetyFullySafeFrame = 3,
+};
+
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

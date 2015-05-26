@@ -42,7 +42,6 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Rect.h"
-#include "Engine/FitCurve.h"
 #include "Engine/RotoContext.h"
 #include "Global/GlobalDefines.h"
 
@@ -813,9 +812,8 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     boost::shared_ptr<Choice_Knob> sourceColor;
-#ifndef ROTO_STROKE_USE_FIT_CURVE
     Curve xCurve,yCurve,pressureCurve;
-#endif
+    RectD bbox;
     
     /*
      * The effect node corresponds to the following given the selected tool:
@@ -833,11 +831,17 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Natron::Node> effectNode;
     boost::shared_ptr<Natron::Node> mergeNode;
     
-    /**
-     * @brief Used while building up the stroke so that we only draw the last portion between the rendered image
-     * and where the pen actually is currently.
-     **/
-    std::map<int,boost::shared_ptr<Natron::Image> > strokeCache;
+    
+    int lastTickAge;
+
+    struct StrokeTickData
+    {
+        RectD tickBbox;
+        RectD wholeBbox;
+        std::list<std::pair<Natron::Point,double> > points;
+    };
+    
+    std::map<int,StrokeTickData> strokeTicks;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
@@ -849,8 +853,14 @@ struct RotoStrokeItemPrivate
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
     , effectNode()
     , mergeNode()
-    , strokeCache()
+    , lastTickAge(-1)
+    , strokeTicks()
     {
+        
+        bbox.x1 = std::numeric_limits<double>::infinity();
+        bbox.x2 = -std::numeric_limits<double>::infinity();
+        bbox.y1 = std::numeric_limits<double>::infinity();
+        bbox.y2 = -std::numeric_limits<double>::infinity();
                 
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
@@ -956,9 +966,9 @@ struct RotoContextPrivate
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
     
-    ///This node is used when the rotopaint node does not have any input, so that the rotopaint tree
-    ///paints at least on a black and transparant region of the size of the project.
-    boost::shared_ptr<Natron::Node> rotoPaintConstantInput;
+    QMutex lastRenderedImageMutex;
+    U64 lastRenderedHash;
+    boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -969,7 +979,9 @@ struct RotoContextPrivate
     , featherLink(true)
     , node(n)
     , age(0)
-    , rotoPaintConstantInput()
+    , lastRenderedImageMutex()
+    , lastRenderedHash(0)
+    , lastRenderedImage()
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
@@ -1163,7 +1175,18 @@ struct RotoContextPrivate
     void renderInternal(cairo_t* cr,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                         unsigned int mipmapLevel,int time);
     
-    void renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
+    
+    void renderDot(cairo_t* cr,
+                   const Natron::Point &center,
+                   double internalDotRadius,
+                   double externalDotRadius,
+                   double shapeColor[3],
+                   const std::vector<std::pair<double, double> >& opacityStops,
+                   double opacity,
+                   double /*pressure*/);
+
+    
+    void renderStroke(cairo_t* cr,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);

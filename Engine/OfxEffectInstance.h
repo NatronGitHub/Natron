@@ -203,7 +203,7 @@ public:
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -388,7 +388,7 @@ private:
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
-    mutable EffectInstance::RenderSafetyEnum _renderSafety;
+    mutable Natron::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;
     Natron::ContextEnum _context;

@@ -205,6 +205,7 @@ struct Node::Implementation
     , mustQuitPreview(false)
     , mustQuitPreviewMutex()
     , mustQuitPreviewCond()
+    , renderInstancesSharedMutex(QMutex::Recursive)
     , knobsAge(0)
     , knobsAgeMutex()
     , masterNodeMutex()
@@ -262,6 +263,19 @@ struct Node::Implementation
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
+    , paintStroke()
+    , currentThreadSafetyMutex()
+    , pluginSafety(Natron::eRenderSafetyInstanceSafe)
+    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , duringPaintStrokeCreation(false)
+    , lastStrokeMovementMutex()
+    , lastStrokeMovementBbox()
+    , strokeBitmapCleared(false)
+    , wholeStrokeBbox()
+    , strokeImageAge(-1)
+    , strokeAgeToRender(-1)
+    , strokeImage()
+    , lastStrokePoints()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -448,6 +462,18 @@ struct Node::Implementation
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
     
     boost::weak_ptr<RotoStrokeItem> paintStroke;
+    
+    mutable QMutex currentThreadSafetyMutex;
+    Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
+    
+    bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
+    mutable QMutex lastStrokeMovementMutex;
+    RectD lastStrokeMovementBbox;
+    bool strokeBitmapCleared;
+    RectD wholeStrokeBbox;
+    int strokeImageAge, strokeAgeToRender;
+    ImagePtr strokeImage;
+    std::list<std::pair<Natron::Point,double> > lastStrokePoints;
 };
 
 /**
@@ -637,6 +663,10 @@ Node::load(const std::string & parentMultiInstanceName,
     
     computeHash();
     assert(_imp->liveInstance);
+    
+    _imp->pluginSafety = _imp->liveInstance->renderThreadSafety();
+    _imp->currentThreadSafety = _imp->pluginSafety;
+    
     _imp->nodeCreated = true;
     
     refreshChannelSelectors(serialization.isNull());
@@ -644,6 +674,114 @@ Node::load(const std::string & parentMultiInstanceName,
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
 } // load
+
+void
+Node::setWhileCreatingPaintStroke(bool creating)
+{
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        _imp->duringPaintStrokeCreation = creating;
+        if (!creating) {
+            _imp->strokeImage.reset();
+        }
+    }
+}
+
+bool
+Node::isDuringPaintStrokeCreation() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->duringPaintStrokeCreation;
+}
+
+void
+Node::setRenderThreadSafety(Natron::RenderSafetyEnum safety)
+{
+    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    _imp->currentThreadSafety = safety;
+}
+
+Natron::RenderSafetyEnum
+Node::getCurrentRenderThreadSafety() const
+{
+    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    return _imp->currentThreadSafety;
+}
+
+void
+Node::revertToPluginThreadSafety()
+{
+    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    _imp->currentThreadSafety = _imp->pluginSafety;
+}
+
+void
+Node::invalidateLastStrokeData()
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+    assert(stroke);
+    stroke->clearChangesUpToAge(_imp->strokeAgeToRender);
+}
+
+void
+Node::updateLastPaintStrokeData()
+{
+    
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        assert(stroke);
+        _imp->lastStrokePoints.clear();
+        stroke->getMostRecentStrokeChangesSinceAge(_imp->strokeImageAge, &_imp->lastStrokePoints, &_imp->lastStrokeMovementBbox, &_imp->wholeStrokeBbox, &_imp->strokeAgeToRender);
+        _imp->strokeBitmapCleared = false;
+    }
+    _imp->liveInstance->clearActionsCache();
+}
+
+void
+Node::getPaintStrokeRoD(int time,RectD* bbox) const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    if (_imp->duringPaintStrokeCreation) {
+        *bbox = _imp->wholeStrokeBbox;
+    } else {
+        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        assert(stroke);
+        *bbox = stroke->getBoundingBox(time);
+    }
+    
+}
+
+void
+Node::getLastPaintStrokeRoD(RectD* bbox)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    if (_imp->strokeBitmapCleared) {
+        return;
+    } else {
+        *bbox = _imp->lastStrokeMovementBbox;
+        _imp->strokeBitmapCleared = true;
+    }
+}
+
+boost::shared_ptr<Natron::Image>
+Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+                                 const RectD& canonicalRoi,
+                                 const Natron::ImageComponents& components,
+                                 Natron::ImageBitDepthEnum depth) const
+{
+    
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    ImagePtr ret;
+    boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+    assert(stroke);
+    
+    ret = stroke->getContext()->renderSingleStroke(stroke, canonicalRoi, _imp->lastStrokePoints, mipMapLevel, components, depth,  &_imp->strokeImage);
+    _imp->strokeImageAge = _imp->strokeAgeToRender;
+
+    return ret;
+}
 
 bool
 Node::isNodeCreated() const
@@ -810,11 +948,19 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     
     marked.push_back(this);
     
+    bool isRotoPaint = _imp->liveInstance->isRotoPaintNode();
+    
     ///call it on all the outputs
     std::list<Node*> outputs;
     getOutputsWithGroupRedirection(outputs);
     for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
+        
+        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = (*it)->getAttachedStrokeItem();
+        if (isRotoPaint && attachedStroke && attachedStroke->getContext()->getNode().get() == this) {
+            continue;
+        }
         (*it)->computeHashInternal(marked);
     }
     
@@ -3769,6 +3915,22 @@ Node::getRotoContext() const
     return _imp->rotoContext;
 }
 
+U64
+Node::getRotoAge() const
+{
+    if (_imp->rotoContext) {
+        return _imp->rotoContext->getAge();
+    }
+    
+    boost::shared_ptr<RotoStrokeItem> item = _imp->paintStroke.lock();
+    if (item) {
+        return item->getContext()->getAge();
+    }
+    return 0;
+    
+}
+
+
 const std::vector<boost::shared_ptr<KnobI> > &
 Node::getKnobs() const
 {
@@ -4395,6 +4557,9 @@ Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
             }
             
         }
+        //Default to alpha
+        *comps = ImageComponents::getAlphaComponents();
+        return 0;
     }
     return -1;
     
@@ -5010,17 +5175,11 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
         
         *isAll = false;
         (void)chanIndex;
-        int numChans = layer->getNumComponents();
         processChannels[0] = true;
-        if (numChans > 1) {
-            processChannels[1] = true;
-            if (numChans > 2) {
-                processChannels[2] = true;
-                if (numChans > 3) {
-                    processChannels[3] = true;
-                }
-            }
-        }
+        processChannels[1] = true;
+        processChannels[2] = true;
+        processChannels[3] = true;
+        
         return true;
     } else {
         if (foundSelector == _imp->channelsSelectors.end()) {
@@ -5348,8 +5507,10 @@ Node::setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes)
     }
     
     ///Increment the node is rendering counter
-    QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-    ++_imp->nodeIsRendering;
+    {
+        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
+        ++_imp->nodeIsRendering;
+    }
     
     
     
@@ -5497,6 +5658,8 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
      * - Preview image is enabled (and Natron is not running in background)
      * - The node is a direct input of a viewer, this is to overcome linear graphs where all nodes would not be cached 
      * - The node is not frame varying, meaning it will always produce the same image at any time
+     * - The node is a roto node and it is being edited
+     * - The node does not support tiles
      */
     
     std::list<Node*> outputs;
@@ -5528,6 +5691,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         ///The node is referenced multiple times below, cache it
         return true;
     } else {
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
         if (sz == 1) {
           
             Node* output = outputs.front();
@@ -5542,10 +5706,10 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
                 }
             }
             
-            boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
             return !isFrameVaryingOrAnimated ||
             output->isSettingsPanelOpened() ||
             _imp->liveInstance->doesTemporalClipAccess() ||
+            ! _imp->liveInstance->supportsTiles() ||
             _imp->liveInstance->getRecursionLevel() > 0 ||
             isForceCachingEnabled() ||
             appPTR->isAggressiveCachingEnabled() ||
@@ -5553,8 +5717,9 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
             (getRotoContext() && isSettingsPanelOpened()) ||
             (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         } else {
-            // outputs == 0, never cache, unless explicitly set
-            return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+            // outputs == 0, never cache, unless explicitly set or rotopaint internal node
+            return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
+            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         }
     }
     

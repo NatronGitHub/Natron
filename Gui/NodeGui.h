@@ -545,6 +545,8 @@ private:
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
     
+    bool _panelOpenedBeforeDeactivate;
+    
     QGraphicsPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
     

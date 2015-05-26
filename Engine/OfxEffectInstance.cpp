@@ -170,7 +170,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 , _created(false)
 , _initialized(false)
 , _renderButton()
-, _renderSafety(EffectInstance::eRenderSafetyUnsafe)
+, _renderSafety(Natron::eRenderSafetyUnsafe)
 , _wasRenderSafetySet(false)
 , _renderSafetyLock(new QReadWriteLock)
 , _context(eContextNone)
@@ -1625,43 +1625,31 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         throw std::runtime_error("getFramesNeeded action failed");
     }
-    if (stat != kOfxStatReplyDefault) {
-        
-        for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-            assert(clip);
-            if (clip) {
-                EffectInstance* inputNode = clip->getAssociatedNode();
-                RectD inputRoi; // input RoI in canonical coordinates
-                inputRoi.x1 = it->second.x1;
-                inputRoi.x2 = it->second.x2;
-                inputRoi.y1 = it->second.y1;
-                inputRoi.y2 = it->second.y2;
-
-                ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
-                ///infinite rod.
-                ifInfiniteclipRectToProjectDefault(&inputRoi);
-                //if (!inputRoi.isNull()) {
-                    ret->insert( std::make_pair(inputNode,inputRoi) );
-                //}
-            }
-        }
-        
-    } else if (stat == kOfxStatReplyDefault) {
-        
-        const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = effectInstance()->getClips();
-        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            if (!it->second->isOutput()) {
-                OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
-                EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
-                if (inputNode) {
-                    ret->insert( std::make_pair(inputNode, renderWindow) );
-                }
-                assert(natronClip);
-            }
+    
+    //Default behaviour already handled in getRegionOfInterestAction
+    
+    for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+        assert(clip);
+        if (clip) {
+            EffectInstance* inputNode = clip->getAssociatedNode();
+            RectD inputRoi; // input RoI in canonical coordinates
+            inputRoi.x1 = it->second.x1;
+            inputRoi.x2 = it->second.x2;
+            inputRoi.y1 = it->second.y1;
+            inputRoi.y2 = it->second.y2;
+            
+            ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
+            ///infinite rod.
+            ifInfiniteclipRectToProjectDefault(&inputRoi);
+            //if (!inputRoi.isNull()) {
+            ret->insert( std::make_pair(inputNode,inputRoi) );
+            //}
         }
     }
-
+    
+    
+    
 } // getRegionsOfInterest
 
 Natron::EffectInstance::FramesNeededMap
@@ -2107,7 +2095,7 @@ OfxEffectInstance::supportsMultipleClipsPAR() const
     return _effect->supportsMultipleClipPARs();
 }
 
-EffectInstance::RenderSafetyEnum
+Natron::RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
     {
@@ -2120,18 +2108,18 @@ OfxEffectInstance::renderThreadSafety() const
         QWriteLocker writeL(_renderSafetyLock);
         const std::string & safety = _effect->getRenderThreadSafety();
         if (safety == kOfxImageEffectRenderUnsafe) {
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _renderSafety = EffectInstance::eRenderSafetyInstanceSafe;
+            _renderSafety = Natron::eRenderSafetyInstanceSafe;
         } else if (safety == kOfxImageEffectRenderFullySafe) {
             if ( _effect->getHostFrameThreading() ) {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafeFrame;
+                _renderSafety =  Natron::eRenderSafetyFullySafeFrame;
             } else {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafe;
+                _renderSafety =  Natron::eRenderSafetyFullySafe;
             }
         } else {
             qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         }
         _wasRenderSafetySet = true;
 

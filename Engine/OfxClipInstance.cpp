@@ -446,24 +446,29 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
                                                OfxRectD* ret) const
 {
     
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx;
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
-        RectD rod;
-        if (attachedStroke) {
-            rod = attachedStroke->getBoundingBox(time);
-        } else {
-            rotoCtx = _nodeInstance->getNode()->getRotoContext();
-            assert(rotoCtx);
-            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
-        }
-        
+    boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
+    RectD rod;
+    if (attachedStroke && (isMask() || getName() == "Roto")) {
+        _nodeInstance->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
         ret->y2 = rod.y2;
         return;
+    } else {
+        boost::shared_ptr<RotoContext> rotoCtx = _nodeInstance->getNode()->getRotoContext();
+        if (rotoCtx && getName() == "Roto") {
+            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+            ret->x1 = rod.x1;
+            ret->x2 = rod.x2;
+            ret->y1 = rod.y1;
+            ret->y2 = rod.y2;
+            return;
+        }
     }
+    
+    
+    
     
     
     if (associatedNode) {

@@ -74,9 +74,9 @@ public:
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return EffectInstance::eRenderSafetyFullySafeFrame;
+        return Natron::eRenderSafetyFullySafeFrame;
     }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -103,6 +103,8 @@ public:
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
 private:
 
     virtual Natron::StatusEnum

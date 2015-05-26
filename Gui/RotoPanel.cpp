@@ -377,6 +377,15 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
+    QString treeToolTip = Qt::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
+                                                      "most commonly used attributes for each of them. "
+                                                      "Each attribute can be found in the parameters above in the panel.\n"
+                                                      "You can reorder items by drag and dropping them and can also right click "
+                                                      "each item for more options.\n"
+                                                      "The items are rendered from bottom to top always, so that the first shape in "
+                                                      "this list will always be the last one rendered "
+                                                      "(generally on top of everything else)."));
+    _imp->tree->setToolTip(treeToolTip);
 
     _imp->mainLayout->addWidget(_imp->tree);
 
@@ -606,6 +615,18 @@ RotoPanel::onSelectionChangedInternal()
     _imp->addKeyframe->setEnabled(enabled);
     _imp->removeKeyframe->setEnabled(enabled);
     _imp->clearAnimation->setEnabled(enabled);
+    
+    if (_imp->context->isRotoPaint()) {
+        _imp->splineLabel->setVisible(false);
+        _imp->currentKeyframe->setVisible(false);
+        _imp->ofLabel->setVisible(false);
+        _imp->totalKeyframes->setVisible(false);
+        _imp->prevKeyframe->setVisible(false);
+        _imp->nextKeyframe->setVisible(false);
+        _imp->addKeyframe->setVisible(false);
+        _imp->removeKeyframe->setVisible(false);
+        _imp->clearAnimation->setVisible(false);
+    }
 
     int time = _imp->context->getTimelineCurrentTime();
 
@@ -772,6 +793,9 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
 void
 RotoPanelPrivate::updateSplinesInfoGUI(int time)
 {
+    if (context->isRotoPaint()) {
+        return;
+    }
     std::set<int> keyframes;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
@@ -864,9 +888,9 @@ RotoPanelPrivate::insertItemRecursively(int time,
 
         ///the parent must have already been inserted!
         assert( parentIT != items.end() );
-        parentIT->treeItem->addChild(treeItem);
+        parentIT->treeItem->insertChild(0,treeItem);
     } else {
-        tree->addTopLevelItem(treeItem);
+        tree->insertTopLevelItem(0,treeItem);
     }
     items.push_back( TreeItem(treeItem,item) );
 

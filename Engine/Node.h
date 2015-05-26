@@ -61,6 +61,7 @@ class NodeGuiI;
 class RotoContext;
 class NodeCollection;
 class RotoStrokeItem;
+class RectD;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -263,6 +264,8 @@ public:
      **/
     boost::shared_ptr<RotoContext> getRotoContext() const;
 
+    U64 getRotoAge() const;
+    
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -366,6 +369,22 @@ public:
      **/
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
+    
+    void setRenderThreadSafety(Natron::RenderSafetyEnum safety);
+    Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    void revertToPluginThreadSafety();
+    
+    void updateLastPaintStrokeData();
+    void invalidateLastStrokeData();
+    void getPaintStrokeRoD(int time,RectD* bbox) const;
+    void getLastPaintStrokeRoD(RectD* pointsBbox) ;
+    boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+                                                                const RectD& canonicalRoi,
+                                                                const Natron::ImageComponents& components,
+                                                                Natron::ImageBitDepthEnum depth) const;
+    
+    void setWhileCreatingPaintStroke(bool creating);
+    bool isDuringPaintStrokeCreation() const;
     
 private:
     

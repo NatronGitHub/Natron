@@ -2283,16 +2283,17 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
                 boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
-                assert(output);
-                if ( output->getIsSelected() && modCASIsShift(e) ) {
-                    std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
-                                                                                       _imp->_selection.end(),lastSelected);
-                    if ( found != _imp->_selection.end() ) {
-                        lastSelected->setUserSelected(false);
-                        _imp->_selection.erase(found);
+                if (output) {
+                    if ( output->getIsSelected() && modCASIsShift(e) ) {
+                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
+                                                                                           _imp->_selection.end(),lastSelected);
+                        if ( found != _imp->_selection.end() ) {
+                            lastSelected->setUserSelected(false);
+                            _imp->_selection.erase(found);
+                        }
+                    } else {
+                        selectNode( output, modCASIsShift(e) );
                     }
-                } else {
-                    selectNode( output, modCASIsShift(e) );
                 }
             }
         }

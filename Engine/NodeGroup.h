@@ -338,9 +338,9 @@ public:
         grouping->push_back(PLUGIN_GROUP_OTHER);
     }
     
-    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return EffectInstance::eRenderSafetyFullySafeFrame;
+        return Natron::eRenderSafetyFullySafeFrame;
     }
     
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN

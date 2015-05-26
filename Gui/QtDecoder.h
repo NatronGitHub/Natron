@@ -99,9 +99,9 @@ public:
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
+        return Natron::eRenderSafetyInstanceSafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
