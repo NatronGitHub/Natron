@@ -41,7 +41,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/DopeSheetView.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/CurveEditor.h"
@@ -149,7 +148,7 @@ struct TimelineGuiPrivate
         double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
 
         gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left, zoomRight);
-        gui->getDopeSheetEditor()->getDopeSheetView()->frame(tlZoomCtx.left, zoomRight);
+        gui->getDopeSheetEditor()->frame(tlZoomCtx.left, zoomRight);
     }
 
     void updateOpenedViewersFrameRanges()

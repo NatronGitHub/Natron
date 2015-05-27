@@ -185,10 +185,10 @@ public:
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetEditor();
 
-    DopeSheetView *getDopeSheetView() const;
-
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
+
+    void frame(double xMin, double xMax);
 
 public Q_SLOTS:
     void toggleTripleSync(bool enabled);

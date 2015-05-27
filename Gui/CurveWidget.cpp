@@ -52,7 +52,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TextRenderer.h"
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/DopeSheet.h"
-#include "Gui/DopeSheetView.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ZoomContext.h"
@@ -3801,9 +3800,7 @@ CurveWidgetPrivate::insertSelectedKeyFrameConditionnaly(const KeyPtr &key)
 void
 CurveWidgetPrivate::updateDopeSheetViewFrameRange()
 {
-    DopeSheetView *dopeSheetView = _gui->getDopeSheetEditor()->getDopeSheetView();
-
-    dopeSheetView->frame(zoomCtx.left(), zoomCtx.right());
+    _gui->getDopeSheetEditor()->frame(zoomCtx.left(), zoomCtx.right());
 }
 
 void

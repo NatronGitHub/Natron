@@ -902,11 +902,6 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 DopeSheetEditor::~DopeSheetEditor()
 {}
 
-DopeSheetView *DopeSheetEditor::getDopeSheetView() const
-{
-    return _imp->dopeSheetView;
-}
-
 /**
  * @brief DopeSheetEditor::addNode
  *
@@ -929,6 +924,11 @@ void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
 void DopeSheetEditor::removeNode(NodeGui *node)
 {
     _imp->model->removeNode(node);
+}
+
+void DopeSheetEditor::frame(double xMin, double xMax)
+{
+    _imp->dopeSheetView->frame(xMin, xMax);
 }
 
 void DopeSheetEditor::toggleTripleSync(bool enabled)
