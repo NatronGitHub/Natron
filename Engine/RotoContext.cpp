@@ -4406,6 +4406,10 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         }
     } else if (type == eRotoStrokeTypeSharpen) {
         //todo
+    } else if (type == eRotoStrokeTypeSmear) {
+        boost::shared_ptr<Double_Knob> spacingKnob = getBrushSpacingKnob();
+        assert(spacingKnob);
+        spacingKnob->setValue(0.05, 0);
     }
     
     getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);

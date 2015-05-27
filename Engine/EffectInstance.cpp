@@ -2763,7 +2763,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
             for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
-                it2->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
+                it2->second.fullscaleImage->clearBitmap(tilesSupported ? lastStrokePixelRoD : roi);
             }
         }
         

@@ -61,8 +61,16 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         if (!effect) {
             return;
         }
+        boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+        
         std::stringstream expr;
-        expr << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
+        if (isGroup) {
+            expr << "thisGroup.";
+        } else {
+            expr << effect->getApp()->getAppIDString() << ".";
+        }
+        expr << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
         << ".get()";
         if (_knob->getKnob()->getDimension() > 1) {
             expr << "[dimension]";

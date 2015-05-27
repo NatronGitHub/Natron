@@ -3309,7 +3309,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     assert(nodePanel);
     boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
     NodePtr node = nodeGui->getNode();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node.get());
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     boost::shared_ptr<NodeCollection> collec = node->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     NodeList collectNodes = collec->getNodes();
@@ -3344,7 +3344,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     
     _imp->knobSelectionCombo = new ComboBox(this);
     
-    _imp->useExpressionLabel = new Natron::Label(tr("Link parameter with expression:"),this);
+    _imp->useExpressionLabel = new Natron::Label(tr("Also create an expression to control the parameter:"),this);
     _imp->useExpressionCheckBox = new QCheckBox(this);
     _imp->useExpressionCheckBox->setChecked(true);
     
