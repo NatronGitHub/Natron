@@ -547,6 +547,28 @@ Settings::initializeKnobs()
     _autoWipe->setAnimationEnabled(false);
     _viewersTab->addKnob(_autoWipe);
     
+    _autoProxyWhenScrubbingTimeline = Natron::createKnob<Bool_Knob>(this, "Automatically enable proxy when scrubbing the timeline");
+    _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
+    _autoProxyWhenScrubbingTimeline->setHintToolTip("When checked, the proxy mode will be at least at the level "
+                                                    "indicated by the auto-proxy parameter.");
+    _autoProxyWhenScrubbingTimeline->setAnimationEnabled(false);
+    _autoProxyWhenScrubbingTimeline->setAddNewLine(false);
+    _viewersTab->addKnob(_autoProxyWhenScrubbingTimeline);
+    
+    
+    _autoProxyLevel = Natron::createKnob<Choice_Knob>(this, "Auto-proxy level");
+    _autoProxyLevel->setName("autoProxyLevel");
+    _autoProxyLevel->setAnimationEnabled(false);
+    std::vector<std::string> autoProxyChoices;
+    autoProxyChoices.push_back("2");
+    autoProxyChoices.push_back("4");
+    autoProxyChoices.push_back("8");
+    autoProxyChoices.push_back("16");
+    autoProxyChoices.push_back("32");
+    _autoProxyLevel->populateChoices(autoProxyChoices);
+    _viewersTab->addKnob(_autoProxyLevel);
+    
+    
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
     
@@ -1041,6 +1063,8 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
     _autoWipe->setDefaultValue(false);
+    _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
+    _autoProxyLevel->setDefaultValue(2);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1612,6 +1636,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
+    } else if (k == _autoProxyWhenScrubbingTimeline.get()) {
+        _autoProxyLevel->setSecret(!_autoProxyWhenScrubbingTimeline->getValue());
     } else if (!_restoringSettings &&
                (k == _sunkenColor.get() ||
                 k == _baseColor.get() ||
@@ -1629,8 +1655,8 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _curveEditorBGColor.get() ||
                 k == _gridColor.get() ||
                 k == _curveEditorScaleColor.get())) {
-        appPTR->reloadStylesheets();
-    }
+                   appPTR->reloadStylesheets();
+               }
 } // onKnobValueChanged
 
 int
@@ -2772,5 +2798,17 @@ Settings::getCurveEditorScaleColor(double* r,double* g,double* b) const
     *r = _curveEditorScaleColor->getValue(0);
     *g = _curveEditorScaleColor->getValue(1);
     *b = _curveEditorScaleColor->getValue(2);
+}
+
+bool
+Settings::isAutoProxyEnabled() const
+{
+    return _autoProxyWhenScrubbingTimeline->getValue();
+}
+
+unsigned int
+Settings::getAutoProxyMipMapLevel() const
+{
+    return (unsigned int)_autoProxyLevel->getValue();
 }
 

@@ -715,16 +715,23 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
     if (_imp->state == eTimelineStateDraggingCursor) {
         _imp->gui->setUserScrubbingTimeline(false);
         _imp->gui->refreshAllPreviews();
-        bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        
+        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+        bool autoProxyEnabled = settings->isAutoProxyEnabled();
+        
+        
         if (onEditingFinishedOnly) {
             double t = toTimeLineCoordinates(e->x(),0).x();
             SequenceTime tseq = std::floor(t + 0.5);
-            if ( tseq != _imp->timeline->currentFrame() ) {
+            if ( (tseq != _imp->timeline->currentFrame()) ) {
 
                 _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
                 Q_EMIT frameChanged(tseq);
             }
 
+        } else if (autoProxyEnabled) {
+            _imp->gui->getApp()->renderAllViewers();
         }
     }
 

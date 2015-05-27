@@ -1024,3 +1024,9 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
     }
     AppInstance::onGroupCreationFinished(node);
 }
+
+bool
+GuiAppInstance::isUserScrubbingTimeline() const
+{
+    return _imp->_gui ? _imp->_gui->isUserScrubbingTimeline() : false;
+}

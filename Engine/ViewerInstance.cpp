@@ -421,6 +421,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     assert(_imp->uiContext);
     int zoomMipMapLevel = getMipMapLevelFromZoomFactor();
     mipMapLevel = std::max( (double)mipMapLevel, (double)zoomMipMapLevel );
+    if (getApp()->isUserScrubbingTimeline() && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
+        unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
+        mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
+    }
     
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().

@@ -3073,7 +3073,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateDraggingTimeline;
         _imp->_lastMousePos = e->pos();
         // no need to set _imp->_dragStartPoint
-
+        _imp->_gui->setUserScrubbingTimeline(true);
         // no need to updateGL()
         return;
     }
@@ -3169,6 +3169,14 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
     if (_imp->_selectedKeyFrames.size() > 1) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
+    if (prevState == eEventStateDraggingTimeline) {
+        _imp->_gui->setUserScrubbingTimeline(false);
+        bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+        if (autoProxyEnabled) {
+            _imp->_gui->renderAllViewers();
+        }
+    }
+    
     if (prevState == eEventStateSelecting) { // should other cases be considered?
         update();
     }

@@ -275,6 +275,9 @@ public:
     void getCurveEditorGridColor(double* r,double* g,double* b) const;
     void getCurveEditorScaleColor(double* r,double* g,double* b) const;
     
+    bool isAutoProxyEnabled() const;
+    unsigned int getAutoProxyMipMapLevel() const;
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -350,6 +353,9 @@ private:
     boost::shared_ptr<Color_Knob> _checkerboardColor1;
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
     boost::shared_ptr<Bool_Knob> _autoWipe;
+    boost::shared_ptr<Bool_Knob> _autoProxyWhenScrubbingTimeline;
+    boost::shared_ptr<Choice_Knob> _autoProxyLevel;
+    
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _autoTurbo;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
