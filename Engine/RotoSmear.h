@@ -8,6 +8,7 @@
 
 #include "Engine/EffectInstance.h"
 
+struct RotoSmearPrivate;
 class RotoSmear : public Natron::EffectInstance
 {
 public:
@@ -88,7 +89,11 @@ public:
     {
         return false;
     }
-    
+
+    virtual bool isPaintingOverItselfEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
     
     virtual void getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     
@@ -110,6 +115,7 @@ private:
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
+    boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
 
 #endif // ROTOSMEAR_H

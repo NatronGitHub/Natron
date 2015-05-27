@@ -4201,7 +4201,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         }
         
         if (!identityProcessed && (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
-            outputClipPrefDepth != it->second.renderMappedImage->getBitDepth())) {
+            outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) && !isPaintingOverItselfEnabled()) {
             it->second.tmpImage.reset(new Image(prefComp,
                                                 it->second.renderMappedImage->getRoD(),
                                                 actionArgs.roi,

@@ -360,6 +360,11 @@ public:
         return false;
     }
 
+    virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
     /**
      * @brief Returns true if the node is capable of generating
      * data and process data on the input as well

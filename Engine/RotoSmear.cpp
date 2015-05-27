@@ -12,8 +12,22 @@
 
 using namespace Natron;
 
+struct RotoSmearPrivate
+{
+    QMutex smearDataMutex;
+    std::pair<Point, double> lastTickPoint;
+    
+    RotoSmearPrivate()
+    : smearDataMutex()
+    , lastTickPoint()
+    {
+        
+    }
+};
+
 RotoSmear::RotoSmear(boost::shared_ptr<Natron::Node> node)
 : EffectInstance(node)
+, _imp(new RotoSmearPrivate())
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -197,17 +211,16 @@ RotoSmear::render(const RenderActionArgs& args)
     boost::shared_ptr<RotoStrokeItem> stroke = node->getAttachedStrokeItem();
     boost::shared_ptr<RotoContext> context = stroke->getContext();
     assert(context);
+    bool duringPainting = node->isDuringPaintStrokeCreation();
+    bool isFirstStrokeTick = duringPainting && node->isFirstPaintStrokeRenderTick();
     
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
     std::list<std::pair<Natron::Point,double> > points;
-    stroke->evaluateStroke(0, &points);
-    //node->getLastPaintStrokePoints(&points);
+    //stroke->evaluateStroke(0, &points);
+    node->getLastPaintStrokePoints(&points);
     
-    //To draw the current dot we will pick the smearStrength previous dot
-    const int smearStrength = 1;
-    
-    if ((int)points.size() <= smearStrength) {
+    if ((int)points.size() <= 1) {
         return eStatusOK;
     }
     
@@ -267,8 +280,11 @@ RotoSmear::render(const RenderActionArgs& args)
             continue;
         }
         
-        //First copy the source image
-        plane->second->pasteFrom(*bgImg,args.roi, false);
+        //First copy the source image if this is the first stroke tick
+        
+        if (isFirstStrokeTick || !duringPainting) {
+            plane->second->pasteFrom(*bgImg,args.roi, false);
+        }
         
         if (brushSpacing == 0 || (writeOnEnd - writeOnStart) <= 0. || visiblePortion.empty()) {
             continue;
@@ -277,16 +293,28 @@ RotoSmear::render(const RenderActionArgs& args)
 
         std::list<std::pair<Natron::Point,double> >::iterator prevIt = visiblePortion.begin();
         std::list<std::pair<Natron::Point,double> >::iterator curIt = prevIt;
-        std::advance(curIt, smearStrength);
+        ++curIt;
         
         std::pair<Point,double> cur = *curIt;
-        std::pair<Point,double> prev = cur;
+        std::pair<Point,double> prev;
         
-        renderSmearDot(context,stroke,prevIt->first,curIt->first,prevIt->second,curIt->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+        if (isFirstStrokeTick) {
+            prev = *prevIt;
+        } else {
+            QMutexLocker k(&_imp->smearDataMutex);
+            prev = _imp->lastTickPoint;
+        }
+        
+        std::pair<Point,double> renderPoint = prev;
+
+        renderSmearDot(context,stroke,prev.first,curIt->first,prev.second,curIt->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+        
+        prev = cur;
         
         std::list<std::pair<Point,double> >::iterator next = curIt;
         ++next;
         double distToNext = 0;
+        
         while (next!=visiblePortion.end()) {
             
             
@@ -313,31 +341,32 @@ RotoSmear::render(const RenderActionArgs& args)
                 a = maxDistPerSegment / dist;
             }
             assert(a >= 0 && a <= 1);
-            Point center;
-            center.x = (next->first.x - cur.first.x) * a + cur.first.x;
-            center.y = (next->first.y - cur.first.y) * a + cur.first.y;
-            double pressure = (next->second - cur.second) * a + cur.second;
+            renderPoint.first.x = (next->first.x - cur.first.x) * a + cur.first.x;
+            renderPoint.first.y = (next->first.y - cur.first.y) * a + cur.first.y;
+            renderPoint.second = (next->second - cur.second) * a + cur.second;
 
             Point prevPoint;
             Point v;
-            v.x = center.x - prev.first.x;
-            v.y = center.y - prev.first.y;
-            double vx = std::min(std::max(0. ,v.x / halfSize),.7);
-            double vy = std::min(std::max(0. ,v.y / halfSize),.7);
+            v.x = renderPoint.first.x - prev.first.x;
+            v.y = renderPoint.first.y - prev.first.y;
+            double vx = std::min(std::max(0. ,v.x / halfSize),.8);
+            double vy = std::min(std::max(0. ,v.y / halfSize),.8);
             
             prevPoint.x = prev.first.x + vx * v.x;
             prevPoint.y = prev.first.y + vy * v.y;
-            renderSmearDot(context,stroke,prevPoint,center,pressure,pressure,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
+            renderSmearDot(context,stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
             
             prev = cur;
-            cur.first = center;
-            cur.second = pressure;
+            cur = renderPoint;
             distToNext = 0;
             
         }
         
-
-        
+        if (isFirstStrokeTick) {
+            QMutexLocker k(&_imp->smearDataMutex);
+            _imp->lastTickPoint = renderPoint;
+        }
     }
+    node->updateLastPaintStrokeAge();
     return Natron::eStatusOK;
 }

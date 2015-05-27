@@ -377,6 +377,8 @@ public:
     void updateLastPaintStrokeData();
     void invalidateLastStrokeData();
     void getPaintStrokeRoD(int time,RectD* bbox) const;
+    bool isFirstPaintStrokeRenderTick() const;
+    void updateLastPaintStrokeAge();
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     void getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* points) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,

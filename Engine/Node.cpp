@@ -778,6 +778,20 @@ Node::getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* poin
     }
 }
 
+bool
+Node::isFirstPaintStrokeRenderTick() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->strokeImageAge == -1;
+}
+
+void
+Node::updateLastPaintStrokeAge()
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->strokeImageAge = _imp->strokeAgeToRender;
+}
+
 boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                  const RectD& canonicalRoi,
