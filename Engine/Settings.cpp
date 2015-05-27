@@ -1064,7 +1064,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,3);
     _autoWipe->setDefaultValue(false);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
-    _autoProxyLevel->setDefaultValue(2);
+    _autoProxyLevel->setDefaultValue(1);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -2809,6 +2809,6 @@ Settings::isAutoProxyEnabled() const
 unsigned int
 Settings::getAutoProxyMipMapLevel() const
 {
-    return (unsigned int)_autoProxyLevel->getValue();
+    return (unsigned int)_autoProxyLevel->getValue() + 1;
 }
 
