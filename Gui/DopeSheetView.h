@@ -154,6 +154,15 @@ private Q_SLOTS:
     void deleteSelectedKeyframes();
     void frame();
 
+    void constantInterpSelectedKeyframes();
+    void linearInterpSelectedKeyframes();
+    void smoothInterpSelectedKeyframes();
+    void catmullRomInterpSelectedKeyframes();
+    void cubicInterpSelectedKeyframes();
+    void horizontalInterpSelectedKeyframes();
+    void breakInterpSelectedKeyframes();
+
+
 private: /* functions */
     void renderText(double x, double y,
                     const QString &text,

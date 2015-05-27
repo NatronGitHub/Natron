@@ -3258,7 +3258,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         _imp->zoomOrPannedSinceLastFit = true;
         _imp->zoomCtx.translate(dx, dy);
 
-        // Synchronize the curve editor
+        // Synchronize the dope sheet editor and opened viewers
         if (_imp->_gui->isTripleSyncEnabled()) {
             _imp->updateDopeSheetViewFrameRange();
             _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
@@ -3352,7 +3352,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
         refreshDisplayedTangents();
         
-        // Synchronize the curve editor
+        // Synchronize the dope sheet editor and opened viewers
         if (_imp->_gui->isTripleSyncEnabled()) {
             _imp->updateDopeSheetViewFrameRange();
             _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
@@ -3490,7 +3490,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
 
     update();
 
-    // Synchronize the curve editor
+    // Synchronize the dope sheet editor and opened viewers
     if (_imp->_gui->isTripleSyncEnabled()) {
         _imp->updateDopeSheetViewFrameRange();
         _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());

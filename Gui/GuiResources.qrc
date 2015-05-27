@@ -218,5 +218,13 @@
         <file>Resources/Images/linkCursor.png</file>
         <file>Resources/Images/expoOFF.png</file>
         <file>Resources/Images/expoON.png</file>
+        <file>Resources/Images/interp_constant.png</file>
+        <file>Resources/Images/interp_linear.png</file>
+        <file>Resources/Images/interp_constant_selected.png</file>
+        <file>Resources/Images/interp_curve.png</file>
+        <file>Resources/Images/interp_curve_selected.png</file>
+        <file>Resources/Images/interp_linear_selected.png</file>
+        <file>Resources/Images/keyframe_node_root.png</file>
+        <file>Resources/Images/keyframe_node_root_selected.png</file>
     </qresource>
 </RCC>

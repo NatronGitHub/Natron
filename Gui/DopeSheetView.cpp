@@ -21,6 +21,8 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 
+#include "Global/Enums.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
@@ -42,6 +44,22 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 
+
+typedef std::set<double> TimeSet;
+typedef std::pair<double, double> FrameRange;
+typedef Knob<int> * KnobIntPtr;
+typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::vector<DSSelectedKey> DSSelectedKeys;
+
+const int KF_PIXMAP_SIZE = 14;
+const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
+const int CLICK_DISTANCE_ACCEPTANCE = 5;
+
+const QColor CLIP_OUTLINE_COLOR = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
+const QColor SELECTED_KF_COLOR = Qt::white;
+const QColor KF_COLOR = CLIP_OUTLINE_COLOR;
+
+
 ////////////////////////// Helpers //////////////////////////
 
 namespace {
@@ -59,25 +77,6 @@ void running_in_main_thread_and_context(const QGLWidget *glWidget) {
     running_in_main_context(glWidget);
 }
 
-} // anon namespace
-
-
-typedef std::set<double> TimeSet;
-typedef std::pair<double, double> FrameRange;
-typedef Knob<int> * KnobIntPtr;
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
-typedef std::vector<DSSelectedKey> DSSelectedKeys;
-
-const int KF_HEIGHT = 10;
-const int KF_X_OFFSET = 3;
-const int CLICK_DISTANCE_ACCEPTANCE = 5;
-const QColor KF_COLOR = QColor::fromRgbF(1.f, 0.f, 0.f);
-const QColor SELECTED_KF_COLOR = QColor::fromRgbF(0.961f, 0.961f, 0.047f);
-
-
-////////////////////////// Helpers //////////////////////////
-
-namespace {
 
 /**
  * @brief ClipColors
@@ -94,11 +93,11 @@ ClipColors getClipColors(DSNode::DSNodeType nodeType)
 
     if (nodeType == DSNode::ReaderNodeType) {
         ret.first = Qt::black;
-        ret.second = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
+        ret.second = CLIP_OUTLINE_COLOR;
     }
     else if (nodeType == DSNode::GroupNodeType) {
         ret.first = Qt::black;
-        ret.second = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
+        ret.second = CLIP_OUTLINE_COLOR;
     }
 
     return ret;
@@ -630,6 +629,21 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 class DopeSheetViewPrivate
 {
 public:
+    enum KeyframeTexture {
+        kfTextureNone = -2,
+        KfTextureInterpConstant = 0,
+        KfTextureInterpConstantSelected,
+
+        KfTextureInterpLinear,
+        KfTextureInterpLinearSelected,
+
+        KfTextureInterpCurve,
+        KfTextureInterpCurveSelected,
+
+        kfTextureRoot,
+        kfTextureRootSelected,
+    };
+
     DopeSheetViewPrivate(DopeSheetView *qq);
     ~DopeSheetViewPrivate();
 
@@ -652,6 +666,10 @@ public:
     DSSelectedKeys isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const;
     DSSelectedKeys isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
 
+    // Textures
+    void initializeKeyframeTextures();
+    DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
+
     // Drawing
     void drawScale() const;
 
@@ -662,6 +680,9 @@ public:
 
     void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
+
+    void drawBaseKeyframe(bool selected, const QRectF &rect) const;
+    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const;
 
     void drawProjectBounds() const;
     void drawCurrentFrameIndicator();
@@ -691,6 +712,8 @@ public:
 
     void updateCurveWidgetFrameRange();
 
+    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+
     /* attributes */
     DopeSheetView *q_ptr;
 
@@ -708,6 +731,10 @@ public:
     // for rendering
     QFont *font;
     Natron::TextRenderer textRenderer;
+
+    // for textures
+    GLuint *kfTexturesIDs;
+    QImage *kfTexturesImages;
 
     // for navigating
     ZoomContext zoomContext;
@@ -752,6 +779,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     nodeRanges(),
     font(new QFont(appFont,appFontSize)),
     textRenderer(),
+    kfTexturesIDs(new GLuint[8]),
+    kfTexturesImages(new QImage[8]),
     zoomContext(),
     zoomOrPannedSinceLastFit(false),
     selectedKeyframes(),
@@ -772,6 +801,10 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
 {
     selectedKeyframes.clear();
+
+    glDeleteTextures(6, kfTexturesIDs);
+    delete []kfTexturesImages;
+    delete []kfTexturesIDs;
 }
 
 /**
@@ -1022,6 +1055,65 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPoi
     return ret;
 }
 
+void DopeSheetViewPrivate::initializeKeyframeTextures()
+{
+    kfTexturesImages[0].load(NATRON_IMAGES_PATH "interp_constant.png");
+    kfTexturesImages[1].load(NATRON_IMAGES_PATH "interp_constant_selected.png");
+    kfTexturesImages[2].load(NATRON_IMAGES_PATH "interp_linear.png");
+    kfTexturesImages[3].load(NATRON_IMAGES_PATH "interp_linear_selected.png");
+    kfTexturesImages[4].load(NATRON_IMAGES_PATH "interp_curve.png");
+    kfTexturesImages[5].load(NATRON_IMAGES_PATH "interp_curve_selected.png");
+    kfTexturesImages[6].load(NATRON_IMAGES_PATH "keyframe_node_root.png");
+    kfTexturesImages[7].load(NATRON_IMAGES_PATH "keyframe_node_root_selected.png");
+
+    kfTexturesImages[0] = kfTexturesImages[0].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[1] = kfTexturesImages[1].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[2] = kfTexturesImages[2].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[3] = kfTexturesImages[3].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[4] = kfTexturesImages[4].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[5] = kfTexturesImages[5].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[6] = kfTexturesImages[6].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    kfTexturesImages[7] = kfTexturesImages[7].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    kfTexturesImages[0] = QGLWidget::convertToGLFormat(kfTexturesImages[0]);
+    kfTexturesImages[1] = QGLWidget::convertToGLFormat(kfTexturesImages[1]);
+    kfTexturesImages[2] = QGLWidget::convertToGLFormat(kfTexturesImages[2]);
+    kfTexturesImages[3] = QGLWidget::convertToGLFormat(kfTexturesImages[3]);
+    kfTexturesImages[4] = QGLWidget::convertToGLFormat(kfTexturesImages[4]);
+    kfTexturesImages[5] = QGLWidget::convertToGLFormat(kfTexturesImages[5]);
+    kfTexturesImages[6] = QGLWidget::convertToGLFormat(kfTexturesImages[6]);
+    kfTexturesImages[7] = QGLWidget::convertToGLFormat(kfTexturesImages[7]);
+
+    glGenTextures(8, kfTexturesIDs);
+}
+
+DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const
+{
+    DopeSheetViewPrivate::KeyframeTexture ret = DopeSheetViewPrivate::kfTextureNone;
+
+    switch (kfType) {
+    case Natron::eKeyframeTypeConstant:
+        ret = (selected) ? DopeSheetViewPrivate::KfTextureInterpConstantSelected : DopeSheetViewPrivate::KfTextureInterpConstant;
+        break;
+    case Natron::eKeyframeTypeLinear:
+    case Natron::eKeyframeTypeBroken:
+    case Natron::eKeyframeTypeFree:
+        ret = (selected) ? DopeSheetViewPrivate::KfTextureInterpLinearSelected : DopeSheetViewPrivate::KfTextureInterpLinear;
+        break;
+    case Natron::eKeyframeTypeSmooth:
+    case Natron::eKeyframeTypeCatmullRom:
+    case Natron::eKeyframeTypeCubic:
+    case Natron::eKeyframeTypeHorizontal:
+        ret = (selected) ? DopeSheetViewPrivate::KfTextureInterpCurveSelected : DopeSheetViewPrivate::KfTextureInterpCurve;
+        break;
+    default:
+        ret = DopeSheetViewPrivate::kfTextureNone;
+        break;
+    }
+
+    return ret;
+}
+
 /**
  * @brief DopeSheetViewPrivate::drawScale
  *
@@ -1207,7 +1299,7 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
 
     glColor4f(rootR, rootG, rootB, rootA);
 
-    glBegin(GL_QUADS);
+    glBegin(GL_POLYGON);
     glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
     glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
     glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
@@ -1236,7 +1328,7 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
 
         glColor4f(rootR, rootG, rootB, rootA);
 
-        glBegin(GL_QUADS);
+        glBegin(GL_POLYGON);
         glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
         glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
         glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
@@ -1254,7 +1346,7 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
             QRectF childrowRect = nameItemRectToRowRect(nameChildItemRect);
 
             // Draw child row
-            glBegin(GL_QUADS);
+            glBegin(GL_POLYGON);
             glVertex2f(childrowRect.topLeft().x(), childrowRect.topLeft().y());
             glVertex2f(childrowRect.bottomLeft().x(), childrowRect.bottomLeft().y());
             glVertex2f(childrowRect.bottomRight().x(), childrowRect.bottomRight().y());
@@ -1271,7 +1363,7 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
 
         glColor4f(knobR, knobG, knobB, knobA);
 
-        glBegin(GL_QUADS);
+        glBegin(GL_POLYGON);
         glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
         glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
         glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
@@ -1305,7 +1397,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         glColor4f(colors.first.redF(), colors.first.greenF(),
                   colors.first.blueF(), colors.first.alphaF());
 
-        glBegin(GL_QUADS);
+        glBegin(GL_POLYGON);
         glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
         glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
         glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
@@ -1406,8 +1498,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glEnable(GL_POINT_SMOOTH);
-
         DSKnobRow knobItems = dsNode->getChildData();
 
         for (DSKnobRow::const_iterator it = knobItems.begin();
@@ -1422,8 +1512,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             }
 
             KnobGui *knobGui = dsKnob->getKnobGui();
-
-            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
 
             // Draw keyframes for each dimension of the knob
             for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
@@ -1441,7 +1529,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                     QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
 
                     QRectF kfRect;
-                    kfRect.setHeight(KF_HEIGHT);
+                    kfRect.setHeight(KF_PIXMAP_SIZE);
                     kfRect.setLeft(zoomContext.toZoomCoordinates(keyTime - KF_X_OFFSET, y).x());
                     kfRect.setRight(zoomContext.toZoomCoordinates(keyTime + KF_X_OFFSET, y).x());
                     kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
@@ -1460,26 +1548,31 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                         if (selectedKey->dsKnob == dsKnob && selectedKey->key == kf) {
                             isSelected = it2;
-                            glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
                             break;
                         }
                     }
+
+                    bool keyframeIsSelected = (isSelected != selectedKeyframes.end());
 
                     // Draw keyframe in the knob dim row only if it's visible
                     bool drawInDimRow = dsNode->getTreeItem()->isExpanded() &&
                             ((dsKnob->isMultiDim()) ? dsKnob->getTreeItem()->isExpanded() : true);
 
                     if (drawInDimRow) {
-                        glBegin(GL_QUADS);
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.top());
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.top());
-                        glEnd();
+                        DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType(kf.getInterpolation(),
+                                                                                                  keyframeIsSelected);
+
+                        if (texType != DopeSheetViewPrivate::kfTextureNone) {
+                            drawTexturedKeyframe(texType, zoomKfRect);
+                        }
+                        else {
+                            drawBaseKeyframe(keyframeIsSelected, zoomKfRect);
+                        }
                     }
 
                     // Draw keyframe in multidim root knob row too
                     bool drawInMultidimRootRow = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
+
                     if (drawInMultidimRootRow) {
                         p = zoomContext.toZoomCoordinates(keyTime,
                                                           hierarchyView->getItemRect(dsKnob).center().y());
@@ -1487,12 +1580,12 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                         zoomKfRect = rectToZoomCoordinates(kfRect);
 
-                        glBegin(GL_QUADS);
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.top());
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.top());
-                        glEnd();
+                        if (keyframeIsSelected) {
+                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomKfRect);
+                        }
+                        else {
+                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomKfRect);
+                        }
                     }
 
                     // Draw keyframe in node row
@@ -1503,21 +1596,73 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                         zoomKfRect = rectToZoomCoordinates(kfRect);
 
-                        glBegin(GL_QUADS);
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.top());
-                        glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
-                        glVertex2f(zoomKfRect.right(), zoomKfRect.top());
-                        glEnd();
-                    }
-
-                    if (isSelected != selectedKeyframes.end()) {
-                        glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
+                        if (keyframeIsSelected) {
+                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomKfRect);
+                        }
+                        else {
+                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomKfRect);
+                        }
                     }
                 }
             }
         }
     }
+}
+
+void DopeSheetViewPrivate::drawBaseKeyframe(bool selected, const QRectF &rect) const
+{
+    if (selected) {
+        glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
+    }
+    else {
+        glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blueF());
+    }
+
+    glBegin(GL_POLYGON);
+    glVertex2f(rect.left(), rect.top());
+    glVertex2f(rect.left(), rect.bottom());
+    glVertex2f(rect.right(), rect.bottom());
+    glVertex2f(rect.right(), rect.top());
+    glEnd();
+
+    glColor4f(1, 1, 1, 1);
+}
+
+void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const
+{
+    GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+    GLProtectMatrix pr(GL_MODELVIEW);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
+
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[textureType].bits());
+
+    glScaled(1.0d / zoomContext.factor(),
+             1.0d / zoomContext.factor(),
+             1.0d);
+
+    glBegin(GL_POLYGON);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(rect.left(), rect.top());
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(rect.left(), rect.bottom());
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(rect.right(), rect.bottom());
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(rect.right(), rect.top());
+    glEnd();
+
+    glColor4f(1, 1, 1, 1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glDisable(GL_TEXTURE_2D);
 }
 
 void DopeSheetViewPrivate::drawProjectBounds() const
@@ -1633,7 +1778,7 @@ void DopeSheetViewPrivate::drawSelectionRect() const
         glColor4f(0.3, 0.3, 0.3, 0.2);
 
         // Draw rect
-        glBegin(GL_QUADS);
+        glBegin(GL_POLYGON);
         glVertex2f(topLeft.x(), bottomRight.y());
         glVertex2f(topLeft.x(), topLeft.y());
         glVertex2f(bottomRight.x(), topLeft.y());
@@ -1933,17 +2078,28 @@ void DopeSheetViewPrivate::createContextMenu()
     contextMenu->clear();
 
     // Create menus
+
+    // Edit menu
     Natron::Menu *editMenu = new Natron::Menu(contextMenu);
     editMenu->setTitle(QObject::tr("Edit"));
 
     contextMenu->addAction(editMenu->menuAction());
 
+    // Interpolation menu
+    Natron::Menu *interpMenu = new Natron::Menu(contextMenu);
+    interpMenu->setTitle(QObject::tr("Interpolation"));
+
+    contextMenu->addAction(interpMenu->menuAction());
+
+    // View menu
     Natron::Menu *viewMenu = new Natron::Menu(contextMenu);
-    viewMenu->setTitle(QObject::tr("Menu"));
+    viewMenu->setTitle(QObject::tr("View"));
 
     contextMenu->addAction(viewMenu->menuAction());
 
     // Create actions
+
+    // Edit actions
     QAction *removeSelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                     kShortcutIDActionDopeSheetEditorDeleteKeys,
                                                                     kShortcutDescActionDopeSheetEditorDeleteKeys,
@@ -1967,6 +2123,101 @@ void DopeSheetViewPrivate::createContextMenu()
     QObject::connect(frameSelectionAction, SIGNAL(triggered()),
                      q_ptr, SLOT(frame()));
     viewMenu->addAction(frameSelectionAction);
+
+    // Interpolation actions
+    QAction *constantInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionCurveEditorConstant,
+                                                           kShortcutDescActionCurveEditorConstant,
+                                                           interpMenu);
+    QPixmap pix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_CONSTANT, &pix);
+    constantInterpAction->setIcon(QIcon(pix));
+    constantInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(constantInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(constantInterpSelectedKeyframes()));
+
+    interpMenu->addAction(constantInterpAction);
+
+    QAction *linearInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                         kShortcutIDActionCurveEditorLinear,
+                                                         kShortcutDescActionCurveEditorLinear,
+                                                         interpMenu);
+
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_HARD, &pix);
+    linearInterpAction->setIcon(QIcon(pix));
+    linearInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(linearInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(linearInterpSelectedKeyframes()));
+
+    interpMenu->addAction(linearInterpAction);
+
+    QAction *smoothInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                         kShortcutIDActionCurveEditorSmooth,
+                                                         kShortcutDescActionCurveEditorSmooth,
+                                                         interpMenu);
+
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_CURVE, &pix);
+    smoothInterpAction->setIcon(QIcon(pix));
+    smoothInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(smoothInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(smoothInterpSelectedKeyframes()));
+
+    interpMenu->addAction(smoothInterpAction);
+
+    QAction *catmullRomInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                             kShortcutIDActionCurveEditorCatmullrom,
+                                                             kShortcutDescActionCurveEditorCatmullrom,
+                                                             interpMenu);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_CURVE, &pix);
+    catmullRomInterpAction->setIcon(QIcon(pix));
+    catmullRomInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(catmullRomInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(catmullRomInterpSelectedKeyframes()));
+
+    interpMenu->addAction(catmullRomInterpAction);
+
+    QAction *cubicInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                        kShortcutIDActionCurveEditorCubic,
+                                                        kShortcutDescActionCurveEditorCubic,
+                                                        interpMenu);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_CURVE, &pix);
+    cubicInterpAction->setIcon(QIcon(pix));
+    cubicInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(cubicInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(cubicInterpSelectedKeyframes()));
+
+    interpMenu->addAction(cubicInterpAction);
+
+    QAction *horizontalInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                             kShortcutIDActionCurveEditorHorizontal,
+                                                             kShortcutDescActionCurveEditorHorizontal,
+                                                             interpMenu);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_CURVE, &pix);
+    horizontalInterpAction->setIcon(QIcon(pix));
+    horizontalInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(horizontalInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(horizontalInterpSelectedKeyframes()));
+
+    interpMenu->addAction(horizontalInterpAction);
+
+    QAction *breakInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                        kShortcutIDActionCurveEditorBreak,
+                                                        kShortcutDescActionCurveEditorBreak,
+                                                        interpMenu);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_INTERP_HARD, &pix);
+    breakInterpAction->setIcon(QIcon(pix));
+    breakInterpAction->setIconVisibleInMenu(true);
+
+    QObject::connect(breakInterpAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(breakInterpSelectedKeyframes()));
+
+    interpMenu->addAction(breakInterpAction);
 }
 
 void DopeSheetViewPrivate::updateCurveWidgetFrameRange()
@@ -1974,6 +2225,22 @@ void DopeSheetViewPrivate::updateCurveWidgetFrameRange()
     CurveWidget *curveWidget = gui->getCurveEditor()->getCurveWidget();
 
     curveWidget->centerOn(zoomContext.left(), zoomContext.right());
+}
+
+void DopeSheetViewPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
+{
+    running_in_main_thread();
+
+    std::list<DSKeyInterpolationChange> changes;
+
+    for (DSKeyPtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        DSKeyPtr keyPtr = (*it);
+        DSKeyInterpolationChange change(keyPtr->key.getInterpolation(), keyType, keyPtr);
+
+        changes.push_back(change);
+    }
+
+    pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, q_ptr));
 }
 
 /**
@@ -2342,6 +2609,55 @@ void DopeSheetView::frame()
     redraw();
 }
 
+void DopeSheetView::constantInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeConstant);
+}
+
+void DopeSheetView::linearInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeLinear);
+}
+
+void DopeSheetView::smoothInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeSmooth);
+}
+
+void DopeSheetView::catmullRomInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeCatmullRom);
+}
+
+void DopeSheetView::cubicInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeCubic);
+}
+
+void DopeSheetView::horizontalInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeHorizontal);
+}
+
+void DopeSheetView::breakInterpSelectedKeyframes()
+{
+    running_in_main_thread();
+
+    _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeBroken);
+}
+
 void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 {
     Q_UNUSED(sTime);
@@ -2526,6 +2842,8 @@ void DopeSheetView::initializeGL()
     if ( !glewIsSupported("GL_ARB_vertex_array_object ")) {
         _imp->hasOpenGLVAOSupport = false;
     }
+
+    _imp->initializeKeyframeTextures();
 }
 
 /**
@@ -2770,7 +3088,7 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
         redraw();
 
-        // Synchronize the curve editor
+        // Synchronize the curve editor and opened viewers
         if (_imp->gui->isTripleSyncEnabled()) {
             _imp->updateCurveWidgetFrameRange();
             _imp->gui->centerOpenedViewersOn(_imp->zoomContext.left(), _imp->zoomContext.right());
@@ -2942,11 +3260,11 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 
-    computeSelectedKeysBRect();    
+    computeSelectedKeysBRect();
 
     redraw();
 
-    // Synchronize the curve editor
+    // Synchronize the curve editor and opened viewers
     if (_imp->gui->isTripleSyncEnabled()) {
         _imp->updateCurveWidgetFrameRange();
         _imp->gui->centerOpenedViewersOn(_imp->zoomContext.left(), _imp->zoomContext.right());
@@ -2984,6 +3302,27 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
         selectAllKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
+        constantInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
+        linearInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
+        smoothInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
+        catmullRomInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
+        cubicInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
+        horizontalInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
+        breakInterpSelectedKeyframes();
     }
 }
 

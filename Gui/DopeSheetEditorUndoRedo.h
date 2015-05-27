@@ -233,9 +233,9 @@ class DSChangeNodeLabelCommand : public QUndoCommand
 {
 public:
     DSChangeNodeLabelCommand(DSNode *dsNode,
-                      const QString &oldLabel,
-                      const QString &newLabel,
-                      QUndoCommand *parent = 0);
+                             const QString &oldLabel,
+                             const QString &newLabel,
+                             QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
@@ -247,6 +247,53 @@ private:
     DSNode *_dsNode;
     QString _oldLabel;
     QString _newLabel;
+};
+
+
+
+/**
+ * @brief The DSKeyInterpolationChange struct
+ *
+ *
+ */
+struct DSKeyInterpolationChange
+{
+    DSKeyInterpolationChange(Natron::KeyframeTypeEnum oldInterpType,
+                             Natron::KeyframeTypeEnum newInterpType,
+                             const DSKeyPtr & key)
+        : _oldInterpType(oldInterpType),
+          _newInterpType(newInterpType),
+          _key(key)
+    {
+    }
+
+    Natron::KeyframeTypeEnum _oldInterpType;
+    Natron::KeyframeTypeEnum _newInterpType;
+    DSKeyPtr _key;
+};
+
+
+/**
+ * @brief The DSSetSelectedKeysInterpolationCommand class
+ *
+ *
+ */
+class DSSetSelectedKeysInterpolationCommand : public QUndoCommand
+{
+public:
+    DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
+                                          DopeSheetView *view,
+                                          QUndoCommand *parent = 0);
+
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+
+private:
+    void setInterpolation(bool undo);
+
+private:
+    std::list<DSKeyInterpolationChange> _changes;
+    DopeSheetView *_view;
 };
 
 

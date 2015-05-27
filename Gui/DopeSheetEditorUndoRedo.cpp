@@ -467,9 +467,9 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 ////////////////////////// DSChangeNodeLabel //////////////////////////
 
 DSChangeNodeLabelCommand::DSChangeNodeLabelCommand(DSNode *dsNode,
-                                     const QString &oldLabel,
-                                     const QString &newLabel,
-                                     QUndoCommand *parent) :
+                                                   const QString &oldLabel,
+                                                   const QString &newLabel,
+                                                   QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNode(dsNode),
     _oldLabel(oldLabel),
@@ -492,4 +492,41 @@ void DSChangeNodeLabelCommand::changeNodeLabel(const QString &label)
 {
     _dsNode->getNodeGui()->getNode()->setLabel(label.toStdString());
     _dsNode->getTreeItem()->setText(0, label);
+}
+
+
+////////////////////////// DSSetSelectedKeysInterpolationCommand //////////////////////////
+
+DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
+                                                                             DopeSheetView *view,
+                                                                             QUndoCommand *parent) :
+    QUndoCommand(parent),
+    _changes(changes),
+    _view(view)
+{
+    setText(QObject::tr("Set selected keys interpolation"));
+}
+
+void DSSetSelectedKeysInterpolationCommand::undo()
+{
+    setInterpolation(true);
+}
+
+void DSSetSelectedKeysInterpolationCommand::redo()
+{
+    setInterpolation(false);
+}
+
+void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
+{
+    for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
+        Natron::KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
+
+        it->_key->dsKnob->getKnobGui()->getKnob()->setInterpolationAtTime(it->_key->dimension,
+                                                                          it->_key->key.getTime(),
+                                                                          interp,
+                                                                          &it->_key->key);
+    }
+
+    _view->redraw();
 }
