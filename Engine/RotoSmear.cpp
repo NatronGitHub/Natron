@@ -113,7 +113,7 @@ RotoSmear::isIdentity(SequenceTime time,
     return false;
 }
 
-static ImagePtr renderSmearDot(const boost::shared_ptr<RotoContext>& context, boost::shared_ptr<RotoStrokeItem>& stroke, const Point& p, double pressure, double brushSize, const ImageComponents& comps, ImageBitDepthEnum depth, unsigned int mipmapLevel)
+static ImagePtr renderSmearMaskDot(const boost::shared_ptr<RotoContext>& context, boost::shared_ptr<RotoStrokeItem>& stroke, const Point& p, double pressure, double brushSize, const ImageComponents& comps, ImageBitDepthEnum depth, unsigned int mipmapLevel)
 {
     RectD dotRod(p.x - brushSize / 2., p.y - brushSize / 2., p.x + brushSize / 2., p.y + brushSize / 2.);
     
@@ -122,6 +122,72 @@ static ImagePtr renderSmearDot(const boost::shared_ptr<RotoContext>& context, bo
     ImagePtr ret;
     (void)context->renderSingleStroke(stroke, dotRod, points, mipmapLevel, comps, depth, &ret);
     return ret;
+}
+
+
+static void renderSmearDot(const boost::shared_ptr<RotoContext>& context,
+                           boost::shared_ptr<RotoStrokeItem>& stroke,
+                           const Point& prev,
+                           const Point& next,
+                           double /*prevPress*/,
+                           double nextPress,
+                           double brushSize,
+                           ImageBitDepthEnum depth,
+                           unsigned int mipmapLevel,
+                           int nComps,
+                           const ImagePtr& outputImage)
+{
+    ImagePtr dotMask = renderSmearMaskDot(context, stroke, next, nextPress, brushSize, ImageComponents::getAlphaComponents(), depth, mipmapLevel);
+    assert(dotMask);
+    
+    RectI nextDotBounds = dotMask->getBounds();
+    
+    
+    RectD prevDotRoD(prev.x - brushSize / 2., prev.y - brushSize / 2., prev.x + brushSize / 2., prev.y + brushSize / 2.);
+    RectI prevDotBounds;
+    prevDotRoD.toPixelEnclosing(mipmapLevel, outputImage->getPixelAspectRatio(), &prevDotBounds);
+    
+    //assert(prevDotBounds.width() == nextDotBounds.width() && prevDotBounds.height() == nextDotBounds.height());
+    
+    
+    float fgPixels[nComps];
+    
+    ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
+    tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
+    
+    Image::ReadAccess tmpAcc(tmpBuf.get());
+    Image::WriteAccess wacc(outputImage.get());
+    Image::ReadAccess mracc = dotMask->getReadRights();
+
+    
+    int yPrev = prevDotBounds.y1;
+    for (int y = nextDotBounds.y1; y < nextDotBounds.y2; ++y,++yPrev) {
+        
+        float* dstPixels = (float*)wacc.pixelAt(nextDotBounds.x1, y);
+        const float* maskPixels = (const float*)mracc.pixelAt(nextDotBounds.x1, y);
+        const float* srcPixels = (const float*)tmpAcc.pixelAt(prevDotBounds.x1, yPrev);
+        assert(srcPixels && dstPixels && maskPixels);
+        
+        int xPrev = prevDotBounds.x1;
+        for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
+             ++x, ++xPrev,
+             srcPixels += nComps,
+             dstPixels += nComps,
+             ++maskPixels) {
+            
+            
+            for (int k = 0; k < nComps; ++k) {
+                fgPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : 0.;
+            }
+            
+            for (int k = 0; k < nComps; ++k) {
+                dstPixels[k] = fgPixels[k] + dstPixels[k] * (1. - *maskPixels);
+            }
+
+        }
+    }
+    
+
 }
 
 Natron::StatusEnum
@@ -135,77 +201,142 @@ RotoSmear::render(const RenderActionArgs& args)
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
     std::list<std::pair<Natron::Point,double> > points;
-    node->getLastPaintStrokePoints(&points);
+    stroke->evaluateStroke(0, &points);
+    //node->getLastPaintStrokePoints(&points);
     
-    RectD pointsBbox;
-    node->getLastPaintStrokeRoD(&pointsBbox);
+    //To draw the current dot we will pick the smearStrength previous dot
+    const int smearStrength = 1;
     
-    if (points.size() <= 1) {
+    if ((int)points.size() <= smearStrength) {
         return eStatusOK;
     }
     
-    std::list<ImageComponents> bgComps;
-    Natron::ImageBitDepthEnum bgDepth;
-    getPreferredDepthAndComponents(0, &bgComps, &bgDepth);
-    assert(!bgComps.empty());
+    ComponentsNeededMap neededComps;
+    bool processAll;
+    bool processComponents[4];
+    SequenceTime ptTime;
+    int ptView;
+    boost::shared_ptr<Node> ptInput;
+    getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
+    
+    ComponentsNeededMap::iterator foundBg = neededComps.find(0);
+    assert(foundBg != neededComps.end() && !foundBg->second.empty());
     
     double par = getPreferredAspectRatio();
     RectI bgImgRoI;
-    ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, par, false, &bgImgRoI);
     
-    if (!bgImg) {
-        for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
-             plane != args.outputPlanes.end(); ++plane) {
-            plane->second->fill(args.roi, 0., 0., 0., 0.);
-        }
-        return eStatusOK;
+    
+    double brushSize = stroke->getBrushSizeKnob()->getValueAtTime(args.time);
+    double brushSpacing = stroke->getBrushSpacingKnob()->getValueAtTime(args.time);
+    if (brushSpacing > 0) {
+        brushSpacing = std::max(0.05, brushSpacing);
     }
     
-    Image::ReadAccess racc = bgImg->getReadRights();
+    brushSpacing = std::max(brushSpacing, 0.05);
     
-    double brushSize = stroke->getBrushSizeKnob()->getValue();
+    double maxDistPerSegment = brushSize * brushSpacing;
+    double halfSize = maxDistPerSegment / 2.;
+
+    
+    double writeOnStart = stroke->getBrushVisiblePortionKnob()->getValueAtTime(args.time , 0);
+    double writeOnEnd = stroke->getBrushVisiblePortionKnob()->getValueAtTime(args.time, 1);
+
+    int firstPoint = (int)std::floor((points.size() * writeOnStart));
+    int endPoint = (int)std::ceil((points.size() * writeOnEnd));
+    assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
+    
+    std::list<std::pair<Point,double> > visiblePortion;
+    std::list<std::pair<Point,double> >::const_iterator startingIt = points.begin();
+    std::list<std::pair<Point,double> >::const_iterator endingIt = points.begin();
+    std::advance(startingIt, firstPoint);
+    std::advance(endingIt, endPoint);
+    for (std::list<std::pair<Point,double> >::const_iterator it = startingIt; it!=endingIt; ++it) {
+        visiblePortion.push_back(*it);
+    }
+ 
     
     for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
         
         int nComps = plane->first.getNumComponents();
         
-        std::list<std::pair<Natron::Point,double> >::iterator it = points.begin();
-        std::list<std::pair<Natron::Point,double> >::iterator next = it;
-        ++next;
+
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), plane->second->getBitDepth(), par, false, &bgImgRoI);
+        if (!bgImg) {
+            plane->second->fill(args.roi, 0., 0., 0., 0.);
+            continue;
+        }
         
-        for (; next != points.end(); ++it, ++next) {
-            ImagePtr dotMask = renderSmearDot(context, stroke, next->first, next->second, brushSize, ImageComponents::getAlphaComponents(), plane->second->getBitDepth(), mipmapLevel);
-            assert(dotMask);
+        //First copy the source image
+        plane->second->pasteFrom(*bgImg,args.roi, false);
+        
+        if (brushSpacing == 0 || (writeOnEnd - writeOnStart) <= 0. || visiblePortion.empty()) {
+            continue;
+        }
+        
+
+        std::list<std::pair<Natron::Point,double> >::iterator prevIt = visiblePortion.begin();
+        std::list<std::pair<Natron::Point,double> >::iterator curIt = prevIt;
+        std::advance(curIt, smearStrength);
+        
+        std::pair<Point,double> cur = *curIt;
+        std::pair<Point,double> prev = cur;
+        
+        renderSmearDot(context,stroke,prevIt->first,curIt->first,prevIt->second,curIt->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+        
+        std::list<std::pair<Point,double> >::iterator next = curIt;
+        ++next;
+        double distToNext = 0;
+        while (next!=visiblePortion.end()) {
             
-            RectI nextDotBounds = dotMask->getBounds();
             
-            RectI prevDotBounds(it->first.x - nextDotBounds.width() / 2., it->first.y - nextDotBounds.height() / 2.,
-                                it->first.x + nextDotBounds.width() /2., it->first.y + nextDotBounds.height() / 2.);
+            //Render for each point a dot. Spacing is a percentage of brushSize:
+            //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
+            //Spacing at 0 we do not render the stroke
             
-            assert(prevDotBounds.width() == nextDotBounds.width() && prevDotBounds.height() == nextDotBounds.height());
+            double dist = std::sqrt((next->first.x - cur.first.x) * (next->first.x - cur.first.x) + (next->first.y - cur.first.y) * (next->first.y - cur.first.y));
             
-            Image::WriteAccess wacc = plane->second->getWriteRights();
-            Image::ReadAccess mracc = dotMask->getReadRights();
-            
-            int yPrev = prevDotBounds.y1;
-            for (int y = nextDotBounds.y1; y < nextDotBounds.y2; ++y,++yPrev) {
-                
-                float* dstPixels = (float*)wacc.pixelAt(nextDotBounds.x1, y);
-                const float* maskPixels = (const float*)mracc.pixelAt(nextDotBounds.x1, y);
-                assert(dstPixels && maskPixels);
-                
-                int xPrev = prevDotBounds.x1;
-                for (int x = nextDotBounds.x1; x < nextDotBounds.x2; ++x, ++xPrev, dstPixels += nComps, ++maskPixels) {
-                    
-                    const float* srcPixels = (const float*)racc.pixelAt(xPrev, yPrev);
-                    for (int k = 0; k < nComps; ++k) {
-                        dstPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : 0.;
-                    }
-                }
+            distToNext += dist;
+            if (distToNext < maxDistPerSegment || dist == 0) {
+                ++next;
+                ++curIt;
+                ++prevIt;
+                cur = *curIt;
+                continue;
             }
             
+            //Find next point
+            double a;
+            if (maxDistPerSegment >= dist) {
+                a = (distToNext - dist) == 0 ? (maxDistPerSegment - dist) / dist : (maxDistPerSegment - dist) / (distToNext - dist);
+            } else {
+                a = maxDistPerSegment / dist;
+            }
+            assert(a >= 0 && a <= 1);
+            Point center;
+            center.x = (next->first.x - cur.first.x) * a + cur.first.x;
+            center.y = (next->first.y - cur.first.y) * a + cur.first.y;
+            double pressure = (next->second - cur.second) * a + cur.second;
+
+            Point prevPoint;
+            Point v;
+            v.x = center.x - prev.first.x;
+            v.y = center.y - prev.first.y;
+            double vx = std::min(std::max(0. ,v.x / halfSize),.7);
+            double vy = std::min(std::max(0. ,v.y / halfSize),.7);
+            
+            prevPoint.x = prev.first.x + vx * v.x;
+            prevPoint.y = prev.first.y + vy * v.y;
+            renderSmearDot(context,stroke,prevPoint,center,pressure,pressure,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
+            
+            prev = cur;
+            cur.first = center;
+            cur.second = pressure;
+            distToNext = 0;
+            
         }
+        
+
         
     }
     return Natron::eStatusOK;

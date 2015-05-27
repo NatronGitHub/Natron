@@ -3548,8 +3548,11 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
 
 }
       
-bool isPluginCreatable(const std::string& /*pluginID*/)
+bool isPluginCreatable(const std::string& pluginID)
 {
+    if (pluginID == PLUGINID_NATRON_ROTOSMEAR) {
+        return false;
+    }
     return true;
 }
     
