@@ -41,6 +41,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/DopeSheetView.h"
+#include "Gui/DopeSheet.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/CurveEditor.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -60,8 +64,8 @@ struct TimeLineZoomContext
 {
     TimeLineZoomContext()
         : bottom(0.)
-          , left(0.)
-          , zoomFactor(1.)
+        , left(0.)
+        , zoomFactor(1.)
     {
     }
 
@@ -79,7 +83,7 @@ struct CachedFrame
     CachedFrame(SequenceTime t,
                 StorageModeEnum m)
         : time(t)
-          , mode(m)
+        , mode(m)
     {
     }
 };
@@ -98,6 +102,7 @@ typedef std::set<CachedFrame,CachedFrame_compare_time> CachedFrames;
 
 struct TimelineGuiPrivate
 {
+    TimeLineGui *parent;
     ViewerInstance* viewer;
     boost::shared_ptr<TimeLine> timeline; //ptr to the internal timeline
     Gui* gui; //< ptr to the gui
@@ -116,25 +121,48 @@ struct TimelineGuiPrivate
     mutable QMutex frameRangeEditedMutex;
     bool isFrameRangeEdited;
     
-    TimelineGuiPrivate(ViewerInstance* viewer,
+    TimelineGuiPrivate(TimeLineGui *qq,
+                       ViewerInstance* viewer,
                        Gui* gui)
-    : viewer(viewer)
-    , timeline()
-    , gui(gui)
-    , alphaCursor(false)
-    , lastMouseEventWidgetCoord()
-    , state(eTimelineStateIdle)
-    , tlZoomCtx()
-    , textRenderer()
-    , font(appFont,appFontSize)
-    , firstPaint(true)
-    , cachedFrames()
-    , boundariesMutex()
-    , leftBoundary(0)
-    , rightBoundary(0)
-    , frameRangeEditedMutex()
-    , isFrameRangeEdited(false)
+        : parent(qq),
+          viewer(viewer)
+        , timeline()
+        , gui(gui)
+        , alphaCursor(false)
+        , lastMouseEventWidgetCoord()
+        , state(eTimelineStateIdle)
+        , tlZoomCtx()
+        , textRenderer()
+        , font(appFont,appFontSize)
+        , firstPaint(true)
+        , cachedFrames()
+        , boundariesMutex()
+        , leftBoundary(0)
+        , rightBoundary(0)
+        , frameRangeEditedMutex()
+        , isFrameRangeEdited(false)
     {
+    }
+
+    void updateEditorFrameRanges()
+    {
+        double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
+
+        gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left, zoomRight);
+        gui->getDopeSheetEditor()->getDopeSheetView()->frame(tlZoomCtx.left, zoomRight);
+    }
+
+    void updateOpenedViewersFrameRanges()
+    {
+        double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
+
+        const std::list<ViewerTab *> &viewers = gui->getViewersList();
+
+        for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            ViewerTab *v = (*it);
+
+            v->centerOn(tlZoomCtx.left, zoomRight);
+        }
     }
 };
 
@@ -144,7 +172,7 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
                          QWidget* parent,
                          const QGLWidget *shareWidget)
     : QGLWidget(parent,shareWidget)
-      , _imp( new TimelineGuiPrivate(viewer,gui) )
+    , _imp( new TimelineGuiPrivate(this, viewer,gui) )
 {
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -162,14 +190,14 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         //connect the internal timeline to the gui
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
-                         this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
+                             this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
         
         
         //connect the gui to the internal timeline
         QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
-  
+
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
     
@@ -178,7 +206,7 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
     
     QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
-   
+
     _imp->timeline = timeline;
 
 
@@ -293,7 +321,7 @@ TimeLineGui::paintGL()
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame,0);
 
         glScissor( firstFrameWidgetPos.x(),0,
-                  lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
+                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
 
         double bgR,bgG,bgB;
         settings->getBaseColor(&bgR, &bgG, &bgB);
@@ -410,13 +438,13 @@ TimeLineGui::paintGL()
         QPointF leftBoundBtm(leftBound,lineYpos);
         QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
         QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2.,
-                                                          leftBoundWidgetCoord.y() );
+                                                           leftBoundWidgetCoord.y() );
         QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
                                                      leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
         QPointF rightBoundBtm(rightBound,lineYpos);
         QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
         QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2.,
-                                                          rightBoundWidgetCoord.y() );
+                                                           rightBoundWidgetCoord.y() );
         QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
                                                       rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
         std::list<SequenceTime> keyframes;
@@ -753,6 +781,11 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
     _imp->tlZoomCtx.zoomFactor = newZoomFactor;
 
     update();
+
+    if (_imp->gui->isTripleSyncEnabled()) {
+        _imp->updateEditorFrameRanges();
+        _imp->updateOpenedViewersFrameRanges();
+    }
 }
 
 void
@@ -779,7 +812,7 @@ TimeLineGui::setBoundaries(SequenceTime first,
 {
 
     setBoundariesInternal(first, last, false);
-   
+
 }
 
 void

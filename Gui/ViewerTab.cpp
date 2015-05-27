@@ -3991,6 +3991,11 @@ ViewerTab::setTimelineBounds(int left,int right)
     _imp->timeLineGui->setBoundaries(left, right);
 }
 
+void ViewerTab::centerOn(SequenceTime left, SequenceTime right)
+{
+    _imp->timeLineGui->centerOn(left, right);
+}
+
 void
 ViewerTab::setFrameRangeEdited(bool edited)
 {

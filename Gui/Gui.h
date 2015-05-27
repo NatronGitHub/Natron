@@ -523,6 +523,8 @@ public:
     void setTripleSyncEnabled(bool enabled);
     bool isTripleSyncEnabled() const;
 
+    void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
+
 Q_SIGNALS:
 
 

@@ -62,6 +62,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
 #include "Gui/GuiAppInstance.h"
@@ -76,7 +77,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 using namespace Natron;
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
-                                               // (in widget pixels)
+// (in widget pixels)
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
@@ -128,12 +129,12 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
                    const QColor & color,
                    int thickness)
     : _internalCurve(curve)
-      , _name(name)
-      , _color(color)
-      , _thickness(thickness)
-      , _visible(false)
-      , _selected(false)
-      , _curveWidget(curveWidget)
+    , _name(name)
+    , _color(color)
+    , _thickness(thickness)
+    , _visible(false)
+    , _selected(false)
+    , _curveWidget(curveWidget)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -158,7 +159,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
     double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(),0).x();
     double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.rbegin()->getTime(),0).x();
     std::pair<double,double> curveYRange = getCurveYRange();
-  
+
     if (x1 < xminCurveWidgetCoord) {
         if ( ( curveYRange.first <= kOfxFlagInfiniteMin) && ( curveYRange.second >= kOfxFlagInfiniteMax) ) {
             *x2 = xminCurveWidgetCoord;
@@ -244,7 +245,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
         double P3pl = upper->getLeftDerivative() / ( upper->getTime() - lower->getTime() ); // normalize for t \in [0,1]
         double P0pr = lower->getRightDerivative() / ( upper->getTime() - lower->getTime() ); // normalize for t \in [0,1]
         double secondDer = 6. * (1. - t) * (P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
-                           6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
+                6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
         double secondDerWidgetCoord = std::abs( _curveWidget->toWidgetCoordinates(0,secondDer).y()
                                                 / ( upper->getTime() - lower->getTime() ) );
         // compute delta_x so that the y difference between the derivative and the curve is at most
@@ -492,9 +493,9 @@ CurveGui::drawCurve(int curveIndex,
                     glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError();
                     _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                             leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                                              leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
                     _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                             rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                                              rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
                 }
                 
                 
@@ -507,7 +508,7 @@ CurveGui::drawCurve(int curveIndex,
                     glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError();
                     _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                             coordStr, QColor(240,240,240), _curveWidget->getFont() );
+                                              coordStr, QColor(240,240,240), _curveWidget->getFont() );
                 }
                 glBegin(GL_POINTS);
                 glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
@@ -571,16 +572,16 @@ CurveGui::getKeyFrames() const
 }
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
-             KnobGui* knob,
-             int dimension,
-             const QString & name,
-             const QColor & color,
-             int thickness)
-: CurveGui(curveWidget,curve,name,color,thickness)
-, _internalKnob()
-, _knob(knob)
-, _dimension(dimension)
+                           boost::shared_ptr<Curve>  curve,
+                           KnobGui* knob,
+                           int dimension,
+                           const QString & name,
+                           const QColor & color,
+                           int thickness)
+    : CurveGui(curveWidget,curve,name,color,thickness)
+    , _internalKnob()
+    , _knob(knob)
+    , _dimension(dimension)
 {
     
     // even when there is only one keyframe, there may be tangents!
@@ -590,18 +591,18 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 }
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
-             const boost::shared_ptr<KnobI>& knob,
-             const boost::shared_ptr<RotoContext>& roto,
-             int dimension,
-             const QString & name,
-             const QColor & color,
-             int thickness)
-: CurveGui(curveWidget,curve,name,color,thickness)
-, _roto(roto)
-, _internalKnob(knob)
-, _knob(0)
-, _dimension(dimension)
+                           boost::shared_ptr<Curve>  curve,
+                           const boost::shared_ptr<KnobI>& knob,
+                           const boost::shared_ptr<RotoContext>& roto,
+                           int dimension,
+                           const QString & name,
+                           const QColor & color,
+                           int thickness)
+    : CurveGui(curveWidget,curve,name,color,thickness)
+    , _roto(roto)
+    , _internalKnob(knob)
+    , _knob(0)
+    , _dimension(dimension)
 {
     // even when there is only one keyframe, there may be tangents!
     if (curve->getKeyFramesCount() > 0) {
@@ -666,9 +667,9 @@ BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
                                    const QString & name,
                                    const QColor & color,
                                    int thickness)
-: CurveGui(curveWidget,boost::shared_ptr<Curve>(),name,color,thickness)
-, _bezier(bezier)
-, _rotoContext(roto)
+    : CurveGui(curveWidget,boost::shared_ptr<Curve>(),name,color,thickness)
+    , _bezier(bezier)
+    , _rotoContext(roto)
 {
     // even when there is only one keyframe, there may be tangents!
     if (bezier->getKeyframesCount() > 0) {
@@ -813,7 +814,7 @@ public:
     bool isNearbyTimelineBtmPoly(const QPoint & pt) const;
 
     KeyPtr isNearbyKeyFrameText(const QPoint& pt) const;
- 
+
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
      **/
@@ -839,7 +840,7 @@ public:
 
     void insertSelectedKeyFrameConditionnaly(const KeyPtr & key);
 
-    void setProjectionToDopeSheetView();
+    void updateDopeSheetViewFrameRange();
 
 private:
 
@@ -861,7 +862,7 @@ public:
     bool _hasOpenGLVAOSupport;
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
-                                  ///the value is either (1,0) or (0,1)
+    ///the value is either (1,0) or (0,1)
     std::vector< KeyFrame > _keyFramesClipBoard;
     QRectF _selectionRectangle;
     QPointF _dragStartPoint;
@@ -897,39 +898,39 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        boost::shared_ptr<TimeLine> timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
-      , zoomCtx()
-      , _state(eEventStateNone)
-      , _rightClickMenu( new Menu(widget) )
-      , _selectedCurveColor(255,255,89,255)
-      , _nextCurveAddedColor()
-      , textRenderer()
-      , _font( new QFont(appFont,appFontSize) )
-      , _curves()
-      , _selectedKeyFrames()
-      , _hasOpenGLVAOSupport(true)
-      , _mustSetDragOrientation(false)
-      , _mouseDragOrientation()
-      , _keyFramesClipBoard()
-      , _selectionRectangle()
-      , _dragStartPoint()
-      , _drawSelectedKeyFramesBbox(false)
-      , _selectedKeyFramesBbox()
-      , _selectedKeyFramesCrossVertLine()
-      , _selectedKeyFramesCrossHorizLine()
-      , _timeline(timeline)
-      , _timelineEnabled(false)
-      , _selectedDerivative()
-      , _evaluateOnPenUp(false)
-      , _keyDragLastMovement()
-      , _undoStack(new QUndoStack)
-      , _gui(gui)
-      , savedTexture(0)
-      , sizeH()
-      , zoomOrPannedSinceLastFit(false)
-      , _timelineTopPoly()
-      , _timelineBtmPoly()
-      , _widget(widget)
-      , _selectionModel(selectionModel)
+    , zoomCtx()
+    , _state(eEventStateNone)
+    , _rightClickMenu( new Menu(widget) )
+    , _selectedCurveColor(255,255,89,255)
+    , _nextCurveAddedColor()
+    , textRenderer()
+    , _font( new QFont(appFont,appFontSize) )
+    , _curves()
+    , _selectedKeyFrames()
+    , _hasOpenGLVAOSupport(true)
+    , _mustSetDragOrientation(false)
+    , _mouseDragOrientation()
+    , _keyFramesClipBoard()
+    , _selectionRectangle()
+    , _dragStartPoint()
+    , _drawSelectedKeyFramesBbox(false)
+    , _selectedKeyFramesBbox()
+    , _selectedKeyFramesCrossVertLine()
+    , _selectedKeyFramesCrossHorizLine()
+    , _timeline(timeline)
+    , _timelineEnabled(false)
+    , _selectedDerivative()
+    , _evaluateOnPenUp(false)
+    , _keyDragLastMovement()
+    , _undoStack(new QUndoStack)
+    , _gui(gui)
+    , savedTexture(0)
+    , sizeH()
+    , zoomOrPannedSinceLastFit(false)
+    , _timelineTopPoly()
+    , _timelineBtmPoly()
+    , _widget(widget)
+    , _selectionModel(selectionModel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1545,7 +1546,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
             QPointF btmRightWidget(topLeftWidget.x() + fm.width(coordStr),topLeftWidget.y() + fm.height());
             
             if (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
-                pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                    pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
                 return *it;
             }
         }
@@ -1565,14 +1566,14 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
             QPointF leftTanPt = zoomCtx.toWidgetCoordinates( (*it)->leftTan.first,(*it)->leftTan.second );
             QPointF rightTanPt = zoomCtx.toWidgetCoordinates( (*it)->rightTan.first,(*it)->rightTan.second );
             if ( ( pt.x() >= (leftTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+                 ( pt.x() <= (leftTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                 ( pt.y() <= (leftTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                 ( pt.y() >= (leftTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
                 return std::make_pair(MoveTangentCommand::eSelectedTangentLeft,*it);
             } else if ( ( pt.x() >= (rightTanPt.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                       ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                       ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-                       ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+                        ( pt.x() <= (rightTanPt.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                        ( pt.y() <= (rightTanPt.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+                        ( pt.y() >= (rightTanPt.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
                 return std::make_pair(MoveTangentCommand::eSelectedTangentRight,*it);
             }
         }
@@ -1609,7 +1610,7 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
             QPointF btmRight_RightTanWidget(topLeft_RightTanWidget.x() + fm.width(rightCoordStr),topLeft_RightTanWidget.y() + fm.height());
             
             if (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
-                pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
+                    pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
                 return std::make_pair(MoveTangentCommand::eSelectedTangentLeft, *it);
             } else if (pt.x() >= topLeft_RightTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.x() <= btmRight_RightTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE &&
                        pt.y() >= topLeft_RightTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() <= btmRight_RightTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
@@ -1653,9 +1654,9 @@ CurveWidgetPrivate::isNearbyBboxTopLeft(const QPoint& pt) const
 {
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(), _selectedKeyFramesBbox.y());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1667,9 +1668,9 @@ CurveWidgetPrivate::isNearbyBboxMidLeft(const QPoint& pt) const
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(),
                                                 _selectedKeyFramesBbox.y() + _selectedKeyFramesBbox.height() / 2.);
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1679,11 +1680,11 @@ bool
 CurveWidgetPrivate::isNearbyBboxBtmLeft(const QPoint& pt) const
 {
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(), _selectedKeyFramesBbox.y() +
-                                                 _selectedKeyFramesBbox.height());
+                                                _selectedKeyFramesBbox.height());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1695,9 +1696,9 @@ CurveWidgetPrivate::isNearbyBboxMidBtm(const QPoint& pt) const
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y() +
                                                 _selectedKeyFramesBbox.height());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1709,9 +1710,9 @@ CurveWidgetPrivate::isNearbyBboxBtmRight(const QPoint& pt) const
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y() +
                                                 _selectedKeyFramesBbox.height());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1723,9 +1724,9 @@ CurveWidgetPrivate::isNearbyBboxMidRight(const QPoint& pt) const
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y() +
                                                 _selectedKeyFramesBbox.height() / 2.);
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1736,9 +1737,9 @@ CurveWidgetPrivate::isNearbyBboxTopRight(const QPoint& pt) const
 {
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1749,9 +1750,9 @@ CurveWidgetPrivate::isNearbyBboxMidTop(const QPoint& pt) const
 {
     QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
-        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+         ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
         return true;
     }
     return false;
@@ -1855,7 +1856,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     }
     // clamp totalMovement to _keyDragMaxMovement
     //totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
-   // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
+    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
     ///Only for the curve editor, parametric curves are not affected by the following
@@ -1957,10 +1958,10 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
         QPointF center = _selectedKeyFramesBbox.center();
         
         if (shiftHeld &&
-            (_state == eEventStateDraggingMidRightBbox ||
-             _state == eEventStateDraggingMidBtmBbox ||
-             _state == eEventStateDraggingMidLeftBbox ||
-             _state == eEventStateDraggingMidTopBbox)) {
+                (_state == eEventStateDraggingMidRightBbox ||
+                 _state == eEventStateDraggingMidBtmBbox ||
+                 _state == eEventStateDraggingMidLeftBbox ||
+                 _state == eEventStateDraggingMidTopBbox)) {
             if (_state == eEventStateDraggingMidTopBbox) {
                 center.ry() = _selectedKeyFramesBbox.bottom();
             } else if (_state == eEventStateDraggingMidBtmBbox) {
@@ -1985,13 +1986,13 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
             double ratio = std::sqrt(dist / prevDist);
             
             if (_state == eEventStateDraggingBtmLeftBbox ||
-                _state == eEventStateDraggingBtmRightBbox ||
-                _state == eEventStateDraggingTopRightBbox ||
-                _state == eEventStateDraggingTopLeftBbox) {
+                    _state == eEventStateDraggingBtmRightBbox ||
+                    _state == eEventStateDraggingTopRightBbox ||
+                    _state == eEventStateDraggingTopLeftBbox) {
                 sx *= ratio;
                 sy *= ratio;
             } else {
-            
+
                 bool processX = _state == eEventStateDraggingMidLeftBbox || _state == eEventStateDraggingMidRightBbox;
                 if (processX) {
                     sx *= ratio;
@@ -2283,9 +2284,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             }
 
             ///Compute the max up/down movements given the min/max of the curve
-//            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
-//            curveMaxMovement.top = maxY.second - topMost->getValue();
-//            curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
+            //            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
+            //            curveMaxMovement.top = maxY.second - topMost->getValue();
+            //            curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
             curvesMaxMovements.insert( std::make_pair( (*it)->curve, curveMaxMovement ) );
         }
     }
@@ -2295,8 +2296,8 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 
     _keyDragMaxMovement.left = INT_MIN;
     _keyDragMaxMovement.right = INT_MAX;
-   // _keyDragMaxMovement.bottom = INT_MIN;
-   // _keyDragMaxMovement.top = INT_MAX;
+    // _keyDragMaxMovement.bottom = INT_MIN;
+    // _keyDragMaxMovement.top = INT_MAX;
 
     for (std::map<CurveGui*,MaxMovement>::const_iterator it = curvesMaxMovements.begin(); it != curvesMaxMovements.end(); ++it) {
         const MaxMovement & move = it->second;
@@ -2317,18 +2318,18 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 
         //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
         //assert(move.bottom <= 0 && _keyDragMaxMovement.bottom <= 0);
-//        if (move.bottom > _keyDragMaxMovement.bottom) {
-//            _keyDragMaxMovement.bottom = move.bottom;
-//        }
+        //        if (move.bottom > _keyDragMaxMovement.bottom) {
+        //            _keyDragMaxMovement.bottom = move.bottom;
+        //        }
 
         //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
         //assert(move.top >= 0 && _keyDragMaxMovement.top >= 0);
-//        if (move.top < _keyDragMaxMovement.top) {
-//            _keyDragMaxMovement.top = move.top;
-//        }
+        //        if (move.top < _keyDragMaxMovement.top) {
+        //            _keyDragMaxMovement.top = move.top;
+        //        }
     }
-  //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
-   //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
+    //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
+    //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
 } // updateSelectedKeysMaxMovement
 #endif
 
@@ -2356,7 +2357,7 @@ CurveWidget::CurveWidget(Gui* gui,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
-      , _imp( new CurveWidgetPrivate(gui,selection,timeline,this) )
+    , _imp( new CurveWidgetPrivate(gui,selection,timeline,this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -2378,8 +2379,8 @@ CurveWidget::CurveWidget(Gui* gui,
     
     if (parent->objectName() == "CurveEditorSplitter") {
         ///if this is the curve widget associated to the CurveEditor
-//        QDesktopWidget* desktop = QApplication::desktop();
-//        _imp->sizeH = desktop->screenGeometry().size();
+        //        QDesktopWidget* desktop = QApplication::desktop();
+        //        _imp->sizeH = desktop->screenGeometry().size();
         _imp->sizeH = QSize(10000,10000);
 
     } else {
@@ -2806,7 +2807,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         return;
     }
     
-   
+
     EditKeyFrameDialog::EditModeEnum mode = EditKeyFrameDialog::eEditModeKeyframePosition;
     
     KeyPtr selectedText;
@@ -2826,7 +2827,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         }
     }
     
-   
+
     
     
     if (selectedText) {
@@ -2848,7 +2849,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
         QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
         dialog->show();
-  
+
         e->accept();
         return;
     }
@@ -2860,7 +2861,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
         if (yCurve < yRange.first || yCurve > yRange.second) {
             QString err =  tr(" Out of curve y range ") +
-            QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+                    QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
             Natron::warningDialog("", err.toStdString());
             e->accept();
             return;
@@ -2868,7 +2869,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         std::vector<KeyFrame> keys(1);
         keys[0] = KeyFrame(xCurve,yCurve);
         
-       
+
         pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
         
     }
@@ -2906,7 +2907,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_dragStartPoint = e->pos();
         // no need to set _imp->_lastMousePos
         // no need to set _imp->_dragStartPoint
-    
+
         // no need to updateGL()
         e->accept();
         return;
@@ -2925,7 +2926,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
             if (yCurve < yRange.first || yCurve > yRange.second) {
                 QString err =  tr(" Out of curve y range ") +
-                QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+                        QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
                 Natron::warningDialog("", err.toStdString());
                 e->accept();
                 return;
@@ -3030,7 +3031,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
 
-       // _imp->updateSelectedKeysMaxMovement();
+        // _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -3039,7 +3040,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         return;
     }
     
-   
+
     
     
     ////
@@ -3210,7 +3211,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
                 
                 std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr> tangentText = _imp->isNearbySelectedTangentText(e->pos());
                 if (tangentText.second) {
-                     setCursor( QCursor(Qt::IBeamCursor));
+                    setCursor( QCursor(Qt::IBeamCursor));
                 } else {
                     
                     //if we're nearby a timeline polygon, set cursor to horizontal displacement
@@ -3260,7 +3261,8 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
         // Synchronize the curve editor
         if (_imp->_gui->isTripleSyncEnabled()) {
-            _imp->setProjectionToDopeSheetView();
+            _imp->updateDopeSheetViewFrameRange();
+            _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
         }
         break;
 
@@ -3292,9 +3294,9 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         break;
 
     case eEventStateDraggingTimeline:
-            _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-            _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
-            break;
+        _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
+        break;
     case eEventStateZooming: {
         
         _imp->zoomOrPannedSinceLastFit = true;
@@ -3353,7 +3355,8 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         
         // Synchronize the curve editor
         if (_imp->_gui->isTripleSyncEnabled()) {
-            _imp->setProjectionToDopeSheetView();
+            _imp->updateDopeSheetViewFrameRange();
+            _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
         }
     } break;
     case eEventStateNone:
@@ -3490,7 +3493,8 @@ CurveWidget::wheelEvent(QWheelEvent* e)
 
     // Synchronize the curve editor
     if (_imp->_gui->isTripleSyncEnabled()) {
-        _imp->setProjectionToDopeSheetView();
+        _imp->updateDopeSheetViewFrameRange();
+        _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
     }
 
 } // wheelEvent
@@ -3588,15 +3592,15 @@ CurveWidget::enterEvent(QEvent* e)
     QWidget* currentFocus = qApp->focusWidget();
     
     bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "tree" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar";
+            dynamic_cast<ViewerGL*>(currentFocus) ||
+            dynamic_cast<CurveWidget*>(currentFocus) ||
+            dynamic_cast<Histogram*>(currentFocus) ||
+            dynamic_cast<NodeGraph*>(currentFocus) ||
+            dynamic_cast<QToolButton*>(currentFocus) ||
+            currentFocus->objectName() == "Properties" ||
+            currentFocus->objectName() == "tree" ||
+            currentFocus->objectName() == "SettingsPanel" ||
+            currentFocus->objectName() == "qt_tabwidget_tabbar";
     
     if (canSetFocus) {
         setFocus();
@@ -3794,7 +3798,8 @@ CurveWidgetPrivate::insertSelectedKeyFrameConditionnaly(const KeyPtr &key)
     }
 }
 
-void CurveWidgetPrivate::setProjectionToDopeSheetView()
+void
+CurveWidgetPrivate::updateDopeSheetViewFrameRange()
 {
     DopeSheetView *dopeSheetView = _gui->getDopeSheetEditor()->getDopeSheetView();
 
@@ -4025,6 +4030,17 @@ CurveWidget::getTextFont() const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     return *_imp->_font;
+}
+
+void
+CurveWidget::centerOn(double xmin, double xmax)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+
+    _imp->zoomCtx.fill(xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top());
+
+    update();
 }
 
 void
@@ -4270,31 +4286,31 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                                                  Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
-      , _gui(gui)
-      , _isExportDialog(isExportDialog)
-      , _mainLayout(0)
-      , _fileContainer(0)
-      , _fileLayout(0)
-      , _fileLabel(0)
-      , _fileLineEdit(0)
-      , _fileBrowseButton(0)
-      , _startContainer(0)
-      , _startLayout(0)
-      , _startLabel(0)
-      , _startSpinBox(0)
-      , _incrContainer(0)
-      , _incrLayout(0)
-      , _incrLabel(0)
-      , _incrSpinBox(0)
-      , _endContainer(0)
-      , _endLayout(0)
-      , _endLabel(0)
-      , _endSpinBox(0)
-      , _curveColumns()
-      , _buttonsContainer(0)
-      , _buttonsLayout(0)
-      , _okButton(0)
-      , _cancelButton(0)
+    , _gui(gui)
+    , _isExportDialog(isExportDialog)
+    , _mainLayout(0)
+    , _fileContainer(0)
+    , _fileLayout(0)
+    , _fileLabel(0)
+    , _fileLineEdit(0)
+    , _fileBrowseButton(0)
+    , _startContainer(0)
+    , _startLayout(0)
+    , _startLabel(0)
+    , _startSpinBox(0)
+    , _incrContainer(0)
+    , _incrLayout(0)
+    , _incrLabel(0)
+    , _incrSpinBox(0)
+    , _endContainer(0)
+    , _endLayout(0)
+    , _endLabel(0)
+    , _endSpinBox(0)
+    , _curveColumns()
+    , _buttonsContainer(0)
+    , _buttonsLayout(0)
+    , _okButton(0)
+    , _cancelButton(0)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4497,19 +4513,19 @@ struct EditKeyFrameDialogPrivate
     EditKeyFrameDialog::EditModeEnum mode;
     
     EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key)
-    : curveWidget(curveWidget)
-    , key(key)
-    , originalX(key->key.getTime())
-    , originalY(key->key.getValue())
-    , mainLayout(0)
-    , boxContainer(0)
-    , boxLayout(0)
-    , xLabel(0)
-    , xSpinbox(0)
-    , yLabel(0)
-    , ySpinbox(0)
-    , wasAccepted(false)
-    , mode(mode)
+        : curveWidget(curveWidget)
+        , key(key)
+        , originalX(key->key.getTime())
+        , originalY(key->key.getValue())
+        , mainLayout(0)
+        , boxContainer(0)
+        , boxLayout(0)
+        , xLabel(0)
+        , xSpinbox(0)
+        , yLabel(0)
+        , ySpinbox(0)
+        , wasAccepted(false)
+        , mode(mode)
     {
         if (mode == EditKeyFrameDialog::eEditModeLeftDerivative) {
             originalX = key->key.getLeftDerivative();
@@ -4522,8 +4538,8 @@ struct EditKeyFrameDialogPrivate
 };
 
 EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidget,const KeyPtr& key,QWidget* parent)
-: QDialog(parent)
-, _imp(new EditKeyFrameDialogPrivate(mode,curveWidget,key))
+    : QDialog(parent)
+    , _imp(new EditKeyFrameDialogPrivate(mode,curveWidget,key))
 {
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     
@@ -4536,15 +4552,15 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     
     QString xLabel;
     switch (mode) {
-        case eEditModeKeyframePosition:
-            xLabel = QString("x: ");
-            break;
-        case eEditModeLeftDerivative:
-            xLabel = QString(tr("Left slope: "));
-            break;
-        case eEditModeRightDerivative:
-            xLabel = QString(tr("Right slope: "));
-            break;
+    case eEditModeKeyframePosition:
+        xLabel = QString("x: ");
+        break;
+    case eEditModeLeftDerivative:
+        xLabel = QString(tr("Left slope: "));
+        break;
+    case eEditModeRightDerivative:
+        xLabel = QString(tr("Right slope: "));
+        break;
     }
     _imp->xLabel = new Natron::Label(xLabel,_imp->boxContainer);
     _imp->xLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size

@@ -284,6 +284,7 @@ public:
 
     const QFont & getTextFont() const;
 
+    void centerOn(double xmin, double xmax);
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
     void addCurveAndSetColor(CurveGui* curve);

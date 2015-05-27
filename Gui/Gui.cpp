@@ -5422,3 +5422,14 @@ bool Gui::isTripleSyncEnabled() const
 {
     return _imp->_isTripleSyncEnabled;
 }
+
+void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
+{
+    const std::list<ViewerTab *> &viewers = getViewersList();
+
+    for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        ViewerTab *v = (*it);
+
+        v->centerOn(left, right);
+    }
+}

@@ -39,6 +39,7 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 
 ////////////////////////// Helpers //////////////////////////
@@ -688,7 +689,7 @@ public:
 
     void createContextMenu();
 
-    void setProjectionToCurveWidget();
+    void updateCurveWidgetFrameRange();
 
     /* attributes */
     DopeSheetView *q_ptr;
@@ -1968,14 +1969,11 @@ void DopeSheetViewPrivate::createContextMenu()
     viewMenu->addAction(frameSelectionAction);
 }
 
-void DopeSheetViewPrivate::setProjectionToCurveWidget()
+void DopeSheetViewPrivate::updateCurveWidgetFrameRange()
 {
     CurveWidget *curveWidget = gui->getCurveEditor()->getCurveWidget();
 
-    double zoomBottom, dummy01, dummy02, dummy03;
-    curveWidget->getProjection(&dummy01, &zoomBottom, &dummy02, &dummy03);
-
-    curveWidget->setProjection(zoomContext.left(), zoomBottom, zoomContext.factor(), zoomContext.aspectRatio());
+    curveWidget->centerOn(zoomContext.left(), zoomContext.right());
 }
 
 /**
@@ -2041,16 +2039,6 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
 DopeSheetView::~DopeSheetView()
 {
 
-}
-
-void DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
-{
-    running_in_main_thread();
-
-    *zoomLeft = _imp->zoomContext.left();
-    *zoomBottom = _imp->zoomContext.bottom();
-    *zoomFactor = _imp->zoomContext.factor();
-    *zoomAspectRatio = _imp->zoomContext.aspectRatio();
 }
 
 void DopeSheetView::frame(double xMin, double xMax)
@@ -2784,7 +2772,8 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
         // Synchronize the curve editor
         if (_imp->gui->isTripleSyncEnabled()) {
-            _imp->setProjectionToCurveWidget();
+            _imp->updateCurveWidgetFrameRange();
+            _imp->gui->centerOpenedViewersOn(_imp->zoomContext.left(), _imp->zoomContext.right());
         }
     }
 
@@ -2959,7 +2948,8 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
     // Synchronize the curve editor
     if (_imp->gui->isTripleSyncEnabled()) {
-        _imp->setProjectionToCurveWidget();
+        _imp->updateCurveWidgetFrameRange();
+        _imp->gui->centerOpenedViewersOn(_imp->zoomContext.left(), _imp->zoomContext.right());
     }
 }
 

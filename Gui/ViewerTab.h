@@ -233,6 +233,8 @@ public:
     void getTimelineBounds(int* left,int* right) const;
     
     void setTimelineBounds(int left,int right);
+
+    void centerOn(SequenceTime left, SequenceTime right);
     
     ///Calls setTimelineBounds + set the frame range line edit
     void setFrameRange(int left,int right);
