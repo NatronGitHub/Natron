@@ -167,7 +167,7 @@ static void renderSmearDot(const boost::shared_ptr<RotoContext>& context,
     //assert(prevDotBounds.width() == nextDotBounds.width() && prevDotBounds.height() == nextDotBounds.height());
     
     
-    float fgPixels[nComps];
+    float fgPixels[4];
     
     ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
