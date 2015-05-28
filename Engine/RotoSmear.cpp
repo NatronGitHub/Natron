@@ -16,10 +16,12 @@ struct RotoSmearPrivate
 {
     QMutex smearDataMutex;
     std::pair<Point, double> lastTickPoint;
+    double lastDistToNext;
     
     RotoSmearPrivate()
     : smearDataMutex()
     , lastTickPoint()
+    , lastDistToNext(0)
     {
         
     }
@@ -247,7 +249,9 @@ RotoSmear::render(const RenderActionArgs& args)
     
     brushSpacing = std::max(brushSpacing, 0.05);
     
+    //This is the distance between each dot we render
     double maxDistPerSegment = brushSize * brushSpacing;
+    
     double halfSize = maxDistPerSegment / 2.;
 
     
@@ -291,49 +295,56 @@ RotoSmear::render(const RenderActionArgs& args)
         }
         
 
-        std::list<std::pair<Natron::Point,double> >::iterator prevIt = visiblePortion.begin();
-        std::list<std::pair<Natron::Point,double> >::iterator curIt = prevIt;
-        ++curIt;
+        std::list<std::pair<Natron::Point,double> >::iterator it = visiblePortion.begin();
         
-        std::pair<Point,double> cur = *curIt;
-        std::pair<Point,double> prev;
+        //prev is the previously rendered point. On initialization this is just the point in the list prior to cur.
+        //cur is the last point we rendered or the point before "it"
+        //renderPoint is the final point we rendered, recorded for the next call to render when we are bulding up the smear
+        std::pair<Point,double> prev,cur,renderPoint;
         
-        if (isFirstStrokeTick) {
-            prev = *prevIt;
+        double distToNext = 0;
+
+        
+        if (isFirstStrokeTick || !duringPainting) {
+            //This is the very first dot we render
+            prev = *it;
+            ++it;
+            renderSmearDot(context,stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+            renderPoint = *it;
+            cur = *it;
+            prev = cur;
+            if (it != visiblePortion.end()) {
+                ++it;
+            }
         } else {
             QMutexLocker k(&_imp->smearDataMutex);
             prev = _imp->lastTickPoint;
+            distToNext = _imp->lastDistToNext;
+            renderPoint = prev;
+            cur = prev;
         }
         
-        std::pair<Point,double> renderPoint = prev;
-
-        renderSmearDot(context,stroke,prev.first,curIt->first,prev.second,curIt->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
         
-        prev = cur;
-        
-        std::list<std::pair<Point,double> >::iterator next = curIt;
-        ++next;
-        double distToNext = 0;
-        
-        while (next!=visiblePortion.end()) {
+        while (it!=visiblePortion.end()) {
             
             
             //Render for each point a dot. Spacing is a percentage of brushSize:
             //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
             //Spacing at 0 we do not render the stroke
             
-            double dist = std::sqrt((next->first.x - cur.first.x) * (next->first.x - cur.first.x) + (next->first.y - cur.first.y) * (next->first.y - cur.first.y));
+            double dx = it->first.x - cur.first.x;
+            double dy = it->first.y - cur.first.y;
+            double dist = std::sqrt(dx * dx + dy * dy);
             
             distToNext += dist;
             if (distToNext < maxDistPerSegment || dist == 0) {
-                ++next;
-                ++curIt;
-                ++prevIt;
-                cur = *curIt;
+                //We did not cross maxDistPerSegment pixels yet along the segments since we rendered cur, continue
+                cur = *it;
+                ++it;
                 continue;
             }
             
-            //Find next point
+            //Find next point by
             double a;
             if (maxDistPerSegment >= dist) {
                 a = (distToNext - dist) == 0 ? (maxDistPerSegment - dist) / dist : (maxDistPerSegment - dist) / (distToNext - dist);
@@ -341,30 +352,32 @@ RotoSmear::render(const RenderActionArgs& args)
                 a = maxDistPerSegment / dist;
             }
             assert(a >= 0 && a <= 1);
-            renderPoint.first.x = (next->first.x - cur.first.x) * a + cur.first.x;
-            renderPoint.first.y = (next->first.y - cur.first.y) * a + cur.first.y;
-            renderPoint.second = (next->second - cur.second) * a + cur.second;
+            renderPoint.first.x = dx * a + cur.first.x;
+            renderPoint.first.y = dy * a + cur.first.y;
+            renderPoint.second = (it->second - cur.second) * a + cur.second;
 
+            //prevPoint is the location of the center of the portion of the image we should copy to the renderPoint
             Point prevPoint;
             Point v;
             v.x = renderPoint.first.x - prev.first.x;
             v.y = renderPoint.first.y - prev.first.y;
-            double vx = std::min(std::max(0. ,v.x / halfSize),.8);
-            double vy = std::min(std::max(0. ,v.y / halfSize),.8);
+            double vx = std::min(std::max(0. ,std::abs(v.x / halfSize)),.8);
+            double vy = std::min(std::max(0. ,std::abs(v.y / halfSize)),.8);
             
             prevPoint.x = prev.first.x + vx * v.x;
             prevPoint.y = prev.first.y + vy * v.y;
             renderSmearDot(context,stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
             
-            prev = cur;
+            prev = renderPoint;
             cur = renderPoint;
             distToNext = 0;
             
         }
         
-        if (isFirstStrokeTick) {
+        if (duringPainting) {
             QMutexLocker k(&_imp->smearDataMutex);
             _imp->lastTickPoint = renderPoint;
+            _imp->lastDistToNext = distToNext;
         }
     }
     node->updateLastPaintStrokeAge();
