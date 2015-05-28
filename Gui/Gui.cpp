@@ -201,6 +201,7 @@ private:
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
+    mutable QMutex _isUserScrubbingTimelineMutex;
     bool _isUserScrubbingTimeline; //< true if the user is actively moving the cursor on the timeline. False on mouse release.
     GuiAppInstance* _appInstance; //< ptr to the appInstance
 
@@ -377,6 +378,7 @@ struct GuiPrivate
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
         : _gui(gui)
+        , _isUserScrubbingTimelineMutex()
         , _isUserScrubbingTimeline(false)
         , _appInstance(app)
         , _uiUsingMainThreadCond()
@@ -4320,12 +4322,14 @@ Gui::getAvailablePaneName(const QString & baseName) const
 void
 Gui::setUserScrubbingTimeline(bool b)
 {
+    QMutexLocker k(&_imp->_isUserScrubbingTimelineMutex);
     _imp->_isUserScrubbingTimeline = b;
 }
 
 bool
 Gui::isUserScrubbingTimeline() const
 {
+    QMutexLocker k(&_imp->_isUserScrubbingTimelineMutex);
     return _imp->_isUserScrubbingTimeline;
 }
 
