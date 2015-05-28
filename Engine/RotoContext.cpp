@@ -4722,7 +4722,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         x2pl = x2 - xNext->getLeftDerivative() / 3.;
         y2pl = y2 - yNext->getLeftDerivative() / 3.;
         press2pl = press2 - pNext->getLeftDerivative() / 3.;
-        
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
          */
@@ -5080,13 +5079,53 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Nat
                                RectD* bbox) const
 {
     KeyFrameSet xSet,ySet,pSet;
+    
     {
         QMutexLocker k(&itemMutex);
         xSet = _imp->xCurve.getKeyFrames_mt_safe();
         ySet = _imp->yCurve.getKeyFrames_mt_safe();
         pSet = _imp->pressureCurve.getKeyFrames_mt_safe();
     }
-    evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,points,bbox);
+    assert(xSet.size() == ySet.size() && xSet.size() == pSet.size());
+    if (xSet.size() > 2) {
+        //Split all curves into small temp curves of 2 points, so that the interpolation yields
+        //derivative which are the same whether we are building up the stroke (actively drawing) or rendering
+        //the full stroke
+        KeyFrameSet::iterator xIt = xSet.begin();
+        KeyFrameSet::iterator yIt = ySet.begin();
+        KeyFrameSet::iterator pIt = pSet.begin();
+        KeyFrameSet::iterator xNext = xIt;
+        KeyFrameSet::iterator yNext = yIt;
+        KeyFrameSet::iterator pNext = pIt;
+        ++xNext;
+        ++yNext;
+        ++pNext;
+        bool isFirst = true;
+        for (; xNext != xSet.end(); ++xIt,++yIt,++pIt,++xNext,++yNext,++pNext) {
+            Curve xTmp,yTmp,pTmp;
+            xTmp.addKeyFrame(*xIt);
+            xTmp.addKeyFrame(*xNext);
+            yTmp.addKeyFrame(*yIt);
+            yTmp.addKeyFrame(*yNext);
+            pTmp.addKeyFrame(*pIt);
+            pTmp.addKeyFrame(*pNext);
+            RectD tmpBox;
+            evaluateStrokeInternal(xTmp.getKeyFrames_mt_safe(),yTmp.getKeyFrames_mt_safe(),pTmp.getKeyFrames_mt_safe(),mipMapLevel,points,&tmpBox);
+            if (isFirst) {
+                if (bbox) {
+                    *bbox = tmpBox;
+                }
+                isFirst = false;
+            } else {
+                if (bbox) {
+                    bbox->merge(tmpBox);
+                }
+            }
+            
+        }
+    } else {
+        evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,points,bbox);
+    }
     if (bbox) {
         double brushSize = _imp->brushSize->getValue() / 2.;
         bbox->x1 -= brushSize;

@@ -15,12 +15,13 @@ using namespace Natron;
 struct RotoSmearPrivate
 {
     QMutex smearDataMutex;
-    std::pair<Point, double> lastTickPoint;
+    std::pair<Point, double> lastTickPoint,lastCur;
     double lastDistToNext;
     
     RotoSmearPrivate()
     : smearDataMutex()
     , lastTickPoint()
+    , lastCur()
     , lastDistToNext(0)
     {
         
@@ -222,6 +223,13 @@ RotoSmear::render(const RenderActionArgs& args)
     //stroke->evaluateStroke(0, &points);
     node->getLastPaintStrokePoints(&points);
     
+    
+    if (isFirstStrokeTick || !duringPainting) {
+        QMutexLocker k(&_imp->smearDataMutex);
+        _imp->lastCur.first.x = INT_MIN;
+        _imp->lastCur.first.y = INT_MIN;
+    }
+    
     if ((int)points.size() <= 1) {
         return eStatusOK;
     }
@@ -248,7 +256,7 @@ RotoSmear::render(const RenderActionArgs& args)
     }
     
     brushSpacing = std::max(brushSpacing, 0.05);
-    
+        
     //This is the distance between each dot we render
     double maxDistPerSegment = brushSize * brushSpacing;
     
@@ -274,6 +282,7 @@ RotoSmear::render(const RenderActionArgs& args)
     
     for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
+       
         
         int nComps = plane->first.getNumComponents();
         
@@ -300,28 +309,35 @@ RotoSmear::render(const RenderActionArgs& args)
         //prev is the previously rendered point. On initialization this is just the point in the list prior to cur.
         //cur is the last point we rendered or the point before "it"
         //renderPoint is the final point we rendered, recorded for the next call to render when we are bulding up the smear
-        std::pair<Point,double> prev,cur,renderPoint;
+        std::pair<Point,double> lastCur,prev,cur,renderPoint;
         
         double distToNext = 0;
 
         
-        if (isFirstStrokeTick || !duringPainting) {
+        {
+            QMutexLocker k(&_imp->smearDataMutex);
+            lastCur = _imp->lastCur;
+        }
+        
+        if (isFirstStrokeTick || !duringPainting || (lastCur.first.x == INT_MIN && lastCur.first.y == INT_MIN)) {
             //This is the very first dot we render
             prev = *it;
             ++it;
             renderSmearDot(context,stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
             renderPoint = *it;
-            cur = *it;
-            prev = cur;
+            prev = renderPoint;
+            ++it;
             if (it != visiblePortion.end()) {
-                ++it;
+                cur = *it;
+            } else {
+                cur = prev;
             }
         } else {
             QMutexLocker k(&_imp->smearDataMutex);
             prev = _imp->lastTickPoint;
             distToNext = _imp->lastDistToNext;
             renderPoint = prev;
-            cur = prev;
+            cur = _imp->lastCur;
         }
         
         
@@ -361,8 +377,8 @@ RotoSmear::render(const RenderActionArgs& args)
             Point v;
             v.x = renderPoint.first.x - prev.first.x;
             v.y = renderPoint.first.y - prev.first.y;
-            double vx = std::min(std::max(0. ,std::abs(v.x / halfSize)),.8);
-            double vy = std::min(std::max(0. ,std::abs(v.y / halfSize)),.8);
+            double vx = std::min(std::max(0. ,std::abs(v.x / halfSize)),.7);
+            double vy = std::min(std::max(0. ,std::abs(v.y / halfSize)),.7);
             
             prevPoint.x = prev.first.x + vx * v.x;
             prevPoint.y = prev.first.y + vy * v.y;
@@ -376,8 +392,9 @@ RotoSmear::render(const RenderActionArgs& args)
         
         if (duringPainting) {
             QMutexLocker k(&_imp->smearDataMutex);
-            _imp->lastTickPoint = renderPoint;
+            _imp->lastTickPoint = prev;
             _imp->lastDistToNext = distToNext;
+            _imp->lastCur = cur;
         }
     }
     node->updateLastPaintStrokeAge();

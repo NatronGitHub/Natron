@@ -39,8 +39,8 @@ void
 Texture::fillOrAllocateTexture(const TextureRect & texRect,
                                DataTypeEnum type)
 {
-    GLuint savedTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    //GLuint savedTexture;
+    //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib a(GL_ENABLE_BIT);
 
