@@ -650,6 +650,8 @@ public:
     /* functions */
 
     // Helpers
+    QRectF keyframeRect(double keyTime, double y) const;
+
     QRectF rectToZoomCoordinates(const QRectF &rect) const;
     QRectF rectToWidgetCoordinates(const QRectF &rect) const;
     QRectF nameItemRectToRowRect(const QRectF &rect) const;
@@ -805,6 +807,19 @@ DopeSheetViewPrivate::~DopeSheetViewPrivate()
     glDeleteTextures(6, kfTexturesIDs);
     delete []kfTexturesImages;
     delete []kfTexturesIDs;
+}
+
+QRectF DopeSheetViewPrivate::keyframeRect(double keyTime, double y) const
+{
+    QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
+
+    QRectF ret;
+    ret.setHeight(KF_PIXMAP_SIZE);
+    ret.setLeft(zoomContext.toZoomCoordinates(keyTime - KF_X_OFFSET, y).x());
+    ret.setRight(zoomContext.toZoomCoordinates(keyTime + KF_X_OFFSET, y).x());
+    ret.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
+
+    return ret;
 }
 
 /**
@@ -1500,6 +1515,8 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
         DSKnobRow knobItems = dsNode->getChildData();
 
+        std::map<double, bool> nodeTimes;
+
         for (DSKnobRow::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
@@ -1510,6 +1527,8 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             if (dsKnob->getTreeItem()->isHidden()) {
                 continue;
             }
+
+            std::map<double, bool> knobTimes;
 
             KnobGui *knobGui = dsKnob->getKnobGui();
 
@@ -1524,17 +1543,21 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     double keyTime = kf.getTime();
 
+                    bool knobTimeNotExists = (knobTimes.find(keyTime) == knobTimes.end());
+                    bool nodeTimeNotExists = (nodeTimes.find(keyTime) == nodeTimes.end());
+
+                    if (knobTimeNotExists) {
+                        knobTimes[keyTime] = false;
+                    }
+
+                    if (nodeTimeNotExists) {
+                        nodeTimes[keyTime] = false;
+                    }
+
                     double y = (dsKnob->isMultiDim()) ? hierarchyView->getItemRectForDim(dsKnob, dim).center().y()
                                                       : hierarchyView->getItemRect(dsKnob).center().y();
-                    QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
 
-                    QRectF kfRect;
-                    kfRect.setHeight(KF_PIXMAP_SIZE);
-                    kfRect.setLeft(zoomContext.toZoomCoordinates(keyTime - KF_X_OFFSET, y).x());
-                    kfRect.setRight(zoomContext.toZoomCoordinates(keyTime + KF_X_OFFSET, y).x());
-                    kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-
-                    QRectF zoomKfRect = rectToZoomCoordinates(kfRect);
+                    QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, y));
 
                     DSKeyPtrList::const_iterator isSelected = selectedKeyframes.end();
 
@@ -1554,6 +1577,14 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     bool keyframeIsSelected = (isSelected != selectedKeyframes.end());
 
+                    if (keyframeIsSelected) {
+                        if (dsKnob->isMultiDim()) {
+                            knobTimes[keyTime] = true;
+                        }
+
+                        nodeTimes[keyTime] = true;
+                    }
+
                     // Draw keyframe in the knob dim row only if it's visible
                     bool drawInDimRow = dsNode->getTreeItem()->isExpanded() &&
                             ((dsKnob->isMultiDim()) ? dsKnob->getTreeItem()->isExpanded() : true);
@@ -1569,40 +1600,57 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                             drawBaseKeyframe(keyframeIsSelected, zoomKfRect);
                         }
                     }
+                }
+            }
 
-                    // Draw keyframe in multidim root knob row too
-                    bool drawInMultidimRootRow = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
+            // Draw keyframes in multidim knob root rows if necessary
+            for (std::map<double, bool>::const_iterator it = knobTimes.begin(); it != knobTimes.end(); ++it) {
+                bool drawInMultidimRootRow = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
 
-                    if (drawInMultidimRootRow) {
-                        p = zoomContext.toZoomCoordinates(keyTime,
-                                                          hierarchyView->getItemRect(dsKnob).center().y());
+                if (!drawInMultidimRootRow) {
+                    continue;
+                }
 
-                        kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-                        zoomKfRect = rectToZoomCoordinates(kfRect);
+                double keyTime = (*it).first;
+                double y = hierarchyView->getItemRect(dsKnob).center().y();
 
-                        if (keyframeIsSelected) {
-                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomKfRect);
-                        }
-                        else {
-                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomKfRect);
-                        }
-                    }
+                QRectF zoomRootKfRect = rectToZoomCoordinates(keyframeRect(keyTime, y));
 
-                    // Draw keyframe in node row
-                    if (dsNode->getDSNodeType() == DSNode::CommonNodeType) {
-                        p = zoomContext.toZoomCoordinates(keyTime,
-                                                          hierarchyView->getItemRect(dsNode).center().y());
+                bool drawSelected = (*it).second;
 
-                        kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-                        zoomKfRect = rectToZoomCoordinates(kfRect);
+                if (drawSelected) {
+                    drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomRootKfRect);
+                }
+                else {
+                    drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomRootKfRect);
+                }
 
-                        if (keyframeIsSelected) {
-                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomKfRect);
-                        }
-                        else {
-                            drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomKfRect);
-                        }
-                    }
+            }
+        }
+
+        // Draw keyframes in node rows if necessary
+        QTreeWidgetItem *nodeTreeItem = dsNode->getTreeItem();
+        for (std::map<double, bool>::const_iterator it = nodeTimes.begin(); it != nodeTimes.end(); ++it) {
+            bool drawInNodeRow = true || (nodeTreeItem->parent() && nodeTreeItem->parent()->isExpanded());
+
+            if (!drawInNodeRow) {
+                continue;
+            }
+
+            // Draw keyframe in node row
+            if (dsNode->getDSNodeType() == DSNode::CommonNodeType) {
+                double keyTime = (*it).first;
+                double y = hierarchyView->getItemRect(dsNode).center().y();
+
+                QRectF zoomNodeKfRect = rectToZoomCoordinates(keyframeRect(keyTime, y));
+
+                bool drawSelected = (*it).second;
+
+                if (drawSelected) {
+                    drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRootSelected, zoomNodeKfRect);
+                }
+                else {
+                    drawTexturedKeyframe(DopeSheetViewPrivate::kfTextureRoot, zoomNodeKfRect);
                 }
             }
         }
