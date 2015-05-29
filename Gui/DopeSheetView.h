@@ -108,6 +108,8 @@ public:
 
     void frame(double xMin, double xMax);
 
+    SequenceTime getCurrentFrame() const;
+
     void swapOpenGLBuffers() OVERRIDE FINAL;
     void redraw() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
@@ -162,6 +164,8 @@ private Q_SLOTS:
     void horizontalInterpSelectedKeyframes();
     void breakInterpSelectedKeyframes();
 
+    void copySelectedKeyframes();
+    void pasteKeyframes();
 
 private: /* functions */
     void renderText(double x, double y,

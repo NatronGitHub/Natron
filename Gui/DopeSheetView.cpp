@@ -49,7 +49,6 @@ typedef std::set<double> TimeSet;
 typedef std::pair<double, double> FrameRange;
 typedef Knob<int> * KnobIntPtr;
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
-typedef std::vector<DSSelectedKey> DSSelectedKeys;
 
 const int KF_PIXMAP_SIZE = 14;
 const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
@@ -479,7 +478,7 @@ QRectF HierarchyView::getItemRect(const DSKnob *dsKnob) const
 
 QRectF HierarchyView::getItemRectForDim(const DSKnob *dsKnob, int dim) const
 {
-    return visualItemRect(dsKnob->getTreeItem()->child(dim));
+    return visualItemRect(_imp->model->findTreeItemForDim(dsKnob, dim));
 }
 
 DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
@@ -665,8 +664,8 @@ public:
     bool isNearByClipRectRight(double time, const QRectF &clipRect) const;
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
 
-    DSSelectedKeys isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const;
-    DSSelectedKeys isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
+    std::vector<DSSelectedKey> isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const;
+    std::vector<DSSelectedKey> isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
 
     // Textures
     void initializeKeyframeTextures();
@@ -702,9 +701,11 @@ public:
     void computeGroupRange(DSNode *dsNode);
 
     // User interaction
-    DSSelectedKeys createSelectionFromRect(const QRectF &rect);
+    std::vector<DSSelectedKey> createSelectionFromRect(const QRectF &rect);
 
-    void makeSelection(const DSSelectedKeys &keys, bool booleanOp);
+    void makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp);
+
+    void unselectTreeItemsOfSelectedKeyframes();
 
     void moveCurrentFrameIndicator(double toTime);
 
@@ -752,6 +753,9 @@ public:
     // keyframe selection rect
     QRectF selectedKeysBRect;
 
+    // keyframe copy/paste
+    std::vector<DSSelectedKey> keyframesClipboard;
+
     // for various user interaction
     QPointF lastPosOnMousePress;
     QPointF lastPosOnMouseMove;
@@ -788,6 +792,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     selectedKeyframes(),
     selectionRect(),
     selectedKeysBRect(),
+    keyframesClipboard(),
     lastPosOnMousePress(),
     lastPosOnMouseMove(),
     lastTimeOffsetOnMousePress(),
@@ -930,7 +935,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                 }
             }
             else if (nodeType == DSNode::CommonNodeType) {
-                DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
+                std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
 
                 if (!keysUnderMouse.empty()) {
                     ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
@@ -942,7 +947,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             QPointF widgetPos = zoomContext.toWidgetCoordinates(zoomCoords.x(), zoomCoords.y());
             DSKnob *dsKnob =  hierarchyView->getDSKnobAt(QPoint(widgetPos.x(), widgetPos.y()), &knobDim);
 
-            DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords, knobDim);
+            std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords, knobDim);
 
             if (!keysUnderMouse.empty()) {
                 ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
@@ -1005,9 +1010,9 @@ bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zo
     return (currentFrameIndicatorBottomPoly.containsPoint(zoomCoords, Qt::OddEvenFill));
 }
 
-DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const
+std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const
 {
-    DSSelectedKeys ret;
+    std::vector<DSSelectedKey> ret;
 
     boost::shared_ptr<KnobI> knob = dsKnob->getKnobGui()->getKnob();
 
@@ -1039,9 +1044,9 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob, const QPoi
     return ret;
 }
 
-DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const
+std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const
 {
-    DSSelectedKeys ret;
+    std::vector<DSSelectedKey> ret;
 
     DSKnobRow dsKnobs = dsNode->getChildData();
 
@@ -2043,9 +2048,9 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *dsNode)
     nodeRanges[dsNode] = range;
 }
 
-DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
+std::vector<DSSelectedKey> DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
 {
-    DSSelectedKeys ret;
+    std::vector<DSSelectedKey> ret;
 
     DSNodeRows dsNodes = model->getNodeRows();
 
@@ -2083,26 +2088,42 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
     return ret;
 }
 
-void DopeSheetViewPrivate::makeSelection(const DSSelectedKeys &keys, bool booleanOp)
+void DopeSheetViewPrivate::makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp)
 {
     if (!booleanOp) {
+        unselectTreeItemsOfSelectedKeyframes();
+
         selectedKeyframes.clear();
     }
 
-    for (DSSelectedKeys::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         DSSelectedKey key = (*it);
 
         DSKeyPtrList::iterator isAlreadySelected = keyframeIsAlreadyInSelected(key);
 
         if (isAlreadySelected == selectedKeyframes.end()) {
             DSKeyPtr selected(new DSSelectedKey(key));
+
             selectedKeyframes.push_back(selected);
+
+            QTreeWidgetItem *treeItem = model->findTreeItemForDim(selected->dsKnob, selected->dimension);
+            treeItem->setSelected(true);
         }
         else {
             if (booleanOp) {
                 selectedKeyframes.erase(isAlreadySelected);
             }
         }
+    }
+}
+
+void DopeSheetViewPrivate::unselectTreeItemsOfSelectedKeyframes()
+{
+    for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        DSKeyPtr selected = (*it);
+
+        QTreeWidgetItem *treeItem = model->findTreeItemForDim(selected->dsKnob, selected->dimension);
+        treeItem->setSelected(false);
     }
 }
 
@@ -2156,6 +2177,22 @@ void DopeSheetViewPrivate::createContextMenu()
                      q_ptr, SLOT(deleteSelectedKeyframes()));
     editMenu->addAction(removeSelectedKeyframesAction);
 
+    QAction *copySelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                                  kShortcutIDActionDopeSheetEditorCopySelectedKeyframes,
+                                                                  kShortcutDescActionDopeSheetEditorCopySelectedKeyframes,
+                                                                  editMenu);
+    QObject::connect(copySelectedKeyframesAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(copySelectedKeyframes()));
+    editMenu->addAction(copySelectedKeyframesAction);
+
+    QAction *pasteKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorPasteKeyframes,
+                                                           kShortcutDescActionDopeSheetEditorPasteKeyframes,
+                                                           editMenu);
+    QObject::connect(pasteKeyframesAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(pasteKeyframes()));
+    editMenu->addAction(pasteKeyframesAction);
+
     QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                kShortcutIDActionDopeSheetEditorSelectAllKeyframes,
                                                                kShortcutDescActionDopeSheetEditorSelectAllKeyframes,
@@ -2164,13 +2201,6 @@ void DopeSheetViewPrivate::createContextMenu()
                      q_ptr, SLOT(selectAllKeyframes()));
     editMenu->addAction(selectAllKeyframesAction);
 
-    QAction *frameSelectionAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
-                                                           kShortcutIDActionDopeSheetEditorFrameSelection,
-                                                           kShortcutDescActionDopeSheetEditorFrameSelection,
-                                                           viewMenu);
-    QObject::connect(frameSelectionAction, SIGNAL(triggered()),
-                     q_ptr, SLOT(frame()));
-    viewMenu->addAction(frameSelectionAction);
 
     // Interpolation actions
     QAction *constantInterpAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
@@ -2266,6 +2296,15 @@ void DopeSheetViewPrivate::createContextMenu()
                      q_ptr, SLOT(breakInterpSelectedKeyframes()));
 
     interpMenu->addAction(breakInterpAction);
+
+    // View actions
+    QAction *frameSelectionAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorFrameSelection,
+                                                           kShortcutDescActionDopeSheetEditorFrameSelection,
+                                                           viewMenu);
+    QObject::connect(frameSelectionAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(frame()));
+    viewMenu->addAction(frameSelectionAction);
 }
 
 void DopeSheetViewPrivate::updateCurveWidgetFrameRange()
@@ -2290,6 +2329,7 @@ void DopeSheetViewPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum
 
     pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, q_ptr));
 }
+
 
 /**
  * @brief DopeSheetView::DopeSheetView
@@ -2361,6 +2401,11 @@ void DopeSheetView::frame(double xMin, double xMax)
     _imp->zoomContext.fill(xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top());
 
     redraw();
+}
+
+SequenceTime DopeSheetView::getCurrentFrame() const
+{
+    return _imp->timeline->currentFrame();
 }
 
 /**
@@ -2555,6 +2600,8 @@ void DopeSheetView::computeSelectedKeysBRect()
 
 void DopeSheetView::clearKeyframeSelection()
 {
+    _imp->unselectTreeItemsOfSelectedKeyframes();
+
     _imp->selectedKeyframes.clear();
 
     computeSelectedKeysBRect();
@@ -2704,6 +2751,43 @@ void DopeSheetView::breakInterpSelectedKeyframes()
     running_in_main_thread();
 
     _imp->setSelectedKeysInterpolation(Natron::eKeyframeTypeBroken);
+}
+
+void DopeSheetView::copySelectedKeyframes()
+{
+    running_in_main_thread();
+
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
+    _imp->keyframesClipboard.clear();
+
+    for (DSKeyPtrList::const_iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        _imp->keyframesClipboard.push_back(*selectedKey);
+    }
+}
+
+void DopeSheetView::pasteKeyframes()
+{
+    running_in_main_thread();
+
+    std::vector<DSSelectedKey> toPaste;
+
+    for (std::vector<DSSelectedKey>::const_iterator it = _imp->keyframesClipboard.begin(); it != _imp->keyframesClipboard.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        // Retrieve the tree item associated with the key dimension
+        QTreeWidgetItem *dimTreeItem = _imp->model->findTreeItemForDim(key.dsKnob, key.dimension);
+
+        if (dimTreeItem->isSelected()) {
+            toPaste.push_back(key);
+        }
+    }
+
+    _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, this));
 }
 
 void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
@@ -3064,7 +3148,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     }
                 }
                 else if (nodeType == DSNode::CommonNodeType) {
-                    DSSelectedKeys keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
+                    std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
                         _imp->makeSelection(keysUnderMouse, modCASIsShift(e));
@@ -3083,7 +3167,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 DSKnob *dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos(), &knobDim);
 
                 if (dsKnob) {
-                    DSSelectedKeys keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos(), knobDim);
+                    std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos(), knobDim);
 
                     if (!keysUnderMouse.empty()) {
                         _imp->makeSelection(keysUnderMouse, modCASIsShift(e));
@@ -3207,7 +3291,7 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
     case DopeSheetView::esSelectionByRect:
     {
         _imp->computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
-        DSSelectedKeys tempSelection = _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect));
+        std::vector<DSSelectedKey> tempSelection = _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect));
 
         _imp->makeSelection(tempSelection, modCASIsShift(e));
 
@@ -3371,6 +3455,12 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
         breakInterpSelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key)) {
+        copySelectedKeyframes();
+    }
+    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
+        pasteKeyframes();
     }
 }
 

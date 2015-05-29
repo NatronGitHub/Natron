@@ -78,6 +78,9 @@ public:
     DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
     DSKnob *findDSKnob(KnobGui *knobGui) const;
 
+    QTreeWidgetItem *findTreeItemForDim(const DSKnob *dsKnob, int dimension) const;
+    int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
+
     DSNode *getGroupDSNode(DSNode *dsNode) const;
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
@@ -126,6 +129,7 @@ public:
     QTreeWidgetItem *getTreeItem() const;
 
     KnobGui *getKnobGui() const;
+    boost::shared_ptr<KnobI> getInternalKnob() const;
 
     bool isMultiDim() const;
 

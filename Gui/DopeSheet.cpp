@@ -28,6 +28,7 @@ typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, DSNode *> TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
+const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 1;
 
 ////////////////////////// Helpers //////////////////////////
 
@@ -348,7 +349,7 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
 
     if (ret->isMultiDim()) {
         if (itemIt != knobTreeItem) {
-            *dimension = itemIt->indexOfChild(knobTreeItem);
+            *dimension = getDim(ret, knobTreeItem);
         }
         else {
             *dimension = -1;
@@ -378,6 +379,37 @@ DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
     }
 
     return NULL;
+}
+
+QTreeWidgetItem *DopeSheet::findTreeItemForDim(const DSKnob *dsKnob, int dimension) const
+{
+    if ( (dsKnob->isMultiDim() && (dimension == -1) )  || (!dsKnob->isMultiDim() && !dimension) ) {
+        return dsKnob->getTreeItem();
+    }
+
+    QTreeWidgetItem *ret = 0;
+
+    QTreeWidgetItem *knobRootItem = dsKnob->getTreeItem();
+
+    for (int i = 0; i < knobRootItem->childCount(); ++i) {
+        QTreeWidgetItem *child = knobRootItem->child(i);
+
+        if (dimension == child->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt()) {
+            ret = child;
+
+            break;
+        }
+    }
+
+    return ret;
+}
+
+int DopeSheet::getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const
+{
+    assert(dsKnob->isMultiDim());
+    assert(dsKnob->getTreeItem()->indexOfChild(item) != -1);
+
+    return item->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt();
 }
 
 DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
@@ -508,16 +540,19 @@ DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
 
     if (knob->getDimension() <= 1) {
         QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        nameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, 0);
         nameItem->setText(0, knob->getDescription().c_str());
 
         dsKnob = new DSKnob(nameItem, knobGui);
     }
     else {
         QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
         multiDimRootNameItem->setText(0, knob->getDescription().c_str());
 
         for (int i = 0; i < knob->getDimension(); ++i) {
             QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
+            dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
             dimItem->setText(0, knob->getDimensionName(i).c_str());
         }
 
@@ -580,11 +615,13 @@ public:
     /* attributes */
     QTreeWidgetItem *nameItem;
     KnobGui *knobGui;
+    boost::shared_ptr<KnobI> knob;
 };
 
 DSKnobPrivate::DSKnobPrivate() :
     nameItem(0),
-    knobGui(0)
+    knobGui(0),
+    knob()
 {}
 
 DSKnobPrivate::~DSKnobPrivate()
@@ -616,8 +653,11 @@ DSKnob::DSKnob(QTreeWidgetItem *nameItem,
     QObject(),
     _imp(new DSKnobPrivate)
 {
+    assert(knobGui);
+
     _imp->nameItem = nameItem;
     _imp->knobGui = knobGui;
+    _imp->knob = knobGui->getKnob();
 }
 
 DSKnob::~DSKnob()
@@ -636,6 +676,11 @@ QTreeWidgetItem *DSKnob::getTreeItem() const
 KnobGui *DSKnob::getKnobGui() const
 {
     return _imp->knobGui;
+}
+
+boost::shared_ptr<KnobI> DSKnob::getInternalKnob() const
+{
+    return _imp->knob;
 }
 
 /**

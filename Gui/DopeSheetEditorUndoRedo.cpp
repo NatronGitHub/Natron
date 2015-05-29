@@ -530,3 +530,65 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 
     _view->redraw();
 }
+
+
+////////////////////////// DSAddKeysCommand //////////////////////////
+
+DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
+                                       DopeSheetView *view,
+                                       QUndoCommand *parent) :
+    QUndoCommand(parent),
+    _keys(keys),
+    _view(view)
+{
+    setText(QObject::tr("Paste keyframes"));
+}
+
+void DSPasteKeysCommand::undo()
+{
+    addOrRemoveKeyframe(false);
+}
+
+void DSPasteKeysCommand::redo()
+{
+    addOrRemoveKeyframe(true);
+}
+
+void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
+{
+    for (std::vector<DSSelectedKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        boost::shared_ptr<KnobI> knob = key.dsKnob->getInternalKnob();
+        knob->beginChanges();
+
+        SequenceTime currentTime = _view->getCurrentFrame();
+
+        double keyTime = key.key.getTime();
+
+        if (add) {
+            Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
+            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+
+            if (isDouble) {
+                isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime), key.dimension);
+            } else if (isBool) {
+                isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime), key.dimension);
+            } else if (isInt) {
+                isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime), key.dimension);
+            } else if (isString) {
+                isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime), key.dimension);
+            }
+        }
+        else {
+            knob->deleteValueAtTime(currentTime, key.dimension);
+        }
+
+        knob->endChanges();
+    }
+
+    _view->redraw();
+    // check if redraw is called more than 1
+}

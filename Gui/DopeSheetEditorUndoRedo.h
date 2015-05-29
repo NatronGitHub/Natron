@@ -297,5 +297,29 @@ private:
 };
 
 
+/**
+ * @brief The DSAddKeysCommand class
+ *
+ *
+ */
+class DSPasteKeysCommand : public QUndoCommand
+{
+public:
+    DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
+                       DopeSheetView *view,
+                       QUndoCommand *parent = 0);
+
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+
+private:
+    void addOrRemoveKeyframe(bool add);
+
+private:
+    std::vector<DSSelectedKey> _keys;
+    DopeSheetView *_view;
+};
+
+
 
 #endif // DOPESHEETEDITORUNDOREDO_H

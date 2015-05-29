@@ -492,6 +492,12 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
 #define kShortcutDescActionDopeSheetEditorRenameNode "Rename node label"
 
+#define kShortcutIDActionDopeSheetEditorCopySelectedKeyframes "copyselectedkeyframes"
+#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy selected keyframes"
+
+#define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
+#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste keyframes"
+
 
 inline
 QKeySequence

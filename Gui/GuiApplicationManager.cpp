@@ -1997,6 +1997,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, kShortcutDescActionCurveEditorCubic, Qt::NoModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, kShortcutDescActionCurveEditorHorizontal, Qt::NoModifier, Qt::Key_H);
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, kShortcutDescActionCurveEditorBreak, Qt::NoModifier, Qt::Key_X);
+
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, kShortcutDescActionDopeSheetEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, kShortcutDescActionDopeSheetEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
 } // populateShortcuts
 
 void
