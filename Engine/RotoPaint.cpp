@@ -76,6 +76,7 @@ RotoPaint::initializeKnobs()
 void
 RotoPaint::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
+    
     EffectInstance* input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
@@ -89,13 +90,13 @@ RotoPaint::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::Imag
 Natron::ImagePremultiplicationEnum
 RotoPaint::getOutputPremultiplication() const
 {
+  
     EffectInstance* input = getInput(0);
     if (input) {
         return input->getOutputPremultiplication();
     } else {
         return eImagePremultiplicationPremultiplied;
     }
-    
 }
 
 double
@@ -111,11 +112,12 @@ RotoPaint::getPreferredAspectRatio() const
 }
 
 void
-RotoPaint::onInputChanged(int /*inputNb*/)
+RotoPaint::onInputChanged(int inputNb)
 {
     
     boost::shared_ptr<Node> inputNode = getNode()->getInput(0);
     getNode()->getRotoContext()->onRotoPaintInputChanged(inputNode);
+    EffectInstance::onInputChanged(inputNb);
     
 }
 
@@ -237,7 +239,8 @@ RotoPaint::render(const RenderActionArgs& args)
                                     args.roi,
                                     RectD(),
                                     neededComps,
-                                    bgDepth);
+                                    bgDepth,
+                                    this);
         ImageList rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {

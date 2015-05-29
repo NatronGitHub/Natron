@@ -1323,6 +1323,7 @@ EffectInstance::getImage(int inputNb,
                                                           RectD(),
                                                           requestedComps,
                                                           depth,
+                                                          this,
                                                           inputImagesThreadLocal), &inputImages);
     
     if (inputImages.empty() || retCode != eRenderRoIRetCodeOk) {
@@ -3252,7 +3253,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
     
-    
+    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
         //We have to return the downscale image, so make sure it has been computed
         if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
@@ -3275,10 +3277,18 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), it->second.downscaleImage->getBounds(), mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
                 
                 bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
-                it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
-                                                           getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                           getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                                           -1, false, unPremultIfNeeded, tmp.get());
+                
+                if (useAlpha0ForRGBToRGBAConversion) {
+                    it->second.downscaleImage->convertToFormatAlpha0(it->second.downscaleImage->getBounds(),
+                                                               getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                               getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                                               -1, false, unPremultIfNeeded, tmp.get());
+                } else {
+                    it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
+                                                               getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                               getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                                               -1, false, unPremultIfNeeded, tmp.get());
+                }
             }
             it->second.downscaleImage = tmp;
         }
@@ -3467,7 +3477,8 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
                                                  inputRoIPixelCoords, //< roi in pixel coordinates
                                                  RectD(), // < did we precompute any RoD to speed-up the call ?
                                                  componentsToRender, //< requested comps
-                                                 inputPrefDepth);
+                                                 inputPrefDepth,
+                                                 this);
                             
                             
                            
@@ -4116,7 +4127,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  downscaledRectToRender,
                                  RectD(),
                                  comps,
-                                 outputClipPrefDepth);
+                                 outputClipPrefDepth,
+                                 this);
         if (identityInput) {
             EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
             if (renderOk == eRenderRoIRetCodeAborted) {

@@ -1068,7 +1068,10 @@ public:
     boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
     boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
     boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
-    
+    boost::shared_ptr<Bool_Knob> getPressureOpacityKnob() const;
+    boost::shared_ptr<Bool_Knob> getPressureSizeKnob() const;
+    boost::shared_ptr<Bool_Knob> getPressureHardnessKnob() const;
+    boost::shared_ptr<Bool_Knob> getBuildupKnob() const;
     
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points,

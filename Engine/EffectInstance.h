@@ -185,8 +185,20 @@ public:
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
+        const EffectInstance* caller;
         
         RenderRoIArgs()
+        : time(0)
+        , scale()
+        , mipMapLevel(0)
+        , view(0)
+        , byPassCache(false)
+        , roi()
+        , preComputedRoD()
+        , components()
+        , bitdepth(eImageBitDepthFloat)
+        , inputImagesList()
+        , caller(0)
         {
         }
 
@@ -199,17 +211,19 @@ public:
                       const RectD & preComputedRoD_,
                       const std::list<Natron::ImageComponents>& components_,
                       Natron::ImageBitDepthEnum bitdepth_,
+                      const EffectInstance* caller,
                       const EffectInstance::InputImagesMap& inputImages =  EffectInstance::InputImagesMap())
-            : time(time_)
-              , scale(scale_)
-              , mipMapLevel(mipMapLevel_)
-              , view(view_)
-              , byPassCache(byPassCache_)
-              , roi(roi_)
-              , preComputedRoD(preComputedRoD_)
-              , components(components_)
-              , bitdepth(bitdepth_)
-              , inputImagesList(inputImages)
+        : time(time_)
+        , scale(scale_)
+        , mipMapLevel(mipMapLevel_)
+        , view(view_)
+        , byPassCache(byPassCache_)
+        , roi(roi_)
+        , preComputedRoD(preComputedRoD_)
+        , components(components_)
+        , bitdepth(bitdepth_)
+        , inputImagesList(inputImages)
+        , caller(caller)
         {
         }
     };

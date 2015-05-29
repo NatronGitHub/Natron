@@ -27,6 +27,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QDialogButtonBox>
+#include <QColorDialog>
 #include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -627,7 +628,9 @@ RotoGui::RotoGui(NodeGui* node,
         QPixmap colorWheelPix;
         appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL,&colorWheelPix);
         _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
+        _imp->colorWheelButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
         _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        QObject::connect(_imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()));
         _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
         _imp->compositingOperatorButton = new ComboBox(_imp->brushButtonsBar);
         {
@@ -4114,3 +4117,23 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
     }
 }
 
+void
+RotoGui::onColorWheelButtonClicked()
+{
+    QColorDialog dialog(_imp->viewerTab);
+    QColor previousColor = _imp->colorPickerLabel->getCurrentColor();
+    dialog.setCurrentColor(previousColor);
+    QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
+    if (!dialog.exec()) {
+        _imp->colorPickerLabel->setColor(previousColor);
+    } else {
+        _imp->colorPickerLabel->setColor(dialog.currentColor());
+    }
+}
+
+void
+RotoGui::onDialogCurrentColorChanged(const QColor& color)
+{
+    assert(_imp->colorPickerLabel);
+    _imp->colorPickerLabel->setColor(color);
+}

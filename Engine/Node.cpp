@@ -276,6 +276,7 @@ struct Node::Implementation
     , strokeAgeToRender(-1)
     , strokeImage()
     , lastStrokePoints()
+    , useAlpha0ToConvertFromRGBToRGBA(false)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -474,6 +475,11 @@ struct Node::Implementation
     int strokeImageAge, strokeAgeToRender;
     ImagePtr strokeImage;
     std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+    
+    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
+    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
+    //won't be able to paint the alpha channel
+    bool useAlpha0ToConvertFromRGBToRGBA;
 };
 
 /**
@@ -661,6 +667,14 @@ Node::load(const std::string & parentMultiInstanceName,
         group->notifyNodeActivated(thisShared);
     }
     
+    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
+    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
+    //won't be able to paint the alpha channel
+    const QString& pluginID = _imp->plugin->getPluginID();
+    if (pluginID == PLUGINID_OFX_ROTO) {
+        _imp->useAlpha0ToConvertFromRGBToRGBA = true;
+    }
+    
     computeHash();
     assert(_imp->liveInstance);
     
@@ -674,6 +688,12 @@ Node::load(const std::string & parentMultiInstanceName,
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
 } // load
+
+bool
+Node::usesAlpha0ToConvertFromRGBToRGBA() const
+{
+    return _imp->useAlpha0ToConvertFromRGBToRGBA;
+}
 
 void
 Node::setWhileCreatingPaintStroke(bool creating)
@@ -3858,7 +3878,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                      renderWindow,
                                                                      rod,
                                                                      requestedComps, //< preview is always rgb...
-                                                                     getBitDepth() ) ,&planes);
+                                                                     getBitDepth(), _imp->liveInstance.get()) ,&planes);
         if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
             return false;
         }
@@ -5894,6 +5914,7 @@ Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->paintStroke = stroke;
+    
 }
 
 boost::shared_ptr<RotoStrokeItem>
@@ -6588,6 +6609,10 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    
+    if (!dynamic_cast<ViewerInstance*>(getLiveInstance())) {
+        return connectInputBase(input, inputNumber);
+    }
     
     ///cannot connect more than _maxInputs inputs.
     assert(inputNumber <= _maxInputs);

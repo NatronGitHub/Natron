@@ -288,6 +288,9 @@ public Q_SLOTS:
     void removeFeatherForSelectedCurve();
     void lockSelectedCurves();
     
+    void onColorWheelButtonClicked();
+    void onDialogCurrentColorChanged(const QColor& color);
+    
 private:
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);

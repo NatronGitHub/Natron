@@ -1982,9 +1982,10 @@ private:
                                                              false);
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
-
+                    
                     ImageList planes;
-                    EffectInstance::RenderRoIRetCode retCode = activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                    EffectInstance::RenderRoIRetCode retCode =
+                    activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                   i, //< the view to render
@@ -1992,9 +1993,10 @@ private:
                                                                                   renderWindow, //< the region of interest (in pixel coordinates)
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
-                                                                                  imageDepth),&planes);
+                                                                                  imageDepth,
+                                                                                  _imp->output),&planes);
                     if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                         _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+                        _imp->scheduler->notifyRenderFailure("Error caught while rendering");
                         return;
                     }
                     
@@ -2090,6 +2092,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    rod,
                                                    components,
                                                    imageDepth,
+                                                   _effect,
                                                    inputImages);
         try {
             ImageList planes;

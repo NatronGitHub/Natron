@@ -137,6 +137,26 @@
 #define kRotoBrushVisiblePortionParamLabel "Visible portion"
 #define kRotoBrushVisiblePortionParamHint "Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end."
 
+#define kRotoBrushPressureLabelParam "pressureAlters"
+#define kRotoBrushPressureLabelParamLabel "Pressure alters:"
+#define kRotoBrushPressureLabelParamHint ""
+
+#define kRotoBrushPressureOpacityParam "pressureOpacity"
+#define kRotoBrushPressureOpacityParamLabel "Opacity"
+#define kRotoBrushPressureOpacityParamHint "Alters the opacity of the paint brush proportionate to changes in pen pressure"
+
+#define kRotoBrushPressureSizeParam "pressureSize"
+#define kRotoBrushPressureSizeParamLabel "Size"
+#define kRotoBrushPressureSizeParamHint "Alters the size of the paint brush proportionate to changes in pen pressure"
+
+#define kRotoBrushPressureHardnessParam "pressureHardness"
+#define kRotoBrushPressureHardnessParamLabel "Hardness"
+#define kRotoBrushPressureHardnessParamHint "Alters the hardness of the paint brush proportionate to changes in pen pressure"
+
+#define kRotoBrushBuildupParam "buildUp"
+#define kRotoBrushBuildupParamLabel "Build-up"
+#define kRotoBrushBuildupParamHint "When checked, the paint stroke builds up when painted over itself"
+
 class Bezier;
 
 struct BezierCPPrivate
@@ -810,6 +830,7 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> brushSpacing;
     boost::shared_ptr<Double_Knob> brushHardness;
     boost::shared_ptr<Double_Knob> effectStrength;
+    boost::shared_ptr<Bool_Knob> pressureOpacity,pressureSize,pressureHardness,buildUp;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     boost::shared_ptr<Choice_Knob> sourceColor;
     Curve xCurve,yCurve,pressureCurve;
@@ -849,6 +870,10 @@ struct RotoStrokeItemPrivate
     , brushSpacing(new Double_Knob(NULL, kRotoBrushSpacingParamLabel, 1, false))
     , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
+    , pressureOpacity(new Bool_Knob(NULL, kRotoBrushPressureLabelParamLabel, 1, false))
+    , pressureSize(new Bool_Knob(NULL, kRotoBrushPressureSizeParamLabel, 1, false))
+    , pressureHardness(new Bool_Knob(NULL, kRotoBrushPressureHardnessParamLabel, 1, false))
+    , buildUp(new Bool_Knob(NULL, kRotoBrushBuildupParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
     , effectNode()
@@ -890,6 +915,33 @@ struct RotoStrokeItemPrivate
         effectStrength->setMinimum(0);
         effectStrength->setMaximum(100);
         
+        pressureOpacity->setName(kRotoBrushPressureOpacityParam);
+        pressureOpacity->setHintToolTip(kRotoBrushPressureOpacityParamHint);
+        pressureOpacity->populate();
+        pressureOpacity->setAnimationEnabled(false);
+        pressureOpacity->setDefaultValue(true);
+        
+        pressureSize->setName(kRotoBrushPressureSizeParam);
+        pressureSize->populate();
+        pressureSize->setHintToolTip(kRotoBrushPressureSizeParamHint);
+        pressureSize->setAnimationEnabled(false);
+        pressureSize->setDefaultValue(false);
+ 
+        
+        pressureHardness->setName(kRotoBrushPressureHardnessParam);
+        pressureHardness->populate();
+        pressureHardness->setHintToolTip(kRotoBrushPressureHardnessParamHint);
+        pressureHardness->setAnimationEnabled(false);
+        pressureHardness->setDefaultValue(false);
+        
+        buildUp->setName(kRotoBrushBuildupParam);
+        buildUp->populate();
+        buildUp->setHintToolTip(kRotoBrushBuildupParamHint);
+        buildUp->setDefaultValue(false);
+        buildUp->setAnimationEnabled(false);
+        buildUp->setDefaultValue(true);
+ 
+        
         visiblePortion->setName(kRotoBrushVisiblePortionParam);
         visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
         visiblePortion->populate();
@@ -910,7 +962,7 @@ struct RotoStrokeItemPrivate
             std::vector<std::string> choices;
             choices.push_back("foreground");
             choices.push_back("background");
-            for (int i = 0; i < 9; ++i) {
+            for (int i = 1; i < 10; ++i) {
                 std::stringstream ss;
                 ss << "background " << i + 1;
                 choices.push_back(ss.str());
@@ -954,6 +1006,11 @@ struct RotoContextPrivate
     boost::weak_ptr<Double_Knob> brushSpacingKnob;
     boost::weak_ptr<Double_Knob> brushHardnessKnob;
     boost::weak_ptr<Double_Knob> brushEffectKnob;
+    boost::weak_ptr<String_Knob> pressureLabelKnob;
+    boost::weak_ptr<Bool_Knob> pressureOpacityKnob;
+    boost::weak_ptr<Bool_Knob> pressureSizeKnob;
+    boost::weak_ptr<Bool_Knob> pressureHardnessKnob;
+    boost::weak_ptr<Bool_Knob> buildUpKnob;
     boost::weak_ptr<Double_Knob> brushVisiblePortionKnob;
     boost::weak_ptr<Choice_Knob> sourceTypeKnob;
     
@@ -1077,7 +1134,7 @@ struct RotoContextPrivate
                 std::vector<std::string> choices;
                 choices.push_back("foreground");
                 choices.push_back("background");
-                for (int i = 0; i < 9; ++i) {
+                for (int i = 1; i < 10; ++i) {
                     std::stringstream ss;
                     ss << "background " << i + 1;
                     choices.push_back(ss.str());
@@ -1137,6 +1194,64 @@ struct RotoContextPrivate
             knobs.push_back(effectStrength);
             brushEffectKnob = effectStrength;
             
+            boost::shared_ptr<String_Knob> pressureLabel = Natron::createKnob<String_Knob>(effect, kRotoBrushPressureLabelParamLabel);
+            pressureLabel->setName(kRotoBrushPressureLabelParam);
+            pressureLabel->setHintToolTip(kRotoBrushPressureLabelParamHint);
+            pressureLabel->setAsLabel();
+            pressureLabel->setAnimationEnabled(false);
+            pressureLabel->setAllDimensionsEnabled(false);
+            shapePage->addKnob(pressureLabel);
+            knobs.push_back(pressureLabel);
+            pressureLabelKnob = pressureLabel;
+            
+            boost::shared_ptr<Bool_Knob> pressureOpacity = Natron::createKnob<Bool_Knob>(effect, kRotoBrushPressureOpacityParamLabel);
+            pressureOpacity->setName(kRotoBrushPressureOpacityParam);
+            pressureOpacity->setHintToolTip(kRotoBrushPressureOpacityParamHint);
+            pressureOpacity->setAnimationEnabled(false);
+            pressureOpacity->setDefaultValue(true);
+            pressureOpacity->setAddNewLine(false);
+            pressureOpacity->setAllDimensionsEnabled(false);
+            pressureOpacity->setIsPersistant(false);
+            shapePage->addKnob(pressureOpacity);
+            knobs.push_back(pressureOpacity);
+            pressureOpacityKnob = pressureOpacity;
+            
+            boost::shared_ptr<Bool_Knob> pressureSize = Natron::createKnob<Bool_Knob>(effect, kRotoBrushPressureSizeParamLabel);
+            pressureSize->setName(kRotoBrushPressureSizeParam);
+            pressureSize->setHintToolTip(kRotoBrushPressureSizeParamHint);
+            pressureSize->setAnimationEnabled(false);
+            pressureSize->setDefaultValue(false);
+            pressureSize->setAddNewLine(false);
+            pressureSize->setAllDimensionsEnabled(false);
+            pressureSize->setIsPersistant(false);
+            knobs.push_back(pressureSize);
+            shapePage->addKnob(pressureSize);
+            pressureSizeKnob = pressureSize;
+            
+            boost::shared_ptr<Bool_Knob> pressureHardness = Natron::createKnob<Bool_Knob>(effect, kRotoBrushPressureHardnessParamLabel);
+            pressureHardness->setName(kRotoBrushPressureHardnessParam);
+            pressureHardness->setHintToolTip(kRotoBrushPressureHardnessParamHint);
+            pressureHardness->setAnimationEnabled(false);
+            pressureHardness->setDefaultValue(false);
+            pressureHardness->setAddNewLine(true);
+            pressureHardness->setAllDimensionsEnabled(false);
+            pressureHardness->setIsPersistant(false);
+            knobs.push_back(pressureHardness);
+            shapePage->addKnob(pressureHardness);
+            pressureHardnessKnob = pressureHardness;
+            
+            boost::shared_ptr<Bool_Knob> buildUp = Natron::createKnob<Bool_Knob>(effect, kRotoBrushBuildupParamLabel);
+            buildUp->setName(kRotoBrushBuildupParam);
+            buildUp->setHintToolTip(kRotoBrushBuildupParamHint);
+            buildUp->setAnimationEnabled(false);
+            buildUp->setDefaultValue(false);
+            buildUp->setAddNewLine(true);
+            buildUp->setAllDimensionsEnabled(false);
+            buildUp->setIsPersistant(false);
+            knobs.push_back(buildUp);
+            shapePage->addKnob(buildUp);
+            buildUpKnob = buildUp;
+            
             boost::shared_ptr<Double_Knob> visiblePortion = Natron::createKnob<Double_Knob>(effect, kRotoBrushVisiblePortionParamLabel, 2, false);
             visiblePortion->setName(kRotoBrushVisiblePortionParam);
             visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
@@ -1152,7 +1267,7 @@ struct RotoContextPrivate
             visiblePortion->setIsPersistant(false);
             shapePage->addKnob(visiblePortion);
             visiblePortion->setDimensionName(0, "start");
-            visiblePortion->setDimensionName(0, "end");
+            visiblePortion->setDimensionName(1, "end");
             knobs.push_back(visiblePortion);
             brushVisiblePortionKnob = visiblePortion;
         }

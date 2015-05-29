@@ -2290,6 +2290,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setSpacing(0);
     
     _colorLabel = new ColorPickerLabel(this,colorContainer);
+    _colorLabel->setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+                                                       "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
+                                                       "To deselect the picker left click anywhere."
+                                                       "Note that by default %1 converts to linear the color picked\n"
+                                                       "because all the processing pipeline is linear, but you can turn this off in the\n"
+                                                       "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
+
     _colorLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
@@ -2971,12 +2978,6 @@ ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
       , _pickingEnabled(false)
     , _knob(knob)
 {
-    setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
-                                            "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
-                                            "To deselect the picker left click anywhere."
-                                            "Note that by default %1 converts to linear the color picked\n"
-                                            "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                            "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
     setMouseTracking(true);
 }
 

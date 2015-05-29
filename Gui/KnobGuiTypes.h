@@ -509,6 +509,11 @@ public:
 
     void setColor(const QColor & color);
 
+    const QColor& getCurrentColor() const
+    {
+        return _currentColor;
+    }
+
     void setPickingEnabled(bool enabled);
     
     void setEnabledMode(bool enabled);

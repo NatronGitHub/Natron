@@ -968,7 +968,9 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 assert(*it);
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
-                assert(output_i);
+                if (!output_i) {
+                    continue;
+                }
                 NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
                 assert(output);
                 if (output) {

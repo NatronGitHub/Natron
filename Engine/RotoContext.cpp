@@ -4286,6 +4286,10 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     addKnob(_imp->effectStrength);
     addKnob(_imp->visiblePortion);
     addKnob(_imp->sourceColor);
+    addKnob(_imp->pressureOpacity);
+    addKnob(_imp->pressureSize);
+    addKnob(_imp->pressureHardness);
+    addKnob(_imp->buildUp);
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -4595,6 +4599,7 @@ RotoStrokeItem::refreshNodesConnections()
             if (_imp->mergeNode->getInput(0) != upstreamNode) {
                 _imp->mergeNode->disconnectInput(0);
                 _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                assert(_imp->mergeNode->getInput(0) == upstreamNode);
             }
         }
         
@@ -5163,6 +5168,30 @@ boost::shared_ptr<Double_Knob>
 RotoStrokeItem::getBrushVisiblePortionKnob() const
 {
     return _imp->visiblePortion;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoStrokeItem::getPressureOpacityKnob() const
+{
+    return _imp->pressureOpacity;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoStrokeItem::getPressureSizeKnob() const
+{
+    return _imp->pressureSize;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoStrokeItem::getPressureHardnessKnob() const
+{
+    return _imp->pressureHardness;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoStrokeItem::getBuildupKnob() const
+{
+    return _imp->buildUp;
 }
 
 ////////////////////////////////////RotoContext////////////////////////////////////
@@ -7359,8 +7388,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     int endPoint = (int)std::ceil((points.size() * writeOnEnd));
     assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
     
+    boost::shared_ptr<Bool_Knob> buildUpKnob = stroke->getBuildupKnob();
+    bool doBuildUp = buildUpKnob->getValueAtTime(time);
     
-    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    boost::shared_ptr<Bool_Knob> pressureOpacityKnob = stroke->getPressureOpacityKnob();
+    boost::shared_ptr<Bool_Knob> pressureSizeKnob = stroke->getPressureSizeKnob();
+    boost::shared_ptr<Bool_Knob> pressureHardnessKnob = stroke->getPressureHardnessKnob();
+    
+    bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
+    bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
+    bool pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
+    
+    cairo_set_operator(cr, doBuildUp ? CAIRO_OPERATOR_ADD : CAIRO_OPERATOR_OVER);
     
     
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
