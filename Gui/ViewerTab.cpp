@@ -624,7 +624,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
 
@@ -663,7 +663,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->gammaBox->setValue(1.0);
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
     
-    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     _imp->gammaSlider->setToolTip(gammaTt);
     QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
     _imp->secondRowLayout->addWidget(_imp->gammaSlider);
@@ -1929,7 +1929,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,Natron::ePenTypePen,1.,false)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -1996,7 +1996,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
+ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,Natron::PenType pen, double pressure, bool isTabletEvent)
 {
     
     QPointF transformViewportPos;
@@ -2037,7 +2037,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e, pen, pressure, isTabletEvent) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -2054,7 +2054,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,transformViewportPos, transformPos);
+        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY, pressure, transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -2072,7 +2072,10 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
                                    double scaleY,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
-                                   QMouseEvent* e)
+                                   QInputEvent* e,
+                                   Natron::PenType pen,
+                                   double pressure,
+                                   bool isTabletEvent)
 {
     bool didSomething = false;
 
@@ -2088,7 +2091,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pen,pressure,isTabletEvent)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -2100,7 +2103,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pen,pressure,isTabletEvent)) {
             return true;
         }
     }
@@ -3050,7 +3053,9 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         assert(roto == _imp->currentRoto.second);
 
         ///Remove the previous buttons bar
-        int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) );
+        QWidget* previousBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) ;
+        assert(previousBar);
+        int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
         assert(buttonsBarIndex >= 0);
         _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
 
@@ -3058,7 +3063,9 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         ///Set the new buttons bar
         int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
         assert(viewerIndex >= 0);
-        _imp->mainLayout->insertWidget( viewerIndex, _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole ) );
+        QWidget* currentBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole );
+        assert(currentBar);
+        _imp->mainLayout->insertWidget( viewerIndex, currentBar);
     }
 }
 

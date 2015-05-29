@@ -650,7 +650,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->timeline->currentFrame() ) {
-            _imp->gui->setUserScrubbingTimeline(true);
+            _imp->gui->setUserScrubbingSlider(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
             Q_EMIT frameChanged(tseq);
         }
@@ -714,8 +714,8 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
     if (_imp->state == eTimelineStateDraggingCursor) {
         
         bool wasScrubbing = false;
-        if (_imp->gui->isUserScrubbingTimeline()) {
-            _imp->gui->setUserScrubbingTimeline(false);
+        if (_imp->gui->isUserScrubbingSlider()) {
+            _imp->gui->setUserScrubbingSlider(false);
             wasScrubbing = true;
         }
         _imp->gui->refreshAllPreviews();

@@ -33,6 +33,7 @@ using Natron::ScaleTypeEnum;
 struct ScaleSliderQWidgetPrivate;
 class QColor;
 class QFont;
+class Gui;
 class ScaleSliderQWidget
     : public QWidget
 {
@@ -50,6 +51,7 @@ public:
                        double top, // the maximum value
                        double initialPos, // the initial value
                        DataTypeEnum dataType,
+                       Gui* gui,
                        Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
     
@@ -80,7 +82,7 @@ public:
     void setUseLineColor(bool use, const QColor& color);
     
 Q_SIGNALS:
-    void editingFinished();
+    void editingFinished(bool hasMovedOnce);
     void positionChanged(double);
 
 public Q_SLOTS:

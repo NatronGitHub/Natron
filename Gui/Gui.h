@@ -318,9 +318,9 @@ public:
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
     
-    void setUserScrubbingTimeline(bool b);
+    void setUserScrubbingSlider(bool b);
 
-    bool isUserScrubbingTimeline() const;
+    bool isUserScrubbingSlider() const;
 
     /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();
@@ -658,6 +658,7 @@ private:
     void createMenuActions();
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
+    //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     

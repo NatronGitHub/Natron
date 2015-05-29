@@ -427,7 +427,7 @@ TrackerGui::penMotion(double scaleX,
                       double scaleY,
                       const QPointF & viewportPos,
                       const QPointF & pos,
-                      QMouseEvent* /*e*/)
+                      QInputEvent* /*e*/)
 {
     bool didSomething = false;
     const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
@@ -439,7 +439,7 @@ TrackerGui::penMotion(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            if ( effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos) ) {
+            if ( effect->onOverlayPenMotion_public(scaleX,scaleY, 1., viewportPos, pos) ) {
                 didSomething = true;
             }
         }

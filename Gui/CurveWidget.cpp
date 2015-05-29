@@ -3169,8 +3169,8 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
         _imp->_drawSelectedKeyFramesBbox = true;
     }
     if (prevState == eEventStateDraggingTimeline) {
-        if (_imp->_gui->isUserScrubbingTimeline()) {
-            _imp->_gui->setUserScrubbingTimeline(false);
+        if (_imp->_gui->isUserScrubbingSlider()) {
+            _imp->_gui->setUserScrubbingSlider(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
                 _imp->_gui->renderAllViewers();
@@ -3293,7 +3293,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         break;
 
     case eEventStateDraggingTimeline:
-            _imp->_gui->setUserScrubbingTimeline(true);
+            _imp->_gui->setUserScrubbingSlider(true);
             _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
             _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
             break;

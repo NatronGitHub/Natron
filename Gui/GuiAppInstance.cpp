@@ -459,7 +459,7 @@ GuiAppInstance::getGui() const
 bool
 GuiAppInstance::shouldRefreshPreview() const
 {
-    return !_imp->_gui->isUserScrubbingTimeline();
+    return !_imp->_gui->isUserScrubbingSlider();
 }
 
 
@@ -1026,7 +1026,7 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
 }
 
 bool
-GuiAppInstance::isUserScrubbingTimeline() const
+GuiAppInstance::isUserScrubbingSlider() const
 {
-    return _imp->_gui ? _imp->_gui->isUserScrubbingTimeline() : false;
+    return _imp->_gui ? _imp->_gui->isUserScrubbingSlider() : false;
 }

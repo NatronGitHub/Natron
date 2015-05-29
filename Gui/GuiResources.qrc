@@ -33,7 +33,7 @@
         <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/deep_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file>
+        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file> 
         <file>Resources/Images/GroupingIcons/Set3/image_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/keyer_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/merge_grouping_3.png</file>
@@ -218,5 +218,18 @@
         <file>Resources/Images/linkCursor.png</file>
         <file>Resources/Images/expoOFF.png</file>
         <file>Resources/Images/expoON.png</file>
+        <file>Resources/Images/rotopaint_blur.png</file>
+        <file>Resources/Images/rotopaint_buildup_off.png</file>
+        <file>Resources/Images/rotopaint_buildup_on.png</file>
+        <file>Resources/Images/rotopaint_burn.png</file>
+        <file>Resources/Images/rotopaint_clone.png</file>
+        <file>Resources/Images/rotopaint_dodge.png</file>
+        <file>Resources/Images/rotopaint_eraser.png</file>
+        <file>Resources/Images/rotopaint_pressure_off.png</file>
+        <file>Resources/Images/rotopaint_pressure_on.png</file>
+        <file>Resources/Images/rotopaint_reveal.png</file>
+        <file>Resources/Images/rotopaint_sharpen.png</file>
+        <file>Resources/Images/rotopaint_smear.png</file>
+        <file>Resources/Images/rotopaint_solid.png</file>
     </qresource>
 </RCC>

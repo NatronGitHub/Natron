@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+class QInputEvent;
 class QMouseEvent;
 class QToolBar;
 class QWidget;
@@ -173,7 +174,8 @@ public:
 
     bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,
+                   Natron::PenType pen, double pressure,bool isTabletEvent);
 
     bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 

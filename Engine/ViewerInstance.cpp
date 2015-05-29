@@ -419,9 +419,15 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     assert(_imp->uiContext);
-    int zoomMipMapLevel = getMipMapLevelFromZoomFactor();
+    double zoomFactor = _imp->uiContext->getZoomFactor();
+    int zoomMipMapLevel;
+    {
+        double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
+        zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
+    }
+    
     mipMapLevel = std::max( (double)mipMapLevel, (double)zoomMipMapLevel );
-    if (getApp()->isUserScrubbingTimeline() && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
+    if (zoomFactor < 1. && getApp()->isUserScrubbingSlider() && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
         mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
     }

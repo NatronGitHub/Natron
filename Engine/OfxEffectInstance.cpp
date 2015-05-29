@@ -2246,6 +2246,7 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
 bool
 OfxEffectInstance::onOverlayPenMotion(double scaleX,
                                       double scaleY,
+                                      double pressure,
                                       const QPointF & viewportPos,
                                       const QPointF & pos)
 {
@@ -2275,7 +2276,7 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         } else {*/
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
+        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, pressure);
         /*}*/
         
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {

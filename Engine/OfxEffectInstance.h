@@ -182,7 +182,7 @@ public:
     virtual bool hasOverlay() const OVERRIDE FINAL;
     virtual void drawOverlay(double scaleX, double scaleY) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(double scaleX, double scaleY,
+    virtual bool onOverlayPenMotion(double scaleX, double scaleY,double pressure,
                                     const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayKeyDown(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;

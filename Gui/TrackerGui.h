@@ -28,6 +28,7 @@ class TrackerPanel;
 class QKeyEvent;
 class QPointF;
 class QMouseEvent;
+class QInputEvent;
 
 struct TrackerGuiPrivate;
 class TrackerGui
@@ -54,7 +55,7 @@ public:
 
     bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e);
 
     bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 

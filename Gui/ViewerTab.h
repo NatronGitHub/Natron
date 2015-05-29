@@ -46,6 +46,7 @@ class RotoGui;
 class NodeGui;
 class TimeLine;
 class TrackerGui;
+class QInputEvent;
 struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab
@@ -90,7 +91,8 @@ public:
 
     bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,
+                                 Natron::PenType pen, double pressure, bool isTabletEvent);
 
     bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
@@ -108,7 +110,7 @@ private:
     
     bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,Natron::PenType pen, double pressure, bool isTabletEvent);
     bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
                                         Natron::KeyboardModifiers km);
     bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,

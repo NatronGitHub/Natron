@@ -377,7 +377,7 @@ public:
     void setCreatingNode(bool b);
     bool isCreatingNode() const;
     
-    virtual bool isUserScrubbingTimeline() const { return false; }
+    virtual bool isUserScrubbingSlider() const { return false; }
     
 public Q_SLOTS:
     

@@ -172,6 +172,7 @@ struct RotoPanelPrivate
     Button* addLayerButton;
     Button* removeItemButton;
     QIcon iconLayer,iconBezier,iconVisible,iconUnvisible,iconLocked,iconUnlocked,iconInverted,iconUninverted,iconWheel;
+    QIcon iconStroke,iconEraser,iconSmear,iconSharpen,iconBlur,iconClone,iconReveal,iconDodge,iconBurn;
     TreeWidget* tree;
     QTreeWidgetItem* treeHeader;
     SelectedItems selectedItems;
@@ -188,53 +189,62 @@ struct RotoPanelPrivate
 
     RotoPanelPrivate(RotoPanel* publicInter,
                      const boost::shared_ptr<NodeGui>&   n)
-        : publicInterface(publicInter)
-        , node(n)
-        , context( n->getNode()->getRotoContext())
-        , mainLayout(0)
-        , splineContainer(0)
-        , splineLayout(0)
-        , splineLabel(0)
-        , currentKeyframe(0)
-        , ofLabel(0)
-        , totalKeyframes(0)
-        , prevKeyframe(0)
-        , nextKeyframe(0)
-        , addKeyframe(0)
-        , removeKeyframe(0)
-        , clearAnimation(0)
-        , buttonContainer(0)
-        , buttonLayout(0)
-        , addLayerButton(0)
-        , removeItemButton(0)
-        , iconLayer()
-        , iconBezier()
-        , iconVisible()
-        , iconUnvisible()
-        , iconLocked()
-        , iconUnlocked()
-        , iconInverted()
-        , iconUninverted()
-        , iconWheel()
-        , tree(0)
-        , treeHeader(0)
-        , selectedItems()
-        , items()
-        , editedItem(NULL)
-        , editedItemName()
-        , lastRightClickedItem(NULL)
-        , clipBoard()
-        , keyframes()
-        , dialogEdition(eColorDialogEditingNothing)
-        , settingNameFromGui(false)
+    : publicInterface(publicInter)
+    , node(n)
+    , context( n->getNode()->getRotoContext())
+    , mainLayout(0)
+    , splineContainer(0)
+    , splineLayout(0)
+    , splineLabel(0)
+    , currentKeyframe(0)
+    , ofLabel(0)
+    , totalKeyframes(0)
+    , prevKeyframe(0)
+    , nextKeyframe(0)
+    , addKeyframe(0)
+    , removeKeyframe(0)
+    , clearAnimation(0)
+    , buttonContainer(0)
+    , buttonLayout(0)
+    , addLayerButton(0)
+    , removeItemButton(0)
+    , iconLayer()
+    , iconBezier()
+    , iconVisible()
+    , iconUnvisible()
+    , iconLocked()
+    , iconUnlocked()
+    , iconInverted()
+    , iconUninverted()
+    , iconWheel()
+    , iconStroke()
+    , iconEraser()
+    , iconSmear()
+    , iconSharpen()
+    , iconBlur()
+    , iconClone()
+    , iconReveal()
+    , iconDodge()
+    , iconBurn()
+    , tree(0)
+    , treeHeader(0)
+    , selectedItems()
+    , items()
+    , editedItem(NULL)
+    , editedItemName()
+    , lastRightClickedItem(NULL)
+    , clipBoard()
+    , keyframes()
+    , dialogEdition(eColorDialogEditingNothing)
+    , settingNameFromGui(false)
     {
         assert(n && context);
     }
-
+    
     void updateSplinesInfoGUI(int time);
-
+    
     void buildTreeFromContext();
-
+    
     TreeItems::iterator findItem(const boost::shared_ptr<RotoItem>& item)
     {
         for (TreeItems::iterator it = items.begin(); it != items.end(); ++it) {
@@ -403,6 +413,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->treeHeader->setText(COL_SCRIPT_NAME, tr("Script"));
 
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
+    QPixmap pixPaintBrush,pixEraser,pixBlur,pixSmear,pixSharpen,pixDodge,pixBurn,pixClone,pixReveal;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
     appPTR->getIcon(NATRON_PIXMAP_BEZIER, &pixBezier);
     appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixVisible);
@@ -414,7 +425,16 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
     appPTR->getIcon(NATRON_PIXMAP_ROTO_MERGE, &pixmerge);
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, &pixDefault);
-
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SOLID, &pixPaintBrush);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_ERASER, &pixEraser);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BLUR, &pixBlur);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SMEAR, &pixSmear);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SHARPEN, &pixSharpen);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_DODGE, &pixDodge);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BURN, &pixBurn);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_CLONE, &pixClone);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_REVEAL, &pixReveal);
+    
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
     _imp->iconInverted.addPixmap(pixInverted);
@@ -424,6 +444,16 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->iconLocked.addPixmap(pixLocked);
     _imp->iconUnlocked.addPixmap(pixUnlocked);
     _imp->iconWheel.addPixmap(pixWheel);
+    
+    _imp->iconStroke.addPixmap(pixPaintBrush);
+    _imp->iconEraser.addPixmap(pixEraser);
+    _imp->iconBlur.addPixmap(pixBlur);
+    _imp->iconSmear.addPixmap(pixSmear);
+    _imp->iconSharpen.addPixmap(pixSharpen);
+    _imp->iconDodge.addPixmap(pixDodge);
+    _imp->iconBurn.addPixmap(pixBurn);
+    _imp->iconClone.addPixmap(pixClone);
+    _imp->iconReveal.addPixmap(pixReveal);
 
     _imp->treeHeader->setIcon(COL_ACTIVATED, _imp->iconVisible);
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
@@ -910,11 +940,45 @@ RotoPanelPrivate::insertItemRecursively(int time,
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (drawable) {
+        
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(drawable.get());
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;
         makeSolidIcon(overlayColor, overlayIcon);
-        treeItem->setIcon(COL_LABEL, iconBezier);
+        if (!isStroke) {
+            treeItem->setIcon(COL_LABEL, iconBezier);
+        } else {
+            switch (isStroke->getBrushType()) {
+                case Natron::eRotoStrokeTypeBlur:
+                    treeItem->setIcon(COL_LABEL, iconBlur);
+                    break;
+                case Natron::eRotoStrokeTypeBurn:
+                    treeItem->setIcon(COL_LABEL, iconBurn);
+                    break;
+                case Natron::eRotoStrokeTypeClone:
+                    treeItem->setIcon(COL_LABEL, iconClone);
+                    break;
+                case Natron::eRotoStrokeTypeDodge:
+                    treeItem->setIcon(COL_LABEL, iconDodge);
+                    break;
+                case Natron::eRotoStrokeTypeEraser:
+                    treeItem->setIcon(COL_LABEL, iconEraser);
+                    break;
+                case Natron::eRotoStrokeTypeReveal:
+                    treeItem->setIcon(COL_LABEL, iconReveal);
+                    break;
+                case Natron::eRotoStrokeTypeSharpen:
+                    treeItem->setIcon(COL_LABEL, iconSharpen);
+                    break;
+                case Natron::eRotoStrokeTypeSmear:
+                    treeItem->setIcon(COL_LABEL, iconSmear);
+                    break;
+                case Natron::eRotoStrokeTypeSolid:
+                    treeItem->setIcon(COL_LABEL, iconStroke);
+                    break;
+            }
+        }
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
         treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(publicInterface->tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
         double shapeColor[3];

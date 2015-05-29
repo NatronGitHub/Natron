@@ -4826,6 +4826,7 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
 bool
 EffectInstance::onOverlayPenMotion_public(double scaleX,
                                           double scaleY,
+                                          double pressure, 
                                           const QPointF & viewportPos,
                                           const QPointF & pos)
 {
@@ -4838,7 +4839,7 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos);
+    bool ret = onOverlayPenMotion(scaleX,scaleY,pressure, viewportPos, pos);
     if (!ret) {
         ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos);
     }

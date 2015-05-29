@@ -55,6 +55,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Menu.h"
+#include "Gui/KnobGuiTypes.h"
+#include "Gui/SpinBox.h"
 
 #include "Global/GLIncludes.h"
 
@@ -183,6 +185,24 @@ struct RotoGui::RotoGuiPrivate
     Button* rippleEditEnabled;
     Button* addKeyframeButton;
     Button* removeKeyframeButton;
+    
+    QWidget* brushButtonsBar;
+    QHBoxLayout* brushButtonsBarLayout;
+    ColorPickerLabel* colorPickerLabel;
+    Button* colorWheelButton;
+    ComboBox* compositingOperatorButton;
+    QLabel* opacityLabel;
+    SpinBox* opacitySpinbox;
+    Button*  pressureOpacityButton;
+    QLabel* sizeLabel;
+    SpinBox* sizeSpinbox;
+    Button* pressureSizeButton;
+    QLabel* hardnessLabel;
+    SpinBox* hardnessSpinBox;
+    Button* pressureHardnessButton;
+    QLabel* buildUpLabel;
+    Button* buildUpButton;
+    
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
     RotoToolButton* bezierEditionTool;
@@ -226,6 +246,22 @@ struct RotoGui::RotoGuiPrivate
     , rippleEditEnabled(0)
     , addKeyframeButton(0)
     , removeKeyframeButton(0)
+    , brushButtonsBar(0)
+    , brushButtonsBarLayout(0)
+    , colorPickerLabel(0)
+    , colorWheelButton(0)
+    , compositingOperatorButton(0)
+    , opacityLabel(0)
+    , opacitySpinbox(0)
+    , pressureOpacityButton(0)
+    , sizeLabel(0)
+    , sizeSpinbox(0)
+    , pressureSizeButton(0)
+    , hardnessLabel(0)
+    , hardnessSpinBox(0)
+    , pressureHardnessButton(0)
+    , buildUpLabel(0)
+    , buildUpButton(0)
     , selectTool(0)
     , pointsEditionTool(0)
     , bezierEditionTool(0)
@@ -311,7 +347,7 @@ struct RotoGui::RotoGuiPrivate
     
     bool isBboxClickAnywhereEnabled() const
     {
-        return bboxClickAnywhere->isDown();
+        return bboxClickAnywhere ? bboxClickAnywhere->isDown() : false;
     }
     
     void toggleToolsSelection(QToolButton* selected);
@@ -439,7 +475,7 @@ RotoGui::RotoGui(NodeGui* node,
     QPixmap pixRippleEnabled,pixRippleDisabled;
     QPixmap pixFeatherEnabled,pixFeatherDisabled;
     QPixmap pixBboxClickEnabled,pixBboxClickDisabled;
-    QPixmap pixPaintBrush;
+    QPixmap pixPaintBrush,pixEraser,pixBlur,pixSmear,pixSharpen,pixDodge,pixBurn,pixClone,pixReveal;
 
     appPTR->getIcon(Natron::NATRON_PIXMAP_BEZIER_32, &pixBezier);
     appPTR->getIcon(Natron::NATRON_PIXMAP_ELLIPSE,&pixEllipse);
@@ -468,107 +504,214 @@ RotoGui::RotoGui(NodeGui* node,
     appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_UNVISIBLE, &pixFeatherDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_ENABLED, &pixBboxClickEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_DISABLED, &pixBboxClickDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, &pixPaintBrush);
-
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SOLID, &pixPaintBrush);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_ERASER, &pixEraser);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BLUR, &pixBlur);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SMEAR, &pixSmear);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SHARPEN, &pixSharpen);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_DODGE, &pixDodge);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BURN, &pixBurn);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_CLONE, &pixClone);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_REVEAL, &pixReveal);
+    
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
     _imp->selectionButtonsBar = new QWidget(parent);
     _imp->selectionButtonsBarLayout = new QHBoxLayout(_imp->selectionButtonsBar);
     _imp->selectionButtonsBarLayout->setContentsMargins(3, 2, 0, 0);
-    QIcon autoKeyIc;
-    autoKeyIc.addPixmap(pixAutoKeyingEnabled,QIcon::Normal,QIcon::On);
-    autoKeyIc.addPixmap(pixAutoKeyingDisabled,QIcon::Normal,QIcon::Off);
-
-
-    _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
-    _imp->autoKeyingEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->autoKeyingEnabled->setCheckable(true);
-    _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
-    _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
-    _imp->autoKeyingEnabled->setToolTip( tr("Auto-keying: When activated any movement to a control point will set a keyframe at the current time.") );
-    QObject::connect( _imp->autoKeyingEnabled, SIGNAL( clicked(bool) ), this, SLOT( onAutoKeyingButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
-
-    QIcon featherLinkIc;
-    featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
-    featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
-    _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
-    _imp->featherLinkEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->featherLinkEnabled->setCheckable(true);
-    _imp->featherLinkEnabled->setChecked( _imp->context->isFeatherLinkEnabled() );
-    _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
-    _imp->featherLinkEnabled->setToolTip( tr("Feather-link: When activated the feather points will follow the same"
-                                             " movement as their counter-part does.") );
-    QObject::connect( _imp->featherLinkEnabled, SIGNAL( clicked(bool) ), this, SLOT( onFeatherLinkButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
-
-    QIcon enableFeatherIC;
-    enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
-    enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
-    _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
-    _imp->displayFeatherEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->displayFeatherEnabled->setCheckable(true);
-    _imp->displayFeatherEnabled->setChecked(true);
-    _imp->displayFeatherEnabled->setDown(true);
-    _imp->displayFeatherEnabled->setToolTip( tr("When checked, the feather curve applied to the shape(s) will be visible and editable.") );
-    QObject::connect( _imp->displayFeatherEnabled, SIGNAL( clicked(bool) ), this, SLOT( onDisplayFeatherButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->displayFeatherEnabled);
-
-    QIcon stickSelIc;
-    stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
-    stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
-    _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
-    _imp->stickySelectionEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->stickySelectionEnabled->setCheckable(true);
-    _imp->stickySelectionEnabled->setChecked(false);
-    _imp->stickySelectionEnabled->setDown(false);
-    _imp->stickySelectionEnabled->setToolTip( tr("Sticky-selection: When activated, "
-                                                 " clicking outside of any shape will not clear the current selection.") );
-    QObject::connect( _imp->stickySelectionEnabled, SIGNAL( clicked(bool) ), this, SLOT( onStickySelectionButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
     
-    QIcon bboxClickIc;
-    bboxClickIc.addPixmap(pixBboxClickEnabled,QIcon::Normal,QIcon::On);
-    bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
-    _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
-    _imp->bboxClickAnywhere->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->bboxClickAnywhere->setCheckable(true);
-    _imp->bboxClickAnywhere->setChecked(true);
-    _imp->bboxClickAnywhere->setDown(true);
-    _imp->bboxClickAnywhere->setToolTip( tr("Easy bounding box manipulation: When activated, "
-                                                 " clicking inside of the bounding box of selected points will move the points."
-                                            "When deactivated, only clicking on the cross will move the points.") );
-    QObject::connect( _imp->bboxClickAnywhere, SIGNAL( clicked(bool) ), this, SLOT( onBboxClickButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->bboxClickAnywhere);
-    
-
-    QIcon rippleEditIc;
-    rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
-    rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
-    _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
-    _imp->rippleEditEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->rippleEditEnabled->setCheckable(true);
-    _imp->rippleEditEnabled->setChecked( _imp->context->isRippleEditEnabled() );
-    _imp->rippleEditEnabled->setDown( _imp->context->isRippleEditEnabled() );
-    _imp->rippleEditEnabled->setToolTip( tr("Ripple-edit: When activated, moving a control point"
-                                            " will move it by the same amount for all the keyframes "
-                                            "it has.") );
-    QObject::connect( _imp->rippleEditEnabled, SIGNAL( clicked(bool) ), this, SLOT( onRippleEditButtonClicked(bool) ) );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
-
-    _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
-    _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
-    _imp->addKeyframeButton->setToolTip( tr("Set a keyframe at the current time for the selected shape(s), if any.") );
-    _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
-
-    _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
-    _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
-    _imp->removeKeyframeButton->setToolTip("Remove a keyframe at the current time for the selected shape(s), if any.");
-    _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
-    _imp->selectionButtonsBarLayout->addStretch();
-
+    if (!_imp->context->isRotoPaint()) {
+        QIcon autoKeyIc;
+        autoKeyIc.addPixmap(pixAutoKeyingEnabled,QIcon::Normal,QIcon::On);
+        autoKeyIc.addPixmap(pixAutoKeyingDisabled,QIcon::Normal,QIcon::Off);
+        
+        
+        _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
+        _imp->autoKeyingEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->autoKeyingEnabled->setCheckable(true);
+        _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
+        _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
+        _imp->autoKeyingEnabled->setToolTip( tr("Auto-keying: When activated any movement to a control point will set a keyframe at the current time.") );
+        QObject::connect( _imp->autoKeyingEnabled, SIGNAL( clicked(bool) ), this, SLOT( onAutoKeyingButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
+        
+        QIcon featherLinkIc;
+        featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
+        featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
+        _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
+        _imp->featherLinkEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->featherLinkEnabled->setCheckable(true);
+        _imp->featherLinkEnabled->setChecked( _imp->context->isFeatherLinkEnabled() );
+        _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
+        _imp->featherLinkEnabled->setToolTip( tr("Feather-link: When activated the feather points will follow the same"
+                                                 " movement as their counter-part does.") );
+        QObject::connect( _imp->featherLinkEnabled, SIGNAL( clicked(bool) ), this, SLOT( onFeatherLinkButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
+        
+        QIcon enableFeatherIC;
+        enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
+        enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
+        _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
+        _imp->displayFeatherEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->displayFeatherEnabled->setCheckable(true);
+        _imp->displayFeatherEnabled->setChecked(true);
+        _imp->displayFeatherEnabled->setDown(true);
+        _imp->displayFeatherEnabled->setToolTip( tr("When checked, the feather curve applied to the shape(s) will be visible and editable.") );
+        QObject::connect( _imp->displayFeatherEnabled, SIGNAL( clicked(bool) ), this, SLOT( onDisplayFeatherButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->displayFeatherEnabled);
+        
+        QIcon stickSelIc;
+        stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
+        stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
+        _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
+        _imp->stickySelectionEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->stickySelectionEnabled->setCheckable(true);
+        _imp->stickySelectionEnabled->setChecked(false);
+        _imp->stickySelectionEnabled->setDown(false);
+        _imp->stickySelectionEnabled->setToolTip( tr("Sticky-selection: When activated, "
+                                                     " clicking outside of any shape will not clear the current selection.") );
+        QObject::connect( _imp->stickySelectionEnabled, SIGNAL( clicked(bool) ), this, SLOT( onStickySelectionButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
+        
+        QIcon bboxClickIc;
+        bboxClickIc.addPixmap(pixBboxClickEnabled,QIcon::Normal,QIcon::On);
+        bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
+        _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
+        _imp->bboxClickAnywhere->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->bboxClickAnywhere->setCheckable(true);
+        _imp->bboxClickAnywhere->setChecked(true);
+        _imp->bboxClickAnywhere->setDown(true);
+        _imp->bboxClickAnywhere->setToolTip( tr("Easy bounding box manipulation: When activated, "
+                                                " clicking inside of the bounding box of selected points will move the points."
+                                                "When deactivated, only clicking on the cross will move the points.") );
+        QObject::connect( _imp->bboxClickAnywhere, SIGNAL( clicked(bool) ), this, SLOT( onBboxClickButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->bboxClickAnywhere);
+        
+        
+        QIcon rippleEditIc;
+        rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
+        rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
+        _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
+        _imp->rippleEditEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->rippleEditEnabled->setCheckable(true);
+        _imp->rippleEditEnabled->setChecked( _imp->context->isRippleEditEnabled() );
+        _imp->rippleEditEnabled->setDown( _imp->context->isRippleEditEnabled() );
+        _imp->rippleEditEnabled->setToolTip( tr("Ripple-edit: When activated, moving a control point"
+                                                " will move it by the same amount for all the keyframes "
+                                                "it has.") );
+        QObject::connect( _imp->rippleEditEnabled, SIGNAL( clicked(bool) ), this, SLOT( onRippleEditButtonClicked(bool) ) );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
+        
+        _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
+        _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
+        _imp->addKeyframeButton->setToolTip( tr("Set a keyframe at the current time for the selected shape(s), if any.") );
+        _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
+        
+        _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
+        _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
+        _imp->removeKeyframeButton->setToolTip("Remove a keyframe at the current time for the selected shape(s), if any.");
+        _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
+        _imp->selectionButtonsBarLayout->addStretch();
+    } else { // if (!_imp->context->isRotoPaint()) {
+        
+        _imp->brushButtonsBar = new QWidget(parent);
+        _imp->brushButtonsBarLayout = new QHBoxLayout(_imp->brushButtonsBar);
+        _imp->brushButtonsBarLayout->setContentsMargins(3, 2, 0, 0);
+        
+        _imp->colorPickerLabel = new ColorPickerLabel(0,_imp->brushButtonsBar);
+        _imp->colorPickerLabel->setColor(Qt::white);
+        _imp->colorPickerLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->brushButtonsBarLayout->addWidget(_imp->colorPickerLabel);
+        QPixmap colorWheelPix;
+        appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL,&colorWheelPix);
+        _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
+        _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
+        _imp->compositingOperatorButton = new ComboBox(_imp->brushButtonsBar);
+        {
+            std::vector<std::string> operators,tooltips;
+            getNatronCompositingOperators(&operators, &tooltips);
+            assert(operators.size() == tooltips.size());
+            for (std::size_t i = 0; i < operators.size(); ++i) {
+                _imp->compositingOperatorButton->addItem(operators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
+            }
+        }
+        _imp->brushButtonsBarLayout->addWidget(_imp->compositingOperatorButton);
+        
+        _imp->opacityLabel = new Natron::Label(tr("Opacity:"),_imp->brushButtonsBar);
+        _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
+        
+        _imp->opacitySpinbox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+        _imp->opacitySpinbox->setMinimum(0);
+        _imp->opacitySpinbox->setMaximum(1);
+        _imp->opacitySpinbox->setValue(1.);
+        _imp->brushButtonsBarLayout->addWidget(_imp->opacitySpinbox);
+        
+        QPixmap pressureOnPix,pressureOffPix,buildupOnPix,buildupOffPix;
+        appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED,&pressureOnPix);
+        appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED,&pressureOffPix);
+        appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED,&buildupOnPix);
+        appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED,&buildupOffPix);
+        
+        QIcon pressureIc;
+        pressureIc.addPixmap(pressureOnPix,QIcon::Normal,QIcon::On);
+        pressureIc.addPixmap(pressureOffPix,QIcon::Normal,QIcon::Off);
+        _imp->pressureOpacityButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        _imp->pressureOpacityButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->pressureOpacityButton->setCheckable(true);
+        _imp->pressureOpacityButton->setChecked(true);
+        _imp->pressureOpacityButton->setDown(true);
+        _imp->brushButtonsBarLayout->addWidget(_imp->pressureOpacityButton);
+        
+        _imp->sizeLabel = new Natron::Label(tr("Size:"),_imp->brushButtonsBar);
+        _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
+        
+        _imp->sizeSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
+        _imp->sizeSpinbox->setMinimum(0);
+        _imp->sizeSpinbox->setMaximum(1000);
+        _imp->sizeSpinbox->setValue(25.);
+        _imp->brushButtonsBarLayout->addWidget(_imp->sizeSpinbox);
+        
+        _imp->pressureSizeButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        _imp->pressureSizeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->pressureSizeButton->setCheckable(true);
+        _imp->pressureSizeButton->setChecked(false);
+        _imp->pressureSizeButton->setDown(false);
+        _imp->brushButtonsBarLayout->addWidget(_imp->pressureSizeButton);
+        
+        _imp->hardnessLabel = new Natron::Label(tr("Hardness:"),_imp->brushButtonsBar);
+        _imp->brushButtonsBarLayout->addWidget(_imp->hardnessLabel);
+        
+        _imp->hardnessSpinBox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+        _imp->hardnessSpinBox->setMinimum(0);
+        _imp->hardnessSpinBox->setMaximum(1);
+        _imp->hardnessSpinBox->setValue(0.25);
+        _imp->brushButtonsBarLayout->addWidget(_imp->hardnessSpinBox);
+        
+        _imp->pressureHardnessButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        _imp->pressureHardnessButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->pressureHardnessButton->setCheckable(true);
+        _imp->pressureHardnessButton->setChecked(false);
+        _imp->pressureHardnessButton->setDown(false);
+        _imp->brushButtonsBarLayout->addWidget(_imp->pressureHardnessButton);
+        
+        _imp->buildUpLabel = new Natron::Label(tr("Build-up:"),_imp->brushButtonsBar);
+        _imp->brushButtonsBarLayout->addWidget(_imp->buildUpLabel);
+        
+        QIcon buildupIc;
+        buildupIc.addPixmap(buildupOnPix,QIcon::Normal,QIcon::On);
+        buildupIc.addPixmap(buildupOffPix,QIcon::Normal,QIcon::Off);
+        _imp->buildUpButton = new Button(buildupIc,"",_imp->brushButtonsBar);
+        _imp->buildUpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->buildUpButton->setCheckable(true);
+        _imp->buildUpButton->setChecked(true);
+        _imp->buildUpButton->setDown(true);
+        _imp->brushButtonsBarLayout->addWidget(_imp->buildUpButton);
+        
+        _imp->brushButtonsBarLayout->addStretch();
+    } // if (!_imp->context->isRotoPaint()) {
     
     ////////////////////////////////////// CREATING VIEWER LEFT TOOLBAR //////////////////////////////////////
     
@@ -652,7 +795,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->paintBrushTool->setDown(false);
         QKeySequence brushPaintShortcut(Qt::Key_N);
         QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
-        createToolAction(_imp->paintBrushTool, QIcon(), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
+        createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
         _imp->paintBrushTool->setDefaultAction(brushPaintAct);
         _imp->allTools.push_back(_imp->paintBrushTool);
         _imp->toolbar->addWidget(_imp->paintBrushTool);
@@ -664,8 +807,8 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->cloneBrushTool->setText("Clone");
         _imp->cloneBrushTool->setDown(false);
         QKeySequence cloneBrushShortcut(Qt::Key_C);
-        QAction* cloneBrushAct = createToolAction(_imp->cloneBrushTool, QIcon(), tr("Clone"), tr("Clone a portion of the source image"), cloneBrushShortcut, eRotoToolClone);
-        createToolAction(_imp->cloneBrushTool, QIcon(), tr("Reveal"), tr("Reveal a portion of the source image"), cloneBrushShortcut, eRotoToolReveal);
+        QAction* cloneBrushAct = createToolAction(_imp->cloneBrushTool, QIcon(pixClone), tr("Clone"), tr("Clone a portion of the source image"), cloneBrushShortcut, eRotoToolClone);
+        createToolAction(_imp->cloneBrushTool, QIcon(pixReveal), tr("Reveal"), tr("Reveal a portion of the source image"), cloneBrushShortcut, eRotoToolReveal);
         _imp->cloneBrushTool->setDefaultAction(cloneBrushAct);
         _imp->allTools.push_back(_imp->cloneBrushTool);
         _imp->toolbar->addWidget(_imp->cloneBrushTool);
@@ -677,9 +820,9 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->effectBrushTool->setText("Blur");
         _imp->effectBrushTool->setDown(false);
         QKeySequence blurShortcut(Qt::Key_X);
-        QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
-        createToolAction(_imp->effectBrushTool, QIcon(), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
-        createToolAction(_imp->effectBrushTool, QIcon(), tr("Smear"), tr("Blur and displace a portion of the source image along the direction of the pen"), blurShortcut, eRotoToolSmear);
+        QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(pixBlur), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
+        createToolAction(_imp->effectBrushTool, QIcon(pixSharpen), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
+        createToolAction(_imp->effectBrushTool, QIcon(pixSmear), tr("Smear"), tr("Blur and displace a portion of the source image along the direction of the pen"), blurShortcut, eRotoToolSmear);
         _imp->effectBrushTool->setDefaultAction(blurBrushAct);
         _imp->allTools.push_back(_imp->effectBrushTool);
         _imp->toolbar->addWidget(_imp->effectBrushTool);
@@ -691,8 +834,8 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->mergeBrushTool->setText("Dodge");
         _imp->mergeBrushTool->setDown(false);
         QKeySequence dodgeBrushShortcut(Qt::Key_B);
-        QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
-        createToolAction(_imp->mergeBrushTool, QIcon(), tr("Burn"), tr("Make the source image darker"), dodgeBrushShortcut, eRotoToolBurn);
+        QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(pixDodge), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
+        createToolAction(_imp->mergeBrushTool, QIcon(pixBurn), tr("Burn"), tr("Make the source image darker"), dodgeBrushShortcut, eRotoToolBurn);
         _imp->mergeBrushTool->setDefaultAction(dodgeBrushAct);
         _imp->allTools.push_back(_imp->mergeBrushTool);
         _imp->toolbar->addWidget(_imp->mergeBrushTool);
@@ -729,19 +872,19 @@ RotoGui::getButtonsBar(RotoGui::RotoRoleEnum role) const
 {
     switch (role) {
         case eRotoRoleSelection:
-            return _imp->selectionButtonsBar;
+            return _imp->context->isRotoPaint() ? _imp->brushButtonsBar : _imp->selectionButtonsBar;
         case eRotoRolePointsEdition:
             return _imp->selectionButtonsBar;
         case eRotoRoleBezierEdition:
             return _imp->selectionButtonsBar;
         case eRotoRolePaintBrush:
-            return _imp->selectionButtonsBar;
+            return _imp->brushButtonsBar;
         case eRotoRoleEffectBrush:
-            return _imp->selectionButtonsBar;
+            return _imp->brushButtonsBar;
         case eRotoRoleCloneBrush:
-            return _imp->selectionButtonsBar;
+            return _imp->brushButtonsBar;
         case eRotoRoleMergeBrush:
-            return _imp->selectionButtonsBar;
+            return _imp->brushButtonsBar;
         default:
             assert(false);
             break;
@@ -2265,7 +2408,8 @@ RotoGui::penMotion(double /*scaleX*/,
                    double /*scaleY*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
-                   QMouseEvent* e)
+                   QInputEvent* e,
+                   Natron::PenType pen, double pressure,bool isTabletEvent)
 {
     std::pair<double, double> pixelScale;
 
@@ -2589,7 +2733,7 @@ RotoGui::penMotion(double /*scaleX*/,
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
-            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.))) {
+            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure))) {
                 _imp->context->evaluateChange();
                 didSomething = true;
             }
@@ -2780,6 +2924,22 @@ RotoGui::keyDown(double /*scaleX*/,
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
         if (_imp->pointsEditionTool) {
             _imp->pointsEditionTool->handleSelection();
+        }
+    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
+        if (_imp->paintBrushTool) {
+            _imp->paintBrushTool->handleSelection();
+        }
+    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
+        if (_imp->cloneBrushTool) {
+            _imp->cloneBrushTool->handleSelection();
+        }
+    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
+        if (_imp->effectBrushTool) {
+            _imp->effectBrushTool->handleSelection();
+        }
+    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
+        if (_imp->mergeBrushTool) {
+            _imp->mergeBrushTool->handleSelection();
         }
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, modifiers, key) ) {
         moveSelectedCpsWithKeyArrows(1,0);

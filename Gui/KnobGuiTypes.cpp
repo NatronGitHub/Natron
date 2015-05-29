@@ -203,13 +203,13 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0,false),
-                                         ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeInt,getGui(),Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+        QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
         
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
@@ -455,16 +455,18 @@ Int_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Int_KnobGui::onSliderEditingFinished()
+Int_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
-    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-
-    if (!penUpOnly) {
-        return;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        sliderEditingEnd(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
     }
-    double d = _slider->getPosition();
-    sliderEditingEnd(d);
 }
 
 void
@@ -1028,13 +1030,13 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0,false),
-                                         ScaleSliderQWidget::eDataTypeDouble, Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeDouble,getGui(), Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+        QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
         containerLayout->addWidget(_slider);
         sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
         onDisplayMinMaxChanged(dispmin, dispmax);
@@ -1284,16 +1286,18 @@ Double_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Double_KnobGui::onSliderEditingFinished()
+Double_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
-    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-
-    if (!penUpOnly) {
-        return;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        sliderEditingEnd(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
     }
-    double d = _slider->getPosition();
-    sliderEditingEnd(d);
 }
 
 void
@@ -2273,9 +2277,10 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         slidermax = 1.;
     }
     _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0,false),
-                                     ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear, boxContainers);
+                                     ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
+    QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
     _slider->hide();
     
     colorContainer = new QWidget(mainContainer);
@@ -2371,6 +2376,21 @@ Color_KnobGui::onSliderValueChanged(double v)
         }
     }
     onColorChanged();
+}
+
+void
+Color_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
+{
+    assert(_knob.lock()->isEnabled(0));
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        onSliderValueChanged(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
+    }
 }
 
 void
@@ -2963,6 +2983,9 @@ ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
 void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
+    if (!_knob) {
+        return;
+    }
     _pickingEnabled = !_pickingEnabled;
     Q_EMIT pickingEnabled(_pickingEnabled);
     setColor(_currentColor); //< refresh the icon
@@ -2997,7 +3020,9 @@ ColorPickerLabel::setEnabledMode(bool enabled)
     if (!enabled && _pickingEnabled) {
         _pickingEnabled = false;
         setColor(_currentColor);
-        _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+        if (_knob) {
+            _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+        }
     }
 }
 
@@ -3006,7 +3031,7 @@ ColorPickerLabel::setColor(const QColor & color)
 {
     _currentColor = color;
 
-    if (_pickingEnabled) {
+    if (_pickingEnabled && _knob) {
         //draw the picker on top of the label
         QPixmap pickerIcon;
         appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerIcon);

@@ -47,6 +47,7 @@ class AppInstance;
 class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
+class QInputEvent;
 struct TextureRect;
 class Format;
 
@@ -401,7 +402,8 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
+    
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
      **/
@@ -413,6 +415,8 @@ private:
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;
 
 private:
+    
+    bool penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType type, double pressure, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.

@@ -116,7 +116,7 @@ public Q_SLOTS:
     void onSpinBoxValueChanged();
 
     void onSliderValueChanged(double);
-    void onSliderEditingFinished();
+    void onSliderEditingFinished(bool hasMovedOnce);
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
@@ -258,7 +258,7 @@ public:
 public Q_SLOTS:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
-    void onSliderEditingFinished();
+    void onSliderEditingFinished(bool hasMovedOnce);
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     void onMinMaxChanged(double mini, double maxi, int index = 0);
 #endif
@@ -568,6 +568,8 @@ public Q_SLOTS:
     void onDimensionSwitchClicked();
 
     void onSliderValueChanged(double v);
+    
+    void onSliderEditingFinished(bool hasMovedOnce);
 
     void onMustShowAllDimension();
 

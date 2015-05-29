@@ -291,6 +291,18 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionRotoEditTool "editTool"
 #define kShortcutDescActionRotoEditTool "Switch to Edition Mode"
 
+#define kShortcutIDActionRotoBrushTool "brushTool"
+#define kShortcutDescActionRotoBrushTool "Switch to Brush Mode"
+
+#define kShortcutIDActionRotoCloneTool "cloneTool"
+#define kShortcutDescActionRotoCloneTool "Switch to Clone Mode"
+
+#define kShortcutIDActionRotoEffectTool "EffectTool"
+#define kShortcutDescActionRotoEffectTool "Switch to Effect Mode"
+
+#define kShortcutIDActionRotoColorTool "colorTool"
+#define kShortcutDescActionRotoColorTool "Switch to Color Mode"
+
 #define kShortcutIDActionRotoNudgeLeft "nudgeLeft"
 #define kShortcutDescActionRotoNudgeLeft "Move Bezier to the Left"
 

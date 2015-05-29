@@ -1278,7 +1278,7 @@ public:
 
     bool onOverlayPenDown_public(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double scaleX,double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
     bool onOverlayPenUp_public(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
@@ -1381,6 +1381,7 @@ protected:
 
     virtual bool onOverlayPenMotion(double /*scaleX*/,
                                     double /*scaleY*/,
+                                    double /*pressure*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {

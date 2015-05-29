@@ -26,6 +26,7 @@
 #include <QtGui/QImage>
 #include <QToolButton>
 #include <QApplication>
+#include <QTabletEvent>
 #include <QDesktopWidget>
 #include <QScreen>
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
@@ -2829,29 +2830,59 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
+    if (!penMotionInternal(e->x(), e->y(), false, Natron::ePenTypePen, 1., e)) {
+        QGLWidget::mouseMoveEvent(e);
+    }
+} // mouseMoveEvent
+
+void
+ViewerGL::tabletEvent(QTabletEvent* e)
+{
+    Natron::PenType pen;
+    switch (e->pointerType()) {
+        case QTabletEvent::Cursor:
+            pen = ePenTypeCursor;
+            break;
+        case QTabletEvent::Eraser:
+            pen = ePenTypeEraser;
+            break;
+        case QTabletEvent::Pen:
+        default:
+            pen = ePenTypePen;
+            break;
+    }
+    if (!penMotionInternal(e->x(), e->y(), true, pen, e->pressure(), e)) {
+        QGLWidget::tabletEvent(e);
+    } else {
+        e->accept();
+    }
+}
+
+bool
+ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType type, double pressure, QInputEvent* e)
+{
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
     ///The app is closing don't do anything
     if ( !_imp->viewerTab->getGui() || !getInternalNode()) {
-        QGLWidget::mouseMoveEvent(e);
-        return;
+        return false;
     }
-
+    
     _imp->hasMovedSincePress = true;
     
     QPointF zoomPos;
-
+    
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
     if ( !_imp->viewerTab->getGui()->hasPickers() ) {
         _imp->pickerState = ePickerStateInactive;
     }
-
+    
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+        zoomPos = _imp->zoomCtx.toZoomCoordinates(x, y);
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
@@ -2859,7 +2890,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     RectD canonicalDispW = dispW.toCanonicalFormat();
     for (int i = 0; i < 2; ++i) {
         const RectD& rod = getRoD(i);
-        updateInfoWidgetColorPicker(zoomPos, e->pos(), width(), height(), rod, canonicalDispW, i);
+        updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image
@@ -2872,14 +2903,13 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     }
     bool mustRedraw = false;
     bool wasHovering = _imp->hs != eHoverStateNothing;
-
-    if ( (_imp->ms == eMouseStateDraggingImage) || !_imp->overlay ) {
-        unsetCursor();
-
-    } else {
+    
+    bool cursorSet = false;
+    if ( (_imp->ms != eMouseStateDraggingImage) && !_imp->overlay) {
         _imp->hs = eHoverStateNothing;
         if ( isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             setCursor( QCursor(Qt::SizeAllCursor) );
+            cursorSet = true;
         } else if ( isWipeHandleVisible() && _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             _imp->hs = eHoverStateWipeMix;
             mustRedraw = true;
@@ -2888,41 +2918,42 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             mustRedraw = true;
         } else if (userRoIEnabled) {
             if ( isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                 || isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                 || ( _imp->ms == eMouseStateDraggingRoiBottomEdge)
-                 || ( _imp->ms == eMouseStateDraggingRoiTopEdge) ) {
+                || isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                || ( _imp->ms == eMouseStateDraggingRoiBottomEdge)
+                || ( _imp->ms == eMouseStateDraggingRoiTopEdge) ) {
                 setCursor( QCursor(Qt::SizeVerCursor) );
+                cursorSet = true;
             } else if ( isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                        || isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
-                        || ( _imp->ms == eMouseStateDraggingRoiLeftEdge)
-                        || ( _imp->ms == eMouseStateDraggingRoiRightEdge) ) {
+                       || isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight)
+                       || ( _imp->ms == eMouseStateDraggingRoiLeftEdge)
+                       || ( _imp->ms == eMouseStateDraggingRoiRightEdge) ) {
                 setCursor( QCursor(Qt::SizeHorCursor) );
+                cursorSet = true;
             } else if ( isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight )
-                        || ( _imp->ms == eMouseStateDraggingRoiCross) ) {
+                       || ( _imp->ms == eMouseStateDraggingRoiCross) ) {
                 setCursor( QCursor(Qt::SizeAllCursor) );
+                cursorSet = true;
             } else if ( isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
-                        isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
-                        ( _imp->ms == eMouseStateDraggingRoiBottomRight) ||
-                        ( _imp->ms == eMouseStateDraggingRoiTopLeft) ) {
+                       isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
+                       ( _imp->ms == eMouseStateDraggingRoiBottomRight) ||
+                       ( _imp->ms == eMouseStateDraggingRoiTopLeft) ) {
                 setCursor( QCursor(Qt::SizeFDiagCursor) );
+                cursorSet = true;
             } else if ( isNearByUserRoI(userRoI.x1, userRoI.y1,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
-                        isNearByUserRoI(userRoI.x2, userRoI.y2,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
-                        ( _imp->ms == eMouseStateDraggingRoiBottomLeft) ||
-                        ( _imp->ms == eMouseStateDraggingRoiTopRight) ) {
+                       isNearByUserRoI(userRoI.x2, userRoI.y2,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ||
+                       ( _imp->ms == eMouseStateDraggingRoiBottomLeft) ||
+                       ( _imp->ms == eMouseStateDraggingRoiTopRight) ) {
                 setCursor( QCursor(Qt::SizeBDiagCursor) );
-            } else {
-                unsetCursor();
+                cursorSet = true;
             }
-        } else {
-            unsetCursor();
         }
     }
-
+    
     if ( (_imp->hs == eHoverStateNothing) && wasHovering ) {
         mustRedraw = true;
     }
-
-    QPoint newClick = e->pos();
+    
+    QPoint newClick(x,y);
     QPoint oldClick = _imp->oldClick;
     QPointF newClick_opengl, oldClick_opengl, oldPosition_opengl;
     {
@@ -2935,248 +2966,250 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     double dxSinceLastMove = ( oldPosition_opengl.x() - newClick_opengl.x() );
     double dySinceLastMove = ( oldPosition_opengl.y() - newClick_opengl.y() );
-
+    
     switch (_imp->ms) {
-    case eMouseStateDraggingImage: {
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            _imp->zoomCtx.translate(dx, dy);
-            _imp->zoomOrPannedSinceLastFit = true;
-        }
-        _imp->oldClick = newClick;
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        
-        //  else {
-        mustRedraw = true;
-        // }
-        // no need to update the color picker or mouse posn: they should be unchanged
-        break;
-    }
-    case eMouseStateZoomingImage: {
-        const double zoomFactor_min = 0.01;
-        const double zoomFactor_max = 1024.;
-        double zoomFactor;
-        int delta = 2*((e->x() - _imp->lastMousePosition.x()) - (e->y() - _imp->lastMousePosition.y()));
-        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta);
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-            if (zoomFactor <= zoomFactor_min) {
-                zoomFactor = zoomFactor_min;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-            } else if (zoomFactor > zoomFactor_max) {
-                zoomFactor = zoomFactor_max;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+        case eMouseStateDraggingImage: {
+            {
+                QMutexLocker l(&_imp->zoomCtxMutex);
+                _imp->zoomCtx.translate(dx, dy);
+                _imp->zoomOrPannedSinceLastFit = true;
             }
-            _imp->zoomCtx.zoom(oldClick_opengl.x(), oldClick_opengl.y(), scaleFactor);
-            _imp->zoomOrPannedSinceLastFit = true;
-        }
-        int zoomValue = (int)(100 * zoomFactor);
-        if (zoomValue == 0) {
-            zoomValue = 1; // sometimes, floor(100*0.01) makes 0
-        }
-        assert(zoomValue > 0);
-        Q_EMIT zoomChanged(zoomValue);
-
-        //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        
-        //  else {
-        mustRedraw = true;
-        // }
-        // no need to update the color picker or mouse posn: they should be unchanged
-        break;
-    }
-    case eMouseStateDraggingRoiBottomEdge: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
-            _imp->userRoI.y1 -= dySinceLastMove;
-            l.unlock();
-            if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-            }
+            _imp->oldClick = newClick;
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            
+            //  else {
             mustRedraw = true;
+            // }
+            // no need to update the color picker or mouse posn: they should be unchanged
+            break;
         }
-        break;
-    }
-    case eMouseStateDraggingRoiLeftEdge: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
-            _imp->userRoI.x1 -= dxSinceLastMove;
-            l.unlock();
-            if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+        case eMouseStateZoomingImage: {
+            const double zoomFactor_min = 0.01;
+            const double zoomFactor_max = 1024.;
+            double zoomFactor;
+            int delta = 2*((x - _imp->lastMousePosition.x()) - (y - _imp->lastMousePosition.y()));
+            double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+            {
+                QMutexLocker l(&_imp->zoomCtxMutex);
+                zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+                if (zoomFactor <= zoomFactor_min) {
+                    zoomFactor = zoomFactor_min;
+                    scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+                } else if (zoomFactor > zoomFactor_max) {
+                    zoomFactor = zoomFactor_max;
+                    scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+                }
+                _imp->zoomCtx.zoom(oldClick_opengl.x(), oldClick_opengl.y(), scaleFactor);
+                _imp->zoomOrPannedSinceLastFit = true;
             }
-            mustRedraw = true;
-        }
-        break;
-    }
-    case eMouseStateDraggingRoiRightEdge: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
-            _imp->userRoI.x2 -= dxSinceLastMove;
-            l.unlock();
-            if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            int zoomValue = (int)(100 * zoomFactor);
+            if (zoomValue == 0) {
+                zoomValue = 1; // sometimes, floor(100*0.01) makes 0
             }
+            assert(zoomValue > 0);
+            Q_EMIT zoomChanged(zoomValue);
+            
+            //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            
+            //  else {
             mustRedraw = true;
+            // }
+            // no need to update the color picker or mouse posn: they should be unchanged
+            break;
         }
-        break;
-    }
-    case eMouseStateDraggingRoiTopEdge: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
-            _imp->userRoI.y2 -= dySinceLastMove;
-            l.unlock();
-            if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-            }
-            mustRedraw = true;
-        }
-        break;
-    }
-    case eMouseStateDraggingRoiCross: {
-        {
+        case eMouseStateDraggingRoiBottomEdge: {
             QMutexLocker l(&_imp->userRoIMutex);
-            _imp->userRoI.translate(-dxSinceLastMove,-dySinceLastMove);
+            if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+                l.unlock();
+                if ( displayingImage() ) {
+                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                }
+                mustRedraw = true;
+            }
+            break;
         }
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+        case eMouseStateDraggingRoiLeftEdge: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+                l.unlock();
+                if ( displayingImage() ) {
+                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                }
+                mustRedraw = true;
+            }
+            break;
         }
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingRoiTopLeft: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
-            _imp->userRoI.y2 -= dySinceLastMove;
+        case eMouseStateDraggingRoiRightEdge: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+                l.unlock();
+                if ( displayingImage() ) {
+                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                }
+                mustRedraw = true;
+            }
+            break;
         }
-        if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
-            _imp->userRoI.x1 -= dxSinceLastMove;
+        case eMouseStateDraggingRoiTopEdge: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+                l.unlock();
+                if ( displayingImage() ) {
+                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                }
+                mustRedraw = true;
+            }
+            break;
         }
-        l.unlock();
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        }
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingRoiTopRight: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
-            _imp->userRoI.y2 -= dySinceLastMove;
-        }
-        if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
-            _imp->userRoI.x2 -= dxSinceLastMove;
-        }
-        l.unlock();
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        }
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingRoiBottomRight: {
-        QMutexLocker l(&_imp->userRoIMutex);
-        if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
-            _imp->userRoI.x2 -= dxSinceLastMove;
-        }
-        if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
-            _imp->userRoI.y1 -= dySinceLastMove;
-        }
-        l.unlock();
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        }
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingRoiBottomLeft: {
-        if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
-            _imp->userRoI.y1 -= dySinceLastMove;
-        }
-        if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
-            _imp->userRoI.x1 -= dxSinceLastMove;
-        }
-        _imp->userRoIMutex.unlock();
-        if ( displayingImage() ) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
-        }
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingWipeCenter: {
-        QMutexLocker l(&_imp->wipeControlsMutex);
-        _imp->wipeCenter.rx() -= dxSinceLastMove;
-        _imp->wipeCenter.ry() -= dySinceLastMove;
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateDraggingWipeMixHandle: {
-        QMutexLocker l(&_imp->wipeControlsMutex);
-        double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
-        double prevAngle = std::atan2( oldPosition_opengl.y() - _imp->wipeCenter.y(),
-                                       oldPosition_opengl.x() - _imp->wipeCenter.x() );
-        _imp->mixAmount -= (angle - prevAngle);
-        _imp->mixAmount = std::max( 0.,std::min(_imp->mixAmount,1.) );
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateRotatingWipeHandle: {
-        QMutexLocker l(&_imp->wipeControlsMutex);
-        double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
-        _imp->wipeAngle = angle;
-        double mpi2 = M_PI / 2.;
-        double closestPI2 = mpi2 * std::floor( (_imp->wipeAngle + M_PI / 4.) / mpi2 );
-        if (std::fabs(_imp->wipeAngle - closestPI2) < 0.1) {
-            // snap to closest multiple of PI / 2.
-            _imp->wipeAngle = closestPI2;
-        }
-
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStatePickingColor: {
-        pickColor( newClick.x(), newClick.y() );
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateBuildingPickerRectangle: {
-        QPointF btmRight = _imp->pickerRect.bottomRight();
-        btmRight.rx() -= dxSinceLastMove;
-        btmRight.ry() -= dySinceLastMove;
-        _imp->pickerRect.setBottomRight(btmRight);
-        mustRedraw = true;
-        break;
-    }
-    case eMouseStateSelecting: {
-        _imp->refreshSelectionRectangle(zoomPos);
-        mustRedraw = true;
-        Q_EMIT selectionRectangleChanged(false);
-    }; break;
-    default: {
-        unsigned int mipMapLevel = getCurrentRenderScale();
-        double scale = 1. / (1 << mipMapLevel);
-        if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, QMouseEventLocalPos(e), zoomPos, e) ) {
+        case eMouseStateDraggingRoiCross: {
+            {
+                QMutexLocker l(&_imp->userRoIMutex);
+                _imp->userRoI.translate(-dxSinceLastMove,-dySinceLastMove);
+            }
+            if ( displayingImage() ) {
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            }
             mustRedraw = true;
+            break;
         }
-        break;
-    }
+        case eMouseStateDraggingRoiTopLeft: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            l.unlock();
+            if ( displayingImage() ) {
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            }
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateDraggingRoiTopRight: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.y2 - dySinceLastMove) > _imp->userRoI.y1 ) {
+                _imp->userRoI.y2 -= dySinceLastMove;
+            }
+            if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            l.unlock();
+            if ( displayingImage() ) {
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            }
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateDraggingRoiBottomRight: {
+            QMutexLocker l(&_imp->userRoIMutex);
+            if ( (_imp->userRoI.x2 - dxSinceLastMove) > _imp->userRoI.x1 ) {
+                _imp->userRoI.x2 -= dxSinceLastMove;
+            }
+            if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            l.unlock();
+            if ( displayingImage() ) {
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            }
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateDraggingRoiBottomLeft: {
+            if ( (_imp->userRoI.y1 - dySinceLastMove) < _imp->userRoI.y2 ) {
+                _imp->userRoI.y1 -= dySinceLastMove;
+            }
+            if ( (_imp->userRoI.x1 - dxSinceLastMove) < _imp->userRoI.x2 ) {
+                _imp->userRoI.x1 -= dxSinceLastMove;
+            }
+            _imp->userRoIMutex.unlock();
+            if ( displayingImage() ) {
+                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            }
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateDraggingWipeCenter: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            _imp->wipeCenter.rx() -= dxSinceLastMove;
+            _imp->wipeCenter.ry() -= dySinceLastMove;
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateDraggingWipeMixHandle: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
+            double prevAngle = std::atan2( oldPosition_opengl.y() - _imp->wipeCenter.y(),
+                                          oldPosition_opengl.x() - _imp->wipeCenter.x() );
+            _imp->mixAmount -= (angle - prevAngle);
+            _imp->mixAmount = std::max( 0.,std::min(_imp->mixAmount,1.) );
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateRotatingWipeHandle: {
+            QMutexLocker l(&_imp->wipeControlsMutex);
+            double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
+            _imp->wipeAngle = angle;
+            double mpi2 = M_PI / 2.;
+            double closestPI2 = mpi2 * std::floor( (_imp->wipeAngle + M_PI / 4.) / mpi2 );
+            if (std::fabs(_imp->wipeAngle - closestPI2) < 0.1) {
+                // snap to closest multiple of PI / 2.
+                _imp->wipeAngle = closestPI2;
+            }
+            
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStatePickingColor: {
+            pickColor( newClick.x(), newClick.y() );
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateBuildingPickerRectangle: {
+            QPointF btmRight = _imp->pickerRect.bottomRight();
+            btmRight.rx() -= dxSinceLastMove;
+            btmRight.ry() -= dySinceLastMove;
+            _imp->pickerRect.setBottomRight(btmRight);
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateSelecting: {
+            _imp->refreshSelectionRectangle(zoomPos);
+            mustRedraw = true;
+            Q_EMIT selectionRectangleChanged(false);
+        }; break;
+        default: {
+            QPointF localPos(x,y);
+            unsigned int mipMapLevel = getCurrentRenderScale();
+            double scale = 1. / (1 << mipMapLevel);
+            if ( _imp->overlay &&
+                _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, localPos, zoomPos, e, type, pressure, isTabletEvent) ) {
+                mustRedraw = true;
+            }
+            break;
+        }
     } // switch
-
+    
     if (mustRedraw) {
         updateGL();
     }
     _imp->lastMousePosition = newClick;
-    //FIXME: This is bugged, somehow we can't set our custom picker cursor...
-//    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
-//        setCursor(appPTR->getColorPickerCursor());
-//    }else{
-//        unsetCursor();
-//    }
-    QGLWidget::mouseMoveEvent(e);
-} // mouseMoveEvent
+    if (!cursorSet) {
+        if (_imp->viewerTab->getGui()->hasPickers()){
+            setCursor(appPTR->getColorPickerCursor());
+        } else {
+            unsetCursor();
+        }
+    }
+    return true;
+}
 
 void
 ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
@@ -3193,6 +3226,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
     }
     QGLWidget::mouseDoubleClickEvent(e);
 }
+
 
 // used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)
 void
