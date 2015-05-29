@@ -27,15 +27,17 @@ class DSNode;
  */
 struct DSSelectedKey
 {
-    DSSelectedKey(DSKnob *knob, KeyFrame kf, int dim) :
+    DSSelectedKey(DSKnob *knob, KeyFrame kf, QTreeWidgetItem *treeItem, int dim) :
         dsKnob(knob),
         key(kf),
+        dimTreeItem(treeItem),
         dimension(dim)
     {}
 
     DSSelectedKey(const DSSelectedKey &other) :
         dsKnob(other.dsKnob),
         key(other.key),
+        dimTreeItem(other.dimTreeItem),
         dimension(other.dimension)
     {}
 
@@ -49,6 +51,10 @@ struct DSSelectedKey
             return false;
         }
 
+        if (key1.dimTreeItem != key2.dimTreeItem) {
+            return false;
+        }
+
         if (key1.dimension != key2.dimension) {
             return false;
         }
@@ -58,6 +64,7 @@ struct DSSelectedKey
 
     DSKnob *dsKnob;
     KeyFrame key;
+    QTreeWidgetItem *dimTreeItem;
     int dimension;
 };
 

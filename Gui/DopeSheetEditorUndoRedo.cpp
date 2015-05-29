@@ -361,6 +361,7 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         }
         else {
             knobGui->removeKeyFrame(selected.key.getTime(), selected.dimension);
+            selected.dimTreeItem->setSelected(false);
         }
     }
 
@@ -590,5 +591,4 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
     }
 
     _view->redraw();
-    // check if redraw is called more than 1
 }

@@ -1035,7 +1035,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob
             QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
             if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < CLICK_DISTANCE_ACCEPTANCE) {
-                DSSelectedKey key(dsKnob, kf, i);
+                DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
                 ret.push_back(key);
             }
         }
@@ -1065,7 +1065,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode
                 QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
                 if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < CLICK_DISTANCE_ACCEPTANCE) {
-                    DSSelectedKey key(dsKnob, kf, i);
+                    DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
                     ret.push_back(key);
                 }
             }
@@ -2078,7 +2078,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::createSelectionFromRect(const Q
 
                     if ((rect.left() <= x) && (rect.right() >= x)
                             && (rect.top() >= rowCenterY) && (rect.bottom() <= rowCenterY)) {
-                        ret.push_back(DSSelectedKey(dsKnob, kf, i));
+                        ret.push_back(DSSelectedKey(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i));
                     }
                 }
             }
@@ -2625,7 +2625,7 @@ void DopeSheetView::selectAllKeyframes()
                 for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
                     KeyFrame kf = *it;
 
-                    DSSelectedKey key (dsKnob, kf, i);
+                    DSSelectedKey key (dsKnob, kf, _imp->model->findTreeItemForDim(dsKnob, i), i);
 
                     DSKeyPtrList::iterator isAlreadySelected = _imp->keyframeIsAlreadyInSelected(key);
 
