@@ -77,13 +77,13 @@ void
 RotoPaint::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
     
-    EffectInstance* input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
+//    EffectInstance* input = getInput(0);
+//    if (input) {
+//        return input->getPreferredDepthAndComponents(-1, comp, depth);
+//    } else {
         comp->push_back(ImageComponents::getRGBAComponents());
         *depth = eImageBitDepthFloat;
-    }
+//    }
 }
 
 
@@ -91,12 +91,12 @@ Natron::ImagePremultiplicationEnum
 RotoPaint::getOutputPremultiplication() const
 {
   
-    EffectInstance* input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
+//    EffectInstance* input = getInput(0);
+//    if (input) {
+//        return input->getOutputPremultiplication();
+//    } else {
         return eImagePremultiplicationPremultiplied;
-    }
+//    }
 }
 
 double

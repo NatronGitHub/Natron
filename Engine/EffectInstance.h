@@ -42,7 +42,9 @@
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
-#define PLUGINID_OFX_CONSTANT    "net.sf.openfx.ConstantPlugin"
+#define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
+#define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
+#define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")

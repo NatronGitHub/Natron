@@ -1072,6 +1072,10 @@ public:
     boost::shared_ptr<Bool_Knob> getPressureSizeKnob() const;
     boost::shared_ptr<Bool_Knob> getPressureHardnessKnob() const;
     boost::shared_ptr<Bool_Knob> getBuildupKnob() const;
+    boost::shared_ptr<Int_Knob> getTimeOffsetKnob() const;
+    boost::shared_ptr<Choice_Knob> getTimeOffsetModeKnob() const;
+    boost::shared_ptr<Choice_Knob> getBrushSourceTypeKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushCloneTranslateKnob() const;
     
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points,
@@ -1080,6 +1084,8 @@ public:
     
     boost::shared_ptr<Natron::Node> getEffectNode() const;
     boost::shared_ptr<Natron::Node> getMergeNode() const;
+    boost::shared_ptr<Natron::Node> getTimeOffsetNode() const;
+    boost::shared_ptr<Natron::Node> getFrameHoldNode() const;
     
     void deactivateNodes();
     void activateNodes();
@@ -1180,7 +1186,9 @@ public:
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     
     
-    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,const std::string& baseName);
+    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,
+                                                 const std::string& baseName,
+                                                 bool clearSel);
     
     std::string generateUniqueName(const std::string& baseName);
     

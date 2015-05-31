@@ -291,6 +291,11 @@ public Q_SLOTS:
     void onColorWheelButtonClicked();
     void onDialogCurrentColorChanged(const QColor& color);
     
+    void onPressureOpacityClicked(bool isDown);
+    void onPressureSizeClicked(bool isDown);
+    void onPressureHardnessClicked(bool isDown);
+    void onBuildupClicked(bool isDown);
+    
 private:
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);

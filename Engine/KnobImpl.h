@@ -1892,10 +1892,8 @@ Knob<double>::resetToDefaultValue(int dimension)
     resetExtraToDefaultValue(dimension);
     
     if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
-        assert( getHolder() );
-        Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
-        assert(holder);
-        isDouble->denormalize(dimension, holder->getThreadLocalRenderTime(), &def);
+        SequenceTime time = getCurrentTime();
+        isDouble->denormalize(dimension, time, &def);
     }
     ignore_result(setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
     if (_signalSlotHandler) {

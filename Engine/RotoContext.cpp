@@ -43,6 +43,19 @@
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
+#define kTimeOffsetParamOffset "timeOffset"
+#define kFrameHoldParamFirstFrame "firstFrame"
+
+#define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
+#define kTransformParamUniform "uniform"
+#define kTransformParamSkewX "skewX"
+#define kTransformParamSkewY "skewY"
+#define kTransformParamSkewOrder "skewOrder"
+#define kTransformParamCenter "center"
+#define kTransformParamFilter "filter"
+#define kTransformParamBlackOutside "black_outside"
 
 //This will enable correct evaluation of beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
@@ -1692,7 +1705,7 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     if (useCairoCompositingOperators) {
         _imp->compOperator->setDefaultValue( (int)CAIRO_OPERATOR_OVER );
     } else {
-        _imp->compOperator->setDefaultValue( (int)eMergeOver);
+        _imp->compOperator->setDefaultValue( (int)eMergeCopy);
     }
 }
 
@@ -4290,6 +4303,18 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     addKnob(_imp->pressureSize);
     addKnob(_imp->pressureHardness);
     addKnob(_imp->buildUp);
+    addKnob(_imp->cloneTranslate);
+    addKnob(_imp->cloneRotate);
+    addKnob(_imp->cloneScale);
+    addKnob(_imp->cloneScaleUniform);
+    addKnob(_imp->cloneSkewX);
+    addKnob(_imp->cloneSkewY);
+    addKnob(_imp->cloneSkewOrder);
+    addKnob(_imp->cloneCenter);
+    addKnob(_imp->cloneFilter);
+    addKnob(_imp->cloneBlackOutside);
+    addKnob(_imp->timeOffset);
+    addKnob(_imp->timeOffsetMode);
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -4315,9 +4340,9 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             pluginId = PLUGINID_OFX_ROTO;
             break;
         case Natron::eRotoStrokeTypeClone:
+        case Natron::eRotoStrokeTypeReveal:
             pluginId = PLUGINID_OFX_TRANSFORM;
             break;
-        case Natron::eRotoStrokeTypeReveal:
         case Natron::eRotoStrokeTypeBurn:
         case Natron::eRotoStrokeTypeDodge:
             //uses merge
@@ -4351,6 +4376,49 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         assert(_imp->effectNode);
         _imp->effectNode->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        
+        if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
+            {
+                fixedNamePrefix = baseFixedName;
+                fixedNamePrefix.append("TimeOffset");
+                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, "",
+                                    -1,-1,
+                                    false,
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false,
+                                    false,
+                                    false,
+                                    fixedNamePrefix,
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    boost::shared_ptr<NodeCollection>());
+                args.createGui = false;
+                _imp->timeOffsetNode = app->createNode(args);
+                assert(_imp->timeOffsetNode);
+                _imp->timeOffsetNode->setWhileCreatingPaintStroke(true);
+                _imp->timeOffsetNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+            }
+            {
+                fixedNamePrefix = baseFixedName;
+                fixedNamePrefix.append("FrameHold");
+                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, "",
+                                    -1,-1,
+                                    false,
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false,
+                                    false,
+                                    false,
+                                    fixedNamePrefix,
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    boost::shared_ptr<NodeCollection>());
+                args.createGui = false;
+                _imp->frameHoldNode = app->createNode(args);
+                assert(_imp->frameHoldNode);
+                _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
+                _imp->frameHoldNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+            }
+        }
     }
     
     fixedNamePrefix = baseFixedName;
@@ -4397,13 +4465,13 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         mergeOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
         compOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
     } else {
-        mergeOp->setValue((int)eMergeOver, 0);
-        compOp->setValue((int)eMergeOver, 0);
+        mergeOp->setValue((int)eMergeCopy, 0);
+        compOp->setValue((int)eMergeCopy, 0);
     }
     
     if (type == eRotoStrokeTypeBlur) {
         double strength = _imp->effectStrength->getValue();
-        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName("size");
+        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
         Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
         if (isDbl) {
             isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
@@ -4465,6 +4533,86 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
             int op_i = compKnob->getValue();
             operation->setValue(op_i, 0);
         }
+    } else if (handler == _imp->timeOffset->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
+        
+        int offsetMode_i = _imp->timeOffsetMode->getValue();
+        boost::shared_ptr<KnobI> offsetKnob;
+        
+        if (offsetMode_i == 0) {
+            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+        } else {
+            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+        }
+        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        if (offset) {
+            offset->setValue(_imp->timeOffset->getValue(),0);
+        }
+    } else if (handler == _imp->timeOffsetMode->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
+        refreshNodesConnections();
+    }
+    
+    if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
+        if (handler == _imp->cloneTranslate->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+            Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+            if (translate) {
+                translate->clone(_imp->cloneTranslate.get());
+            }
+        } else if (handler == _imp->cloneRotate->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+            Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+            if (rotate) {
+                rotate->clone(_imp->cloneRotate.get());
+            }
+        } else if (handler == _imp->cloneScale->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+            Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+            if (scale) {
+                scale->clone(_imp->cloneScale.get());
+            }
+        } else if (handler == _imp->cloneScaleUniform->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+            Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+            if (uniform) {
+                uniform->clone(_imp->cloneScaleUniform.get());
+            }
+        } else if (handler == _imp->cloneSkewX->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+            Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+            if (skewX) {
+                skewX->clone(_imp->cloneSkewX.get());
+            }
+        } else if (handler == _imp->cloneSkewY->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+            Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+            if (skewY) {
+                skewY->clone(_imp->cloneSkewY.get());
+            }
+        } else if (handler == _imp->cloneSkewOrder->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+            Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+            if (skewOrder) {
+                skewOrder->clone(_imp->cloneSkewOrder.get());
+            }
+        } else if (handler == _imp->cloneCenter->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+            Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+            if (center) {
+                center->clone(_imp->cloneCenter.get());
+            }
+        } else if (handler == _imp->cloneFilter->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+            Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+            if (filter) {
+                filter->clone(_imp->cloneFilter.get());
+            }
+        } else if (handler == _imp->cloneBlackOutside->getSignalSlotHandler().get()) {
+            boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+            Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+            if (bo) {
+                bo->clone(_imp->cloneBlackOutside.get());
+            }
+        }
     }
     
     
@@ -4473,6 +4621,12 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
     }
     if (_imp->mergeNode) {
         _imp->mergeNode->incrementKnobsAge();
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->incrementKnobsAge();
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->incrementKnobsAge();
     }
   
 }
@@ -4559,6 +4713,19 @@ RotoStrokeItem::getMergeNode() const
     return _imp->mergeNode;
 }
 
+boost::shared_ptr<Natron::Node>
+RotoStrokeItem::getTimeOffsetNode() const
+{
+    
+    return _imp->timeOffsetNode;
+}
+
+boost::shared_ptr<Natron::Node>
+RotoStrokeItem::getFrameHoldNode() const
+{
+    return _imp->frameHoldNode;
+}
+
 void
 RotoStrokeItem::deactivateNodes()
 {
@@ -4566,6 +4733,12 @@ RotoStrokeItem::deactivateNodes()
         _imp->effectNode->deactivate(std::list< Node* >(),true,false,false,false);
     }
     _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
 }
 
 void
@@ -4575,6 +4748,12 @@ RotoStrokeItem::activateNodes()
         _imp->effectNode->activate(std::list< Node* >(),false,false);
     }
     _imp->mergeNode->activate(std::list< Node* >(),false,false);
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->activate(std::list< Node* >(),false,false);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->activate(std::list< Node* >(),false,false);
+    }
 }
 
 void
@@ -4588,6 +4767,20 @@ RotoStrokeItem::refreshNodesConnections()
     
     if (_imp->effectNode) {
         
+        
+        boost::shared_ptr<Natron::Node> mergeInput;
+        if (!_imp->timeOffsetNode) {
+            mergeInput = _imp->effectNode;
+        } else {
+            int timeOffsetMode_i = _imp->timeOffsetMode->getValue();
+            if (timeOffsetMode_i == 0) {
+                //relative
+                mergeInput = _imp->timeOffsetNode;
+            } else {
+                mergeInput = _imp->frameHoldNode;
+            }
+            _imp->effectNode->connectInputBase(mergeInput, 0);
+        }
         /*
          * This case handles: Stroke, Blur, Sharpen, Smear, Clone
          */
@@ -4618,9 +4811,9 @@ RotoStrokeItem::refreshNodesConnections()
         }
         
         if (revealInput) {
-            if (_imp->effectNode->getInput(0) != revealInput) {
-                _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(revealInput, 0);
+            if (mergeInput->getInput(0) != revealInput) {
+                mergeInput->disconnectInput(0);
+                mergeInput->connectInputBase(revealInput, 0);
             }
         }
     } else {
@@ -5006,7 +5199,7 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
     serializeRotoKnob(_imp->brushHardness, &s->_brushHardness);
     serializeRotoKnob(_imp->effectStrength, &s->_brushEffectStrength);
     serializeRotoKnob(_imp->visiblePortion, &s->_brushVisiblePortion);
-    
+#pragma message WARN("HANDLE STROKE SERIALIZATION CORRECTLY")
 }
 
 
@@ -5194,6 +5387,30 @@ RotoStrokeItem::getBuildupKnob() const
     return _imp->buildUp;
 }
 
+boost::shared_ptr<Int_Knob>
+RotoStrokeItem::getTimeOffsetKnob() const
+{
+    return _imp->timeOffset;
+}
+
+boost::shared_ptr<Choice_Knob>
+RotoStrokeItem::getTimeOffsetModeKnob() const
+{
+    return _imp->timeOffsetMode;
+}
+
+boost::shared_ptr<Choice_Knob>
+RotoStrokeItem::getBrushSourceTypeKnob() const
+{
+    return _imp->sourceColor;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushCloneTranslateKnob() const
+{
+    return _imp->cloneTranslate;
+}
+
 ////////////////////////////////////RotoContext////////////////////////////////////
 
 
@@ -5220,11 +5437,19 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* 
         }
         boost::shared_ptr<Natron::Node> effectNode = isStroke->getEffectNode();
         boost::shared_ptr<Natron::Node> mergeNode = isStroke->getMergeNode();
+        boost::shared_ptr<Natron::Node> timeOffsetNode = isStroke->getTimeOffsetNode();
+        boost::shared_ptr<Natron::Node> frameHoldNode = isStroke->getFrameHoldNode();
         if (effectNode) {
             nodes->push_back(effectNode);
         }
         if (mergeNode) {
             nodes->push_back(mergeNode);
+        }
+        if (timeOffsetNode) {
+            nodes->push_back(timeOffsetNode);
+        }
+        if (frameHoldNode) {
+            nodes->push_back(frameHoldNode);
         }
     }
 }
@@ -5490,7 +5715,7 @@ RotoContext::makeBezier(double x,
 } // makeBezier
 
 boost::shared_ptr<RotoStrokeItem>
-RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName)
+RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,bool clearSel)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -5534,14 +5759,22 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName)
     if (mergeNode) {
         mergeNode->attachStrokeItem(curve);
     }
-    
+    boost::shared_ptr<Node> timeOffsetNode = curve->getTimeOffsetNode();
+    if (timeOffsetNode) {
+        timeOffsetNode->attachStrokeItem(curve);
+    }
+    boost::shared_ptr<Node> frameHoldNode = curve->getFrameHoldNode();
+    if (frameHoldNode) {
+        frameHoldNode->attachStrokeItem(curve);
+    }
     _imp->lastInsertedItem = curve;
     
     Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
     
-    
-    clearSelection(RotoItem::eSelectionReasonOther);
-    select(curve, RotoItem::eSelectionReasonOther);
+    if (clearSel) {
+        clearSelection(RotoItem::eSelectionReasonOther);
+        select(curve, RotoItem::eSelectionReasonOther);
+    }
     return curve;
 
 }
@@ -5972,7 +6205,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     int nbUnlockedBeziers = 0;
     int nbUnlockedStrokes = 0;
     int nbStrokeWithoutStrength = 0;
-    int nbStrokeWithoutSourceType = 0;
+    int nbStrokeWithoutCloneFunctions = 0;
     bool foundItem = false;
     
     {
@@ -6010,7 +6243,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                 ++nbStrokeWithoutStrength;
             }
             if (isStroke->getBrushType() != eRotoStrokeTypeClone && isStroke->getBrushType() != eRotoStrokeTypeReveal) {
-                ++nbStrokeWithoutSourceType;
+                ++nbStrokeWithoutCloneFunctions;
             }
         }
         
@@ -6062,14 +6295,28 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         
         boost::shared_ptr<KnobI> strengthKnob = _imp->brushEffectKnob.lock();
         boost::shared_ptr<KnobI> sourceTypeKnob = _imp->sourceTypeKnob.lock();
+        boost::shared_ptr<KnobI> timeOffsetKnob = _imp->timeOffsetKnob.lock();
+        boost::shared_ptr<KnobI> timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
             if (!k) {
                 continue;
             }
-            if ((k == strengthKnob && nbStrokeWithoutStrength) ||
-                (k == sourceTypeKnob && nbStrokeWithoutSourceType)) {
+            
+            
+            if (k == strengthKnob && nbStrokeWithoutStrength) {
                 k->setAllDimensionsEnabled(false);
+            } else {
+                k->setAllDimensionsEnabled(true);
+            }
+            if (nbStrokeWithoutCloneFunctions) {
+                bool isCloneKnob = false;
+                for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2!=_imp->cloneKnobs.end(); ++it2) {
+                    if (it2->lock() == k) {
+                        isCloneKnob = true;
+                    }
+                }
+                k->setAllDimensionsEnabled(!isCloneKnob);
             } else {
                 k->setAllDimensionsEnabled(true);
             }
@@ -6906,7 +7153,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     bool copyFromImage = false;
     if (!source) {
-        source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+        source.reset(new Natron::Image(components,
                                     pointsBbox,
                                     pixelPointsBbox,
                                     mipmapLevel,
@@ -6927,7 +7174,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             
             
             //upscale the original image
-            source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+            source.reset(new Natron::Image(components,
                                         mergeRoD,
                                         mergeBounds,
                                         mipmapLevel,
@@ -6947,7 +7194,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             mergeRoD.toPixelEnclosing(mipmapLevel, 1., &mergeBounds);
             
             //downscale the original image
-            source.reset(new Natron::Image(ImageComponents::getAlphaComponents(),
+            source.reset(new Natron::Image(components,
                                         mergeRoD,
                                         mergeBounds,
                                         mipmapLevel,
@@ -6985,7 +7232,25 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         copyFromImage = true;
     }
     
+    cairo_format_t cairoImgFormat;
     
+    int srcNComps;
+    if (components.getNumComponents() == 1) {
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
+    } else if (components.getNumComponents() == 2) {
+        cairoImgFormat = CAIRO_FORMAT_RGB24;
+        srcNComps = 3;
+    } else if (components.getNumComponents() == 3) {
+        cairoImgFormat = CAIRO_FORMAT_RGB24;
+        srcNComps = 3;
+    } else if (components.getNumComponents() == 4) {
+        cairoImgFormat = CAIRO_FORMAT_ARGB32;
+        srcNComps = 4;
+    } else {
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
+    }
     
     
     ////Allocate the cairo temporary buffer
@@ -6993,16 +7258,16 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
     std::vector<unsigned char> buf;
     if (copyFromImage) {
-        std::size_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_A8, pixelPointsBbox.width());
+        std::size_t stride = cairo_format_stride_for_width(cairoImgFormat, pixelPointsBbox.width());
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
         memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, source.get(), pixelPointsBbox, pixelPointsBbox, 1);
-        cairoImg = cairo_image_surface_create_for_data(buf.data(), CAIRO_FORMAT_A8, pixelPointsBbox.width(), pixelPointsBbox.height(),
+        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, source.get(), pixelPointsBbox, pixelPointsBbox, srcNComps);
+        cairoImg = cairo_image_surface_create_for_data(buf.data(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {
-        cairoImg = cairo_image_surface_create(CAIRO_FORMAT_A8, pixelPointsBbox.width(), pixelPointsBbox.height() );
+        cairoImg = cairo_image_surface_create(cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height() );
         cairo_surface_set_device_offset(cairoImg, -pixelPointsBbox.x1, -pixelPointsBbox.y1);
     }
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
@@ -7021,8 +7286,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     // maybe the inner polygon should be made of mesh patterns too?
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
     
-    int srcNComps = 1;
-
     std::list<std::pair<Natron::Point,double> > toScalePoints;
     int pot = 1 << mipmapLevel;
     if (mipmapLevel == 0) {
@@ -7070,7 +7333,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                  const RectI& roi,
+                                  const RectI& /*roi*/,
                                   U64 rotoAge,
                                   U64 nodeHash,
                                   const Natron::ImageComponents& components,
@@ -7333,8 +7596,7 @@ RotoContextPrivate::renderDot(cairo_t* cr,
                               double externalDotRadius,
                               double shapeColor[3],
                               const std::vector<std::pair<double, double> >& opacityStops,
-                              double opacity,
-                              double /*pressure*/)
+                              double opacity)
 {
     
     if (!opacityStops.empty()) {
@@ -7349,6 +7611,38 @@ RotoContextPrivate::renderDot(cairo_t* cr,
     }
     cairo_arc(cr, center.x, center.y, externalDotRadius, 0, M_PI * 2);
     cairo_fill(cr);
+}
+
+static void getRenderDotParams(double alpha, double brushSizePixel, double brushHardness, double brushSpacing, double pressure, bool pressureAffectsOpacity, bool pressureAffectsSize, bool pressureAffectsHardness, double* internalDotRadius, double* externalDotRadius, double * maxDistPerSegment, std::vector<std::pair<double,double> >* opacityStops)
+{
+    if (pressureAffectsSize) {
+        brushSizePixel *= pressure;
+    }
+    if (pressureAffectsHardness) {
+        brushHardness *= pressure;
+    }
+    if (pressureAffectsOpacity) {
+        alpha *= pressure;
+    }
+    
+    *internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
+    *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
+    *maxDistPerSegment = *externalDotRadius * 2. * brushSpacing;
+    
+    
+    opacityStops->clear();
+    
+    double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
+    const int maxStops = 8;
+    double incr = 1. / maxStops;
+    
+    if (brushHardness != 1.) {
+        for (double d = 0; d <= 1.; d += incr) {
+            double o = hardnessGaussLookup(std::pow(d, exp));
+            opacityStops->push_back(std::make_pair(d, o * alpha));
+        }
+    }
+    
 }
 
 void
@@ -7389,17 +7683,16 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
     
     boost::shared_ptr<Bool_Knob> buildUpKnob = stroke->getBuildupKnob();
-    bool doBuildUp = buildUpKnob->getValueAtTime(time);
-    
     boost::shared_ptr<Bool_Knob> pressureOpacityKnob = stroke->getPressureOpacityKnob();
     boost::shared_ptr<Bool_Knob> pressureSizeKnob = stroke->getPressureSizeKnob();
     boost::shared_ptr<Bool_Knob> pressureHardnessKnob = stroke->getPressureHardnessKnob();
     
+    bool doBuildUp = buildUpKnob->getValueAtTime(time);
     bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
     bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
     bool pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
     
-    cairo_set_operator(cr, doBuildUp ? CAIRO_OPERATOR_ADD : CAIRO_OPERATOR_OVER);
+    cairo_set_operator(cr,CAIRO_OPERATOR_OVER);
     
     
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
@@ -7420,29 +7713,12 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         brushSizePixel /= (1 << mipmapLevel);
     }
     
-    double internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
-    double externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
-    double spacingPixel = externalDotRadius * 2. * brushSpacing;
-    double maxDistPerSegment = spacingPixel;
-    
+    double internalDotRadius,externalDotRadius,maxDistPerSegment;
     std::vector<std::pair<double,double> > opacityStops;
-    {
-        
-        double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
-        const int maxStops = 8;
-        double incr = 1. / maxStops;
-        
-        if (brushHardness != 1.) {
-            for (double d = 0; d <= 1.; d += incr) {
-                double o = hardnessGaussLookup(std::pow(d, exp));
-                opacityStops.push_back(std::make_pair(d, o * alpha));
-            }
-        }
-    }
-    
     
     std::pair<Point,double> cur = *visiblePortion.begin();
-    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha, cur.second);
+    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, cur.second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &maxDistPerSegment, &opacityStops);
+    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
     
     
     std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
@@ -7478,7 +7754,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         center.x = (next->first.x - cur.first.x) * a + cur.first.x;
         center.y = (next->first.y - cur.first.y) * a + cur.first.y;
         double pressure = (next->second - cur.second) * a + cur.second;
-        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha, pressure);
+        
+        getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &maxDistPerSegment, &opacityStops);
+        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
         cur.first = center;
         cur.second = pressure;
         distToNext = 0;

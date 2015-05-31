@@ -671,7 +671,7 @@ Node::load(const std::string & parentMultiInstanceName,
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     const QString& pluginID = _imp->plugin->getPluginID();
-    if (pluginID == PLUGINID_OFX_ROTO) {
+    if (isRotoPaintingNode() || pluginID == PLUGINID_OFX_ROTO) {
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
     
@@ -5914,7 +5914,7 @@ Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->paintStroke = stroke;
-    
+    _imp->useAlpha0ToConvertFromRGBToRGBA = true;
 }
 
 boost::shared_ptr<RotoStrokeItem>

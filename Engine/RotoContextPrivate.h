@@ -112,7 +112,7 @@
 
 #define kRotoBrushSourceColor "sourceType"
 #define kRotoBrushSourceColorLabel "Source"
-#define kRotoBrushSourceColorHint "Source color used for painting the stroke:\n" \
+#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
 "- foreground: the painted result at this point in the hierarchy\n" \
 "- background: the original image unpainted connected to bg\n" \
 "- backgroundN: the original image unpainted connected to bgN\n"
@@ -156,6 +156,75 @@
 #define kRotoBrushBuildupParam "buildUp"
 #define kRotoBrushBuildupParamLabel "Build-up"
 #define kRotoBrushBuildupParamHint "When checked, the paint stroke builds up when painted over itself"
+
+#define kRotoBrushTimeOffsetParam "timeOffset"
+#define kRotoBrushTimeOffsetParamLabel "Clone time offset"
+#define kRotoBrushTimeOffsetParamHint "When the Clone tool is used, this determines depending on the time offset mode the source frame to " \
+"clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
+
+#define kRotoBrushTimeOffsetModeParam "timeOffsetMode"
+#define kRotoBrushTimeOffsetModeParamLabel "Mode"
+#define kRotoBrushTimeOffsetModeParamHint "Time offset mode: when in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
+
+#define kRotoBrushTranslateParam "translate"
+#define kRotoBrushTranslateParamLabel "Translate"
+#define kRotoBrushTranslateParamHint ""
+
+#define kRotoBrushRotateParam "rotate"
+#define kRotoBrushRotateParamLabel "Rotate"
+#define kRotoBrushRotateParamHint ""
+
+#define kRotoBrushScaleParam "scale"
+#define kRotoBrushScaleParamLabel "Scale"
+#define kRotoBrushScaleParamHint ""
+
+#define kRotoBrushScaleUniformParam "uniform"
+#define kRotoBrushScaleUniformParamLabel "Uniform"
+#define kRotoBrushScaleUniformParamHint ""
+
+#define kRotoBrushSkewXParam "skewx"
+#define kRotoBrushSkewXParamLabel "Skew X"
+#define kRotoBrushSkewXParamHint ""
+
+#define kRotoBrushSkewYParam "skewy"
+#define kRotoBrushSkewYParamLabel "Skew Y"
+#define kRotoBrushSkewYParamHint ""
+
+#define kRotoBrushSkewOrderParam "skewOrder"
+#define kRotoBrushSkewOrderParamLabel "Skew Order"
+#define kRotoBrushSkewOrderParamHint ""
+
+#define kRotoBrushCenterParam "center"
+#define kRotoBrushCenterParamLabel "Center"
+#define kRotoBrushCenterParamHint ""
+
+#define kRotoBrushFilterParam "filter"
+#define kRotoBrushFilterParamLabel "Filter"
+#define kRotoBrushFilterParamHint "Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+)."
+
+#define kFilterImpulse "Impulse"
+#define kFilterImpulseHint "(nearest neighbor / box) Use original values"
+#define kFilterBilinear "Bilinear"
+#define kFilterBilinearHint "(tent / triangle) Bilinear interpolation between original values"
+#define kFilterCubic "Cubic"
+#define kFilterCubicHint "(cubic spline) Some smoothing"
+#define kFilterKeys "Keys"
+#define kFilterKeysHint "(Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*)"
+#define kFilterSimon "Simon"
+#define kFilterSimonHint "Some smoothing, plus medium sharpening (*)"
+#define kFilterRifman "Rifman"
+#define kFilterRifmanHint "Some smoothing, plus significant sharpening (*)"
+#define kFilterMitchell "Mitchell"
+#define kFilterMitchellHint "Some smoothing, plus blurring to hide pixelation (*+)"
+#define kFilterParzen "Parzen"
+#define kFilterParzenHint "(cubic B-spline) Greatest smoothing of all filters (+)"
+#define kFilterNotch "Notch"
+#define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)"
+
+#define kRotoBrushBlackOutsideParam "blackOutside"
+#define kRotoBrushBlackOutsideParamLabel "Black Outside"
+#define kRotoBrushBlackOutsideParamHint "Fill the area outside the source image with black"
+
 
 class Bezier;
 
@@ -832,7 +901,21 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Bool_Knob> pressureOpacity,pressureSize,pressureHardness,buildUp;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
+    
+    boost::shared_ptr<Double_Knob> cloneTranslate;
+    boost::shared_ptr<Double_Knob> cloneRotate;
+    boost::shared_ptr<Double_Knob> cloneScale;
+    boost::shared_ptr<Bool_Knob> cloneScaleUniform;
+    boost::shared_ptr<Double_Knob> cloneSkewX;
+    boost::shared_ptr<Double_Knob> cloneSkewY;
+    boost::shared_ptr<Choice_Knob> cloneSkewOrder;
+    boost::shared_ptr<Double_Knob> cloneCenter;
+    boost::shared_ptr<Choice_Knob> cloneFilter;
+    boost::shared_ptr<Bool_Knob> cloneBlackOutside;
+    
     boost::shared_ptr<Choice_Knob> sourceColor;
+    boost::shared_ptr<Int_Knob> timeOffset;
+    boost::shared_ptr<Choice_Knob> timeOffsetMode;
     Curve xCurve,yCurve,pressureCurve;
     RectD bbox;
     
@@ -851,6 +934,7 @@ struct RotoStrokeItemPrivate
      */
     boost::shared_ptr<Natron::Node> effectNode;
     boost::shared_ptr<Natron::Node> mergeNode;
+    boost::shared_ptr<Natron::Node> timeOffsetNode, frameHoldNode;
     
     
     int lastTickAge;
@@ -875,9 +959,23 @@ struct RotoStrokeItemPrivate
     , pressureHardness(new Bool_Knob(NULL, kRotoBrushPressureHardnessParamLabel, 1, false))
     , buildUp(new Bool_Knob(NULL, kRotoBrushBuildupParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
+    , cloneTranslate(new Double_Knob(NULL, kRotoBrushTranslateParamLabel, 2, false))
+    , cloneRotate(new Double_Knob(NULL, kRotoBrushRotateParamLabel, 1, false))
+    , cloneScale(new Double_Knob(NULL, kRotoBrushScaleParamLabel, 2, false))
+    , cloneScaleUniform(new Bool_Knob(NULL, kRotoBrushScaleUniformParamLabel, 1, false))
+    , cloneSkewX(new Double_Knob(NULL, kRotoBrushSkewXParamLabel, 1, false))
+    , cloneSkewY(new Double_Knob(NULL, kRotoBrushSkewYParamLabel, 1, false))
+    , cloneSkewOrder(new Choice_Knob(NULL, kRotoBrushSkewOrderParamLabel, 1, false))
+    , cloneCenter(new Double_Knob(NULL, kRotoBrushCenterParamLabel, 2, false))
+    , cloneFilter(new Choice_Knob(NULL, kRotoBrushFilterParamLabel, 1, false))
+    , cloneBlackOutside(new Bool_Knob(NULL, kRotoBrushBlackOutsideParamLabel, 1, false))
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
+    , timeOffset(new Int_Knob(NULL, kRotoBrushTimeOffsetParamLabel, 1, false))
+    , timeOffsetMode(new Choice_Knob(NULL, kRotoBrushTimeOffsetModeParamLabel, 1, false))
     , effectNode()
     , mergeNode()
+    , timeOffsetNode()
+    , frameHoldNode()
     , lastTickAge(-1)
     , strokeTicks()
     {
@@ -954,6 +1052,83 @@ struct RotoStrokeItemPrivate
         maxs.push_back(1);
         visiblePortion->setMinimumsAndMaximums(mins, maxs);
         
+        cloneTranslate->setName(kRotoBrushTranslateParam);
+        cloneTranslate->setHintToolTip(kRotoBrushTranslateParamHint);
+        cloneTranslate->populate();
+        
+        cloneRotate->setName(kRotoBrushRotateParam);
+        cloneRotate->setHintToolTip(kRotoBrushRotateParamHint);
+        cloneRotate->populate();
+        
+        cloneScale->setName(kRotoBrushScaleParam);
+        cloneScale->setHintToolTip(kRotoBrushScaleParamHint);
+        cloneScale->populate();
+        cloneScale->setDefaultValue(1,0);
+        cloneScale->setDefaultValue(1,1);
+        
+        cloneScaleUniform->setName(kRotoBrushScaleUniformParam);
+        cloneScaleUniform->setHintToolTip(kRotoBrushScaleUniformParamHint);
+        cloneScaleUniform->populate();
+        cloneScaleUniform->setDefaultValue(true);
+        
+        cloneSkewX->setName(kRotoBrushSkewXParam);
+        cloneSkewX->setHintToolTip(kRotoBrushSkewXParamHint);
+        cloneSkewX->populate();
+        
+        cloneSkewY->setName(kRotoBrushSkewYParam);
+        cloneSkewY->setHintToolTip(kRotoBrushSkewYParamHint);
+        cloneSkewY->populate();
+        
+        cloneSkewOrder->setName(kRotoBrushSkewOrderParam);
+        cloneSkewOrder->setHintToolTip(kRotoBrushSkewOrderParamHint);
+        cloneSkewOrder->populate();
+        {
+            std::vector<std::string> choices;
+            choices.push_back("XY");
+            choices.push_back("YX");
+            cloneSkewOrder->populateChoices(choices);
+        }
+        
+        cloneCenter->setName(kRotoBrushCenterParam);
+        cloneCenter->setHintToolTip(kRotoBrushCenterParamHint);
+        cloneCenter->populate();
+        //double defCenter[2] = {.5,.5};
+        //cloneCenter->setDefaultValuesNormalized(2, defCenter);
+
+        cloneFilter->setName(kRotoBrushFilterParam);
+        cloneFilter->setHintToolTip(kRotoBrushFilterParamHint);
+        cloneFilter->populate();
+        {
+            std::vector<std::string> choices,helps;
+            
+            choices.push_back(kFilterImpulse);
+            helps.push_back(kFilterImpulseHint);
+            choices.push_back(kFilterBilinear);
+            helps.push_back(kFilterBilinearHint);
+            choices.push_back(kFilterCubic);
+            helps.push_back(kFilterCubicHint);
+            choices.push_back(kFilterKeys);
+            helps.push_back(kFilterKeysHint);
+            choices.push_back(kFilterSimon);
+            helps.push_back(kFilterSimonHint);
+            choices.push_back(kFilterRifman);
+            helps.push_back(kFilterRifmanHint);
+            choices.push_back(kFilterMitchell);
+            helps.push_back(kFilterMitchellHint);
+            choices.push_back(kFilterParzen);
+            helps.push_back(kFilterParzenHint);
+            choices.push_back(kFilterNotch);
+            helps.push_back(kFilterNotchHint);
+            cloneFilter->populateChoices(choices);
+        }
+        cloneFilter->setDefaultValue(2);
+        
+        
+        cloneBlackOutside->setName(kRotoBrushBlackOutsideParam);
+        cloneBlackOutside->setHintToolTip(kRotoBrushBlackOutsideParamHint);
+        cloneBlackOutside->populate();
+        cloneBlackOutside->setDefaultValue(true);
+        
         sourceColor->setName(kRotoBrushSourceColor);
         sourceColor->setHintToolTip(kRotoBrushSizeParamHint);
         sourceColor->populate();
@@ -970,6 +1145,21 @@ struct RotoStrokeItemPrivate
             sourceColor->populateChoices(choices);
         }
         
+        timeOffset->setName(kRotoBrushTimeOffsetParam);
+        timeOffset->setHintToolTip(kRotoBrushTimeOffsetParamHint);
+        timeOffset->populate();
+        timeOffset->setDisplayMinimum(-100);
+        timeOffset->setDisplayMaximum(100);
+        
+        timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
+        timeOffsetMode->setName(kRotoBrushTimeOffsetModeParamHint);
+        timeOffsetMode->populate();
+        {
+            std::vector<std::string> modes;
+            modes.push_back("Relative");
+            modes.push_back("Absolute");
+            timeOffsetMode->populateChoices(modes);
+        }
     }
 };
 
@@ -1012,11 +1202,24 @@ struct RotoContextPrivate
     boost::weak_ptr<Bool_Knob> pressureHardnessKnob;
     boost::weak_ptr<Bool_Knob> buildUpKnob;
     boost::weak_ptr<Double_Knob> brushVisiblePortionKnob;
-    boost::weak_ptr<Choice_Knob> sourceTypeKnob;
     
+    boost::weak_ptr<Double_Knob> translateKnob;
+    boost::weak_ptr<Double_Knob> rotateKnob;
+    boost::weak_ptr<Double_Knob> scaleKnob;
+    boost::weak_ptr<Bool_Knob> uniformKnob;
+    boost::weak_ptr<Double_Knob> skewXKnob;
+    boost::weak_ptr<Double_Knob> skewYKnob;
+    boost::weak_ptr<Choice_Knob> skewOrderKnob;
+    boost::weak_ptr<Double_Knob> centerKnob;
+    boost::weak_ptr<Choice_Knob> filterKnob;
+    boost::weak_ptr<Bool_Knob> blackOutsideKnob;
+    
+    boost::weak_ptr<Choice_Knob> sourceTypeKnob;
+    boost::weak_ptr<Int_Knob> timeOffsetKnob;
+    boost::weak_ptr<Choice_Knob> timeOffsetModeKnob;
 
     std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
-
+    std::list<boost::weak_ptr<KnobI> > cloneKnobs;
 
     ///This keeps track  of the items linked to the context knobs
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
@@ -1043,7 +1246,8 @@ struct RotoContextPrivate
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
     
-        boost::shared_ptr<Page_Knob> shapePage = Natron::createKnob<Page_Knob>(effect, "Controls", 1, false);
+        boost::shared_ptr<Page_Knob> shapePage = Natron::createKnob<Page_Knob>(effect, "Stroke", 1, false);
+        boost::shared_ptr<Page_Knob> clonePage = Natron::createKnob<Page_Knob>(effect, "Clone", 1, false);
 
         boost::shared_ptr<Double_Knob> opacityKnob = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);
         opacityKnob->setHintToolTip(kRotoOpacityHint);
@@ -1142,9 +1346,181 @@ struct RotoContextPrivate
                 sourceType->populateChoices(choices);
             }
             sourceType->setAllDimensionsEnabled(false);
-            shapePage->addKnob(sourceType);
+            clonePage->addKnob(sourceType);
             knobs.push_back(sourceType);
+            cloneKnobs.push_back(sourceType);
             sourceTypeKnob = sourceType;
+            
+            boost::shared_ptr<Double_Knob> translate = Natron::createKnob<Double_Knob>(effect, kRotoBrushTranslateParamLabel, 2, false);
+            translate->setName(kRotoBrushTranslateParam);
+            translate->setHintToolTip(kRotoBrushTranslateParamHint);
+            translate->setAllDimensionsEnabled(false);
+            translate->setIncrement(10);
+            clonePage->addKnob(translate);
+            knobs.push_back(translate);
+            cloneKnobs.push_back(translate);
+            translateKnob = translate;
+            
+            boost::shared_ptr<Double_Knob> rotate = Natron::createKnob<Double_Knob>(effect, kRotoBrushRotateParamLabel, 1, false);
+            rotate->setName(kRotoBrushRotateParam);
+            rotate->setHintToolTip(kRotoBrushRotateParamHint);
+            rotate->setAllDimensionsEnabled(false);
+            rotate->setDisplayMinimum(-180);
+            rotate->setDisplayMaximum(180);
+            clonePage->addKnob(rotate);
+            knobs.push_back(rotate);
+            cloneKnobs.push_back(rotate);
+            rotateKnob = rotate;
+            
+            boost::shared_ptr<Double_Knob> scale = Natron::createKnob<Double_Knob>(effect, kRotoBrushScaleParamLabel, 2, false);
+            scale->setName(kRotoBrushScaleParam);
+            scale->setHintToolTip(kRotoBrushScaleParamHint);
+            scale->setDefaultValue(1,0);
+            scale->setDefaultValue(1,1);
+            scale->setDisplayMinimum(0.1,0);
+            scale->setDisplayMinimum(0.1,1);
+            scale->setDisplayMaximum(10,0);
+            scale->setDisplayMaximum(10,1);
+            scale->setAddNewLine(false);
+            scale->setAllDimensionsEnabled(false);
+            clonePage->addKnob(scale);
+            cloneKnobs.push_back(scale);
+            knobs.push_back(scale);
+            scaleKnob = scale;
+            
+            boost::shared_ptr<Bool_Knob> scaleUniform = Natron::createKnob<Bool_Knob>(effect, kRotoBrushScaleUniformParamLabel, 1, false);
+            scaleUniform->setName(kRotoBrushScaleUniformParam);
+            scaleUniform->setHintToolTip(kRotoBrushScaleUniformParamHint);
+            scaleUniform->setDefaultValue(true);
+            scaleUniform->setAllDimensionsEnabled(false);
+            scaleUniform->setAnimationEnabled(false);
+            clonePage->addKnob(scaleUniform);
+            cloneKnobs.push_back(scaleUniform);
+            knobs.push_back(scaleUniform);
+            uniformKnob = scaleUniform;
+            
+            boost::shared_ptr<Double_Knob> skewX = Natron::createKnob<Double_Knob>(effect, kRotoBrushSkewXParamLabel, 1, false);
+            skewX->setName(kRotoBrushSkewXParam);
+            skewX->setHintToolTip(kRotoBrushSkewXParamHint);
+            skewX->setAllDimensionsEnabled(false);
+            skewX->setDisplayMinimum(-1,0);
+            skewX->setDisplayMaximum(1,0);
+            cloneKnobs.push_back(skewX);
+            clonePage->addKnob(skewX);
+            knobs.push_back(skewX);
+            skewXKnob = skewX;
+            
+            boost::shared_ptr<Double_Knob> skewY = Natron::createKnob<Double_Knob>(effect, kRotoBrushSkewYParamLabel, 1, false);
+            skewY->setName(kRotoBrushSkewYParam);
+            skewY->setHintToolTip(kRotoBrushSkewYParamHint);
+            skewY->setAllDimensionsEnabled(false);
+            skewY->setDisplayMinimum(-1,0);
+            skewY->setDisplayMaximum(1,0);
+            clonePage->addKnob(skewY);
+            cloneKnobs.push_back(skewY);
+            knobs.push_back(skewY);
+            skewYKnob = skewY;
+
+            boost::shared_ptr<Choice_Knob> skewOrder = Natron::createKnob<Choice_Knob>(effect,kRotoBrushSkewOrderParamLabel,1,false);
+            skewOrder->setName(kRotoBrushSkewOrderParam);
+            skewOrder->setHintToolTip(kRotoBrushSkewOrderParamHint);
+            skewOrder->setDefaultValue(0);
+            {
+                std::vector<std::string> choices;
+                choices.push_back("XY");
+                choices.push_back("YX");
+                skewOrder->populateChoices(choices);
+            }
+            skewOrder->setAllDimensionsEnabled(false);
+            skewOrder->setAnimationEnabled(false);
+            clonePage->addKnob(skewOrder);
+            cloneKnobs.push_back(skewOrder);
+            knobs.push_back(skewOrder);
+            skewOrderKnob = skewOrder;
+            
+            boost::shared_ptr<Double_Knob> center = Natron::createKnob<Double_Knob>(effect, kRotoBrushCenterParamLabel, 2, false);
+            center->setName(kRotoBrushCenterParam);
+            center->setHintToolTip(kRotoBrushCenterParamHint);
+            center->setAllDimensionsEnabled(false);
+            double defCenter[2] = {.5,.5};
+            center->setDefaultValuesNormalized(2, defCenter);
+            clonePage->addKnob(center);
+            cloneKnobs.push_back(center);
+            knobs.push_back(center);
+            centerKnob = center;
+            
+            boost::shared_ptr<Choice_Knob> filter = Natron::createKnob<Choice_Knob>(effect,kRotoBrushFilterParamLabel,1,false);
+            filter->setName(kRotoBrushFilterParam);
+            filter->setHintToolTip(kRotoBrushFilterParamHint);
+            {
+                std::vector<std::string> choices,helps;
+                
+                choices.push_back(kFilterImpulse);
+                helps.push_back(kFilterImpulseHint);
+                choices.push_back(kFilterBilinear);
+                helps.push_back(kFilterBilinearHint);
+                choices.push_back(kFilterCubic);
+                helps.push_back(kFilterCubicHint);
+                choices.push_back(kFilterKeys);
+                helps.push_back(kFilterKeysHint);
+                choices.push_back(kFilterSimon);
+                helps.push_back(kFilterSimonHint);
+                choices.push_back(kFilterRifman);
+                helps.push_back(kFilterRifmanHint);
+                choices.push_back(kFilterMitchell);
+                helps.push_back(kFilterMitchellHint);
+                choices.push_back(kFilterParzen);
+                helps.push_back(kFilterParzenHint);
+                choices.push_back(kFilterNotch);
+                helps.push_back(kFilterNotchHint);
+                filter->populateChoices(choices);
+            }
+            filter->setDefaultValue(2);
+            filter->setAllDimensionsEnabled(false);
+            filter->setAddNewLine(false);
+            clonePage->addKnob(filter);
+            cloneKnobs.push_back(filter);
+            knobs.push_back(filter);
+            filterKnob = filter;
+
+            boost::shared_ptr<Bool_Knob> blackOutside = Natron::createKnob<Bool_Knob>(effect, kRotoBrushBlackOutsideParamLabel, 1, false);
+            blackOutside->setName(kRotoBrushBlackOutsideParam);
+            blackOutside->setHintToolTip(kRotoBrushBlackOutsideParamHint);
+            blackOutside->setDefaultValue(true);
+            blackOutside->setAllDimensionsEnabled(false);
+            clonePage->addKnob(blackOutside);
+            knobs.push_back(blackOutside);
+            cloneKnobs.push_back(blackOutside);
+            blackOutsideKnob = blackOutside;
+            
+            boost::shared_ptr<Int_Knob> timeOffset = Natron::createKnob<Int_Knob>(effect, kRotoBrushTimeOffsetParamLabel, 1, false);
+            timeOffset->setName(kRotoBrushTimeOffsetParam);
+            timeOffset->setHintToolTip(kRotoBrushTimeOffsetParamHint);
+            timeOffset->setDisplayMinimum(-100);
+            timeOffset->setDisplayMaximum(100);
+            timeOffset->setAllDimensionsEnabled(false);
+            timeOffset->setIsPersistant(false);
+            timeOffset->setAddNewLine(false);
+            clonePage->addKnob(timeOffset);
+            cloneKnobs.push_back(timeOffset);
+            knobs.push_back(timeOffset);
+            timeOffsetKnob = timeOffset;
+            
+            boost::shared_ptr<Choice_Knob> timeOffsetMode = Natron::createKnob<Choice_Knob>(effect, kRotoBrushTimeOffsetModeParamLabel, 1, false);
+            timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
+            timeOffsetMode->setHintToolTip(kRotoBrushTimeOffsetModeParamHint);
+            {
+                std::vector<std::string> modes;
+                modes.push_back("Relative");
+                modes.push_back("Absolute");
+                timeOffsetMode->populateChoices(modes);
+            }
+            timeOffsetMode->setAllDimensionsEnabled(false);
+            timeOffsetMode->setIsPersistant(false);
+            clonePage->addKnob(timeOffsetMode);
+            knobs.push_back(timeOffsetMode);
+            cloneKnobs.push_back(timeOffsetMode);
+            timeOffsetModeKnob = timeOffsetMode;
             
             boost::shared_ptr<Double_Knob> brushSize = Natron::createKnob<Double_Knob>(effect, kRotoBrushSizeParamLabel, 1, false);
             brushSize->setName(kRotoBrushSizeParam);
@@ -1297,8 +1673,7 @@ struct RotoContextPrivate
                    double externalDotRadius,
                    double shapeColor[3],
                    const std::vector<std::pair<double, double> >& opacityStops,
-                   double opacity,
-                   double /*pressure*/);
+                   double opacity);
 
     
     void renderStroke(cairo_t* cr,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);

@@ -2966,7 +2966,7 @@ ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType ty
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     double dxSinceLastMove = ( oldPosition_opengl.x() - newClick_opengl.x() );
     double dySinceLastMove = ( oldPosition_opengl.y() - newClick_opengl.y() );
-    
+    bool overlaysCaughtByPlugin = false;
     switch (_imp->ms) {
         case eMouseStateDraggingImage: {
             {
@@ -3192,6 +3192,7 @@ ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType ty
             if ( _imp->overlay &&
                 _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, localPos, zoomPos, e, type, pressure, isTabletEvent) ) {
                 mustRedraw = true;
+                overlaysCaughtByPlugin = true;
             }
             break;
         }
@@ -3204,7 +3205,7 @@ ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType ty
     if (!cursorSet) {
         if (_imp->viewerTab->getGui()->hasPickers()){
             setCursor(appPTR->getColorPickerCursor());
-        } else {
+        } else if (!overlaysCaughtByPlugin) {
             unsetCursor();
         }
     }

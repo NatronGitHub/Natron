@@ -105,6 +105,7 @@ enum EventStateEnum
     eEventStateDraggingBBoxMidBtm,
     eEventStateDraggingBBoxMidLeft,
     eEventStateBuildingStroke,
+    eEventStateDraggingCloneOffset,
 };
 
 enum HoverStateEnum
@@ -148,6 +149,7 @@ struct RotoGuiSharedData
     SelectedCP featherBarBeingDragged,featherBarBeingHovered;
     bool displayFeather;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
+    std::pair<double,double> cloneOffset;
 
     RotoGuiSharedData()
     : selectedItems()
@@ -163,7 +165,9 @@ struct RotoGuiSharedData
     , featherBarBeingHovered()
     , displayFeather(true)
     , strokeBeingPaint()
+    , cloneOffset()
     {
+        cloneOffset.first = cloneOffset.second = 0.;
     }
 };
 
@@ -203,6 +207,10 @@ struct RotoGui::RotoGuiPrivate
     Button* pressureHardnessButton;
     QLabel* buildUpLabel;
     Button* buildUpButton;
+    QLabel* timeOffsetLabel;
+    SpinBox* timeOffsetSpinbox;
+    ComboBox* timeOffsetMode;
+    ComboBox* sourceTypeCombobox;
     
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
@@ -263,6 +271,10 @@ struct RotoGui::RotoGuiPrivate
     , pressureHardnessButton(0)
     , buildUpLabel(0)
     , buildUpButton(0)
+    , timeOffsetLabel(0)
+    , timeOffsetSpinbox(0)
+    , timeOffsetMode(0)
+    , sourceTypeCombobox(0)
     , selectTool(0)
     , pointsEditionTool(0)
     , bezierEditionTool(0)
@@ -352,6 +364,8 @@ struct RotoGui::RotoGuiPrivate
     }
     
     void toggleToolsSelection(QToolButton* selected);
+    
+    void makeStroke(const Natron::Point& p);
 };
 
 
@@ -620,18 +634,25 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->brushButtonsBar = new QWidget(parent);
         _imp->brushButtonsBarLayout = new QHBoxLayout(_imp->brushButtonsBar);
         _imp->brushButtonsBarLayout->setContentsMargins(3, 2, 0, 0);
+        _imp->brushButtonsBarLayout->setSpacing(1);
+        
+        _imp->brushButtonsBarLayout->addSpacing(5);
         
         _imp->colorPickerLabel = new ColorPickerLabel(0,_imp->brushButtonsBar);
         _imp->colorPickerLabel->setColor(Qt::white);
         _imp->colorPickerLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _imp->colorPickerLabel->setToolTip(Qt::convertFromPlainText(tr("The color of the next paint brush stroke to be painted")));
         _imp->brushButtonsBarLayout->addWidget(_imp->colorPickerLabel);
         QPixmap colorWheelPix;
         appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL,&colorWheelPix);
         _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
-        _imp->colorWheelButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
+        _imp->colorWheelButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog"), Qt::WhiteSpaceNormal));
         _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         QObject::connect(_imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()));
         _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
+        
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
         _imp->compositingOperatorButton = new ComboBox(_imp->brushButtonsBar);
         {
             std::vector<std::string> operators,tooltips;
@@ -641,12 +662,19 @@ RotoGui::RotoGui(NodeGui* node,
                 _imp->compositingOperatorButton->addItem(operators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
             }
         }
+        _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeCopy);
+        _imp->compositingOperatorButton->setToolTip(Qt::convertFromPlainText(tr("The blending mode of the next brush stroke")));
         _imp->brushButtonsBarLayout->addWidget(_imp->compositingOperatorButton);
         
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
+        QString opacitytt = Qt::convertFromPlainText(tr("The opacity of the next brush stroke to be painted"));
         _imp->opacityLabel = new Natron::Label(tr("Opacity:"),_imp->brushButtonsBar);
+        _imp->opacityLabel->setToolTip(opacitytt);
         _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
         
         _imp->opacitySpinbox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+        _imp->opacitySpinbox->setToolTip(opacitytt);
         _imp->opacitySpinbox->setMinimum(0);
         _imp->opacitySpinbox->setMaximum(1);
         _imp->opacitySpinbox->setValue(1.);
@@ -661,57 +689,135 @@ RotoGui::RotoGui(NodeGui* node,
         QIcon pressureIc;
         pressureIc.addPixmap(pressureOnPix,QIcon::Normal,QIcon::On);
         pressureIc.addPixmap(pressureOffPix,QIcon::Normal,QIcon::Off);
+        QString pressOpatt = Qt::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the opacity of the next "
+                                                         "brush stroke"));
+        
         _imp->pressureOpacityButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        QObject::connect(_imp->pressureOpacityButton, SIGNAL(clicked(bool)), this, SLOT(onPressureOpacityClicked(bool)));
+        _imp->pressureOpacityButton->setToolTip(pressOpatt);
         _imp->pressureOpacityButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->pressureOpacityButton->setCheckable(true);
         _imp->pressureOpacityButton->setChecked(true);
         _imp->pressureOpacityButton->setDown(true);
         _imp->brushButtonsBarLayout->addWidget(_imp->pressureOpacityButton);
         
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
+        QString sizett = Qt::convertFromPlainText(tr("The size of the next brush stroke to be painted"));
         _imp->sizeLabel = new Natron::Label(tr("Size:"),_imp->brushButtonsBar);
+        _imp->sizeLabel->setToolTip(sizett);
         _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
         
         _imp->sizeSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
         _imp->sizeSpinbox->setMinimum(0);
         _imp->sizeSpinbox->setMaximum(1000);
         _imp->sizeSpinbox->setValue(25.);
+        _imp->sizeSpinbox->setToolTip(sizett);
         _imp->brushButtonsBarLayout->addWidget(_imp->sizeSpinbox);
         
+        QString pressSizett = Qt::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the size of the next "
+                                                         "brush stroke"));
         _imp->pressureSizeButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        QObject::connect(_imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)));
+        _imp->pressureSizeButton->setToolTip(pressSizett);
         _imp->pressureSizeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->pressureSizeButton->setCheckable(true);
         _imp->pressureSizeButton->setChecked(false);
         _imp->pressureSizeButton->setDown(false);
         _imp->brushButtonsBarLayout->addWidget(_imp->pressureSizeButton);
         
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
+        QString hardnesstt = Qt::convertFromPlainText(tr("The hardness of the next brush stroke to be painted"));
         _imp->hardnessLabel = new Natron::Label(tr("Hardness:"),_imp->brushButtonsBar);
+        _imp->hardnessLabel->setToolTip(hardnesstt);
         _imp->brushButtonsBarLayout->addWidget(_imp->hardnessLabel);
         
         _imp->hardnessSpinBox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
         _imp->hardnessSpinBox->setMinimum(0);
         _imp->hardnessSpinBox->setMaximum(1);
-        _imp->hardnessSpinBox->setValue(0.25);
+        _imp->hardnessSpinBox->setValue(0.2);
+        _imp->hardnessSpinBox->setToolTip(hardnesstt);
         _imp->brushButtonsBarLayout->addWidget(_imp->hardnessSpinBox);
         
+        QString pressHardnesstt = Qt::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the hardness of the next "
+                                                          "brush stroke"));
         _imp->pressureHardnessButton = new Button(pressureIc,"",_imp->brushButtonsBar);
+        QObject::connect(_imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)));
+        _imp->pressureHardnessButton->setToolTip(pressHardnesstt);
         _imp->pressureHardnessButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->pressureHardnessButton->setCheckable(true);
         _imp->pressureHardnessButton->setChecked(false);
         _imp->pressureHardnessButton->setDown(false);
         _imp->brushButtonsBarLayout->addWidget(_imp->pressureHardnessButton);
         
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
+        QString builduptt = Qt::convertFromPlainText(tr("When build-up is enabled, the next brush stroke will build up "
+                                                              "when painted over itself"));
+
         _imp->buildUpLabel = new Natron::Label(tr("Build-up:"),_imp->brushButtonsBar);
+        _imp->buildUpLabel->setToolTip(builduptt);
         _imp->brushButtonsBarLayout->addWidget(_imp->buildUpLabel);
         
         QIcon buildupIc;
         buildupIc.addPixmap(buildupOnPix,QIcon::Normal,QIcon::On);
         buildupIc.addPixmap(buildupOffPix,QIcon::Normal,QIcon::Off);
         _imp->buildUpButton = new Button(buildupIc,"",_imp->brushButtonsBar);
+        QObject::connect(_imp->buildUpButton, SIGNAL(clicked(bool)), this, SLOT(onBuildupClicked(bool)));
+        _imp->buildUpButton->setToolTip(builduptt);
         _imp->buildUpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->buildUpButton->setCheckable(true);
         _imp->buildUpButton->setChecked(true);
         _imp->buildUpButton->setDown(true);
         _imp->brushButtonsBarLayout->addWidget(_imp->buildUpButton);
+        
+        _imp->brushButtonsBarLayout->addSpacing(5);
+        
+        QString timeOfftt = Qt::convertFromPlainText(tr("When the Clone tool is used, this determines depending on the time offset "
+                                                        "mode the source frame to clone. When in absolute mode, this is the frame "
+                                                        "number of the source, when in relative mode, this is an offset relative "
+                                                        "to the current frame."),Qt::WhiteSpaceNormal);
+        
+        _imp->timeOffsetLabel = new Natron::Label(tr("Time Offset:"),_imp->brushButtonsBar);
+        _imp->timeOffsetLabel->setVisible(false);
+        _imp->timeOffsetLabel->setToolTip(timeOfftt);
+        _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetLabel);
+        
+        _imp->timeOffsetSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeInt);
+        _imp->timeOffsetSpinbox->setValue(0);
+        _imp->timeOffsetSpinbox->setVisible(false);
+        _imp->timeOffsetSpinbox->setToolTip(timeOfftt);
+        _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetSpinbox);
+        
+        _imp->timeOffsetMode = new ComboBox(_imp->brushButtonsBar);
+        _imp->timeOffsetMode->setToolTip(Qt::convertFromPlainText(tr("when in absolute mode, this is the frame number of the source, "
+                                                                     "when in relative mode, this is an offset relative to "
+                                                                     "the current frame."),Qt::WhiteSpaceNormal));
+        _imp->timeOffsetMode->addItem(tr("Relative"));
+        _imp->timeOffsetMode->addItem(tr("Absolute"));
+        _imp->timeOffsetMode->setCurrentIndex_no_emit(0);
+        _imp->timeOffsetMode->setVisible(false);
+        _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetMode);
+        
+        _imp->sourceTypeCombobox = new ComboBox(_imp->brushButtonsBar);
+        _imp->sourceTypeCombobox->setToolTip(Qt::convertFromPlainText(tr(
+                    "Source color used for painting the stroke when the Reveal/Clone tools are used:\n"
+                    "- foreground: the painted result at this point in the hierarchy\n"
+                    "- background: the original image unpainted connected to bg\n"
+                    "- backgroundN: the original image unpainted connected to bgN\n"),Qt::WhiteSpaceNormal));
+        {
+        _imp->sourceTypeCombobox->addItem(tr("foreground"));
+        _imp->sourceTypeCombobox->addItem(tr("background"));
+        for (int i = 1; i < 10; ++i) {
+            
+            QString str = tr("background") + QString::number(i+1);
+            _imp->sourceTypeCombobox->addItem(str);
+        }
+        }
+        _imp->sourceTypeCombobox->setCurrentIndex_no_emit(1);
+        _imp->sourceTypeCombobox->setVisible(false);
+        _imp->brushButtonsBarLayout->addWidget(_imp->sourceTypeCombobox);
         
         _imp->brushButtonsBarLayout->addStretch();
     } // if (!_imp->context->isRotoPaint()) {
@@ -728,14 +834,16 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(pixSelectAll), tr("Select all"),
                                              tr("everything can be selected and moved."),
                                              selectShortCut, eRotoToolSelectAll);
-    createToolAction(_imp->selectTool, QIcon(pixSelectPoints), tr("Select points"),
-                     tr("works only for the points of the inner shape,"
-                        " feather points will not be taken into account."),
-                     selectShortCut, eRotoToolSelectPoints);
-    createToolAction(_imp->selectTool, QIcon(pixSelectCurves), tr("Select curves"),
-                     tr("only the curves can be selected.")
-                     ,selectShortCut,eRotoToolSelectCurves);
-    createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,eRotoToolSelectFeatherPoints);
+    if (!_imp->context->isRotoPaint()) {
+        createToolAction(_imp->selectTool, QIcon(pixSelectPoints), tr("Select points"),
+                         tr("works only for the points of the inner shape,"
+                            " feather points will not be taken into account."),
+                         selectShortCut, eRotoToolSelectPoints);
+        createToolAction(_imp->selectTool, QIcon(pixSelectCurves), tr("Select curves"),
+                         tr("only the curves can be selected.")
+                         ,selectShortCut,eRotoToolSelectCurves);
+        createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,eRotoToolSelectFeatherPoints);
+    }
     _imp->selectTool->setDown(hasShapes);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->allTools.push_back(_imp->selectTool);
@@ -1005,6 +1113,27 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
             assert(false);
             break;
     }
+    
+    if (actionRole == eRotoRoleCloneBrush) {
+        _imp->timeOffsetLabel->setVisible(true);
+        _imp->timeOffsetMode->setVisible(true);
+        _imp->timeOffsetSpinbox->setVisible(true);
+        _imp->sourceTypeCombobox->setVisible(true);
+    } else {
+        if (_imp->timeOffsetLabel) {
+            _imp->timeOffsetLabel->setVisible(false);
+        }
+        if (_imp->timeOffsetMode) {
+            _imp->timeOffsetMode->setVisible(false);
+        }
+        if (_imp->timeOffsetSpinbox) {
+            _imp->timeOffsetSpinbox->setVisible(false);
+        }
+        if (_imp->sourceTypeCombobox) {
+            _imp->sourceTypeCombobox->setVisible(false);
+        }
+    }
+    
     _imp->toggleToolsSelection(toolButton);
     Q_EMIT roleChanged( (int)previousRole,(int)actionRole);
 
@@ -1119,6 +1248,28 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
     }
     glEnd();
 } // drawSelectedCp
+
+static void
+drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r, double g, double b)
+{
+    glColor3f(r*l, g*l, b*l);
+    
+    glPushMatrix();
+    //  center the oval at x_center, y_center
+    glTranslatef((float)x, (float)y, 0.f);
+    //  draw the oval using line segments
+    glBegin(GL_LINE_LOOP);
+    // we don't need to be pixel-perfect here, it's just an interact!
+    // 40 segments is enough.
+    double m = 2 * 3.14159265358979323846264338327950288419717 / 40.;
+    for (int i = 0; i < 40; ++i) {
+        double theta = i * m;
+        glVertex2d(radiusX * std::cos(theta), radiusY * std::sin(theta));
+    }
+    glEnd();
+    
+    glPopMatrix();
+}
 
 void
 RotoGui::drawOverlays(double /*scaleX*/,
@@ -1489,6 +1640,57 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 } // if ( ( selected != _imp->rotoData->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
             glCheckError();
+        } // for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        
+        if (_imp->context->isRotoPaint() && _imp->selectTool != _imp->selectedRole) {
+            
+            QPoint widgetPos = _imp->viewer->mapToGlobal(_imp->viewer->mapFromParent(_imp->viewer->pos()));
+            QRect r(widgetPos.x(),widgetPos.y(),_imp->viewer->width(),_imp->viewer->height());
+            
+            if (r.contains(QCursor::pos())) {
+                //Draw a circle  around the cursor
+                double brushSize = _imp->sizeSpinbox->value();
+                
+                GLdouble projection[16];
+                glGetDoublev( GL_PROJECTION_MATRIX, projection);
+                OfxPointD shadow; // how much to translate GL_PROJECTION to get exactly one pixel on screen
+                shadow.x = 2. / (projection[0] * viewportSize.first);
+                shadow.y = 2. / (projection[5] * viewportSize.second);
+                
+                double halfBrush = brushSize / 2.;
+                for (int l = 0; l < 2; ++l) {
+                    
+                    glMatrixMode(GL_PROJECTION);
+                    int direction = (l == 0) ? 1 : -1;
+                    // translate (1,-1) pixels
+                    glTranslated(direction * shadow.x, -direction * shadow.y, 0);
+                    glMatrixMode(GL_MODELVIEW);
+                    drawEllipse(_imp->lastMousePos.x(),_imp->lastMousePos.y(),halfBrush,halfBrush,l, .8f, .8f, .8f);
+                    
+                    glColor3f(.6f*l, .6f*l, .6f*l);
+
+                    
+                    if (_imp->selectedTool == eRotoToolClone) {
+                        glBegin(GL_LINES);
+                        
+                        if (_imp->state == eEventStateDraggingCloneOffset) {
+                            //draw a line between the center of the 2 ellipses
+                            glVertex2d(_imp->lastMousePos.x(),_imp->lastMousePos.y());
+                            glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() + _imp->rotoData->cloneOffset.second);
+                        }
+                        //draw a cross in the center of the source ellipse
+                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second - halfBrush);
+                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() +  _imp->rotoData->cloneOffset.second + halfBrush);
+                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first - halfBrush,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second);
+                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first + halfBrush,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second);
+                        glEnd();
+                        
+                        
+                        //draw the source ellipse
+                        drawEllipse(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() + _imp->rotoData->cloneOffset.second,halfBrush,halfBrush,l, .6f, .6f, .6f);
+                    }
+                }
+            }
         }
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
@@ -2301,55 +2503,17 @@ RotoGui::penDown(double /*scaleX*/,
         case eRotoToolSmear:
         case eRotoToolDodge:
         case eRotoToolBurn: {
-            Natron::RotoStrokeType strokeType;
-            std::string itemName;
-            switch (_imp->selectedTool) {
-                case eRotoToolSolidBrush:
-                    strokeType = Natron::eRotoStrokeTypeSolid;
-                    itemName = kRotoPaintBrushBaseName;
-                    break;
-                case eRotoToolEraserBrush:
-                    strokeType = Natron::eRotoStrokeTypeEraser;
-                    itemName = kRotoPaintEraserBaseName;
-                    break;
-                case eRotoToolClone:
-                    strokeType = Natron::eRotoStrokeTypeClone;
-                    itemName = kRotoPaintCloneBaseName;
-                    break;
-                case eRotoToolReveal:
-                    strokeType = Natron::eRotoStrokeTypeReveal;
-                    itemName = kRotoPaintRevealBaseName;
-                    break;
-                case eRotoToolBlur:
-                    strokeType = Natron::eRotoStrokeTypeBlur;
-                    itemName = kRotoPaintBlurBaseName;
-                    break;
-                case eRotoToolSharpen:
-                    strokeType = Natron::eRotoStrokeTypeSharpen;
-                    itemName = kRotoPaintSharpenBaseName;
-                    break;
-                case eRotoToolSmear:
-                    strokeType = Natron::eRotoStrokeTypeSmear;
-                    itemName = kRotoPaintSmearBaseName;
-                    break;
-                case eRotoToolDodge:
-                    strokeType = Natron::eRotoStrokeTypeDodge;
-                    itemName = kRotoPaintDodgeBaseName;
-                    break;
-                case eRotoToolBurn:
-                    strokeType = Natron::eRotoStrokeTypeBurn;
-                    itemName = kRotoPaintBurnBaseName;
-                    break;
-                default:
-                    assert(false);
-                    return false;
+            
+            if (_imp->selectedTool == eRotoToolClone && modCASIsControl(e)) {
+                _imp->state = eEventStateDraggingCloneOffset;
+            } else {
+                Natron::Point p;
+                p.x = pos.x();
+                p.y = pos.y();
+                _imp->makeStroke(p);
+                _imp->state = eEventStateBuildingStroke;
+                _imp->viewer->setCursor(Qt::BlankCursor);
             }
-            _imp->rotoData->strokeBeingPaint = _imp->context->makeStroke(strokeType, itemName);
-            Natron::Point p;
-            p.x = pos.x();
-            p.y = pos.y();
-            _imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.));
-            _imp->state = eEventStateBuildingStroke;
             didSomething = true;
             break;
         }
@@ -2412,7 +2576,7 @@ RotoGui::penMotion(double /*scaleX*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
                    QInputEvent* e,
-                   Natron::PenType pen, double pressure,bool isTabletEvent)
+                   Natron::PenType /*pen*/, double pressure,bool /*isTabletEvent*/)
 {
     std::pair<double, double> pixelScale;
 
@@ -2426,6 +2590,15 @@ RotoGui::penMotion(double /*scaleX*/,
     
     double cpTol = kControlPointSelectionTolerance * pixelScale.first;
     
+    if (_imp->context->isRotoPaint() && _imp->selectedRole != _imp->selectTool) {
+        if (!_imp->rotoData->strokeBeingPaint) {
+            _imp->viewer->setCursor(Qt::CrossCursor);
+        } else {
+            _imp->viewer->setCursor(Qt::BlankCursor);
+        }
+        didSomething = true;
+        cursorSet = true;
+    }
     
     if ( !cursorSet && _imp->rotoData->showCpsBbox && (_imp->state != eEventStateDraggingControlPoint) && (_imp->state != eEventStateDraggingSelectedControlPoints)
         && ( _imp->state != eEventStateDraggingLeftTangent) &&
@@ -2743,6 +2916,10 @@ RotoGui::penMotion(double /*scaleX*/,
         }
         break;
     }
+    case eEventStateDraggingCloneOffset: {
+        _imp->rotoData->cloneOffset.first -= dx;
+        _imp->rotoData->cloneOffset.second -= dy;
+    }   break;
     case eEventStateNone:
     default:
         break;
@@ -2835,6 +3012,102 @@ RotoGui::penUp(double /*scaleX*/,
     }
 
     return true;
+}
+
+void
+RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p)
+{
+    Natron::RotoStrokeType strokeType;
+    std::string itemName;
+    switch (selectedTool) {
+        case eRotoToolSolidBrush:
+            strokeType = Natron::eRotoStrokeTypeSolid;
+            itemName = kRotoPaintBrushBaseName;
+            break;
+        case eRotoToolEraserBrush:
+            strokeType = Natron::eRotoStrokeTypeEraser;
+            itemName = kRotoPaintEraserBaseName;
+            break;
+        case eRotoToolClone:
+            strokeType = Natron::eRotoStrokeTypeClone;
+            itemName = kRotoPaintCloneBaseName;
+            break;
+        case eRotoToolReveal:
+            strokeType = Natron::eRotoStrokeTypeReveal;
+            itemName = kRotoPaintRevealBaseName;
+            break;
+        case eRotoToolBlur:
+            strokeType = Natron::eRotoStrokeTypeBlur;
+            itemName = kRotoPaintBlurBaseName;
+            break;
+        case eRotoToolSharpen:
+            strokeType = Natron::eRotoStrokeTypeSharpen;
+            itemName = kRotoPaintSharpenBaseName;
+            break;
+        case eRotoToolSmear:
+            strokeType = Natron::eRotoStrokeTypeSmear;
+            itemName = kRotoPaintSmearBaseName;
+            break;
+        case eRotoToolDodge:
+            strokeType = Natron::eRotoStrokeTypeDodge;
+            itemName = kRotoPaintDodgeBaseName;
+            break;
+        case eRotoToolBurn:
+            strokeType = Natron::eRotoStrokeTypeBurn;
+            itemName = kRotoPaintBurnBaseName;
+            break;
+        default:
+            assert(false);
+            return;
+    }
+    rotoData->strokeBeingPaint = context->makeStroke(strokeType, itemName, false);
+    assert(rotoData->strokeBeingPaint);
+    boost::shared_ptr<Color_Knob> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
+    boost::shared_ptr<Choice_Knob> operatorKnob = rotoData->strokeBeingPaint->getOperatorKnob();
+    boost::shared_ptr<Double_Knob> opacityKnob = rotoData->strokeBeingPaint->getOpacityKnob();
+    boost::shared_ptr<Double_Knob> sizeKnob = rotoData->strokeBeingPaint->getBrushSizeKnob();
+    boost::shared_ptr<Double_Knob> hardnessKnob = rotoData->strokeBeingPaint->getBrushHardnessKnob();
+    boost::shared_ptr<Bool_Knob> pressureOpaKnob = rotoData->strokeBeingPaint->getPressureOpacityKnob();
+    boost::shared_ptr<Bool_Knob> pressureSizeKnob = rotoData->strokeBeingPaint->getPressureSizeKnob();
+    boost::shared_ptr<Bool_Knob> pressureHardnessKnob = rotoData->strokeBeingPaint->getPressureHardnessKnob();
+    boost::shared_ptr<Bool_Knob> buildUpKnob = rotoData->strokeBeingPaint->getBuildupKnob();
+    boost::shared_ptr<Choice_Knob> timeOffsetModeKnob = rotoData->strokeBeingPaint->getTimeOffsetModeKnob();
+    boost::shared_ptr<Choice_Knob> sourceTypeKnob = rotoData->strokeBeingPaint->getBrushSourceTypeKnob();
+    boost::shared_ptr<Int_Knob> timeOffsetKnob = rotoData->strokeBeingPaint->getTimeOffsetKnob();
+    boost::shared_ptr<Double_Knob> translateKnob = rotoData->strokeBeingPaint->getBrushCloneTranslateKnob();
+    
+    const QColor& color = colorPickerLabel->getCurrentColor();
+    int compOp = compositingOperatorButton->activeIndex();
+    double opacity = opacitySpinbox->value();
+    double size = sizeSpinbox->value();
+    double hardness = hardnessSpinBox->value();
+    bool pressOpa = pressureOpacityButton->isDown();
+    bool pressSize = pressureSizeButton->isDown();
+    bool pressHarness = pressureHardnessButton->isDown();
+    bool buildUp = buildUpButton->isDown();
+    int timeOffset = timeOffsetSpinbox->value();
+    int timeOffsetMode_i = timeOffsetMode->activeIndex();
+    int sourceType_i = sourceTypeCombobox->activeIndex();
+    
+    colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), Natron::eValueChangedReasonNatronGuiEdited);
+    operatorKnob->setValue(compOp,0);
+    opacityKnob->setValue(opacity, 0);
+    sizeKnob->setValue(size, 0);
+    hardnessKnob->setValue(hardness, 0);
+    pressureOpaKnob->setValue(pressOpa, 0);
+    pressureSizeKnob->setValue(pressSize, 0);
+    pressureHardnessKnob->setValue(pressHarness, 0);
+    buildUpKnob->setValue(buildUp, 0);
+    if (strokeType == Natron::eRotoStrokeTypeClone || strokeType == Natron::eRotoStrokeTypeReveal) {
+        timeOffsetKnob->setValue(timeOffset, 0);
+        timeOffsetModeKnob->setValue(timeOffsetMode_i, 0);
+        sourceTypeKnob->setValue(sourceType_i, 0);
+        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
+    }
+    rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.));
+    
+    context->clearSelection(RotoItem::eSelectionReasonOther);
+    context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
 }
 
 void
@@ -4136,4 +4409,28 @@ RotoGui::onDialogCurrentColorChanged(const QColor& color)
 {
     assert(_imp->colorPickerLabel);
     _imp->colorPickerLabel->setColor(color);
+}
+
+void
+RotoGui::onPressureOpacityClicked(bool isDown)
+{
+    _imp->pressureOpacityButton->setDown(isDown);
+}
+
+void
+RotoGui::onPressureSizeClicked(bool isDown)
+{
+    _imp->pressureSizeButton->setDown(isDown);
+}
+
+void
+RotoGui::onPressureHardnessClicked(bool isDown)
+{
+    _imp->pressureHardnessButton->setDown(isDown);
+}
+
+void
+RotoGui::onBuildupClicked(bool isDown)
+{
+    _imp->buildUpButton->setDown(isDown);
 }
