@@ -7613,7 +7613,7 @@ RotoContextPrivate::renderDot(cairo_t* cr,
     cairo_fill(cr);
 }
 
-static void getRenderDotParams(double alpha, double brushSizePixel, double brushHardness, double brushSpacing, double pressure, bool pressureAffectsOpacity, bool pressureAffectsSize, bool pressureAffectsHardness, double* internalDotRadius, double* externalDotRadius, double * maxDistPerSegment, std::vector<std::pair<double,double> >* opacityStops)
+static void getRenderDotParams(double alpha, double brushSizePixel, double brushHardness, double brushSpacing, double pressure, bool pressureAffectsOpacity, bool pressureAffectsSize, bool pressureAffectsHardness, double* internalDotRadius, double* externalDotRadius, double * spacing, std::vector<std::pair<double,double> >* opacityStops)
 {
     if (pressureAffectsSize) {
         brushSizePixel *= pressure;
@@ -7627,7 +7627,7 @@ static void getRenderDotParams(double alpha, double brushSizePixel, double brush
     
     *internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
     *externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
-    *maxDistPerSegment = *externalDotRadius * 2. * brushSpacing;
+    *spacing = *externalDotRadius * 2. * brushSpacing;
     
     
     opacityStops->clear();
@@ -7713,54 +7713,41 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         brushSizePixel /= (1 << mipmapLevel);
     }
     
-    double internalDotRadius,externalDotRadius,maxDistPerSegment;
-    std::vector<std::pair<double,double> > opacityStops;
-    
-    std::pair<Point,double> cur = *visiblePortion.begin();
-    getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, cur.second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &maxDistPerSegment, &opacityStops);
-    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
-    
-    
+
     std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
     std::list<std::pair<Point,double> >::iterator next = it;
     ++next;
     double distToNext = 0;
+
     while (next!=visiblePortion.end()) {
-        
-        
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
         
-        double dist = std::sqrt((next->first.x - cur.first.x) * (next->first.x - cur.first.x) + (next->first.y - cur.first.y) * (next->first.y - cur.first.y));
-        
-        distToNext += dist;
-        if (distToNext < maxDistPerSegment || dist == 0) {
-            ++next;
-            ++it;
-            cur = *it;
-            continue;
+        double dist = std::hypot(next->first.x - it->first.x, next->first.y - it->first.y);
+
+        // while the next point can be drawn on this segment, draw a point and advance
+        while (distToNext <= dist) {
+            double a = dist == 0. ? 0. : distToNext/dist;
+            Point center = {
+                it->first.x * (1 - a) + next->first.x * a,
+                it->first.y * (1 - a) + next->first.y * a
+            };
+            double pressure = it->second * (1 - a) + next->second * a;
+
+            // draw the dot
+            double internalDotRadius, externalDotRadius, spacing;
+            std::vector<std::pair<double,double> > opacityStops;
+            getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+            renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
+
+            distToNext += spacing;
         }
-        
-        //Find next point
-        double a;
-        if (maxDistPerSegment >= dist) {
-            a = (distToNext - dist) == 0 ? (maxDistPerSegment - dist) / dist : (maxDistPerSegment - dist) / (distToNext - dist);
-        } else {
-            a = maxDistPerSegment / dist;
-        }
-        assert(a >= 0 && a <= 1);
-        Point center;
-        center.x = (next->first.x - cur.first.x) * a + cur.first.x;
-        center.y = (next->first.y - cur.first.y) * a + cur.first.y;
-        double pressure = (next->second - cur.second) * a + cur.second;
-        
-        getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &maxDistPerSegment, &opacityStops);
-        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
-        cur.first = center;
-        cur.second = pressure;
-        distToNext = 0;
-        
+
+        // go to the next segment
+        distToNext -= dist;
+        ++next;
+        ++it;
     }
     
 
