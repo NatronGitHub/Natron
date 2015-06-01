@@ -86,6 +86,9 @@ public:
     Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<DSNode *> *result) const;
 
+    bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
+    bool canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const;
+
     void pushUndoCommand(QUndoCommand *cmd);
 
     /* attributes */
@@ -155,6 +158,32 @@ void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vec
 
         getInputsConnected_recursive(input.get(), result);
     }
+}
+
+bool DopeSheetPrivate::canTrimLeft(double newFirstFrame, double currentLastFrame) const
+{
+    if (newFirstFrame < 0) {
+        return false;
+    }
+
+    if (newFirstFrame > currentLastFrame) {
+        return false;
+    }
+
+    return true;
+}
+
+bool DopeSheetPrivate::canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const
+{
+    if (newLastFrame > originalLastFrame) {
+        return false;
+    }
+
+    if (newLastFrame < currentFirstFrame) {
+        return false;
+    }
+
+    return true;
 }
 
 void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
@@ -668,20 +697,42 @@ void DopeSheet::moveSelectedKeys(double dt)
     _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
 }
 
-void DopeSheet::trimReaderLeft(DSNode *reader, double dt)
+void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 {
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
             (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
-
-    _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrameKnob->getValue(), dt, this));
-}
-
-void DopeSheet::trimReaderRight(DSNode *reader, double time)
-{
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
             (reader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
 
-    _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrameKnob->getValue(), time, this));
+    double firstFrame = firstFrameKnob->getValue();
+
+    if (newFirstFrame == firstFrame) {
+        return;
+    }
+
+    if (_imp->canTrimLeft(newFirstFrame, lastFrameKnob->getValue())) {
+        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame, this));
+    }
+}
+
+void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
+{
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
+    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("originalFrameRange").get());
+
+    double lastFrame = lastFrameKnob->getValue();
+
+    if (newLastFrame == lastFrame) {
+        return;
+    }
+
+    if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
+        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, this));
+    }
 }
 
 void DopeSheet::moveReader(DSNode *reader, double time)

@@ -3156,9 +3156,9 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
         Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>
                 (_imp->currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
 
-        double newTime = (currentTime - timeOffsetKnob->getValue());
+        double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
-        _imp->model->trimReaderLeft(_imp->currentEditedReader, newTime);
+        _imp->model->trimReaderLeft(_imp->currentEditedReader, newFirstFrame);
 
         break;
     }
@@ -3167,9 +3167,9 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
         Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>
                 (_imp->currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
 
-        double newTime = (currentTime - timeOffsetKnob->getValue());
+        double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
-        _imp->model->trimReaderRight(_imp->currentEditedReader, newTime);
+        _imp->model->trimReaderRight(_imp->currentEditedReader, newLastFrame);
 
         break;
     }

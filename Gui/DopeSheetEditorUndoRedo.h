@@ -74,7 +74,7 @@ public:
     bool mergeWith(const QUndoCommand *other);
 
 private:
-    void trimLeft(double firstFrameTime);
+    void trimLeft(double firstFrame);
 
 private:
     DSNode *_dsNodeReader;
@@ -104,7 +104,7 @@ public:
     bool mergeWith(const QUndoCommand *other);
 
 private:
-    void trimRight(double time);
+    void trimRight(double lastFrame);
 
 private:
     DSNode *_dsNodeReader;
