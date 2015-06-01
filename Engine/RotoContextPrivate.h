@@ -895,6 +895,7 @@ struct RotoDrawableItemPrivate
 struct RotoStrokeItemPrivate
 {
     Natron::RotoStrokeType type;
+    bool finished;
     boost::shared_ptr<Double_Knob> brushSize;
     boost::shared_ptr<Double_Knob> brushSpacing;
     boost::shared_ptr<Double_Knob> brushHardness;
@@ -950,6 +951,7 @@ struct RotoStrokeItemPrivate
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
+    , finished(false)
     , brushSize(new Double_Knob(NULL, kRotoBrushSizeParamLabel, 1, false))
     , brushSpacing(new Double_Knob(NULL, kRotoBrushSpacingParamLabel, 1, false))
     , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))

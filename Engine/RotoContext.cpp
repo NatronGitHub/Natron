@@ -2050,7 +2050,7 @@ RotoLayer::save(RotoItemSerialization *obj) const
             childSerialization.reset(new BezierSerialization);
             isBezier->save( childSerialization.get() );
         } else if (isStroke) {
-            childSerialization.reset(new RotoStrokeSerialization);
+            childSerialization.reset(new RotoStrokeSerialization());
             isStroke->save(childSerialization.get());
         } else {
             assert(layer);
@@ -5013,6 +5013,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 void
 RotoStrokeItem::setStrokeFinished()
 {
+    _imp->finished = true;
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(false);
         _imp->effectNode->incrementKnobsAge();
@@ -5370,7 +5371,7 @@ RotoStrokeItem::getBoundingBox(int time) const
     if (!isActivated)  {
         return RectD();
     }
-    if (_imp->mergeNode->isDuringPaintStrokeCreation()) {
+    if (!_imp->finished) {
         return _imp->bbox;
     } else {
         return computeBoundingBox(time);
@@ -7811,8 +7812,6 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     if (mipmapLevel != 0) {
         brushSizePixel /= (1 << mipmapLevel);
     }
-    brushSizePixel /= 2;
-    
     
 
     std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();

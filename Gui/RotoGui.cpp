@@ -71,9 +71,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowWidth 3
 #define kTransformArrowOffsetFromPoint 15
 
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-#define DRAW_STROKE_FITTED_CURVE
-#endif
 
 using namespace Natron;
 
@@ -1331,13 +1328,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     continue;
                 }
 
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-                std::list<Point> points;
-                isStroke->evaluateAtTime_DeCasteljau(time, 0, 50, &points, NULL);
-#else
                 std::list<std::pair<Point,double> > points;
                 isStroke->evaluateStroke(0,&points);
-#endif
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
                 if (!locked) {
@@ -1347,41 +1339,11 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 }
                 glColor4dv(curveColor);
                 glBegin(GL_LINE_STRIP);
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-                for (std::list<Point>::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
-                     glVertex2f(it2->x, it2->y);
-                }
-#else
                 for (std::list<std::pair<Point,double> >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->first.x, it2->first.y);
                 }
-#endif
                 glEnd();
                 
-#ifdef DRAW_STROKE_FITTED_CURVE
-                const BezierCPs& cps = isStroke->getControlPoints();
-                for (BezierCPs::const_iterator it2 = cps.begin(); it2 !=cps.end(); ++it2) {
-                    
-                    double x,y,lx,ly,rx,ry;
-                    (*it2)->getPositionAtTime(time, &x, &y);
-                    (*it2)->getLeftBezierPointAtTime(time, &lx, &ly);
-                    (*it2)->getRightBezierPointAtTime(time, &rx, &ry);
-                    glColor3f(0., 1., 1.);
-                    glBegin(GL_POINTS);
-                    glVertex2d(lx, ly);
-                    glVertex2d(rx, ry);
-                    glEnd();
-                    glColor3f(1., 0., 0.);
-                    glBegin(GL_POINTS);
-                    glVertex2d(x, y);
-                    glEnd();
-                    glColor3f(0., 1., 0.);
-                    glBegin(GL_LINES);
-                    glVertex2d(lx, ly);
-                    glVertex2d(rx, ry);
-                    glEnd();
-                }
-#endif
                 
             } else if (isBezier) {
                 ///draw the bezier
