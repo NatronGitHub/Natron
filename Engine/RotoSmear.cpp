@@ -137,7 +137,7 @@ static ImagePtr renderSmearMaskDot(const boost::shared_ptr<RotoContext>& context
     std::list<std::pair<Point,double> > points;
     points.push_back(std::make_pair(p, pressure));
     ImagePtr ret;
-    (void)context->renderSingleStroke(stroke, dotRod, points, mipmapLevel, comps, depth, &ret);
+    (void)context->renderSingleStroke(stroke, dotRod, points, mipmapLevel, 1., comps, depth, 0, &ret);
     return ret;
 }
 

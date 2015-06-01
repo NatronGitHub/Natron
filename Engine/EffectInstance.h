@@ -376,10 +376,7 @@ public:
         return false;
     }
 
-    virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns true if the node is capable of generating

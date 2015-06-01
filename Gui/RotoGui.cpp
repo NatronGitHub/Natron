@@ -1133,6 +1133,18 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
             _imp->sourceTypeCombobox->setVisible(false);
         }
     }
+    if (actionRole == eRotoRolePaintBrush || actionRole == eRotoRoleCloneBrush || actionRole == eRotoRoleMergeBrush ||
+        actionRole == eRotoRoleEffectBrush) {
+        if ((RotoToolEnum)data.x() == eRotoToolSolidBrush) {
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeOver);
+        } else if ((RotoToolEnum)data.x() == eRotoToolBurn) {
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeColorBurn);
+        } else if ((RotoToolEnum)data.x() == eRotoToolDodge) {
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeColorDodge);
+        } else {
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeCopy);
+        }
+    }
     
     _imp->toggleToolsSelection(toolButton);
     Q_EMIT roleChanged( (int)previousRole,(int)actionRole);
@@ -3780,7 +3792,7 @@ RotoGui::onBboxClickButtonClicked(bool e)
 bool
 RotoGui::isStickySelectionEnabled() const
 {
-    return _imp->stickySelectionEnabled->isChecked();
+    return _imp->stickySelectionEnabled ? _imp->stickySelectionEnabled->isChecked() : false;
 }
 
 void

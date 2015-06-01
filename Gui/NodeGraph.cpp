@@ -4162,7 +4162,6 @@ NodeGraph::focusInEvent(QFocusEvent* e)
     if (_imp->_gui) {
         _imp->_gui->setLastSelectedGraph(this);
     }
-    _imp->_undoStack->setActive();
 }
 
 void

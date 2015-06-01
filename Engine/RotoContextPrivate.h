@@ -1442,6 +1442,7 @@ struct RotoContextPrivate
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip(kRotoBrushCenterParamHint);
             center->setAllDimensionsEnabled(false);
+            center->setAnimationEnabled(false);
             double defCenter[2] = {.5,.5};
             center->setDefaultValuesNormalized(2, defCenter);
             clonePage->addKnob(center);
@@ -1676,7 +1677,12 @@ struct RotoContextPrivate
                    double opacity);
 
     
-    void renderStroke(cairo_t* cr,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
+    double renderStroke(cairo_t* cr,
+                      const std::list<std::pair<Natron::Point,double> >& points,
+                      double distToNext,
+                      const RotoStrokeItem* stroke,
+                      int time,
+                      unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);

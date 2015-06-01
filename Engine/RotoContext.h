@@ -1102,6 +1102,8 @@ private:
     
     void refreshBoundingBox();
     
+    void resetCloneTransformCenter();
+    
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
@@ -1247,13 +1249,15 @@ public:
                                                           Natron::ImageBitDepthEnum depth,
                                                           unsigned int mipmapLevel);
     
-    boost::shared_ptr<Natron::Image> renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                                        const RectD& rod,
-                                                        const std::list<std::pair<Natron::Point,double> >& points,
-                                                        unsigned int mipmapLevel,
-                                                        const Natron::ImageComponents& components,
-                                                        Natron::ImageBitDepthEnum depth,
-                                                        boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+    double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                            const RectD& rod,
+                            const std::list<std::pair<Natron::Point,double> >& points,
+                            unsigned int mipmapLevel,
+                            double par,
+                            const Natron::ImageComponents& components,
+                            Natron::ImageBitDepthEnum depth,
+                            double distToNext,
+                            boost::shared_ptr<Natron::Image> *wholeStrokeImage);
     
 private:
     

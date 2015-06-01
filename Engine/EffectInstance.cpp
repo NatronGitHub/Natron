@@ -1288,7 +1288,7 @@ EffectInstance::getImage(int inputNb,
         
         if (attachedStroke) {
             if (getNode()->isDuringPaintStrokeCreation()) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, roi, prefComps, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
             } else {
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
                                                       time, view, depth, mipMapLevel);
@@ -2546,9 +2546,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     
     
-    RectI downscaledImageBounds,upscaledImageBounds;
-    rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBounds);
-    rod.toPixelEnclosing(0, par, &upscaledImageBounds);
+    
+    RectI downscaledImageBoundsNc,upscaledImageBoundsNc;
+    rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBoundsNc);
+    rod.toPixelEnclosing(0, par, &upscaledImageBoundsNc);
     
     
     
@@ -2556,28 +2557,31 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ///Intersection will be in pixel coordinates
     if (tilesSupported) {
         if (useImageAsOutput) {
-            if (!roi.intersect(upscaledImageBounds, &roi)) {
+            if (!roi.intersect(upscaledImageBoundsNc, &roi)) {
                 return eRenderRoIRetCodeOk;
             }
-            assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
-                   roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
+            assert(roi.x1 >= upscaledImageBoundsNc.x1 && roi.y1 >= upscaledImageBoundsNc.y1 &&
+                   roi.x2 <= upscaledImageBoundsNc.x2 && roi.y2 <= upscaledImageBoundsNc.y2);
             
         } else {
-            if (!roi.intersect(downscaledImageBounds, &roi)) {
+            if (!roi.intersect(downscaledImageBoundsNc, &roi)) {
                 return eRenderRoIRetCodeOk;
             }
-            assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
-                   roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
+            assert(roi.x1 >= downscaledImageBoundsNc.x1 && roi.y1 >= downscaledImageBoundsNc.y1 &&
+                   roi.x2 <= downscaledImageBoundsNc.x2 && roi.y2 <= downscaledImageBoundsNc.y2);
         }
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
         ///just allocate the roi
-        upscaledImageBounds.intersect(roi, &upscaledImageBounds);
-        downscaledImageBounds.intersect(args.roi, &downscaledImageBounds);
+        upscaledImageBoundsNc.intersect(roi, &upscaledImageBoundsNc);
+        downscaledImageBoundsNc.intersect(args.roi, &downscaledImageBoundsNc);
 #endif
     } else {
-        roi = useImageAsOutput ? upscaledImageBounds : downscaledImageBounds;
+        roi = useImageAsOutput ? upscaledImageBoundsNc : downscaledImageBoundsNc;
     }
-        
+    
+    const RectI& downscaledImageBounds = downscaledImageBoundsNc;
+    const RectI& upscaledImageBounds = upscaledImageBoundsNc;
+    
     RectD canonicalRoI;
     if (useImageAsOutput) {
         roi.toCanonical(0, par, rod, &canonicalRoI);
@@ -2680,9 +2684,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     //This is to deal with the situation with an image rendered at scale 1 in the cache, but a new render asking for the same
                     //image at scale 0.5. The RoD will then be slightly larger at scale 0.5 thus re-rendering a few pixels. If the effect
                     //wouldn't support tiles, then it'b problematic as it would need to render the whole frame again just for a few pixels.
-                    if (!tilesSupported) {
-                        rod = plane.fullscaleImage->getRoD();
-                    }
+//                    if (!tilesSupported) {
+//                        rod = plane.fullscaleImage->getRoD();
+//                    }
                     framesNeeded = plane.fullscaleImage->getParams()->getFramesNeeded();
                 }
             } else {
@@ -2763,8 +2767,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             RectI lastStrokePixelRoD;
             lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
-            for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
-                it2->second.fullscaleImage->clearBitmap(tilesSupported ? lastStrokePixelRoD : roi);
+            for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin();
+                 it2 != planesToRender.planes.end(); ++it2) {
+                it2->second.fullscaleImage->clearBitmap(tilesSupported ? lastStrokePixelRoD : downscaledImageBounds);
             }
         }
         
@@ -2811,7 +2816,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (!tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsLeftToRender.clear();
-            rectsLeftToRender.push_back(isPlaneCached->getBounds());
+            rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
         }
     } else {
         if (tilesSupported) {
@@ -3239,6 +3244,20 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         // Kindly check that everything we asked for is rendered!
         
         for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
+            
+            if (!tilesSupported) {
+                //assert that bounds are consistent with the RoD if tiles are not supported
+                const RectD & srcRodCanonical = useImageAsOutput ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
+                RectI srcBounds;
+                srcRodCanonical.toPixelEnclosing(renderMappedMipMapLevel, par, &srcBounds);
+                RectI srcRealBounds = useImageAsOutput ? it->second.fullscaleImage->getBounds() : it->second.downscaleImage->getBounds();
+                assert(srcRealBounds.x1 == srcBounds.x1);
+                assert(srcRealBounds.x2 == srcBounds.x2);
+                assert(srcRealBounds.y1 == srcBounds.y1);
+                assert(srcRealBounds.y2 == srcBounds.y2);
+            }
+
+            
             std::list<RectI> restToRender;
             if (useImageAsOutput) {
                 it->second.fullscaleImage->getRestToRender(roi,restToRender);
@@ -3246,6 +3265,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 it->second.downscaleImage->getRestToRender(roi,restToRender);
             }
             assert(restToRender.empty());
+            
         }
     }
 #endif
@@ -6308,6 +6328,13 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
     return ret;
 }
 
+bool
+EffectInstance::isPaintingOverItselfEnabled() const
+{
+    NodePtr node = getNode();
+    assert(node);
+    return node->isDuringPaintStrokeCreation();
+}
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)

@@ -4051,8 +4051,6 @@ void
 CurveWidget::focusInEvent(QFocusEvent* e)
 {
     QGLWidget::focusInEvent(e);
-
-    _imp->_undoStack->setActive();
 }
 
 void

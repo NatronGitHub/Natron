@@ -276,6 +276,8 @@ struct Node::Implementation
     , strokeAgeToRender(-1)
     , strokeImage()
     , lastStrokePoints()
+    , distToNextIn(0.)
+    , distToNextOut(0.)
     , useAlpha0ToConvertFromRGBToRGBA(false)
     {        
         ///Initialize timers
@@ -475,6 +477,7 @@ struct Node::Implementation
     int strokeImageAge, strokeAgeToRender;
     ImagePtr strokeImage;
     std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+    double distToNextIn,distToNextOut;
     
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
@@ -741,7 +744,7 @@ Node::invalidateLastStrokeData()
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
     assert(stroke);
-    stroke->clearChangesUpToAge(_imp->strokeAgeToRender);
+    stroke->clearChangesUpToAge(_imp->strokeImageAge);
 }
 
 void
@@ -754,6 +757,8 @@ Node::updateLastPaintStrokeData()
         assert(stroke);
         _imp->lastStrokePoints.clear();
         stroke->getMostRecentStrokeChangesSinceAge(_imp->strokeImageAge, &_imp->lastStrokePoints, &_imp->lastStrokeMovementBbox, &_imp->wholeStrokeBbox, &_imp->strokeAgeToRender);
+
+        _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
     }
     _imp->liveInstance->clearActionsCache();
@@ -814,20 +819,37 @@ Node::updateLastPaintStrokeAge()
 
 boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                 const RectD& canonicalRoi,
+                                 const RectI& /*roi*/,
+                                 double par,
                                  const Natron::ImageComponents& components,
                                  Natron::ImageBitDepthEnum depth) const
 {
     
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    ImagePtr ret;
+    
+    std::list<RectI> restToRender;
+    if (_imp->strokeImage && _imp->strokeImageAge == _imp->strokeAgeToRender) {
+//        _imp->strokeImage->getRestToRender(roi, restToRender);
+//        if (restToRender.empty()) {
+            return _imp->strokeImage;
+//        }
+    } else {
+//        restToRender.push_back(roi);
+//        if (_imp->strokeImage) {
+//            _imp->strokeImage->clearBitmap(roi);
+//        }
+    }
     boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
     assert(stroke);
-    
-    ret = stroke->getContext()->renderSingleStroke(stroke, canonicalRoi, _imp->lastStrokePoints, mipMapLevel, components, depth,  &_imp->strokeImage);
+//    qDebug() << "Roi: " << roi.x1 << roi.y1 << roi.x2 << roi.y2;
+//    for (std::list<RectI>::iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
+//        RectD canonicalRect;
+//        it->toCanonical_noClipping(mipMapLevel, par, &canonicalRect);
+        _imp->distToNextOut = stroke->getContext()->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
+  //  }
     _imp->strokeImageAge = _imp->strokeAgeToRender;
 
-    return ret;
+    return _imp->strokeImage;
 }
 
 bool

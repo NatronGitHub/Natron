@@ -62,6 +62,7 @@ class RotoContext;
 class NodeCollection;
 class RotoStrokeItem;
 class RectD;
+class RectI;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -382,7 +383,8 @@ public:
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     void getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* points) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                                                const RectD& canonicalRoi,
+                                                                const RectI& roi,
+                                                                double par,
                                                                 const Natron::ImageComponents& components,
                                                                 Natron::ImageBitDepthEnum depth) const;
     

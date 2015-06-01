@@ -554,9 +554,6 @@ Image::Image(const ImageKey & key,
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
     
-#ifdef DEBUG
-    checkBounds_debug();
-#endif
 }
 
 Image::Image(const ImageKey & key,
@@ -568,10 +565,6 @@ Image::Image(const ImageKey & key,
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
-    
-#ifdef DEBUG
-    checkBounds_debug();
-#endif
     
     allocateMemory();
 }
@@ -610,10 +603,6 @@ Image::Image(const ImageComponents& components,
     _rod = regionOfDefinition;
     _bounds = _params->getBounds();
     _par = par;
-    
-#ifdef DEBUG
-    checkBounds_debug();
-#endif
     
     allocateMemory();
 }
@@ -707,16 +696,6 @@ Image::makeParams(int cost,
                                                            framesNeeded) );
 }
 
-#ifdef DEBUG
-void
-Image::checkBounds_debug()
-{
-    RectI pixelRod;
-    _rod.toPixelEnclosing(getMipMapLevel(), getPixelAspectRatio(), &pixelRod);
-    assert(_bounds.left() >= pixelRod.left() && _bounds.right() <= pixelRod.right() &&
-           _bounds.bottom() >= pixelRod.bottom() && _bounds.top() <= pixelRod.top());
-}
-#endif
 
 
 // code proofread and fixed by @devernay on 8/8/2014
