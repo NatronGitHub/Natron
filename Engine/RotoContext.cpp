@@ -2089,6 +2089,26 @@ RotoLayer::load(const RotoItemSerialization &obj)
 #ifdef ROTO_ENABLE_PAINT
             else if (s) {
                 boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,this_layer));
+                
+                ///Attach this stroke to the underlying nodes used
+                boost::shared_ptr<Node> effectNode = stroke->getEffectNode();
+                if (effectNode) {
+                    effectNode->attachStrokeItem(stroke);
+                }
+                boost::shared_ptr<Node> mergeNode = stroke->getMergeNode();
+                if (mergeNode) {
+                    mergeNode->attachStrokeItem(stroke);
+                }
+                boost::shared_ptr<Node> timeOffsetNode = stroke->getTimeOffsetNode();
+                if (timeOffsetNode) {
+                    timeOffsetNode->attachStrokeItem(stroke);
+                }
+                boost::shared_ptr<Node> frameHoldNode = stroke->getFrameHoldNode();
+                if (frameHoldNode) {
+                    frameHoldNode->attachStrokeItem(stroke);
+                }
+
+                
                 stroke->load(*s);
                 
                 QMutexLocker l(&itemMutex);
