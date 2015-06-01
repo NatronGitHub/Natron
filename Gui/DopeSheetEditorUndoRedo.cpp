@@ -171,12 +171,14 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
 
+    qDebug() << firstFrame;
+
     firstFrameKnob->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(r);
     firstFrameKnob->endChanges();
 
-    _model->emit_modelChanged();
+    // The dope sheet view is automatically updated (see DopeSheetView::onReaderChanged())
 }
 
 int DSLeftTrimReaderCommand::id() const
@@ -237,7 +239,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
     Q_UNUSED(r);
     lastFrameKnob->endChanges();
 
-    _model->emit_modelChanged();
+    // The dope sheet view is automatically updated (see DopeSheetView::onReaderChanged())
 }
 
 int DSRightTrimReaderCommand::id() const

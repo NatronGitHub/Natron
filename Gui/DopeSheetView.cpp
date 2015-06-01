@@ -2693,18 +2693,18 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     else if (nodeType == DSNode::ReaderNodeType) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        boost::shared_ptr<KnobSignalSlotHandler> firstFrameKnob = node->getKnobByName("firstFrame")->getSignalSlotHandler();
         boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName("startingTime")->getSignalSlotHandler();
-
-        connect(firstFrameKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onReaderChanged()));
 
         connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onReaderChanged()));
 
         connect(startingTimeKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onReaderChanged()));
+
+        // We don't make the connection for the first frame knob, because the
+        // starting time is updated when it's modified. Thus we avoid two
+        // refreshes of the view.
 
         _imp->computeReaderRange(dsNode);
     }
