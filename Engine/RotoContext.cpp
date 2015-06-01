@@ -7773,8 +7773,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         brushSizePixel /= (1 << mipmapLevel);
     }
     
+    
 
     std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
+    
+    if (visiblePortion.size() == 1) {
+        double internalDotRadius, externalDotRadius, spacing;
+        std::vector<std::pair<double,double> > opacityStops;
+        getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
+        renderDot(cr, it->first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
+        return 0;
+    }
+    
     std::list<std::pair<Point,double> >::iterator next = it;
     ++next;
 

@@ -845,6 +845,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
 //    for (std::list<RectI>::iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
 //        RectD canonicalRect;
 //        it->toCanonical_noClipping(mipMapLevel, par, &canonicalRect);
+    /*qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;*/
         _imp->distToNextOut = stroke->getContext()->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
   //  }
     _imp->strokeImageAge = _imp->strokeAgeToRender;
