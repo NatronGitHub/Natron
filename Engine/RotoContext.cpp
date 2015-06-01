@@ -4899,6 +4899,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
                        const KeyFrameSet& pCurve,
                        unsigned int mipMapLevel,
+                       double halfBrushSize,
                        std::list<std::pair<Natron::Point,double> >* points,
                        RectD* bbox)
 {
@@ -4929,13 +4930,23 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         Natron::Point p;
         p.x = xIt->getValue();
         p.y = yIt->getValue();
-        points->push_back(std::make_pair(p, pIt->getValue()));
-        bbox->x1 = p.x;
-        bbox->x2 = p.x;
-        bbox->y1 = p.y;
-        bbox->y2 = p.y;
+        double pressure = pIt->getValue();
+        points->push_back(std::make_pair(p, pressure));
+        if (bbox) {
+            bbox->x1 = p.x;
+            bbox->x2 = p.x;
+            bbox->y1 = p.y;
+            bbox->y2 = p.y;
+            bbox->x1 -= halfBrushSize * pressure;
+            bbox->x2 += halfBrushSize * pressure;
+            bbox->y1 -= halfBrushSize * pressure;
+            bbox->y2 += halfBrushSize * pressure;
+        }
         return;
     }
+    
+    
+    assert(xCurve.size() == 2);
     
     for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
         
@@ -4947,6 +4958,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         x2 = xNext->getValue();
         y2 = yNext->getValue();
         press2 = pNext->getValue();
+        
+        double pressure = std::max(press1, press2);
         
         x1pr = x1 + xIt->getRightDerivative() / 3.;
         y1pr = y1 + yIt->getRightDerivative() / 3.;
@@ -4991,6 +5004,14 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             points->push_back(std::make_pair(p, pi));
         }
         
+        if (bbox) {
+            bbox->x1 -= halfBrushSize * pressure;
+            bbox->x2 += halfBrushSize * pressure;
+            bbox->y1 -= halfBrushSize * pressure;
+            bbox->y2 += halfBrushSize * pressure;
+        }
+
+        
         if (xNext != xCurve.end()) {
             ++xNext;
         }
@@ -5000,7 +5021,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         if (pNext != pCurve.end()) {
             ++pNext;
         }
-    }
+    } // for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
     
 }
 
@@ -5102,23 +5123,14 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
             tmpP.addKeyFrame(k);
         }
         
-        
+        double brushSize = (_imp->brushSize->getValue() / 2.);
+
   
-        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), 0, &data.points, &data.tickBbox);
+        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), 0, brushSize, &data.points, &data.tickBbox);
         _imp->bbox.merge(data.tickBbox);
         
-        double brushSize = (_imp->brushSize->getValue() / 2.) * pressure;
-        
-        data.tickBbox.x1 -= brushSize;
-        data.tickBbox.x2 += brushSize;
-        data.tickBbox.y1 -= brushSize;
-        data.tickBbox.y2 += brushSize;
-        
         data.wholeBbox = _imp->bbox;
-        data.wholeBbox.x1 -= brushSize;
-        data.wholeBbox.x2 += brushSize;
-        data.wholeBbox.y1 -= brushSize;
-        data.wholeBbox.y2 += brushSize;
+
         
         ++_imp->lastTickAge;
         _imp->strokeTicks.insert(std::make_pair(_imp->lastTickAge, data));
@@ -5223,7 +5235,6 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->pressureCurve.clone(otherStroke->_imp->pressureCurve);
         _imp->type = otherStroke->_imp->type;
     }
-    refreshBoundingBox();
     RotoDrawableItem::clone(other);
 }
 
@@ -5270,7 +5281,6 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
     _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
     
-    refreshBoundingBox();
     resetNodesThreadSafety();
     setStrokeFinished();
 }
@@ -5297,29 +5307,82 @@ RotoStrokeItem::resetCloneTransformCenter()
     _imp->cloneCenter->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
 }
 
-void
-RotoStrokeItem::refreshBoundingBox()
-{
-    QMutexLocker k(&itemMutex);
 
-    _imp->bbox.x1 = std::numeric_limits<double>::infinity();
-    _imp->bbox.x2 = -std::numeric_limits<double>::infinity();
-    _imp->bbox.y1 = std::numeric_limits<double>::infinity();
-    _imp->bbox.y2 = -std::numeric_limits<double>::infinity();
+RectD
+RotoStrokeItem::computeBoundingBox(int time) const
+{
+
+    RectD bbox;
+    bool bboxSet = false;
     
-    assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount());
-    int nKfs = _imp->xCurve.getKeyFramesCount();
-    for (int i = 0; i < nKfs; ++i) {
-        KeyFrame xK,yK;
-        bool ok = _imp->xCurve.getKeyFrameWithIndex(i, &xK);
-        assert(ok);
-        ok = _imp->yCurve.getKeyFrameWithIndex(i, &yK);
-        assert(ok);
-        _imp->bbox.x1 = std::min(_imp->bbox.x1, xK.getValue());
-        _imp->bbox.x2 = std::max(_imp->bbox.x2, xK.getValue());
-        _imp->bbox.y1 = std::min(_imp->bbox.y1, yK.getValue());
-        _imp->bbox.y2 = std::max(_imp->bbox.y2, yK.getValue());
+    double halfBrushSize = _imp->brushSize->getValueAtTime(time) / 2.;
+    
+    KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
+    KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
+    KeyFrameSet pCurve = _imp->pressureCurve.getKeyFrames_mt_safe();
+    
+    assert(xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size());
+    
+    KeyFrameSet::const_iterator xIt = xCurve.begin();
+    KeyFrameSet::const_iterator yIt = yCurve.begin();
+    KeyFrameSet::const_iterator pIt = pCurve.begin();
+    KeyFrameSet::const_iterator xNext = xIt;
+    KeyFrameSet::const_iterator yNext = yIt;
+    KeyFrameSet::const_iterator pNext = pIt;
+    ++xNext;
+    ++yNext;
+    ++pNext;
+    
+    if (xCurve.size() == 1) {
+        Natron::Point p;
+        p.x = xIt->getValue();
+        p.y = yIt->getValue();
+        double pressure = pIt->getValue();
+        bbox.x1 = p.x;
+        bbox.x2 = p.x;
+        bbox.y1 = p.y;
+        bbox.y2 = p.y;
+        bbox.x1 -= halfBrushSize * pressure;
+        bbox.x2 += halfBrushSize * pressure;
+        bbox.y1 -= halfBrushSize * pressure;
+        bbox.y2 += halfBrushSize * pressure;
+        
     }
+    
+    for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
+        
+        RectD subBox;
+        
+        double pressure = std::max(pIt->getValue(), pNext->getValue());
+        
+        if (xNext != xCurve.end()) {
+            ++xNext;
+        }
+        if (yNext != yCurve.end()) {
+            ++yNext;
+        }
+        if (pNext != pCurve.end()) {
+            ++pNext;
+        }
+        
+        subBox.x1 = std::min(xIt->getValue(), xNext->getValue());
+        subBox.x2 = std::max(xIt->getValue(), xNext->getValue());
+        subBox.y1 = std::min(yIt->getValue(), yNext->getValue());
+        subBox.y2 = std::max(yIt->getValue(), yNext->getValue());
+        
+        subBox.x1 -= halfBrushSize * pressure;
+        subBox.x2 += halfBrushSize * pressure;
+        subBox.y1 -= halfBrushSize * pressure;
+        subBox.y2 += halfBrushSize * pressure;
+        
+        if (!bboxSet) {
+            bboxSet = true;
+            bbox = subBox;
+        } else {
+            bbox.merge(subBox);
+        }
+    }
+    return bbox;
 
 }
 
@@ -5331,17 +5394,16 @@ RotoStrokeItem::getBoundingBox(int time) const
     if (_imp->xCurve.getKeyFramesCount() <= 1) {
         return RectD();
     }
-    RectD bbox = _imp->bbox;
-    double brushSize = _imp->brushSize->getValueAtTime(time) / 2.;
+    
     bool isActivated = getActivatedKnob()->getValueAtTime(time);
     if (!isActivated)  {
         return RectD();
     }
-    bbox.x1 -= brushSize;
-    bbox.x2 += brushSize;
-    bbox.y1 -= brushSize;
-    bbox.y2 += brushSize;
-    return bbox;
+    if (_imp->mergeNode->isDuringPaintStrokeCreation()) {
+        return _imp->bbox;
+    } else {
+        return computeBoundingBox(time);
+    }
 }
 
 void
@@ -5357,6 +5419,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Nat
         pSet = _imp->pressureCurve.getKeyFrames_mt_safe();
     }
     assert(xSet.size() == ySet.size() && xSet.size() == pSet.size());
+    double brushSize = _imp->brushSize->getValue() / 2.;
     if (xSet.size() > 2) {
         //Split all curves into small temp curves of 2 points, so that the interpolation yields
         //derivative which are the same whether we are building up the stroke (actively drawing) or rendering
@@ -5378,9 +5441,11 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Nat
             yTmp.addKeyFrame(*yIt);
             yTmp.addKeyFrame(*yNext);
             pTmp.addKeyFrame(*pIt);
+            double pressure = pIt->getValue();
             pTmp.addKeyFrame(*pNext);
+            pressure = std::max(pressure, pNext->getValue());
             RectD tmpBox;
-            evaluateStrokeInternal(xTmp.getKeyFrames_mt_safe(),yTmp.getKeyFrames_mt_safe(),pTmp.getKeyFrames_mt_safe(),mipMapLevel,points,&tmpBox);
+            evaluateStrokeInternal(xTmp.getKeyFrames_mt_safe(),yTmp.getKeyFrames_mt_safe(),pTmp.getKeyFrames_mt_safe(),mipMapLevel,brushSize,points,&tmpBox);
             if (isFirst) {
                 if (bbox) {
                     *bbox = tmpBox;
@@ -5394,15 +5459,9 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Nat
             
         }
     } else {
-        evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,points,bbox);
+        evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,brushSize, points,bbox);
     }
-    if (bbox) {
-        double brushSize = _imp->brushSize->getValue() / 2.;
-        bbox->x1 -= brushSize;
-        bbox->x2 += brushSize;
-        bbox->y1 -= brushSize;
-        bbox->y2 += brushSize;
-    }
+    
 }
 
 boost::shared_ptr<Double_Knob>
