@@ -684,6 +684,8 @@ public:
     std::vector<DSSelectedKey> isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension) const;
     std::vector<DSSelectedKey> isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
 
+    double clampedMouseOffset(double fromTime, double toTime);
+
     // Textures
     void initializeKeyframeTextures();
     DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
@@ -1060,6 +1062,20 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode
     }
 
     return ret;
+}
+
+double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
+{
+    double totalMovement = toTime - fromTime;
+    // Clamp the motion to the nearet integer
+    totalMovement = std::floor(totalMovement + 0.5);
+
+    double dt = totalMovement - keyDragLastMovement;
+
+    // Update the last drag movement
+    keyDragLastMovement = totalMovement;
+
+    return dt;
 }
 
 void DopeSheetViewPrivate::initializeKeyframeTextures()
@@ -3110,18 +3126,11 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
     switch (_imp->eventState) {
     case DopeSheetView::esMoveKeyframeSelection:
     {
-        double totalMovement = currentTime - lastZoomCoordsOnMousePress.x();
-        // Clamp the motion to the nearet integer
-        totalMovement = std::floor(totalMovement + 0.5);
-
-        double dt = totalMovement - _imp->keyDragLastMovement;
+        double dt = _imp->clampedMouseOffset(lastZoomCoordsOnMousePress.x(), currentTime);
 
         if (dt >= 1.0f || dt <= -1.0f) {
             _imp->model->moveSelectedKeys(dt);
         }
-
-        // Update the last drag movement
-        _imp->keyDragLastMovement = totalMovement;
 
         break;
     }
@@ -3164,7 +3173,6 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
     }
     case DopeSheetView::esClipRepos:
     {
-
         int mouseOffset = (lastZoomCoordsOnMousePress.x() - _imp->lastTimeOffsetOnMousePress);
         double newTime = (currentTime - mouseOffset);
 
@@ -3174,16 +3182,11 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
     }
     case DopeSheetView::esGroupRepos:
     {
-        double totalMovement = currentTime - lastZoomCoordsOnMousePress.x();
-        // Clamp the motion to the nearet integer
-        totalMovement = std::floor(totalMovement + 0.5);
+        double dt = _imp->clampedMouseOffset(lastZoomCoordsOnMousePress.x(), currentTime);
 
-        double dt = totalMovement - _imp->keyDragLastMovement;
-
-        _imp->model->moveGroup(_imp->currentEditedGroup, dt);
-
-        // Update the last drag movement
-        _imp->keyDragLastMovement = totalMovement;
+        if (dt >= 1.0f || dt <= -1.0f) {
+            _imp->model->moveGroup(_imp->currentEditedGroup, dt);
+        }
 
         break;
     }
