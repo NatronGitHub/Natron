@@ -1100,7 +1100,7 @@ public Q_SLOTS:
 private:
     RotoStrokeItem* findPreviousStrokeInHierarchy();
     
-    void refreshBoundingBox();
+    RectD computeBoundingBox(int time) const;
     
     void resetCloneTransformCenter();
     
