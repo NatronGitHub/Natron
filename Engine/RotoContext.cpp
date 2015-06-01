@@ -4908,9 +4908,10 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         bbox->y1 = std::numeric_limits<double>::infinity();
         bbox->y2 = -std::numeric_limits<double>::infinity();
     }
-    if (xCurve.size() <= 1) {
+    if (xCurve.empty()) {
         return;
     }
+    
     assert(xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size());
     
     KeyFrameSet::const_iterator xIt = xCurve.begin();
@@ -4923,6 +4924,19 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     ++yNext;
     ++pNext;
 
+    
+    if (xCurve.size() == 1) {
+        Natron::Point p;
+        p.x = xIt->getValue();
+        p.y = yIt->getValue();
+        points->push_back(std::make_pair(p, pIt->getValue()));
+        bbox->x1 = p.x;
+        bbox->x2 = p.x;
+        bbox->y1 = p.y;
+        bbox->y2 = p.y;
+        return;
+    }
+    
     for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
         
         double x1,y1,press1,x2,y2,press2;
@@ -5075,13 +5089,13 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
             KeyFrame k;
             k.setTime(_imp->pressureCurve.getKeyFramesCount());
             k.setValue(rawPoints.second);
+            pressure = rawPoints.second;
             int nK = _imp->pressureCurve.getKeyFramesCount();
             if (nK > 0) {
                 KeyFrame prev;
                 bool ok = _imp->pressureCurve.getKeyFrameWithIndex(nK - 1, &prev);
                 assert(ok);
                 tmpP.addKeyFrame(prev);
-                pressure = rawPoints.second;
                 pressure = std::max(pressure, prev.getValue());
             }
             _imp->pressureCurve.addKeyFrame(k);
@@ -5089,11 +5103,6 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
         }
         
         
-        
-        
-        if (_imp->xCurve.getKeyFramesCount() <= 1) {
-            return false;
-        }
   
         evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), 0, &data.points, &data.tickBbox);
         _imp->bbox.merge(data.tickBbox);
