@@ -5,6 +5,12 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include <vector>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+#include "Global/Enums.h"
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -12,66 +18,12 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/Curve.h"
-
-class DopeSheetView;
-class DSKnob;
-class QTreeWidgetItem;
-
+class DopeSheet;
+class DSSelectedKey;
 class DSNode;
-
-/**
- * @brief The DSSelectedKey struct
- *
- *
- */
-struct DSSelectedKey
-{
-    DSSelectedKey(DSKnob *knob, KeyFrame kf, QTreeWidgetItem *treeItem, int dim) :
-        dsKnob(knob),
-        key(kf),
-        dimTreeItem(treeItem),
-        dimension(dim)
-    {}
-
-    DSSelectedKey(const DSSelectedKey &other) :
-        dsKnob(other.dsKnob),
-        key(other.key),
-        dimTreeItem(other.dimTreeItem),
-        dimension(other.dimension)
-    {}
-
-    friend bool operator==(const DSSelectedKey &key1, const DSSelectedKey &key2)
-    {
-        if (key1.dsKnob != key2.dsKnob) {
-            return false;
-        }
-
-        if (key1.key != key2.key) {
-            return false;
-        }
-
-        if (key1.dimTreeItem != key2.dimTreeItem) {
-            return false;
-        }
-
-        if (key1.dimension != key2.dimension) {
-            return false;
-        }
-
-        return true;
-    }
-
-    DSKnob *dsKnob;
-    KeyFrame key;
-    QTreeWidgetItem *dimTreeItem;
-    int dimension;
-};
-
 
 typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
-
 
 /**
  * @brief The DSMoveKeysCommand class
@@ -83,7 +35,7 @@ class DSMoveKeysCommand : public QUndoCommand
 public:
     DSMoveKeysCommand(const DSKeyPtrList &keys,
                       double dt,
-                      DopeSheetView *view,
+                      DopeSheet *model,
                       QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -98,7 +50,7 @@ private:
 private:
     DSKeyPtrList _keys;
     double _dt;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 /**
@@ -112,7 +64,7 @@ public:
     DSLeftTrimReaderCommand(DSNode *dsNodeReader,
                             double oldTime,
                             double newTime,
-                            DopeSheetView *view,
+                            DopeSheet *model,
                             QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -128,7 +80,7 @@ private:
     DSNode *_dsNodeReader;
     double _oldTime;
     double _newTime;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 /**
@@ -142,7 +94,7 @@ public:
     DSRightTrimReaderCommand(DSNode *dsNodeReader,
                              double oldTime,
                              double newTime,
-                             DopeSheetView *view,
+                             DopeSheet *model,
                              QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -158,7 +110,7 @@ private:
     DSNode *_dsNodeReader;
     double _oldTime;
     double _newTime;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 class DSMoveReaderCommand : public QUndoCommand
@@ -166,7 +118,7 @@ class DSMoveReaderCommand : public QUndoCommand
 public:
     DSMoveReaderCommand(DSNode *dsNodeReader,
                         double oldTime, double newTime,
-                        DopeSheetView *view,
+                        DopeSheet *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -182,7 +134,7 @@ private:
     DSNode *_dsNodeReader;
     double _oldTime;
     double _newTime;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 /**
@@ -194,7 +146,7 @@ class DSRemoveKeysCommand : public QUndoCommand
 {
 public:
     DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
-                        DopeSheetView *view,
+                        DopeSheet *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -205,7 +157,7 @@ private:
 
 private:
     std::vector<DSSelectedKey> _keys;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 /**
@@ -218,7 +170,7 @@ class DSMoveGroupCommand : public QUndoCommand
 public:
     DSMoveGroupCommand(DSNode *dsNodeGroup,
                        double dt,
-                       DopeSheetView *view,
+                       DopeSheet *model,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -233,7 +185,7 @@ private:
 private:
     DSNode *_dsNodeGroup;
     double _dt;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 class DSChangeNodeLabelCommand : public QUndoCommand
@@ -289,7 +241,7 @@ class DSSetSelectedKeysInterpolationCommand : public QUndoCommand
 {
 public:
     DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                          DopeSheetView *view,
+                                          DopeSheet *model,
                                           QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -300,7 +252,7 @@ private:
 
 private:
     std::list<DSKeyInterpolationChange> _changes;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 
@@ -313,7 +265,7 @@ class DSPasteKeysCommand : public QUndoCommand
 {
 public:
     DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
-                       DopeSheetView *view,
+                       DopeSheet *model,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -324,7 +276,7 @@ private:
 
 private:
     std::vector<DSSelectedKey> _keys;
-    DopeSheetView *_view;
+    DopeSheet *_model;
 };
 
 

@@ -12,7 +12,6 @@
 
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
-#include "Gui/DopeSheetView.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
 
@@ -37,12 +36,12 @@ static bool dsSelectedKeyLessFunctor(const DSKeyPtr &left,
 
 DSMoveKeysCommand::DSMoveKeysCommand(const DSKeyPtrList &keys,
                                      double dt,
-                                     DopeSheetView *view,
+                                     DopeSheet *model,
                                      QUndoCommand *parent) :
     QUndoCommand(parent),
     _keys(keys),
     _dt(dt),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Move selected keys"));
 
@@ -107,9 +106,7 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
         viewer->renderCurrentFrame(true);
     }
 
-    _view->computeSelectedKeysBRect();
-
-    _view->redraw();
+    _model->emit_keyframeSelectionChanged();
 }
 
 int DSMoveKeysCommand::id() const
@@ -148,13 +145,13 @@ bool DSMoveKeysCommand::mergeWith(const QUndoCommand *other)
 DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(DSNode *dsNodeReader,
                                                  double oldTime,
                                                  double newTime,
-                                                 DopeSheetView *view,
+                                                 DopeSheet *model,
                                                  QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeReader(dsNodeReader),
     _oldTime(oldTime),
     _newTime(newTime),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Trim left"));
 }
@@ -179,7 +176,7 @@ void DSLeftTrimReaderCommand::trimLeft(double time)
     Q_UNUSED(r);
     firstFrameKnob->endChanges();
 
-    _view->redraw();
+    _model->emit_modelChanged();
 }
 
 int DSLeftTrimReaderCommand::id() const
@@ -209,13 +206,13 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSRightTrimReaderCommand::DSRightTrimReaderCommand(DSNode *dsNodeReader,
                                                    double oldTime, double newTime,
-                                                   DopeSheetView *view,
+                                                   DopeSheet *model,
                                                    QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeReader(dsNodeReader),
     _oldTime(oldTime),
     _newTime(newTime),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Trim right"));
 }
@@ -240,7 +237,7 @@ void DSRightTrimReaderCommand::trimRight(double time)
     Q_UNUSED(r);
     lastFrameKnob->endChanges();
 
-    _view->redraw();
+    _model->emit_modelChanged();
 }
 
 int DSRightTrimReaderCommand::id() const
@@ -271,13 +268,13 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
                                          double oldTime,
                                          double newTime,
-                                         DopeSheetView *view,
+                                         DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeReader(dsNodeReader),
     _oldTime(oldTime),
     _newTime(newTime),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Move reader"));
 }
@@ -302,7 +299,7 @@ void DSMoveReaderCommand::moveClip(double time)
     Q_UNUSED(r);
     timeOffsetKnob->endChanges();
 
-    _view->redraw();
+    _model->emit_modelChanged();
 }
 
 int DSMoveReaderCommand::id() const
@@ -331,11 +328,11 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
 ////////////////////////// DSRemoveKeysCommand //////////////////////////
 
 DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
-                                         DopeSheetView *view,
+                                         DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _keys(keys),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Delete selected keyframes"));
 }
@@ -365,17 +362,17 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         }
     }
 
-    _view->redraw();
+    _model->emit_keyframeSelectionChanged();
 }
 
 
 ////////////////////////// DSMoveGroupCommand //////////////////////////
 
-DSMoveGroupCommand::DSMoveGroupCommand(DSNode *dsNodeGroup, double dt, DopeSheetView *view, QUndoCommand *parent) :
+DSMoveGroupCommand::DSMoveGroupCommand(DSNode *dsNodeGroup, double dt, DopeSheet *model, QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeGroup(dsNodeGroup),
     _dt(dt),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Move Group Keyframes"));
 }
@@ -459,9 +456,7 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
         }
     }
 
-    _view->clearKeyframeSelection();
-
-    _view->redraw();
+    _model->clearKeyframeSelection();
 }
 
 
@@ -499,11 +494,11 @@ void DSChangeNodeLabelCommand::changeNodeLabel(const QString &label)
 ////////////////////////// DSSetSelectedKeysInterpolationCommand //////////////////////////
 
 DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                                                             DopeSheetView *view,
+                                                                             DopeSheet *model,
                                                                              QUndoCommand *parent) :
     QUndoCommand(parent),
     _changes(changes),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Set selected keys interpolation"));
 }
@@ -529,18 +524,18 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
                                                                           &it->_key->key);
     }
 
-    _view->redraw();
+    _model->emit_modelChanged();
 }
 
 
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
-                                       DopeSheetView *view,
+                                       DopeSheet *model,
                                        QUndoCommand *parent) :
     QUndoCommand(parent),
     _keys(keys),
-    _view(view)
+    _model(model)
 {
     setText(QObject::tr("Paste keyframes"));
 }
@@ -563,7 +558,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         boost::shared_ptr<KnobI> knob = key.dsKnob->getInternalKnob();
         knob->beginChanges();
 
-        SequenceTime currentTime = _view->getCurrentFrame();
+        SequenceTime currentTime = _model->getCurrentFrame();
 
         double keyTime = key.key.getTime();
 
@@ -590,5 +585,5 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         knob->endChanges();
     }
 
-    _view->redraw();
+    _model->emit_modelChanged();
 }

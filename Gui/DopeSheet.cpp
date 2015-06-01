@@ -7,8 +7,15 @@
 #include <QSplitter>
 #include <QtEvents>
 #include <QTreeWidget>
+#include <QUndoStack>
 
 // Natron includes
+#include "Engine/Knob.h"
+#include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/NoOp.h"
+#include "Engine/TimeLine.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
@@ -19,16 +26,13 @@
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 
-#include "Engine/Knob.h"
-#include "Engine/Node.h"
-#include "Engine/NodeGroup.h"
-#include "Engine/NoOp.h"
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, DSNode *> TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 1;
+
 
 ////////////////////////// Helpers //////////////////////////
 
@@ -82,21 +86,34 @@ public:
     Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<DSNode *> *result) const;
 
+    void pushUndoCommand(QUndoCommand *cmd);
+
     /* attributes */
     DopeSheet *q_ptr;
     DSNodeRows nodeRows;
+    DSKeyPtrList selectedKeyframes;
+
+    boost::scoped_ptr<QUndoStack> undoStack;
+
+    std::vector<DSSelectedKey> keyframesClipboard;
+
+    boost::shared_ptr<TimeLine> timeline;
 };
 
 DopeSheetPrivate::DopeSheetPrivate(DopeSheet *qq) :
     q_ptr(qq),
-    nodeRows()
+    nodeRows(),
+    selectedKeyframes(),
+    undoStack(new QUndoStack(q_ptr)),
+    keyframesClipboard(),
+    timeline()
 {
 
 }
 
 DopeSheetPrivate::~DopeSheetPrivate()
 {
-
+    selectedKeyframes.clear();
 }
 
 Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node) const
@@ -140,10 +157,20 @@ void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vec
     }
 }
 
+void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
+{
+    undoStack->setActive();
+    undoStack->push(cmd);
+}
 
-DopeSheet::DopeSheet() :
+
+DopeSheet::DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline) :
     _imp(new DopeSheetPrivate(this))
-{}
+{
+    _imp->timeline = timeline;
+
+    gui->registerNewUndoStack(_imp->undoStack.get());
+}
 
 DopeSheet::~DopeSheet()
 {
@@ -265,6 +292,11 @@ void DopeSheet::removeNode(NodeGui *node)
     _imp->nodeRows.erase(toRemove);
 
     delete (dsNode);
+}
+
+SequenceTime DopeSheet::getCurrentFrame() const
+{
+    return _imp->timeline->currentFrame();
 }
 
 DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
@@ -492,6 +524,239 @@ bool DopeSheet::nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) cons
     }
 
     return false;
+}
+
+DSKeyPtrList DopeSheet::getSelectedKeyframes() const
+{
+    return _imp->selectedKeyframes;
+}
+
+int DopeSheet::getSelectedKeyframesCount() const
+{
+    return _imp->selectedKeyframes.size();
+}
+
+void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp, bool updateBRect)
+{
+    if (!booleanOp) {
+        Q_EMIT keyframeSelectionAboutToBeCleared();
+
+        _imp->selectedKeyframes.clear();
+    }
+
+    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
+
+        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+            DSKeyPtr selected(new DSSelectedKey(key));
+
+            _imp->selectedKeyframes.push_back(selected);
+
+            QTreeWidgetItem *treeItem = findTreeItemForDim(selected->dsKnob, selected->dimension);
+            treeItem->setSelected(true);
+        }
+        else {
+            if (booleanOp) {
+                _imp->selectedKeyframes.erase(isAlreadySelected);
+            }
+        }
+    }
+
+    if (updateBRect) {
+        Q_EMIT keyframeSelectionChanged();
+    }
+}
+
+bool DopeSheet::keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const
+{
+    DSKeyPtrList::const_iterator isSelected = _imp->selectedKeyframes.end();
+
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        if (selectedKey->dimension != dimension) {
+            continue;
+        }
+
+        if (selectedKey->dsKnob == dsKnob && selectedKey->key == keyframe) {
+            isSelected = it;
+            break;
+        }
+    }
+
+    return (isSelected != _imp->selectedKeyframes.end());
+}
+
+DSKeyPtrList::iterator DopeSheet::keyframeIsSelected(const DSSelectedKey &key) const
+{
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        if (*(selectedKey.get()) == key) {
+            return it;
+        }
+    }
+
+    return _imp->selectedKeyframes.end();
+}
+
+void DopeSheet::clearKeyframeSelection()
+{
+    Q_EMIT keyframeSelectionAboutToBeCleared();
+
+    _imp->selectedKeyframes.clear();
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheet::deleteSelectedKeyframes()
+{
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
+    Q_EMIT keyframeSelectionAboutToBeCleared();
+
+    std::vector<DSSelectedKey> toRemove;
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        toRemove.push_back(DSSelectedKey(**it));
+    }
+
+    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
+    _imp->selectedKeyframes.clear();
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheet::selectAllKeyframes()
+{
+    for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
+        DSNode *dsNode = (*it).second;
+
+        DSKnobRow dsKnobItems = dsNode->getChildData();
+
+        for (DSKnobRow::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+            DSKnob *dsKnob = (*itKnob).second;
+
+            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
+                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+
+                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+                    KeyFrame kf = *it;
+
+                    DSSelectedKey key (dsKnob, kf, findTreeItemForDim(dsKnob, i), i);
+
+                    DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
+
+                    if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+                        DSKeyPtr selected(new DSSelectedKey(key));
+
+                        _imp->selectedKeyframes.push_back(selected);
+                    }
+                }
+            }
+        }
+    }
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheet::moveSelectedKeys(double dt)
+{
+    _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
+}
+
+void DopeSheet::trimReaderLeft(DSNode *reader, double time)
+{
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
+
+    _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrameKnob->getValue(), time, this));
+}
+
+void DopeSheet::trimReaderRight(DSNode *reader, double time)
+{
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+
+    _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrameKnob->getValue(), time, this));
+}
+
+void DopeSheet::moveReader(DSNode *reader, double time)
+{
+    Knob<int> * timeOffsetKnob = dynamic_cast<Knob<int> *>
+            (reader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+
+    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, timeOffsetKnob->getValue(), time, this));
+}
+
+void DopeSheet::moveGroup(DSNode *group, double dt)
+{
+    _imp->pushUndoCommand(new DSMoveGroupCommand(group, dt, this));
+}
+
+void DopeSheet::copySelectedKeys()
+{
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
+    _imp->keyframesClipboard.clear();
+
+    for (DSKeyPtrList::const_iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        _imp->keyframesClipboard.push_back(*selectedKey);
+    }
+}
+
+void DopeSheet::pasteKeys()
+{
+    std::vector<DSSelectedKey> toPaste;
+
+    for (std::vector<DSSelectedKey>::const_iterator it = _imp->keyframesClipboard.begin(); it != _imp->keyframesClipboard.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        // Retrieve the tree item associated with the key dimension
+        QTreeWidgetItem *dimTreeItem = key.dimTreeItem;
+
+        if (dimTreeItem->isSelected()) {
+            toPaste.push_back(key);
+        }
+    }
+
+    _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, this));
+}
+
+void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
+{
+    std::list<DSKeyInterpolationChange> changes;
+
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr keyPtr = (*it);
+        DSKeyInterpolationChange change(keyPtr->key.getInterpolation(), keyType, keyPtr);
+
+        changes.push_back(change);
+    }
+
+    _imp->pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, this));
+}
+
+void DopeSheet::setUndoStackActive()
+{
+    _imp->undoStack->setActive();
+}
+
+void DopeSheet::emit_modelChanged()
+{
+    Q_EMIT modelChanged();
+}
+
+void DopeSheet::emit_keyframeSelectionChanged()
+{
+    Q_EMIT keyframeSelectionChanged();
 }
 
 DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
@@ -923,7 +1188,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
 
-    _imp->model = new DopeSheet;
+    _imp->model = new DopeSheet(gui, timeline);
 
     _imp->hierarchyView = new HierarchyView(_imp->model, gui, _imp->splitter);
 

@@ -62,6 +62,8 @@ private Q_SLOTS:
     void onNodeSettingsPanelOpened(DSNode *dsNode);
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
 
+    void onKeyframeSelectionAboutToBeCleared();
+
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 
@@ -102,7 +104,7 @@ public:
 
     explicit DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
                            Gui *gui,
-                           boost::shared_ptr<TimeLine> timeline,
+                           const boost::shared_ptr<TimeLine> &timeline,
                            QWidget *parent = 0);
     ~DopeSheetView();
 
@@ -111,7 +113,6 @@ public:
     SequenceTime getCurrentFrame() const;
 
     void swapOpenGLBuffers() OVERRIDE FINAL;
-    void redraw() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
@@ -121,7 +122,7 @@ public:
 
 public Q_SLOTS:
     void computeSelectedKeysBRect();
-    void clearKeyframeSelection();
+    void redraw() OVERRIDE FINAL;
 
 protected:
     void initializeGL() OVERRIDE FINAL;
@@ -151,6 +152,7 @@ private Q_SLOTS:
     void onReaderChanged();
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
+    void onKeyframeSelectionChanged();
 
     void selectAllKeyframes();
     void deleteSelectedKeyframes();

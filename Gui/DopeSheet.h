@@ -16,6 +16,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Curve.h"
 #include "Engine/ScriptObject.h"
 
 #include "Global/GlobalDefines.h"
@@ -33,6 +34,7 @@ class KnobI;
 class KnobGui;
 class NodeGroup;
 class NodeGui;
+class QUndoCommand;
 class TimeLine;
 
 namespace Natron {
@@ -48,6 +50,59 @@ typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRow;
 
 
 /**
+ * @brief The DSSelectedKey struct
+ *
+ *
+ */
+struct DSSelectedKey
+{
+    DSSelectedKey(DSKnob *knob, KeyFrame kf, QTreeWidgetItem *treeItem, int dim) :
+        dsKnob(knob),
+        key(kf),
+        dimTreeItem(treeItem),
+        dimension(dim)
+    {}
+
+    DSSelectedKey(const DSSelectedKey &other) :
+        dsKnob(other.dsKnob),
+        key(other.key),
+        dimTreeItem(other.dimTreeItem),
+        dimension(other.dimension)
+    {}
+
+    friend bool operator==(const DSSelectedKey &key1, const DSSelectedKey &key2)
+    {
+        if (key1.dsKnob != key2.dsKnob) {
+            return false;
+        }
+
+        if (key1.key != key2.key) {
+            return false;
+        }
+
+        if (key1.dimTreeItem != key2.dimTreeItem) {
+            return false;
+        }
+
+        if (key1.dimension != key2.dimension) {
+            return false;
+        }
+
+        return true;
+    }
+
+    DSKnob *dsKnob;
+    KeyFrame key;
+    QTreeWidgetItem *dimTreeItem;
+    int dimension;
+};
+
+
+typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
+typedef std::list<DSKeyPtr> DSKeyPtrList;
+
+
+/**
  * @brief The DopeSheet class
  *
  *
@@ -60,7 +115,7 @@ public:
     friend class DSNode;
     friend class DSNodePrivate;
 
-    DopeSheet();
+    DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
     DSNodeRows getNodeRows() const;
@@ -69,6 +124,8 @@ public:
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
+
+    SequenceTime getCurrentFrame() const;
 
     DSNode *findParentDSNode(QTreeWidgetItem *treeItem) const;
     DSNode *findDSNode(QTreeWidgetItem *nodeTreeItem) const;
@@ -90,6 +147,35 @@ public:
 
     bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const;
 
+    // Keyframe selection logic
+    DSKeyPtrList getSelectedKeyframes() const;
+    int getSelectedKeyframesCount() const;
+
+    void makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp, bool updateBRect = true);
+
+    bool keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const;
+    DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
+
+    void clearKeyframeSelection();
+    void deleteSelectedKeyframes();
+    void selectAllKeyframes();
+
+    // User interaction
+    void moveSelectedKeys(double dt);
+    void trimReaderLeft(DSNode *reader, double time);
+    void trimReaderRight(DSNode *reader, double time);
+    void moveReader(DSNode *reader, double time);
+    void moveGroup(DSNode *group, double dt);
+    void copySelectedKeys();
+    void pasteKeys();
+    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+
+    // Undo/redo
+    void setUndoStackActive();
+
+    void emit_modelChanged();
+    void emit_keyframeSelectionChanged();
+
 Q_SIGNALS:
     void modelChanged();
     void nodeAdded(DSNode *dsNode);
@@ -97,6 +183,8 @@ Q_SIGNALS:
     void groupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
     void keyframeSetOrRemoved(DSKnob *dsKnob);
+    void keyframeSelectionAboutToBeCleared();
+    void keyframeSelectionChanged();
 
 private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
