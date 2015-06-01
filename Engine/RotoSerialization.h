@@ -437,11 +437,6 @@ public:
     RotoStrokeSerialization()
     : BezierSerialization()
     , _brushType()
-    , _brushSize()
-    , _brushHardness()
-    , _brushSpacing()
-    , _brushVisiblePortion()
-    , _brushEffectStrength()
     {
         
     }
@@ -470,11 +465,6 @@ private:
                                                                                                         );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BezierSerialization);
         ar & boost::serialization::make_nvp("BrushType",_brushType);
-        ar & boost::serialization::make_nvp("BrushSize",_brushSize);
-        ar & boost::serialization::make_nvp("BrushSpacing",_brushSpacing);
-        ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
-        ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
-        ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
 #ifndef ROTO_STROKE_USE_FIT_CURVE
         ar & boost::serialization::make_nvp("CurveX",_xCurve);
         ar & boost::serialization::make_nvp("CurveY",_yCurve);
@@ -493,11 +483,6 @@ private:
                                                                                                         );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BezierSerialization);
         ar & boost::serialization::make_nvp("BrushType",_brushType);
-        ar & boost::serialization::make_nvp("BrushSize",_brushSize);
-        ar & boost::serialization::make_nvp("BrushSpacing",_brushSpacing);
-        ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
-        ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
-        ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
 #ifndef ROTO_STROKE_USE_FIT_CURVE
         ar & boost::serialization::make_nvp("CurveX",_xCurve);
         ar & boost::serialization::make_nvp("CurveY",_yCurve);
@@ -508,11 +493,6 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
     
     int _brushType;
-    KnobSerialization _brushSize;
-    KnobSerialization _brushHardness;
-    KnobSerialization _brushSpacing;
-    KnobSerialization _brushVisiblePortion;
-    KnobSerialization _brushEffectStrength;
 #ifndef ROTO_STROKE_USE_FIT_CURVE
     Curve _xCurve,_yCurve,_pressureCurve;
 #endif

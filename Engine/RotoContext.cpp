@@ -4948,81 +4948,66 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     
     assert(xCurve.size() == 2);
     
-    for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
+    double x1,y1,press1,x2,y2,press2;
+    double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
+    x1 = xIt->getValue();
+    y1 = yIt->getValue();
+    press1 = pIt->getValue();
+    x2 = xNext->getValue();
+    y2 = yNext->getValue();
+    press2 = pNext->getValue();
+    
+    double pressure = std::max(press1, press2);
+    
+    x1pr = x1 + xIt->getRightDerivative() / 3.;
+    y1pr = y1 + yIt->getRightDerivative() / 3.;
+    press1pr = press1 + pIt->getRightDerivative() / 3.;
+    x2pl = x2 - xNext->getLeftDerivative() / 3.;
+    y2pl = y2 - yNext->getLeftDerivative() / 3.;
+    press2pl = press2 - pNext->getLeftDerivative() / 3.;
+    /*
+     * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+     */
+    double dx1,dy1,dx2,dy2,dx3,dy3;
+    dx1 = x1pr - x1;
+    dy1 = y1pr - y1;
+    dx2 = x2pl - x1pr;
+    dy2 = y2pl - y1pr;
+    dx3 = x2 - x2pl;
+    dy3 = y2 - y2pl;
+    double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+    std::sqrt(dx2 * dx2 + dy2 * dy2) +
+    std::sqrt(dx3 * dx3 + dy3 * dy3);
+    double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+    
+    double incr = 1. / (double)(nbPointsPerSegment - 1);
+    
+    int pot = 1 << mipMapLevel;
+    for (double t = 0.; t <= 1.; t += incr) {
         
-        double x1,y1,press1,x2,y2,press2;
-        double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
-        x1 = xIt->getValue();
-        y1 = yIt->getValue();
-        press1 = pIt->getValue();
-        x2 = xNext->getValue();
-        y2 = yNext->getValue();
-        press2 = pNext->getValue();
-        
-        double pressure = std::max(press1, press2);
-        
-        x1pr = x1 + xIt->getRightDerivative() / 3.;
-        y1pr = y1 + yIt->getRightDerivative() / 3.;
-        press1pr = press1 + pIt->getRightDerivative() / 3.;
-        x2pl = x2 - xNext->getLeftDerivative() / 3.;
-        y2pl = y2 - yNext->getLeftDerivative() / 3.;
-        press2pl = press2 - pNext->getLeftDerivative() / 3.;
-        /*
-         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
-         */
-        double dx1,dy1,dx2,dy2,dx3,dy3;
-        dx1 = x1pr - x1;
-        dy1 = y1pr - y1;
-        dx2 = x2pl - x1pr;
-        dy2 = y2pl - y1pr;
-        dx3 = x2 - x2pl;
-        dy3 = y2 - y2pl;
-        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-        std::sqrt(dx3 * dx3 + dy3 * dy3);
-        double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
-        
-        double incr = 1. / (double)(nbPointsPerSegment - 1);
-        
-        int pot = 1 << mipMapLevel;
-        for (double t = 0.; t <= 1.; t += incr) {
-            
-            Point p;
-            p.x = bezier(x1, x1pr, x2pl, x2, t);
-            p.y = bezier(y1, y1pr, y2pl, y2, t);
-            
-            if (bbox) {
-                bbox->x1 = std::min(p.x,bbox->x1);
-                bbox->x2 = std::max(p.x,bbox->x2);
-                bbox->y1 = std::min(p.y,bbox->y1);
-                bbox->y2 = std::max(p.y,bbox->y2);
-            }
-            
-            double pi = bezier(press1, press1pr, press2pl, press2, t);
-            p.x /= pot;
-            p.y /= pot;
-            points->push_back(std::make_pair(p, pi));
-        }
+        Point p;
+        p.x = bezier(x1, x1pr, x2pl, x2, t);
+        p.y = bezier(y1, y1pr, y2pl, y2, t);
         
         if (bbox) {
-            bbox->x1 -= halfBrushSize * pressure;
-            bbox->x2 += halfBrushSize * pressure;
-            bbox->y1 -= halfBrushSize * pressure;
-            bbox->y2 += halfBrushSize * pressure;
+            bbox->x1 = std::min(p.x,bbox->x1);
+            bbox->x2 = std::max(p.x,bbox->x2);
+            bbox->y1 = std::min(p.y,bbox->y1);
+            bbox->y2 = std::max(p.y,bbox->y2);
         }
-
         
-        if (xNext != xCurve.end()) {
-            ++xNext;
-        }
-        if (yNext != yCurve.end()) {
-            ++yNext;
-        }
-        if (pNext != pCurve.end()) {
-            ++pNext;
-        }
-    } // for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
+        double pi = bezier(press1, press1pr, press2pl, press2, t);
+        p.x /= pot;
+        p.y /= pot;
+        points->push_back(std::make_pair(p, pi));
+    }
     
+    if (bbox) {
+        bbox->x1 -= halfBrushSize * pressure;
+        bbox->x2 += halfBrushSize * pressure;
+        bbox->y1 -= halfBrushSize * pressure;
+        bbox->y2 += halfBrushSize * pressure;
+    }
 }
 
 void
@@ -5075,7 +5060,6 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
     {
         QMutexLocker k(&itemMutex);
         
-        double pressure = 0;
         Curve tmpX,tmpY,tmpP;
         {
             KeyFrame k;
@@ -5110,14 +5094,12 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
             KeyFrame k;
             k.setTime(_imp->pressureCurve.getKeyFramesCount());
             k.setValue(rawPoints.second);
-            pressure = rawPoints.second;
             int nK = _imp->pressureCurve.getKeyFramesCount();
             if (nK > 0) {
                 KeyFrame prev;
                 bool ok = _imp->pressureCurve.getKeyFrameWithIndex(nK - 1, &prev);
                 assert(ok);
                 tmpP.addKeyFrame(prev);
-                pressure = std::max(pressure, prev.getValue());
             }
             _imp->pressureCurve.addKeyFrame(k);
             tmpP.addKeyFrame(k);
@@ -5252,12 +5234,6 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
         s->_yCurve = _imp->yCurve;
         s->_pressureCurve = _imp->pressureCurve;
     }
-    serializeRotoKnob(_imp->brushSize, &s->_brushSize);
-    serializeRotoKnob(_imp->brushSpacing, &s->_brushSpacing);
-    serializeRotoKnob(_imp->brushHardness, &s->_brushHardness);
-    serializeRotoKnob(_imp->effectStrength, &s->_brushEffectStrength);
-    serializeRotoKnob(_imp->visiblePortion, &s->_brushVisiblePortion);
-#pragma message WARN("HANDLE STROKE SERIALIZATION CORRECTLY")
 }
 
 
@@ -5275,11 +5251,6 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->yCurve.clone(s->_yCurve);
         _imp->pressureCurve.clone(s->_pressureCurve);
     }
-    _imp->brushSize->clone(s->_brushSize.getKnob().get());
-    _imp->brushSpacing->clone(s->_brushSpacing.getKnob().get());
-    _imp->brushHardness->clone(s->_brushHardness.getKnob().get());
-    _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
-    _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
     
     resetNodesThreadSafety();
     setStrokeFinished();
@@ -7840,6 +7811,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     if (mipmapLevel != 0) {
         brushSizePixel /= (1 << mipmapLevel);
     }
+    brushSizePixel /= 2;
     
     
 
