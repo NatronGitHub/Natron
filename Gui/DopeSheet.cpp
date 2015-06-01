@@ -668,12 +668,12 @@ void DopeSheet::moveSelectedKeys(double dt)
     _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
 }
 
-void DopeSheet::trimReaderLeft(DSNode *reader, double time)
+void DopeSheet::trimReaderLeft(DSNode *reader, double dt)
 {
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
             (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
 
-    _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrameKnob->getValue(), time, this));
+    _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrameKnob->getValue(), dt, this));
 }
 
 void DopeSheet::trimReaderRight(DSNode *reader, double time)

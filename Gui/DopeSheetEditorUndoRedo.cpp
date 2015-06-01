@@ -166,13 +166,13 @@ void DSLeftTrimReaderCommand::redo()
     trimLeft(_newTime);
 }
 
-void DSLeftTrimReaderCommand::trimLeft(double time)
+void DSLeftTrimReaderCommand::trimLeft(double firstFrameTime)
 {
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
 
     firstFrameKnob->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrameTime, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(r);
     firstFrameKnob->endChanges();
 

@@ -162,7 +162,7 @@ public:
 
     // User interaction
     void moveSelectedKeys(double dt);
-    void trimReaderLeft(DSNode *reader, double time);
+    void trimReaderLeft(DSNode *reader, double dt);
     void trimReaderRight(DSNode *reader, double time);
     void moveReader(DSNode *reader, double time);
     void moveGroup(DSNode *group, double dt);

@@ -1460,11 +1460,11 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
                       colors.second.blueF(), colors.second.alphaF());
 
             glBegin(GL_LINES);
-            glVertex2f(clipRectZoomCoords.left() - firstFrameKnob->getValue(), clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.left() - firstFrameKnob->getValue() + 1, clipRectCenterY);
             glVertex2f(clipRectZoomCoords.left(), clipRectCenterY);
 
             glVertex2f(clipRectZoomCoords.right(), clipRectCenterY);
-            glVertex2f(clipRectZoomCoords.right() + framesFromEndToTotal, clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.right() + framesFromEndToTotal + 1, clipRectCenterY);
             glEnd();
         }
     }
