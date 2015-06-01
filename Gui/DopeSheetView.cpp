@@ -2792,6 +2792,8 @@ void DopeSheetView::onReaderChanged()
         assert(dsNode->getDSNodeType() == DSNode::ReaderNodeType);
 
         _imp->computeReaderRange(dsNode);
+
+        redraw();
     }
 }
 
