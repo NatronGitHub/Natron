@@ -416,7 +416,7 @@ private:
 
 private:
     
-    bool penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType type, double pressure, QInputEvent* event);
+    bool penMotionInternal(int x, int y, double pressure, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.

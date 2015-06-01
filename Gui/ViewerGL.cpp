@@ -217,6 +217,8 @@ struct ViewerGL::Implementation
     , lastRenderedImage()
     , memoryHeldByLastRenderedImages()
     , sizeH()
+    , pointerTypeOnPress(Natron::ePenTypePen)
+    , subsequentMousePressIsTablet(false)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -333,6 +335,9 @@ struct ViewerGL::Implementation
     U64 memoryHeldByLastRenderedImages[2];
     
     QSize sizeH;
+
+    Natron::PenType pointerTypeOnPress;
+    bool subsequentMousePressIsTablet;
     
     bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
@@ -2558,17 +2563,17 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    
+
     _imp->hasMovedSincePress = false;
-    
+
     ///Set focus on user click
     setFocus();
-    
+
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        
+
         boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
         assert(gui_i);
         boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
@@ -2597,7 +2602,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
-    
+
     if (!overlaysCaught &&
         (buttonDownIsMiddle(e) ||
          ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
@@ -2658,7 +2663,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, QMouseEventLocalPos(e), zoomPos, e);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2778,7 +2783,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         overlaysCaught = true;
     }
     (void)overlaysCaught;
-    
+
     if (mustRedraw) {
         updateGL();
     }
@@ -2793,8 +2798,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
-    
-    
+
+    _imp->subsequentMousePressIsTablet = false;
+
     bool mustRedraw = false;
     if (_imp->ms == eMouseStateBuildingPickerRectangle) {
         updateRectangleColorPicker();
@@ -2807,7 +2813,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
             Q_EMIT selectionRectangleChanged(true);
         }
     }
-    
+
     _imp->hasMovedSincePress = false;
 
 
@@ -2830,7 +2836,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!penMotionInternal(e->x(), e->y(), false, Natron::ePenTypePen, 1., e)) {
+    if (!penMotionInternal(e->x(), e->y(), 1., e)) {
         QGLWidget::mouseMoveEvent(e);
     }
 } // mouseMoveEvent
@@ -2838,28 +2844,42 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 void
 ViewerGL::tabletEvent(QTabletEvent* e)
 {
-    Natron::PenType pen;
-    switch (e->pointerType()) {
-        case QTabletEvent::Cursor:
-            pen = ePenTypeCursor;
-            break;
-        case QTabletEvent::Eraser:
-            pen = ePenTypeEraser;
-            break;
-        case QTabletEvent::Pen:
-        default:
-            pen = ePenTypePen;
-            break;
-    }
-    if (!penMotionInternal(e->x(), e->y(), true, pen, e->pressure(), e)) {
+
+    switch (e->type()) {
+    case QEvent::TabletPress: {
+        switch (e->pointerType()) {
+            case QTabletEvent::Cursor:
+                _imp->pointerTypeOnPress  = ePenTypeCursor;
+                break;
+            case QTabletEvent::Eraser:
+                _imp->pointerTypeOnPress  = ePenTypeEraser;
+                break;
+            case QTabletEvent::Pen:
+            default:
+                _imp->pointerTypeOnPress  = ePenTypePen;
+                break;
+        }
+        _imp->subsequentMousePressIsTablet = true;
         QGLWidget::tabletEvent(e);
-    } else {
-        e->accept();
+    }   break;
+    case QEvent::TabletRelease: {
+        QGLWidget::tabletEvent(e);
+    }   break;
+    case QEvent::TabletMove: {
+        if (!penMotionInternal(e->x(), e->y(), e->pressure(), e)) {
+            QGLWidget::tabletEvent(e);
+        } else {
+            e->accept();
+        }
+    }   break;
+    default:
+        break;
     }
+
 }
 
 bool
-ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType type, double pressure, QInputEvent* e)
+ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3190,7 +3210,7 @@ ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType ty
             unsigned int mipMapLevel = getCurrentRenderScale();
             double scale = 1. / (1 << mipMapLevel);
             if ( _imp->overlay &&
-                _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, localPos, zoomPos, e, type, pressure, isTabletEvent) ) {
+                _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, localPos, zoomPos, e, pressure) ) {
                 mustRedraw = true;
                 overlaysCaughtByPlugin = true;
             }
@@ -3199,7 +3219,7 @@ ViewerGL::penMotionInternal(int x, int y, bool isTabletEvent, Natron::PenType ty
     } // switch
     
     if (mustRedraw) {
-        updateGL();
+        update();
     }
     _imp->lastMousePosition = newClick;
     if (!cursorSet) {

@@ -1794,7 +1794,7 @@ ViewerTab::drawOverlays(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
+ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
 {
 
     QPointF transformViewportPos;
@@ -1835,7 +1835,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDown(scaleX, scaleY,transformViewportPos,transformPos,e) ) {
+            if ( _imp->currentRoto.second->penDown(scaleX, scaleY,transformViewportPos,transformPos, pen, isTabletEvent, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -1869,6 +1869,8 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
 bool
 ViewerTab::notifyOverlaysPenDown(double scaleX,
                                  double scaleY,
+                                 Natron::PenType pen,
+                                 bool isTabletEvent,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  QMouseEvent* e)
@@ -1887,7 +1889,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 
-                if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+                if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, pen, isTabletEvent, viewportPos, pos, e)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -1898,7 +1900,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
     }
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+        if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, pen, isTabletEvent, viewportPos, pos, e)) {
             return true;
         }
     }
@@ -1929,7 +1931,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,Natron::ePenTypePen,1.,false)) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,1.)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -1996,7 +1998,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,Natron::PenType pen, double pressure, bool isTabletEvent)
+ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,double pressure)
 {
     
     QPointF transformViewportPos;
@@ -2037,7 +2039,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e, pen, pressure, isTabletEvent) ) {
+            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e, pressure) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -2073,9 +2075,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    QInputEvent* e,
-                                   Natron::PenType pen,
-                                   double pressure,
-                                   bool isTabletEvent)
+                                   double pressure)
 {
     bool didSomething = false;
 
@@ -2091,7 +2091,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pen,pressure,isTabletEvent)) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pressure)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -2103,7 +2103,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pen,pressure,isTabletEvent)) {
+        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e,pressure)) {
             return true;
         }
     }
