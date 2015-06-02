@@ -5000,13 +5000,13 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         Natron::Point pixelPoint;
         pixelPoint.x = p.x / pot;
         pixelPoint.y = p.y / pot;
-        double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-        points->push_back(std::make_pair(pixelPoint, pressure));
+        points->push_back(std::make_pair(pixelPoint, pIt->getValue()));
         if (bbox) {
             bbox->x1 = p.x;
             bbox->x2 = p.x;
             bbox->y1 = p.y;
             bbox->y2 = p.y;
+            double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
             bbox->x1 -= halfBrushSize * pressure;
             bbox->x2 += halfBrushSize * pressure;
             bbox->y1 -= halfBrushSize * pressure;
@@ -5027,7 +5027,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     y2 = yNext->getValue();
     press2 = pNext->getValue();
     
-    double pressure = pressureAffectsSize ? std::max(press1, press2) : 1.;
     
     x1pr = x1 + xIt->getRightDerivative() / 3.;
     y1pr = y1 + yIt->getRightDerivative() / 3.;
@@ -5052,6 +5051,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     
     double incr = 1. / (double)(nbPointsPerSegment - 1);
     
+    double pressure = pressureAffectsSize ? std::max(press1, press2) : 1.;
+
     for (double t = 0.; t <= 1.; t += incr) {
         
         Point p;
