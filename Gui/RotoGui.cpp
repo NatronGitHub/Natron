@@ -2506,6 +2506,7 @@ RotoGui::penDown(double /*scaleX*/,
                 p.x = pos.x();
                 p.y = pos.y();
                 _imp->makeStroke(p, pressure);
+                _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
             }

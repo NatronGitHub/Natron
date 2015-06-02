@@ -4945,14 +4945,19 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     ++xNext;
     ++yNext;
     ++pNext;
+    
 
+    int pot = 1 << mipMapLevel;
     
     if (xCurve.size() == 1) {
         Natron::Point p;
         p.x = xIt->getValue();
         p.y = yIt->getValue();
+        Natron::Point pixelPoint;
+        pixelPoint.x = p.x / pot;
+        pixelPoint.y = p.y / pot;
         double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-        points->push_back(std::make_pair(p, pressure));
+        points->push_back(std::make_pair(pixelPoint, pressure));
         if (bbox) {
             bbox->x1 = p.x;
             bbox->x2 = p.x;
@@ -5003,7 +5008,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     
     double incr = 1. / (double)(nbPointsPerSegment - 1);
     
-    int pot = 1 << mipMapLevel;
     for (double t = 0.; t <= 1.; t += incr) {
         
         Point p;
