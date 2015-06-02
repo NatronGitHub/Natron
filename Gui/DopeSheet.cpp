@@ -91,6 +91,8 @@ public:
 
     void pushUndoCommand(QUndoCommand *cmd);
 
+    void selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result);
+
     /* attributes */
     DopeSheet *q_ptr;
     DSNodeRows nodeRows;
@@ -190,6 +192,19 @@ void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
 {
     undoStack->setActive();
     undoStack->push(cmd);
+}
+
+void DopeSheetPrivate::selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result)
+{
+    KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
+
+    for (KeyFrameSet::const_iterator kIt = keyframes.begin();
+         kIt != keyframes.end();
+         ++kIt) {
+        KeyFrame kf = (*kIt);
+
+        result->push_back(DSSelectedKey(dsKnob, kf, q_ptr->findTreeItemForDim(dsKnob, dim), dim));
+    }
 }
 
 
@@ -565,7 +580,7 @@ int DopeSheet::getSelectedKeyframesCount() const
     return _imp->selectedKeyframes.size();
 }
 
-void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp, bool updateBRect)
+void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp)
 {
     if (!booleanOp) {
         Q_EMIT keyframeSelectionAboutToBeCleared();
@@ -582,9 +597,6 @@ void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool boole
             DSKeyPtr selected(new DSSelectedKey(key));
 
             _imp->selectedKeyframes.push_back(selected);
-
-            QTreeWidgetItem *treeItem = findTreeItemForDim(selected->dsKnob, selected->dimension);
-            treeItem->setSelected(true);
         }
         else {
             if (booleanOp) {
@@ -593,9 +605,7 @@ void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool boole
         }
     }
 
-    if (updateBRect) {
-        Q_EMIT keyframeSelectionChanged();
-    }
+    Q_EMIT keyframeSelectionChanged();
 }
 
 bool DopeSheet::keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const
@@ -654,6 +664,7 @@ void DopeSheet::deleteSelectedKeyframes()
     }
 
     _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
+
     _imp->selectedKeyframes.clear();
 
     Q_EMIT keyframeSelectionChanged();
@@ -690,6 +701,20 @@ void DopeSheet::selectAllKeyframes()
     }
 
     Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheet::selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey> *result)
+{
+    int dim = -2;
+
+    if (DSKnob *dsKnob = findDSKnob(item, &dim)) {
+        boost::shared_ptr<KnobI> knob = dsKnob->getInternalKnob();
+
+        // Select all keyframes of the multidim knob
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            _imp->selectKeyframes(dsKnob, i, result);
+        }
+    }
 }
 
 void DopeSheet::moveSelectedKeys(double dt)

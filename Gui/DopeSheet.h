@@ -112,7 +112,6 @@ class DopeSheet: public QObject
     Q_OBJECT
 
 public:
-    friend class DSNode;
     friend class DSNodePrivate;
 
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
@@ -151,7 +150,7 @@ public:
     DSKeyPtrList getSelectedKeyframes() const;
     int getSelectedKeyframesCount() const;
 
-    void makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp, bool updateBRect = true);
+    void makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp);
 
     bool keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const;
     DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
@@ -159,6 +158,7 @@ public:
     void clearKeyframeSelection();
     void deleteSelectedKeyframes();
     void selectAllKeyframes();
+    void selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey> *result);
 
     // User interaction
     void moveSelectedKeys(double dt);

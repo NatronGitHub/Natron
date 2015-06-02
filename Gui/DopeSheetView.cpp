@@ -115,24 +115,6 @@ bool itemHasNoChildVisible(QTreeWidgetItem *item)
     return true;
 }
 
-/**
- * @brief recursiveSelect
- *
- * Performs a recursive selection on 'item' 's chilren.
- */
-void recursiveSelect(QTreeWidgetItem *item)
-{
-    if (item->childCount() > 0 && !itemHasNoChildVisible(item)) {
-        for (int i = 0; i < item->childCount(); ++i) {
-            QTreeWidgetItem *childItem = item->child(i);
-            childItem->setSelected(true);
-
-            // /!\ recursion
-            recursiveSelect(childItem);
-        }
-    }
-}
-
 } // anon namespace
 
 
@@ -213,7 +195,11 @@ public:
     void checkNodeVisibleState(DSNode *dsNode);
     void checkKnobVisibleState(DSKnob *dsKnob);
 
-    void unselectTreeItemsOfSelectedKeyframes();
+    void recursiveSelect(QTreeWidgetItem *item);
+
+    void selectSelectedKeyframesItems(bool selected);
+
+    void selectKeyframes(const QList<QTreeWidgetItem *> &items);
 
     /* attributes */
     HierarchyView *q_ptr;
@@ -420,15 +406,60 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
     checkNodeVisibleState(model->findDSNode(nodeTreeItem));
 }
 
-void HierarchyViewPrivate::unselectTreeItemsOfSelectedKeyframes()
+/**
+ * @brief recursiveSelect
+ *
+ * Performs a recursive selection on 'item' 's chilren.
+ */
+void HierarchyViewPrivate::recursiveSelect(QTreeWidgetItem *item)
 {
+    if (item->childCount() > 0 && !itemHasNoChildVisible(item)) {
+        for (int i = 0; i < item->childCount(); ++i) {
+            QTreeWidgetItem *childItem = item->child(i);
+            childItem->setSelected(true);
+
+            // /!\ recursion
+            recursiveSelect(childItem);
+        }
+    }
+}
+
+void HierarchyViewPrivate::selectSelectedKeyframesItems(bool aselect)
+{
+    QObject::disconnect(q_ptr, SIGNAL(itemSelectionChanged()),
+                        q_ptr, SLOT(onItemSelectionChanged()));
+
     DSKeyPtrList selectedKeyframes = model->getSelectedKeyframes();
 
     for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        DSKeyPtr selected = (*it);
+        DSKeyPtr selectedKey = (*it);
 
-        selected->dimTreeItem->setSelected(false);
+        if (selectedKey->dimTreeItem->isSelected() != aselect) {
+            selectedKey->dimTreeItem->setSelected(aselect);
+        }
+
+        if (selectedKey->dsKnob->getTreeItem()->isSelected() != aselect) {
+            selectedKey->dsKnob->getTreeItem()->setSelected(aselect);
+        }
+
+        if (selectedKey->dsKnob->getTreeItem()->parent()->isSelected() != aselect) {
+            selectedKey->dsKnob->getTreeItem()->parent()->setSelected(aselect);
+        }
     }
+
+    QObject::connect(q_ptr, SIGNAL(itemSelectionChanged()),
+                     q_ptr, SLOT(onItemSelectionChanged()));
+}
+
+void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
+{
+    std::vector<DSSelectedKey> keys;
+
+    Q_FOREACH (QTreeWidgetItem *item, items) {
+        model->selectKeyframes(item, &keys);
+    }
+
+    model->makeSelection(keys, false);
 }
 
 
@@ -458,6 +489,9 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 
     connect(model, SIGNAL(keyframeSelectionAboutToBeCleared()),
             this, SLOT(onKeyframeSelectionAboutToBeCleared()));
+
+    connect(model, SIGNAL(keyframeSelectionChanged()),
+            this, SLOT(onKeyframeSelectionChanged()));
 
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
@@ -542,22 +576,25 @@ void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
 
 void HierarchyView::onKeyframeSelectionAboutToBeCleared()
 {
-    _imp->unselectTreeItemsOfSelectedKeyframes();
+    _imp->selectSelectedKeyframesItems(false);
 }
 
-/**
- * @brief DopeSheetEditor::onItemSelectionChanged
- *
- * Selects recursively the current selected items of the hierarchy view.
- *
- * This slot is automatically called when this current selection has changed.
- */
+void HierarchyView::onKeyframeSelectionChanged()
+{
+    _imp->selectSelectedKeyframesItems(true);
+}
+
 void HierarchyView::onItemSelectionChanged()
 {
-    QList<QTreeWidgetItem *> currentItemSelection = selectedItems();
+    if (selectedItems().empty()) {
+        _imp->model->clearKeyframeSelection();
+    }
+    else {
+        Q_FOREACH (QTreeWidgetItem *item, selectedItems()) {
+            _imp->recursiveSelect(item);
+        }
 
-    Q_FOREACH (QTreeWidgetItem *item, currentItemSelection) {
-        recursiveSelect(item);
+        _imp->selectKeyframes(selectedItems());
     }
 }
 
@@ -2350,8 +2387,6 @@ void DopeSheetView::redraw()
 {
     running_in_main_thread();
 
-    qDebug() << "redraw";
-
     update();
 }
 
@@ -3145,7 +3180,7 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
         _imp->computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
 
         std::vector<DSSelectedKey> tempSelection = _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect));
-        _imp->model->makeSelection(tempSelection, modCASIsShift(e), false);
+        _imp->model->makeSelection(tempSelection, modCASIsShift(e));
 
         redraw();
 
