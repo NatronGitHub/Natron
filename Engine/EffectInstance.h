@@ -550,9 +550,11 @@ public:
     };
 
     /**
-     * @brief Renders the image at the given time,scale and for the given view & render window.
+     * @brief Renders the image planes at the given time,scale and for the given view & render window.
      * This returns a list of all planes requested in the args.
      * @param args See the definition of the class for comments on each argument.
+     * The return code indicates whether the render succeeded or failed. Note that this function may succeed
+     * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
     RenderRoIRetCode renderRoI(const RenderRoIArgs & args,std::list<boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
 

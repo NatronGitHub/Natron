@@ -2183,11 +2183,14 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
                             break;
                         }
                         Natron::EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
-                        if (!subIdentityInput || subIdentityInput == identityInput) {
+                        if (subIdentityInput == identityInput) {
                             break;
                         }
                         
                         identityInput = subIdentityInput;
+                        if (!subIdentityInput) {
+                            break;
+                        }
                     }
                 }
                 r.identityInput = identityInput;
@@ -4161,6 +4164,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
             comps.push_back(it->second.renderMappedImage->getComponents());
         }
+        assert(!comps.empty());
         ImageList identityPlanes;
         RenderRoIArgs renderArgs(identityTime,
                                  actionArgs.originalScale,
@@ -4235,6 +4239,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         } else {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
             identityProcessed = true;
         }
