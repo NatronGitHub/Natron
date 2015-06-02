@@ -419,6 +419,9 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
         if (itemIt->parent()) {
             itemIt = itemIt->parent();
         }
+        else {
+            return NULL;
+        }
     }
 
     ret = clickedDSKnob->second;
