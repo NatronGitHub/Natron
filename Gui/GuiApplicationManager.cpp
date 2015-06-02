@@ -1948,7 +1948,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, kShortcutDescActionRotoBrushTool, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, kShortcutDescActionRotoCloneTool, Qt::NoModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, kShortcutDescActionRotoEffectTool, Qt::NoModifier, Qt::Key_X);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, kShortcutDescActionRotoColorTool, Qt::NoModifier, Qt::Key_D);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, kShortcutDescActionRotoColorTool, Qt::NoModifier, Qt::Key_E);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeLeft, kShortcutDescActionRotoNudgeLeft, Qt::AltModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeBottom, kShortcutDescActionRotoNudgeBottom, Qt::AltModifier, Qt::Key_Down);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, kShortcutDescActionRotoNudgeRight, Qt::AltModifier, Qt::Key_Right);

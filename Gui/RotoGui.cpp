@@ -947,7 +947,7 @@ RotoGui::RotoGui(NodeGui* node,
         QObject::connect( _imp->mergeBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
         _imp->mergeBrushTool->setText("Dodge");
         _imp->mergeBrushTool->setDown(false);
-        QKeySequence dodgeBrushShortcut(Qt::Key_B);
+        QKeySequence dodgeBrushShortcut(Qt::Key_E);
         QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(pixDodge), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
         createToolAction(_imp->mergeBrushTool, QIcon(pixBurn), tr("Burn"), tr("Make the source image darker"), dodgeBrushShortcut, eRotoToolBurn);
         _imp->mergeBrushTool->setDefaultAction(dodgeBrushAct);
@@ -1122,6 +1122,11 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         _imp->timeOffsetMode->setVisible(true);
         _imp->timeOffsetSpinbox->setVisible(true);
         _imp->sourceTypeCombobox->setVisible(true);
+        if ((RotoToolEnum)data.x() == eRotoToolClone) {
+            _imp->sourceTypeCombobox->setCurrentIndex_no_emit(1);
+        } else if ((RotoToolEnum)data.x() == eRotoToolReveal) {
+            _imp->sourceTypeCombobox->setCurrentIndex_no_emit(2);
+        }
     } else {
         if (_imp->timeOffsetLabel) {
             _imp->timeOffsetLabel->setVisible(false);
