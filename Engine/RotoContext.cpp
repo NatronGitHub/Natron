@@ -4527,6 +4527,7 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         return;
     }
     
+    bool incrementKnobsAge = false;
     
     boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
     if (handler == _imp->sourceColor->getSignalSlotHandler().get()) {
@@ -4539,7 +4540,10 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
                 boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
                 if (isDbl) {
-                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                    if (isDbl->getValue(0) != strength || isDbl->getValue(1) != strength) {
+                        isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                        incrementKnobsAge = true;
+                    }
                 }
             }   break;
             case Natron::eRotoStrokeTypeSharpen: {
@@ -4555,7 +4559,10 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
         if (operation) {
             int op_i = compKnob->getValue();
-            operation->setValue(op_i, 0);
+            if (operation->getValue() != op_i) {
+                operation->setValue(op_i, 0);
+                incrementKnobsAge = true;
+            }
         }
     } else if (handler == _imp->timeOffset->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
         
@@ -4569,7 +4576,11 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         }
         Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
         if (offset) {
-            offset->setValue(_imp->timeOffset->getValue(),0);
+            double value = _imp->timeOffset->getValue();
+            if (offset->getValue() != value) {
+                offset->setValue(value,0);
+                incrementKnobsAge = true;
+            }
         }
     } else if (handler == _imp->timeOffsetMode->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
         refreshNodesConnections();
@@ -4580,79 +4591,112 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
             boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
             Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
             if (translate) {
-                translate->clone(_imp->cloneTranslate.get());
+                if (translate->getValue(0) != _imp->cloneTranslate->getValue(0) ||
+                    translate->getValue(1) != _imp->cloneTranslate->getValue(1)) {
+                    translate->clone(_imp->cloneTranslate.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneRotate->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
             Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
             if (rotate) {
-                rotate->clone(_imp->cloneRotate.get());
+                if (rotate->getValue() != _imp->cloneRotate->getValue()) {
+                    rotate->clone(_imp->cloneRotate.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneScale->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
             Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
             if (scale) {
-                scale->clone(_imp->cloneScale.get());
+                if (scale->getValue(0) != _imp->cloneScale->getValue(0) ||
+                    scale->getValue(1) != _imp->cloneScale->getValue(1)) {
+                    scale->clone(_imp->cloneScale.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneScaleUniform->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
             Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
             if (uniform) {
-                uniform->clone(_imp->cloneScaleUniform.get());
+                if (uniform->getValue() != _imp->cloneScaleUniform->getValue()) {
+                    uniform->clone(_imp->cloneScaleUniform.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneSkewX->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
             Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
             if (skewX) {
-                skewX->clone(_imp->cloneSkewX.get());
+                if (skewX->getValue() != _imp->cloneSkewX->getValue()) {
+                    skewX->clone(_imp->cloneSkewX.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneSkewY->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
             Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
             if (skewY) {
-                skewY->clone(_imp->cloneSkewY.get());
+                if (skewY->getValue() != _imp->cloneSkewY->getValue()) {
+                    skewY->clone(_imp->cloneSkewY.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneSkewOrder->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
             Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
             if (skewOrder) {
-                skewOrder->clone(_imp->cloneSkewOrder.get());
+                if (skewOrder->getValue() != _imp->cloneSkewOrder->getValue()) {
+                    skewOrder->clone(_imp->cloneSkewOrder.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneCenter->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
             Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
             if (center) {
-                center->clone(_imp->cloneCenter.get());
+                if (center->getValue(0) != _imp->cloneCenter->getValue(0) ||
+                    center->getValue(1) != _imp->cloneCenter->getValue(1)) {
+                    center->clone(_imp->cloneCenter.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneFilter->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
             Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
             if (filter) {
-                filter->clone(_imp->cloneFilter.get());
+                if (filter->getValue() != _imp->cloneFilter->getValue()) {
+                    filter->clone(_imp->cloneFilter.get());
+                    incrementKnobsAge = true;
+                }
             }
         } else if (handler == _imp->cloneBlackOutside->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
             Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
             if (bo) {
-                bo->clone(_imp->cloneBlackOutside.get());
+                if (bo->getValue() != _imp->cloneBlackOutside->getValue()) {
+                    bo->clone(_imp->cloneBlackOutside.get());
+                    incrementKnobsAge = true;
+                }
             }
         }
     }
     
-    
-    if (_imp->effectNode) {
-        _imp->effectNode->incrementKnobsAge();
+    if (incrementKnobsAge) {
+        if (_imp->effectNode) {
+            _imp->effectNode->incrementKnobsAge();
+        }
+        if (_imp->mergeNode) {
+            _imp->mergeNode->incrementKnobsAge();
+        }
+        if (_imp->timeOffsetNode) {
+            _imp->timeOffsetNode->incrementKnobsAge();
+        }
+        if (_imp->frameHoldNode) {
+            _imp->frameHoldNode->incrementKnobsAge();
+        }
     }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->incrementKnobsAge();
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->incrementKnobsAge();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->incrementKnobsAge();
-    }
-  
 }
 
 
