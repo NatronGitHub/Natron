@@ -66,7 +66,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
                             "<br/>"
                             "<br><font color=orange>RGBA:</font>  The RGBA color of the displayed image. Note that if some <b>?</b> are set instead of colors "
                             "that means the underlying image cannot be accessed internally, you should refresh the viewer to make it available. "
-                            "Also sometimes you may notice the tild '~' after the colors: it indicates whether the color indicated is the true "
+                            "Also sometimes you may notice the tild '~' before the colors: it indicates whether the color indicated is the true "
                             "color in the image (no tild) or this is an approximated mipmap that has been filtered with a box filter (tild), "
                             "in which case this may not reflect exactly the underlying internal image. </br>"
                             "<br/>"

@@ -4181,6 +4181,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             } else if (identityPlanes.empty()) {
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                     it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                    it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
                 identityProcessed = true;
             } else {
