@@ -372,6 +372,10 @@ public Q_SLOTS:
     void onGainSliderChanged(double v);
 
     void onGainSpinBoxValueChanged(double value);
+    
+    void onGammaSliderEditingFinished(bool hasMovedOnce);
+    void onGainSliderEditingFinished(bool hasMovedOnce);
+    
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

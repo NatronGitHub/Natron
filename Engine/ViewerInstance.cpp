@@ -60,7 +60,6 @@ static void scaleToTexture8bits(std::pair<int,int> yRange,
                                 U32* output);
 static void scaleToTexture32bits(std::pair<int,int> yRange,
                                  const RenderViewerArgs & args,
-                                 ViewerInstance* viewer,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
@@ -427,6 +426,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     mipMapLevel = std::max( (double)mipMapLevel, (double)zoomMipMapLevel );
+    
+    // realMipMapLevel is the mipmap level if the auto proxy is not applied
+   // unsigned int realMipMapLevel = mipMapLevel;
     if (zoomFactor < 1. && getApp()->isUserScrubbingSlider() && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
         mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
@@ -571,6 +573,12 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
+    }
+    {
+        QMutexLocker k(&_imp->gammaLookupMutex);
+        if (_imp->gammaLookup.empty()) {
+            _imp->fillGammaLut(1. / outArgs->params->gamma);
+        }
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
@@ -1000,6 +1008,7 @@ ViewerInstance::renderViewer_internal(int view,
                                     lutFromColorspace(inArgs.params->lut),
                                     alphaChannelIndex);
         
+        QMutexLocker k(&_imp->gammaLookupMutex);
         renderFunctor(std::make_pair(roi.y1,roi.y2),
                       args,
                       this,
@@ -1086,6 +1095,7 @@ ViewerInstance::renderViewer_internal(int view,
             renderFunctor(std::make_pair(inArgs.params->textureRect.y1,inArgs.params->textureRect.y2),
                           args, this, inArgs.params->ramBuffer);
         } else {
+            QMutexLocker k(&_imp->gammaLookupMutex);
             QtConcurrent::map( splitRows,
                               boost::bind(&renderFunctor,
                                           _1,
@@ -1117,7 +1127,7 @@ renderFunctor(std::pair<int,int> yRange,
 
     if ( (args.bitDepth == OpenGLViewerI::eBitDepthFloat) || (args.bitDepth == OpenGLViewerI::eBitDepthHalf) ) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
-        scaleToTexture32bits(yRange, args,viewer, (float*)buffer);
+        scaleToTexture32bits(yRange, args, (float*)buffer);
     } else {
         // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
         scaleToTexture8bits(yRange, args,viewer, (U32*)buffer);
@@ -1238,10 +1248,10 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
 template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
-                             const RenderViewerArgs & args,
-                             int nComps,
-                             ViewerInstance* /*viewer*/,
-                             U32* output)
+                            const RenderViewerArgs & args,
+                            int nComps,
+                            ViewerInstance* viewer,
+                            U32* output)
 {
     size_t pixelSize = sizeof(PIX);
     
@@ -1353,9 +1363,20 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                 }
                 
                 //args.gamma is in fact 1. / gamma at this point
-                r =  args.gamma == 0.? 0. : std::pow(r * args.gain + args.offset, args.gamma);
-                g =  args.gamma == 0.? 0. : std::pow(g * args.gain + args.offset, args.gamma);
-                b =  args.gamma == 0.? 0. : std::pow(b * args.gain + args.offset, args.gamma);
+                if  (args.gamma == 0) {
+                    r = 0;
+                    g = 0.;
+                    b = 0.;
+                } else if (args.gamma == 1.) {
+                    r = r * args.gain + args.offset;
+                    g = g * args.gain + args.offset;
+                    b = b * args.gain + args.offset;
+                } else {
+                    r = viewer->interpolateGammaLut(r * args.gain + args.offset);
+                    g = viewer->interpolateGammaLut(g * args.gain + args.offset);
+                    b = viewer->interpolateGammaLut(b * args.gain + args.offset);
+                }
+        
                 
                 if (luminance) {
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -1525,12 +1546,17 @@ scaleToTexture8bits(std::pair<int,int> yRange,
     }
 } // scaleToTexture8bits
 
+float
+ViewerInstance::interpolateGammaLut(float value)
+{
+    return _imp->lookupGammaLut(value);
+}
+
 template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
                             const RenderViewerArgs & args,
                             int nComps,
-                            ViewerInstance* viewer,
                             float *output)
 {
     size_t pixelSize = sizeof(PIX);
@@ -1552,11 +1578,6 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
     for (int y = yRange.first; y < yRange.second;
          ++y,
          src_pixels += srcRowElements) {
-        
-        if (viewer->aborted()) {
-            return;
-        }
-        
 
         for (int x = 0; x < args.texRect.w;
              ++x,
@@ -1651,34 +1672,32 @@ template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffs
 void
 scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
                              float *output) {
-    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
+    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, output);
 }
 
 template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
                              float *output)
 {
     int  nComps = args.inputImage->getComponents().getNumComponents();
     switch (nComps) {
         case 4:
-            scaleToTexture32bitsInternal<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            scaleToTexture32bitsInternal<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(yRange,args,output);
             break;
         case 3:
-            scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,output);
             break;
         case 2:
-            scaleToTexture32bitsInternal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            scaleToTexture32bitsInternal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,output);
             break;
         case 1:
-            scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,output);
             break;
         default:
-            scaleToTexture32bitsGeneric<PIX,maxValue, opaque, rOffset,gOffset,bOffset>(yRange,args,nComps,viewer,output);
+            scaleToTexture32bitsGeneric<PIX,maxValue, opaque, rOffset,gOffset,bOffset>(yRange,args,nComps,output);
             break;
     }
 }
@@ -1687,7 +1706,6 @@ template <typename PIX,int maxValue,bool opaque>
 void
 scaleToTexture32bitsForPremultForComponents(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
                              float *output)
 {
     
@@ -1696,40 +1714,40 @@ scaleToTexture32bitsForPremultForComponents(const std::pair<int,int> & yRange,
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args, output);
             break;
         case Natron::eDisplayChannelsG:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args, output);
             break;
         case Natron::eDisplayChannelsB:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args, output);
             break;
         case Natron::eDisplayChannelsA:
             switch (args.alphaChannelIndex) {
                 case -1:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args, output);
                     break;
                 case 0:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args, output);
                     break;
                 case 1:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args, output);
                     break;
                 case 2:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args, output);
                     break;
                 case 3:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args, output);
                     break;
                 default:
-                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args, output);
                     break;
             }
             
             break;
         case Natron::eDisplayChannelsR:
         default:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args, output);
             break;
     }
 
@@ -1739,17 +1757,16 @@ template <typename PIX,int maxValue>
 void
 scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
                              float *output)
 {
     switch (args.srcPremult) {
         case Natron::eImagePremultiplicationOpaque:
-            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(yRange, args, output);
             break;
         case Natron::eImagePremultiplicationPremultiplied:
         case Natron::eImagePremultiplicationUnPremultiplied:
         default:
-            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(yRange, args, output);
             break;
             
     }
@@ -1760,20 +1777,19 @@ scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
 void
 scaleToTexture32bits(std::pair<int,int> yRange,
                      const RenderViewerArgs & args,
-                     ViewerInstance* viewer,
                      float *output)
 {
     assert(output);
 
     switch ( args.inputImage->getBitDepth() ) {
         case Natron::eImageBitDepthFloat:
-            scaleToTexture32bitsForPremult<float, 1>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<float, 1>(yRange, args, output);
             break;
         case Natron::eImageBitDepthByte:
-            scaleToTexture32bitsForPremult<unsigned char, 255>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned char, 255>(yRange, args, output);
             break;
         case Natron::eImageBitDepthShort:
-            scaleToTexture32bitsForPremult<unsigned short, 65535>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned short, 65535>(yRange, args, output);
             break;
         case Natron::eImageBitDepthNone:
             break;
@@ -1853,6 +1869,7 @@ ViewerInstance::onGammaChanged(double value)
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsGamma = value;
+        _imp->fillGammaLut(1. / value);
     }
     assert(_imp->uiContext);
     if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )

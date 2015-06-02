@@ -625,6 +625,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
 
     _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    QObject::connect(_imp->gainSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGainSliderEditingFinished(bool)));
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
 
@@ -664,6 +665,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
     
     _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    QObject::connect(_imp->gammaSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGammaSliderEditingFinished(bool)));
     _imp->gammaSlider->setToolTip(gammaTt);
     QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
     _imp->secondRowLayout->addWidget(_imp->gammaSlider);
@@ -4441,4 +4443,22 @@ ViewerTab::onGammaSpinBoxValueChanged(double value)
     _imp->viewer->setGamma(value);
     _imp->viewerNode->onGammaChanged(value);
     _imp->lastGammaValue = value;
+}
+
+void
+ViewerTab::onGammaSliderEditingFinished(bool hasMovedOnce)
+{
+    bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+    if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
+    }
+}
+
+void
+ViewerTab::onGainSliderEditingFinished(bool hasMovedOnce)
+{
+    bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+    if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
+    }
 }

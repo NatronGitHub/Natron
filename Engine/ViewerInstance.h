@@ -189,6 +189,8 @@ public:
     
     struct ViewerInstancePrivate;
     
+    float interpolateGammaLut(float value);
+    
 public Q_SLOTS:
     
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
