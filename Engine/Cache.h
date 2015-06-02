@@ -180,10 +180,10 @@ private:
                     
                     assert(!_entriesQueue.empty());
                     front = _entriesQueue.front();
-                    if (front) {
-                        front->scheduleForDestruction();
-                    }
                     _entriesQueue.pop_front();
+                }
+                if (front) {
+                    front->scheduleForDestruction();
                 }
             } // front. After this scope, the image is guarenteed to be freed
             cache->notifyMemoryDeallocated();

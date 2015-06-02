@@ -2996,6 +2996,7 @@ RotoGui::penUp(double /*scaleX*/,
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
+        _imp->context->evaluateChange();
         _imp->rotoData->strokeBeingPaint.reset();
     }
     

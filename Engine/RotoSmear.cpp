@@ -214,7 +214,7 @@ RotoSmear::render(const RenderActionArgs& args)
     boost::shared_ptr<RotoStrokeItem> stroke = node->getAttachedStrokeItem();
     boost::shared_ptr<RotoContext> context = stroke->getContext();
     assert(context);
-    bool duringPainting = node->isDuringPaintStrokeCreation();
+    bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
     bool isFirstStrokeTick = duringPainting && node->isFirstPaintStrokeRenderTick();
     
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);

@@ -989,6 +989,11 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
+                        
+                        //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
+                        if (_imp->paintStroke.lock() && input->isRotoPaintingNode()) {
+                            continue;
+                        }
                         ///Add the index of the input to its hash.
                         ///Explanation: if we didn't add this, just switching inputs would produce a similar
                         ///hash.
@@ -1007,14 +1012,13 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
         
-        
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
         qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
         _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
-    }
+    } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     marked.push_back(this);
     

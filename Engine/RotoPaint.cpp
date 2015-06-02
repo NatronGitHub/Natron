@@ -158,7 +158,9 @@ public:
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
             (*it)->updateLastPaintStrokeData();
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+            Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+            bool isDuringPaintStrokeCreation = (*it)->isDuringPaintStrokeCreation();
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isDuringPaintStrokeCreation, safety);
         }
     }
     

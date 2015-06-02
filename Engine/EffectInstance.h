@@ -129,6 +129,13 @@ struct ParallelRenderArgs
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis;
     
+    ///If true, the attached paint stroke is being drawn currently
+    bool isDuringPaintStrokeCreation;
+    
+    ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
+    ///whereas afterwards we revert back to the plug-in thread safety
+    Natron::RenderSafetyEnum currentThreadSafety;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -143,6 +150,8 @@ struct ParallelRenderArgs
     , renderRequester(0)
     , textureIndex(0)
     , isAnalysis(false)
+    , isDuringPaintStrokeCreation(false)
+    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     {
         
     }
@@ -609,7 +618,9 @@ public:
                                   Natron::OutputEffectInstance* renderRequested,
                                   int textureIndex,
                                   const TimeLine* timeline,
-                                  bool isAnalysis);
+                                  bool isAnalysis,
+                                  bool isDuringPaintStrokeCreation,
+                                  Natron::RenderSafetyEnum currentThreadSafety);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
 
@@ -1145,6 +1156,9 @@ public:
      * This function is here to update the last render args thread storage.
      **/
     void updateThreadLocalRenderTime(int time);
+
+    bool isDuringPaintStrokeCreationThreadLocal() const;
+    Natron::RenderSafetyEnum getCurrentThreadSafetyThreadLocal() const;
 
     struct PlaneToRender
     {

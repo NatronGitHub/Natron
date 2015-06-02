@@ -863,8 +863,10 @@ NodeCollection::setParallelRenderArgs(int time,
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
         U64 rotoAge = (*it)->getRotoAge();
+        bool duringPaintStrokeCreation = (*it)->isDuringPaintStrokeCreation();
+        Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
         liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(),
-                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, safety);
         
         if ((*it)->isMultiInstance()) {
             
@@ -876,7 +878,8 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis);
+                Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, childSafety);
                 
             }
         }

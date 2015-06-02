@@ -786,7 +786,9 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          Natron::OutputEffectInstance* renderRequester,
                                          int textureIndex,
                                          const TimeLine* timeline,
-                                         bool isAnalysis)
+                                         bool isAnalysis,
+                                         bool isDuringPaintStrokeCreation,
+                                         Natron::RenderSafetyEnum currentThreadSafety)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -802,6 +804,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.renderRequester = renderRequester;
     args.textureIndex = textureIndex;
     args.isAnalysis = isAnalysis;
+    args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
+    args.currentThreadSafety = currentThreadSafety;
     
     ++args.validArgs;
     
@@ -1287,7 +1291,7 @@ EffectInstance::getImage(int inputNb,
     if (useRotoInput) {
         
         if (attachedStroke) {
-            if (getNode()->isDuringPaintStrokeCreation()) {
+            if (isDuringPaintStrokeCreationThreadLocal()) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
             } else {
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
@@ -2281,7 +2285,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ///locks belongs to an instance)
     
     boost::shared_ptr<QMutexLocker> locker;
-    Natron::RenderSafetyEnum safety = getNode()->getCurrentRenderThreadSafety();
+    Natron::RenderSafetyEnum safety = getCurrentThreadSafetyThreadLocal();
     if (safety == eRenderSafetyInstanceSafe) {
         locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
     } else if (safety == eRenderSafetyUnsafe) {
@@ -2770,7 +2774,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     std::list<RectI> rectsLeftToRender;
     if (isPlaneCached) {
-        bool isDuringPaintStroke = getNode()->isDuringPaintStrokeCreation();
+        bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 
         RectD lastStrokeRoD;
         if (isDuringPaintStroke && args.inputImagesList.empty()) {
@@ -3284,7 +3288,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             } else {
                 it->second.downscaleImage->getRestToRender(roi,restToRender);
             }
-            assert(restToRender.empty());
+           // assert(restToRender.empty());
             
         }
     }
@@ -4073,7 +4077,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         assert(renderMappedMipMapLevel == 0);
     }
 #     endif // DEBUG
-    
     
     RenderingFunctorRetEnum handlerRet =  renderHandler(args,
                                                         frameArgs,
@@ -5183,14 +5186,14 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool isDuringStrokeCreation = getNode()->isDuringPaintStrokeCreation();
+    //bool isDuringStrokeCreation = isDuringPaintStrokeCreationThreadLocal();
     
     bool foundInCache;
-    if (isDuringStrokeCreation) {
-        foundInCache = false;
-    } else {
+   // if (isDuringStrokeCreation) {
+    //    foundInCache = false;
+    //} else {
         foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
-    }
+   // }
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
@@ -5221,18 +5224,18 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
-                if (!isDuringStrokeCreation) {
+                //if (!isDuringStrokeCreation) {
                     _imp->actionsCache.invalidateAll(hash);
                     _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
-                }
+               // }
                 return ret;
             }
             
             if (rod->isNull()) {
-                if (!isDuringStrokeCreation) {
+                //if (!isDuringStrokeCreation) {
                     _imp->actionsCache.invalidateAll(hash);
                     _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
-                }
+                //}
                 return eStatusFailed;
             }
             
@@ -5242,9 +5245,9 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-        if (!isDuringStrokeCreation) {
+        //if (!isDuringStrokeCreation) {
             _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
-        }
+        //}
         return ret;
     }
 }
@@ -5850,6 +5853,30 @@ EffectInstance::updateThreadLocalRenderTime(int time)
     }
 }
 
+bool
+EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.isDuringPaintStrokeCreation;
+        }
+    }
+    return getNode()->isDuringPaintStrokeCreation();
+}
+
+Natron::RenderSafetyEnum
+EffectInstance::getCurrentThreadSafetyThreadLocal() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.currentThreadSafety;
+        }
+    }
+    return getNode()->getCurrentRenderThreadSafety();
+}
+
 void
 EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback)
 {
@@ -6351,9 +6378,7 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
 bool
 EffectInstance::isPaintingOverItselfEnabled() const
 {
-    NodePtr node = getNode();
-    assert(node);
-    return node->isDuringPaintStrokeCreation();
+    return isDuringPaintStrokeCreationThreadLocal();
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
