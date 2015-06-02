@@ -1078,7 +1078,7 @@ public:
     boost::shared_ptr<Double_Knob> getBrushCloneTranslateKnob() const;
     
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points,
+    void evaluateStroke(unsigned int mipMapLevel, int time, std::list<std::pair<Natron::Point,double> >* points,
                         RectD* bbox = 0) const;
     
     

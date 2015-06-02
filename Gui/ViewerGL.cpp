@@ -219,6 +219,7 @@ struct ViewerGL::Implementation
     , sizeH()
     , pointerTypeOnPress(Natron::ePenTypePen)
     , subsequentMousePressIsTablet(false)
+    , pressureOnPress(1.)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -338,6 +339,7 @@ struct ViewerGL::Implementation
 
     Natron::PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;
+    double pressureOnPress;
     
     bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
@@ -2663,7 +2665,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, e);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, _imp->pressureOnPress, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2799,6 +2801,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         return;
     }
 
+    _imp->pressureOnPress = 1;
     _imp->subsequentMousePressIsTablet = false;
 
     bool mustRedraw = false;
@@ -2859,6 +2862,7 @@ ViewerGL::tabletEvent(QTabletEvent* e)
                 _imp->pointerTypeOnPress  = ePenTypePen;
                 break;
         }
+        _imp->pressureOnPress = e->pressure();
         _imp->subsequentMousePressIsTablet = true;
         QGLWidget::tabletEvent(e);
     }   break;

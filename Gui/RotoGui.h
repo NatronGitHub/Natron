@@ -170,7 +170,7 @@ public:
 
     void drawOverlays(double scaleX, double scaleY) const;
 
-    bool penDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos,Natron::PenType pen, bool isTabletEvent, QMouseEvent* e);
+    bool penDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos,double pressure, Natron::PenType pen, bool isTabletEvent, QMouseEvent* e);
 
     bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 

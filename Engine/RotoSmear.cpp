@@ -221,7 +221,7 @@ RotoSmear::render(const RenderActionArgs& args)
     
     std::list<std::pair<Natron::Point,double> > points;
     //stroke->evaluateStroke(0, &points);
-    node->getLastPaintStrokePoints(&points);
+    node->getLastPaintStrokePoints(args.time, &points);
     
     
     if (isFirstStrokeTick || !duringPainting) {

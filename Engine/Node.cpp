@@ -791,7 +791,7 @@ Node::getLastPaintStrokeRoD(RectD* bbox)
 }
 
 void
-Node::getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* points) const
+Node::getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (_imp->duringPaintStrokeCreation) {
@@ -799,7 +799,7 @@ Node::getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* poin
     } else {
         boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
-        stroke->evaluateStroke(0, points);
+        stroke->evaluateStroke(0, time, points);
     }
 }
 

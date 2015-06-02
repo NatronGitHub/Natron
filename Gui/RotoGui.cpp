@@ -218,6 +218,8 @@ struct RotoGui::RotoGuiPrivate
     RotoToolButton* mergeBrushTool;
     std::list<RotoToolButton*> allTools;
     QAction* selectAllAction;
+    QAction* lastPaintToolAction;
+    QAction* eraserAction;
     RotoToolEnum selectedTool;
     QToolButton* selectedRole;
     EventStateEnum state;
@@ -230,6 +232,7 @@ struct RotoGui::RotoGuiPrivate
     bool iSelectingwithCtrlA;
     int shiftDown;
     int ctrlDown;
+    bool lastTabletDownTriggeredEraser;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -281,6 +284,8 @@ struct RotoGui::RotoGuiPrivate
     , mergeBrushTool(0)
     , allTools()
     , selectAllAction(0)
+    , lastPaintToolAction(0)
+    , eraserAction(0)
     , selectedTool(eRotoToolSelectAll)
     , selectedRole(0)
     , state(eEventStateNone)
@@ -293,6 +298,7 @@ struct RotoGui::RotoGuiPrivate
     , iSelectingwithCtrlA(false)
     , shiftDown(0)
     , ctrlDown(0)
+    , lastTabletDownTriggeredEraser(false)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = eRotoTypeRotopainting;
@@ -362,7 +368,7 @@ struct RotoGui::RotoGuiPrivate
     
     void toggleToolsSelection(QToolButton* selected);
     
-    void makeStroke(const Natron::Point& p);
+    void makeStroke(const Natron::Point& p, double pressure);
 };
 
 
@@ -903,7 +909,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->paintBrushTool->setDown(false);
         QKeySequence brushPaintShortcut(Qt::Key_N);
         QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
-        createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
+        _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
         _imp->paintBrushTool->setDefaultAction(brushPaintAct);
         _imp->allTools.push_back(_imp->paintBrushTool);
         _imp->toolbar->addWidget(_imp->paintBrushTool);
@@ -1143,6 +1149,10 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         }
     }
     
+    if ((RotoToolEnum)data.x() != eRotoToolEraserBrush) {
+        _imp->lastPaintToolAction = action;
+    }
+    
     _imp->toggleToolsSelection(toolButton);
     Q_EMIT roleChanged( (int)previousRole,(int)actionRole);
 
@@ -1329,7 +1339,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 }
 
                 std::list<std::pair<Point,double> > points;
-                isStroke->evaluateStroke(0,&points);
+                isStroke->evaluateStroke(0, time, &points);
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
                 if (!locked) {
@@ -2131,7 +2141,9 @@ RotoGui::penDown(double /*scaleX*/,
                  double /*scaleY*/,
                  const QPointF & /*viewportPos*/,
                  const QPointF & pos,
-                 Natron::PenType pen, bool isTabletEvent,
+                 double pressure,
+                 Natron::PenType pen,
+                 bool isTabletEvent,
                  QMouseEvent* e)
 {
     std::pair<double, double> pixelScale;
@@ -2142,6 +2154,14 @@ RotoGui::penDown(double /*scaleX*/,
     int time = _imp->context->getTimelineCurrentTime();
     double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
+    
+    _imp->lastTabletDownTriggeredEraser = false;
+    if (_imp->context->isRotoPaint() && isTabletEvent) {
+        if (pen == ePenTypeEraser && _imp->selectedTool != eRotoToolEraserBrush) {
+            onToolActionTriggered(_imp->eraserAction);
+            _imp->lastTabletDownTriggeredEraser = true;
+        }
+    }
     
     
     ////////////////// TANGENT SELECTION
@@ -2485,7 +2505,7 @@ RotoGui::penDown(double /*scaleX*/,
                 Natron::Point p;
                 p.x = pos.x();
                 p.y = pos.y();
-                _imp->makeStroke(p);
+                _imp->makeStroke(p, pressure);
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
             }
@@ -2985,11 +3005,15 @@ RotoGui::penUp(double /*scaleX*/,
         onToolActionTriggered(_imp->selectAllAction);
     }
 
+    if (_imp->lastTabletDownTriggeredEraser) {
+        onToolActionTriggered(_imp->lastPaintToolAction);
+    }
+    
     return true;
 }
 
 void
-RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p)
+RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p, double pressure)
 {
     Natron::RotoStrokeType strokeType;
     std::string itemName;
@@ -3078,7 +3102,7 @@ RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p)
         sourceTypeKnob->setValue(sourceType_i, 0);
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
-    rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.));
+    rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure));
     
     context->clearSelection(RotoItem::eSelectionReasonOther);
     context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);

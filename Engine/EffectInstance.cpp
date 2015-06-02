@@ -1300,6 +1300,15 @@ EffectInstance::getImage(int inputNb,
         if (roiPixel) {
             *roiPixel = pixelRoI;
         }
+        
+        if (!pixelRoI.intersects(inputImg->getBounds())) {
+            //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
+#ifdef DEBUG
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image";
+#endif
+            return ImagePtr();
+        }
+        
         if (inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
             _imp->addInputImageTempPointer(inputNb,inputImg);
@@ -1333,7 +1342,13 @@ EffectInstance::getImage(int inputNb,
     
     inputImg = inputImages.front();
     
-    
+    if (!pixelRoI.intersects(inputImg->getBounds())) {
+        //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
+#ifdef DEBUG
+        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to" << n->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
+#endif
+        return ImagePtr();
+    }
     
     /*
      * From now on this is the generic part. We first call renderRoI and then convert to the appropriate scale/components if needed.
@@ -2831,13 +2846,18 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      * using the isIdentity action.
      */
     bool tryIdentityOptim = false;
+#ifdef DEBUG
+    RectD maskRod; // declared here for debugging purposes 
+#endif
     if (tilesSupported && !rectsLeftToRender.empty()) {
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
-            if (isInputMask(i) && isMaskEnabled(i)) {
+            if (isInputRotoBrush(i) || (isInputMask(i) && isMaskEnabled(i))) {
                 
                 boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+#ifndef DEBUG
                 RectD maskRod;
+#endif
                 if (attachedStroke) {
                     maskRod = attachedStroke->getBoundingBox(args.time);
                 } else {

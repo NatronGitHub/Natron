@@ -381,7 +381,7 @@ public:
     bool isFirstPaintStrokeRenderTick() const;
     void updateLastPaintStrokeAge();
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
-    void getLastPaintStrokePoints(std::list<std::pair<Natron::Point,double> >* points) const;
+    void getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,
