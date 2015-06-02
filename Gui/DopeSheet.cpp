@@ -876,42 +876,6 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
     return dsNode;
 }
 
-DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
-{
-    DSKnob *dsKnob = 0;
-
-    boost::shared_ptr<KnobI> knob = knobGui->getKnob();
-
-    if (knob->getDimension() <= 1) {
-        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
-        nameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, 0);
-        nameItem->setText(0, knob->getDescription().c_str());
-
-        dsKnob = new DSKnob(nameItem, knobGui);
-    }
-    else {
-        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
-        multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
-        multiDimRootNameItem->setText(0, knob->getDescription().c_str());
-
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
-            dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
-            dimItem->setText(0, knob->getDimensionName(i).c_str());
-        }
-
-        dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
-    }
-
-    connect(knobGui, SIGNAL(keyFrameSet()),
-            this, SLOT(onKeyframeSetOrRemoved()));
-
-    connect(knobGui, SIGNAL(keyFrameRemoved()),
-            this, SLOT(onKeyframeSetOrRemoved()));
-
-    return dsKnob;
-}
-
 void DopeSheet::onSettingsPanelCloseChanged(bool closed)
 {
     Q_UNUSED(closed);
@@ -1046,7 +1010,7 @@ public:
     ~DSNodePrivate();
 
     /* functions */
-    void createDSKnobs();
+    DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
 
     void initGroupNode();
 
@@ -1079,23 +1043,40 @@ DSNodePrivate::DSNodePrivate(DSNode *qq) :
 DSNodePrivate::~DSNodePrivate()
 {}
 
-void DSNodePrivate::createDSKnobs()
+DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
 {
-    const KnobsAndGuis &knobs = nodeGui->getKnobs();
+    DSKnob *dsKnob = 0;
 
-    for (KnobsAndGuis::const_iterator it = knobs.begin();
-         it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first.lock();
-        KnobGui *knobGui = it->second;
+    boost::shared_ptr<KnobI> knob = knobGui->getKnob();
 
-        if (!knob->canAnimate() || !knob->isAnimationEnabled()) {
-            continue;
+    if (knob->getDimension() <= 1) {
+        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        nameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, 0);
+        nameItem->setText(0, knob->getDescription().c_str());
+
+        dsKnob = new DSKnob(nameItem, knobGui);
+    }
+    else {
+        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
+        multiDimRootNameItem->setText(0, knob->getDescription().c_str());
+
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
+            dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
+            dimItem->setText(0, knob->getDimensionName(i).c_str());
         }
 
-        DSKnob *dsKnob = dopeSheetModel->createDSKnob(knobGui, q_ptr);
-
-        knobRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
+        dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
     }
+
+    QObject::connect(knobGui, SIGNAL(keyFrameSet()),
+                     dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
+
+    QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
+                     dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
+
+    return dsKnob;
 }
 
 void DSNodePrivate::initGroupNode()
@@ -1127,7 +1108,22 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
 
-    _imp->createDSKnobs();
+    // Create dope sheet knobs
+    const KnobsAndGuis &knobs = nodeGui->getKnobs();
+
+    for (KnobsAndGuis::const_iterator it = knobs.begin();
+         it != knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        KnobGui *knobGui = it->second;
+
+        if (!knob->canAnimate() || !knob->isAnimationEnabled()) {
+            continue;
+        }
+
+        DSKnob *dsKnob = _imp->createDSKnob(knobGui, this);
+
+        _imp->knobRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
+    }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
     // the group's clip rect

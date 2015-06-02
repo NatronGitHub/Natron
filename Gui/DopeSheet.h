@@ -112,8 +112,6 @@ class DopeSheet: public QObject
     Q_OBJECT
 
 public:
-    friend class DSNodePrivate;
-
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
@@ -188,7 +186,6 @@ Q_SIGNALS:
 
 private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
-    DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
 
 private Q_SLOTS:
     void onSettingsPanelCloseChanged(bool closed);
