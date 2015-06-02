@@ -43,13 +43,17 @@
 #include "Gui/ZoomContext.h"
 
 
+// Typedefs
 typedef std::set<double> TimeSet;
 typedef std::pair<double, double> FrameRange;
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
+
+// Constants
 const int KF_PIXMAP_SIZE = 14;
 const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
-const int CLICK_DISTANCE_ACCEPTANCE = 5;
+const int DISTANCE_ACCEPTANCE_FROM_KEYFRAME = 5;
+const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
 
 const QColor CLIP_OUTLINE_COLOR = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
 const QColor SELECTED_KF_COLOR = Qt::white;
@@ -1021,14 +1025,20 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorForEventState(DopeSheetView::Even
 
 bool DopeSheetViewPrivate::isNearByClipRectLeft(double time, const QRectF &clipRect) const
 {
-    return ((time >= clipRect.left() - CLICK_DISTANCE_ACCEPTANCE)
-            && (time <= clipRect.left() + CLICK_DISTANCE_ACCEPTANCE));
+    double timeWidgetCoords = zoomContext.toWidgetCoordinates(time, 0).x();
+    double rectLeftWidgetCoords = zoomContext.toWidgetCoordinates(clipRect.left(), 0).x();
+
+    return ((timeWidgetCoords >= rectLeftWidgetCoords - DISTANCE_ACCEPTANCE_FROM_READER_EDGE)
+            && (timeWidgetCoords <= rectLeftWidgetCoords + DISTANCE_ACCEPTANCE_FROM_READER_EDGE));
 }
 
 bool DopeSheetViewPrivate::isNearByClipRectRight(double time, const QRectF &clipRect) const
 {
-    return ((time >= clipRect.right() - CLICK_DISTANCE_ACCEPTANCE)
-            && (time <= clipRect.right() + CLICK_DISTANCE_ACCEPTANCE));
+    double timeWidgetCoords = zoomContext.toWidgetCoordinates(time, 0).x();
+    double rectLeftWidgetCoords = zoomContext.toWidgetCoordinates(clipRect.right(), 0).x();
+
+    return ((timeWidgetCoords >= rectLeftWidgetCoords - DISTANCE_ACCEPTANCE_FROM_READER_EDGE)
+            && (timeWidgetCoords <= rectLeftWidgetCoords + DISTANCE_ACCEPTANCE_FROM_READER_EDGE));
 }
 
 bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const
@@ -1060,7 +1070,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob
 
             QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
-            if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < CLICK_DISTANCE_ACCEPTANCE) {
+            if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
                 DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
                 ret.push_back(key);
             }
@@ -1090,7 +1100,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode
 
                 QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
-                if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < CLICK_DISTANCE_ACCEPTANCE) {
+                if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
                     DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
                     ret.push_back(key);
                 }
