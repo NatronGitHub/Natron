@@ -171,8 +171,6 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
 
-    qDebug() << firstFrame;
-
     firstFrameKnob->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(r);
