@@ -1770,7 +1770,8 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
 
     assert(s);
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> k(new KnobSerialization(*it));
+        boost::shared_ptr<KnobSerialization> k(new KnobSerialization());
+        serializeRotoKnob(*it,k.get());
         s->_knobs.push_back(k);
     }
     {
