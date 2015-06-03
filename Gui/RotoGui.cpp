@@ -935,7 +935,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->effectBrushTool->setDown(false);
         QKeySequence blurShortcut(Qt::Key_X);
         QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(pixBlur), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
-        createToolAction(_imp->effectBrushTool, QIcon(pixSharpen), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
+        //createToolAction(_imp->effectBrushTool, QIcon(pixSharpen), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
         createToolAction(_imp->effectBrushTool, QIcon(pixSmear), tr("Smear"), tr("Blur and displace a portion of the source image along the direction of the pen"), blurShortcut, eRotoToolSmear);
         _imp->effectBrushTool->setDefaultAction(blurBrushAct);
         _imp->allTools.push_back(_imp->effectBrushTool);
