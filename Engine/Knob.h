@@ -1274,6 +1274,7 @@ protected:
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* /*other*/,int dimension = -1)
     {
         (void)dimension;
+        return false;
     }
     
     virtual void cloneExtraData(KnobI* /*other*/,

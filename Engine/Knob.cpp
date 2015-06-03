@@ -3852,8 +3852,9 @@ AnimatingString_KnobHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*d
     AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
     
     if (isAnimatedString) {
-        _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
+       return  _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
     }
+    return false;
 }
 
 void
