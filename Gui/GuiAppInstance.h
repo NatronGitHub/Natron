@@ -183,6 +183,10 @@ public:
     void projectFormatChanged(const Format& f);
     
     virtual bool isUserScrubbingSlider() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setUserIsPainting(bool painting) OVERRIDE FINAL;
+    virtual bool getIsUserPainting() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
 
     virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;

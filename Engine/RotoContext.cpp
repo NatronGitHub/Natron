@@ -4388,6 +4388,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         _imp->effectNode = app->createNode(args);
         assert(_imp->effectNode);
         _imp->effectNode->setWhileCreatingPaintStroke(true);
+        getContext()->getNode()->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
         
         if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
@@ -5065,9 +5066,9 @@ RotoStrokeItem::setStrokeFinished()
         _imp->frameHoldNode->setWhileCreatingPaintStroke(false);
         _imp->frameHoldNode->incrementKnobsAge();
     }
+    getContext()->getNode()->setWhileCreatingPaintStroke(false);
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();
-    getContext()->getNode()->revertToPluginThreadSafety();
 }
 
 
@@ -5084,6 +5085,8 @@ RotoStrokeItem::resetNodesThreadSafety()
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->revertToPluginThreadSafety();
     }
+    getContext()->getNode()->revertToPluginThreadSafety();
+
 }
 
 void
@@ -5298,6 +5301,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->finished = true;
     }
     RotoDrawableItem::clone(other);
+    resetNodesThreadSafety();
 }
 
 void

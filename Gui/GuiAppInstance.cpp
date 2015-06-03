@@ -70,6 +70,9 @@ struct GuiAppInstancePrivate
     std::string declareAppAndParamsString;
     int overlayRedrawRequests;
     
+    mutable QMutex userIsPaintingMutex;
+    bool userIsPainting;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -83,6 +86,8 @@ struct GuiAppInstancePrivate
     , loadProjectSplash(0)
     , declareAppAndParamsString()
     , overlayRedrawRequests(0)
+    , userIsPaintingMutex()
+    , userIsPainting(false)
     {
     }
     
@@ -1029,4 +1034,18 @@ bool
 GuiAppInstance::isUserScrubbingSlider() const
 {
     return _imp->_gui ? _imp->_gui->isUserScrubbingSlider() : false;
+}
+
+void
+GuiAppInstance::setUserIsPainting(bool painting)
+{
+    QMutexLocker k(&_imp->userIsPaintingMutex);
+    _imp->userIsPainting = painting;
+}
+
+bool
+GuiAppInstance::getIsUserPainting() const
+{
+    QMutexLocker k(&_imp->userIsPaintingMutex);
+    return _imp->userIsPainting;
 }

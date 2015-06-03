@@ -2889,7 +2889,8 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
     ///The app is closing don't do anything
-    if ( !_imp->viewerTab->getGui() || !getInternalNode()) {
+    Gui* gui = _imp->viewerTab->getGui();
+    if ( !gui || !getInternalNode()) {
         return false;
     }
     
@@ -2899,7 +2900,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
     
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
-    if ( !_imp->viewerTab->getGui()->hasPickers() ) {
+    if ( !gui->hasPickers() ) {
         _imp->pickerState = ePickerStateInactive;
     }
     
@@ -2912,9 +2913,11 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
     }
     Format dispW = getDisplayWindow();
     RectD canonicalDispW = dispW.toCanonicalFormat();
-    for (int i = 0; i < 2; ++i) {
-        const RectD& rod = getRoD(i);
-        updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
+    if (!gui->getApp()->getIsUserPainting()) {
+        for (int i = 0; i < 2; ++i) {
+            const RectD& rod = getRoD(i);
+            updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
+        }
     }
     
     //update the cursor if it is hovering an overlay and we're not dragging the image

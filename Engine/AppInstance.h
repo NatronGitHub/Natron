@@ -379,6 +379,9 @@ public:
     
     virtual bool isUserScrubbingSlider() const { return false; }
     
+    virtual void setUserIsPainting(bool /*painting*/) {}
+    virtual bool getIsUserPainting() const { return false; }
+    
 public Q_SLOTS:
     
     void quit();

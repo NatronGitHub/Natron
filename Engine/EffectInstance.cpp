@@ -2776,8 +2776,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// Determine rectangles left to render /////////////////////////////////////////////////////
     
     std::list<RectI> rectsLeftToRender;
+    bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     if (isPlaneCached) {
-        bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 
         RectD lastStrokeRoD;
         if (isDuringPaintStroke && args.inputImagesList.empty()) {
@@ -2866,7 +2866,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 RectD maskRod;
 #endif
                 if (attachedStroke) {
-                    maskRod = attachedStroke->getBoundingBox(args.time);
+                    getNode()->getPaintStrokeRoD(args.time,&maskRod);
                 } else {
                     EffectInstance* maskInput = getInput(i);
                     if (maskInput) {
@@ -3172,14 +3172,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 ///Note that if 2 threads concurrently are rendering the same frame with 2 different keys, this would not
                 ///interfere with the cache system for the other thread because if another thread uses this image, the
                 ///attempt to remove it from the cache will fail because of use_count > 1
-                ImageList lastRenderedPlanes;
+                bool isLastPlanesEmpty;
                 U64 lastRenderHash;
                 {
                     QMutexLocker l(&_imp->lastRenderArgsMutex);
-                    lastRenderedPlanes = _imp->lastPlanesRendered;
+                    isLastPlanesEmpty = _imp->lastPlanesRendered.empty();
                     lastRenderHash = _imp->lastRenderHash;
                 }
-                if ( !lastRenderedPlanes.empty() && lastRenderHash != nodeHash ) {
+                if ( !isLastPlanesEmpty && lastRenderHash != nodeHash ) {
                     ///once we got it remove it from the cache
                     if (!useDiskCacheNode) {
                         appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
@@ -3254,6 +3254,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     if (renderAborted && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
         
         ///Return a NULL image
+        
+        if (isDuringPaintStroke) {
+            //We know the image will never be used ever again
+            appPTR->removeAllImagesFromCacheWithMatchingKey(nodeHash);
+        }
         return eRenderRoIRetCodeAborted;
         
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
@@ -4176,7 +4181,14 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  comps,
                                  outputClipPrefDepth,
                                  this);
-        if (identityInput) {
+        if (!identityInput) {
+            for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+                it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                it->second.renderMappedImage->markForRendered(downscaledRectToRender);
+            }
+            identityProcessed = true;
+        } else {
+        
             EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
             if (renderOk == eRenderRoIRetCodeAborted) {
                 return eRenderingFunctorRetAborted;
@@ -4236,12 +4248,6 @@ EffectInstance::renderHandler(RenderArgs & args,
                 }
                 return eRenderingFunctorRetOK;
             }
-        } else {
-            for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-                it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
-                it->second.renderMappedImage->markForRendered(downscaledRectToRender);
-            }
-            identityProcessed = true;
         }
         
     }

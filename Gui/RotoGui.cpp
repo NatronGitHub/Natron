@@ -2514,6 +2514,7 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
+                _imp->context->getNode()->getApp()->setUserIsPainting(true);
             }
             didSomething = true;
             break;
@@ -2999,6 +3000,7 @@ RotoGui::penUp(double /*scaleX*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
+        _imp->context->getNode()->getApp()->setUserIsPainting(false);
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->context->evaluateChange();

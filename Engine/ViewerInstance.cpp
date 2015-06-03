@@ -603,7 +603,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     assert(_imp->uiContext);
     boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
     
-    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast) {
+    //If the user is actively painting with the rotopaint we don't want to spam the cache with useless textures
+    bool isUserPainting = getApp()->getIsUserPainting();
+    
+    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast && !isUserPainting) {
         isCached = Natron::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
         
         ///if we want to force a refresh, we by-pass the cache
@@ -757,7 +760,7 @@ ViewerInstance::renderViewer_internal(int view,
     ///is very low, we better render again (and let the NodeCache do the work) rather than just
     ///overload the ViewerCache which may become slowe
     assert(_imp->uiContext);
-    if (inArgs.forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast) {
+    if (inArgs.forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast || getApp()->getIsUserPainting()) {
         
         assert(!inArgs.params->cachedFrame);
         inArgs.params->mustFreeRamBuffer = true;
@@ -1837,8 +1840,9 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->textureIndex);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         
-        
-        uiContext->updateColorPicker(params->textureIndex);
+        if (!instance->getApp()->getIsUserPainting()) {
+            uiContext->updateColorPicker(params->textureIndex);
+        }
     }
     //
     //        updateViewerRunning = false;

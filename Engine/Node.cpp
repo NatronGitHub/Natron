@@ -767,8 +767,9 @@ Node::updateLastPaintStrokeData()
 void
 Node::getPaintStrokeRoD(int time,RectD* bbox) const
 {
+    bool duringPaintStroke = _imp->liveInstance->isDuringPaintStrokeCreationThreadLocal();
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    if (_imp->duringPaintStrokeCreation) {
+    if (duringPaintStroke) {
         *bbox = _imp->wholeStrokeBbox;
     } else {
         boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
