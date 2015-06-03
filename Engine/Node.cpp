@@ -1019,7 +1019,6 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
-        qDebug() << getScriptName().c_str() << "hash:" << _imp->hash.value();
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     marked.push_back(this);
