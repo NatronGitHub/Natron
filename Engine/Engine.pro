@@ -10,7 +10,9 @@ CONFIG += moc
 CONFIG += boost qt expat cairo python shiboken pyside
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
-QT -= gui
+
+# Don't uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
+#QT -= gui
 
 
 precompile_header {
