@@ -434,6 +434,11 @@ public:
     virtual void cloneDefaultValues(KnobI* other) = 0;
     
     /**
+     * @brief Same as clone but returns whether the knob state changed as the result of the clone operation
+     **/
+    virtual bool cloneAndCheckIfChanged(KnobI* other,int dimension = -1) = 0;
+    
+    /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
      * If the range is NULL everything will be copied.
@@ -1266,6 +1271,11 @@ protected:
         (void)dimension;
     }
 
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* /*other*/,int dimension = -1)
+    {
+        (void)dimension;
+    }
+    
     virtual void cloneExtraData(KnobI* /*other*/,
                                 SequenceTime /*offset*/,
                                 const RangeD* /*range*/,
@@ -1275,6 +1285,7 @@ protected:
     }
     
     void cloneExpressions(KnobI* other,int dimension = -1);
+    bool cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension = -1);
     
     virtual void cloneExpressionsResults(KnobI* /*other*/,int /*dimension = -1*/) {}
 
@@ -1511,6 +1522,7 @@ public:
     virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneDefaultValues(KnobI* other) OVERRIDE FINAL;
+    virtual bool cloneAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
@@ -1560,6 +1572,7 @@ private:
     void signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension);
 
     void cloneValues(KnobI* other,int dimension);
+    bool cloneValuesAndCheckIfChanged(KnobI* other,int dimension);
     
     virtual void cloneExpressionsResults(KnobI* other,int dimension = -1) OVERRIDE FINAL;
 
@@ -1693,6 +1706,7 @@ public:
 protected:
 
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE;
     virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;

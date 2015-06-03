@@ -310,6 +310,33 @@ Curve::clone(const Curve & other)
     onCurveChanged();
 }
 
+bool
+Curve::cloneAndCheckIfChanged(const Curve& other)
+{
+    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    QMutexLocker l(&_imp->_lock);
+    bool hasChanged = false;
+    if (otherKeys.size() != _imp->keyFrames.size()) {
+        hasChanged = true;
+    }
+    if (!hasChanged) {
+        assert(otherKeys.size() == _imp->keyFrames.size());
+        KeyFrameSet::iterator oit = otherKeys.begin();
+        for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it,++oit) {
+            if (*it != *oit) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+    if (hasChanged) {
+        _imp->keyFrames.clear();
+        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        onCurveChanged();
+    }
+    return hasChanged;
+}
+
 void
 Curve::clone(const Curve & other,
              SequenceTime offset,

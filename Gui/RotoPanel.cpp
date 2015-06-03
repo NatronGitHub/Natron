@@ -1223,7 +1223,7 @@ RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
     }
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
     boost::shared_ptr<RotoDrawableItem> item;
-    if (item) {
+    if (i) {
         item = boost::dynamic_pointer_cast<RotoDrawableItem>(i->shared_from_this());
     }
 
@@ -1311,6 +1311,7 @@ void
 RotoPanel::onItemColorDialogEdited(const QColor & color)
 {
     QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
+    bool mustEvaluate = false;
     for (int i = 0; i < selected.size(); ++i) {
         TreeItems::iterator found = _imp->findItem(selected[i]);
         assert( found != _imp->items.end() );
@@ -1332,6 +1333,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 _imp->context->getColorKnob()->setValue(colorArray[0], 0);
                 _imp->context->getColorKnob()->setValue(colorArray[1], 1);
                 _imp->context->getColorKnob()->setValue(colorArray[2], 2);
+                mustEvaluate = true;
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
                 colorArray[0] = color.redF();
@@ -1344,6 +1346,9 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 found->treeItem->setIcon(COL_OVERLAY,icon);
             }
         }
+    }
+    if (mustEvaluate) {
+        _imp->context->evaluateChange();
     }
 }
 
@@ -1478,6 +1483,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
                 bool colorChosen = false;
                 double shapeColor[3];
+                bool mustEvaluate = false;
                 if (drawable) {
                     QColorDialog dialog;
                     _imp->dialogEdition = eColorDialogEditingShapeColor;
@@ -1505,14 +1511,20 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                             colorKnob->setValue(shapeColor[0], 0);
                             colorKnob->setValue(shapeColor[1], 1);
                             colorKnob->setValue(shapeColor[2], 2);
+                            mustEvaluate = true;
                             found->treeItem->setIcon(COL_COLOR, icon);
                         }
                     }
                 }
+                
                 if ( colorChosen && !selected.empty() ) {
                     _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
                     _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
                     _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
+                    mustEvaluate = true;
+                }
+                if (mustEvaluate) {
+                    _imp->context->evaluateChange();
                 }
                 break;
             }

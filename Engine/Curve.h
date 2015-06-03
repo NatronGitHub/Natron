@@ -163,6 +163,8 @@ public:
      * @brief Copies all the keyframes held by other, but does not change the pointer to the owner.
      **/
     void clone(const Curve & other);
+    
+    bool cloneAndCheckIfChanged(const Curve& other);
 
     /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset

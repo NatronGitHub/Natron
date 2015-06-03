@@ -1559,6 +1559,22 @@ Parametric_Knob::cloneExtraData(KnobI* other,int dimension )
     }
 }
 
+bool
+Parametric_Knob::cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension) {
+    bool hasChanged = false;
+    ///Mt-safe as Curve is MT-safe
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
+    
+    if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
+        for (int i = 0; i < getDimension(); ++i) {
+            if (i == dimension || dimension == -1) {
+                hasChanged |= _curves[i]->cloneAndCheckIfChanged( *isParametric->getParametricCurve(i) );
+            }
+        }
+    }
+    return hasChanged;
+}
+
 void
 Parametric_Knob::cloneExtraData(KnobI* other,
                                 SequenceTime offset,

@@ -2090,26 +2090,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
 #ifdef ROTO_ENABLE_PAINT
             else if (s) {
                 boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,this_layer));
-                
-                ///Attach this stroke to the underlying nodes used
-                boost::shared_ptr<Node> effectNode = stroke->getEffectNode();
-                if (effectNode) {
-                    effectNode->attachStrokeItem(stroke);
-                }
-                boost::shared_ptr<Node> mergeNode = stroke->getMergeNode();
-                if (mergeNode) {
-                    mergeNode->attachStrokeItem(stroke);
-                }
-                boost::shared_ptr<Node> timeOffsetNode = stroke->getTimeOffsetNode();
-                if (timeOffsetNode) {
-                    timeOffsetNode->attachStrokeItem(stroke);
-                }
-                boost::shared_ptr<Node> frameHoldNode = stroke->getFrameHoldNode();
-                if (frameHoldNode) {
-                    frameHoldNode->attachStrokeItem(stroke);
-                }
-
-                
+                stroke->attachStrokeToNodes();
                 stroke->load(*s);
                 
                 QMutexLocker l(&itemMutex);
@@ -2156,13 +2137,21 @@ RotoLayer::insertItem(const boost::shared_ptr<RotoItem> & item,
     assert(index >= 0);
     
     boost::shared_ptr<RotoLayer> parentLayer = item->getParentLayer();
-    if (parentLayer) {
+    if (parentLayer && parentLayer.get() != this) {
         parentLayer->removeItem(item);
     }
     
-    item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
+    
     {
         QMutexLocker l(&itemMutex);
+        if (parentLayer.get() != this) {
+            item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
+        } else {
+            RotoItems::iterator found = std::find(_imp->items.begin(), _imp->items.end(), item);
+            if (found != _imp->items.end()) {
+                _imp->items.erase(found);
+            }
+        }
         RotoItems::iterator it = _imp->items.begin();
         if ( index >= (int)_imp->items.size() ) {
             it = _imp->items.end();
@@ -4528,7 +4517,9 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         return;
     }
     
-    bool incrementKnobsAge = false;
+    boost::shared_ptr<KnobI> triggerKnob = handler->getKnob();
+    assert(triggerKnob);
+    
     
     boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
     if (handler == _imp->sourceColor->getSignalSlotHandler().get()) {
@@ -4541,10 +4532,7 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
                 boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
                 if (isDbl) {
-                    if (isDbl->getValue(0) != strength || isDbl->getValue(1) != strength) {
-                        isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
-                        incrementKnobsAge = true;
-                    }
+                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
                 }
             }   break;
             case Natron::eRotoStrokeTypeSharpen: {
@@ -4560,10 +4548,7 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
         if (operation) {
             int op_i = compKnob->getValue();
-            if (operation->getValue() != op_i) {
-                operation->setValue(op_i, 0);
-                incrementKnobsAge = true;
-            }
+            operation->setValue(op_i, 0);
         }
     } else if (handler == _imp->timeOffset->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
         
@@ -4578,10 +4563,7 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
         Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
         if (offset) {
             double value = _imp->timeOffset->getValue();
-            if (offset->getValue() != value) {
-                offset->setValue(value,0);
-                incrementKnobsAge = true;
-            }
+            offset->setValue(value,0);
         }
     } else if (handler == _imp->timeOffsetMode->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
         refreshNodesConnections();
@@ -4592,112 +4574,80 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
             boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
             Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
             if (translate) {
-                if (translate->getValue(0) != _imp->cloneTranslate->getValue(0) ||
-                    translate->getValue(1) != _imp->cloneTranslate->getValue(1)) {
-                    translate->clone(_imp->cloneTranslate.get());
-                    incrementKnobsAge = true;
-                }
+                translate->clone(_imp->cloneTranslate.get());
             }
         } else if (handler == _imp->cloneRotate->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
             Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
             if (rotate) {
-                if (rotate->getValue() != _imp->cloneRotate->getValue()) {
-                    rotate->clone(_imp->cloneRotate.get());
-                    incrementKnobsAge = true;
-                }
+                rotate->clone(_imp->cloneRotate.get());
             }
         } else if (handler == _imp->cloneScale->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
             Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
             if (scale) {
-                if (scale->getValue(0) != _imp->cloneScale->getValue(0) ||
-                    scale->getValue(1) != _imp->cloneScale->getValue(1)) {
-                    scale->clone(_imp->cloneScale.get());
-                    incrementKnobsAge = true;
-                }
+                scale->clone(_imp->cloneScale.get());
             }
         } else if (handler == _imp->cloneScaleUniform->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
             Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
             if (uniform) {
-                if (uniform->getValue() != _imp->cloneScaleUniform->getValue()) {
-                    uniform->clone(_imp->cloneScaleUniform.get());
-                    incrementKnobsAge = true;
-                }
+                uniform->clone(_imp->cloneScaleUniform.get());
             }
         } else if (handler == _imp->cloneSkewX->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
             Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
             if (skewX) {
-                if (skewX->getValue() != _imp->cloneSkewX->getValue()) {
-                    skewX->clone(_imp->cloneSkewX.get());
-                    incrementKnobsAge = true;
-                }
+                skewX->clone(_imp->cloneSkewX.get());
             }
         } else if (handler == _imp->cloneSkewY->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
             Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
             if (skewY) {
-                if (skewY->getValue() != _imp->cloneSkewY->getValue()) {
-                    skewY->clone(_imp->cloneSkewY.get());
-                    incrementKnobsAge = true;
-                }
+                skewY->clone(_imp->cloneSkewY.get());
             }
         } else if (handler == _imp->cloneSkewOrder->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
             Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
             if (skewOrder) {
-                if (skewOrder->getValue() != _imp->cloneSkewOrder->getValue()) {
-                    skewOrder->clone(_imp->cloneSkewOrder.get());
-                    incrementKnobsAge = true;
-                }
+                skewOrder->clone(_imp->cloneSkewOrder.get());
             }
         } else if (handler == _imp->cloneCenter->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
             Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
             if (center) {
-                if (center->getValue(0) != _imp->cloneCenter->getValue(0) ||
-                    center->getValue(1) != _imp->cloneCenter->getValue(1)) {
-                    center->clone(_imp->cloneCenter.get());
-                    incrementKnobsAge = true;
-                }
+                center->clone(_imp->cloneCenter.get());
+                
             }
         } else if (handler == _imp->cloneFilter->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
             Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
             if (filter) {
-                if (filter->getValue() != _imp->cloneFilter->getValue()) {
-                    filter->clone(_imp->cloneFilter.get());
-                    incrementKnobsAge = true;
-                }
+                filter->clone(_imp->cloneFilter.get());
             }
         } else if (handler == _imp->cloneBlackOutside->getSignalSlotHandler().get()) {
             boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
             Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
             if (bo) {
-                if (bo->getValue() != _imp->cloneBlackOutside->getValue()) {
-                    bo->clone(_imp->cloneBlackOutside.get());
-                    incrementKnobsAge = true;
-                }
+                bo->clone(_imp->cloneBlackOutside.get());
+                
             }
         }
     }
     
-    if (incrementKnobsAge) {
-        if (_imp->effectNode) {
-            _imp->effectNode->incrementKnobsAge();
-        }
-        if (_imp->mergeNode) {
-            _imp->mergeNode->incrementKnobsAge();
-        }
-        if (_imp->timeOffsetNode) {
-            _imp->timeOffsetNode->incrementKnobsAge();
-        }
-        if (_imp->frameHoldNode) {
-            _imp->frameHoldNode->incrementKnobsAge();
-        }
+    if (_imp->effectNode) {
+        _imp->effectNode->incrementKnobsAge();
     }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->incrementKnobsAge();
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->incrementKnobsAge();
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->incrementKnobsAge();
+    }
+    
 }
 
 
@@ -5120,6 +5070,26 @@ RotoStrokeItem::resetNodesThreadSafety()
     }
 }
 
+void
+RotoStrokeItem::attachStrokeToNodes()
+{
+    boost::shared_ptr<RotoStrokeItem> curve = boost::dynamic_pointer_cast<RotoStrokeItem>(shared_from_this());
+    assert(curve);
+    ///Attach this stroke to the underlying nodes used
+    if (_imp->effectNode) {
+        _imp->effectNode->attachStrokeItem(curve);
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->attachStrokeItem(curve);
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->attachStrokeItem(curve);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->attachStrokeItem(curve);
+    }
+}
+
 bool
 RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
 {
@@ -5288,6 +5258,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->yCurve.clone(otherStroke->_imp->yCurve);
         _imp->pressureCurve.clone(otherStroke->_imp->pressureCurve);
         _imp->type = otherStroke->_imp->type;
+        _imp->finished = true;
     }
     RotoDrawableItem::clone(other);
 }
@@ -5912,24 +5883,8 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
     if (parentLayer) {
         parentLayer->insertItem(curve,0);
     }
+    curve->attachStrokeToNodes();
     
-    ///Attach this stroke to the underlying nodes used
-    boost::shared_ptr<Node> effectNode = curve->getEffectNode();
-    if (effectNode) {
-        effectNode->attachStrokeItem(curve);
-    }
-    boost::shared_ptr<Node> mergeNode = curve->getMergeNode();
-    if (mergeNode) {
-        mergeNode->attachStrokeItem(curve);
-    }
-    boost::shared_ptr<Node> timeOffsetNode = curve->getTimeOffsetNode();
-    if (timeOffsetNode) {
-        timeOffsetNode->attachStrokeItem(curve);
-    }
-    boost::shared_ptr<Node> frameHoldNode = curve->getFrameHoldNode();
-    if (frameHoldNode) {
-        frameHoldNode->attachStrokeItem(curve);
-    }
     _imp->lastInsertedItem = curve;
     
     Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);

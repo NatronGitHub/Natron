@@ -55,6 +55,8 @@ public:
     void stringFromInterpolatedIndex(double interpolated,std::string* returnValue) const;
 
     void clone(const StringAnimationManager & other);
+    
+    bool cloneAndCheckIfChanged(const StringAnimationManager & other);
 
     void clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
 

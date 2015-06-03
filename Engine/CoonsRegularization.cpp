@@ -765,6 +765,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     RectD bbox;
     Bezier::deCastelJau(patch, time, 0, true, -1, &discretizedPolygon, &bbox);
     Point pointInside = findPointInside(patch, time);
+#pragma message WARN("Compute winding number correctly without decastelJau")
     int sign;
     {
         int winding_number = 0;
@@ -858,13 +859,13 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         }
     }
     if (!degenerate) {
-#pragma message WARN("BUG: same code for if and else branches")
-        if ((sign >= 0 && aligned == 1) || (sign < 0 && aligned == 2)) {
+        //We do not care if the coons patch orientation, if we would though, we would have to reverse the patch
+        //if ((sign >= 0 && aligned == 1) || (sign < 0 && aligned == 2)) {
             fixedPatch->push_back(patch);
             return;
-        }
-        fixedPatch->push_back(patch);
-        return;
+        //}
+        //fixedPatch->push_back(patch);
+        //return;
     }
     
     // Polynomial coefficients of (B_i'' B_j + B_i' B_j')/3.

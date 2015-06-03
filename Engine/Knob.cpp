@@ -2599,6 +2599,30 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
     }
 }
 
+bool
+KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
+{
+    assert((int)_imp->expressions.size() == getDimension());
+    bool ret = false;
+    try {
+        int dims = std::min(getDimension(),other->getDimension());
+        for (int i = 0; i < dims; ++i) {
+            if (i == dimension || dimension == -1) {
+                std::string expr = other->getExpression(i);
+                bool hasRet = other->isExpressionUsingRetVariable(i);
+                if (!expr.empty() && (expr != _imp->expressions[i].originalExpression || hasRet != _imp->expressions[i].hasRet)) {
+                    (void)setExpression(i, expr,hasRet);
+                    cloneExpressionsResults(other,i);
+                    ret = true;
+                }
+            }
+        }
+    } catch(...) {
+        ///ignore errors
+    }
+    return ret;
+}
+
 void
 KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob)
 {
@@ -3816,6 +3840,16 @@ AnimatingString_KnobHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
     
     if (isAnimatedString) {
         _animation->clone( isAnimatedString->getAnimation() );
+    }
+}
+
+bool
+AnimatingString_KnobHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
+{
+    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
+    
+    if (isAnimatedString) {
+        _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
     }
 }
 
