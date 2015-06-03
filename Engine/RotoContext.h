@@ -1036,6 +1036,9 @@ public:
      **/
     bool appendPoint(const std::pair<Natron::Point,double>& rawPoints);
     
+    //Must be called after constructor
+    void attachStrokeToNodes();
+    
     bool getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
                                             RectD* wholeBbox, int* newAge);
     
