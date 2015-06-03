@@ -226,5 +226,15 @@
         <file>Resources/Images/interp_linear_selected.png</file>
         <file>Resources/Images/keyframe_node_root.png</file>
         <file>Resources/Images/keyframe_node_root_selected.png</file>
+        <file>Resources/Images/interp_break.png</file>
+        <file>Resources/Images/interp_break_selected.png</file>
+        <file>Resources/Images/interp_curve_c.png</file>
+        <file>Resources/Images/interp_curve_c_selected.png</file>
+        <file>Resources/Images/interp_curve_h.png</file>
+        <file>Resources/Images/interp_curve_h_selected.png</file>
+        <file>Resources/Images/interp_curve_r.png</file>
+        <file>Resources/Images/interp_curve_r_selected.png</file>
+        <file>Resources/Images/interp_curve_z.png</file>
+        <file>Resources/Images/interp_curve_z_selected.png</file>
     </qresource>
 </RCC>

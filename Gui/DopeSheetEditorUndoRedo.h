@@ -41,8 +41,8 @@ public:
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-    int id() const;
-    bool mergeWith(const QUndoCommand *other);
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
     void moveSelectedKeyframes(double dt);
@@ -52,6 +52,7 @@ private:
     double _dt;
     DopeSheet *_model;
 };
+
 
 /**
  * @brief The DSLeftTrimReaderCommand class
@@ -70,8 +71,8 @@ public:
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-    int id() const;
-    bool mergeWith(const QUndoCommand *other);
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
     void trimLeft(double firstFrame);
@@ -82,6 +83,7 @@ private:
     double _newTime;
     DopeSheet *_model;
 };
+
 
 /**
  * @brief The DSRightTrimReaderCommand class
@@ -100,8 +102,8 @@ public:
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-    int id() const;
-    bool mergeWith(const QUndoCommand *other);
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
     void trimRight(double lastFrame);
@@ -113,6 +115,35 @@ private:
     DopeSheet *_model;
 };
 
+class DSSlipReaderCommand : public QUndoCommand
+{
+public:
+    DSSlipReaderCommand(DSNode *dsNodeReader,
+                        double dt,
+                        DopeSheet *model,
+                        QUndoCommand *parent = 0);
+
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+
+private:
+    void slipReader(double dt);
+
+private:
+    DSNode *_dsNodeReader;
+    double _dt;
+    DopeSheet *_model;
+};
+
+
+/**
+ * @brief The DSMoveReaderCommand class
+ *
+ *
+ */
 class DSMoveReaderCommand : public QUndoCommand
 {
 public:
@@ -124,11 +155,11 @@ public:
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-    int id() const;
-    bool mergeWith(const QUndoCommand *other);
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
-    void moveClip(double time);
+    void moveReader(double time);
 
 private:
     DSNode *_dsNodeReader;
@@ -136,6 +167,7 @@ private:
     double _newTime;
     DopeSheet *_model;
 };
+
 
 /**
  * @brief The DSRemoveKeysCommand class
@@ -160,6 +192,7 @@ private:
     DopeSheet *_model;
 };
 
+
 /**
  * @brief The DSMoveGroupCommand class
  *
@@ -176,8 +209,8 @@ public:
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-    int id() const;
-    bool mergeWith(const QUndoCommand *other);
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
     void moveGroupKeyframes(double dt);
@@ -188,6 +221,12 @@ private:
     DopeSheet *_model;
 };
 
+
+/**
+ * @brief The DSChangeNodeLabelCommand class
+ *
+ *
+ */
 class DSChangeNodeLabelCommand : public QUndoCommand
 {
 public:

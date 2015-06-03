@@ -896,32 +896,38 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "enter_group.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-
-            case NATRON_PIXMAP_INTERP_HARD:
+            case NATRON_PIXMAP_INTERP_LINEAR:
                 img.load(NATRON_IMAGES_PATH "interp_linear.png");
-                *pix = QPixmap::fromImage(img);
-                break;
-            case NATRON_PIXMAP_INTERP_HARD_SELECTED:
-                img.load(NATRON_IMAGES_PATH "interp_linear_selected.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_INTERP_CURVE:
                 img.load(NATRON_IMAGES_PATH "interp_curve.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-            case NATRON_PIXMAP_INTERP_CURVE_SELECTED:
-                img.load(NATRON_IMAGES_PATH "interp_curve_selected.png");
-                *pix = QPixmap::fromImage(img);
-                break;
             case NATRON_PIXMAP_INTERP_CONSTANT:
                 img.load(NATRON_IMAGES_PATH "interp_constant.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-            case NATRON_PIXMAP_INTERP_CONSTANT_SELECTED:
-                img.load(NATRON_IMAGES_PATH "interp_constant_selected.png");
+            case NATRON_PIXMAP_INTERP_BREAK:
+                img.load(NATRON_IMAGES_PATH "interp_break.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-
+            case NATRON_PIXMAP_INTERP_CURVE_C:
+                img.load(NATRON_IMAGES_PATH "interp_curve_c.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_H:
+                img.load(NATRON_IMAGES_PATH "interp_curve_h.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_R:
+                img.load(NATRON_IMAGES_PATH "interp_curve_r.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_Z:
+                img.load(NATRON_IMAGES_PATH "interp_curve_z.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch

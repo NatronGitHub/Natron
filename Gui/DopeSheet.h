@@ -135,6 +135,7 @@ public:
     QTreeWidgetItem *findTreeItemForDim(const DSKnob *dsKnob, int dimension) const;
     int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
 
+    bool isPartOfGroup(DSNode *dsNode) const;
     DSNode *getGroupDSNode(DSNode *dsNode) const;
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
@@ -148,7 +149,8 @@ public:
     DSKeyPtrList getSelectedKeyframes() const;
     int getSelectedKeyframesCount() const;
 
-    void makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp);
+    void makeSelection(const std::vector<DSSelectedKey> &keys);
+    void makeBooleanSelection(const std::vector<DSSelectedKey> &keys);
 
     bool keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const;
     DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
@@ -162,6 +164,7 @@ public:
     void moveSelectedKeys(double dt);
     void trimReaderLeft(DSNode *reader, double newFirstFrame);
     void trimReaderRight(DSNode *reader, double newLastFrame);
+    void slipReader(DSNode *reader, double dt);
     void moveReader(DSNode *reader, double time);
     void moveGroup(DSNode *group, double dt);
     void copySelectedKeys();
@@ -255,6 +258,8 @@ public:
     DSKnobRow getChildData() const;
 
     DSNode::DSNodeType getDSNodeType() const;
+
+    bool hasRange() const;
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;

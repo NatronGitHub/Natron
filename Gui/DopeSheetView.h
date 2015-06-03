@@ -92,7 +92,7 @@ public:
     {
         esNoEditingState,
         esPickKeyframe,
-        esClipRepos,
+        esReaderRepos,
         esReaderLeftTrim,
         esReaderRightTrim,
         esReaderSlip,
@@ -135,8 +135,6 @@ protected:
     void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
     void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
 
-    void mouseDragEvent(QMouseEvent *e);
-
     void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
 
     void enterEvent(QEvent *e) OVERRIDE FINAL;
@@ -150,7 +148,7 @@ private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
     void onKeyframeChanged();
-    void onReaderChanged();
+    void onReaderChanged(int, int reason);
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void onKeyframeSelectionChanged();

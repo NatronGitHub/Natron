@@ -35,7 +35,11 @@
 #define PLUGINID_OFX_TRACKERPM    "net.sf.openfx.TrackerPM"
 #define PLUGINID_OFX_DOTEXAMPLE   "net.sf.openfx.dotexample"
 #define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
+#define PLUGINID_OFX_READFFMPEG     "fr.inria.openfx.ReadFFmpeg"
+#define PLUGINID_OFX_READPFM     "fr.inria.openfx.ReadPFM"
 #define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
+#define PLUGINID_OFX_WRITEFFMPEG     "fr.inria.openfx.WriteFFmpeg"
+#define PLUGINID_OFX_WRITEPFM     "fr.inria.openfx.WritePFM"
 #define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
 #define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
@@ -43,6 +47,9 @@
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
 #define PLUGINID_OFX_CONSTANT    "net.sf.openfx.ConstantPlugin"
+#define PLUGINID_OFX_TIMEOFFSET "net.sf.openfx.timeOffset"
+#define PLUGINID_OFX_RETIME "net.sf.openfx.Retime"
+#define PLUGINID_OFX_FRAMERANGE "net.sf.openfx.FrameRange"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")

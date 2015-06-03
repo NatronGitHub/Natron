@@ -491,6 +491,13 @@ int DopeSheet::getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const
     return item->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt();
 }
 
+bool DopeSheet::isPartOfGroup(DSNode *dsNode) const
+{
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
+
+    return (parentGroup);
+}
+
 DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
     boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
@@ -583,13 +590,11 @@ int DopeSheet::getSelectedKeyframesCount() const
     return _imp->selectedKeyframes.size();
 }
 
-void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool booleanOp)
+void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys)
 {
-    if (!booleanOp) {
-        Q_EMIT keyframeSelectionAboutToBeCleared();
+    Q_EMIT keyframeSelectionAboutToBeCleared();
 
-        _imp->selectedKeyframes.clear();
-    }
+    _imp->selectedKeyframes.clear();
 
     for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         DSSelectedKey key = (*it);
@@ -601,10 +606,25 @@ void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys, bool boole
 
             _imp->selectedKeyframes.push_back(selected);
         }
+    }
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheet::makeBooleanSelection(const std::vector<DSSelectedKey> &keys)
+{
+    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
+
+        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+            DSKeyPtr selected(new DSSelectedKey(key));
+
+            _imp->selectedKeyframes.push_back(selected);
+        }
         else {
-            if (booleanOp) {
-                _imp->selectedKeyframes.erase(isAlreadySelected);
-            }
+            _imp->selectedKeyframes.erase(isAlreadySelected);
         }
     }
 
@@ -646,6 +666,10 @@ DSKeyPtrList::iterator DopeSheet::keyframeIsSelected(const DSSelectedKey &key) c
 
 void DopeSheet::clearKeyframeSelection()
 {
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
     Q_EMIT keyframeSelectionAboutToBeCleared();
 
     _imp->selectedKeyframes.clear();
@@ -727,10 +751,12 @@ void DopeSheet::moveSelectedKeys(double dt)
 
 void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 {
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+    NodePtr node = reader->getNodeGui()->getNode();
+
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    assert(firstFrameKnob);
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    assert(lastFrameKnob);
 
     double firstFrame = firstFrameKnob->getValue();
 
@@ -745,12 +771,14 @@ void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 
 void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
 {
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("originalFrameRange").get());
+    NodePtr node = reader->getNodeGui()->getNode();
+
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    assert(firstFrameKnob);
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    assert(lastFrameKnob);
+    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
+    assert(originalFrameRangeKnob);
 
     double lastFrame = lastFrameKnob->getValue();
 
@@ -763,10 +791,26 @@ void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
     }
 }
 
+void DopeSheet::slipReader(DSNode *reader, double dt)
+{
+    NodePtr node = reader->getNodeGui()->getNode();
+
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    assert(firstFrameKnob);
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    assert(lastFrameKnob);
+    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
+    assert(originalFrameRangeKnob);
+
+    _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+}
+
 void DopeSheet::moveReader(DSNode *reader, double time)
 {
-    Knob<int> * timeOffsetKnob = dynamic_cast<Knob<int> *>
-            (reader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+    NodePtr node = reader->getNodeGui()->getNode();
+
+    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
+    assert(timeOffsetKnob);
 
     _imp->pushUndoCommand(new DSMoveReaderCommand(reader, timeOffsetKnob->getValue(), time, this));
 }
@@ -846,19 +890,23 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 
     NodePtr node = nodeGui->getNode();
 
-    if (node->getPlugin()->isReader()) {
+    std::string pluginID = node->getPluginID();
+
+    if (pluginID == PLUGINID_OFX_READOIIO
+            || pluginID == PLUGINID_OFX_READFFMPEG
+            || pluginID == PLUGINID_OFX_READPFM) {
         nodeType = DSNode::ReaderNodeType;
     }
     else if (dynamic_cast<NodeGroup *>(node->getLiveInstance())) {
         nodeType = DSNode::GroupNodeType;
     }
-    else if (node->getPluginLabel() == "RetimeOFX") {
+    else if (pluginID == PLUGINID_OFX_RETIME) {
         nodeType = DSNode::RetimeNodeType;
     }
-    else if (node->getPluginLabel() == "TimeOffsetOFX") {
+    else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
         nodeType = DSNode::TimeOffsetNodeType;
     }
-    else if (node->getPluginLabel() == "FrameRangeOFX") {
+    else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
         nodeType = DSNode::FrameRangeNodeType;
     }
 
@@ -1173,6 +1221,12 @@ DSKnobRow DSNode::getChildData() const
 DSNode::DSNodeType DSNode::getDSNodeType() const
 {
     return _imp->nodeType;
+}
+
+bool DSNode::hasRange() const
+{
+    return (_imp->nodeType == DSNode::ReaderNodeType ||
+            _imp->nodeType == DSNode::GroupNodeType);
 }
 
 /**

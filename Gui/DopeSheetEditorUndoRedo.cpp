@@ -29,6 +29,47 @@ static bool dsSelectedKeyLessFunctor(const DSKeyPtr &left,
     return left->key.getTime() < right->key.getTime();
 }
 
+void renderOnce(Natron::EffectInstance *effectInstance)
+{
+    assert(effectInstance);
+
+    std::set<ViewerInstance *> toRender;
+
+    std::list<ViewerInstance *> connectedViewers;
+    effectInstance->getNode()->hasViewersConnected(&connectedViewers);
+
+    toRender.insert(connectedViewers.begin(), connectedViewers.end());
+
+    for (std::set<ViewerInstance *>::const_iterator viIt = toRender.begin(); viIt != toRender.end(); ++viIt) {
+        ViewerInstance *viewer = (*viIt);
+
+        viewer->renderCurrentFrame(true);
+    }
+}
+
+void renderOnce(std::set<KnobHolder *> *holders)
+{
+    std::set<ViewerInstance *> toRender;
+
+    for (std::set<KnobHolder *>::iterator khIt = holders->begin(); khIt != holders->end(); ++khIt) {
+        Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(*khIt);
+
+        effectInstance->endChanges(true);
+
+        std::list<ViewerInstance *> connectedViewers;
+
+        effectInstance->getNode()->hasViewersConnected(&connectedViewers);
+
+        toRender.insert(connectedViewers.begin(), connectedViewers.end());
+    }
+
+    for (std::set<ViewerInstance *>::const_iterator viIt = toRender.begin(); viIt != toRender.end(); ++viIt) {
+        ViewerInstance *viewer = (*viIt);
+
+        viewer->renderCurrentFrame(true);
+    }
+}
+
 } // anon namespace
 
 
@@ -71,9 +112,9 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
     }
 
     for (std::set<KnobHolder *>::iterator khIt = knobHolders.begin(); khIt != knobHolders.end(); ++khIt) {
-        Natron::EffectInstance *holder = dynamic_cast<Natron::EffectInstance *>(*khIt);
+        Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(*khIt);
 
-        holder->beginChanges();
+        effectInstance->beginChanges();
     }
 
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
@@ -86,25 +127,7 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
                               dt, 0, &selectedKey->key);
     }
 
-    std::set<ViewerInstance *> toRender;
-
-    for (std::set<KnobHolder *>::iterator khIt = knobHolders.begin(); khIt != knobHolders.end(); ++khIt) {
-        Natron::EffectInstance *holder = dynamic_cast<Natron::EffectInstance *>(*khIt);
-
-        holder->endChanges(true);
-
-        std::list<ViewerInstance *> connectedViewers;
-
-        holder->getNode()->hasViewersConnected(&connectedViewers);
-
-        toRender.insert(connectedViewers.begin(), connectedViewers.end());
-    }
-
-    for (std::set<ViewerInstance *>::const_iterator viIt = toRender.begin(); viIt != toRender.end(); ++viIt) {
-        ViewerInstance *viewer = (*viIt);
-
-        viewer->renderCurrentFrame(true);
-    }
+    renderOnce(&knobHolders);
 
     _model->emit_keyframeSelectionChanged();
 }
@@ -168,15 +191,19 @@ void DSLeftTrimReaderCommand::redo()
 
 void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>
-            (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
+    assert(firstFrameKnob);
 
-    firstFrameKnob->beginChanges();
+    KnobHolder *holder = firstFrameKnob->getHolder();
+    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+    effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    Q_UNUSED(r);
-    firstFrameKnob->endChanges();
+    effectInstance->endChanges(true);
 
-    // The dope sheet view is automatically updated (see DopeSheetView::onReaderChanged())
+    renderOnce(effectInstance);
+
+    Q_UNUSED(r);
 }
 
 int DSLeftTrimReaderCommand::id() const
@@ -229,15 +256,19 @@ void DSRightTrimReaderCommand::redo()
 
 void DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>
-            (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+    assert(lastFrameKnob);
 
-    lastFrameKnob->beginChanges();
+    KnobHolder *holder = lastFrameKnob->getHolder();
+    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+    effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    Q_UNUSED(r);
-    lastFrameKnob->endChanges();
+    effectInstance->endChanges(true);
 
-    // The dope sheet view is automatically updated (see DopeSheetView::onReaderChanged())
+    renderOnce(effectInstance);
+
+    Q_UNUSED(r);
 }
 
 int DSRightTrimReaderCommand::id() const
@@ -263,6 +294,81 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 }
 
 
+////////////////////////// DSSlipReaderCommand //////////////////////////
+
+DSSlipReaderCommand::DSSlipReaderCommand(DSNode *dsNodeReader,
+                                         double dt,
+                                         DopeSheet *model,
+                                         QUndoCommand *parent) :
+    QUndoCommand(parent),
+    _dsNodeReader(dsNodeReader),
+    _dt(dt),
+    _model(model)
+{
+    setText(QObject::tr("Slip reader"));
+}
+
+void DSSlipReaderCommand::undo()
+{
+    slipReader(-_dt);
+}
+
+void DSSlipReaderCommand::redo()
+{
+    slipReader(_dt);
+}
+
+int DSSlipReaderCommand::id() const
+{
+    return kDopeSheetEditorSlipReaderCommandCompressionID;
+}
+
+bool DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
+{
+    const DSSlipReaderCommand *cmd = dynamic_cast<const DSSlipReaderCommand *>(other);
+
+    if (cmd->id() != id()) {
+        return false;
+    }
+
+    if (cmd->_dsNodeReader != _dsNodeReader) {
+        return false;
+    }
+
+    _dt += cmd->_dt;
+
+    return true;
+}
+
+void DSSlipReaderCommand::slipReader(double dt)
+{
+    NodePtr node = _dsNodeReader->getNodeGui()->getNode();
+
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    assert(firstFrameKnob);
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    assert(lastFrameKnob);
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get());
+    assert(startingTimeKnob);
+
+    KnobHolder *holder = lastFrameKnob->getHolder();
+    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+    effectInstance->beginChanges();
+
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrameKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+
+    r = lastFrameKnob->setValue(lastFrameKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    r = startingTimeKnob->setValue(startingTimeKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+
+    effectInstance->endChanges(true);
+
+    renderOnce(effectInstance);
+
+    Q_UNUSED(r);
+}
+
+
 ////////////////////////// DSMoveReaderCommand //////////////////////////
 
 DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
@@ -281,25 +387,29 @@ DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
 
 void DSMoveReaderCommand::undo()
 {
-    moveClip(_oldTime);
+    moveReader(_oldTime);
 }
 
 void DSMoveReaderCommand::redo()
 {
-    moveClip(_newTime);
+    moveReader(_newTime);
 }
 
-void DSMoveReaderCommand::moveClip(double time)
+void DSMoveReaderCommand::moveReader(double time)
 {
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>
-            (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+    assert(timeOffsetKnob);
 
-    timeOffsetKnob->beginChanges();
+    KnobHolder *holder = timeOffsetKnob->getHolder();
+    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+    effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    Q_UNUSED(r);
-    timeOffsetKnob->endChanges();
+    effectInstance->endChanges(true);
 
-    _model->emit_modelChanged();
+    Q_UNUSED(r);
+
+    renderOnce(effectInstance);
 }
 
 int DSMoveReaderCommand::id() const
@@ -414,6 +524,8 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
     NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getNodeGui()->getNode()->getLiveInstance());
     NodeList nodes = group->getNodes();
 
+    std::set<KnobHolder *> knobHolders;
+
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
 
@@ -436,6 +548,12 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
                 continue;
             }
 
+            KnobHolder *holder = knob->getHolder();
+            knobHolders.insert(holder);
+
+            Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+            effectInstance->beginChanges();
+
             for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
                 if (!knob->isAnimated(dim)) {
                     continue;
@@ -448,15 +566,16 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 
                     KeyFrame fake;
 
-                    knob->beginChanges();
                     knob->moveValueAtTime(kf.getTime(), dim, dt, 0, &fake);
-                    knob->endChanges();
                 }
             }
         }
     }
 
+    renderOnce(&knobHolders);
+
     _model->clearKeyframeSelection();
+    _model->emit_modelChanged();
 }
 
 

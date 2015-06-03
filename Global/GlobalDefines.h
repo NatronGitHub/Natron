@@ -112,6 +112,7 @@ typedef OfxRangeD RangeD;
 #define kDopeSheetEditorRightTrimCommandCompressionID 20
 #define kDopeSheetEditorMoveClipCommandCompressionID 21
 #define kDopeSheetEditorMoveGroupCommandCompressionID 22
+#define kDopeSheetEditorSlipReaderCommandCompressionID 23
 
 namespace Natron {
 /*Converts a std::string to wide string*/
