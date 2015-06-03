@@ -2261,7 +2261,7 @@ KnobHelper::slaveTo(int dimension,
         
     }
     
-    clone(other,dimension);
+    bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
     
     if (_signalSlotHandler) {
         ///Notify we want to refresh
@@ -2269,7 +2269,10 @@ KnobHelper::slaveTo(int dimension,
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
     }
-    evaluateValueChange(dimension, reason);
+    
+    if (hasChanged) {
+        evaluateValueChange(dimension, reason);
+    }
 
     ///Register this as a listener of the master
     if (helper) {

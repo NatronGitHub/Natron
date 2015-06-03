@@ -4338,6 +4338,8 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     fixedNamePrefix.append('_');
     fixedNamePrefix.append(name.c_str());
     fixedNamePrefix.append('_');
+    fixedNamePrefix.append(QString::number(context->getAge()));
+    fixedNamePrefix.append('_');
     
     QString pluginId;
     switch (type) {
@@ -4506,7 +4508,12 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
 
 RotoStrokeItem::~RotoStrokeItem()
 {
-    
+    for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+        if (_imp->strokeDotPatterns[i]) {
+            cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
+            _imp->strokeDotPatterns[i] = 0;
+        }
+    }
 }
 
 void
@@ -5035,6 +5042,15 @@ void
 RotoStrokeItem::setStrokeFinished()
 {
     _imp->finished = true;
+    
+    for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+        if (_imp->strokeDotPatterns[i]) {
+            cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
+            _imp->strokeDotPatterns[i] = 0;
+        }
+    }
+    _imp->strokeDotPatterns.clear();
+    
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(false);
         _imp->effectNode->incrementKnobsAge();
@@ -5102,6 +5118,13 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
     {
         QMutexLocker k(&itemMutex);
         
+        if (_imp->strokeDotPatterns.empty()) {
+            _imp->strokeDotPatterns.resize(101);
+            for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+                _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
+            }
+        }
+        
         Curve tmpX,tmpY,tmpP;
         {
             KeyFrame k;
@@ -5164,6 +5187,20 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
     
     
     return true;
+}
+
+std::vector<cairo_pattern_t*>
+RotoStrokeItem::getPatternCache() const
+{
+    QMutexLocker k(&itemMutex);
+    return _imp->strokeDotPatterns;
+}
+
+void
+RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
+{
+    QMutexLocker k(&itemMutex);
+    _imp->strokeDotPatterns = cache;
 }
 
 bool
@@ -5293,10 +5330,11 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->xCurve.clone(s->_xCurve);
         _imp->yCurve.clone(s->_yCurve);
         _imp->pressureCurve.clone(s->_pressureCurve);
+        resetNodesThreadSafety();
+        setStrokeFinished();
     }
     
-    resetNodesThreadSafety();
-    setStrokeFinished();
+    
 }
 
 void
@@ -7402,7 +7440,16 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
     }
     
-    distToNext = _imp->renderStroke(cr, toScalePoints, distToNext, stroke.get(), getTimelineCurrentTime(), mipmapLevel);
+    std::vector<cairo_pattern_t*> dotPatterns = stroke->getPatternCache();
+    if (dotPatterns.empty()) {
+        dotPatterns.resize(101);
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            dotPatterns[i] = (cairo_pattern_t*)0;
+        }
+    }
+    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), getTimelineCurrentTime(), mipmapLevel);
+    
+    stroke->updatePatternCache(dotPatterns);
     
     assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     
@@ -7619,7 +7666,11 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
 
     
     if (isSingleStroke) {
-        _imp->renderStroke(cr, points, 0, isSingleStroke, time, mipmapLevel);
+        std::vector<cairo_pattern_t*> dotPatterns(101);
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            dotPatterns[i] = (cairo_pattern_t*)0;
+        }
+        _imp->renderStroke(cr, dotPatterns, points, 0, isSingleStroke, time, mipmapLevel);
     } else {
         _imp->renderInternal(cr, splines,mipmapLevel,time);
     }
@@ -7696,21 +7747,33 @@ static double hardnessGaussLookup(double f)
 
 void
 RotoContextPrivate::renderDot(cairo_t* cr,
+                              std::vector<cairo_pattern_t*>& dotPatterns,
                               const Point &center,
                               double internalDotRadius,
                               double externalDotRadius,
+                              double pressure,
                               double shapeColor[3],
                               const std::vector<std::pair<double, double> >& opacityStops,
                               double opacity)
 {
     
     if (!opacityStops.empty()) {
-        cairo_pattern_t* pattern = cairo_pattern_create_radial(center.x, center.y, internalDotRadius, center.x, center.y, externalDotRadius);
-        for (std::size_t i = 0; i < opacityStops.size(); ++i) {
-            cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, shapeColor[0], shapeColor[1], shapeColor[2],opacityStops[i].second);
+        cairo_pattern_t* pattern;
+        int pressureInt = std::floor(pressure * 100. + 0.5);
+        assert(pressureInt >= 0 && pressureInt <= 100);
+        if (dotPatterns[pressureInt]) {
+            pattern = dotPatterns[pressureInt];
+        } else {
+            
+            pattern = cairo_pattern_create_radial(0, 0, internalDotRadius, 0, 0, externalDotRadius);
+            for (std::size_t i = 0; i < opacityStops.size(); ++i) {
+                cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, shapeColor[0], shapeColor[1], shapeColor[2],opacityStops[i].second);
+            }
+            dotPatterns[pressureInt] = pattern;
         }
-        
+        cairo_translate(cr, center.x, center.y);
         cairo_set_source(cr, pattern);
+        cairo_translate(cr, -center.x, -center.y);
     } else {
         cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
     }
@@ -7761,7 +7824,13 @@ static void getRenderDotParams(double alpha, double brushSizePixel, double brush
 }
 
 double
-RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,double> >& points, double distToNext, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
+RotoContextPrivate::renderStroke(cairo_t* cr,
+                                 std::vector<cairo_pattern_t*>& dotPatterns,
+                                 const std::list<std::pair<Point,double> >& points,
+                                 double distToNext,
+                                 const RotoStrokeItem* stroke,
+                                 int time,
+                                 unsigned int mipmapLevel)
 {
     if (points.empty()) {
         return distToNext;
@@ -7770,6 +7839,8 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     if (!stroke->isActivated(time)) {
         return distToNext;
     }
+    
+    assert(dotPatterns.size() == 101);
     
     double alpha = stroke->getOpacity(time);
     double shapeColor[3];
@@ -7835,7 +7906,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         double internalDotRadius, externalDotRadius, spacing;
         std::vector<std::pair<double,double> > opacityStops;
         getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-        renderDot(cr, it->first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
+        renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, shapeColor, opacityStops, alpha);
         return 0;
     }
     
@@ -7862,7 +7933,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
             double internalDotRadius, externalDotRadius, spacing;
             std::vector<std::pair<double,double> > opacityStops;
             getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, pressure, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-            renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha);
+            renderDot(cr, dotPatterns, center, internalDotRadius, externalDotRadius, pressure, shapeColor, opacityStops, alpha);
 
             distToNext += spacing;
         }
@@ -7882,7 +7953,11 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     std::list<std::pair<Point,double> > points;
 
     stroke->evaluateStroke(mipmapLevel, time, &points);
-    renderStroke(cr, points, 0, stroke, time, mipmapLevel);
+    std::vector<cairo_pattern_t*> dotPatterns(101);
+    for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+        dotPatterns[i] = (cairo_pattern_t*)0;
+    }
+    renderStroke(cr, dotPatterns, points, 0, stroke, time, mipmapLevel);
 }
 
 void

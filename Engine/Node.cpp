@@ -986,12 +986,13 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                     }
                 }
             } else {
+                boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
                         
                         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-                        if (_imp->paintStroke.lock() && input->isRotoPaintingNode()) {
+                        if (attachedStroke && input->isRotoPaintingNode()) {
                             continue;
                         }
                         ///Add the index of the input to its hash.
@@ -1018,9 +1019,11 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
+        qDebug() << getScriptName().c_str() << "hash:" << _imp->hash.value();
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     marked.push_back(this);
+    
     
     bool isRotoPaint = _imp->liveInstance->isRotoPaintNode();
     

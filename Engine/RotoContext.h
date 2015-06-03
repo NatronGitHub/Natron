@@ -75,6 +75,7 @@ class Double_Knob;
 class Int_Knob;
 class Choice_Knob;
 class Color_Knob;
+typedef struct _cairo_pattern cairo_pattern_t;
 
 class Curve;
 class Bezier;
@@ -1035,6 +1036,9 @@ public:
      * @returns True if the number of points is > 1
      **/
     bool appendPoint(const std::pair<Natron::Point,double>& rawPoints);
+    
+    std::vector<cairo_pattern_t*> getPatternCache() const;
+    void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
     
     //Must be called after constructor
     void attachStrokeToNodes();

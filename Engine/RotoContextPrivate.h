@@ -949,6 +949,8 @@ struct RotoStrokeItemPrivate
     
     std::map<int,StrokeTickData> strokeTicks;
     
+    std::vector<cairo_pattern_t*> strokeDotPatterns;
+    
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
     , finished(false)
@@ -980,6 +982,7 @@ struct RotoStrokeItemPrivate
     , frameHoldNode()
     , lastTickAge(-1)
     , strokeTicks()
+    , strokeDotPatterns()
     {
         
         bbox.x1 = std::numeric_limits<double>::infinity();
@@ -1671,20 +1674,23 @@ struct RotoContextPrivate
     
     
     void renderDot(cairo_t* cr,
+                   std::vector<cairo_pattern_t*>& dotPatterns,
                    const Natron::Point &center,
                    double internalDotRadius,
                    double externalDotRadius,
+                   double pressure,
                    double shapeColor[3],
                    const std::vector<std::pair<double, double> >& opacityStops,
                    double opacity);
 
     
     double renderStroke(cairo_t* cr,
-                      const std::list<std::pair<Natron::Point,double> >& points,
-                      double distToNext,
-                      const RotoStrokeItem* stroke,
-                      int time,
-                      unsigned int mipmapLevel);
+                        std::vector<cairo_pattern_t*>& dotPatterns,
+                        const std::list<std::pair<Natron::Point,double> >& points,
+                        double distToNext,
+                        const RotoStrokeItem* stroke,
+                        int time,
+                        unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);
