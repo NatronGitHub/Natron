@@ -289,7 +289,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
         ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), plane->second->getBitDepth(), par, false, &bgImgRoI);
         if (!bgImg) {
-            plane->second->fill(args.roi, 0., 0., 0., 0.);
+            plane->second->fillZero(args.roi);
             continue;
         }
         

@@ -3742,7 +3742,8 @@ ViewerGL::enterEvent(QEvent* e)
     dynamic_cast<QToolButton*>(currentFocus) ||
     currentFocus->objectName() == "Properties" ||
     currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar";
+    currentFocus->objectName() == "qt_tabwidget_tabbar" ||
+    currentFocus->objectName() == "PanelTabBar";
     
     if (canSetFocus) {
         setFocus();

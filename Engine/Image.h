@@ -52,8 +52,10 @@ namespace Natron {
     {
     public:
         Bitmap(const RectI & bounds)
-            : _bounds(bounds)
-            , _map( bounds.area() )
+        : _bounds(bounds)
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
+        , _map( bounds.area() )
         {
             //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -63,11 +65,13 @@ namespace Natron {
         }
 
         Bitmap()
-            : _bounds()
-            , _map()
+        : _bounds()
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
+        , _map()
         {
         }
-
+        
         void initialize(const RectI & bounds)
         {
             _bounds = bounds;
@@ -129,8 +133,22 @@ namespace Natron {
         
         void copyBitmapPortion(const RectI& roi, const Bitmap& other);
         
+        void setDirtyZone(const RectI& zone) {
+            _dirtyZone = zone;
+            _dirtyZoneSet = true;
+        }
+        
     private:
         RectI _bounds;
+        
+        /**
+         * This represents the zone that has potentially something to render. In minimalNonMarkedRects
+         * we intersect the region of interest with the dirty zone. This is useful to optimize the bitmap checking
+         * when we are sure multiple threads are not using the image and we have a very small RoI to render.
+         * For now it's only used for the rotopaint while painting.
+         **/
+        RectI _dirtyZone;
+        bool _dirtyZoneSet;
         std::vector<char> _map;
     };
 
@@ -200,7 +218,7 @@ namespace Natron {
          * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
          * a new buffer. This is not thread-safe and should be called only while under an ImageLocker 
          **/
-        void ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false);
+        bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false, bool setBitmapTo1 = false);
         
         /**
      * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
@@ -264,6 +282,7 @@ namespace Natron {
             return this->_params->getComponents();
         }
 
+        void setBitmapDirtyZone(const RectI& zone);
         
         /**
      * @brief This function returns true if the components 'from' have enough components to
@@ -593,6 +612,8 @@ namespace Natron {
      * be used.
      **/
         void fill(const RectI & roi,float r,float g,float b,float a);
+        
+        void fillZero(const RectI& roi);
 
         /**
      * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
@@ -603,15 +624,6 @@ namespace Natron {
                   float alphaValue = 1.f)
         {
             fill(rect,colorValue,colorValue,colorValue,alphaValue);
-        }
-
-        /**
-     * @brief Fills the entire image with the given R,G,B value and an alpha value.
-     **/
-        void defaultInitialize(float colorValue = 0.f,
-                               float alphaValue = 1.f)
-        {
-            fill(_bounds,colorValue,alphaValue);
         }
 
         /**

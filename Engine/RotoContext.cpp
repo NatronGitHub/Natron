@@ -7342,7 +7342,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                         mipmapLevel,
                                         par,
                                         depth, false));
-            source->fill(pixelPointsBbox, 0., 0., 0., 0.);
+            source->fillZero(pixelPointsBbox);
             (*image)->upscaleMipMap(oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get());
             *image = source;
         } else if ((*image)->getMipMapLevel() < mipmapLevel) {
@@ -7362,7 +7362,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                         mipmapLevel,
                                         par,
                                         depth, false));
-            source->fill(pixelPointsBbox, 0., 0., 0., 0.);
+            source->fillZero(pixelPointsBbox);
             (*image)->downscaleMipMap(pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get());
             *image = source;
         } else {

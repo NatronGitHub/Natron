@@ -816,8 +816,10 @@ DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
 {
     setFocusPolicy(Qt::ClickFocus);
     QTabBar* tabbar = new NoWheelTabBar(this);
+    tabbar->setObjectName("PanelTabBar");
     tabbar->setFocusPolicy(Qt::ClickFocus);
     setTabBar(tabbar);
+    setObjectName("PanelTabBar");
 }
 
 void

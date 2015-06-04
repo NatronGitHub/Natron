@@ -154,13 +154,18 @@ public:
                                 bool isAnalysis)
     : _nodes(nodes)
     {
+        bool duringPaintStroke;
+        if (!nodes.empty()) {
+            duringPaintStroke = nodes.front()->isDuringPaintStrokeCreation();
+        } else {
+            duringPaintStroke = false;
+        }
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
             (*it)->updateLastPaintStrokeData();
-            Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
-            bool isDuringPaintStrokeCreation = (*it)->isDuringPaintStrokeCreation();
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isDuringPaintStrokeCreation, safety);
+            Natron::RenderSafetyEnum safety = duringPaintStroke ? Natron::eRenderSafetyInstanceSafe : liveInstance->renderThreadSafety();
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, duringPaintStroke, safety);
         }
     }
     
@@ -201,7 +206,7 @@ RotoPaint::render(const RenderActionArgs& args)
             if (bgImg) {
                 plane->second->pasteFrom(*bgImg, args.roi, false);
             } else {
-                plane->second->fill(args.roi, 0., 0., 0., 0.);
+                plane->second->fillZero(args.roi);
             }
             
         }
@@ -253,7 +258,7 @@ RotoPaint::render(const RenderActionArgs& args)
             for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
                  plane != args.outputPlanes.end(); ++plane) {
                 
-                plane->second->fill(args.roi, 0., 0., 0., 0.);
+                plane->second->fillZero(args.roi);
                 
                 
             }

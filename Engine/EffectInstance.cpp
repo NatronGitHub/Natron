@@ -1865,12 +1865,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 }
                 
                 imageToConvert = img;
-                
-                
-
-                //imageToConvert->ensureBounds(bounds);
-                
-
 
             }
             
@@ -1882,24 +1876,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             ///Ensure the image is allocated
             (*image)->allocateMemory();
             
-            /*
-             * There might be a situation  where the RoD of the cached image is not the same as this RoD even though the hash is the same.
-             * This seems to happen with the Roto node. This hack just updates the image's RoD to prevent an assert from triggering
-             * in the call to ensureBounds() below.
-             */
-//            RectD oldRod = (*image)->getRoD();
-//            if (oldRod != rod) {
-//                oldRod.merge(rod);
-//                (*image)->setRoD(oldRod);
-//            }
-            
-            
-            /*
-             * Another thread might have allocated the same image in the cache but with another RoI, make sure
-             * it is big enough for us, or resize it to our needs.
-             */
-            //(*image)->ensureBounds(bounds);
-            //assert((*image)->getBounds().contains(bounds));
 
         }
         
@@ -2436,7 +2412,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 
             } else {
                 for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
-                    (*it)->fill(args.roi, 0., 0., 0., 0.);
+                    (*it)->fillZero(args.roi);
                 }
             }
             
@@ -2777,6 +2753,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     std::list<RectI> rectsLeftToRender;
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
+    bool fillGrownBoundsWithZeroes = false;
+    RectI lastStrokePixelRoD;
     if (isPlaneCached) {
 
         RectD lastStrokeRoD;
@@ -2786,12 +2764,21 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
         if (isDuringPaintStroke && !lastStrokeRoD.isNull()) {
             
-            RectI lastStrokePixelRoD;
+            fillGrownBoundsWithZeroes = true;
             lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
             for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin();
                  it2 != planesToRender.planes.end(); ++it2) {
-                it2->second.fullscaleImage->clearBitmap(tilesSupported ? lastStrokePixelRoD : downscaledImageBounds);
+                it2->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
+                
+                /*
+                 * This is useful to optimize the bitmap checking
+                 * when we are sure multiple threads are not using the image and we have a very small RoI to render.
+                 * For now it's only used for the rotopaint while painting.
+                 */
+                it2->second.fullscaleImage->setBitmapDirtyZone(lastStrokePixelRoD);
+                
+                
             }
         }
         
@@ -3069,69 +3056,80 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
     
     ///For all planes, if needed allocate the associated image
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin();
-         it != planesToRender.planes.end(); ++it) {
-        
-        const ImageComponents *components = 0;
-        
-        if (!it->first.isColorPlane()) {
-            //This plane is not color, there can only be a single set of components
-            components = &(it->first);
-        } else {
-            //Find color plane from clip preferences
-            for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
-                if (it->isColorPlane()) {
-                    components = &(*it);
-                    break;
+    if (hasSomethingToRender) {
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin();
+             it != planesToRender.planes.end(); ++it) {
+            
+            const ImageComponents *components = 0;
+            
+            if (!it->first.isColorPlane()) {
+                //This plane is not color, there can only be a single set of components
+                components = &(it->first);
+            } else {
+                //Find color plane from clip preferences
+                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
+                    if (it->isColorPlane()) {
+                        components = &(*it);
+                        break;
+                    }
                 }
             }
-        }
-        assert(components);
-        
-        if (!it->second.fullscaleImage) {
-            ///The image is not cached
-            allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+            assert(components);
             
-        } else {
-            
-            /*
-             * There might be a situation  where the RoD of the cached image
-             * is not the same as this RoD even though the hash is the same.
-             * This seems to happen with the Roto node. This hack just updates the
-             * image's RoD to prevent an assert from triggering in the call to ensureBounds() below.
-             */
-            RectD oldRod = it->second.fullscaleImage->getRoD();
-            if (oldRod != rod) {
-                oldRod.merge(rod);
-                it->second.fullscaleImage->setRoD(oldRod);
+            if (!it->second.fullscaleImage) {
+                ///The image is not cached
+                allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+                
+            } else {
+                
+                /*
+                 * There might be a situation  where the RoD of the cached image
+                 * is not the same as this RoD even though the hash is the same.
+                 * This seems to happen with the Roto node. This hack just updates the
+                 * image's RoD to prevent an assert from triggering in the call to ensureBounds() below.
+                 */
+                RectD oldRod = it->second.fullscaleImage->getRoD();
+                if (oldRod != rod) {
+                    oldRod.merge(rod);
+                    it->second.fullscaleImage->setRoD(oldRod);
+                }
+                
+                
+                /*
+                 * Another thread might have allocated the same image in the cache but with another RoI, make sure
+                 * it is big enough for us, or resize it to our needs.
+                 */
+                bool hasResized = it->second.fullscaleImage->ensureBounds(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
+                                                                          fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
+                
+                
+                /*
+                 * Note that the image has been resized and the bitmap explicitly set to 1 in the newly allocated portions (for rotopaint purpose).
+                 * We must reset it back to 0 in the last stroke tick RoD.
+                 */
+                if (hasResized && fillGrownBoundsWithZeroes) {
+                    it->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
+                }
+                
+                if (renderFullScaleThenDownscale && it->second.fullscaleImage->getMipMapLevel() == 0) {
+                    //Allocate a downscale image that will be cheap to create
+                    ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
+                    RectI bounds;
+                    rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
+                    it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
+                    it->second.fullscaleImage->downscaleMipMap(rod,it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get());
+                }
             }
             
-            
-            /*
-             * Another thread might have allocated the same image in the cache but with another RoI, make sure
-             * it is big enough for us, or resize it to our needs.
-             */
-            it->second.fullscaleImage->ensureBounds(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
-            
-            if (renderFullScaleThenDownscale && it->second.fullscaleImage->getMipMapLevel() == 0) {
-                //Allocate a downscale image that will be cheap to create
-                ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
-                RectI bounds;
-                rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
-                it->second.fullscaleImage->downscaleMipMap(rod,it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get());
-            }
+            ///The image and downscaled image are pointing to the same image in 2 cases:
+            ///1) Proxy mode is turned off
+            ///2) Proxy mode is turned on but plug-in supports render scale
+            ///Subsequently the image and downscaled image are different only if the plug-in
+            ///does not support the render scale and the proxy mode is turned on.
+            assert( (it->second.fullscaleImage == it->second.downscaleImage && !renderFullScaleThenDownscale) ||
+                   ((it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipMapLevel() == it->second.downscaleImage->getMipMapLevel()) && renderFullScaleThenDownscale) );
         }
-        
-        ///The image and downscaled image are pointing to the same image in 2 cases:
-        ///1) Proxy mode is turned off
-        ///2) Proxy mode is turned on but plug-in supports render scale
-        ///Subsequently the image and downscaled image are different only if the plug-in
-        ///does not support the render scale and the proxy mode is turned on.
-        assert( (it->second.fullscaleImage == it->second.downscaleImage && !renderFullScaleThenDownscale) ||
-               ((it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipMapLevel() == it->second.downscaleImage->getMipMapLevel()) && renderFullScaleThenDownscale) );
-    }
-    
+    } // hasSomethingToRender
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End allocation of planes ///////////////////////////////////////////////////////////////
     
@@ -3296,8 +3294,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             } else {
                 it->second.downscaleImage->getRestToRender(roi,restToRender);
             }
-           // assert(restToRender.empty());
-            
+            assert(restToRender.empty());
         }
     }
 #endif
@@ -3926,8 +3923,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
             downscaledRectToRender = initialRenderRect;
         }
         
-        assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
+        assert(downscaledRectToRender.isNull() || (renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
+               renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2));
     } else {
         //The downscaled image is cached, read bitmap from it
 #if NATRON_ENABLE_TRIMAP
@@ -3941,8 +3938,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         const RectI downscaledRectToRenderMinimal = downscaledImage->getMinimalRect(downscaledRectToRender);
 #endif
         
-        assert(renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2);
+        assert(downscaledRectToRenderMinimal.isNull() || (renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2));
         
         
         
@@ -4183,7 +4180,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  this);
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-                it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                it->second.renderMappedImage->fillZero(downscaledRectToRender);
                 it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
             identityProcessed = true;
@@ -4196,7 +4193,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 return eRenderingFunctorRetFailed;
             } else if (identityPlanes.empty()) {
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-                    it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                    it->second.renderMappedImage->fillZero(downscaledRectToRender);
                     it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
                 identityProcessed = true;
