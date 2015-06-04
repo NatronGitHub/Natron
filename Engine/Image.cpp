@@ -237,7 +237,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
     }
     
     RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, _map, isBeingRenderedElsewhere);
-    assert(trimap && isBeingRenderedElsewhere || !trimap && !isBeingRenderedElsewhere);
+    assert((trimap && isBeingRenderedElsewhere) || (!trimap && !isBeingRenderedElsewhere));
     
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
