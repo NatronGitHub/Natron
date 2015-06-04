@@ -2153,6 +2153,7 @@ Knob<double>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
             }
         }
     }
+    return ret;
 }
 
 template<>
