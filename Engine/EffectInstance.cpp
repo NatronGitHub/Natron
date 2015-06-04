@@ -4866,6 +4866,7 @@ EffectInstance::drawOverlay_public(double scaleX,
 bool
 EffectInstance::onOverlayPenDown_public(double scaleX,
                                         double scaleY,
+                                        double pressure,
                                         const QPointF & viewportPos,
                                         const QPointF & pos)
 {
@@ -4879,7 +4880,7 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
+        ret = onOverlayPenDown(scaleX,scaleY, pressure,  viewportPos, pos);
         if (!ret) {
             ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos);
         }
@@ -4920,6 +4921,7 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
 bool
 EffectInstance::onOverlayPenUp_public(double scaleX,
                                       double scaleY,
+                                      double pressure,
                                       const QPointF & viewportPos,
                                       const QPointF & pos)
 {
@@ -4932,7 +4934,7 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
+        ret = onOverlayPenUp(scaleX,scaleY, pressure, viewportPos, pos);
         if (!ret) {
             ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos);
         }

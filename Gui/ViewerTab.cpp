@@ -1854,7 +1854,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,transformViewportPos, transformPos);
+        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY, pressure, transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -2124,6 +2124,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 bool
 ViewerTab::notifyOverlaysPenUp(double scaleX,
                                double scaleY,
+                               double pressure, 
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                QMouseEvent* e)
@@ -2193,7 +2194,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,transformViewportPos, transformPos);
+        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY, pressure, transformViewportPos, transformPos);
         
         
     }

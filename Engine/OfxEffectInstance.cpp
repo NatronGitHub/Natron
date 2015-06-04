@@ -2196,6 +2196,7 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 bool
 OfxEffectInstance::onOverlayPenDown(double scaleX,
                                     double scaleY,
+                                    double pressure,
                                     const QPointF & viewportPos,
                                     const QPointF & pos)
 {
@@ -2224,7 +2225,7 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
          */
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
+        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, pressure);
         
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
@@ -2294,6 +2295,7 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
 bool
 OfxEffectInstance::onOverlayPenUp(double scaleX,
                                   double scaleY,
+                                  double pressure,
                                   const QPointF & viewportPos,
                                   const QPointF & pos)
 {
@@ -2321,7 +2323,7 @@ OfxEffectInstance::onOverlayPenUp(double scaleX,
                                             0);
          */
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
+        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, pressure);
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();

@@ -94,7 +94,7 @@ public:
     bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,
                                   double pressure);
 
-    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenUp(double scaleX, double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
     bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
 
