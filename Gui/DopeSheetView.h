@@ -150,7 +150,10 @@ private Q_SLOTS:
     void onKeyframeChanged();
     void onReaderChanged(int, int);
     void onFrameRangeNodeChanged(int, int);
+
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
+    void onHierarchyViewScrollbarMoved(int);
+
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void onKeyframeSelectionChanged();
 

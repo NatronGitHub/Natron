@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
+#include <QScrollBar>
 #include <QStyledItemDelegate>
 #include <QStyleOption>
 #include <QThread>
@@ -2496,6 +2497,9 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
     connect(_imp->model, SIGNAL(keyframeSelectionChanged()),
             this, SLOT(onKeyframeSelectionChanged()));
 
+    connect(_imp->hierarchyView->verticalScrollBar(), SIGNAL(valueChanged(int)),
+            this, SLOT(onHierarchyViewScrollbarMoved(int)));
+
     connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
             this, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
 
@@ -3014,6 +3018,11 @@ void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item
 
     computeSelectedKeysBRect();
 
+    redraw();
+}
+
+void DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
+{
     redraw();
 }
 
