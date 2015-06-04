@@ -122,7 +122,6 @@ public:
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
 public Q_SLOTS:
-    void computeSelectedKeysBRect();
     void redraw() OVERRIDE FINAL;
 
 protected:

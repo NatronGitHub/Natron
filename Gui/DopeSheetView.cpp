@@ -780,6 +780,9 @@ public:
     // After or during an user interaction
     void computeTimelinePositions();
     void computeSelectionRect(const QPointF &origin, const QPointF &current);
+
+    void computeSelectedKeysBRect();
+
     void computeRangesBelow(DSNode *dsNode);
     void computeNodeRange(DSNode *dsNode);
     void computeReaderRange(DSNode *reader);
@@ -2000,6 +2003,102 @@ void DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin, const QPo
     selectionRect.setBottomRight(QPointF(xmax, ymax));
 }
 
+void DopeSheetViewPrivate::computeSelectedKeysBRect()
+{
+    DSKeyPtrList selectedKeyframes = model->getSelectedKeyframes();
+
+    if (selectedKeyframes.size() <= 1) {
+        selectedKeysBRect = QRectF();
+
+        return;
+    }
+
+    const int SELECTED_KF_BBOX_BOUNDS_OFFSET = 4;
+
+    QRectF rect;
+    QTreeWidgetItem *topMostItem = 0;
+
+    for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin();
+         it != selectedKeyframes.end();
+         ++it) {
+        DSKeyPtr selected = (*it);
+
+        double x = selected->key.getTime();
+        double y = 0;
+
+        QTreeWidgetItem *knobTreeItem = selected->dsKnob->getTreeItem();
+        QTreeWidgetItem *selectedNodeTreeItem = knobTreeItem->parent();
+
+        if (!selectedNodeTreeItem->isExpanded()) {
+            y = hierarchyView->visualItemRect(selectedNodeTreeItem).center().y();
+        }
+        else {
+            if (selected->dsKnob->isMultiDim()) {
+                if (knobTreeItem->isExpanded()) {
+                    for (int i = knobTreeItem->childCount() - 1; i >= 0  ; --i) {
+                        if (!knobTreeItem->child(i)->isHidden()) {
+                            y = hierarchyView->visualItemRect(knobTreeItem->child(i)).center().y();
+
+                            break;
+                        }
+                    }
+                }
+                else {
+                    y = hierarchyView->visualItemRect(knobTreeItem).center().y();
+                }
+            }
+            else {
+                y = hierarchyView->visualItemRect(knobTreeItem).center().y();
+            }
+        }
+
+        if (it != selectedKeyframes.begin()) {
+            if (x < rect.left()) {
+                rect.setLeft(x);
+            }
+
+            if (x > rect.right()) {
+                rect.setRight(x);
+            }
+
+            if (y > rect.top()) {
+                rect.setTop(y);
+            }
+
+            if (hierarchyView->visualItemRect(selectedNodeTreeItem).center().y()
+                    < hierarchyView->visualItemRect(topMostItem).center().y()) {
+                topMostItem = selectedNodeTreeItem;
+            }
+        }
+        else {
+            rect.setLeft(x);
+            rect.setRight(x);
+            rect.setTop(y);
+            rect.setBottom(y);
+
+            topMostItem = selectedNodeTreeItem;
+        }
+    }
+
+    QPointF topLeft(rect.left(), rect.top());
+    QPointF bottomRight(rect.right(), rect.bottom());
+
+    selectedKeysBRect.setTopLeft(topLeft);
+    selectedKeysBRect.setBottomRight(bottomRight);
+
+    if (!selectedKeysBRect.isNull()) {
+        double bottom = hierarchyView->visualItemRect(topMostItem).center().y();
+
+        selectedKeysBRect.setBottom(bottom);
+
+        double xAdjustOffset = (zoomContext.toZoomCoordinates(rect.left(), 0).x() -
+                                zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
+
+        selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
+                                       xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
+    }
+}
+
 void DopeSheetViewPrivate::computeRangesBelow(DSNode *dsNode)
 {
     DSNodeRows nodeRows = model->getNodeRows();
@@ -2622,108 +2721,12 @@ unsigned int DopeSheetView::getCurrentRenderScale() const
     return 0;
 }
 
-void DopeSheetView::computeSelectedKeysBRect()
-{
-    DSKeyPtrList selectedKeyframes = _imp->model->getSelectedKeyframes();
-
-    if (selectedKeyframes.size() <= 1) {
-        _imp->selectedKeysBRect = QRectF();
-
-        return;
-    }
-
-    const int SELECTED_KF_BBOX_BOUNDS_OFFSET = 4;
-
-    QRectF rect;
-    QTreeWidgetItem *topMostItem = 0;
-
-    for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin();
-         it != selectedKeyframes.end();
-         ++it) {
-        DSKeyPtr selected = (*it);
-
-        double x = selected->key.getTime();
-        double y = 0;
-
-        QTreeWidgetItem *knobTreeItem = selected->dsKnob->getTreeItem();
-        QTreeWidgetItem *selectedNodeTreeItem = knobTreeItem->parent();
-
-        if (!selectedNodeTreeItem->isExpanded()) {
-            y = _imp->hierarchyView->visualItemRect(selectedNodeTreeItem).center().y();
-        }
-        else {
-            if (selected->dsKnob->isMultiDim()) {
-                if (knobTreeItem->isExpanded()) {
-                    for (int i = knobTreeItem->childCount() - 1; i >= 0  ; --i) {
-                        if (!knobTreeItem->child(i)->isHidden()) {
-                            y = _imp->hierarchyView->visualItemRect(knobTreeItem->child(i)).center().y();
-
-                            break;
-                        }
-                    }
-                }
-                else {
-                    y = _imp->hierarchyView->visualItemRect(knobTreeItem).center().y();
-                }
-            }
-            else {
-                y = _imp->hierarchyView->visualItemRect(knobTreeItem).center().y();
-            }
-        }
-
-        if (it != selectedKeyframes.begin()) {
-            if (x < rect.left()) {
-                rect.setLeft(x);
-            }
-
-            if (x > rect.right()) {
-                rect.setRight(x);
-            }
-
-            if (y > rect.top()) {
-                rect.setTop(y);
-            }
-
-            if (_imp->hierarchyView->visualItemRect(selectedNodeTreeItem).center().y()
-                    < _imp->hierarchyView->visualItemRect(topMostItem).center().y()) {
-                topMostItem = selectedNodeTreeItem;
-            }
-        }
-        else {
-            rect.setLeft(x);
-            rect.setRight(x);
-            rect.setTop(y);
-            rect.setBottom(y);
-
-            topMostItem = selectedNodeTreeItem;
-        }
-    }
-
-    QPointF topLeft(rect.left(), rect.top());
-    QPointF bottomRight(rect.right(), rect.bottom());
-
-    _imp->selectedKeysBRect.setTopLeft(topLeft);
-    _imp->selectedKeysBRect.setBottomRight(bottomRight);
-
-    if (!_imp->selectedKeysBRect.isNull()) {
-        double bottom = _imp->hierarchyView->visualItemRect(topMostItem).center().y();
-
-        _imp->selectedKeysBRect.setBottom(bottom);
-
-        double xAdjustOffset = (_imp->zoomContext.toZoomCoordinates(rect.left(), 0).x() -
-                                _imp->zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
-
-        _imp->selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
-                                       xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
-    }
-}
-
 void DopeSheetView::selectAllKeyframes()
 {
     _imp->model->selectAllKeyframes();
 
     if (_imp->model->getSelectedKeyframesCount() > 1) {
-        computeSelectedKeysBRect();
+        _imp->computeSelectedKeysBRect();
     }
 
     redraw();
@@ -2770,7 +2773,7 @@ void DopeSheetView::frame()
     _imp->computeTimelinePositions();
 
     if (selectedKeyframesCount > 1) {
-        computeSelectedKeysBRect();
+        _imp->computeSelectedKeysBRect();
     }
 
     redraw();
@@ -3016,7 +3019,7 @@ void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item
         _imp->computeRangesBelow(dsNode);
     }
 
-    computeSelectedKeysBRect();
+    _imp->computeSelectedKeysBRect();
 
     redraw();
 }
@@ -3036,7 +3039,7 @@ void DopeSheetView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
 void DopeSheetView::onKeyframeSelectionChanged()
 {
     qDebug() << "DopeSheetView::onKeyframeSelectionChanged";
-    computeSelectedKeysBRect();
+    _imp->computeSelectedKeysBRect();
 
     redraw();
 }
@@ -3312,7 +3315,7 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
 
     if (_imp->eventState == DopeSheetView::esSelectionByRect) {
         if (_imp->model->getSelectedKeyframesCount() > 1) {
-            computeSelectedKeysBRect();
+            _imp->computeSelectedKeysBRect();
         }
 
         _imp->selectionRect = QRectF();
@@ -3372,7 +3375,7 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 
-    computeSelectedKeysBRect();
+    _imp->computeSelectedKeysBRect();
 
     redraw();
 
