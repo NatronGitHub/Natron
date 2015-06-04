@@ -164,7 +164,7 @@ void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vec
 
 bool DopeSheetPrivate::canTrimLeft(double newFirstFrame, double currentLastFrame) const
 {
-    if (newFirstFrame < 0) {
+    if (newFirstFrame < 1) {
         return false;
     }
 
@@ -802,7 +802,16 @@ void DopeSheet::slipReader(DSNode *reader, double dt)
     Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
     assert(originalFrameRangeKnob);
 
-    _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+    int currentFirstFrame = firstFrameKnob->getValue();
+    int currentLastFrame = lastFrameKnob->getValue();
+    int originalLastFrame = originalFrameRangeKnob->getValue(1);
+
+    bool canSlip = ( _imp->canTrimLeft(currentFirstFrame + dt, currentLastFrame)
+                     && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
+
+    if (canSlip) {
+        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+    }
 }
 
 void DopeSheet::moveReader(DSNode *reader, double time)
