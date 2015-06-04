@@ -148,7 +148,8 @@ private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
     void onKeyframeChanged();
-    void onReaderChanged(int, int reason);
+    void onReaderChanged(int, int);
+    void onFrameRangeNodeChanged(int, int);
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void onKeyframeSelectionChanged();

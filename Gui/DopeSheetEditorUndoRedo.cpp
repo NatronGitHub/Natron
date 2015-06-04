@@ -191,7 +191,7 @@ void DSLeftTrimReaderCommand::redo()
 
 void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
 
     KnobHolder *holder = firstFrameKnob->getHolder();
@@ -256,7 +256,7 @@ void DSRightTrimReaderCommand::redo()
 
 void DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("lastFrame").get());
     assert(lastFrameKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -342,7 +342,7 @@ bool DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 
 void DSSlipReaderCommand::slipReader(double dt)
 {
-    NodePtr node = _dsNodeReader->getNodeGui()->getNode();
+    NodePtr node = _dsNodeReader->getNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -401,7 +401,7 @@ void DSMoveReaderCommand::redo()
 
 void DSMoveReaderCommand::moveReader(double time)
 {
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("timeOffset").get());
     assert(timeOffsetKnob);
 
     KnobHolder *holder = timeOffsetKnob->getHolder();
@@ -525,7 +525,7 @@ bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
 
 void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 {
-    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getNodeGui()->getNode()->getLiveInstance());
+    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getNode()->getLiveInstance());
     NodeList nodes = group->getNodes();
 
     std::set<KnobHolder *> knobHolders;
@@ -609,7 +609,7 @@ void DSChangeNodeLabelCommand::redo()
 
 void DSChangeNodeLabelCommand::changeNodeLabel(const QString &label)
 {
-    _dsNode->getNodeGui()->getNode()->setLabel(label.toStdString());
+    _dsNode->getNode()->setLabel(label.toStdString());
     _dsNode->getTreeItem()->setText(0, label);
 }
 

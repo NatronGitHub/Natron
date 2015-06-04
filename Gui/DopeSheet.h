@@ -254,6 +254,7 @@ public:
     QTreeWidgetItem *getTreeItem() const;
 
     boost::shared_ptr<NodeGui> getNodeGui() const;
+    boost::shared_ptr<Natron::Node> getNode() const;
 
     DSKnobRow getChildData() const;
 

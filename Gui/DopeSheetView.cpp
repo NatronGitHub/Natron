@@ -58,8 +58,8 @@ const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
 const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
 
 const QColor CLIP_OUTLINE_COLOR = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
-const QColor SELECTED_KF_COLOR = Qt::white;
-const QColor KF_COLOR = CLIP_OUTLINE_COLOR;
+const QColor TIME_NODE_OUTLINE_COLOR = QColor::fromRgb(229, 205, 52);
+const QColor GROUP_OUTLINE_COLOR = QColor::fromRgb(229, 61, 52);
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -99,7 +99,11 @@ ClipColors getClipColors(DSNode::DSNodeType nodeType)
     }
     else if (nodeType == DSNode::GroupNodeType) {
         ret.first = Qt::black;
-        ret.second = CLIP_OUTLINE_COLOR;
+        ret.second = GROUP_OUTLINE_COLOR;
+    }
+    else if (nodeType == DSNode::FrameRangeNodeType) {
+        ret.first = Qt::black;
+        ret.second = TIME_NODE_OUTLINE_COLOR;
     }
 
     return ret;
@@ -665,7 +669,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
         DSNode *dsNode = _imp->model->findDSNode(item);
 
         if (dsNode) {
-            std::string iconFilePath = dsNode->getNodeGui()->getNode()->getPluginIconFilePath();
+            std::string iconFilePath = dsNode->getNode()->getPluginIconFilePath();
 
             if (!iconFilePath.empty()) {
                 QPixmap pix;
@@ -763,7 +767,6 @@ public:
     void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
 
-    void drawBaseKeyframe(bool selected, const QRectF &rect) const;
     void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const;
 
     void drawProjectBounds() const;
@@ -779,7 +782,8 @@ public:
     void computeRangesBelow(DSNode *dsNode);
     void computeNodeRange(DSNode *dsNode);
     void computeReaderRange(DSNode *reader);
-    void computeGroupRange(DSNode *dsNode);
+    void computeGroupRange(DSNode *group);
+    void computeFRRange(DSNode *frameRange);
 
     // User interaction
     void onMouseDrag(QMouseEvent *e);
@@ -1520,7 +1524,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 
         // If necessary, draw the original frame range line
         if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
-            NodePtr node = dsNode->getNodeGui()->getNode();
+            NodePtr node = dsNode->getNode();
 
             Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
             assert(firstFrameKnob);
@@ -1668,9 +1672,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         if (texType != DopeSheetViewPrivate::kfTextureNone) {
                             drawTexturedKeyframe(texType, zoomKfRect);
                         }
-                        else {
-                            drawBaseKeyframe(keyframeIsSelected, zoomKfRect);
-                        }
                     }
                 }
             }
@@ -1727,25 +1728,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             }
         }
     }
-}
-
-void DopeSheetViewPrivate::drawBaseKeyframe(bool selected, const QRectF &rect) const
-{
-    if (selected) {
-        glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
-    }
-    else {
-        glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blueF());
-    }
-
-    glBegin(GL_POLYGON);
-    glVertex2f(rect.left(), rect.top());
-    glVertex2f(rect.left(), rect.bottom());
-    glVertex2f(rect.right(), rect.bottom());
-    glVertex2f(rect.right(), rect.top());
-    glEnd();
-
-    glColor4f(1, 1, 1, 1);
 }
 
 void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const
@@ -2038,6 +2020,9 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
     case DSNode::GroupNodeType:
         computeGroupRange(dsNode);
         break;
+    case DSNode::FrameRangeNodeType:
+        computeFRRange(dsNode);
+        break;
     default:
         break;
     }
@@ -2045,7 +2030,7 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 
 void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 {
-    NodePtr node = reader->getNodeGui()->getNode();
+    NodePtr node = reader->getNode();
 
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get());
     assert(startingTimeKnob);
@@ -2064,9 +2049,9 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     nodeRanges[reader] = range;
 }
 
-void DopeSheetViewPrivate::computeGroupRange(DSNode *dsNode)
+void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 {
-    NodePtr node = dsNode->getNodeGui()->getNode();
+    NodePtr node = group->getNode();
 
     FrameRange range;
 
@@ -2119,7 +2104,21 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *dsNode)
         range.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
     }
 
-    nodeRanges[dsNode] = range;
+    nodeRanges[group] = range;
+}
+
+void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
+{
+    NodePtr node = frameRange->getNode();
+
+    Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("frameRange").get());
+    assert(frameRangeKnob);
+
+    FrameRange range;
+    range.first = frameRangeKnob->getValue(0);
+    range.second = frameRangeKnob->getValue(1);
+
+    nodeRanges[frameRange] = range;
 }
 
 void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
@@ -2164,7 +2163,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esReaderLeftTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getNode()->getKnobByName("timeOffset").get());
             assert(timeOffsetKnob);
 
             double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2177,7 +2176,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esReaderRightTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getNode()->getKnobByName("timeOffset").get());
             assert(timeOffsetKnob);
 
             double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2861,7 +2860,7 @@ void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 void DopeSheetView::onNodeAdded(DSNode *dsNode)
 {
     DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
-    NodePtr node = dsNode->getNodeGui()->getNode();
+    NodePtr node = dsNode->getNode();
 
     if (nodeType == DSNode::CommonNodeType) {
         if (_imp->model->isPartOfGroup(dsNode)) {
@@ -2885,7 +2884,9 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
         boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
+        assert(lastFrameKnob);
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName("startingTime")->getSignalSlotHandler();
+        assert(startingTimeKnob);
 
         connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onReaderChanged(int, int)));
@@ -2898,6 +2899,15 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         // refreshes of the view.
 
         _imp->computeReaderRange(dsNode);
+    }
+    else if (nodeType == DSNode::FrameRangeNodeType) {
+        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName("frameRange")->getSignalSlotHandler();
+        assert(frameRangeKnob);
+
+        connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),
+                this, SLOT(onFrameRangeNodeChanged(int, int)));
+
+        _imp->computeFRRange(dsNode);
     }
     else if (nodeType == DSNode::GroupNodeType) {
         _imp->computeGroupRange(dsNode);
@@ -2946,10 +2956,8 @@ void DopeSheetView::onKeyframeChanged()
     }
 }
 
-void DopeSheetView::onReaderChanged(int /*dimension*/, int reason)
+void DopeSheetView::onReaderChanged(int /*dimension*/, int /*reason*/)
 {
-    qDebug() << reason;
-
     QObject *signalSender = sender();
 
     DSNode *dsNode = 0;
@@ -2963,12 +2971,29 @@ void DopeSheetView::onReaderChanged(int /*dimension*/, int reason)
 
         _imp->computeReaderRange(dsNode);
 
-        //        if (_imp->eventState != DopeSheetView::esReaderSlip
-        //                && _imp->eventState != DopeSheetView::esReaderRightTrim
-        //                && _imp->eventState != DopeSheetView::esReaderLeftTrim
-        //                && _imp->eventState != DopeSheetView::esReaderRepos) {
         redraw();
-        //        }
+    }
+}
+
+void DopeSheetView::onFrameRangeNodeChanged(int /*dimension*/, int /*reason*/)
+{
+    QObject *signalSender = sender();
+
+    DSNode *dsNode = 0;
+
+    if (KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender)) {
+        KnobHolder *holder = knobHandler->getKnob()->getHolder();
+        Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+        dsNode = _imp->model->findDSNode(effectInstance->getNode().get());
+    }
+
+    if (dsNode) {
+        assert(dsNode->getDSNodeType() == DSNode::FrameRangeNodeType);
+
+        _imp->computeFRRange(dsNode);
+
+        redraw();
     }
 }
 
@@ -3178,7 +3203,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                                 _imp->eventState = DopeSheetView::esReaderRepos;
                             }
 
-                            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_imp->currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+                            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_imp->currentEditedReader->getNode()->getKnobByName("timeOffset").get());
                             assert(timeOffsetKnob);
 
                             _imp->lastTimeOffsetOnMousePress = timeOffsetKnob->getValue();

@@ -375,7 +375,7 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
          ++it) {
         DSNode *dsNode = (*it).second;
 
-        if (dsNode->getNodeGui()->getNode().get() == node) {
+        if (dsNode->getNode().get() == node) {
             return dsNode;
         }
     }
@@ -493,14 +493,14 @@ int DopeSheet::getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const
 
 bool DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNode()->getGroup());
 
     return (parentGroup);
 }
 
 DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNode()->getGroup());
 
     DSNode *parentGroupDSNode = 0;
 
@@ -549,7 +549,7 @@ DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
         return NULL;
     }
 
-    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getNodeGui()->getNode().get());
+    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getNode().get());
 
     return findDSNode(timeNode);
 }
@@ -558,7 +558,7 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
 {
     std::vector<DSNode *> ret;
 
-    _imp->getInputsConnected_recursive(dsNode->getNodeGui()->getNode().get(), &ret);
+    _imp->getInputsConnected_recursive(dsNode->getNode().get(), &ret);
 
     return ret;
 }
@@ -751,7 +751,7 @@ void DopeSheet::moveSelectedKeys(double dt)
 
 void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 {
-    NodePtr node = reader->getNodeGui()->getNode();
+    NodePtr node = reader->getNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -771,7 +771,7 @@ void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 
 void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
 {
-    NodePtr node = reader->getNodeGui()->getNode();
+    NodePtr node = reader->getNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -793,7 +793,7 @@ void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
 
 void DopeSheet::slipReader(DSNode *reader, double dt)
 {
-    NodePtr node = reader->getNodeGui()->getNode();
+    NodePtr node = reader->getNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -816,7 +816,7 @@ void DopeSheet::slipReader(DSNode *reader, double dt)
 
 void DopeSheet::moveReader(DSNode *reader, double time)
 {
-    NodePtr node = reader->getNodeGui()->getNode();
+    NodePtr node = reader->getNode();
 
     Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
     assert(timeOffsetKnob);
@@ -1217,6 +1217,11 @@ boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
     return _imp->nodeGui;
 }
 
+boost::shared_ptr<Natron::Node> DSNode::getNode() const
+{
+    return _imp->nodeGui->getNode();
+}
+
 /**
  * @brief DSNode::getTreeItemsAndDSKnobs
  *
@@ -1235,7 +1240,8 @@ DSNode::DSNodeType DSNode::getDSNodeType() const
 bool DSNode::hasRange() const
 {
     return (_imp->nodeType == DSNode::ReaderNodeType ||
-            _imp->nodeType == DSNode::GroupNodeType);
+            _imp->nodeType == DSNode::GroupNodeType ||
+            _imp->nodeType == DSNode::FrameRangeNodeType);
 }
 
 /**
