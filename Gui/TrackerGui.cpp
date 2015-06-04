@@ -360,7 +360,7 @@ TrackerGui::penDown(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
+            didSomething = effect->onOverlayPenDown_public(scaleX,scaleY, 1., viewportPos, pos);
         }
     }
 
@@ -471,7 +471,7 @@ TrackerGui::penUp(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+            didSomething = effect->onOverlayPenUp_public(scaleX,scaleY, 1.,viewportPos, pos);
             if (didSomething) {
                 return true;
             }
