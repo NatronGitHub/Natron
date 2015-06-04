@@ -1777,11 +1777,15 @@ void DopeSheetViewPrivate::drawProjectBounds() const
     int projectStart, projectEnd;
     gui->getApp()->getFrameRange(&projectStart, &projectEnd);
 
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    double colorR, colorG, colorB;
+    settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
+
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glColor4f(1.f, 1.f, 1.f, 1.f);
+        glColor4f(colorR, colorG, colorB, 1.f);
 
         // Draw start bound
         glBegin(GL_LINES);
@@ -1816,8 +1820,8 @@ void DopeSheetViewPrivate::drawCurrentFrameIndicator()
 
     // Retrieve settings for drawing
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-    double gridR, gridG, gridB;
-    settings->getDopeSheetEditorGridColor(&gridR, &gridG, &gridB);
+    double colorR, colorG, colorB;
+    settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
 
     // Perform drawing
     {
@@ -1830,7 +1834,7 @@ void DopeSheetViewPrivate::drawCurrentFrameIndicator()
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glColor3f(gridR, gridG, gridB);
+        glColor4f(colorR, colorG, colorB, 1.f);
 
         glBegin(GL_LINES);
         glVertex2f(currentFrame, top);
