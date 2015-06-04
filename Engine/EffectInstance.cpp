@@ -2433,15 +2433,32 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ComponentsNeededMap neededComps;
     bool processAllComponentsRequested;
     bool processChannels[4];
+    ComponentsNeededMap::iterator foundOutputNeededComps;
+    
     {
         SequenceTime ptTime;
         int ptView;
         boost::shared_ptr<Natron::Node> ptInput;
         getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
+        
+        foundOutputNeededComps = neededComps.find(-1);
+        assert(foundOutputNeededComps != neededComps.end());
+        
         if (processAllComponentsRequested) {
             std::vector<ImageComponents> compVec;
             for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-                compVec.push_back(*it);
+                
+                bool found = false;
+                for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
+                    if ((it2->isColorPlane() && it->isColorPlane())) {
+                        compVec.push_back(*it2);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    compVec.push_back(*it);
+                }
             }
             for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
                 it->second = compVec;
@@ -2449,8 +2466,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             //neededComps[-1] = compVec;
         }
     }
-    ComponentsNeededMap::iterator foundOutputNeededComps = neededComps.find(-1);
-    assert(foundOutputNeededComps != neededComps.end());
     const std::vector<Natron::ImageComponents>& outputComponents = foundOutputNeededComps->second;
     
     /*
@@ -5718,8 +5733,9 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
             ImageComponents layer;
             std::vector<ImageComponents> compVec;
             bool ok = getNode()->getUserComponents(-1, processChannels,processAllRequested, &layer);
-            if (ok && !*processAllRequested) {
-                if (!layer.isColorPlane()) {
+            if (ok) {
+             
+                if (!layer.isColorPlane() && layer.getNumComponents() != 0) {
                     compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
@@ -5733,13 +5749,15 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                     }
 
                 }
-            } else if (!ok) {
+            } else  {
                 //Use regular clip preferences
                 ImageBitDepthEnum depth;
                 std::list<ImageComponents> components;
                 getPreferredDepthAndComponents(-1, &components, &depth);
                 for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                    compVec.push_back(*it);
+                    if (it->isColorPlane()) {
+                        compVec.push_back(*it);
+                    }
                 }
             }
             comps->insert(std::make_pair(-1, compVec));
@@ -5785,7 +5803,9 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                     std::list<ImageComponents> components;
                     getPreferredDepthAndComponents(i, &components, &depth);
                     for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        compVec.push_back(*it);
+                        if (it->isColorPlane()) {
+                            compVec.push_back(*it);
+                        }
                     }
                 }
                 comps->insert(std::make_pair(i, compVec));

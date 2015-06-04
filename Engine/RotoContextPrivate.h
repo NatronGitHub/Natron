@@ -949,6 +949,7 @@ struct RotoStrokeItemPrivate
     
     std::map<int,StrokeTickData> strokeTicks;
     
+    mutable QMutex strokeDotPatternsMutex;
     std::vector<cairo_pattern_t*> strokeDotPatterns;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
@@ -982,6 +983,7 @@ struct RotoStrokeItemPrivate
     , frameHoldNode()
     , lastTickAge(-1)
     , strokeTicks()
+    , strokeDotPatternsMutex()
     , strokeDotPatterns()
     {
         

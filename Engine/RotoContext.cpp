@@ -5200,15 +5200,30 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
 std::vector<cairo_pattern_t*>
 RotoStrokeItem::getPatternCache() const
 {
-    QMutexLocker k(&itemMutex);
+    assert(!_imp->strokeDotPatternsMutex.tryLock());
     return _imp->strokeDotPatterns;
 }
 
 void
 RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 {
-    QMutexLocker k(&itemMutex);
+    assert(!_imp->strokeDotPatternsMutex.tryLock());
     _imp->strokeDotPatterns = cache;
+}
+
+double
+RotoStrokeItem::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                          const RectD& rod,
+                          const std::list<std::pair<Natron::Point,double> >& points,
+                          unsigned int mipmapLevel,
+                          double par,
+                          const Natron::ImageComponents& components,
+                          Natron::ImageBitDepthEnum depth,
+                          double distToNext,
+                          boost::shared_ptr<Natron::Image> *wholeStrokeImage)
+{
+    QMutexLocker k(&_imp->strokeDotPatternsMutex);
+    return getContext()->renderSingleStroke(stroke, rod, points, mipmapLevel, par, components, depth, distToNext, wholeStrokeImage);
 }
 
 bool

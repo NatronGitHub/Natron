@@ -2053,7 +2053,8 @@ handleControlPointMaximum(int time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
-    if (!node->getNode()->isActivated()) {
+    boost::shared_ptr<Natron::Node> n = node->getNode();
+    if (n && !n->isActivated()) {
         return;
     }
     int time = context->getTimelineCurrentTime();

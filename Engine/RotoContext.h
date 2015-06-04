@@ -1040,6 +1040,17 @@ public:
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
     
+    double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                              const RectD& rod,
+                              const std::list<std::pair<Natron::Point,double> >& points,
+                              unsigned int mipmapLevel,
+                              double par,
+                              const Natron::ImageComponents& components,
+                              Natron::ImageBitDepthEnum depth,
+                              double distToNext,
+                              boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+
+    
     //Must be called after constructor
     void attachStrokeToNodes();
     
