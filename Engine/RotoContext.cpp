@@ -61,6 +61,11 @@
 //This will enable correct evaluation of beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
 
+// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
+// 512 should be OK, see:
+// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
+#define ROTO_PRESSURE_LEVELS 512
+
 using namespace Natron;
 
 
@@ -5122,7 +5127,7 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
         QMutexLocker k(&itemMutex);
         
         if (_imp->strokeDotPatterns.empty()) {
-            _imp->strokeDotPatterns.resize(101);
+            _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
             for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
                 _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
             }
@@ -7446,7 +7451,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     std::vector<cairo_pattern_t*> dotPatterns = stroke->getPatternCache();
     if (dotPatterns.empty()) {
-        dotPatterns.resize(101);
+        dotPatterns.resize(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
@@ -7670,7 +7675,7 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
 
     
     if (isSingleStroke) {
-        std::vector<cairo_pattern_t*> dotPatterns(101);
+        std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
@@ -7763,8 +7768,8 @@ RotoContextPrivate::renderDot(cairo_t* cr,
     
     if (!opacityStops.empty()) {
         cairo_pattern_t* pattern;
-        int pressureInt = std::floor(pressure * 100. + 0.5);
-        assert(pressureInt >= 0 && pressureInt <= 100);
+        int pressureInt = int(pressure * (ROTO_PRESSURE_LEVELS-1) + 0.5);
+        assert(pressureInt >= 0 && pressureInt < ROTO_PRESSURE_LEVELS);
         if (dotPatterns[pressureInt]) {
             pattern = dotPatterns[pressureInt];
         } else {
@@ -7844,7 +7849,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
         return distToNext;
     }
     
-    assert(dotPatterns.size() == 101);
+    assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
     
     double alpha = stroke->getOpacity(time);
     double shapeColor[3];
@@ -7957,10 +7962,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     std::list<std::pair<Point,double> > points;
 
     stroke->evaluateStroke(mipmapLevel, time, &points);
-    std::vector<cairo_pattern_t*> dotPatterns(101);
-    for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
-        dotPatterns[i] = (cairo_pattern_t*)0;
-    }
+    std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS, (cairo_pattern_t*)0);
     renderStroke(cr, dotPatterns, points, 0, stroke, time, mipmapLevel);
 }
 
