@@ -102,6 +102,10 @@ ClipColors getClipColors(DSNode::DSNodeType nodeType)
         ret.first = Qt::black;
         ret.second = GROUP_OUTLINE_COLOR;
     }
+    else if (nodeType == DSNode::TimeOffsetNodeType) {
+        ret.first = Qt::black;
+        ret.second = TIME_NODE_OUTLINE_COLOR;
+    }
     else if (nodeType == DSNode::FrameRangeNodeType) {
         ret.first = Qt::black;
         ret.second = TIME_NODE_OUTLINE_COLOR;
@@ -174,11 +178,8 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     DSNode::DSNodeType nodeType = DSNode::DSNodeType(item->type());
 
-    if (nodeType == DSNode::ReaderNodeType
-            || nodeType == DSNode::GroupNodeType
-            || nodeType == DSNode::RetimeNodeType
-            || nodeType == DSNode::TimeOffsetNodeType
-            || nodeType == DSNode::FrameRangeNodeType) {
+    if (nodeType >= DSNode::ReaderNodeType
+            && nodeType <= DSNode::GroupNodeType) {
         itemSize.rheight() += 10;
     }
 
@@ -231,46 +232,36 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
 void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+    DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-    if (DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode)) {
-        nearestTimeNode->getTreeItem()->insertChild(0, treeItem);
-    }
-    else if (dsNode->getDSNodeType() == DSNode::RetimeNodeType
-             || dsNode->getDSNodeType() == DSNode::TimeOffsetNodeType
-             || dsNode->getDSNodeType() == DSNode::FrameRangeNodeType) {
-        std::vector<DSNode *> inputs = model->getInputsConnected(dsNode);
+    if (nodeType == DSNode::ReaderNodeType) {
+        DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode);
 
-        bool hasNoInputs = true;
-
-        for (std::vector<DSNode *>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-            DSNode *input = (*it);
-
-            DSNode *nearestTimeNode = 0;
-
-            if ( (nearestTimeNode = model->getNearestTimeNodeFromOutputs(input)) ) {
-                QTreeWidgetItem *inputTreeItem = input->getTreeItem();
-                QTreeWidgetItem *inputParentItem = getParentItem(inputTreeItem);
-
-                // Put the input in the time node's children
-                inputTreeItem = inputParentItem->takeChild(indexInParent(inputTreeItem));
-
-                nearestTimeNode->getTreeItem()->insertChild(0, inputTreeItem);
-
-                hasNoInputs = false;
-
-                // Add the time node as top level item
-                q_ptr->addTopLevelItem(nearestTimeNode->getTreeItem());
-
-                input->getTreeItem()->setExpanded(true);
-                expandAndCheckKnobItems(input);
-            }
+        if (nearestTimeNode) {
+            nearestTimeNode->getTreeItem()->insertChild(0, treeItem);
+        }
+        else {
+            q_ptr->addTopLevelItem(treeItem);
         }
 
-        if (hasNoInputs) {
-            q_ptr->addTopLevelItem(dsNode->getTreeItem());
+        treeItem->setExpanded(true);
+        expandAndCheckKnobItems(dsNode);
+    }
+    else if (dsNode->isTimeNode()) {
+        q_ptr->addTopLevelItem(treeItem);
 
-            dsNode->getTreeItem()->setExpanded(true);
-            expandAndCheckKnobItems(dsNode);
+        treeItem->setExpanded(true);
+        expandAndCheckKnobItems(dsNode);
+
+        if (DSNode *nearestReader = model->findDSNode(model->getNearestReader(dsNode))) {
+            QTreeWidgetItem *nearestReaderTreeItem = nearestReader->getTreeItem();
+            QTreeWidgetItem *parentItem = getParentItem(nearestReaderTreeItem);
+
+            //TODO use moveChildTo function
+            nearestReaderTreeItem = parentItem->takeChild(indexInParent(nearestReaderTreeItem));
+            treeItem->insertChild(0, nearestReaderTreeItem);
+
+            expandAndCheckKnobItems(nearestReader);
         }
     }
     else {
@@ -333,14 +324,16 @@ int HierarchyViewPrivate::indexInParent(QTreeWidgetItem *item) const
 
 void HierarchyViewPrivate::moveChildTo(DSNode *child, DSNode *newParent)
 {
-    QTreeWidgetItem *currentParent = getParentItem(child->getTreeItem());
-    currentParent->takeChild(indexInParent(child->getTreeItem()));
+    QTreeWidgetItem *childItem = child->getTreeItem();
+
+    QTreeWidgetItem *currentParent = getParentItem(childItem);
+    currentParent->takeChild(indexInParent(childItem));
 
     if (newParent) {
-        newParent->getTreeItem()->addChild(child->getTreeItem());
+        newParent->getTreeItem()->addChild(childItem);
     }
     else {
-        q_ptr->addTopLevelItem(child->getTreeItem());
+        q_ptr->addTopLevelItem(childItem);
     }
 }
 
@@ -349,20 +342,20 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
     nodeGui->setVisibleSettingsPanel(true);
 
-    bool showItem = nodeGui->isSettingsPanelVisible();
+    bool showNode = nodeGui->isSettingsPanelVisible();
 
     DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
     if (nodeType == DSNode::CommonNodeType) {
-        showItem = model->nodeHasAnimation(nodeGui);
+        showNode = model->nodeHasAnimation(nodeGui);
     }
     else if (nodeType == DSNode::GroupNodeType) {
         NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
 
-        showItem = showItem && !model->groupSubNodesAreHidden(group);
+        showNode = showNode && !model->groupSubNodesAreHidden(group);
     }
 
-    dsNode->getTreeItem()->setHidden(!showItem);
+    dsNode->getTreeItem()->setHidden(!showNode);
 
     // Hide the parent group item if there's no subnodes displayed
     if (DSNode *parentGroupDSNode = model->getGroupDSNode(dsNode)) {
@@ -373,47 +366,30 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
-    QTreeWidgetItem *nodeTreeItem = dsKnob->getTreeItem()->parent();
 
     KnobGui *knobGui = dsKnob->getKnobGui();
 
+    bool showKnob = false;
+
     if (dsKnob->isMultiDim()) {
         for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
-            if (knobGui->getCurve(i)->isAnimated()) {
-                if(treeItem->child(i)->isHidden()) {
-                    treeItem->child(i)->setHidden(false);
-                }
-            }
-            else {
-                if (!treeItem->child(i)->isHidden()) {
-                    treeItem->child(i)->setHidden(true);
-                }
-            }
-        }
+            bool showDim = knobGui->getCurve(i)->isAnimated();
 
-        if (itemHasNoChildVisible(treeItem)) {
-            treeItem->setHidden(true);
-        }
-        else {
-            treeItem->setHidden(false);
+            if (!showKnob && showDim) {
+                showKnob = true;
+            }
+
+            QTreeWidgetItem *dimItem = model->findTreeItemForDim(dsKnob, i);
+            dimItem->setHidden(!showDim);
         }
     }
     else {
-        if (knobGui->getCurve(0)->isAnimated()) {
-            treeItem->setHidden(false);
-        }
-        else {
-            treeItem->setHidden(true);
-        }
+        showKnob = knobGui->getCurve(0)->isAnimated();
     }
 
-    if (itemHasNoChildVisible(nodeTreeItem)) {
-        nodeTreeItem->setHidden(true);
-    }
-    else if (nodeTreeItem->isHidden()) {
-        nodeTreeItem->setHidden(false);
-    }
+    treeItem->setHidden(!showKnob);
 
+    QTreeWidgetItem *nodeTreeItem = dsKnob->getTreeItem()->parent();
     checkNodeVisibleState(model->findDSNode(nodeTreeItem));
 }
 
@@ -552,10 +528,6 @@ void HierarchyView::onNodeAdded(DSNode *dsNode)
     _imp->insertNodeItem(dsNode);
 
     dsNode->getTreeItem()->setExpanded(true);
-
-    if (!dsNode->getTreeItem()->isHidden()) {
-        _imp->expandAndCheckKnobItems(dsNode);
-    }
 }
 
 void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
@@ -753,6 +725,8 @@ public:
 
     double clampedMouseOffset(double fromTime, double toTime);
 
+    bool isRangeBasedNode(DSNode *dsNode) const;
+
     // Textures
     void generateKeyframeTextures();
     DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
@@ -786,8 +760,9 @@ public:
     void computeRangesBelow(DSNode *dsNode);
     void computeNodeRange(DSNode *dsNode);
     void computeReaderRange(DSNode *reader);
-    void computeGroupRange(DSNode *group);
+    void computeTimeOffsetRange(DSNode *timeOffset);
     void computeFRRange(DSNode *frameRange);
+    void computeGroupRange(DSNode *group);
 
     // User interaction
     void onMouseDrag(QMouseEvent *e);
@@ -968,7 +943,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 
             QRectF treeItemRect = hierarchyView->getItemRect(dsNode);
 
-            if (dsNode->hasRange()) {
+            if (isRangeBasedNode(dsNode)) {
                 FrameRange range = nodeRanges.at(dsNode);
 
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
@@ -1161,6 +1136,14 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
     keyDragLastMovement = totalMovement;
 
     return dt;
+}
+
+bool DopeSheetViewPrivate::isRangeBasedNode(DSNode *dsNode) const
+{
+    DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
+
+    return (nodeType >= DSNode::ReaderNodeType &&
+            nodeType <= DSNode::GroupNodeType);
 }
 
 void DopeSheetViewPrivate::generateKeyframeTextures()
@@ -1383,7 +1366,7 @@ void DopeSheetViewPrivate::drawRows() const
 
             DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-            if (dsNode->hasRange()) {
+            if (isRangeBasedNode(dsNode)) {
                 drawClip(dsNode);
             }
 
@@ -2095,7 +2078,7 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
                                 zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
 
         selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
-                                       xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
+                                 xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
     }
 }
 
@@ -2119,13 +2102,22 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 
     switch (nodeType) {
     case DSNode::ReaderNodeType:
+    {
         computeReaderRange(dsNode);
+
+        if (DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode)) {
+            computeNodeRange(nearestTimeNode);
+        }
+    }
         break;
-    case DSNode::GroupNodeType:
-        computeGroupRange(dsNode);
+    case DSNode::TimeOffsetNodeType:
+        computeTimeOffsetRange(dsNode);
         break;
     case DSNode::FrameRangeNodeType:
         computeFRRange(dsNode);
+        break;
+    case DSNode::GroupNodeType:
+        computeGroupRange(dsNode);
         break;
     default:
         break;
@@ -2151,6 +2143,41 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
                      startingTimeValue + (lastFrameValue - firstFrameValue));
 
     nodeRanges[reader] = range;
+}
+
+void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
+{
+    FrameRange range(0, 0);
+
+    // Retrieve nearest reader useful values
+    if (DSNode *nearestReader = model->findDSNode(model->getNearestReader(timeOffset))) {
+        FrameRange nearestReaderRange = nodeRanges.at(nearestReader);
+
+        // Retrieve the time offset values
+        Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getNode()->getKnobByName("timeOffset").get());
+        assert(timeOffsetKnob);
+
+        int timeOffsetValue = timeOffsetKnob->getValue();
+
+        range.first = nearestReaderRange.first + timeOffsetValue;
+        range.second = nearestReaderRange.second + timeOffsetValue;
+    }
+
+    nodeRanges[timeOffset] = range;
+}
+
+void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
+{
+    NodePtr node = frameRange->getNode();
+
+    Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("frameRange").get());
+    assert(frameRangeKnob);
+
+    FrameRange range;
+    range.first = frameRangeKnob->getValue(0);
+    range.second = frameRangeKnob->getValue(1);
+
+    nodeRanges[frameRange] = range;
 }
 
 void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
@@ -2209,20 +2236,6 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     }
 
     nodeRanges[group] = range;
-}
-
-void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
-{
-    NodePtr node = frameRange->getNode();
-
-    Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("frameRange").get());
-    assert(frameRangeKnob);
-
-    FrameRange range;
-    range.first = frameRangeKnob->getValue(0);
-    range.second = frameRangeKnob->getValue(1);
-
-    nodeRanges[frameRange] = range;
 }
 
 void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
@@ -2900,10 +2913,10 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         assert(startingTimeKnob);
 
         connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onReaderChanged(int, int)));
+                this, SLOT(onRangeNodeChanged(int, int)));
 
         connect(startingTimeKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onReaderChanged(int, int)));
+                this, SLOT(onRangeNodeChanged(int, int)));
 
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
@@ -2916,9 +2929,18 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         assert(frameRangeKnob);
 
         connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onFrameRangeNodeChanged(int, int)));
+                this, SLOT(onRangeNodeChanged(int, int)));
 
         _imp->computeFRRange(dsNode);
+    }
+    else if (nodeType == DSNode::TimeOffsetNodeType) {
+        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName("timeOffset")->getSignalSlotHandler();
+        assert(timeOffsetKnob);
+
+        connect(timeOffsetKnob.get(), SIGNAL(valueChanged(int, int)),
+                this, SLOT(onRangeNodeChanged(int, int)));
+
+        _imp->computeTimeOffsetRange(dsNode);
     }
     else if (nodeType == DSNode::GroupNodeType) {
         _imp->computeGroupRange(dsNode);
@@ -2967,26 +2989,7 @@ void DopeSheetView::onKeyframeChanged()
     }
 }
 
-void DopeSheetView::onReaderChanged(int /*dimension*/, int /*reason*/)
-{
-    QObject *signalSender = sender();
-
-    DSNode *dsNode = 0;
-
-    if (KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender)) {
-        dsNode = _imp->model->findDSNode(knobHandler->getKnob());
-    }
-
-    if (dsNode) {
-        assert(dsNode->getDSNodeType() == DSNode::ReaderNodeType);
-
-        _imp->computeReaderRange(dsNode);
-
-        redraw();
-    }
-}
-
-void DopeSheetView::onFrameRangeNodeChanged(int /*dimension*/, int /*reason*/)
+void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 {
     QObject *signalSender = sender();
 
@@ -2999,13 +3002,11 @@ void DopeSheetView::onFrameRangeNodeChanged(int /*dimension*/, int /*reason*/)
         dsNode = _imp->model->findDSNode(effectInstance->getNode().get());
     }
 
-    if (dsNode) {
-        assert(dsNode->getDSNodeType() == DSNode::FrameRangeNodeType);
+    assert(dsNode);
 
-        _imp->computeFRRange(dsNode);
+    _imp->computeNodeRange(dsNode);
 
-        redraw();
-    }
+    redraw();
 }
 
 void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
@@ -3190,7 +3191,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                 QRectF treeItemRect = _imp->hierarchyView->getItemRect(dsNode);
 
-                if (dsNode->hasRange()) {
+                if (_imp->isRangeBasedNode(dsNode)) {
                     FrameRange range = _imp->nodeRanges[dsNode];
                     QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                              QPointF(range.second, treeItemRect.bottom() + 1)));

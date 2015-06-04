@@ -896,6 +896,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "enter_group.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+
             case NATRON_PIXMAP_INTERP_LINEAR:
                 img.load(NATRON_IMAGES_PATH "interp_linear.png");
                 *pix = QPixmap::fromImage(img);

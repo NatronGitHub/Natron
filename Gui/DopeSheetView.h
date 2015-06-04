@@ -144,11 +144,12 @@ protected:
 private Q_SLOTS:
     void onTimeLineFrameChanged(SequenceTime sTime, int reason);
     void onTimeLineBoundariesChanged(int, int);
+
     void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
+
     void onKeyframeChanged();
-    void onReaderChanged(int, int);
-    void onFrameRangeNodeChanged(int, int);
+    void onRangeNodeChanged(int, int);
 
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
     void onHierarchyViewScrollbarMoved(int);
@@ -156,6 +157,7 @@ private Q_SLOTS:
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void onKeyframeSelectionChanged();
 
+    // Actions
     void selectAllKeyframes();
     void deleteSelectedKeyframes();
     void frame();

@@ -142,6 +142,7 @@ public:
 
     DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
+    Natron::Node *getNearestReader(DSNode *timeNode) const;
 
     bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const;
 
@@ -238,6 +239,8 @@ public:
     enum DSNodeType
     {
         CommonNodeType = 1001,
+
+        // Range-based nodes
         ReaderNodeType,
         RetimeNodeType,
         TimeOffsetNodeType,
@@ -260,7 +263,7 @@ public:
 
     DSNode::DSNodeType getDSNodeType() const;
 
-    bool hasRange() const;
+    bool isTimeNode() const;
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;

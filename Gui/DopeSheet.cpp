@@ -84,6 +84,7 @@ public:
 
     /* functions */
     Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node) const;
+    Natron::Node *getNearestReaderFromInputs_recursive(Natron::Node *node) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<DSNode *> *result) const;
 
     bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
@@ -128,13 +129,41 @@ Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node
     for (std::list<Natron::Node *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         Natron::Node *output = (*it);
 
-        if (output->getPluginLabel() == "RetimeOFX"
-                || output->getPluginLabel() == "TimeOffsetOFX"
-                || output->getPluginLabel() == "FrameRangeOFX") {
+        std::string pluginID = output->getPluginID();
+
+        if (pluginID == PLUGINID_OFX_RETIME
+                || pluginID == PLUGINID_OFX_TIMEOFFSET
+                || pluginID == PLUGINID_OFX_FRAMERANGE) {
             return output;
         }
         else {
             return getNearestTimeFromOutputs_recursive(output);
+        }
+    }
+
+    return NULL;
+}
+
+Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Node *node) const
+{
+    const std::vector<boost::shared_ptr<Natron::Node> > &inputs = node->getInputs_mt_safe();
+
+    for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        NodePtr input = (*it);
+
+        if (!input) {
+            continue;
+        }
+
+        std::string pluginID = input->getPluginID();
+
+        if (pluginID == PLUGINID_OFX_READOIIO ||
+                pluginID == PLUGINID_OFX_READFFMPEG ||
+                pluginID == PLUGINID_OFX_READPFM) {
+            return input.get();
+        }
+        else {
+            return getNearestReaderFromInputs_recursive(input.get());
         }
     }
 
@@ -380,7 +409,7 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
@@ -543,9 +572,7 @@ bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
  */
 DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
 {
-    if (dsNode->getDSNodeType() == DSNode::RetimeNodeType
-            || dsNode->getDSNodeType() == DSNode::TimeOffsetNodeType
-            || dsNode->getDSNodeType() == DSNode::FrameRangeNodeType) {
+    if (dsNode->isTimeNode()) {
         return NULL;
     }
 
@@ -561,6 +588,15 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
     _imp->getInputsConnected_recursive(dsNode->getNode().get(), &ret);
 
     return ret;
+}
+
+Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const
+{
+    assert(timeNode->isTimeNode());
+
+    Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getNode().get());
+
+    return nearestReader;
 }
 
 bool DopeSheet::nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const
@@ -1237,11 +1273,10 @@ DSNode::DSNodeType DSNode::getDSNodeType() const
     return _imp->nodeType;
 }
 
-bool DSNode::hasRange() const
+bool DSNode::isTimeNode() const
 {
-    return (_imp->nodeType == DSNode::ReaderNodeType ||
-            _imp->nodeType == DSNode::GroupNodeType ||
-            _imp->nodeType == DSNode::FrameRangeNodeType);
+    return (_imp->nodeType >= DSNode::RetimeNodeType)
+            && (_imp->nodeType < DSNode::GroupNodeType);
 }
 
 /**
