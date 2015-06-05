@@ -87,12 +87,12 @@ public:
     Natron::Node *getNearestReaderFromInputs_recursive(Natron::Node *node) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<DSNode *> *result) const;
 
-    bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
-    bool canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const;
-
     void pushUndoCommand(QUndoCommand *cmd);
 
     void selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result);
+
+    bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
+    bool canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const;
 
     /* attributes */
     DopeSheet *q_ptr;
@@ -191,6 +191,25 @@ void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vec
     }
 }
 
+void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
+{
+    undoStack->setActive();
+    undoStack->push(cmd);
+}
+
+void DopeSheetPrivate::selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result)
+{
+    KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
+
+    for (KeyFrameSet::const_iterator kIt = keyframes.begin();
+         kIt != keyframes.end();
+         ++kIt) {
+        KeyFrame kf = (*kIt);
+
+        result->push_back(DSSelectedKey(dsKnob, kf, q_ptr->findTreeItemForDim(dsKnob, dim), dim));
+    }
+}
+
 bool DopeSheetPrivate::canTrimLeft(double newFirstFrame, double currentLastFrame) const
 {
     if (newFirstFrame < 1) {
@@ -216,26 +235,6 @@ bool DopeSheetPrivate::canTrimRight(double newLastFrame, double currentFirstFram
 
     return true;
 }
-
-void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
-{
-    undoStack->setActive();
-    undoStack->push(cmd);
-}
-
-void DopeSheetPrivate::selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result)
-{
-    KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
-
-    for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-         kIt != keyframes.end();
-         ++kIt) {
-        KeyFrame kf = (*kIt);
-
-        result->push_back(DSSelectedKey(dsKnob, kf, q_ptr->findTreeItemForDim(dsKnob, dim), dim));
-    }
-}
-
 
 DopeSheet::DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline) :
     _imp(new DopeSheetPrivate(this))

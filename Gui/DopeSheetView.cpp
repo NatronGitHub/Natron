@@ -80,40 +80,6 @@ void running_in_main_thread_and_context(const QGLWidget *glWidget) {
     running_in_main_context(glWidget);
 }
 
-
-/**
- * @brief ClipColors
- *
- * A convenience typedef for storing useful colors for drawing:
- * - the first element defines the fill color of the clip ;
- * - the second element defines the outline color.
- */
-typedef std::pair<QColor, QColor> ClipColors;
-
-ClipColors getClipColors(DSNode::DSNodeType nodeType)
-{
-    ClipColors ret;
-
-    if (nodeType == DSNode::ReaderNodeType) {
-        ret.first = Qt::black;
-        ret.second = CLIP_OUTLINE_COLOR;
-    }
-    else if (nodeType == DSNode::GroupNodeType) {
-        ret.first = Qt::black;
-        ret.second = GROUP_OUTLINE_COLOR;
-    }
-    else if (nodeType == DSNode::TimeOffsetNodeType) {
-        ret.first = Qt::black;
-        ret.second = TIME_NODE_OUTLINE_COLOR;
-    }
-    else if (nodeType == DSNode::FrameRangeNodeType) {
-        ret.first = Qt::black;
-        ret.second = TIME_NODE_OUTLINE_COLOR;
-    }
-
-    return ret;
-}
-
 /**
  * @brief itemHasNoChildVisible
  *
@@ -177,11 +143,21 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
     DSNode::DSNodeType nodeType = DSNode::DSNodeType(item->type());
+    int newItemHeight = 0;
 
-    if (nodeType >= DSNode::ReaderNodeType
-            && nodeType <= DSNode::GroupNodeType) {
-        itemSize.rheight() += 10;
+    switch (nodeType) {
+    case DSNode::ReaderNodeType:
+    case DSNode::RetimeNodeType:
+    case DSNode::TimeOffsetNodeType:
+    case DSNode::FrameRangeNodeType:
+    case DSNode::GroupNodeType:
+        newItemHeight = 10;
+        break;
+    default:
+        break;
     }
+
+    itemSize.rheight() += newItemHeight;
 
     return itemSize;
 }
@@ -760,6 +736,7 @@ public:
     void computeRangesBelow(DSNode *dsNode);
     void computeNodeRange(DSNode *dsNode);
     void computeReaderRange(DSNode *reader);
+    void computeRetimeRange(DSNode *retimer);
     void computeTimeOffsetRange(DSNode *timeOffset);
     void computeFRRange(DSNode *frameRange);
     void computeGroupRange(DSNode *group);
@@ -1384,7 +1361,7 @@ void DopeSheetViewPrivate::drawRows() const
  */
 void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
 {
-    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
 
     QRectF nameItemRect = hierarchyView->getItemRect(dsNode);
 
@@ -1400,6 +1377,17 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
     glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
     glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
     glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
+    glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
+    glEnd();
+
+    // Draw row separation
+    int lineWidth = (dsNode->getDSNodeType() == DSNode::GroupNodeType) ? 5 : 3;
+
+    glLineWidth(lineWidth);
+    glColor4f(0.f, 0.f, 0.f, 1.f);
+
+    glBegin(GL_LINES);
+    glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
     glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
     glEnd();
 }
@@ -1474,8 +1462,6 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 {
     // Draw the clip
     {
-        ClipColors colors = getClipColors(dsNode->getDSNodeType());
-
         FrameRange range = nodeRanges.at(dsNode);
 
         QRectF treeItemRect = hierarchyView->getItemRect(dsNode);
@@ -1485,30 +1471,6 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 
         GLProtectAttrib a(GL_CURRENT_BIT);
 
-        // Fill the reader rect
-        glColor4f(colors.first.redF(), colors.first.greenF(),
-                  colors.first.blueF(), colors.first.alphaF());
-
-        glBegin(GL_POLYGON);
-        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
-        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
-        glEnd();
-
-        glLineWidth(2);
-
-        // Draw the outline
-        glColor4f(colors.second.redF(), colors.second.greenF(),
-                  colors.second.blueF(), colors.second.alphaF());
-
-        glBegin(GL_LINE_LOOP);
-        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
-        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
-        glEnd();
-
         // If necessary, draw the original frame range line
         if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
             NodePtr node = dsNode->getNode();
@@ -1517,28 +1479,64 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
             assert(firstFrameKnob);
             Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
             assert(lastFrameKnob);
+
+            double speedValue = 1.0f;
+
+            if (DSNode *nearestRetimer = model->getNearestTimeNodeFromOutputs(dsNode)) {
+                if (nearestRetimer->getDSNodeType() == DSNode::RetimeNodeType) {
+                    Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(nearestRetimer->getNode()->getKnobByName("speed").get());
+                    assert(speedKnob);
+
+                    speedValue = speedKnob->getValue();
+                }
+            }
+
             Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
             assert(originalFrameRangeKnob);
 
-            int framesFromEndToTotal = (originalFrameRangeKnob->getValue(1) - originalFrameRangeKnob->getValue(0))
-                    - lastFrameKnob->getValue();
+            int lineBegin = clipRectZoomCoords.left() - firstFrameKnob->getValue() + 1;
+
+            int frameCount = originalFrameRangeKnob->getValue(1) - originalFrameRangeKnob->getValue(0) + 1;
+            int lineEnd = lineBegin + (frameCount / speedValue);
 
             float clipRectCenterY = clipRectZoomCoords.center().y();
 
             glLineWidth(1);
 
-            glColor4f(colors.second.redF(), colors.second.greenF(),
-                      colors.second.blueF(), colors.second.alphaF());
-
             glBegin(GL_LINES);
-            glVertex2f(clipRectZoomCoords.left() - firstFrameKnob->getValue() + 1, clipRectCenterY);
-            glVertex2f(clipRectZoomCoords.left(), clipRectCenterY);
+            glVertex2f(lineBegin, clipRectCenterY);
+//            glVertex2f(clipRectZoomCoords.left(), clipRectCenterY);
 
-            glVertex2f(clipRectZoomCoords.right(), clipRectCenterY);
-            glVertex2f(clipRectZoomCoords.right() + framesFromEndToTotal + 1, clipRectCenterY);
+//            glVertex2f(clipRectZoomCoords.right(), clipRectCenterY);
+            glVertex2f(lineEnd, clipRectCenterY);
             glEnd();
         }
+
+        // Fill the range rect
+        QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+
+        glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+
+        glBegin(GL_POLYGON);
+        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
+        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
+        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
+        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
+        glEnd();
     }
+
+        // Draw the outline
+//        glLineWidth(2);
+
+////        glColor4f(bkColorR, bkColorG, bkColorB, 1.f);
+
+//        glBegin(GL_LINE_LOOP);
+//        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
+//        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
+//        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
+//        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
+//        glEnd();
+//    }
 
     // Draw the preview
     //    {
@@ -2103,12 +2101,18 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
     switch (nodeType) {
     case DSNode::ReaderNodeType:
     {
-        computeReaderRange(dsNode);
-
         if (DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode)) {
-            computeNodeRange(nearestTimeNode);
+            if (nearestTimeNode->getDSNodeType() == DSNode::RetimeNodeType) {
+                computeRetimeRange(nearestTimeNode);
+            }
+        }
+        else {
+            computeReaderRange(dsNode);
         }
     }
+        break;
+    case DSNode::RetimeNodeType:
+        computeRetimeRange(dsNode);
         break;
     case DSNode::TimeOffsetNodeType:
         computeTimeOffsetRange(dsNode);
@@ -2140,9 +2144,47 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     int lastFrameValue = lastFrameKnob->getValue();
 
     FrameRange range(startingTimeValue,
-                     startingTimeValue + (lastFrameValue - firstFrameValue));
+                     startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
 
     nodeRanges[reader] = range;
+}
+
+void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
+{
+    NodePtr node = retimer->getNode();
+
+    if (Natron::Node *nearestReader = model->getNearestReader(retimer)) {
+        Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("startingTime").get());
+        assert(startingTimeKnob);
+        Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("firstFrame").get());
+        assert(firstFrameKnob);
+        Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("lastFrame").get());
+        assert(lastFrameKnob);
+        Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("originalFrameRange").get());
+        assert(originalFrameRangeKnob);
+
+        int startingTimeValue = startingTimeKnob->getValue();
+        int firstFrameValue = firstFrameKnob->getValue();
+        int lastFrameValue = lastFrameKnob->getValue();
+
+        Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(node->getKnobByName("speed").get());
+        assert(speedKnob);
+
+        double speedValue = speedKnob->getValue();
+
+        int frameCount = lastFrameValue - firstFrameValue + 1;
+        int rangeEnd = startingTimeValue + (frameCount / speedValue);
+
+        FrameRange range;
+        range.first = startingTimeValue;
+        range.second = rangeEnd;
+
+        nodeRanges[retimer] = range;
+
+        if (DSNode *readerIsOpenInDopeSheet = model->findDSNode(nearestReader)) {
+            nodeRanges[readerIsOpenInDopeSheet] = range;
+        }
+    }
 }
 
 void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
@@ -2886,6 +2928,8 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
     NodePtr node = dsNode->getNode();
 
+    bool mustComputeNodeRange = true;
+
     if (nodeType == DSNode::CommonNodeType) {
         if (_imp->model->isPartOfGroup(dsNode)) {
             const KnobsAndGuis &knobs = dsNode->getNodeGui()->getKnobs();
@@ -2903,6 +2947,8 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
                         this, SLOT(onKeyframeChanged()));
             }
         }
+
+        mustComputeNodeRange = false;
     }
     else if (nodeType == DSNode::ReaderNodeType) {
         // The dopesheet view must refresh if the user set some values in the settings panel
@@ -2921,17 +2967,18 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
         // refreshes of the view.
-
-        _imp->computeReaderRange(dsNode);
     }
-    else if (nodeType == DSNode::FrameRangeNodeType) {
-        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName("frameRange")->getSignalSlotHandler();
-        assert(frameRangeKnob);
+    else if (nodeType == DSNode::RetimeNodeType) {
+        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName("speed")->getSignalSlotHandler();
+        assert(speedKnob);
+        boost::shared_ptr<KnobSignalSlotHandler> durationKnob = node->getKnobByName("duration")->getSignalSlotHandler();
+        assert(durationKnob);
 
-        connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),
+        connect(speedKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
 
-        _imp->computeFRRange(dsNode);
+        connect(durationKnob.get(), SIGNAL(valueChanged(int, int)),
+                this, SLOT(onRangeNodeChanged(int, int)));
     }
     else if (nodeType == DSNode::TimeOffsetNodeType) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName("timeOffset")->getSignalSlotHandler();
@@ -2939,11 +2986,17 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
 
         connect(timeOffsetKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
-
-        _imp->computeTimeOffsetRange(dsNode);
     }
-    else if (nodeType == DSNode::GroupNodeType) {
-        _imp->computeGroupRange(dsNode);
+    else if (nodeType == DSNode::FrameRangeNodeType) {
+        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName("frameRange")->getSignalSlotHandler();
+        assert(frameRangeKnob);
+
+        connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),
+                this, SLOT(onRangeNodeChanged(int, int)));
+    }
+
+    if (mustComputeNodeRange) {
+        _imp->computeNodeRange(dsNode);
     }
 
     if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
