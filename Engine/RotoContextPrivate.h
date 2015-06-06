@@ -1681,7 +1681,7 @@ struct RotoContextPrivate
                    double internalDotRadius,
                    double externalDotRadius,
                    double pressure,
-                   double shapeColor[3],
+                   bool doBuildUp,
                    const std::vector<std::pair<double, double> >& opacityStops,
                    double opacity);
 

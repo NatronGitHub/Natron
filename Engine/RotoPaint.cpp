@@ -151,15 +151,11 @@ public:
                                 Natron::OutputEffectInstance* renderRequester,
                                 int textureIndex,
                                 const TimeLine* timeline,
-                                bool isAnalysis)
+                                bool isAnalysis,
+                                bool duringPaintStroke)
     : _nodes(nodes)
     {
-        bool duringPaintStroke;
-        if (!nodes.empty()) {
-            duringPaintStroke = nodes.front()->isDuringPaintStrokeCreation();
-        } else {
-            duringPaintStroke = false;
-        }
+        
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
@@ -216,6 +212,12 @@ RotoPaint::render(const RenderActionArgs& args)
         NodeList rotoPaintNodes;
         roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         
+        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+        RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
+        assert(firstStroke);
+        boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();
+        
+        bool duringPaintStroke = bottomMerge->isDuringPaintStrokeCreation();
         
         RotoPaintParallelArgsSetter frameArgs(rotoPaintNodes,
                                               args.time,
@@ -227,12 +229,10 @@ RotoPaint::render(const RenderActionArgs& args)
                                               0, // viewer requester
                                               0, //texture index
                                               getApp()->getTimeLine().get(),
-                                              false);
+                                              false,
+                                              duringPaintStroke);
         
-        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-        RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
-        assert(firstStroke);
-        boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();
+        
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
 

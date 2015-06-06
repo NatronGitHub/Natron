@@ -1563,6 +1563,7 @@ private:
                                          bool* isIdentity_p,
                                          int* identityTime,
                                          int* identityInputNb_p,
+                                         bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
                                          RectD* optionalBounds_p); //!< output, only set if optionalBoundsParam != NULL

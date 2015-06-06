@@ -521,8 +521,10 @@ void
 Natron::Bitmap::markForRendered(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
-    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
-        memset( buf, 1, roi.width() );
+    int w = _bounds.width();
+    int roiw = roi.width();
+    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
+        memset( buf, 1, roiw);
     }
 }
 
@@ -531,8 +533,10 @@ void
 Natron::Bitmap::markForRendering(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
-    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
-        memset( buf, PIXEL_UNAVAILABLE , roi.width() );
+    int w = _bounds.width();
+    int roiw = roi.width();
+    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
+        memset( buf, PIXEL_UNAVAILABLE , roiw );
     }
 }
 #endif
@@ -541,8 +545,10 @@ void
 Natron::Bitmap::clear(const RectI& roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
-    for (int i = roi.bottom(); i < roi.top(); ++i, buf += _bounds.width()) {
-        memset( buf, 0 , roi.width() );
+    int w = _bounds.width();
+    int roiw = roi.width();
+    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
+        memset( buf, 0 , roiw );
     }
 }
 

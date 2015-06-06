@@ -1011,6 +1011,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
                                                 bool* isIdentity_p,
                                                 int* identityTime,
                                                 int* identityInputNb_p,
+                                                bool* duringPaintStroke_p,
                                                 RectD* rod_p,
                                                 RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
                                                 RectD* optionalBounds_p) //!< output, only set if optionalBoundsParam != NULL
@@ -1034,6 +1035,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
     
     *nodeHash_p = getHash();
     *rotoAge_p = getNode()->getRotoAge();
+    *duringPaintStroke_p = getNode()->isDuringPaintStrokeCreation();
     const U64& nodeHash = *nodeHash_p;
 
     {
@@ -1181,7 +1183,7 @@ EffectInstance::getImage(int inputNb,
     int inputIdentityTime;
     U64 nodeHash;
     U64 rotoAge;
-    
+    bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     /// re-computing of the same image many many times
     bool byPassCache = false;
@@ -1196,7 +1198,7 @@ EffectInstance::getImage(int inputNb,
     
     if (!_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData()) {
         
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
             return ImagePtr();
         }
         
@@ -1206,7 +1208,7 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
         
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
                 return ImagePtr();
             }
             
@@ -1218,6 +1220,7 @@ EffectInstance::getImage(int inputNb,
             inputNbIdentity = renderArgs._identityInputNb;
             nodeHash = frameRenderArgs.nodeHash;
             rotoAge = frameRenderArgs.rotoAge;
+            duringPaintStroke = frameRenderArgs.isDuringPaintStrokeCreation;
         }
         
         
@@ -1291,7 +1294,7 @@ EffectInstance::getImage(int inputNb,
     if (useRotoInput) {
         
         if (attachedStroke) {
-            if (isDuringPaintStrokeCreationThreadLocal()) {
+            if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
             } else {
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
@@ -2770,17 +2773,18 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     bool fillGrownBoundsWithZeroes = false;
     RectI lastStrokePixelRoD;
+    if (isDuringPaintStroke && args.inputImagesList.empty()) {
+        RectD lastStrokeRoD;
+        assert(safety == eRenderSafetyInstanceSafe && locker);
+        getNode()->getLastPaintStrokeRoD(&lastStrokeRoD);
+        lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
+    }
+
     if (isPlaneCached) {
 
-        RectD lastStrokeRoD;
-        if (isDuringPaintStroke && args.inputImagesList.empty()) {
-            assert(safety == eRenderSafetyInstanceSafe && locker);
-            getNode()->getLastPaintStrokeRoD(&lastStrokeRoD);
-        }
-        if (isDuringPaintStroke && !lastStrokeRoD.isNull()) {
+        if (isDuringPaintStroke && !lastStrokePixelRoD.isNull()) {
             
             fillGrownBoundsWithZeroes = true;
-            lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
             for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin();
                  it2 != planesToRender.planes.end(); ++it2) {
@@ -2798,7 +2802,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
         
         ///We check what is left to render.
-        
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
             isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
@@ -2808,8 +2811,13 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 #else
         isPlaneCached->getRestToRender(roi, rectsLeftToRender);
 #endif
-        
-        
+        if (isDuringPaintStroke && !rectsLeftToRender.empty() && !lastStrokePixelRoD.isNull()) {
+            rectsLeftToRender.clear();
+            RectI intersection;
+            if (downscaledImageBounds.intersect(lastStrokePixelRoD, &intersection)) {
+                rectsLeftToRender.push_back(intersection);
+            }
+        }
         
         if (!rectsLeftToRender.empty() && cacheAlmostFull) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
@@ -3338,17 +3346,17 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             {
                 Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
                 
-                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), it->second.downscaleImage->getBounds(), mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
+                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), args.roi, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
                 
                 bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
                 
                 if (useAlpha0ForRGBToRGBAConversion) {
-                    it->second.downscaleImage->convertToFormatAlpha0(it->second.downscaleImage->getBounds(),
+                    it->second.downscaleImage->convertToFormatAlpha0(args.roi,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());
                 } else {
-                    it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
+                    it->second.downscaleImage->convertToFormat(args.roi,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());
@@ -3987,7 +3995,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     
     ///It might have been already rendered now
     if (downscaledRectToRender.isNull()) {
-        return eRenderingFunctorRetOK;
+        return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
     }
 
     ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
