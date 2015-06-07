@@ -1800,6 +1800,9 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                 boost::shared_ptr<RotoItem> intoRotoItem = _panel->getRotoItemForTreeItem(into);
                 QList<QTreeWidgetItem*> foundDropped = findItems(it.value().toString(),Qt::MatchExactly | Qt::MatchRecursive,0);
                 assert( !foundDropped.empty() );
+                if (foundDropped.empty()) {
+                    return false;
+                }
 
                 ///the dropped item
                 ret->dropped = foundDropped[0];
@@ -1829,7 +1832,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                     if (ret->newParentLayer) {
                         ret->newParentItem = into->parent();
                         ///find the target item index into its parent layer and insert the item above it
-                        const std::list<boost::shared_ptr<RotoItem> > & children = intoRotoItem->getParentLayer()->getItems();
+                        const std::list<boost::shared_ptr<RotoItem> > & children = ret->newParentLayer->getItems();
                         std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
                             std::find(children.begin(),children.end(),intoRotoItem);
                         assert( found != children.end() );
@@ -1859,6 +1862,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                         ret->newParentLayer = isIntoALayer;
                         ret->newParentItem = into;
                     } else {
+                        assert(intoParentLayer);
                         ///find the target item index into its parent layer and insert the item after it
                         const std::list<boost::shared_ptr<RotoItem> > & children = intoParentLayer->getItems();
                         std::list<boost::shared_ptr<RotoItem> >::const_iterator found =
