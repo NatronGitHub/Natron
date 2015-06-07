@@ -1514,6 +1514,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 
         // Fill the range rect
         QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+        fillColor = QColor::fromHsl(fillColor.hslHue(), 50, fillColor.lightness());
 
         glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
