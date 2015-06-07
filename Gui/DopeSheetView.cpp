@@ -401,12 +401,14 @@ void HierarchyViewPrivate::selectSelectedKeyframesItems(bool aselect)
             selectedKey->dimTreeItem->setSelected(aselect);
         }
 
-        if (selectedKey->dsKnob->getTreeItem()->isSelected() != aselect) {
-            selectedKey->dsKnob->getTreeItem()->setSelected(aselect);
+        QTreeWidgetItem *knobItem = selectedKey->dsKnob->getTreeItem();
+        if (knobItem->isSelected() != aselect) {
+            knobItem->setSelected(aselect);
         }
 
-        if (selectedKey->dsKnob->getTreeItem()->parent()->isSelected() != aselect) {
-            selectedKey->dsKnob->getTreeItem()->parent()->setSelected(aselect);
+        QTreeWidgetItem *knobItemParent = selectedKey->dsKnob->getTreeItem()->parent();
+        if (knobItemParent->isSelected() != aselect) {
+            knobItemParent->setSelected(aselect);
         }
     }
 
@@ -701,7 +703,7 @@ public:
 
     double clampedMouseOffset(double fromTime, double toTime);
 
-    bool isRangeBasedNode(DSNode *dsNode) const;
+    bool isRangeBasedNode(DSNode::DSNodeType nodeType) const;
 
     // Textures
     void generateKeyframeTextures();
@@ -886,8 +888,8 @@ QRectF DopeSheetViewPrivate::nameItemRectToRowRect(const QRectF &rect) const
 {
     QRectF r = rectToZoomCoordinates(rect);
 
-    double rowTop = r.topLeft().y();
-    double rowBottom = r.bottomRight().y() - 1;
+    double rowTop = r.top();
+    double rowBottom = r.bottom() - 1;
 
     return QRectF(QPointF(zoomContext.left(), rowTop),
                   QPointF(zoomContext.right(), rowBottom));
@@ -920,7 +922,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 
             QRectF treeItemRect = hierarchyView->getItemRect(dsNode);
 
-            if (isRangeBasedNode(dsNode)) {
+            if (isRangeBasedNode(nodeType)) {
                 FrameRange range = nodeRanges.at(dsNode);
 
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
@@ -1115,10 +1117,8 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
     return dt;
 }
 
-bool DopeSheetViewPrivate::isRangeBasedNode(DSNode *dsNode) const
+bool DopeSheetViewPrivate::isRangeBasedNode(DSNode::DSNodeType nodeType) const
 {
-    DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
-
     return (nodeType >= DSNode::ReaderNodeType &&
             nodeType <= DSNode::GroupNodeType);
 }
@@ -1343,7 +1343,7 @@ void DopeSheetViewPrivate::drawRows() const
 
             DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-            if (isRangeBasedNode(dsNode)) {
+            if (isRangeBasedNode(nodeType)) {
                 drawClip(dsNode);
             }
 
@@ -1374,10 +1374,10 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
     glColor4f(rootR, rootG, rootB, rootA);
 
     glBegin(GL_POLYGON);
-    glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
-    glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
-    glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
-    glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
+    glVertex2f(rowRect.left(), rowRect.top());
+    glVertex2f(rowRect.left(), rowRect.bottom());
+    glVertex2f(rowRect.right(), rowRect.bottom());
+    glVertex2f(rowRect.right(), rowRect.top());
     glEnd();
 
     // Draw row separation
@@ -1387,8 +1387,8 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
     glColor4f(0.f, 0.f, 0.f, 1.f);
 
     glBegin(GL_LINES);
-    glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
-    glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
+    glVertex2f(rowRect.left(), rowRect.top());
+    glVertex2f(rowRect.right(), rowRect.top());
     glEnd();
 }
 
@@ -1414,10 +1414,10 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
         glColor4f(rootR, rootG, rootB, rootA);
 
         glBegin(GL_POLYGON);
-        glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
-        glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
-        glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
-        glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
+        glVertex2f(rowRect.left(), rowRect.top());
+        glVertex2f(rowRect.left(), rowRect.bottom());
+        glVertex2f(rowRect.right(), rowRect.bottom());
+        glVertex2f(rowRect.right(), rowRect.top());
         glEnd();
 
         // Draw child rows
@@ -1432,10 +1432,10 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
 
             // Draw child row
             glBegin(GL_POLYGON);
-            glVertex2f(childrowRect.topLeft().x(), childrowRect.topLeft().y());
-            glVertex2f(childrowRect.bottomLeft().x(), childrowRect.bottomLeft().y());
-            glVertex2f(childrowRect.bottomRight().x(), childrowRect.bottomRight().y());
-            glVertex2f(childrowRect.topRight().x(), childrowRect.topRight().y());
+            glVertex2f(childrowRect.left(), childrowRect.top());
+            glVertex2f(childrowRect.left(), childrowRect.bottom());
+            glVertex2f(childrowRect.right(), childrowRect.bottom());
+            glVertex2f(childrowRect.right(), childrowRect.top());
             glEnd();
         }
     }
@@ -1449,10 +1449,10 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
         glColor4f(knobR, knobG, knobB, knobA);
 
         glBegin(GL_POLYGON);
-        glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
-        glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
-        glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
-        glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
+        glVertex2f(rowRect.left(), rowRect.top());
+        glVertex2f(rowRect.left(), rowRect.bottom());
+        glVertex2f(rowRect.right(), rowRect.bottom());
+        glVertex2f(rowRect.right(), rowRect.top());
         glEnd();
 
     }
@@ -1518,10 +1518,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
         glBegin(GL_POLYGON);
-        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
-        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
+        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.top());
+        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 2);
+        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 2);
+        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
         glEnd();
     }
 
@@ -1531,10 +1531,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 ////        glColor4f(bkColorR, bkColorG, bkColorB, 1.f);
 
 //        glBegin(GL_LINE_LOOP);
-//        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
-//        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-//        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-//        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
+//        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.top());
+//        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 2);
+//        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 2);
+//        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
 //        glEnd();
 //    }
 
@@ -2184,6 +2184,9 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         if (DSNode *readerIsOpenInDopeSheet = model->findDSNode(nearestReader)) {
             nodeRanges[readerIsOpenInDopeSheet] = range;
         }
+    }
+    else {
+        nodeRanges[retimer] = FrameRange();
     }
 }
 
@@ -3244,7 +3247,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                 QRectF treeItemRect = _imp->hierarchyView->getItemRect(dsNode);
 
-                if (_imp->isRangeBasedNode(dsNode)) {
+                if (_imp->isRangeBasedNode(nodeType)) {
                     FrameRange range = _imp->nodeRanges[dsNode];
                     QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                              QPointF(range.second, treeItemRect.bottom() + 1)));
