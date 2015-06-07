@@ -406,7 +406,7 @@ void HierarchyViewPrivate::selectSelectedKeyframesItems(bool aselect)
             knobItem->setSelected(aselect);
         }
 
-        QTreeWidgetItem *knobItemParent = selectedKey->dsKnob->getTreeItem()->parent();
+        QTreeWidgetItem *knobItemParent = knobItem->parent();
         if (knobItemParent->isSelected() != aselect) {
             knobItemParent->setSelected(aselect);
         }

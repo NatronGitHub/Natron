@@ -725,11 +725,9 @@ void DopeSheet::deleteSelectedKeyframes()
         toRemove.push_back(DSSelectedKey(**it));
     }
 
-    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
-
     _imp->selectedKeyframes.clear();
 
-    Q_EMIT keyframeSelectionChanged();
+    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
 }
 
 void DopeSheet::selectAllKeyframes()
