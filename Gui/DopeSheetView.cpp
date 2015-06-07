@@ -717,6 +717,8 @@ public:
     void drawNodeRow(const DSNode *dsNode) const;
     void drawKnobRow(const DSKnob *dsKnob) const;
 
+    void drawRowSeparation(const DSNode *dsNode) const;
+
     void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
 
@@ -1350,6 +1352,8 @@ void DopeSheetViewPrivate::drawRows() const
             if (nodeType != DSNode::GroupNodeType) {
                 drawKeyframes(dsNode);
             }
+
+            drawRowSeparation(dsNode);
         }
     }
 }
@@ -1361,10 +1365,9 @@ void DopeSheetViewPrivate::drawRows() const
  */
 void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
 {
-    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
+    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
     QRectF nameItemRect = hierarchyView->getItemRect(dsNode);
-
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -1377,17 +1380,6 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
     glVertex2f(rowRect.left(), rowRect.top());
     glVertex2f(rowRect.left(), rowRect.bottom());
     glVertex2f(rowRect.right(), rowRect.bottom());
-    glVertex2f(rowRect.right(), rowRect.top());
-    glEnd();
-
-    // Draw row separation
-    int lineWidth = (dsNode->getDSNodeType() == DSNode::GroupNodeType) ? 5 : 3;
-
-    glLineWidth(lineWidth);
-    glColor4f(0.f, 0.f, 0.f, 1.f);
-
-    glBegin(GL_LINES);
-    glVertex2f(rowRect.left(), rowRect.top());
     glVertex2f(rowRect.right(), rowRect.top());
     glEnd();
 }
@@ -1458,6 +1450,25 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
     }
 }
 
+void DopeSheetViewPrivate::drawRowSeparation(const DSNode *dsNode) const
+{
+    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
+
+    QRectF nameItemRect = hierarchyView->getItemRect(dsNode);
+    QRectF rowRect = nameItemRectToRowRect(nameItemRect);
+
+    int lineWidth = (dsNode->getDSNodeType() == DSNode::GroupNodeType) ? 5 : 3;
+
+    glLineWidth(lineWidth);
+    glColor4f(0.f, 0.f, 0.f, 1.f);
+
+    glBegin(GL_LINES);
+    glVertex2f(rowRect.left(), rowRect.top());
+    glVertex2f(rowRect.right(), rowRect.top());
+    glEnd();
+
+}
+
 void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 {
     // Draw the clip
@@ -1469,7 +1480,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         QRectF clipRectZoomCoords = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                  QPointF(range.second, treeItemRect.bottom() + 1)));
 
-        GLProtectAttrib a(GL_CURRENT_BIT);
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_LINE_BIT);
 
         // If necessary, draw the original frame range line
         if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
@@ -1860,7 +1871,7 @@ void DopeSheetViewPrivate::drawSelectionRect() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1905,7 +1916,7 @@ void DopeSheetViewPrivate::drawSelectedKeysBRect() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
