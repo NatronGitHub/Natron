@@ -1297,6 +1297,9 @@ public:
      * @brief To be called when a change was made to trigger a new render.
      **/
     void evaluateChange();
+    void evaluateChange_noIncrement();
+    
+    void clearViewersLastRenderedStrokes();
 
     /**
      *@brief Returns the age of the roto context

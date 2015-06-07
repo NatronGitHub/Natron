@@ -1667,6 +1667,9 @@ DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
         Item i;
         i.dropped = *it;
         i.oldParentItem = (*it)->dropped->parent();
+        if (!i.oldParentItem) {
+            continue;
+        }
         i.oldParentLayer = (*it)->droppedRotoItem->getParentLayer();
         if (i.oldParentLayer) {
             i.indexInOldLayer = i.oldParentLayer->getChildIndex( (*it)->droppedRotoItem );

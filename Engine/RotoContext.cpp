@@ -2089,7 +2089,9 @@ RotoLayer::load(const RotoItemSerialization &obj)
             if (b && !s) {
                 boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, this_layer) );
                 bezier->load(*b);
-
+                if (!bezier->getParentLayer()) {
+                    bezier->setParentLayer(this_layer);
+                }
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             }
@@ -2098,7 +2100,10 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,this_layer));
                 stroke->attachStrokeToNodes();
                 stroke->load(*s);
-                
+                if (!stroke->getParentLayer()) {
+                    stroke->setParentLayer(this_layer);
+                }
+
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
             }
@@ -2108,6 +2113,10 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 _imp->items.push_back(layer);
                 getContext()->addLayer(layer);
                 layer->load(*l);
+                if (!layer->getParentLayer()) {
+                    layer->setParentLayer(this_layer);
+                }
+
             }
         }
     }
@@ -4394,13 +4403,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         _imp->effectNode = app->createNode(args);
         assert(_imp->effectNode);
         _imp->effectNode->setWhileCreatingPaintStroke(true);
-        boost::shared_ptr<Node> rotoNode = getContext()->getNode();
-        rotoNode->setWhileCreatingPaintStroke(true);
-        std::list<ViewerInstance*> viewers;
-        rotoNode->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-            (*it)->getNode()->setWhileCreatingPaintStroke(true);
-        }
+        getContext()->getNode()->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
         
         if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
@@ -5080,14 +5083,8 @@ RotoStrokeItem::setStrokeFinished()
         _imp->frameHoldNode->setWhileCreatingPaintStroke(false);
         _imp->frameHoldNode->incrementKnobsAge();
     }
-    
-    boost::shared_ptr<Node> rotoNode = getContext()->getNode();
-    rotoNode->setWhileCreatingPaintStroke(false);
-    std::list<ViewerInstance*> viewers;
-    rotoNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-        (*it)->getNode()->setWhileCreatingPaintStroke(false);
-    }
+    getContext()->getNode()->setWhileCreatingPaintStroke(false);
+    getContext()->clearViewersLastRenderedStrokes();
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();
 }
@@ -7011,6 +7008,31 @@ RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
     getNode()->getLiveInstance()->evaluate_public(NULL, true,Natron::eValueChangedReasonUserEdited);
+}
+
+void
+RotoContext::evaluateChange_noIncrement()
+{
+    std::list<ViewerInstance* > viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+         it != viewers.end();
+         ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
+    
+}
+
+void
+RotoContext::clearViewersLastRenderedStrokes()
+{
+    std::list<ViewerInstance* > viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+         it != viewers.end();
+         ++it) {
+        (*it)->clearLastRenderedImage();
+    }
 }
 
 U64
