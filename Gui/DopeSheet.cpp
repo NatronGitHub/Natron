@@ -770,9 +770,13 @@ void DopeSheet::selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey
     if (DSKnob *dsKnob = findDSKnob(item, &dim)) {
         boost::shared_ptr<KnobI> knob = dsKnob->getInternalKnob();
 
-        // Select all keyframes of the multidim knob
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            _imp->selectKeyframes(dsKnob, i, result);
+        if (dim == -1) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                _imp->selectKeyframes(dsKnob, i, result);
+            }
+        }
+        else {
+            _imp->selectKeyframes(dsKnob, dim, result);
         }
     }
 }
