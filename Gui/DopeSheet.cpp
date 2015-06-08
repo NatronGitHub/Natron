@@ -901,6 +901,10 @@ void DopeSheet::pasteKeys()
 
 void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
 {
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
     std::list<DSKeyInterpolationChange> changes;
 
     for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
