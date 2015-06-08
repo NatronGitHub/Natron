@@ -1324,8 +1324,16 @@ void DopeSheetViewPrivate::drawRows() const
              ++it) {
             DSNode *dsNode = (*it).second;
 
-            if(dsNode->getTreeItem()->isHidden()) {
+            QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
+            if(treeItem->isHidden()) {
                 continue;
+            }
+
+            if (QTreeWidgetItem *parentItem = treeItem->parent()) {
+                if (!parentItem->isExpanded()) {
+                    continue;
+                }
             }
 
             glEnable(GL_BLEND);
