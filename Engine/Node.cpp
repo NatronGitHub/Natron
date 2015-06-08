@@ -94,8 +94,6 @@ namespace { // protect local classes in anonymous namespace
         
         boost::weak_ptr<Choice_Knob> layer;
         boost::weak_ptr<String_Knob> layerName;
-        boost::weak_ptr<Bool_Knob> enabledChan[4];
-        bool useRGBASelectors; //< if false, only the layer knob is created
         bool hasAllChoice; // if true, the layer has a "all" entry
         
         mutable QMutex compsMutex;
@@ -106,8 +104,6 @@ namespace { // protect local classes in anonymous namespace
         ChannelSelector()
         : layer()
         , layerName()
-        , enabledChan()
-        , useRGBASelectors(false)
         , hasAllChoice(false)
         , compsMutex()
         , compsAvailable()
@@ -121,10 +117,6 @@ namespace { // protect local classes in anonymous namespace
         
         void operator=(const ChannelSelector& other) {
             layer = other.layer;
-            for (int i = 0; i < 4; ++i) {
-                enabledChan[i] = other.enabledChan[i];
-            }
-            useRGBASelectors = other.useRGBASelectors;
             hasAllChoice = other.hasAllChoice;
             layerName = other.layerName;
             QMutexLocker k(&compsMutex);
@@ -226,6 +218,7 @@ struct Node::Implementation
     , beforeRender()
     , afterFrameRender()
     , afterRender()
+    , enabledChan()
     , channelsSelectors()
     , maskSelectors()
     , rotoContext()
@@ -403,6 +396,9 @@ struct Node::Implementation
     boost::weak_ptr<String_Knob> beforeRender;
     boost::weak_ptr<String_Knob> afterFrameRender;
     boost::weak_ptr<String_Knob> afterRender;
+    
+    boost::weak_ptr<Bool_Knob> enabledChan[4];
+
     
     std::map<int,ChannelSelector> channelsSelectors;
     std::map<int,MaskSelector> maskSelectors;
@@ -744,7 +740,7 @@ Node::invalidateLastStrokeData()
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
     assert(stroke);
-    stroke->clearChangesUpToAge(_imp->strokeImageAge);
+    stroke->clearChangesUpToAge(_imp->strokeAgeToRender);
 }
 
 void
@@ -757,11 +753,35 @@ Node::updateLastPaintStrokeData()
         assert(stroke);
         _imp->lastStrokePoints.clear();
         stroke->getMostRecentStrokeChangesSinceAge(_imp->strokeImageAge, &_imp->lastStrokePoints, &_imp->lastStrokeMovementBbox, &_imp->wholeStrokeBbox, &_imp->strokeAgeToRender);
-
         _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
     }
     _imp->liveInstance->clearActionsCache();
+}
+
+void
+Node::setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox)
+{
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        _imp->lastStrokeMovementBbox = lastStrokeBbox;
+        _imp->strokeBitmapCleared = false;
+        _imp->duringPaintStrokeCreation = true;
+    }
+    _imp->liveInstance->setDuringPaintStrokeCreationThreadLocal(true);
+    _imp->liveInstance->clearActionsCache();
+}
+
+void
+Node::invalidateLastPaintStrokeDataNoRotopaint()
+{
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        _imp->lastStrokeMovementBbox.clear();
+        _imp->duringPaintStrokeCreation = false;
+    }
+    _imp->liveInstance->clearActionsCache();
+
 }
 
 void
@@ -783,12 +803,16 @@ void
 Node::getLastPaintStrokeRoD(RectD* bbox)
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    if (_imp->strokeBitmapCleared) {
-        return;
-    } else {
-        *bbox = _imp->lastStrokeMovementBbox;
-        _imp->strokeBitmapCleared = true;
-    }
+    *bbox = _imp->lastStrokeMovementBbox;
+    
+}
+
+void
+Node::clearLastPaintStrokeRoD()
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->strokeBitmapCleared = true;
+
 }
 
 void
@@ -846,7 +870,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
 //    for (std::list<RectI>::iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
 //        RectD canonicalRect;
 //        it->toCanonical_noClipping(mipMapLevel, par, &canonicalRect);
-    /*qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;*/
+    qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
         _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
   //  }
     _imp->strokeImageAge = _imp->strokeAgeToRender;
@@ -2241,6 +2265,33 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     
                 }
                 _imp->createChannelSelector(-1, "Output", true, mainPage);
+                
+                //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
+                std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
+                std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
+                std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
+                
+                boost::shared_ptr<Bool_Knob> foundEnabled[4];
+                for (int i = 0; i < 4; ++i) {
+                    boost::shared_ptr<Bool_Knob> enabled;
+                    for (std::size_t j = 0; j < knobs.size(); ++j) {
+                        if (knobs[j]->getOriginalName() == channelNames[i]) {
+                            foundEnabled[i] = boost::dynamic_pointer_cast<Bool_Knob>(knobs[j]);
+                            break;
+                        }
+                    }
+                }
+                if (!foundEnabled[0] || !foundEnabled[1] || !foundEnabled[2] || !foundEnabled[3]) {
+                    for (int i = 0; i < 4; ++i) {
+                        foundEnabled[i] =  Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), channelLabels[i], 1, false);
+                        foundEnabled[i]->setName(channelLabels[i]);
+                        foundEnabled[i]->setAnimationEnabled(false);
+                        foundEnabled[i]->setAddNewLine(i == 3);
+                        foundEnabled[i]->setDefaultValue(true);
+                        foundEnabled[i]->setHintToolTip(channelHints[i]);
+                        mainPage->addKnob(foundEnabled[i]);
+                    }
+                }
             }
         }
         boost::shared_ptr<String_Knob> nodeLabel = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
@@ -2456,7 +2507,6 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
 {
     
     ChannelSelector sel;
-    sel.useRGBASelectors = isOutput;
     sel.hasAllChoice = isOutput;
     boost::shared_ptr<Choice_Knob> layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
     layer->setHostCanAddOptions(isOutput);
@@ -2467,9 +2517,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
         layer->setHintToolTip("Select here the channels that will be used by the input " + inputName);
     }
     layer->setAnimationEnabled(false);
-    if (sel.useRGBASelectors) {
-        layer->setAddNewLine(false);
-    }
+
     page->addKnob(layer);
     sel.layer = layer;
     std::vector<std::string> baseLayers;
@@ -2494,25 +2542,10 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     layerName->setSecret(true);
     layerName->setAnimationEnabled(false);
     layerName->setEvaluateOnChange(false);
-    layerName->setAddNewLine(!sel.useRGBASelectors);
+    //layerName->setAddNewLine(!sel.useRGBASelectors);
     page->addKnob(layerName);
     sel.layerName = layerName;
     
-    if (sel.useRGBASelectors) {
-        
-        std::string channelNames[4] = {"R", "G", "B", "A"};
-        for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<Bool_Knob> enabled = Natron::createKnob<Bool_Knob>(liveInstance.get(), channelNames[i], 1, false);
-            enabled->setName(inputName + "_enable_" + channelNames[i]);
-            enabled->setAnimationEnabled(false);
-            enabled->setAddNewLine(i == 3);
-            enabled->setDefaultValue(true);
-            enabled->setHintToolTip("When checked the corresponding channel of the layer will be used, "
-                                               "otherwise it will be considered to be 0 everywhere.");
-            sel.enabledChan[i] = enabled;
-            page->addKnob(enabled);
-        }
-    }
     channelsSelectors[inputNb] = sel;
     
 }
@@ -5183,20 +5216,20 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
                                                      OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
                                                      true, true);
     }
-    if (!selector.useRGBASelectors) {
+    if (!enabledChan[0].lock()) {
         return;
     }
     
     Natron::ImageComponents comp ;
     if (!getSelectedLayer(inputNb, selector, &comp)) {
         for (int i = 0; i < 4; ++i) {
-            selector.enabledChan[i].lock()->setSecret(true);
+            enabledChan[i].lock()->setSecret(true);
         }
 
     } else {
         const std::vector<std::string>& channels = comp.getComponentsNames();
         for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<Bool_Knob> enabled = selector.enabledChan[i].lock();
+            boost::shared_ptr<Bool_Knob> enabled = enabledChan[i].lock();
             if (i >= (int)(channels.size())) {
                 enabled->setSecret(true);
             } else {
@@ -5270,11 +5303,11 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     }
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
-    if (foundSelector->second.useRGBASelectors) {
-        processChannels[0] = foundSelector->second.enabledChan[0].lock()->getValue();
-        processChannels[1] = foundSelector->second.enabledChan[1].lock()->getValue();
-        processChannels[2] = foundSelector->second.enabledChan[2].lock()->getValue();
-        processChannels[3] = foundSelector->second.enabledChan[3].lock()->getValue();
+    if (_imp->enabledChan[0].lock()) {
+        processChannels[0] = _imp->enabledChan[0].lock()->getValue();
+        processChannels[1] = _imp->enabledChan[1].lock()->getValue();
+        processChannels[2] = _imp->enabledChan[2].lock()->getValue();
+        processChannels[3] = _imp->enabledChan[3].lock()->getValue();
     } else {
         int numChans = layer->getNumComponents();
         processChannels[0] = true;
@@ -5300,12 +5333,12 @@ Node::hasAtLeastOneChannelToProcess() const
     if (foundSelector == _imp->channelsSelectors.end()) {
         return true;
     }
-    if (foundSelector->second.useRGBASelectors) {
+    if (_imp->enabledChan[0].lock()) {
         bool processChannels[4];
-        processChannels[0] = foundSelector->second.enabledChan[0].lock()->getValue();
-        processChannels[1] = foundSelector->second.enabledChan[1].lock()->getValue();
-        processChannels[2] = foundSelector->second.enabledChan[2].lock()->getValue();
-        processChannels[3] = foundSelector->second.enabledChan[3].lock()->getValue();
+        processChannels[0] = _imp->enabledChan[0].lock()->getValue();
+        processChannels[1] = _imp->enabledChan[1].lock()->getValue();
+        processChannels[2] = _imp->enabledChan[2].lock()->getValue();
+        processChannels[3] = _imp->enabledChan[3].lock()->getValue();
         if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
             return false;
         }
@@ -6481,15 +6514,15 @@ Node::refreshChannelSelectors(bool setValues)
                         layerKnob->setValue(i, 0);
                         _imp->liveInstance->endChanges(true);
                         layerKnob->unblockValueChanges();
-                        if (isColor && it->second.useRGBASelectors) {
+                        if (isColor && _imp->enabledChan[0].lock()) {
                             assert(colorIndex != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
                             for (int j = 0; j < 4; ++j) {
                                 if (j >= (int)(channels.size())) {
-                                    it->second.enabledChan[j].lock()->setSecret(true);
+                                    _imp->enabledChan[j].lock()->setSecret(true);
                                 } else {
-                                    it->second.enabledChan[j].lock()->setSecret(false);
+                                    _imp->enabledChan[j].lock()->setSecret(false);
                                 }
                             }
                         }

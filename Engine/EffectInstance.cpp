@@ -812,6 +812,13 @@ EffectInstance::setParallelRenderArgsTLS(int time,
 }
 
 void
+EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
+{
+    ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+    args.isDuringPaintStrokeCreation = duringPaintStroke;
+}
+
+void
 EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgs& args)
 {
     assert(args.validArgs);
@@ -2124,6 +2131,7 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
  * For non-identity rectangles, compute the bounding box of them and render it
  */
 static void optimizeRectsToRender(Natron::EffectInstance* self,
+                                  const RectI& inputsRoDIntersection,
                                   const std::list<RectI>& rectsToRender,
                                   const int time,
                                   const int view,
@@ -2145,7 +2153,13 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
         for (std::size_t i = 0; i < splits.size(); ++i) {
             SequenceTime identityInputTime;
             int identityInputNb;
-            bool identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+            bool identity;
+            
+            if (!splits[i].intersects(inputsRoDIntersection)) {
+                identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+            } else {
+                identity = false;
+            }
             
             if (identity) {
                 EffectInstance::RectToRender r;
@@ -2777,6 +2791,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         RectD lastStrokeRoD;
         assert(safety == eRenderSafetyInstanceSafe && locker);
         getNode()->getLastPaintStrokeRoD(&lastStrokeRoD);
+        getNode()->clearLastPaintStrokeRoD();
         lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
     }
 
@@ -2859,49 +2874,51 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     }
 
     /*
-     * If the effect has a mask enabled and the mask is smaller than the rod, try to optimize the rectangles left to render
-     * using the isIdentity action.
+     * If the effect has multiple inputs (such as masks) try to call isIdentity if the RoDs do not intersect the RoI
      */
     bool tryIdentityOptim = false;
-#ifdef DEBUG
-    RectD maskRod; // declared here for debugging purposes 
-#endif
+    RectI inputsRoDIntersectionPixel;
     if (tilesSupported && !rectsLeftToRender.empty()) {
+        
+        RectD inputsIntersection;
+        bool inputsIntersectionSet = false;
+        bool hasDifferentRods = false;
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
-            if (isInputRotoBrush(i) || (isInputMask(i) && isMaskEnabled(i))) {
-                
-                boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
-#ifndef DEBUG
-                RectD maskRod;
-#endif
-                if (attachedStroke) {
-                    getNode()->getPaintStrokeRoD(args.time,&maskRod);
-                } else {
-                    EffectInstance* maskInput = getInput(i);
-                    if (maskInput) {
-                        bool isMaskProjectFormat;
-                        ParallelRenderArgs maskArgs = maskInput->getParallelRenderArgsTLS();
-                        U64 maskHash = maskArgs.validArgs ? maskArgs.nodeHash : maskInput->getHash();
-                        Natron::StatusEnum stat = maskInput->getRegionOfDefinition_public(maskHash, args.time, args.scale, args.view, &maskRod, &isMaskProjectFormat);
-                        if (stat != eStatusOK && !maskRod.isNull()) {
-                            break;
-                        }
-                        
-                    }
-                }
-                
-                if (rod.contains(maskRod)) {
-                    tryIdentityOptim = true;
-                }
+            
+            EffectInstance* input = getInput(i);
+            if (!input) {
+                continue;
+            }
+            RectD inputRod;
+            bool isProjectFormat;
+            ParallelRenderArgs inputFrameArgs = input->getParallelRenderArgsTLS();
+            U64 inputHash = inputFrameArgs.validArgs ? inputFrameArgs.nodeHash : input->getHash();
+            Natron::StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
+            if (stat != eStatusOK && !inputRod.isNull()) {
                 break;
             }
+            if (!inputsIntersectionSet) {
+                inputsIntersection = inputRod;
+                inputsIntersectionSet = true;
+            } else {
+                if (!hasDifferentRods) {
+                    if (inputRod != inputsIntersection) {
+                        hasDifferentRods = true;
+                    }
+                }
+                inputsIntersection.intersect(inputRod, &inputsIntersection);
+            }
+        }
+        if (inputsIntersectionSet && hasDifferentRods) {
+            inputsIntersection.toPixelEnclosing(mipMapLevel, par, &inputsRoDIntersectionPixel);
+            tryIdentityOptim = true;
         }
         
     }
     
     if (tryIdentityOptim) {
-        optimizeRectsToRender(this, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
+        optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
     } else {
         for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it!=rectsLeftToRender.end(); ++it) {
             RectToRender r;
@@ -3022,7 +3039,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             
 
             if (tryIdentityOptim && !rectsLeftToRender.empty()) {
-                optimizeRectsToRender(this, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
+                optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
             } else {
                 for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it!=rectsLeftToRender.end(); ++it) {
                     RectToRender r;

@@ -2511,11 +2511,11 @@ RotoGui::penDown(double /*scaleX*/,
                 Natron::Point p;
                 p.x = pos.x();
                 p.y = pos.y();
+                _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
                 _imp->makeStroke(p, pressure);
                 _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
-                _imp->context->getNode()->getApp()->setUserIsPainting(true);
             }
             didSomething = true;
             break;
@@ -2912,7 +2912,7 @@ RotoGui::penMotion(double /*scaleX*/,
             p.x = pos.x();
             p.y = pos.y();
             if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure))) {
-                _imp->context->evaluateChange();
+                _imp->context->evaluateChange_noIncrement();
                 didSomething = true;
             }
         }
@@ -3001,7 +3001,7 @@ RotoGui::penUp(double /*scaleX*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
-        _imp->context->getNode()->getApp()->setUserIsPainting(false);
+        _imp->context->getNode()->getApp()->setUserIsPainting(boost::shared_ptr<Node>());
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->context->evaluateChange();

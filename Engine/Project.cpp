@@ -137,7 +137,7 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave)
 {
 
-    reset();
+    reset(false);
 
     try {
         QString realPath = path;
@@ -1390,14 +1390,14 @@ Project::autoSavesDir()
 void
 Project::resetProject()
 {
-    reset();
+    reset(false);
     if (!appPTR->isBackground()) {
         createViewer();
     }
 }
 
 void
-Project::reset()
+Project::reset(bool aboutToQuit)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -1433,27 +1433,30 @@ Project::reset()
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes(true);
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
-    beginChanges();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            knobs[i]->resetToDefaultValue(j);
+    if (!aboutToQuit) {
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+        
+        beginChanges();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+                knobs[i]->resetToDefaultValue(j);
+            }
         }
+        
+        
+        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
+        
+        endChanges(true);
     }
     
-    
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    
-    endChanges(true);
-
     _imp->projectClosing = false;
 }
-
-bool
-Project::isAutoSetProjectFormatEnabled() const
-{
-    QMutexLocker l(&_imp->formatMutex);
+    
+    bool
+    Project::isAutoSetProjectFormatEnabled() const
+    {
+        QMutexLocker l(&_imp->formatMutex);
     return _imp->autoSetProjectFormat;
 }
     

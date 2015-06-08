@@ -95,6 +95,7 @@ public:
     , textureRect()
     , srcPremult(Natron::eImagePremultiplicationOpaque)
     , bytesCount(0)
+    , depth()
     , gain(1.)
     , gamma(1.)
     , offset(0.)
@@ -130,6 +131,7 @@ public:
     TextureRect textureRect;
     Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
+    Natron::ImageBitDepthEnum depth;
     double gain;
     double gamma;
     double offset;
@@ -178,6 +180,8 @@ public:
     , lastRenderedHashValid(false)
     , gammaLookupMutex()
     , gammaLookup()
+    , lastRotoPaintTickParamsMutex()
+    , lastRotoPaintTickParams()
     , renderAgeMutex()
     , renderAge()
     , displayAge()
@@ -414,6 +418,10 @@ public:
     
     mutable QMutex gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
+    
+    //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
+    mutable QMutex lastRotoPaintTickParamsMutex;
+    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams;
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

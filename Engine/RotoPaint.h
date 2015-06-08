@@ -104,6 +104,9 @@ public:
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
+
+    RectD getLastPaintStrokeTickRoD() const;
+
 private:
 
     virtual Natron::StatusEnum

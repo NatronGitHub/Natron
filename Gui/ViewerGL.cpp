@@ -484,7 +484,7 @@ ViewerGL::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    bool useShader = getBitDepth() != OpenGLViewerI::eBitDepthByte && _imp->supportsGLSL;
+    bool useShader = getBitDepth() != Natron::eImageBitDepthByte && _imp->supportsGLSL;
 
     
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -2429,11 +2429,11 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    OpenGLViewerI::BitDepthEnum bd = getBitDepth();
+    Natron::ImageBitDepthEnum bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
-    if (bd == OpenGLViewerI::eBitDepthByte) {
+    if (bd == Natron::eImageBitDepthByte) {
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
-    } else if ( (bd == OpenGLViewerI::eBitDepthFloat) || (bd == OpenGLViewerI::eBitDepthHalf) ) {
+    } else if (bd == Natron::eImageBitDepthFloat) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
     }
@@ -2916,7 +2916,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
     }
     Format dispW = getDisplayWindow();
     RectD canonicalDispW = dispW.toCanonicalFormat();
-    if (!gui->getApp()->getIsUserPainting()) {
+    if (!gui->getApp()->getIsUserPainting().get()) {
         for (int i = 0; i < 2; ++i) {
             const RectD& rod = getRoD(i);
             updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
@@ -3630,8 +3630,9 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject && triggerRender) {
         fitImageToFormat();
-        if ( _imp->viewerTab->getInternalNode()) {
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+        ViewerInstance* node = _imp->viewerTab->getInternalNode();
+        if (node) {
+            node->renderCurrentFrame(false);
         }
     }
     
@@ -3848,18 +3849,15 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-OpenGLViewerI::BitDepthEnum
+Natron::ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {
     // MT-SAFE
     ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
     if (!_imp->supportsGLSL) {
-        return OpenGLViewerI::eBitDepthByte;
+        return Natron::eImageBitDepthByte;
     } else {
-        // FIXME: casting an int to an enum!
-
-        ///the bitdepth value is locked by the knob holding that value itself.
-        return (OpenGLViewerI::BitDepthEnum)appPTR->getCurrentSettings()->getViewersBitDepth();
+        return appPTR->getCurrentSettings()->getViewersBitDepth();
     }
 }
 

@@ -1121,7 +1121,7 @@ AppManager::loadInternal(const CLArgs& cl)
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
               _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
             try {
-                mainInstance->getProject()->closeProject();
+                mainInstance->getProject()->closeProject(true);
             } catch (std::logic_error) {
                 // ignore
             }

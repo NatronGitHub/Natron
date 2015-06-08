@@ -3050,7 +3050,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
             int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
             
             //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-            if (_imp->viewer->getNode()->isDuringPaintStrokeCreation()) {
+            if (_imp->viewer->getApp()->getIsUserPainting().get() != 0) {
                 maxThreads = 1;
             }
             if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {

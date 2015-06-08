@@ -293,7 +293,7 @@ public:
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     
-    ~ParallelRenderArgsSetter();
+    virtual ~ParallelRenderArgsSetter();
 };
 
 

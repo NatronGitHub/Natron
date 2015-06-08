@@ -497,8 +497,8 @@ Settings::initializeKnobs()
     textureModes.push_back("Byte");
     helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
                                       "by the CPU. As a results, the size of cached textures is smaller.");
-    textureModes.push_back("16bits half-float");
-    helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
+    //textureModes.push_back("16bits half-float");
+    //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
     textureModes.push_back("32bits floating-point");
     helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.");
@@ -1659,10 +1659,17 @@ Settings::onKnobValueChanged(KnobI* k,
                }
 } // onKnobValueChanged
 
-int
+Natron::ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
-    return _texturesMode->getValue();
+    int v = _texturesMode->getValue();
+    if (v == 0) {
+        return Natron::eImageBitDepthByte;
+    } else if (v == 1) {
+        return Natron::eImageBitDepthFloat;
+    } else {
+        return Natron::eImageBitDepthByte;
+    }
 }
 
 int

@@ -379,8 +379,8 @@ public:
     
     virtual bool isUserScrubbingSlider() const { return false; }
     
-    virtual void setUserIsPainting(bool /*painting*/) {}
-    virtual bool getIsUserPainting() const { return false; }
+    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/) {}
+    virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const { return boost::shared_ptr<Natron::Node>(); }
     
 public Q_SLOTS:
     

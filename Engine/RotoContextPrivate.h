@@ -1691,6 +1691,7 @@ struct RotoContextPrivate
                         const std::list<std::pair<Natron::Point,double> >& points,
                         double distToNext,
                         const RotoStrokeItem* stroke,
+                        bool doBuildup,
                         int time,
                         unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);

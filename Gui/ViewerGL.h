@@ -105,7 +105,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    OpenGLViewerI::BitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual Natron::ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.

@@ -624,7 +624,9 @@ public:
                                   bool isDuringPaintStrokeCreation,
                                   Natron::RenderSafetyEnum currentThreadSafety);
 
-    void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
+    void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
+
+    void setParallelRenderArgsTLS(const ParallelRenderArgs& args);
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false

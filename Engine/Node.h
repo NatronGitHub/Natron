@@ -377,10 +377,16 @@ public:
     
     void updateLastPaintStrokeData();
     void invalidateLastStrokeData();
+    
+    //Used by nodes below the rotopaint tree to optimize the RoI
+    void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
+    void invalidateLastPaintStrokeDataNoRotopaint();
+    
     void getPaintStrokeRoD(int time,RectD* bbox) const;
     bool isFirstPaintStrokeRenderTick() const;
     void updateLastPaintStrokeAge();
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
+    void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,

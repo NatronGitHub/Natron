@@ -136,6 +136,24 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     return Natron::eStatusOK;
 }
 
+RectD
+RotoPaint::getLastPaintStrokeTickRoD() const
+{
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getNode()->getRotoContext()->getCurvesByRenderOrder();
+    if (items.empty()) {
+        return RectD();
+    }
+    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+    RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
+    assert(firstStroke);
+    boost::shared_ptr<Node> bottomMerge = firstStroke->getMergeNode();
+    assert(bottomMerge);
+    RectD ret;
+    bottomMerge->getLastPaintStrokeRoD(&ret);
+    return ret;
+}
+
+
 class RotoPaintParallelArgsSetter
 {
     NodeList _nodes;
@@ -151,24 +169,22 @@ public:
                                 Natron::OutputEffectInstance* renderRequester,
                                 int textureIndex,
                                 const TimeLine* timeline,
-                                bool isAnalysis,
-                                bool duringPaintStroke)
+                                bool isAnalysis)
     : _nodes(nodes)
     {
         
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
-            (*it)->updateLastPaintStrokeData();
-            Natron::RenderSafetyEnum safety = duringPaintStroke ? Natron::eRenderSafetyInstanceSafe : liveInstance->renderThreadSafety();
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, duringPaintStroke, safety);
+            Natron::RenderSafetyEnum safety = liveInstance->renderThreadSafety();
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, false, safety);
         }
+
     }
     
     ~RotoPaintParallelArgsSetter()
     {
         for (NodeList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            (*it)->invalidateLastStrokeData();
             (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }
@@ -215,22 +231,25 @@ RotoPaint::render(const RenderActionArgs& args)
         const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
         RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
         assert(firstStroke);
-        boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();
+        boost::shared_ptr<Node> bottomMerge = firstStroke->getMergeNode();
         
         bool duringPaintStroke = bottomMerge->isDuringPaintStrokeCreation();
         
-        RotoPaintParallelArgsSetter frameArgs(rotoPaintNodes,
-                                              args.time,
-                                              args.view,
-                                              args.isRenderResponseToUserInteraction,
-                                              args.isSequentialRender,
-                                              false,
-                                              0, //render Age
-                                              0, // viewer requester
-                                              0, //texture index
-                                              getApp()->getTimeLine().get(),
-                                              false,
-                                              duringPaintStroke);
+        boost::shared_ptr<RotoPaintParallelArgsSetter> frameArgs;
+        if (!duringPaintStroke) {
+            //In the other case this is handled by the viewer TLS
+            frameArgs.reset(new RotoPaintParallelArgsSetter(rotoPaintNodes,
+                                                            args.time,
+                                                            args.view,
+                                                            args.isRenderResponseToUserInteraction,
+                                                            args.isSequentialRender,
+                                                            false,
+                                                            0, //render Age
+                                                            0, // viewer requester
+                                                            0, //texture index
+                                                            getApp()->getTimeLine().get(),
+                                                            false ));
+        }
         
         
         
@@ -264,7 +283,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
             return Natron::eStatusOK;
         }
-        
+        qDebug() << "Roi: " << args.roi.x1 << args.roi.y1 << args.roi.x2 << args.roi.y2;
         assert(rotoPaintImages.size() == args.outputPlanes.size());
         
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();

@@ -26,7 +26,9 @@
 #define FRAME_KEY_INTRODUCES_INPUT_NAME 2
 #define FRAME_KEY_INTRODUCES_LAYERS 3
 #define FRAME_KEY_INTRODUCES_GAMMA 4
-#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_GAMMA
+#define FRAME_KEY_CHANGES_BITDEPTH_ENUM 5
+#define FRAME_KEY_VERSION FRAME_KEY_CHANGES_BITDEPTH_ENUM
+
 template<class Archive>
 void
 Natron::FrameKey::serialize(Archive & ar,
@@ -40,6 +42,9 @@ Natron::FrameKey::serialize(Archive & ar,
     }
     ar & boost::serialization::make_nvp("Lut", _lut);
     ar & boost::serialization::make_nvp("BitDepth", _bitDepth);
+    if (version < FRAME_KEY_CHANGES_BITDEPTH_ENUM) {
+        _bitDepth += 1;
+    }
     ar & boost::serialization::make_nvp("Channels", _channels);
     ar & boost::serialization::make_nvp("View", _view);
     ar & boost::serialization::make_nvp("TextureRect", _textureRect);

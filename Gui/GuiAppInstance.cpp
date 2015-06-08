@@ -71,7 +71,7 @@ struct GuiAppInstancePrivate
     int overlayRedrawRequests;
     
     mutable QMutex userIsPaintingMutex;
-    bool userIsPainting;
+    boost::shared_ptr<Natron::Node> userIsPainting;
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -87,7 +87,7 @@ struct GuiAppInstancePrivate
     , declareAppAndParamsString()
     , overlayRedrawRequests(0)
     , userIsPaintingMutex()
-    , userIsPainting(false)
+    , userIsPainting()
     {
     }
     
@@ -1037,13 +1037,13 @@ GuiAppInstance::isUserScrubbingSlider() const
 }
 
 void
-GuiAppInstance::setUserIsPainting(bool painting)
+GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
 {
     QMutexLocker k(&_imp->userIsPaintingMutex);
-    _imp->userIsPainting = painting;
+    _imp->userIsPainting = rotopaintNode;
 }
 
-bool
+boost::shared_ptr<Natron::Node>
 GuiAppInstance::getIsUserPainting() const
 {
     QMutexLocker k(&_imp->userIsPaintingMutex);

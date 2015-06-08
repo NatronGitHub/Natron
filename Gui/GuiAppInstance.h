@@ -184,8 +184,8 @@ public:
     
     virtual bool isUserScrubbingSlider() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void setUserIsPainting(bool painting) OVERRIDE FINAL;
-    virtual bool getIsUserPainting() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode) OVERRIDE FINAL;
+    virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
 private:
 
