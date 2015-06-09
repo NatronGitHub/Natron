@@ -3140,3 +3140,24 @@ OfxEffectInstance::doesTemporalClipAccess() const
     return effectInstance()->temporalAccess();
 }
 
+bool
+OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+{
+    std::string defaultChannels = effectInstance()->getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
+    if (defaultChannels == kOfxImageComponentNone) {
+        return false;
+    }
+    if (defaultChannels == kOfxImageComponentRGBA) {
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    } else if (defaultChannels == kOfxImageComponentRGB) {
+        *defaultR = *defaultG = *defaultB = true;
+        *defaultA = false;
+    } else if (defaultChannels == kOfxImageComponentAlpha) {
+        *defaultR = *defaultG = *defaultB = false;
+        *defaultA = true;
+    } else {
+        qDebug() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    }
+    return true;
+}

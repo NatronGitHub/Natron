@@ -2274,6 +2274,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
                 std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
                 
+                
+                bool pluginDefaultPref[4];
+                bool useRGBACheckbox = _imp->liveInstance->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
                 boost::shared_ptr<Bool_Knob> foundEnabled[4];
                 for (int i = 0; i < 4; ++i) {
                     boost::shared_ptr<Bool_Knob> enabled;
@@ -2284,15 +2287,20 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         }
                     }
                 }
-                if (!foundEnabled[0] || !foundEnabled[1] || !foundEnabled[2] || !foundEnabled[3]) {
+#ifdef DEBUG
+                if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3] && useRGBACheckbox) {
+                    qDebug() << "WARNING: property" << kNatronOfxImageEffectPropChannelSelector << "was not set to" << kOfxImageComponentNone << "but plug-in uses its own checkboxes";
+                }
+#endif
+                if (useRGBACheckbox && (!foundEnabled[0] || !foundEnabled[1] || !foundEnabled[2] || !foundEnabled[3])) {
                     for (int i = 0; i < 4; ++i) {
                         foundEnabled[i] =  Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), channelLabels[i], 1, false);
                         foundEnabled[i]->setName(channelLabels[i]);
                         foundEnabled[i]->setAnimationEnabled(false);
                         foundEnabled[i]->setAddNewLine(i == 3);
-                        foundEnabled[i]->setDefaultValue(true);
+                        foundEnabled[i]->setDefaultValue(pluginDefaultPref[i]);
                         foundEnabled[i]->setHintToolTip(channelHints[i]);
-                        mainPage->addKnob(foundEnabled[i]);
+                        mainPage->insertKnob(i,foundEnabled[i]);
                     }
                 }
             }

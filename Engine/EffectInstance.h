@@ -1344,6 +1344,14 @@ public:
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
 
 
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+    {
+        *defaultR = true;
+        *defaultG = true;
+        *defaultB = true;
+        *defaultA = true;
+        return true;
+    }
 
 private:
 
