@@ -29,11 +29,6 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 
-unix:!macx {
-    # GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
-    LIBS +=  -lGLU
-}
-
 #System library is required on windows to map network share names from drive letters
 win32 {
     LIBS += mpr.lib
@@ -65,7 +60,11 @@ win32-msvc*{
         else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/debug/ -lGui
         else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Release/ -lGui
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Debug/ -lGui
-        else:unix: LIBS += -L$$OUT_PWD/../Gui/ -lGui
+        else:unix {
+            LIBS += -L$$OUT_PWD/../Gui/ -lGui
+            # GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
+            !macx: LIBS += -lGLU
+        }
 }
 INCLUDEPATH += $$PWD/../Gui
 DEPENDPATH += $$PWD/../Gui
