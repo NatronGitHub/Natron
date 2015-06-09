@@ -137,6 +137,7 @@ public:
 
     bool isPartOfGroup(DSNode *dsNode) const;
     DSNode *getGroupDSNode(DSNode *dsNode) const;
+    std::vector<DSNode *> getNodesFromGroup(DSNode *dsGroup) const;
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 

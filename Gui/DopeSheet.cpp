@@ -539,6 +539,27 @@ DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
     return parentGroupDSNode;
 }
 
+std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
+{
+    assert(dsGroup->getDSNodeType() == DSNode::GroupNodeType);
+
+    NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getNode()->getLiveInstance());
+    assert(nodeGroup);
+
+    std::vector<DSNode *> ret;
+
+    NodeList nodes = nodeGroup->getNodes();
+    for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodePtr childNode = (*it);
+
+        if (DSNode *isInDopeSheet = findDSNode(childNode.get())) {
+            ret.push_back(isInDopeSheet);
+        }
+    }
+
+    return ret;
+}
+
 bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
 {
     bool ret = true;
@@ -1371,6 +1392,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->helpersLayout->addStretch();
 
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
+    _imp->splitter->setHandleWidth(1);
 
     _imp->model = new DopeSheet(gui, timeline);
 

@@ -58,9 +58,7 @@ const int DISTANCE_ACCEPTANCE_FROM_KEYFRAME = 5;
 const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
 const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
 
-const QColor CLIP_OUTLINE_COLOR = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
-const QColor TIME_NODE_OUTLINE_COLOR = QColor::fromRgb(229, 205, 52);
-const QColor GROUP_OUTLINE_COLOR = QColor::fromRgb(229, 61, 52);
+const int NODE_SEPARATION_WIDTH = 4;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -112,7 +110,8 @@ class HierarchyViewItemDelegate : public QStyledItemDelegate
 public:
     explicit HierarchyViewItemDelegate(HierarchyView *hierarchyView);
 
-    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
+    virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+    virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
 
 private:
     HierarchyView *m_hierarchyView;
@@ -162,6 +161,24 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
     return itemSize;
 }
 
+void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    QTreeWidgetItem *item = m_hierarchyView->itemFromIndex(index);
+
+    QStyleOptionViewItemV4 newOpt = option;
+    initStyleOption(&newOpt, index);
+
+    painter->save();
+
+    QColor itemFontColor = (item->isSelected()) ? Qt::white : Qt::black;
+
+    painter->setFont(item->font(0));
+    painter->setPen(itemFontColor);
+    painter->drawText(option.rect, Qt::AlignVCenter, item->text(0));
+
+    painter->restore();
+}
+
 
 ////////////////////////// HierarchyView //////////////////////////
 
@@ -173,9 +190,10 @@ public:
 
     /* functions */
     void insertNodeItem(DSNode *dsNode);
-    void expandAndCheckKnobItems(DSNode *dsNode);
-    void putChildrenNodesAtTopLevel(DSNode *dsNode);
+    void checkNodeItem(DSNode *dsNode);
+    void processChildNodes(DSNode *dsNode);
 
+    DSNode *getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
     QTreeWidgetItem *getParentItem(QTreeWidgetItem *item) const;
     int indexInParent(QTreeWidgetItem *item) const;
     void moveChildTo(DSNode *child, DSNode *newParent);
@@ -185,6 +203,12 @@ public:
 
     void recursiveSelect(QTreeWidgetItem *item);
 
+    DSNode *itemBelowIsNode(QTreeWidgetItem *item) const;
+
+    // item painting
+    void drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const;
+
+    // keyframe selection
     void selectSelectedKeyframesItems(bool selected);
 
     void selectKeyframes(const QList<QTreeWidgetItem *> &items);
@@ -210,45 +234,52 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
     DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-    if (nodeType == DSNode::ReaderNodeType) {
-        DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode);
+    DSNode *isAffectedByTimeNode = model->getNearestTimeNodeFromOutputs(dsNode);
+    DSNode *isFromGroup = model->getGroupDSNode(dsNode);
 
-        if (nearestTimeNode) {
-            nearestTimeNode->getTreeItem()->insertChild(0, treeItem);
+    if (isAffectedByTimeNode) {
+        isAffectedByTimeNode->getTreeItem()->insertChild(0, treeItem);
+    }
+
+    if (isFromGroup) {
+        if (isAffectedByTimeNode) {
+            moveChildTo(isAffectedByTimeNode, isFromGroup);
         }
         else {
-            q_ptr->addTopLevelItem(treeItem);
-        }
-
-        treeItem->setExpanded(true);
-        expandAndCheckKnobItems(dsNode);
-    }
-    else if (dsNode->isTimeNode()) {
-        q_ptr->addTopLevelItem(treeItem);
-
-        treeItem->setExpanded(true);
-        expandAndCheckKnobItems(dsNode);
-
-        if (DSNode *nearestReader = model->findDSNode(model->getNearestReader(dsNode))) {
-            QTreeWidgetItem *nearestReaderTreeItem = nearestReader->getTreeItem();
-            QTreeWidgetItem *parentItem = getParentItem(nearestReaderTreeItem);
-
-            //TODO use moveChildTo function
-            nearestReaderTreeItem = parentItem->takeChild(indexInParent(nearestReaderTreeItem));
-            treeItem->insertChild(0, nearestReaderTreeItem);
-
-            expandAndCheckKnobItems(nearestReader);
+            isFromGroup->getTreeItem()->insertChild(0, treeItem);
         }
     }
-    else {
-        q_ptr->addTopLevelItem(treeItem);
 
-        treeItem->setExpanded(true);
-        expandAndCheckKnobItems(dsNode);
+    if (!isAffectedByTimeNode && !isFromGroup) {
+        q_ptr->addTopLevelItem(treeItem);
+    }
+
+    if (dsNode->isTimeNode()) {
+        std::vector<DSNode *> affectedNodes = model->getInputsConnected(dsNode);
+        for (std::vector<DSNode *>::const_iterator it = affectedNodes.begin();
+             it != affectedNodes.end();
+             ++it) {
+            DSNode *input = (*it);
+
+            moveChildTo(input, dsNode);
+            checkNodeItem(input);
+            input->getTreeItem()->setExpanded(true);
+        }
+    }
+    else if (nodeType == DSNode::GroupNodeType) {
+        std::vector<DSNode *> childNodes = model->getNodesFromGroup(dsNode);
+
+        for (std::vector<DSNode *>::const_iterator it = childNodes.begin(); it != childNodes.end(); ++it) {
+            DSNode *child = (*it);
+
+            moveChildTo(child, dsNode);
+            checkNodeItem(child);
+            child->getTreeItem()->setExpanded(true);
+        }
     }
 }
 
-void HierarchyViewPrivate::expandAndCheckKnobItems(DSNode *dsNode)
+void HierarchyViewPrivate::checkNodeItem(DSNode *dsNode)
 {
     DSKnobRow knobRows = dsNode->getChildData();
 
@@ -265,7 +296,7 @@ void HierarchyViewPrivate::expandAndCheckKnobItems(DSNode *dsNode)
     }
 }
 
-void HierarchyViewPrivate::putChildrenNodesAtTopLevel(DSNode *dsNode)
+void HierarchyViewPrivate::processChildNodes(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
@@ -278,12 +309,26 @@ void HierarchyViewPrivate::putChildrenNodesAtTopLevel(DSNode *dsNode)
             q_ptr->addTopLevelItem(itemToMove);
 
             itemToMove->setExpanded(true);
-            expandAndCheckKnobItems(nodeToMove);
+            checkNodeItem(nodeToMove);
         }
         else {
             break;
         }
     }
+}
+
+DSNode *HierarchyViewPrivate::getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode) const
+{
+    DSNode *dsNode = model->findDSNode(item);
+
+    if (!dsNode) {
+        dsNode = model->findParentDSNode(item);
+    }
+    else if (itemIsNode) {
+        *itemIsNode = true;
+    }
+
+    return dsNode;
 }
 
 QTreeWidgetItem *HierarchyViewPrivate::getParentItem(QTreeWidgetItem *item) const
@@ -300,23 +345,20 @@ int HierarchyViewPrivate::indexInParent(QTreeWidgetItem *item) const
 
 void HierarchyViewPrivate::moveChildTo(DSNode *child, DSNode *newParent)
 {
+    QTreeWidgetItem *newParentItem = newParent->getTreeItem();
+    assert(newParent && newParentItem);
+
     QTreeWidgetItem *childItem = child->getTreeItem();
-
     QTreeWidgetItem *currentParent = getParentItem(childItem);
-    currentParent->takeChild(indexInParent(childItem));
 
-    if (newParent) {
-        newParent->getTreeItem()->addChild(childItem);
-    }
-    else {
-        q_ptr->addTopLevelItem(childItem);
-    }
+    childItem = currentParent->takeChild(indexInParent(childItem));
+
+    newParentItem->insertChild(0, childItem);
 }
 
 void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
-    nodeGui->setVisibleSettingsPanel(true);
 
     bool showNode = nodeGui->isSettingsPanelVisible();
 
@@ -383,6 +425,41 @@ void HierarchyViewPrivate::recursiveSelect(QTreeWidgetItem *item)
 
             // /!\ recursion
             recursiveSelect(childItem);
+        }
+    }
+}
+
+DSNode *HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
+{
+    DSNode *ret = 0;
+
+    QTreeWidgetItem *itemBelow = q_ptr->itemBelow(item);
+
+    if (itemBelow) {
+        ret = model->findDSNode(itemBelow);
+    }
+
+    return ret;
+}
+
+void HierarchyViewPrivate::drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const
+{
+    std::string iconFilePath = dsNode->getNode()->getPluginIconFilePath();
+
+    if (!iconFilePath.empty()) {
+        QPixmap pix;
+
+        if (pix.load(iconFilePath.c_str())) {
+            pix = pix.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2, NATRON_MEDIUM_BUTTON_SIZE - 2,
+                             Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+            QRect pluginIconRect = rowRect;
+            pluginIconRect.setSize(pix.size());
+            pluginIconRect.moveRight(rowRect.right() - 2);
+            pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
+                                             rowRect.center().y()));
+
+            p->drawPixmap(pluginIconRect, pix);
         }
     }
 }
@@ -474,6 +551,8 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
     setExpandsOnDoubleClick(false);
 
     setItemDelegate(new HierarchyViewItemDelegate(this));
+
+    setStyleSheet("HierarchyView { border: 0px; }");
 }
 
 HierarchyView::~HierarchyView()
@@ -504,6 +583,7 @@ DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
 void HierarchyView::onNodeAdded(DSNode *dsNode)
 {
     _imp->insertNodeItem(dsNode);
+    _imp->checkNodeItem(dsNode);
 
     dsNode->getTreeItem()->setExpanded(true);
 }
@@ -514,7 +594,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     bool isTopLevelItem = !treeItem->parent();
 
     if (isTopLevelItem) {
-        _imp->putChildrenNodesAtTopLevel(dsNode);
+        _imp->processChildNodes(dsNode);
     }
 }
 
@@ -525,7 +605,7 @@ void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
 
 void HierarchyView::onNodeSettingsPanelOpened(DSNode *dsNode)
 {
-    _imp->expandAndCheckKnobItems(dsNode);
+    _imp->checkNodeItem(dsNode);
 }
 
 void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
@@ -609,37 +689,68 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    QTreeWidget::drawRow(painter, option, index);
-
     QTreeWidgetItem *item = itemFromIndex(index);
-
     QRect rowRect = option.rect;
 
-    // Draw the plugin icon
+    // Draw row
     {
-        DSNode *dsNode = _imp->model->findDSNode(item);
+        painter->save();
 
-        if (dsNode) {
-            std::string iconFilePath = dsNode->getNode()->getPluginIconFilePath();
+        bool drawPluginIconToo = false;
 
-            if (!iconFilePath.empty()) {
-                QPixmap pix;
+        DSNode *dsNode = _imp->getDSNodeFromItem(item, &drawPluginIconToo);
 
-                if (pix.load(iconFilePath.c_str())) {
-                    pix = pix.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2, NATRON_MEDIUM_BUTTON_SIZE - 2,
-                                     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
 
-                    QRect pluginIconRect = rowRect;
-                    pluginIconRect.setSize(pix.size());
-                    pluginIconRect.moveRight(rowRect.right() - 2);
-                    pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
-                                                     rowRect.center().y()));
+        painter->fillRect(rowRect, fillColor);
 
-                    painter->drawPixmap(pluginIconRect, pix);
-                }
-            }
+        // Draw the plugin icon
+        if (drawPluginIconToo) {
+            _imp->drawPluginIcon(painter, dsNode, rowRect);
         }
+
+        QTreeWidget::drawRow(painter, option, index);
+
+        // Draw half-separation at node item top
+        if (drawPluginIconToo) {
+            int lineWidth = (NODE_SEPARATION_WIDTH / 2);
+
+            QPen pen(Qt::black);
+            pen.setWidth(lineWidth);
+
+            painter->setPen(pen);
+            painter->drawLine(rect().left(), rowRect.top() + lineWidth - 1,
+                              rowRect.right(), rowRect.top() + lineWidth - 1);
+        }
+
+        // And draw the other half at last item
+        /* We use this trick because of the artifacts that appear if the
+        painter draw something outside its rect */
+        if (_imp->itemBelowIsNode(item)) {
+            int lineWidth = (NODE_SEPARATION_WIDTH / 2);
+
+            QPen pen(Qt::black);
+            pen.setWidth(lineWidth);
+
+            painter->setPen(pen);
+
+            painter->drawLine(rect().left(), rowRect.bottom() - lineWidth + 2,
+                              rowRect.right(), rowRect.bottom() - lineWidth + 2);
+        }
+
+        painter->restore();
     }
+
+}
+
+void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
+{
+    QTreeWidgetItem *item = itemFromIndex(index);
+    DSNode *dsNode = _imp->getDSNodeFromItem(item);
+
+    QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+
+    painter->fillRect(rect, fillColor);
 }
 
 
@@ -717,7 +828,7 @@ public:
     void drawNodeRow(const DSNode *dsNode) const;
     void drawKnobRow(const DSKnob *dsKnob) const;
 
-    void drawRowSeparation(const DSNode *dsNode) const;
+    void drawNodeRowSeparation(const DSNode *dsNode) const;
 
     void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
@@ -1360,8 +1471,14 @@ void DopeSheetViewPrivate::drawRows() const
             if (nodeType != DSNode::GroupNodeType) {
                 drawKeyframes(dsNode);
             }
+        }
 
-            drawRowSeparation(dsNode);
+        // Draw node rows separations
+        for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
+             it != treeItemsAndDSNodes.end();
+             ++it) {
+            DSNode *dsNode = (*it).second;
+            drawNodeRowSeparation(dsNode);
         }
     }
 }
@@ -1399,6 +1516,10 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
  */
 void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
 {
+    if (dsKnob->getTreeItem()->isHidden()) {
+        return;
+    }
+
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -1430,7 +1551,6 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
             QRectF nameChildItemRect = hierarchyView->getItemRectForDim(dsKnob, i);
             QRectF childrowRect = nameItemRectToRowRect(nameChildItemRect);
 
-            // Draw child row
             glBegin(GL_POLYGON);
             glVertex2f(childrowRect.left(), childrowRect.top());
             glVertex2f(childrowRect.left(), childrowRect.bottom());
@@ -1454,27 +1574,23 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
         glVertex2f(rowRect.right(), rowRect.bottom());
         glVertex2f(rowRect.right(), rowRect.top());
         glEnd();
-
     }
 }
 
-void DopeSheetViewPrivate::drawRowSeparation(const DSNode *dsNode) const
+void DopeSheetViewPrivate::drawNodeRowSeparation(const DSNode *dsNode) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
 
     QRectF nameItemRect = hierarchyView->getItemRect(dsNode);
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
-    int lineWidth = (dsNode->getDSNodeType() == DSNode::GroupNodeType) ? 5 : 3;
-
-    glLineWidth(lineWidth);
+    glLineWidth(NODE_SEPARATION_WIDTH);
     glColor4f(0.f, 0.f, 0.f, 1.f);
 
     glBegin(GL_LINES);
     glVertex2f(rowRect.left(), rowRect.top());
     glVertex2f(rowRect.right(), rowRect.top());
     glEnd();
-
 }
 
 void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
@@ -1488,7 +1604,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         QRectF clipRectZoomCoords = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                  QPointF(range.second, treeItemRect.bottom() + 1)));
 
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_LINE_BIT);
+        GLProtectAttrib a(GL_CURRENT_BIT);
+
+        QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+        fillColor = QColor::fromHsl(fillColor.hslHue(), 50, fillColor.lightness());
 
         // If necessary, draw the original frame range line
         if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
@@ -1520,43 +1639,40 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 
             float clipRectCenterY = clipRectZoomCoords.center().y();
 
+            GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
             glLineWidth(1);
+
+            glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
             glBegin(GL_LINES);
             glVertex2f(lineBegin, clipRectCenterY);
-//            glVertex2f(clipRectZoomCoords.left(), clipRectCenterY);
-
-//            glVertex2f(clipRectZoomCoords.right(), clipRectCenterY);
             glVertex2f(lineEnd, clipRectCenterY);
             glEnd();
         }
 
         // Fill the range rect
-        QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
-        fillColor = QColor::fromHsl(fillColor.hslHue(), 50, fillColor.lightness());
-
         glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
         glBegin(GL_POLYGON);
         glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.top());
-        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 2);
-        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 2);
+        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 1);
+        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 1);
         glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
         glEnd();
     }
 
-        // Draw the outline
-//        glLineWidth(2);
+    // Draw the outline
+    //        glLineWidth(2);
 
-////        glColor4f(bkColorR, bkColorG, bkColorB, 1.f);
+    ////        glColor4f(bkColorR, bkColorG, bkColorB, 1.f);
 
-//        glBegin(GL_LINE_LOOP);
-//        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.top());
-//        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 2);
-//        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 2);
-//        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
-//        glEnd();
-//    }
+    //        glBegin(GL_LINE_LOOP);
+    //        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.top());
+    //        glVertex2f(clipRectZoomCoords.left(), clipRectZoomCoords.bottom() + 2);
+    //        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.bottom() + 2);
+    //        glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
+    //        glEnd();
+    //    }
 
     // Draw the preview
     //    {
@@ -1593,6 +1709,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
     //        }
     //    }
 }
+
 
 /**
  * @brief DopeSheetViewPrivate::drawKeyframes
@@ -3215,6 +3332,7 @@ void DopeSheetView::paintGL()
         glClear(GL_COLOR_BUFFER_BIT);
 
         _imp->drawScale();
+        _imp->drawProjectBounds();
         _imp->drawRows();
 
         if (_imp->eventState == DopeSheetView::esSelectionByRect) {
@@ -3225,7 +3343,6 @@ void DopeSheetView::paintGL()
             _imp->drawSelectedKeysBRect();
         }
 
-        _imp->drawProjectBounds();
         _imp->drawCurrentFrameIndicator();
     }
 }

@@ -69,7 +69,8 @@ private Q_SLOTS:
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 protected:
-    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+    virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
 
 private:
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
