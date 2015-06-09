@@ -726,7 +726,11 @@ namespace Natron {
         
         
         
-        void copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        void copyUnProcessedChannels(const RectI& roi,
+                                     Natron::ImagePremultiplicationEnum outputPremult,
+                                     Natron::ImagePremultiplicationEnum originalImagePremult,
+                                     const bool* processChannels,
+                                     const boost::shared_ptr<Image>& originalImage);
 
         /**
          * @brief returns true if image contains NaNs or infinite values, and fix them.

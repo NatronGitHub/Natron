@@ -136,23 +136,6 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     return Natron::eStatusOK;
 }
 
-RectD
-RotoPaint::getLastPaintStrokeTickRoD() const
-{
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getNode()->getRotoContext()->getCurvesByRenderOrder();
-    if (items.empty()) {
-        return RectD();
-    }
-    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-    RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
-    assert(firstStroke);
-    boost::shared_ptr<Node> bottomMerge = firstStroke->getMergeNode();
-    assert(bottomMerge);
-    RectD ret;
-    bottomMerge->getLastPaintStrokeRoD(&ret);
-    return ret;
-}
-
 
 class RotoPaintParallelArgsSetter
 {
@@ -283,7 +266,6 @@ RotoPaint::render(const RenderActionArgs& args)
             }
             return Natron::eStatusOK;
         }
-        qDebug() << "Roi: " << args.roi.x1 << args.roi.y1 << args.roi.x2 << args.roi.y2;
         assert(rotoPaintImages.size() == args.outputPlanes.size());
         
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();

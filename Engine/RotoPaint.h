@@ -105,7 +105,6 @@ public:
 
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
-    RectD getLastPaintStrokeTickRoD() const;
 
 private:
 

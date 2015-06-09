@@ -1659,7 +1659,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
         const PIX * const srcLineStart = src;
         PIX * const dstLineBatchStart = dst;
-        ycount = scale + yo - yi * scale; // how many lines should be filled
+        ycount = scale - (yo - yi * scale); // how many lines should be filled
         ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
         int xi = srcRoi.x1;
@@ -3286,7 +3286,11 @@ Image::copyUnProcessedChannelsForDepth(bool premult,
 }
 
 void
-Image::copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const ImagePtr& originalImage)
+Image::copyUnProcessedChannels(const RectI& roi,
+                               Natron::ImagePremultiplicationEnum outputPremult,
+                               Natron::ImagePremultiplicationEnum originalImagePremult,
+                               const bool* processChannels,
+                               const ImagePtr& originalImage)
 {
     int numComp = getComponents().getNumComponents();
     if (originalImage && getMipMapLevel() != originalImage->getMipMapLevel()) {

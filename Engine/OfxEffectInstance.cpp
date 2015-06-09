@@ -1173,13 +1173,13 @@ clipPrefsProxy(OfxEffectInstance* self,
         assert(foundClipPrefs != clipPrefs.end());
         
         ///Set the clip to have the same components as the output components if it is supported
-        if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+        /*if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
             ///we only take into account non mask clips for the most components
             if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
                 foundClipPrefs->second.components = foundOutputPrefs->second.components;
                 hasChanged = true;
             }
-        }
+        }*/
         
         if (instance) {
             
@@ -3140,3 +3140,24 @@ OfxEffectInstance::doesTemporalClipAccess() const
     return effectInstance()->temporalAccess();
 }
 
+bool
+OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+{
+    std::string defaultChannels = effectInstance()->getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
+    if (defaultChannels == kOfxImageComponentNone) {
+        return false;
+    }
+    if (defaultChannels == kOfxImageComponentRGBA) {
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    } else if (defaultChannels == kOfxImageComponentRGB) {
+        *defaultR = *defaultG = *defaultB = true;
+        *defaultA = false;
+    } else if (defaultChannels == kOfxImageComponentAlpha) {
+        *defaultR = *defaultG = *defaultB = false;
+        *defaultA = true;
+    } else {
+        qDebug() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    }
+    return true;
+}

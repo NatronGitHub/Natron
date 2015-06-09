@@ -5084,10 +5084,13 @@ RotoStrokeItem::setStrokeFinished()
         _imp->frameHoldNode->setWhileCreatingPaintStroke(false);
         _imp->frameHoldNode->incrementKnobsAge();
     }
+    
+    getContext()->setStrokeBeingPainted(boost::shared_ptr<RotoStrokeItem>());
     getContext()->getNode()->setWhileCreatingPaintStroke(false);
     getContext()->clearViewersLastRenderedStrokes();
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();
+    
 }
 
 
@@ -5636,6 +5639,20 @@ RotoContext::isRotoPaint() const
 }
 
 void
+RotoContext::setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke)
+{
+    QMutexLocker k(&_imp->rotoContextMutex);
+    _imp->strokeBeingPainted = stroke;
+}
+
+boost::shared_ptr<RotoStrokeItem>
+RotoContext::getStrokeBeingPainted() const
+{
+    QMutexLocker k(&_imp->rotoContextMutex);
+    return _imp->strokeBeingPainted;
+}
+
+void
 RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false);
@@ -5959,6 +5976,7 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
         parentLayer->insertItem(curve,0);
     }
     curve->attachStrokeToNodes();
+    _imp->strokeBeingPainted = curve;
     
     _imp->lastInsertedItem = curve;
     
@@ -7013,6 +7031,12 @@ RotoContext::evaluateChange()
 void
 RotoContext::evaluateChange_noIncrement()
 {
+    //Used for the rotopaint to optimize the portion to render (the last tick of the mouse move)
+    std::list<Node*> outputs;
+    for (std::list<Node*>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        (*it)->incrementKnobsAge();
+    }
+    
     std::list<ViewerInstance* > viewers;
     getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
@@ -7020,8 +7044,8 @@ RotoContext::evaluateChange_noIncrement()
          ++it) {
         (*it)->renderCurrentFrame(true);
     }
-    
 }
+
 
 void
 RotoContext::clearViewersLastRenderedStrokes()
@@ -7439,6 +7463,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
     
     bool copyFromImage = false;
+    bool mipMapLevelChanged = false;
     if (!source) {
         source.reset(new Natron::Image(components,
                                     pointsBbox,
@@ -7450,6 +7475,8 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     } else {
         
         if ((*image)->getMipMapLevel() > mipmapLevel) {
+            
+            mipMapLevelChanged = true;
             
             RectD otherRoD = (*image)->getRoD();
             RectI oldBounds;
@@ -7471,7 +7498,8 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             (*image)->upscaleMipMap(oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get());
             *image = source;
         } else if ((*image)->getMipMapLevel() < mipmapLevel) {
-            
+            mipMapLevelChanged = true;
+        
             RectD otherRoD = (*image)->getRoD();
             RectI oldBounds;
             otherRoD.toPixelEnclosing((*image)->getMipMapLevel(), par, &oldBounds);
@@ -7566,6 +7594,9 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     }
     
     std::vector<cairo_pattern_t*> dotPatterns = stroke->getPatternCache();
+    if (mipMapLevelChanged) {
+        dotPatterns.clear();
+    }
     if (dotPatterns.empty()) {
         dotPatterns.resize(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {

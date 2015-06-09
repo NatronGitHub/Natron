@@ -54,7 +54,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
-//#define ROTO_ENABLE_PAINT
+#define ROTO_ENABLE_PAINT
 
 namespace Natron {
 class Image;
@@ -1414,6 +1414,9 @@ public:
     void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
         
     void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    
+    void setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke);
+    boost::shared_ptr<RotoStrokeItem> getStrokeBeingPainted() const;
     
 Q_SIGNALS:
 
