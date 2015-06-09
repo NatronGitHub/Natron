@@ -158,10 +158,6 @@ unix {
      } else {
          cairo:     PKGCONFIG += cairo
      }
-     !macx {
-     # don't uncomment: GLU should only be linked for GUI applications (it brings X11)! add it only for GUI apps if necessary.
-     #    LIBS +=  -lGLU
-     }
 
      # User may specify an alternate python3-config from the command-line,
      # as in "qmake PYTHON_CONFIG=python3.4-config" (MacPorts doesn't have a python3-config)

@@ -29,6 +29,11 @@ INCLUDEPATH += $$PWD/../libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 
+unix:!macx {
+    # GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
+    LIBS +=  -lGLU
+}
+
 #System library is required on windows to map network share names from drive letters
 win32 {
     LIBS += mpr.lib
