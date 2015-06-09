@@ -113,34 +113,33 @@ win32 {
 }
 
 win32-msvc* {
+    CONFIG(64bit){
+        message("Compiling for architecture x86 64 bits")
+        Release:DESTDIR = x64/release
+        Release:OBJECTS_DIR = x64/release/.obj
+        Release:MOC_DIR = x64/release/.moc
+        Release:RCC_DIR = x64/release/.rcc
+        Release:UI_DIR = x64/release/.ui
 
-CONFIG(64bit){
-	message("Compiling for architecture x86 64 bits")
-	Release:DESTDIR = x64/release
-	Release:OBJECTS_DIR = x64/release/.obj
-	Release:MOC_DIR = x64/release/.moc
-	Release:RCC_DIR = x64/release/.rcc
-	Release:UI_DIR = x64/release/.ui
-	
-	Debug:DESTDIR = x64/debug
-	Debug:OBJECTS_DIR = x64/debug/.obj
-	Debug:MOC_DIR = x64/debug/.moc
-	Debug:RCC_DIR = x64/debug/.rcc
-	Debug:UI_DIR = x64/debug/.ui
-} else {
-	message("Compiling for architecture x86 32 bits")
-	Release:DESTDIR = win32/release
-	Release:OBJECTS_DIR = win32/release/.obj
-	Release:MOC_DIR = win32/release/.moc
-	Release:RCC_DIR = win32/release/.rcc
-	Release:UI_DIR = win32/release/.ui
-	
-	Debug:DESTDIR = win32/debug
-	Debug:OBJECTS_DIR = win32/debug/.obj
-	Debug:MOC_DIR = win32/debug/.moc
-	Debug:RCC_DIR = win32/debug/.rcc
-	Debug:UI_DIR = win32/debug/.ui
-}
+        Debug:DESTDIR = x64/debug
+        Debug:OBJECTS_DIR = x64/debug/.obj
+        Debug:MOC_DIR = x64/debug/.moc
+        Debug:RCC_DIR = x64/debug/.rcc
+        Debug:UI_DIR = x64/debug/.ui
+    } else {
+        message("Compiling for architecture x86 32 bits")
+        Release:DESTDIR = win32/release
+        Release:OBJECTS_DIR = win32/release/.obj
+        Release:MOC_DIR = win32/release/.moc
+        Release:RCC_DIR = win32/release/.rcc
+        Release:UI_DIR = win32/release/.ui
+
+        Debug:DESTDIR = win32/debug
+        Debug:OBJECTS_DIR = win32/debug/.obj
+        Debug:MOC_DIR = win32/debug/.moc
+        Debug:RCC_DIR = win32/debug/.rcc
+        Debug:UI_DIR = win32/debug/.ui
+    }
 }
 
 unix {
@@ -149,12 +148,19 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
-     cairo:     PKGCONFIG += cairo
-     !macx {
-         LIBS +=  -lGLU
-     }
-     linux {
+     linux-* {
+         # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
+         cairo {
+             PKGCONFIG += pixman-1 freetype2 fontconfig
+             LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
+         }
          LIBS += -ldl
+     } else {
+         cairo:     PKGCONFIG += cairo
+     }
+     !macx {
+     # don't uncomment: GLU should only be linked for GUI applications (it brings X11)! add it only for GUI apps if necessary.
+     #    LIBS +=  -lGLU
      }
 
      # User may specify an alternate python3-config from the command-line,
