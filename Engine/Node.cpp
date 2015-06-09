@@ -2287,6 +2287,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         }
                     }
                 }
+                if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3]) {
+                    _imp->enabledChan[0] = foundEnabled[0];
+                    _imp->enabledChan[1] = foundEnabled[1];
+                    _imp->enabledChan[2] = foundEnabled[2];
+                    _imp->enabledChan[3] = foundEnabled[3];
+                }
 #ifdef DEBUG
                 if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3] && useRGBACheckbox) {
                     qDebug() << "WARNING: property" << kNatronOfxImageEffectPropChannelSelector << "was not set to" << kOfxImageComponentNone << "but plug-in uses its own checkboxes";
@@ -2301,6 +2307,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         foundEnabled[i]->setDefaultValue(pluginDefaultPref[i]);
                         foundEnabled[i]->setHintToolTip(channelHints[i]);
                         mainPage->insertKnob(i,foundEnabled[i]);
+                        _imp->enabledChan[i] = foundEnabled[i];
                     }
                 }
             }
@@ -5292,6 +5299,7 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
     int chanIndex = getMaskChannel(inputNb,layer);
+    bool hasChannelSelector = false;
     if (chanIndex != -1) {
         
         *isAll = false;
@@ -5308,32 +5316,27 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
             foundSelector = _imp->channelsSelectors.find(-1);
         }
         if (foundSelector == _imp->channelsSelectors.end()) {
-            processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
-            return false;
+            hasChannelSelector = false;
         }
     }
-    
-    *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
+    if (hasChannelSelector) {
+        *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
+    } else {
+        *isAll = false;
+    }
     if (_imp->enabledChan[0].lock()) {
         processChannels[0] = _imp->enabledChan[0].lock()->getValue();
         processChannels[1] = _imp->enabledChan[1].lock()->getValue();
         processChannels[2] = _imp->enabledChan[2].lock()->getValue();
         processChannels[3] = _imp->enabledChan[3].lock()->getValue();
     } else {
-        int numChans = layer->getNumComponents();
         processChannels[0] = true;
-        if (numChans > 1) {
-            processChannels[1] = true;
-            if (numChans > 2) {
-                processChannels[2] = true;
-                if (numChans > 3) {
-                    processChannels[3] = true;
-                }
-            }
-        }
+        processChannels[1] = true;
+        processChannels[2] = true;
+        processChannels[3] = true;
     }
  
-    return true;
+    return hasChannelSelector;
 
 }
 
