@@ -3324,7 +3324,11 @@ Image::copyUnProcessedChannelsForDepth(const RectI& roi,const bool* processChann
 }
 
 void
-Image::copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const ImagePtr& originalImage)
+Image::copyUnProcessedChannels(const RectI& roi,
+                               Natron::ImagePremultiplicationEnum outputPremult,
+                               Natron::ImagePremultiplicationEnum originalImagePremult,
+                               const bool* processChannels,
+                               const ImagePtr& originalImage)
 {
     int numComp = getComponents().getNumComponents();
     if (originalImage && getMipMapLevel() != originalImage->getMipMapLevel()) {

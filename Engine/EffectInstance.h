@@ -1211,8 +1211,9 @@ public:
         std::list<RectToRender> rectsToRender;
         std::map<Natron::ImageComponents, PlaneToRender> planes;
         bool isBeingRenderedElsewhere;
+        Natron::ImagePremultiplicationEnum outputPremult;
+        std::map<int,Natron::ImagePremultiplicationEnum> inputPremult;
         
-    
         ImagePlanesToRender()
         : rectsToRender(), planes(), isBeingRenderedElsewhere(false)
         {
@@ -1696,6 +1697,7 @@ private:
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels,
                                           const boost::shared_ptr<Natron::Image>& originalInputImage,
+                                          Natron::ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender& planes);
 
     /**

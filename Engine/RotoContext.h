@@ -54,7 +54,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
-//#define ROTO_ENABLE_PAINT
+#define ROTO_ENABLE_PAINT
 
 namespace Natron {
 class Image;
