@@ -3013,22 +3013,22 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
                     dst_pixels[c] = 0; \
                 } else if (premult) { \
                     if (doA) { \
-                        dst_pixels[c] = src_pixels[c]; /* dst will have same alpha as src */ \
+                        dst_pixels[c] = src_pixels[c]; /* dst will have same alpha as src, just copy src */ \
                     } else { \
-                        dst_pixels[c] = (src_pixels[c] / (float)srcA) * dst_pixels[srcNComps - 1]; \
+                        dst_pixels[c] = (src_pixels[c] / (float)srcA) * dst_pixels[srcNComps - 1]; /* dst keeps its alpha, unpremult src and repremult */ \
                     } \
                 } else { \
-                    dst_pixels[c] = (src_pixels[c] / (float)srcA) * maxValue; /* dst is not premultiplied */ \
+                    dst_pixels[c] = (src_pixels[c] / (float)srcA) * maxValue; /* dst is not premultiplied, unpremult src */ \
                 } \
             } else { \
                 if (premult) { \
                     if (doA) { \
-                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * srcA; /* dst will have same alpha as src */ \
+                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * srcA; /* dst will have same alpha as src, just premult src with its alpha */ \
                     } else { \
-                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * dst_pixels[srcNComps - 1]; \
+                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * dst_pixels[srcNComps - 1]; /* dst keeps its alpha, premult src with dst's alpha */ \
                     } \
                 } else { \
-                    dst_pixels[c] = src_pixels[c]; /* dst is not premultiplied */ \
+                    dst_pixels[c] = src_pixels[c]; /* neither src nor dst is not premultiplied */ \
                 } \
             } \
 
@@ -3042,7 +3042,6 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
                 DOCHANNEL(2);
             }
             if (doA) {
-                PIX dstA;
                 if (premult) {
                     PIX dstAorig = 0;
                     if (dstNComps == 1 || dstNComps == 4) {
@@ -3321,18 +3320,17 @@ Image::copyUnProcessedChannels(const RectI& roi,
     RectI intersected;
     roi.intersect(_bounds, &intersected);
 
-#pragma message WARN("set premult from actual src and dst")
-    bool originalPremult = true;
-    bool premult = true;
+    bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
+    bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
     switch (getBitDepth()) {
         case eImageBitDepthByte:
-            copyUnProcessedChannelsForDepth<unsigned char>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
+            copyUnProcessedChannelsForDepth<unsigned char, 255>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
             break;
         case eImageBitDepthShort:
-            copyUnProcessedChannelsForDepth<unsigned short>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
+            copyUnProcessedChannelsForDepth<unsigned short, 65535>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
             break;
         case eImageBitDepthFloat:
-            copyUnProcessedChannelsForDepth<float>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
+            copyUnProcessedChannelsForDepth<float, 1>(premult, roi, doR, doG, doB, doA, originalImage, originalPremult);
             break;
         default:
             return;
