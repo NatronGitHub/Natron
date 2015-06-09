@@ -2367,7 +2367,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, args[i].get());
+            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, NodePtr(), args[i].get());
         }
        
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
@@ -2389,7 +2389,7 @@ private:
         
         if ((args[0] && status[0] != eStatusFailed) || (args[1] && status[1] != eStatusFailed)) {
             try {
-                stat = _viewer->renderViewer(view,false,true,viewerHash,true,args);
+                stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), args);
             } catch (...) {
                 stat = eStatusFailed;
             }
@@ -2753,7 +2753,13 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     
     BufferableObjectList ret;
     try {
-        stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,args.args);
+        if (!args.isRotoPaintRequest) {
+            stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,
+                                             NodePtr(),args.args);
+        } else {
+            stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest,
+                                                             &args.args[0],&args.args[1]);
+        }
     } catch (...) {
         stat = eStatusFailed;
     }
@@ -2990,76 +2996,84 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
     }
+    
+    NodePtr isUserRotopainting = _imp->viewer->getApp()->getIsUserPainting();
     boost::shared_ptr<ViewerArgs> args[2];
-    for (int i = 0; i < 2; ++i) {
-        args[i].reset(new ViewerArgs);
-        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash, args[i].get());
-    }
-    
-    if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
-        _imp->viewer->disconnectViewer();
-        return;
-    } else if (status[0] == eStatusReplyDefault && status[1] == eStatusReplyDefault) {
-        _imp->viewer->redrawViewer();
-        return;
-    }
-    
-    for (int i = 0; i < 2 ; ++i) {
-        if (args[i]->params && args[i]->params->ramBuffer) {
-            _imp->viewer->updateViewer(args[i]->params);
-            args[i].reset();
+    if (!isUserRotopainting) {
+        for (int i = 0; i < 2; ++i) {
+            args[i].reset(new ViewerArgs);
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash,isUserRotopainting, args[i].get());
         }
-    }
-    if ((!args[0] && !args[1]) ||
-        (!args[0] && status[0] == eStatusOK && args[1] && status[1] == eStatusFailed) ||
-        (!args[1] && status[1] == eStatusOK && args[0] && status[0] == eStatusFailed)) {
-        _imp->viewer->redrawViewer();
+        
+        if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+            _imp->viewer->disconnectViewer();
+            return;
+        } else if (status[0] == eStatusReplyDefault && status[1] == eStatusReplyDefault) {
+            _imp->viewer->redrawViewer();
+            return;
+        }
+        
+        for (int i = 0; i < 2 ; ++i) {
+            if (args[i]->params && args[i]->params->ramBuffer) {
+                _imp->viewer->updateViewer(args[i]->params);
+                args[i].reset();
+            }
+        }
+        if ((!args[0] && !args[1]) ||
+            (!args[0] && status[0] == eStatusOK && args[1] && status[1] == eStatusFailed) ||
+            (!args[1] && status[1] == eStatusOK && args[0] && status[0] == eStatusFailed)) {
+            _imp->viewer->redrawViewer();
+            return;
+        }
     } else {
         
-        CurrentFrameFunctorArgs functorArgs;
-        functorArgs.viewer = _imp->viewer;
-        functorArgs.view = view;
-        functorArgs.args[0] = args[0];
-        functorArgs.args[1] = args[1];
-        functorArgs.viewerHash = viewerHash;
-        functorArgs.scheduler = _imp.get();
-        functorArgs.request = 0;
-        functorArgs.canAbort = canAbort;
-        
-        if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-            renderCurrentFrameFunctor(functorArgs);
-        } else {
-            RequestedFrame *request = new RequestedFrame;
-            request->id = 0;
-            {
-                QMutexLocker k(&_imp->requestsQueueMutex);
-                _imp->requestsQueue.push_back(request);
-                
-                if (isRunning()) {
-                    _imp->requestsQueueNotEmpty.wakeOne();
-                } else {
-                    start();
-                }
-            }
-            functorArgs.request = request;
+    }
+    CurrentFrameFunctorArgs functorArgs;
+    functorArgs.viewer = _imp->viewer;
+    functorArgs.time = frame;
+    functorArgs.view = view;
+    functorArgs.args[0] = args[0];
+    functorArgs.args[1] = args[1];
+    functorArgs.viewerHash = viewerHash;
+    functorArgs.scheduler = _imp.get();
+    functorArgs.request = 0;
+    functorArgs.canAbort = canAbort;
+    functorArgs.isRotoPaintRequest = isUserRotopainting;
+    
+    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
+        renderCurrentFrameFunctor(functorArgs);
+    } else {
+        RequestedFrame *request = new RequestedFrame;
+        request->id = 0;
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            _imp->requestsQueue.push_back(request);
             
-            /*
-             * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
-             * with QtConcurrent::run
-             */
-            int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
-            
-            //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-            if (_imp->viewer->getApp()->getIsUserPainting().get() != 0) {
-                maxThreads = 1;
-            }
-            if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
-                _imp->backupThread.renderCurrentFrame(functorArgs);
+            if (isRunning()) {
+                _imp->requestsQueueNotEmpty.wakeOne();
             } else {
-                QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+                start();
             }
         }
+        functorArgs.request = request;
+        
+        /*
+         * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
+         * with QtConcurrent::run
+         */
+        int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
+        
+        //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
+        if (_imp->viewer->getApp()->getIsUserPainting().get() != 0) {
+            maxThreads = 1;
+        }
+        if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
+            _imp->backupThread.renderCurrentFrame(functorArgs);
+        } else {
+            QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+        }
     }
+    
 }
 
 struct ViewerCurrentFrameRequestRendererBackupPrivate

@@ -291,11 +291,47 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 }
 
 Natron::StatusEnum
+ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
+                                             bool canAbort,
+                                             int view,
+                                             U64 viewerHash,
+                                             const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                             boost::shared_ptr<ViewerArgs>* argsA,
+                                             boost::shared_ptr<ViewerArgs>* argsB)
+{
+    ///This is used only by the rotopaint while drawing. We must clear the action cache of the rotopaint node before calling
+    ///getRoD or this will not work
+    assert(rotoPaintNode);
+    rotoPaintNode->getLiveInstance()->clearActionsCache();
+    
+    Natron::StatusEnum status[2] = {
+        eStatusFailed, eStatusFailed
+    };
+
+    boost::shared_ptr<ViewerArgs> args[2];
+    for (int i = 0; i < 2; ++i) {
+        args[i].reset(new ViewerArgs);
+        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, args[i].get());
+    }
+    
+    if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+        disconnectViewer();
+        return eStatusFailed;
+    }
+    Natron::StatusEnum ret =  renderViewer(view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,rotoPaintNode, args);
+    *argsA = args[0];
+    *argsB = args[1];
+    return ret;
+    
+}
+
+Natron::StatusEnum
 ViewerInstance::renderViewer(int view,
                              bool singleThreaded,
                              bool isSequentialRender,
                              U64 viewerHash,
                              bool canAbort,
+                             const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                              boost::shared_ptr<ViewerArgs> args[2])
 {
     if (!_imp->uiContext) {
@@ -311,7 +347,7 @@ ViewerInstance::renderViewer(int view,
         
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, *args[i]);
+            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, *args[i]);
             if (ret[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -483,7 +519,8 @@ public:
                                    int textureIndex,
                                    const TimeLine* timeline,
                                    bool isAnalysis,
-                                   const NodePtr& rotoPaintNode)
+                                   const NodePtr& rotoPaintNode,
+                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke)
     : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
@@ -492,16 +529,27 @@ public:
         if (rotoNode) {
             boost::shared_ptr<RotoContext> roto = rotoNode->getRotoContext();
             assert(roto);
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-            for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, true, Natron::eRenderSafetyInstanceSafe);
-                (*it)->updateLastPaintStrokeData();
+            if (activeStroke) {
+                
+                roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+                RectD wholeStrokeRod;
+                RectD lastStrokeBbox;
+                int lastAge,newAge;
+                lastAge = activeStroke->getMergeNode()->getStrokeImageAge();
+                activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &newAge);
+                
+                for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                    
+                    bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
+                    
+                    (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
+                    if (isStrokeNode) {
+                        (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
+                    }
+                }
+                updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
             }
-            
-            RotoPaint* rotoPaint = dynamic_cast<RotoPaint*>(rotoPaintNode->getLiveInstance());
-            assert(rotoPaint);
-            RectD bbox = rotoPaint->getLastPaintStrokeTickRoD();
-            updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, bbox, false);
         }
     }
     
@@ -522,7 +570,10 @@ Natron::StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  bool canAbort,
-                                                 int view, int textureIndex, U64 viewerHash,
+                                                 int view,
+                                                 int textureIndex,
+                                                 U64 viewerHash,
+                                                 const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                                  ViewerArgs* outArgs)
 {
     U64 renderAge = _imp->getRenderAge(textureIndex);
@@ -616,11 +667,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
     
-    
-    //If the user is actively painting with the rotopaint we don't want to spam the cache with useless textures
-    NodePtr isUserPainting = getApp()->getIsUserPainting();
-
-    
+        
     ///need to set TLS for getROD()
     ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
                                        time,
@@ -759,7 +806,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     assert(_imp->uiContext);
     boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
     
-    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast && !isUserPainting.get()) {
+    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast && !rotoPaintNode.get()) {
         isCached = Natron::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
         
         ///if we want to force a refresh, we by-pass the cache
@@ -850,6 +897,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool isSequentialRender,
                                       U64 viewerHash,
                                       bool canAbort,
+                                      boost::shared_ptr<Natron::Node> rotoPaintNode,
                                       ViewerArgs& inArgs)
 {
     //Do not call this if the texture is already cached.
@@ -908,9 +956,14 @@ ViewerInstance::renderViewer_internal(int view,
     ///Don't allow different threads to write the texture entry
     FrameEntryLocker entryLocker(_imp.get());
     
-    boost::shared_ptr<Natron::Node> isUserPainting = getApp()->getIsUserPainting();
-
     
+    boost::shared_ptr<RotoStrokeItem> activeStroke;
+    if (rotoPaintNode) {
+        activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
+        if (!activeStroke) {
+            rotoPaintNode.reset();
+        }
+    }
     ///Make sure the parallel render args are set on the thread and die when rendering is finished
     ViewerParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
                                              inArgs.params->time,
@@ -923,7 +976,8 @@ ViewerInstance::renderViewer_internal(int view,
                                              inArgs.params->textureIndex,
                                              getTimeline().get(),
                                              false,
-                                             isUserPainting);
+                                             rotoPaintNode,
+                                             activeStroke);
     
 
     
@@ -931,22 +985,25 @@ ViewerInstance::renderViewer_internal(int view,
     ///is very low, we better render again (and let the NodeCache do the work) rather than just
     ///overload the ViewerCache which may become slowe
     assert(_imp->uiContext);
-    if (inArgs.forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast || isUserPainting != 0) {
+    RectI lastPaintBboxPixel;
+    if (inArgs.forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast || rotoPaintNode.get() != 0) {
         
         assert(!inArgs.params->cachedFrame);
         //if we are actively painting, re-use the last texture instead of re-drawing everything
-        if (isUserPainting) {
+        if (rotoPaintNode) {
             
-            //Overwrite the RoI to only the last portion rendered
-            RectD lastPaintBbox;
-            getNode()->getLastPaintStrokeRoD(&lastPaintBbox);
-            const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
-            RectI lastPaintBboxPixel;
-            lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
-            lastPaintBboxPixel.intersect(roi, &roi);
             
             QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
-            if (_imp->lastRotoPaintTickParams) {
+            if (_imp->lastRotoPaintTickParams && inArgs.params->mipMapLevel == _imp->lastRotoPaintTickParams->mipMapLevel && inArgs.params->textureRect.contains(_imp->lastRotoPaintTickParams->textureRect)) {
+                
+                //Overwrite the RoI to only the last portion rendered
+                RectD lastPaintBbox;
+                getNode()->getLastPaintStrokeRoD(&lastPaintBbox);
+                const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
+                
+                lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
+
+                
                 assert(_imp->lastRotoPaintTickParams->ramBuffer);
                 inArgs.params->ramBuffer =  0;
                 bool mustFreeSource = copyAndSwap(_imp->lastRotoPaintTickParams->textureRect, inArgs.params->textureRect, inArgs.params->bytesCount, inArgs.params->depth,_imp->lastRotoPaintTickParams->ramBuffer, &inArgs.params->ramBuffer);
@@ -965,11 +1022,22 @@ ViewerInstance::renderViewer_internal(int view,
             }
             _imp->lastRotoPaintTickParams = inArgs.params;
         } else {
+            
+            {
+                QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
+                _imp->lastRotoPaintTickParams.reset();
+            }
+            
             inArgs.params->mustFreeRamBuffer = true;
             inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
         }
         
     } else {
+        
+        {
+            QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
+            _imp->lastRotoPaintTickParams.reset();
+        }
         
         // For the viewer, we need the enclosing rectangle to avoid black borders.
         // Do this here to avoid infinity values.
@@ -1172,6 +1240,12 @@ ViewerInstance::renderViewer_internal(int view,
     
     //Make sure the viewer does not render something outside the bounds
     roi.intersect(inArgs.params->image->getBounds(), &roi);
+    
+    //If we are painting, only render the portion needed
+    if (!lastPaintBboxPixel.isNull()) {
+        lastPaintBboxPixel.intersect(roi, &roi);
+    }
+    
     
     if (singleThreaded) {
         if (autoContrast) {

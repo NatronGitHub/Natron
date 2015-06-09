@@ -52,6 +52,7 @@
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/BackDrop.h"
+#include "Engine/RotoPaint.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
@@ -744,15 +745,18 @@ Node::invalidateLastStrokeData()
 }
 
 void
-Node::updateLastPaintStrokeData()
+Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
+                                const RectD& wholeBbox,const RectD& lastPointsBbox)
 {
     
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
         boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
-        _imp->lastStrokePoints.clear();
-        stroke->getMostRecentStrokeChangesSinceAge(_imp->strokeImageAge, &_imp->lastStrokePoints, &_imp->lastStrokeMovementBbox, &_imp->wholeStrokeBbox, &_imp->strokeAgeToRender);
+        _imp->lastStrokePoints = points;
+        _imp->lastStrokeMovementBbox = lastPointsBbox;
+        _imp->wholeStrokeBbox = wholeBbox;
+        _imp->strokeAgeToRender = newAge;
         _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
     }
@@ -769,7 +773,7 @@ Node::setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox)
         _imp->duringPaintStrokeCreation = true;
     }
     _imp->liveInstance->setDuringPaintStrokeCreationThreadLocal(true);
-    _imp->liveInstance->clearActionsCache();
+    //_imp->liveInstance->clearActionsCache();
 }
 
 void
@@ -780,7 +784,7 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
         _imp->lastStrokeMovementBbox.clear();
         _imp->duringPaintStrokeCreation = false;
     }
-    _imp->liveInstance->clearActionsCache();
+   // _imp->liveInstance->clearActionsCache();
 
 }
 
@@ -805,6 +809,13 @@ Node::getLastPaintStrokeRoD(RectD* bbox)
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     *bbox = _imp->lastStrokeMovementBbox;
     
+}
+
+bool
+Node::isLastPaintStrokeBitmapCleared() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->strokeBitmapCleared;
 }
 
 void
@@ -835,6 +846,13 @@ Node::isFirstPaintStrokeRenderTick() const
     return _imp->strokeImageAge == -1;
 }
 
+int
+Node::getStrokeImageAge() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->strokeImageAge;
+}
+
 void
 Node::updateLastPaintStrokeAge()
 {
@@ -853,26 +871,11 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     
     std::list<RectI> restToRender;
-    if (_imp->strokeImage && _imp->strokeImageAge == _imp->strokeAgeToRender) {
-//        _imp->strokeImage->getRestToRender(roi, restToRender);
-//        if (restToRender.empty()) {
-            return _imp->strokeImage;
-//        }
-    } else {
-//        restToRender.push_back(roi);
-//        if (_imp->strokeImage) {
-//            _imp->strokeImage->clearBitmap(roi);
-//        }
-    }
     boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
     assert(stroke);
-//    qDebug() << "Roi: " << roi.x1 << roi.y1 << roi.x2 << roi.y2;
-//    for (std::list<RectI>::iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
-//        RectD canonicalRect;
-//        it->toCanonical_noClipping(mipMapLevel, par, &canonicalRect);
-    qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
+
+   // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
         _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
-  //  }
     _imp->strokeImageAge = _imp->strokeAgeToRender;
 
     return _imp->strokeImage;
@@ -5771,7 +5774,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
      * - The node is a roto node and it is being edited
      * - The node does not support tiles
      */
-    
+
     std::list<Node*> outputs;
     {
         QMutexLocker k(&_imp->outputsMutex);

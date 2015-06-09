@@ -1232,6 +1232,7 @@ struct RotoContextPrivate
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
+    boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
     
     QMutex lastRenderedImageMutex;
     U64 lastRenderedHash;

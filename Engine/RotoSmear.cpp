@@ -130,20 +130,19 @@ RotoSmear::isIdentity(SequenceTime time,
     return false;
 }
 
-static ImagePtr renderSmearMaskDot(const boost::shared_ptr<RotoContext>& context, boost::shared_ptr<RotoStrokeItem>& stroke, const Point& p, double pressure, double brushSize, const ImageComponents& comps, ImageBitDepthEnum depth, unsigned int mipmapLevel)
+static ImagePtr renderSmearMaskDot( boost::shared_ptr<RotoStrokeItem>& stroke, const Point& p, double pressure, double brushSize, const ImageComponents& comps, ImageBitDepthEnum depth, unsigned int mipmapLevel)
 {
     RectD dotRod(p.x - brushSize / 2., p.y - brushSize / 2., p.x + brushSize / 2., p.y + brushSize / 2.);
     
     std::list<std::pair<Point,double> > points;
     points.push_back(std::make_pair(p, pressure));
     ImagePtr ret;
-    (void)context->renderSingleStroke(stroke, dotRod, points, mipmapLevel, 1., comps, depth, 0, &ret);
+    stroke->renderSingleStroke(stroke, dotRod, points, mipmapLevel, 1., comps, depth, 0, &ret);
     return ret;
 }
 
 
-static void renderSmearDot(const boost::shared_ptr<RotoContext>& context,
-                           boost::shared_ptr<RotoStrokeItem>& stroke,
+static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
                            const Point& prev,
                            const Point& next,
                            double /*prevPress*/,
@@ -154,7 +153,7 @@ static void renderSmearDot(const boost::shared_ptr<RotoContext>& context,
                            int nComps,
                            const ImagePtr& outputImage)
 {
-    ImagePtr dotMask = renderSmearMaskDot(context, stroke, next, nextPress, brushSize, ImageComponents::getAlphaComponents(), depth, mipmapLevel);
+    ImagePtr dotMask = renderSmearMaskDot( stroke, next, nextPress, brushSize, ImageComponents::getAlphaComponents(), depth, mipmapLevel);
     assert(dotMask);
     
     RectI nextDotBounds = dotMask->getBounds();
@@ -183,24 +182,25 @@ static void renderSmearDot(const boost::shared_ptr<RotoContext>& context,
         float* dstPixels = (float*)wacc.pixelAt(nextDotBounds.x1, y);
         const float* maskPixels = (const float*)mracc.pixelAt(nextDotBounds.x1, y);
         const float* srcPixels = (const float*)tmpAcc.pixelAt(prevDotBounds.x1, yPrev);
-        assert(srcPixels && dstPixels && maskPixels);
+        assert(dstPixels && maskPixels);
         
         int xPrev = prevDotBounds.x1;
         for (int x = nextDotBounds.x1; x < nextDotBounds.x2;
              ++x, ++xPrev,
-             srcPixels += nComps,
              dstPixels += nComps,
              ++maskPixels) {
             
             
             for (int k = 0; k < nComps; ++k) {
-                fgPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : 0.;
+                fgPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : dstPixels[k];
             }
             
             for (int k = 0; k < nComps; ++k) {
                 dstPixels[k] = fgPixels[k] + dstPixels[k] * (1. - *maskPixels);
             }
-
+            if (srcPixels) {
+                srcPixels += nComps;
+            }
         }
     }
     
@@ -323,7 +323,7 @@ RotoSmear::render(const RenderActionArgs& args)
             //This is the very first dot we render
             prev = *it;
             ++it;
-            renderSmearDot(context,stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+            renderSmearDot(stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
             renderPoint = *it;
             prev = renderPoint;
             ++it;
@@ -382,7 +382,7 @@ RotoSmear::render(const RenderActionArgs& args)
             
             prevPoint.x = prev.first.x + vx * v.x;
             prevPoint.y = prev.first.y + vy * v.y;
-            renderSmearDot(context,stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
+            renderSmearDot(stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
             
             prev = renderPoint;
             cur = renderPoint;

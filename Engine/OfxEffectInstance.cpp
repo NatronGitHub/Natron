@@ -1173,13 +1173,13 @@ clipPrefsProxy(OfxEffectInstance* self,
         assert(foundClipPrefs != clipPrefs.end());
         
         ///Set the clip to have the same components as the output components if it is supported
-        if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+        /*if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
             ///we only take into account non mask clips for the most components
             if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
                 foundClipPrefs->second.components = foundOutputPrefs->second.components;
                 hasChanged = true;
             }
-        }
+        }*/
         
         if (instance) {
             

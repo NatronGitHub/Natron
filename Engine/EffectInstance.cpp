@@ -2789,10 +2789,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     RectI lastStrokePixelRoD;
     if (isDuringPaintStroke && args.inputImagesList.empty()) {
         RectD lastStrokeRoD;
-        assert(safety == eRenderSafetyInstanceSafe && locker);
-        getNode()->getLastPaintStrokeRoD(&lastStrokeRoD);
-        getNode()->clearLastPaintStrokeRoD();
-        lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
+        NodePtr node = getNode();
+        if (!node->isLastPaintStrokeBitmapCleared()) {
+            node->getLastPaintStrokeRoD(&lastStrokeRoD);
+            node->clearLastPaintStrokeRoD();
+           // qDebug() << getScriptName_mt_safe().c_str() << "last stroke RoD: " << lastStrokeRoD.x1 << lastStrokeRoD.y1 << lastStrokeRoD.x2 << lastStrokeRoD.y2;
+            lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
+        }
+        
     }
 
     if (isPlaneCached) {
@@ -3939,77 +3943,80 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///now make the preliminaries call to handle that region (getRoI etc...) so just stick with the old rect to render
     
     // check the bitmap!
-    if (outputUseImage) {
-        
-        //The renderMappedImage is cached , read bitmap from it
-        canonicalRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
-        downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
-        
-        RectI initialRenderRect = downscaledRectToRender;
-        
-#if NATRON_ENABLE_TRIMAP
-        if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-            downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect_trimap(downscaledRectToRender,&isBeingRenderedElseWhere);
-        } else {
-            downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect(downscaledRectToRender);
-        }
-#else
-        reducedDownscaledRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
-#endif
-        
-        ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-        ///we stick to what was requested
-        if (!initialRenderRect.contains(downscaledRectToRender)) {
-            downscaledRectToRender = initialRenderRect;
-        }
-        
-        assert(downscaledRectToRender.isNull() || (renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2));
-    } else {
-        //The downscaled image is cached, read bitmap from it
-#if NATRON_ENABLE_TRIMAP
-        RectI downscaledRectToRenderMinimal;
-        if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-            downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect_trimap(downscaledRectToRender,&isBeingRenderedElseWhere);
-        } else {
-            downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect(downscaledRectToRender);
-        }
-#else
-        const RectI downscaledRectToRenderMinimal = downscaledImage->getMinimalRect(downscaledRectToRender);
-#endif
-        
-        assert(downscaledRectToRenderMinimal.isNull() || (renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
-               renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2));
-        
-        
-        
-        if (renderFullScaleThenDownscale) {
+    bool tilesSupported = supportsTiles();
+    if (tilesSupported) {
+        if (outputUseImage) {
             
+            //The renderMappedImage is cached , read bitmap from it
+            canonicalRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
+            downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
             
-            ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-            ///we stick to what was requested
-            if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
-                RectD canonicalrenderRectToRender;
-                downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
-                canonicalrenderRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
-                downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
+            RectI initialRenderRect = downscaledRectToRender;
+            
+#if NATRON_ENABLE_TRIMAP
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect_trimap(downscaledRectToRender,&isBeingRenderedElseWhere);
             } else {
-                RectD canonicalrenderRectToRender;
-                downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
-                canonicalrenderRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
-                downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
+                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect(downscaledRectToRender);
             }
-        } else {
+#else
+            reducedDownscaledRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+#endif
             
             ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
             ///we stick to what was requested
-            if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
-                downscaledRectToRender = downscaledRectToRenderMinimal;
+            if (!initialRenderRect.contains(downscaledRectToRender)) {
+                downscaledRectToRender = initialRenderRect;
             }
+            
+            assert(downscaledRectToRender.isNull() || (renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
+                                                       renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2));
+        } else {
+            //The downscaled image is cached, read bitmap from it
+#if NATRON_ENABLE_TRIMAP
+            RectI downscaledRectToRenderMinimal;
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect_trimap(downscaledRectToRender,&isBeingRenderedElseWhere);
+            } else {
+                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect(downscaledRectToRender);
+            }
+#else
+            const RectI downscaledRectToRenderMinimal = downscaledImage->getMinimalRect(downscaledRectToRender);
+#endif
+            
+            assert(downscaledRectToRenderMinimal.isNull() || (renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
+                                                              renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2));
+            
+            
+            
+            if (renderFullScaleThenDownscale) {
+                
+                
+                ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
+                ///we stick to what was requested
+                if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
+                    RectD canonicalrenderRectToRender;
+                    downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
+                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
+                    downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
+                } else {
+                    RectD canonicalrenderRectToRender;
+                    downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
+                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
+                    downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
+                }
+            } else {
+                
+                ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
+                ///we stick to what was requested
+                if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
+                    downscaledRectToRender = downscaledRectToRenderMinimal;
+                }
+            }
+            
         }
         
-    }
-    
+    } // tilesSupported
     ///It might have been already rendered now
     if (downscaledRectToRender.isNull()) {
         return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
@@ -4056,7 +4063,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     RenderScale scale;
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
-    bool tilesSupported = supportsTiles();
     // check the dimensions of all input and output images
     for (InputImagesMap::const_iterator it = rectToRender.imgs.begin();
          it != rectToRender.imgs.end();

@@ -375,7 +375,8 @@ public:
     Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
-    void updateLastPaintStrokeData();
+    void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
+                                   const RectD& wholeBbox,const RectD& lastPointsBbox);
     void invalidateLastStrokeData();
     
     //Used by nodes below the rotopaint tree to optimize the RoI
@@ -384,8 +385,10 @@ public:
     
     void getPaintStrokeRoD(int time,RectD* bbox) const;
     bool isFirstPaintStrokeRenderTick() const;
+    int getStrokeImageAge() const;
     void updateLastPaintStrokeAge();
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
+    bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
