@@ -125,7 +125,7 @@ CrashDialog::CrashDialog(const QString &filePath)
     
     QString infoStr = tr("Unfortunately Natron crashed.\n This report is for development purposes only and can be sent to the developers team "
                          "to help track down the bug.\n You will not be contacted nor identified by the process of sending the report.");
-    _infoLabel = new QLabel(Qt::convertFromPlainText(infoStr,Qt::WhiteSpaceNormal),_mainFrame);
+    _infoLabel = new QLabel(Qt::convertFromPlainText(infoStr, Qt::WhiteSpaceNormal), _mainFrame);
     
     _gridLayout->addWidget(_infoLabel, 1, 0, 1 , 2);
     

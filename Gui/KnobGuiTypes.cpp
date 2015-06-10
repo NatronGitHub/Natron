@@ -3292,7 +3292,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont(QApplication::font());
-            _fontCombo->setToolTip( tr("Font") );
+            _fontCombo->setToolTip(Qt::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontCombo);
 
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -3300,7 +3300,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect( _fontSizeSpinBox,SIGNAL( valueChanged(double) ),this,SLOT( onFontSizeChanged(double) ) );
-            _fontSizeSpinBox->setToolTip( tr("Font size") );
+            _fontSizeSpinBox->setToolTip(Qt::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
 
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -3313,7 +3313,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip( tr("Bold") );
+            _setBoldButton->setToolTip(Qt::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect( _setBoldButton,SIGNAL( clicked(bool) ),this,SLOT( boldChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -3324,7 +3324,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
-            _setItalicButton->setToolTip( tr("Italic") );
+            _setItalicButton->setToolTip(Qt::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect( _setItalicButton,SIGNAL( clicked(bool) ),this,SLOT( italicChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -3333,7 +3333,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
-            _fontColorButton->setToolTip( tr("Font color") );
+            _fontColorButton->setToolTip(Qt::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );
             _richTextOptionsLayout->addWidget(_fontColorButton);

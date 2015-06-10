@@ -321,7 +321,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly(true);
-    _imp->currentKeyframe->setToolTip( tr("The current keyframe for the selected shape(s)") );
+    _imp->currentKeyframe->setToolTip(Qt::convertFromPlainText(tr("The current keyframe for the selected shape(s)."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->currentKeyframe);
 
     _imp->ofLabel = new ClickableLabel("of",_imp->splineContainer);
@@ -331,7 +331,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
-    _imp->totalKeyframes->setToolTip( tr("The keyframe count for all the selected shapes.") );
+    _imp->totalKeyframes->setToolTip(Qt::convertFromPlainText(tr("The keyframe count for all the selected shapes."), Qt::WhiteSpaceNormal));
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
     QPixmap prevPix,nextPix,addPix,removePix,clearAnimPix;
@@ -343,35 +343,35 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
 
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->prevKeyframe->setToolTip( tr("Go to the previous keyframe") );
+    _imp->prevKeyframe->setToolTip(Qt::convertFromPlainText(tr("Go to the previous keyframe."), Qt::WhiteSpaceNormal));
     _imp->prevKeyframe->setEnabled(false);
     QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->prevKeyframe);
 
     _imp->nextKeyframe = new Button(QIcon(nextPix),"",_imp->splineContainer);
     _imp->nextKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->nextKeyframe->setToolTip( tr("Go to the next keyframe") );
+    _imp->nextKeyframe->setToolTip(Qt::convertFromPlainText(tr("Go to the next keyframe."), Qt::WhiteSpaceNormal));
     _imp->nextKeyframe->setEnabled(false);
     QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->nextKeyframe);
 
     _imp->addKeyframe = new Button(QIcon(addPix),"",_imp->splineContainer);
     _imp->addKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addKeyframe->setToolTip( tr("Add keyframe at the current timeline's time") );
+    _imp->addKeyframe->setToolTip(Qt::convertFromPlainText(tr("Add keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->addKeyframe->setEnabled(false);
     QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->addKeyframe);
 
     _imp->removeKeyframe = new Button(QIcon(removePix),"",_imp->splineContainer);
     _imp->removeKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->removeKeyframe->setToolTip( tr("Remove keyframe at the current timeline's time") );
+    _imp->removeKeyframe->setToolTip(Qt::convertFromPlainText(tr("Remove keyframe at the current timeline's time."), Qt::WhiteSpaceNormal));
     _imp->removeKeyframe->setEnabled(false);
     QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
     
     _imp->clearAnimation = new Button(QIcon(clearAnimPix),"",_imp->splineContainer);
     _imp->clearAnimation->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearAnimation->setToolTip( tr("Remove all animation for the selected shape(s)") );
+    _imp->clearAnimation->setToolTip(Qt::convertFromPlainText(tr("Remove all animation for the selected shape(s)."), Qt::WhiteSpaceNormal));
     _imp->clearAnimation->setEnabled(false);
     QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->clearAnimation);
@@ -394,7 +394,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
                                                       "each item for more options.\n"
                                                       "The items are rendered from bottom to top always, so that the first shape in "
                                                       "this list will always be the last one rendered "
-                                                      "(generally on top of everything else)."));
+                                                      "(generally on top of everything else)."), Qt::WhiteSpaceNormal);
     _imp->tree->setToolTip(treeToolTip);
 
     _imp->mainLayout->addWidget(_imp->tree);
@@ -481,12 +481,12 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->buttonLayout->setSpacing(0);
 
     _imp->addLayerButton = new Button("+",_imp->buttonContainer);
-    _imp->addLayerButton->setToolTip("Add a new layer");
+    _imp->addLayerButton->setToolTip(Qt::convertFromPlainText(tr("Add a new layer."), Qt::WhiteSpaceNormal));
     _imp->buttonLayout->addWidget(_imp->addLayerButton);
     QObject::connect( _imp->addLayerButton, SIGNAL( clicked(bool) ), this, SLOT( onAddLayerButtonClicked() ) );
 
     _imp->removeItemButton = new Button("-",_imp->buttonContainer);
-    _imp->removeItemButton->setToolTip( tr("Remove selected items") );
+    _imp->removeItemButton->setToolTip(Qt::convertFromPlainText(tr("Remove selected items."), Qt::WhiteSpaceNormal));
     _imp->buttonLayout->addWidget(_imp->removeItemButton);
     QObject::connect( _imp->removeItemButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveItemButtonClicked() ) );
 

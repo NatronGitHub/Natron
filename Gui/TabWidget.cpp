@@ -304,7 +304,7 @@ TabWidget::createMenu()
     menu.addSeparator();
     
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
-    isAnchorAction->setToolTip(tr("The anchor pane is where viewers will be created by default."));
+    isAnchorAction->setToolTip(Qt::convertFromPlainText(tr("The anchor pane is where viewers will be created by default."), Qt::WhiteSpaceNormal));
     isAnchorAction->setCheckable(true);
     bool isVA = isAnchor();
     isAnchorAction->setChecked(isVA);

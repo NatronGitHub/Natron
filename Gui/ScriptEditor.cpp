@@ -116,8 +116,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QKeySequence undoSeq(Qt::CTRL + Qt::Key_BracketLeft);
     _imp->undoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->undoB->setFocusPolicy(Qt::NoFocus);
-    _imp->undoB->setToolTip(tr("Previous script") +
-                               tr("<br>Keyboard shortcut: ") + undoSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->undoB->setToolTip("<p>" + tr("Previous script.") +
+                               "</p><p><b>" + tr("Keyboard shortcut:") + " " + undoSeq.toString(QKeySequence::NativeText) + "</b></p>");
     _imp->undoB->setEnabled(false);
     QObject::connect(_imp->undoB, SIGNAL(clicked(bool)), this, SLOT(onUndoClicked()));
     
@@ -125,31 +125,31 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QKeySequence redoSeq(Qt::CTRL + Qt::Key_BracketRight);
     _imp->redoB->setFocusPolicy(Qt::NoFocus);
     _imp->redoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->redoB->setToolTip(tr("Next script") +
-                            tr("<br>Keyboard shortcut: ") + redoSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->redoB->setToolTip("<p>" + tr("Next script.") +
+                            "</p><p><b>" + tr("Keyboard shortcut:") + " " + redoSeq.toString(QKeySequence::NativeText) + "</b></p>");
     _imp->redoB->setEnabled(false);
     QObject::connect(_imp->redoB, SIGNAL(clicked(bool)), this, SLOT(onRedoClicked()));
     
     _imp->clearHistoB = new Button(QIcon(clearHistoPix),"",_imp->buttonsContainer);
-    _imp->clearHistoB->setToolTip(tr("Clear history"));
+    _imp->clearHistoB->setToolTip(Qt::convertFromPlainText(tr("Clear history."), Qt::WhiteSpaceNormal));
     _imp->clearHistoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearHistoB->setFocusPolicy(Qt::NoFocus);
     QObject::connect(_imp->clearHistoB, SIGNAL(clicked(bool)), this, SLOT(onClearHistoryClicked()));
     
     _imp->sourceScriptB = new Button(QIcon(sourceScriptPix),"",_imp->buttonsContainer);
-    _imp->sourceScriptB->setToolTip(tr("Open and execute a script"));
+    _imp->sourceScriptB->setToolTip(Qt::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal));
     _imp->sourceScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->sourceScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->sourceScriptB, SIGNAL(clicked(bool)), this, SLOT(onSourceScriptClicked()));
     
     _imp->loadScriptB = new Button(QIcon(loadScriptPix),"",_imp->buttonsContainer);
-    _imp->loadScriptB->setToolTip(tr("Open a script without executing it"));
+    _imp->loadScriptB->setToolTip(Qt::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal));
     _imp->loadScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->loadScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->loadScriptB, SIGNAL(clicked(bool)), this, SLOT(onLoadScriptClicked()));
     
     _imp->saveScriptB = new Button(QIcon(saveScriptPix),"",_imp->buttonsContainer);
-    _imp->saveScriptB->setToolTip(tr("Save the current script"));
+    _imp->saveScriptB->setToolTip(Qt::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal));
     _imp->saveScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->saveScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->saveScriptB, SIGNAL(clicked(bool)), this, SLOT(onSaveScriptClicked()));
@@ -158,8 +158,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QKeySequence execSeq(Qt::CTRL + Qt::Key_Return);
     _imp->execScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->execScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->execScriptB->setToolTip(tr("Execute the current script")
-                                  + tr("<br>Keyboard shortcut: ") + execSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->execScriptB->setToolTip("<p>" + tr("Execute the current script.")
+                                  + "</p><p><b>" + tr("Keyboard shortcut:") + " " + execSeq.toString(QKeySequence::NativeText) + "</b></p>");
 
     QObject::connect(_imp->execScriptB, SIGNAL(clicked(bool)), this, SLOT(onExecScriptClicked()));
     
@@ -167,7 +167,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     icShowHide.addPixmap(outputVisiblePix,QIcon::Normal,QIcon::On);
     icShowHide.addPixmap(outputHiddenPix,QIcon::Normal,QIcon::Off);
     _imp->showHideOutputB = new Button(icShowHide,"",_imp->buttonsContainer);
-    _imp->showHideOutputB->setToolTip(tr("Show/Hide the output area"));
+    _imp->showHideOutputB->setToolTip(Qt::convertFromPlainText(tr("Show/Hide the output area."), Qt::WhiteSpaceNormal));
     _imp->showHideOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->showHideOutputB->setCheckable(true);
     _imp->showHideOutputB->setChecked(true);
@@ -179,8 +179,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QKeySequence clearSeq(Qt::CTRL + Qt::Key_Backspace);
     _imp->clearOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->clearOutputB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearOutputB->setToolTip(tr("Clear the output area")
-                                   + tr("<br>Keyboard shortcut: ") + clearSeq.toString(QKeySequence::NativeText) + "</br>");
+    _imp->clearOutputB->setToolTip("<p>" + tr("Clear the output area")
+                                   + "</p><p><b>" + tr("Keyboard shortcut:") + " " + clearSeq.toString(QKeySequence::NativeText) + "</b></p>");
     QObject::connect(_imp->clearOutputB, SIGNAL(clicked(bool)), this, SLOT(onClearOutputClicked()));
     
     _imp->buttonsContainerLayout->addWidget(_imp->undoB);
