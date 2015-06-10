@@ -5060,16 +5060,18 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 void
 RotoStrokeItem::setStrokeFinished()
 {
-    _imp->finished = true;
-    
-    for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-        if (_imp->strokeDotPatterns[i]) {
-            cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
-            _imp->strokeDotPatterns[i] = 0;
+    {
+        QMutexLocker k(&itemMutex);
+        _imp->finished = true;
+        
+        for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+            if (_imp->strokeDotPatterns[i]) {
+                cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
+                _imp->strokeDotPatterns[i] = 0;
+            }
         }
+        _imp->strokeDotPatterns.clear();
     }
-    _imp->strokeDotPatterns.clear();
-    
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(false);
         _imp->effectNode->incrementKnobsAge();
@@ -5142,7 +5144,7 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
     assert(thisShared);
     {
         QMutexLocker k(&itemMutex);
-        
+        assert(!_imp->finished);
         if (_imp->strokeDotPatterns.empty()) {
             _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
             for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
@@ -5371,9 +5373,9 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->yCurve.clone(s->_yCurve);
         _imp->pressureCurve.clone(s->_pressureCurve);
         resetNodesThreadSafety();
-        setStrokeFinished();
     }
-    
+    setStrokeFinished();
+
     
 }
 
@@ -7595,6 +7597,12 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     std::vector<cairo_pattern_t*> dotPatterns = stroke->getPatternCache();
     if (mipMapLevelChanged) {
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            if (dotPatterns[i]) {
+                cairo_pattern_destroy(dotPatterns[i]);
+                dotPatterns[i] = 0;
+            }
+        }
         dotPatterns.clear();
     }
     if (dotPatterns.empty()) {
@@ -7625,20 +7633,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     ////Free the buffer used by Cairo
     cairo_surface_destroy(cairoImg);
     
-//    ImagePtr ret;
-//    
-//    if (components != source->getComponents() || depth != source->getBitDepth()) {
-//        ret.reset(new Image(components, pointsBbox, pixelPointsBbox, mipmapLevel, 1., depth));
-//        Natron::ViewerColorSpaceEnum colorspace = getNode()->getApp()->getDefaultColorSpaceForBitDepth(source->getBitDepth());
-//        Natron::ViewerColorSpaceEnum dstColorspace = getNode()->getApp()->getDefaultColorSpaceForBitDepth(depth);
-//        source->convertToFormat(pixelPointsBbox, colorspace, dstColorspace, 0, false, false, ret.get());
-//        
-//    } else {
-//        ret = source;
-//    }
-    //(*image)->markForRendered(pixelPointsBbox);
-//    assert(ret);
-//    return ret;
     return distToNext;
 }
 
@@ -7658,23 +7652,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     
     
     ImagePtr image;// = stroke->getStrokeTimePreview();
-//    if (image) {
-//        
-//        //Todo handle different pixel scale if needed
-//        
-//        RectI bounds;
-//        roi.intersect(image->getBounds(), &bounds);
-//        
-//        ImagePtr ret(new Image(components, image->getRoD(), bounds, mipmapLevel, 1., depth));
-//        if (components != image->getComponents()) {
-//            Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
-//            Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
-//            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, ret.get());
-//        } else {
-//            ret->pasteFrom(*image, bounds, false);
-//        }
-//        return ret;
-//    }
+
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
     ///the output image of the roto node and the mask image.
     Hash64 hash;
@@ -7846,6 +7824,14 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
         _imp->renderStroke(cr, dotPatterns, points, 0, isSingleStroke, doBuildUp, time, mipmapLevel);
+        
+        for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+            if (dotPatterns[i]) {
+                cairo_pattern_destroy(dotPatterns[i]);
+                dotPatterns[i] = 0;
+            }
+        }
+        
         switch (depth) {
             case Natron::eImageBitDepthFloat:
                 convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor);
@@ -7962,7 +7948,7 @@ RotoContextPrivate::renderDot(cairo_t* cr,
                     cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, opacityStops[i].second, opacityStops[i].second, opacityStops[i].second,1);
                 }
             }
-            dotPatterns[pressureInt] = pattern;
+            //dotPatterns[pressureInt] = pattern;
         }
         cairo_translate(cr, center.x, center.y);
         cairo_set_source(cr, pattern);
@@ -8101,7 +8087,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
         double internalDotRadius, externalDotRadius, spacing;
         std::vector<std::pair<double,double> > opacityStops;
         getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
-        renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, true, opacityStops, alpha);
+        renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
         return 0;
     }
     
@@ -8151,6 +8137,12 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS, (cairo_pattern_t*)0);
     bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
     renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, time, mipmapLevel);
+    for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
+        if (dotPatterns[i]) {
+            cairo_pattern_destroy(dotPatterns[i]);
+            dotPatterns[i] = 0;
+        }
+    }
 }
 
 void

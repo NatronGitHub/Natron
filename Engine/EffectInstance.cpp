@@ -4073,7 +4073,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     if (foundPrefPremult != planes.inputPremult.end()) {
         originalImagePremultiplication = foundPrefPremult->second;
     } else {
-        originalImagePremultiplication = Natron::eImagePremultiplicationPremultiplied;
+        originalImagePremultiplication = Natron::eImagePremultiplicationOpaque;
     }
     
     if (foundPrefInput != rectToRender.imgs.end() && !foundPrefInput->second.empty()) {

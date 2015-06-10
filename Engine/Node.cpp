@@ -888,6 +888,27 @@ Node::isNodeCreated() const
 }
 
 void
+Node::setProcessChannelsValues(bool doR,bool doG, bool doB, bool doA)
+{
+    boost::shared_ptr<Bool_Knob> eR = _imp->enabledChan[0].lock();
+    if (eR) {
+        eR->setValue(doR, 0);
+    }
+    boost::shared_ptr<Bool_Knob> eG = _imp->enabledChan[1].lock();
+    if (eG) {
+        eG->setValue(doG, 0);
+    }
+    boost::shared_ptr<Bool_Knob> eB = _imp->enabledChan[2].lock();
+    if (eB) {
+        eB->setValue(doB, 0);
+    }
+    boost::shared_ptr<Bool_Knob> eA = _imp->enabledChan[3].lock();
+    if (eA) {
+        eA->setValue(doA, 0);
+    }
+}
+
+void
 Node::declareRotoPythonField()
 {
     assert(_imp->rotoContext);
@@ -5992,6 +6013,7 @@ Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
     assert(QThread::currentThread() == qApp->thread());
     _imp->paintStroke = stroke;
     _imp->useAlpha0ToConvertFromRGBToRGBA = true;
+    setProcessChannelsValues(true, true, true, true);
 }
 
 boost::shared_ptr<RotoStrokeItem>

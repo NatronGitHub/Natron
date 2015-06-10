@@ -962,6 +962,11 @@ ViewerInstance::renderViewer_internal(int view,
         activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
         if (!activeStroke) {
             rotoPaintNode.reset();
+            //This render is no longer useful because another one has been triggered from the penUp handler.
+            if (!isSequentialRender && canAbort) {
+                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+            }
+            return eStatusReplyDefault;
         }
     }
     ///Make sure the parallel render args are set on the thread and die when rendering is finished

@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Lut.h"
 #include "Engine/RotoContextPrivate.h"
 
 #include <ofxNatron.h>
@@ -3097,7 +3098,12 @@ RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p, double pressure)
     int timeOffsetMode_i = timeOffsetMode->activeIndex();
     int sourceType_i = sourceTypeCombobox->activeIndex();
     
-    colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), Natron::eValueChangedReasonNatronGuiEdited);
+
+    double r = Natron::Color::from_func_srgb(color.redF());
+    double g = Natron::Color::from_func_srgb(color.greenF());
+    double b = Natron::Color::from_func_srgb(color.blueF());
+
+    colorKnob->setValues(r,g,b, Natron::eValueChangedReasonNatronGuiEdited);
     operatorKnob->setValue(compOp,0);
     opacityKnob->setValue(opacity, 0);
     sizeKnob->setValue(size, 0);

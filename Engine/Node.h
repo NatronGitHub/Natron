@@ -375,6 +375,8 @@ public:
     Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
+    /////////////////////ROTO-PAINT related functionnalities//////////////////////
+    //////////////////////////////////////////////////////////////////////////////
     void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
                                    const RectD& wholeBbox,const RectD& lastPointsBbox);
     void invalidateLastStrokeData();
@@ -399,6 +401,10 @@ public:
     
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;
+    ////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////
+    
+    void setProcessChannelsValues(bool doR,bool doG, bool doB, bool doA);
     
 private:
     
