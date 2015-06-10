@@ -271,7 +271,15 @@ RotoPaint::render(const RenderActionArgs& args)
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
-            plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+            if ((*rotoImagesIt)->getComponents() != plane->second->getComponents()) {
+                
+                (*rotoImagesIt)->convertToFormat(args.roi,
+                                                 getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                                                 getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+                                                 , false, false, plane->second.get());
+            } else {
+                plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+            }
         }
     }
     

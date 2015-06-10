@@ -4347,6 +4347,10 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), this, SLOT(onRotoStrokeKnobChanged(int)));
     }
     
+    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName("Output_channels");
+    assert(outputChansKnob);
+    QObject::connect(outputChansKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoPaintOutputChannelsChanged()));
+    
     
     AppInstance* app = context->getNode()->getApp();
     QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
@@ -4518,6 +4522,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     
     getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
 
+    onRotoPaintOutputChannelsChanged();
     refreshNodesConnections();
     
 }
@@ -4528,6 +4533,42 @@ RotoStrokeItem::~RotoStrokeItem()
         if (_imp->strokeDotPatterns[i]) {
             cairo_pattern_destroy(_imp->strokeDotPatterns[i]);
             _imp->strokeDotPatterns[i] = 0;
+        }
+    }
+}
+
+void
+RotoStrokeItem::onRotoPaintOutputChannelsChanged()
+{
+    
+    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName("Output_channels");
+    assert(outputChansKnob);
+    Choice_Knob* outputChannels = dynamic_cast<Choice_Knob*>(outputChansKnob.get());
+    assert(outputChannels);
+    
+    int outputchans_i = outputChannels->getValue();
+    
+    std::list<Node*> nodes;
+    if (_imp->mergeNode) {
+        nodes.push_back(_imp->mergeNode.get());
+    }
+    if (_imp->effectNode) {
+        nodes.push_back(_imp->effectNode.get());
+    }
+    if (_imp->timeOffsetNode) {
+        nodes.push_back(_imp->timeOffsetNode.get());
+    }
+    if (_imp->frameHoldNode) {
+        nodes.push_back(_imp->frameHoldNode.get());
+    }
+    for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName("Output_channels");
+        if (!channelsKnob) {
+            continue;
+        }
+        Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(channelsKnob.get());
+        if (nodeChannels) {
+            nodeChannels->setValue(outputchans_i, 0);
         }
     }
 }

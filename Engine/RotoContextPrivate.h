@@ -1254,7 +1254,19 @@ struct RotoContextPrivate
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
     
-        boost::shared_ptr<Page_Knob> shapePage = Natron::createKnob<Page_Knob>(effect, "Stroke", 1, false);
+        boost::shared_ptr<Page_Knob> shapePage;
+        
+        if (isPaintNode) {
+            shapePage = Natron::createKnob<Page_Knob>(effect, "Stroke", 1, false);
+        } else {
+            boost::shared_ptr<KnobI> controlsPageKnob = effect->getKnobByName("Controls");
+            shapePage = boost::dynamic_pointer_cast<Page_Knob>(controlsPageKnob);
+            if (!shapePage) {
+                shapePage = Natron::createKnob<Page_Knob>(effect, "Controls", 1, false);
+            }
+        }
+        
+        
         boost::shared_ptr<Page_Knob> clonePage = Natron::createKnob<Page_Knob>(effect, "Clone", 1, false);
 
         boost::shared_ptr<Double_Knob> opacityKnob = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);

@@ -1051,6 +1051,7 @@ public:
                               boost::shared_ptr<Natron::Image> *wholeStrokeImage);
 
     
+    
     //Must be called after constructor
     void attachStrokeToNodes();
     
@@ -1113,6 +1114,7 @@ public:
     
 public Q_SLOTS:
     
+    void onRotoPaintOutputChannelsChanged();
     void onRotoStrokeKnobChanged(int);
     
 private:

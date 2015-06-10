@@ -2943,7 +2943,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
     
     ///Pre-render input images before allocating the image if we need to render
-    planesToRender.outputPremult = getOutputPremultiplication();
+    {
+        const ImageComponents& outComp = outputComponents.front();
+        if (outComp.isColorPlane()) {
+            planesToRender.outputPremult = getOutputPremultiplication();
+        } else {
+            planesToRender.outputPremult = eImagePremultiplicationOpaque;
+        }
+    }
     for (std::list<RectToRender>::iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
         
         if (it->isIdentity) {
@@ -2978,6 +2985,13 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 EffectInstance* input = getInput(it2->first);
                 if (input) {
                     Natron::ImagePremultiplicationEnum inputPremult = input->getOutputPremultiplication();
+                    if (!it2->second.empty()) {
+                        const ImageComponents& comps = it2->second.front()->getComponents();
+                        if (!comps.isColorPlane()) {
+                            inputPremult = eImagePremultiplicationOpaque;
+                        }
+                    }
+                    
                     planesToRender.inputPremult[it2->first] = inputPremult;
                 }
             }

@@ -5320,7 +5320,7 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
     int chanIndex = getMaskChannel(inputNb,layer);
-    bool hasChannelSelector = false;
+    bool hasChannelSelector = true;
     if (chanIndex != -1) {
         
         *isAll = false;
