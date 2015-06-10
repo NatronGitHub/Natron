@@ -166,41 +166,45 @@
 #define kRotoBrushTimeOffsetModeParamLabel "Mode"
 #define kRotoBrushTimeOffsetModeParamHint "Time offset mode: when in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
 
-#define kRotoBrushTranslateParam "translate"
+#define kRotoBrushTranslateParam "cloneTranslate"
 #define kRotoBrushTranslateParamLabel "Translate"
 #define kRotoBrushTranslateParamHint ""
 
-#define kRotoBrushRotateParam "rotate"
+#define kRotoBrushRotateParam "cloneRotate"
 #define kRotoBrushRotateParamLabel "Rotate"
 #define kRotoBrushRotateParamHint ""
 
-#define kRotoBrushScaleParam "scale"
+#define kRotoBrushScaleParam "cloneScale"
 #define kRotoBrushScaleParamLabel "Scale"
 #define kRotoBrushScaleParamHint ""
 
-#define kRotoBrushScaleUniformParam "uniform"
+#define kRotoBrushScaleUniformParam "cloneUniform"
 #define kRotoBrushScaleUniformParamLabel "Uniform"
 #define kRotoBrushScaleUniformParamHint ""
 
-#define kRotoBrushSkewXParam "skewx"
+#define kRotoBrushSkewXParam "cloneSkewx"
 #define kRotoBrushSkewXParamLabel "Skew X"
 #define kRotoBrushSkewXParamHint ""
 
-#define kRotoBrushSkewYParam "skewy"
+#define kRotoBrushSkewYParam "cloneSkewy"
 #define kRotoBrushSkewYParamLabel "Skew Y"
 #define kRotoBrushSkewYParamHint ""
 
-#define kRotoBrushSkewOrderParam "skewOrder"
+#define kRotoBrushSkewOrderParam "cloneSkewOrder"
 #define kRotoBrushSkewOrderParamLabel "Skew Order"
 #define kRotoBrushSkewOrderParamHint ""
 
-#define kRotoBrushCenterParam "center"
+#define kRotoBrushCenterParam "cloneCenter"
 #define kRotoBrushCenterParamLabel "Center"
 #define kRotoBrushCenterParamHint ""
 
-#define kRotoBrushFilterParam "filter"
+#define kRotoBrushFilterParam "cloneFilter"
 #define kRotoBrushFilterParamLabel "Filter"
 #define kRotoBrushFilterParamHint "Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+)."
+
+#define kRotoBrushBlackOutsideParam "blackOutside"
+#define kRotoBrushBlackOutsideParamLabel "Black Outside"
+#define kRotoBrushBlackOutsideParamHint "Fill the area outside the source image with black"
 
 #define kFilterImpulse "Impulse"
 #define kFilterImpulseHint "(nearest neighbor / box) Use original values"
@@ -221,10 +225,38 @@
 #define kFilterNotch "Notch"
 #define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)"
 
-#define kRotoBrushBlackOutsideParam "blackOutside"
-#define kRotoBrushBlackOutsideParamLabel "Black Outside"
-#define kRotoBrushBlackOutsideParamHint "Fill the area outside the source image with black"
 
+#define kRotoDrawableItemTranslateParam "translate"
+#define kRotoDrawableItemTranslateParamLabel "Translate"
+#define kRotoDrawableItemTranslateParamHint ""
+
+#define kRotoDrawableItemRotateParam "rotate"
+#define kRotoDrawableItemRotateParamLabel "Rotate"
+#define kRotoDrawableItemRotateParamHint ""
+
+#define kRotoDrawableItemScaleParam "scale"
+#define kRotoDrawableItemScaleParamLabel "Scale"
+#define kRotoDrawableItemScaleParamHint ""
+
+#define kRotoDrawableItemScaleUniformParam "uniform"
+#define kRotoDrawableItemScaleUniformParamLabel "Uniform"
+#define kRotoDrawableItemScaleUniformParamHint ""
+
+#define kRotoDrawableItemSkewXParam "skewx"
+#define kRotoDrawableItemSkewXParamLabel "Skew X"
+#define kRotoDrawableItemSkewXParamHint ""
+
+#define kRotoDrawableItemSkewYParam "skewy"
+#define kRotoDrawableItemSkewYParamLabel "Skew Y"
+#define kRotoDrawableItemSkewYParamHint ""
+
+#define kRotoDrawableItemSkewOrderParam "skewOrder"
+#define kRotoDrawableItemSkewOrderParamLabel "Skew Order"
+#define kRotoDrawableItemSkewOrderParamHint ""
+
+#define kRotoDrawableItemCenterParam "center"
+#define kRotoDrawableItemCenterParamLabel "Center"
+#define kRotoDrawableItemCenterParamHint ""
 
 class Bezier;
 
@@ -812,19 +844,36 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Color_Knob> color;
     boost::shared_ptr<Choice_Knob> compOperator;
     
+    boost::shared_ptr<Double_Knob> translate;
+    boost::shared_ptr<Double_Knob> rotate;
+    boost::shared_ptr<Double_Knob> scale;
+    boost::shared_ptr<Bool_Knob> scaleUniform;
+    boost::shared_ptr<Double_Knob> skewX;
+    boost::shared_ptr<Double_Knob> skewY;
+    boost::shared_ptr<Choice_Knob> skewOrder;
+    boost::shared_ptr<Double_Knob> center;
+    
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
     RotoDrawableItemPrivate(bool isPaintingNode)
-        : opacity()
-          , feather()
-          , featherFallOff()
-          , activated()
+    : opacity()
+    , feather()
+    , featherFallOff()
+    , activated()
 #ifdef NATRON_ROTO_INVERTIBLE
-          , inverted()
+    , inverted()
 #endif
-          , color()
-          , compOperator()
-          , knobs()
+    , color()
+    , compOperator()
+    , translate()
+    , rotate()
+    , scale()
+    , scaleUniform()
+    , skewX()
+    , skewY()
+    , skewOrder()
+    , center()
+    , knobs()
     {
         opacity.reset(new Double_Knob(NULL, kRotoOpacityParamLabel, 1, false));
         opacity->setHintToolTip(kRotoOpacityHint);
