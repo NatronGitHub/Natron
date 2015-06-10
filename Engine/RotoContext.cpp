@@ -4908,23 +4908,27 @@ RotoStrokeItem::refreshNodesConnections()
             _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
             connectionChanged = true;
         }
-        if (upstreamNode) {
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
+        
+        if (_imp->mergeNode->getInput(0) != upstreamNode) {
+            _imp->mergeNode->disconnectInput(0);
+            if (upstreamNode) {
                 _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 assert(_imp->mergeNode->getInput(0) == upstreamNode);
-                connectionChanged = true;
             }
+            connectionChanged = true;
         }
+        
         
         int reveal_i = _imp->sourceColor->getValue();
         boost::shared_ptr<Node> revealInput;
+        bool shouldUseUpstreamForReveal = true;
         if ((_imp->type == eRotoStrokeTypeReveal ||
             _imp->type == eRotoStrokeTypeClone ||
             _imp->type == eRotoStrokeTypeEraser) && reveal_i > 0) {
+            shouldUseUpstreamForReveal = false;
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
-        if (!revealInput) {
+        if (!revealInput && shouldUseUpstreamForReveal) {
             if (_imp->type != eRotoStrokeTypeSolid) {
                 revealInput = upstreamNode;
             }
@@ -4937,60 +4941,77 @@ RotoStrokeItem::refreshNodesConnections()
                 mergeInput->connectInputBase(revealInput, 0);
                 connectionChanged = true;
             }
+        } else {
+            if (mergeInput->getInput(0)) {
+                mergeInput->disconnectInput(0);
+                connectionChanged = true;
+            }
+            
         }
     } else {
         
         if (_imp->type == eRotoStrokeTypeEraser) {
             
             boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
-            if (eraserInput) {
-                if (_imp->mergeNode->getInput(1) != eraserInput) {
-                    _imp->mergeNode->disconnectInput(1);
+            if (_imp->mergeNode->getInput(1) != eraserInput) {
+                _imp->mergeNode->disconnectInput(1);
+                if (eraserInput) {
                     _imp->mergeNode->connectInputBase(eraserInput, 1); // A
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
-            if (upstreamNode) {
-                if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                    _imp->mergeNode->disconnectInput(0);
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
+            
         } else if (_imp->type == eRotoStrokeTypeReveal) {
             
             int reveal_i = _imp->sourceColor->getValue();
             
             boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-            if (revealInput) {
-                if (_imp->mergeNode->getInput(1) != revealInput) {
-                    _imp->mergeNode->disconnectInput(1);
+            
+            if (_imp->mergeNode->getInput(1) != revealInput) {
+                _imp->mergeNode->disconnectInput(1);
+                if (revealInput) {
                     _imp->mergeNode->connectInputBase(revealInput, 1); // A
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
-            if (upstreamNode) {
-                if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                    _imp->mergeNode->disconnectInput(0);
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
+            
         } else if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
-            if (upstreamNode) {
-                if (_imp->mergeNode->getInput(1) != upstreamNode) {
-                    _imp->mergeNode->disconnectInput(1);
+            
+            if (_imp->mergeNode->getInput(1) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(1);
+                if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
-            if (upstreamNode) {
-                if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                    _imp->mergeNode->disconnectInput(0);
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                    connectionChanged = true;
                 }
+                connectionChanged = true;
             }
+            
         } else {
             //unhandled case
             assert(false);
