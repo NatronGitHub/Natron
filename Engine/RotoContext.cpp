@@ -4362,7 +4362,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             pluginId = PLUGINID_OFX_BLURCIMG;
             break;
         case Natron::eRotoStrokeTypeEraser:
-            //uses merge
+            pluginId = PLUGINID_OFX_CONSTANT;
             break;
         case Natron::eRotoStrokeTypeSolid:
             pluginId = PLUGINID_OFX_ROTO;
@@ -4380,7 +4380,6 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             break;
         case Natron::eRotoStrokeTypeSmear:
             pluginId = PLUGINID_NATRON_ROTOSMEAR;
-            //hand-made
             break;
     }
     
@@ -4808,7 +4807,7 @@ RotoStrokeItem::refreshNodesConnections()
     boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
     
     bool connectionChanged = false;
-    if (_imp->effectNode) {
+    if (_imp->effectNode && _imp->type != eRotoStrokeTypeEraser) {
         
         
         boost::shared_ptr<Natron::Node> mergeInput;
@@ -4869,10 +4868,12 @@ RotoStrokeItem::refreshNodesConnections()
     } else {
         
         if (_imp->type == eRotoStrokeTypeEraser) {
-            if (rotoPaintInput) {
-                if (_imp->mergeNode->getInput(1) != rotoPaintInput) {
+            
+            boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
+            if (eraserInput) {
+                if (_imp->mergeNode->getInput(1) != eraserInput) {
                     _imp->mergeNode->disconnectInput(1);
-                    _imp->mergeNode->connectInputBase(rotoPaintInput, 1); // A
+                    _imp->mergeNode->connectInputBase(eraserInput, 1); // A
                     connectionChanged = true;
                 }
             }
