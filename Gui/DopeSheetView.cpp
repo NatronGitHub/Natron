@@ -596,6 +596,8 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     if (isTopLevelItem) {
         _imp->processChildNodes(dsNode);
     }
+
+    takeTopLevelItem(indexOfTopLevelItem(treeItem));
 }
 
 void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
