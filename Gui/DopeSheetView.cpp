@@ -2377,7 +2377,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
              ++it) {
             boost::shared_ptr<KnobI> knob = (*it);
 
-            if (!knob->canAnimate() || !knob->hasAnimation()) {
+            if (!knob->isAnimationEnabled() || !knob->hasAnimation()) {
                 continue;
             }
             else {

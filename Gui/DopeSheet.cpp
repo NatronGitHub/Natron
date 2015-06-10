@@ -47,7 +47,7 @@ bool nodeCanAnimate(const boost::shared_ptr<NodeGui> &node)
          ++it) {
         boost::shared_ptr<KnobI> knob = *it;
 
-        if (knob->canAnimate()) {
+        if (knob->isAnimationEnabled()) {
             return true;
         }
     }
