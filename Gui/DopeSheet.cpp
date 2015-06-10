@@ -38,9 +38,9 @@ const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 1;
 
 namespace {
 
-bool nodeCanAnimate(const boost::shared_ptr<NodeGui> &node)
+bool nodeCanAnimate(const NodePtr &node)
 {
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getNode()->getKnobs();
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getKnobs();
 
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
          it != knobs.end();
@@ -313,25 +313,54 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 {
     nodeGui->ensurePanelCreated();
 
-    // Don't show the group nodes' input & output
-    if (dynamic_cast<GroupInput *>(nodeGui->getNode()->getLiveInstance()) ||
-            dynamic_cast<GroupOutput *>(nodeGui->getNode()->getLiveInstance())) {
-        return;
+    // Determinate the node type
+    // It will be useful to identify and sort tree items
+    DopeSheet::NodeType nodeType = DopeSheet::NodeTypeCommon;
+
+    NodePtr node = nodeGui->getNode();
+    Natron::EffectInstance *effectInstance = node->getLiveInstance();
+
+    std::string pluginID = node->getPluginID();
+
+    if (pluginID == PLUGINID_OFX_READOIIO
+            || pluginID == PLUGINID_OFX_READFFMPEG
+            || pluginID == PLUGINID_OFX_READPFM) {
+        nodeType = DopeSheet::NodeTypeReader;
+    }
+    else if (dynamic_cast<NodeGroup *>(effectInstance)) {
+        nodeType = DopeSheet::NodeTypeGroup;
+    }
+    else if (pluginID == PLUGINID_OFX_RETIME) {
+        nodeType = DopeSheet::NodeTypeRetime;
+    }
+    else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
+        nodeType = DopeSheet::NodeTypeTimeOffset;
+    }
+    else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
+        nodeType = DopeSheet::NodeTypeFrameRange;
     }
 
-    if (nodeGui->getNode()->isRotoNode() || nodeGui->getNode()->isRotoPaintingNode()) {
-        return;
+    // Discard specific nodes
+    if (nodeType == DopeSheet::NodeTypeCommon) {
+        if (dynamic_cast<GroupInput *>(effectInstance) ||
+                dynamic_cast<GroupOutput *>(effectInstance)) {
+            return;
+        }
+
+        if (node->isRotoNode() || node->isRotoPaintingNode()) {
+            return;
+        }
+
+        if (node->getKnobs().empty()) {
+            return;
+        }
+
+        if (!nodeCanAnimate(node)) {
+            return;
+        }
     }
 
-    if (nodeGui->getNode()->getKnobs().empty()) {
-        return;
-    }
-
-    if (!dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance()) && !nodeCanAnimate(nodeGui)) {
-        return;
-    }
-
-    DSNode *dsNode = createDSNode(nodeGui);
+    DSNode *dsNode = createDSNode(nodeGui, nodeType);
 
     _imp->nodeRows.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
 
@@ -541,7 +570,7 @@ DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 
 std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
 {
-    assert(dsGroup->getDSNodeType() == DSNode::GroupNodeType);
+    assert(dsGroup->getDSNodeType() == DopeSheet::NodeTypeGroup);
 
     NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getNode()->getLiveInstance());
     assert(nodeGroup);
@@ -949,38 +978,16 @@ void DopeSheet::emit_keyframeSelectionChanged()
     Q_EMIT keyframeSelectionChanged();
 }
 
-DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
+DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::NodeType nodeType)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
-    DSNode::DSNodeType nodeType = DSNode::CommonNodeType;
-
     NodePtr node = nodeGui->getNode();
-
-    std::string pluginID = node->getPluginID();
-
-    if (pluginID == PLUGINID_OFX_READOIIO
-            || pluginID == PLUGINID_OFX_READFFMPEG
-            || pluginID == PLUGINID_OFX_READPFM) {
-        nodeType = DSNode::ReaderNodeType;
-    }
-    else if (dynamic_cast<NodeGroup *>(node->getLiveInstance())) {
-        nodeType = DSNode::GroupNodeType;
-    }
-    else if (pluginID == PLUGINID_OFX_RETIME) {
-        nodeType = DSNode::RetimeNodeType;
-    }
-    else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
-        nodeType = DSNode::TimeOffsetNodeType;
-    }
-    else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
-        nodeType = DSNode::FrameRangeNodeType;
-    }
 
     QTreeWidgetItem *nameItem = new QTreeWidgetItem(nodeType);
     nameItem->setText(0, node->getLabel().c_str());
 
-    DSNode *dsNode = new DSNode(this, nodeType, nameItem, nodeGui);
+    DSNode *dsNode = new DSNode(this, nodeType, nodeGui, nameItem);
 
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
             this, SLOT(onSettingsPanelCloseChanged(bool)));
@@ -1134,7 +1141,7 @@ public:
 
     DopeSheet *dopeSheetModel;
 
-    DSNode::DSNodeType nodeType;
+    DopeSheet::NodeType nodeType;
 
     boost::shared_ptr<NodeGui> nodeGui;
 
@@ -1212,9 +1219,9 @@ void DSNodePrivate::initGroupNode()
 }
 
 DSNode::DSNode(DopeSheet *model,
-               DSNodeType nodeType,
-               QTreeWidgetItem *nameItem,
-               const boost::shared_ptr<NodeGui> &nodeGui) :
+               DopeSheet::NodeType nodeType,
+               const boost::shared_ptr<NodeGui> &nodeGui,
+               QTreeWidgetItem *nameItem) :
     QObject(),
     _imp(new DSNodePrivate(this))
 {
@@ -1242,7 +1249,7 @@ DSNode::DSNode(DopeSheet *model,
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
     // the group's clip rect
-    if (_imp->nodeType == DSNode::GroupNodeType) {
+    if (_imp->nodeType == DopeSheet::NodeTypeGroup) {
         _imp->initGroupNode();
     }
 }
@@ -1263,6 +1270,16 @@ DSNode::~DSNode()
     delete _imp->nameItem;
 
     _imp->knobRows.clear();
+}
+
+/**
+ * @brief DSNode::getNameItem
+ *
+ * Returns the hierarchy view item associated with this node.
+ */
+QTreeWidgetItem *DSNode::getTreeItem() const
+{
+    return _imp->nameItem;
 }
 
 /**
@@ -1290,25 +1307,15 @@ DSKnobRow DSNode::getChildData() const
     return _imp->knobRows;
 }
 
-DSNode::DSNodeType DSNode::getDSNodeType() const
+DopeSheet::NodeType DSNode::getDSNodeType() const
 {
     return _imp->nodeType;
 }
 
 bool DSNode::isTimeNode() const
 {
-    return (_imp->nodeType >= DSNode::RetimeNodeType)
-            && (_imp->nodeType < DSNode::GroupNodeType);
-}
-
-/**
- * @brief DSNode::getNameItem
- *
- * Returns the hierarchy view item associated with this node.
- */
-QTreeWidgetItem *DSNode::getTreeItem() const
-{
-    return _imp->nameItem;
+    return (_imp->nodeType >= DopeSheet::NodeTypeRetime)
+            && (_imp->nodeType < DopeSheet::NodeTypeGroup);
 }
 
 

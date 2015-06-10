@@ -112,6 +112,18 @@ class DopeSheet: public QObject
     Q_OBJECT
 
 public:
+    enum NodeType
+    {
+        NodeTypeCommon = 1001,
+
+        // Range-based nodes
+        NodeTypeReader,
+        NodeTypeRetime,
+        NodeTypeTimeOffset,
+        NodeTypeFrameRange,
+        NodeTypeGroup
+    };
+
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
@@ -190,7 +202,7 @@ Q_SIGNALS:
     void keyframeSelectionChanged();
 
 private: /* functions */
-    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
+    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, NodeType nodeType);
 
 private Q_SLOTS:
     void onSettingsPanelCloseChanged(bool closed);
@@ -237,22 +249,10 @@ class DSNode : public QObject
     Q_OBJECT
 
 public:
-    enum DSNodeType
-    {
-        CommonNodeType = 1001,
-
-        // Range-based nodes
-        ReaderNodeType,
-        RetimeNodeType,
-        TimeOffsetNodeType,
-        FrameRangeNodeType,
-        GroupNodeType
-    };
-
     DSNode(DopeSheet *model,
-           DSNode::DSNodeType nodeType,
-           QTreeWidgetItem *nameItem,
-           const boost::shared_ptr<NodeGui> &nodeGui);
+           DopeSheet::NodeType nodeType,
+           const boost::shared_ptr<NodeGui> &nodeGui,
+           QTreeWidgetItem *nameItem);
     ~DSNode();
 
     QTreeWidgetItem *getTreeItem() const;
@@ -262,7 +262,7 @@ public:
 
     DSKnobRow getChildData() const;
 
-    DSNode::DSNodeType getDSNodeType() const;
+    DopeSheet::NodeType getDSNodeType() const;
 
     bool isTimeNode() const;
 
