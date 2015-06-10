@@ -199,7 +199,7 @@ public:
     
     void clearOfxImagesTLS();
     
-    void setClipComponentTLS(const Natron::ImageComponents& components);
+    void setClipComponentTLS(bool hasImage,const Natron::ImageComponents& components);
     void clearClipComponentsTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
@@ -259,6 +259,7 @@ private:
         //String indicating what a subsequent call to getComponents should return
         bool clipComponentsValid;
         Natron::ImageComponents clipComponents;
+        bool hasImage;
         
         ActionLocalData()
         : isViewValid(false)
@@ -272,6 +273,7 @@ private:
         , imagesBeingRendered()
         , clipComponentsValid(false)
         , clipComponents()
+        , hasImage(false)
         {
         }
     };

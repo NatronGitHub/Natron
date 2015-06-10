@@ -838,6 +838,9 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     if (_lastActionData.hasLocalData()) {
         ActionLocalData & args = _lastActionData.localData();
         if (args.clipComponentsValid) {
+            if (!args.hasImage) {
+                return 0;
+            }
             components = args.clipComponents;
         }
     }
@@ -1303,11 +1306,12 @@ OfxClipInstance::clearOfxImagesTLS()
 }
 
 void
-OfxClipInstance::setClipComponentTLS(const Natron::ImageComponents& components)
+OfxClipInstance::setClipComponentTLS(bool hasImage,const Natron::ImageComponents& components)
 {
     ActionLocalData & args = _lastActionData.localData();
     args.clipComponents = components;
     args.clipComponentsValid = true;
+    args.hasImage = hasImage;
 }
 
 void

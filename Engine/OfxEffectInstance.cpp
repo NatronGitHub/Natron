@@ -132,9 +132,9 @@ public:
                 if (!it->second.empty()) {
                     const ImagePtr& img = it->second.front();
                     assert(img);
-                    effect->setInputClipPlane(it->first, img->getComponents());
+                    effect->setInputClipPlane(it->first, true, img->getComponents());
                 } else {
-                    effect->setInputClipPlane(it->first, ImageComponents::getNoneComponents());
+                    effect->setInputClipPlane(it->first, false, ImageComponents::getNoneComponents());
                 }
             }
         }

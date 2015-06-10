@@ -96,6 +96,13 @@ public:
     
     void addAction(QAction* action);
     
+private:
+    
+    void addActionPrivate(QAction* action);
+    
+public:
+    
+    
     void addItem( const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
     
     void addItemNew();

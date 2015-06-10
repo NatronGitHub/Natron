@@ -406,6 +406,8 @@ ComboBox::createMenu()
         QVariant data = triggered->data();
         if (data.toString() != "New") {
             setCurrentIndex(data.toInt());
+        } else {
+            Q_EMIT itemNewSelected();
         }
         
     }
@@ -462,11 +464,17 @@ ComboBox::insertItem(int index,
 void
 ComboBox::addAction(QAction* action)
 {
+    action->setData(QVariant((int)_rootNode->children.size()));
+    addActionPrivate(action);
+}
+
+void
+ComboBox::addActionPrivate(QAction* action)
+{
     QString text = action->text();
     
     growMaximumWidthFromText(text);
     action->setParent(this);
-    action->setData(QVariant((int)_rootNode->children.size()));
     boost::shared_ptr<ComboBoxMenuNode> node(new ComboBoxMenuNode());
     node->text = text;
     node->isLeaf = action;
@@ -478,6 +486,7 @@ ComboBox::addAction(QAction* action)
     if (_rootNode->children.size() == 1) {
         setCurrentText_no_emit( itemText(0) );
     }
+
 }
 
 void
@@ -493,7 +502,7 @@ ComboBox::addItemNew()
     QFont f = QFont(appFont,appFontSize);
     f.setItalic(true);
     action->setFont(f);
-    addAction(action);
+    addActionPrivate(action);
 
 }
 
@@ -710,12 +719,16 @@ ComboBox::setCurrentIndex_internal(int index)
     if (node) {
         text = getNodeTextRecursive(node,_rootNode.get());
     }
-   
-    str = text;
-    if (str == "New") {
-        Q_EMIT itemNewSelected();
+    if (!node) {
         return false;
     }
+    //Forbid programmatic setting of the "New" choice, only user can select it
+    if ((node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
+        return false;
+    }
+   
+    str = text;
+
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
@@ -745,11 +758,6 @@ ComboBox::setCurrentIndex(int index)
 void
 ComboBox::setCurrentIndex_no_emit(int index)
 {
-    //Forbid programmatic setting of the "New" choice, only user can select it
-    ComboBoxMenuNode* node = getCurrentIndexNode(index, _rootNode.get()) ;
-    if (!node || (node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
-        return;
-    }
     setCurrentIndex_internal(index);
 }
 
