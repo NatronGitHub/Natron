@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtConcurrentRun>
 
 #include <QtCore/QSettings>
+#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include <SequenceParsing.h>
 
@@ -404,7 +405,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _relativeChoice = new ComboBox(_selectionWidget);
     QObject::connect(_relativeChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onRelativeChoiceChanged(int)));
-    _relativeChoice->setToolTip(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."));
+    _relativeChoice->setToolTip(Qt::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal));
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string,std::string> projectPaths;

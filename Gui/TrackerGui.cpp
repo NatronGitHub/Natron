@@ -107,11 +107,11 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addTrackButton->setToolTip( tr( Qt::convertFromPlainText(tr("When enabled you can add new tracks "
-                                                                      "by clicking on the Viewer. "
-                                                                      "Holding the Control + Alt keys is the "
-                                                                      "same as pressing this button."),
-                                                                   Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->addTrackButton->setToolTip(Qt::convertFromPlainText(tr("When enabled you can add new tracks "
+                                                                 "by clicking on the Viewer. "
+                                                                 "Holding the Control + Alt keys is the "
+                                                                 "same as pressing this button."),
+                                                              Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
@@ -134,8 +134,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     bwIcon.addPixmap(bwDisabled,QIcon::Normal,QIcon::Off);
     _imp->trackBwButton = new Button(bwIcon,"",_imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackBwButton->setToolTip(tr("Track selected tracks backward until left bound of the timeline.") +
-                                    "<p><b>" + tr("Keyboard shortcut") + ": Z</b></p>");
+    _imp->trackBwButton->setToolTip("<p>" + tr("Track selected tracks backward until left bound of the timeline.") +
+                                    "</p><p><b>" + tr("Keyboard shortcut:") + " Z</b></p>");
     _imp->trackBwButton->setCheckable(true);
     _imp->trackBwButton->setChecked(false);
     QObject::connect( _imp->trackBwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackBwClicked() ) );
@@ -143,22 +143,22 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
 
     _imp->trackPrevButton = new Button(QIcon(pixPrev),"",_imp->buttonsBar);
     _imp->trackPrevButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackPrevButton->setToolTip(tr("Track selected tracks on the previous frame.") +
-                                      "<p><b>" + tr("Keyboard shortcut") + ": X</b></p>");
+    _imp->trackPrevButton->setToolTip("<p>" + tr("Track selected tracks on the previous frame.") +
+                                      "</p><p><b>" + tr("Keyboard shortcut:") + " X</b></p>");
     QObject::connect( _imp->trackPrevButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackPrevClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackPrevButton);
 
     _imp->stopTrackingButton = new Button(QIcon(pixStop),"",_imp->buttonsBar);
     _imp->stopTrackingButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->stopTrackingButton->setToolTip(tr("Stop the ongoing tracking if any")  +
-                                         "<p><b>" + tr("Keyboard shortcut") + ": Escape</b></p>");
+    _imp->stopTrackingButton->setToolTip("<p>" + tr("Stop the ongoing tracking if any")  +
+                                         "</p><p><b>" + tr("Keyboard shortcut:") + " Escape</b></p>");
     QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->stopTrackingButton);
 
     _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackNextButton->setToolTip(tr("Track selected tracks on the next frame.") +
-                                      "<p><b>" + tr("Keyboard shortcut") + ": C</b></p>");
+    _imp->trackNextButton->setToolTip("<p>" + tr("Track selected tracks on the next frame.") +
+                                      "</p><p><b>" + tr("Keyboard shortcut:") + " C</b></p>");
     QObject::connect( _imp->trackNextButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackNextClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->trackNextButton);
 
@@ -167,8 +167,8 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     fwIcon.addPixmap(fwDisabled,QIcon::Normal,QIcon::Off);
     _imp->trackFwButton = new Button(fwIcon,"",_imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackFwButton->setToolTip(tr("Track selected tracks forward until right bound of the timeline.") +
-                                    "<p><b>" + tr("Keyboard shortcut") + ": V</b></p>");
+    _imp->trackFwButton->setToolTip("<p>" + tr("Track selected tracks forward until right bound of the timeline.") +
+                                    "</p><p><b>" + tr("Keyboard shortcut:") + " V</b></p>");
     _imp->trackFwButton->setCheckable(true);
     _imp->trackFwButton->setChecked(false);
     QObject::connect( _imp->trackFwButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackFwClicked() ) );
@@ -177,22 +177,19 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
 
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearAllAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear all animation for selected tracks."),
-                                                                            Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->clearAllAnimationButton->setToolTip(Qt::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
 
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearBwAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear animation backward from the current frame."),
-                                                                           Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->clearBwAnimationButton->setToolTip(Qt::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
 
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearFwAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear animation forward from the current frame."),
-                                                                           Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->clearFwAnimationButton->setToolTip(Qt::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
 
@@ -204,9 +201,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
-    _imp->updateViewerButton->setToolTip( tr( Qt::convertFromPlainText(tr("Update viewer during tracking for each "
-                                                                          "frame instead of just the tracks."),
-                                                                        Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->updateViewerButton->setToolTip(Qt::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->updateViewerButton,SIGNAL( clicked(bool) ),this,SLOT( onUpdateViewerClicked(bool) ) );
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 

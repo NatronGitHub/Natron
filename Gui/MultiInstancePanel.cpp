@@ -29,6 +29,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QWaitCondition>
 #include <QtConcurrentMap>
 #include <QApplication>
+#include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -517,12 +518,12 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->addButton->setToolTip("Add new");
+    _imp->addButton->setToolTip(Qt::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
-    _imp->removeButton->setToolTip( tr("Remove selection") );
+    _imp->removeButton->setToolTip(Qt::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
@@ -531,14 +532,14 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
 
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
     _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->selectAll->setToolTip( tr("Select all") );
+    _imp->selectAll->setToolTip(Qt::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
     QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
 
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
     QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip( tr("Reset selected items") );
+    _imp->resetTracksButton->setToolTip(Qt::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
 
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
@@ -1742,20 +1743,20 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
     _imp->exportLayout->setContentsMargins(0, 0, 0, 0);
 
     _imp->exportChoice = new ComboBox(_imp->exportContainer);
-    _imp->exportChoice->setToolTip( tr("<p><b>CornerPinOFX (Use current frame):</p></b>"
-                                       "<p>Warp the image according to the relative transform using the current frame as reference.</p>"
-                                       "<p><b>CornerPinOFX (Use transform ref frame):</p></b>"
-                                       "<p>Warp the image according to the relative transform using the "
-                                       "reference frame specified in the transform tab.</p>"
-                                       "<p><b>CornerPinOFX (Stabilize):</p></b>"
-                                       "<p>Transform the image so that the tracked points do not move.</p>"
-//                                      "<p><b>Transform (Stabilize):</p></b>"
-//                                      "<p>Transform the image so that the tracked points do not move.</p>"
-//                                      "<p><b>Transform (Match-move):</p></b>"
-//                                      "<p>Transform another image so that it moves to match the tracked points.</p>"
-//                                      "<p>The linked versions keep a link between the new node and the track, the others just copy"
-//                                      " the values.</p>"
-                                       ) );
+    _imp->exportChoice->setToolTip( "<p><b>" + tr("CornerPinOFX (Use current frame):") + "</p></b>"
+                                       "<p>" + tr("Warp the image according to the relative transform using the current frame as reference.") + "</p>"
+                                       "<p><b>" + tr("CornerPinOFX (Use transform ref frame):") + "</p></b>"
+                                       "<p>" + tr("Warp the image according to the relative transform using the "
+                                       "reference frame specified in the transform tab.") + "</p>"
+                                       "<p><b>" + tr("CornerPinOFX (Stabilize):") + "</p></b>"
+                                       "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
+//                                      "<p><b>" + tr("Transform (Stabilize):</p></b>"
+//                                      "<p>" + tr("Transform the image so that the tracked points do not move.") + "</p>"
+//                                      "<p><b>" + tr("Transform (Match-move):</p></b>"
+//                                      "<p>" + tr("Transform another image so that it moves to match the tracked points.") + "</p>"
+//                                      "<p>" + tr("The linked versions keep a link between the new node and the track, the others just copy"
+//                                      " the values.") + "</p>"
+                                       );
     std::vector<std::string> choices;
     std::vector<std::string> helps;
 
@@ -1814,7 +1815,7 @@ TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
         return;
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
-    _imp->averageTracksButton->setToolTip( tr("Make a new track which is the average of the selected tracks") );
+    _imp->averageTracksButton->setToolTip(Qt::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
