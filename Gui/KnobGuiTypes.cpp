@@ -1850,6 +1850,7 @@ void
 Choice_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new ComboBox( layout->parentWidget() );
+    _comboBox->setCascading(_knob.lock()->isCascading());
     onEntriesPopulated();
 
     QObject::connect( _comboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );

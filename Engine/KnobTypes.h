@@ -437,6 +437,16 @@ public:
     
     bool getHostCanAddOptions() const;
 
+    void setCascading(bool cascading)
+    {
+        _isCascading = cascading;
+    }
+    
+    bool isCascading() const
+    {
+        return _isCascading;
+    }
+    
 Q_SIGNALS:
 
     void populated();
@@ -453,6 +463,7 @@ private:
     std::vector<std::string> _entriesHelp;
     bool _addNewChoice;
     static const std::string _typeNameStr;
+    bool _isCascading;
 };
 
 /******************************SEPARATOR_KNOB**************************************/

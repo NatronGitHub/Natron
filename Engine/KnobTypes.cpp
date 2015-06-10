@@ -559,6 +559,7 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
 : Knob<int>(holder, description, dimension,declaredByPlugin)
 , _entriesMutex()
 , _addNewChoice(false)
+, _isCascading(false)
 {
 }
 

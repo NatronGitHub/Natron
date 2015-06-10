@@ -3156,7 +3156,7 @@ OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG,
         *defaultR = *defaultG = *defaultB = false;
         *defaultA = true;
     } else {
-        qDebug() << "Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+        qDebug() << getScriptName_mt_safe().c_str() <<"Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
         *defaultR = *defaultG = *defaultB = *defaultA = true;
     }
     return true;

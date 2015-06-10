@@ -790,6 +790,9 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->setDefaultValue(def,0);
     
+    bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
+    choice->setCascading(cascading);
+    
     bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
     if (canAddOptions) {
         choice->setHostCanAddOptions(true);
