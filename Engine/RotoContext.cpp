@@ -7463,11 +7463,19 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
             if (dstNComps == 1) {
                 dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
             } else if (dstNComps == 4) {
-                assert(srcNComps == 4);
-                dstPix[x * dstNComps + 0] = (float)srcPix[x * srcNComps + 2] / maxValue * 255.f;
-                dstPix[x * dstNComps + 1] = (float)srcPix[x * srcNComps + 1] / maxValue * 255.f;
-                dstPix[x * dstNComps + 2] = (float)srcPix[x * srcNComps + 0] / maxValue * 255.f;
-                dstPix[x * dstNComps + 3] = (float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                if (srcNComps == 4) {
+                    dstPix[x * dstNComps + 0] = (float)srcPix[x * srcNComps + 2] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 1] = (float)srcPix[x * srcNComps + 1] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 2] = (float)srcPix[x * srcNComps + 0] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 3] = (float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                } else {
+                    assert(srcNComps == 1);
+                    float pix = (float)srcPix[x];
+                    dstPix[x * dstNComps + 0] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 1] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 2] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 3] = pix / maxValue * 255.f;
+                }
             }
             assert(!boost::math::isnan(dstPix[x]));
         }
@@ -7612,12 +7620,12 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     int srcNComps;
     //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
-    if (doBuildUp || components.getNumComponents() == 1) {
-        cairoImgFormat = CAIRO_FORMAT_A8;
-        srcNComps = 1;
-    } else {
+    if (!doBuildUp || components.getNumComponents() > 1) {
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
         srcNComps = 4;
+    } else {
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
     }
     
     
@@ -7842,12 +7850,12 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
     if (isSingleStroke) {
         doBuildUp = isSingleStroke->getBuildupKnob()->getValueAtTime(time);
         //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
-        if (doBuildUp || components.getNumComponents() == 1) {
-            cairoImgFormat = CAIRO_FORMAT_A8;
-            srcNComps = 1;
-        } else {
+        if (!doBuildUp || components.getNumComponents() > 1) {
             cairoImgFormat = CAIRO_FORMAT_ARGB32;
             srcNComps = 4;
+        } else {
+            cairoImgFormat = CAIRO_FORMAT_A8;
+            srcNComps = 1;
         }
     } else {
         if (components.getNumComponents() == 1) {
