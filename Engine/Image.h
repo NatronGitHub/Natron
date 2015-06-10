@@ -742,17 +742,38 @@ namespace Natron {
         void copyBitmapPortion(const RectI& roi, const Image& other);
         
     private:
-        
-        template <typename PIX,int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-        void copyUnProcessedChannelsForChannels(const RectI& roi,const boost::shared_ptr<Image>& originalImage);
-        
 
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
+        void copyUnProcessedChannelsForPremult(const RectI& roi,
+                                               const boost::shared_ptr<Image>& originalImage);
+
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
+        void copyUnProcessedChannelsForChannels(bool premult,
+                                                const RectI& roi,
+                                                const boost::shared_ptr<Image>& originalImage,
+                                                bool originalPremult);
+
+
+
+        template <typename PIX, int maxValue,int srcNComps, int dstNComps>
+        void copyUnProcessedChannelsForComponents(bool premult,
+                                                  const RectI& roi,
+                                                  bool doR,
+                                                  bool doG,
+                                                  bool doB,
+                                                  bool doA,
+                                                  const boost::shared_ptr<Image>& originalImage,
+                                                  bool originalPremult);
         
-        template <typename PIX,int srcNComps, int dstNComps>
-        void copyUnProcessedChannelsForComponents(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
-        
-        template <typename PIX>
-        void copyUnProcessedChannelsForDepth(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        template <typename PIX, int maxValue>
+        void copyUnProcessedChannelsForDepth(bool premult,
+                                             const RectI& roi,
+                                             bool doR,
+                                             bool doG,
+                                             bool doB,
+                                             bool doA,
+                                             const boost::shared_ptr<Image>& originalImage,
+                                             bool originalPremult);
 
 
         

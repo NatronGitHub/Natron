@@ -77,6 +77,8 @@ SOURCES += \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
+    ImageConvert.cpp \
+    ImageCopyChannels.cpp \
     ImageComponents.cpp \
     ImageKey.cpp \
     ImageParamsSerialization.cpp \
