@@ -376,6 +376,7 @@ struct RotoGui::RotoGuiPrivate
 RotoToolButton::RotoToolButton(QWidget* parent)
 : QToolButton(parent)
 , isSelected(false)
+, wasMouseReleased(false)
 {
     setFocusPolicy(Qt::ClickFocus);
 }
@@ -389,16 +390,27 @@ RotoToolButton::~RotoToolButton()
 void
 RotoToolButton::mousePressEvent(QMouseEvent* /*e*/)
 {
+    setFocus();
+    wasMouseReleased = false;
+    QTimer::singleShot(300, this, SLOT(handleLongPress()));
 }
 
+void
+RotoToolButton::handleLongPress()
+{
+    if (!wasMouseReleased) {
+        showMenu();
+    }
+}
 
 void
 RotoToolButton::mouseReleaseEvent(QMouseEvent* e)
 {
-    if ( triggerButtonisLeft(e) ) {
-        handleSelection();
-    } else if ( triggerButtonisRight(e) ) {
+    wasMouseReleased = true;
+    if (triggerButtonisRight(e)) {
         showMenu();
+    } else if ( triggerButtonisLeft(e) ) {
+        handleSelection();
     } else {
         QToolButton::mousePressEvent(e);
     }

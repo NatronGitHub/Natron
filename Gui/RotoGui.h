@@ -69,12 +69,17 @@ public:
     bool getIsSelected() const;
     void setIsSelected(bool s);
     
+public Q_SLOTS:
+    
+    void handleLongPress();
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     bool isSelected;
+    bool wasMouseReleased;
 };
 
 class RotoGui
