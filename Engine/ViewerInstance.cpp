@@ -1832,7 +1832,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
          ++y,
          dst_pixels += dstRowElements) {
 
-        for (int x = roi.x1; x < roi.x2;
+        for (int x = 0; x < roi.width();
              ++x) {
             
             double r,g,b,a;
