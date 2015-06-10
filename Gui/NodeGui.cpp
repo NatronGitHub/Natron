@@ -416,7 +416,7 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
         QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
-        if (getNode()->isRotoNode()) {
+        if (getNode()->isRotoNode() || getNode()->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
         if (getNode()->isTrackerNode()) {
