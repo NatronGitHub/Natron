@@ -238,16 +238,11 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
     DSNode *isFromGroup = model->getGroupDSNode(dsNode);
 
     if (isAffectedByTimeNode) {
-        isAffectedByTimeNode->getTreeItem()->insertChild(0, treeItem);
+        isAffectedByTimeNode->getTreeItem()->addChild(treeItem);
     }
 
     if (isFromGroup) {
-        if (isAffectedByTimeNode) {
-            moveChildTo(isAffectedByTimeNode, isFromGroup);
-        }
-        else {
-            isFromGroup->getTreeItem()->insertChild(0, treeItem);
-        }
+        isFromGroup->getTreeItem()->addChild(treeItem);
     }
 
     if (!isAffectedByTimeNode && !isFromGroup) {
@@ -300,19 +295,18 @@ void HierarchyViewPrivate::processChildNodes(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
-    for (int i = 0; i < treeItem->childCount(); ++i) {
-        if (DSNode *nodeToMove = model->findDSNode(treeItem->child(0))) {
-            QTreeWidgetItem *itemToMove = nodeToMove->getTreeItem();
+    // Put its child node items at the up level
+    for (int i = treeItem->childCount() - 1; i >= 0; --i) {
+        QTreeWidgetItem *child = treeItem->child(i);
 
-            treeItem->takeChild(0);
+        if (DSNode *nodeToMove = model->findDSNode(child)) {
+            QTreeWidgetItem *newParent = getParentItem(treeItem);
 
-            q_ptr->addTopLevelItem(itemToMove);
+            treeItem->takeChild(treeItem->indexOfChild(child));
+            newParent->addChild(child);
 
-            itemToMove->setExpanded(true);
+            child->setExpanded(true);
             checkNodeItem(nodeToMove);
-        }
-        else {
-            break;
         }
     }
 }
@@ -353,7 +347,7 @@ void HierarchyViewPrivate::moveChildTo(DSNode *child, DSNode *newParent)
 
     childItem = currentParent->takeChild(indexInParent(childItem));
 
-    newParentItem->insertChild(0, childItem);
+    newParentItem->addChild(childItem);
 }
 
 void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
@@ -591,13 +585,11 @@ void HierarchyView::onNodeAdded(DSNode *dsNode)
 void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
-    bool isTopLevelItem = !treeItem->parent();
 
-    if (isTopLevelItem) {
-        _imp->processChildNodes(dsNode);
-    }
+    _imp->processChildNodes(dsNode);
 
-    takeTopLevelItem(indexOfTopLevelItem(treeItem));
+    QTreeWidgetItem *treeItemParent = _imp->getParentItem(treeItem);
+    treeItemParent->takeChild(treeItemParent->indexOfChild(treeItem));
 }
 
 void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)

@@ -327,7 +327,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
         return;
     }
 
-    if (!nodeCanAnimate(nodeGui)) {
+    if (!dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance()) && !nodeCanAnimate(nodeGui)) {
         return;
     }
 
@@ -592,10 +592,6 @@ bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
  */
 DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
 {
-    if (dsNode->isTimeNode()) {
-        return NULL;
-    }
-
     Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getNode().get());
 
     return findDSNode(timeNode);
