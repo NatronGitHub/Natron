@@ -3850,6 +3850,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
                 
                 if (functorRet == eRenderingFunctorRetFailed || functorRet == eRenderingFunctorRetAborted) {
+                    renderStatus = functorRet;
                     break;
                 }
                 
