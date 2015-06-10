@@ -1301,6 +1301,8 @@ public:
     void evaluateChange();
     void evaluateChange_noIncrement();
     
+    void incrementAge();
+    
     void clearViewersLastRenderedStrokes();
 
     /**

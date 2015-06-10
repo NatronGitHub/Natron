@@ -2097,12 +2097,13 @@ RotoLayer::load(const RotoItemSerialization &obj)
             }
 #ifdef ROTO_ENABLE_PAINT
             else if (s) {
-                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,this_layer));
+                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
                 stroke->attachStrokeToNodes();
                 stroke->load(*s);
                 if (!stroke->getParentLayer()) {
                     stroke->setParentLayer(this_layer);
                 }
+                getContext()->incrementAge();
 
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
@@ -4768,6 +4769,7 @@ static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* ite
             //We found another stroke below at the same level
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(found->get());
             if (isStroke) {
+                assert(isStroke != item);
                 return isStroke;
             }
             
@@ -4776,6 +4778,7 @@ static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* ite
             if (isLayer) {
                 RotoStrokeItem* si = findPreviousOfItemInLayer(isLayer, 0);
                 if (si) {
+                    assert(si != item);
                     return si;
                 }
             }
@@ -4797,7 +4800,9 @@ static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* ite
         }
     }
     assert(found != greatParentItems.end());
-    return findPreviousOfItemInLayer(parentLayer.get(), layer);
+    RotoStrokeItem* ret = findPreviousOfItemInLayer(parentLayer.get(), layer);
+    assert(ret != item);
+    return ret;
 }
 
 RotoStrokeItem*
@@ -6363,6 +6368,7 @@ RotoContext::load(const RotoContextSerialization & obj)
     assert( QThread::currentThread() == qApp->thread() );
     ///no need to lock here, when this is called the main-thread is the only active thread
 
+    _imp->isCurrentlyLoading = true;
     _imp->autoKeying = obj._autoKeying;
     _imp->featherLink = obj._featherLink;
     _imp->rippleEdit = obj._rippleEdit;
@@ -6387,6 +6393,8 @@ RotoContext::load(const RotoContextSerialization & obj)
             linkItemsKnobsRecursively(this, isLayer);
         }
     }
+    _imp->isCurrentlyLoading = false;
+    refreshRotoPaintTree();
 }
 
 void
@@ -7093,6 +7101,12 @@ RotoContext::findDeepestSelectedLayer() const
     }
 
     return minLayer;
+}
+
+void
+RotoContext::incrementAge()
+{
+    _imp->incrementRotoAge();
 }
 
 void
@@ -8986,7 +9000,7 @@ static void refreshLayerRotoPaintTree(RotoLayer* layer)
 void
 RotoContext::refreshRotoPaintTree()
 {
-    if (!_imp->isPaintNode) {
+    if (!_imp->isPaintNode || _imp->isCurrentlyLoading) {
         return;
     }
     boost::shared_ptr<RotoLayer> layer;

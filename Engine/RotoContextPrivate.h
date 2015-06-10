@@ -1208,7 +1208,7 @@ struct RotoStrokeItemPrivate
         timeOffset->setDisplayMaximum(100);
         
         timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
-        timeOffsetMode->setName(kRotoBrushTimeOffsetModeParamHint);
+        timeOffsetMode->setHintToolTip(kRotoBrushTimeOffsetModeParamHint);
         timeOffsetMode->populate();
         {
             std::vector<std::string> modes;
@@ -1234,6 +1234,7 @@ struct RotoContextPrivate
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
+    bool isCurrentlyLoading;
     boost::weak_ptr<Natron::Node> node;
     U64 age;
 
@@ -1294,6 +1295,7 @@ struct RotoContextPrivate
     , autoKeying(true)
     , rippleEdit(false)
     , featherLink(true)
+    , isCurrentlyLoading(false)
     , node(n)
     , age(0)
     , lastRenderedImageMutex()

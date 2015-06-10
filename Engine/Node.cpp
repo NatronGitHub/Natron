@@ -572,6 +572,15 @@ Node::load(const std::string & parentMultiInstanceName,
         func = binary->findFunction<EffectBuilder>("BuildEffect");
     }
     bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
+    
+    bool nameSet = false;
+    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
+        setScriptName_no_error_check(serialization.getNodeScriptName());
+        setLabel(serialization.getNodeLabel());
+        nameSet = true;
+    }
+
+    
     if (func.first) {
         _imp->liveInstance.reset(func.second(thisShared));
         assert(_imp->liveInstance);
@@ -621,12 +630,6 @@ Node::load(const std::string & parentMultiInstanceName,
     }
     
     
-    bool nameSet = false;
-    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setScriptName_no_error_check(serialization.getNodeScriptName());
-        setLabel(serialization.getNodeLabel());
-        nameSet = true;
-    }
     
     if (!nameSet) {
         if (fixedName.isEmpty()) {
