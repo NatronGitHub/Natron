@@ -684,29 +684,33 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
+
+    bool drawPluginIconToo = false;
+    DSNode *dsNode = _imp->getDSNodeFromItem(item, &drawPluginIconToo);
+
     QRect rowRect = option.rect;
+    QRect itemRect = visualItemRect(item);
+    QRect branchRect(0, rowRect.y(), itemRect.x(), rowRect.height());
+
+    QStyleOptionViewItemV4 newOpt = viewOptions();
+    newOpt.rect = itemRect;
 
     // Draw row
     {
         painter->save();
 
-        bool drawPluginIconToo = false;
-
-        DSNode *dsNode = _imp->getDSNodeFromItem(item, &drawPluginIconToo);
-
         QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
 
         painter->fillRect(rowRect, fillColor);
 
-        // Draw the plugin icon
+        itemDelegate()->paint(painter, newOpt, index);
+
+        drawBranches(painter, branchRect, index);
+
+        // Draw the plugin icon and half-separation at node item top
         if (drawPluginIconToo) {
             _imp->drawPluginIcon(painter, dsNode, rowRect);
-        }
 
-        QTreeWidget::drawRow(painter, option, index);
-
-        // Draw half-separation at node item top
-        if (drawPluginIconToo) {
             int lineWidth = (NODE_SEPARATION_WIDTH / 2);
 
             QPen pen(Qt::black);
@@ -734,7 +738,6 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 
         painter->restore();
     }
-
 }
 
 void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
