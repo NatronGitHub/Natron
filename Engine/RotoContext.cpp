@@ -4547,6 +4547,14 @@ RotoStrokeItem::onRotoPaintOutputChannelsChanged()
     assert(outputChannels);
     
     int outputchans_i = outputChannels->getValue();
+    std::string rotopaintOutputChannels;
+    std::vector<std::string> rotoPaintchannelEntries = outputChannels->getEntries_mt_safe();
+    if (outputchans_i  < (int)rotoPaintchannelEntries.size()) {
+        rotopaintOutputChannels = rotoPaintchannelEntries[outputchans_i];
+    }
+    if (rotopaintOutputChannels.empty()) {
+        return;
+    }
     
     std::list<Node*> nodes;
     if (_imp->mergeNode) {
@@ -4579,7 +4587,14 @@ RotoStrokeItem::onRotoPaintOutputChannelsChanged()
         for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
             Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(*it);
             if (nodeChannels) {
-                nodeChannels->setValue(outputchans_i, 0);
+                std::vector<std::string> entries = nodeChannels->getEntries_mt_safe();
+                for (std::size_t i = 0; i < entries.size(); ++i) {
+                    if (entries[i] == rotopaintOutputChannels) {
+                        nodeChannels->setValue(i, 0);
+                        break;
+                    }
+                }
+                
             }
         }
     }
@@ -8134,7 +8149,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     
     double brushSizePixel = brushSize;
     if (mipmapLevel != 0) {
-        brushSizePixel /= (1 << mipmapLevel);
+        brushSizePixel = std::max(1.,brushSizePixel / (1 << mipmapLevel));
     }
     
 

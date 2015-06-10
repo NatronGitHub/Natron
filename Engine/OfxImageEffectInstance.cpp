@@ -860,22 +860,20 @@ OfxImageEffectInstance::discardClipsMipMapLevel()
 void
 OfxImageEffectInstance::setInputClipPlane(int inputNb,const Natron::ImageComponents& comp)
 {
-    std::string ofxComp = OfxClipInstance::natronsComponentsToOfxComponents(comp);
     OfxClipInstance* clip = getOfxEffectInstance()->getClipCorrespondingToInput(inputNb);
     assert(clip);
-    clip->setClipComponentTLS(ofxComp);
+    clip->setClipComponentTLS(comp);
 }
 
 void
 OfxImageEffectInstance::setClipsPlaneBeingRendered(const Natron::ImageComponents& comp)
 {
-    std::string ofxComp = OfxClipInstance::natronsComponentsToOfxComponents(comp);
     OFX::Host::ImageEffect::ClipInstance* ofxClip = getClip(kOfxImageEffectOutputClipName);
     assert(ofxClip);
     OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
     assert(clip);
     if (clip) {
-        clip->setClipComponentTLS(ofxComp);
+        clip->setClipComponentTLS(comp);
     }
 }
 

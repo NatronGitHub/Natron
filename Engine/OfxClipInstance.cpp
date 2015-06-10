@@ -834,21 +834,20 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    std::string components;
+    Natron::ImageComponents components;
     if (_lastActionData.hasLocalData()) {
         ActionLocalData & args = _lastActionData.localData();
         if (args.clipComponentsValid) {
             components = args.clipComponents;
         }
     }
-    if (components.empty()) {
-        components = _components;
-    } else if (components == kOfxImageComponentNone) {
-        return 0;
+    if (components.getNumComponents() == 0) {
+        std::list<ImageComponents> comps = ofxComponentsToNatronComponents(_components);
+        assert(!comps.empty());
+        components = comps.front();
     }
-    std::list<Natron::ImageComponents> comp = ofxComponentsToNatronComponents(components);
-    assert(!comp.empty());
-    std::string plane = natronsPlaneToOfxPlane(comp.front());
+
+    std::string plane = natronsPlaneToOfxPlane(components);
     return getImagePlane(time, view, plane, optionalBounds);
 } // getStereoscopicImage
 
@@ -1304,7 +1303,7 @@ OfxClipInstance::clearOfxImagesTLS()
 }
 
 void
-OfxClipInstance::setClipComponentTLS(const std::string& components)
+OfxClipInstance::setClipComponentTLS(const Natron::ImageComponents& components)
 {
     ActionLocalData & args = _lastActionData.localData();
     args.clipComponents = components;
@@ -1316,8 +1315,8 @@ OfxClipInstance::clearClipComponentsTLS()
 {
     assert(_lastActionData.hasLocalData());
     ActionLocalData & args = _lastActionData.localData();
-    args.clipComponents.clear();
     args.clipComponentsValid = false;
+    args.clipComponents = ImageComponents::getNoneComponents();
 }
 
 const std::string &
