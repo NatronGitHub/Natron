@@ -2237,16 +2237,7 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 
     switch (nodeType) {
     case DSNode::ReaderNodeType:
-    {
-        if (DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode)) {
-            if (nearestTimeNode->getDSNodeType() == DSNode::RetimeNodeType) {
-                computeRetimeRange(nearestTimeNode);
-            }
-        }
-        else {
-            computeReaderRange(dsNode);
-        }
-    }
+        computeReaderRange(dsNode);
         break;
     case DSNode::RetimeNodeType:
         computeRetimeRange(dsNode);
@@ -2317,10 +2308,6 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         range.second = rangeEnd;
 
         nodeRanges[retimer] = range;
-
-        if (DSNode *readerIsOpenInDopeSheet = model->findDSNode(nearestReader)) {
-            nodeRanges[readerIsOpenInDopeSheet] = range;
-        }
     }
     else {
         nodeRanges[retimer] = FrameRange();
