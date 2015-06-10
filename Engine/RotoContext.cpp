@@ -6517,22 +6517,25 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                 continue;
             }
             
-            
-            if (k == strengthKnob && nbStrokeWithoutStrength) {
-                k->setAllDimensionsEnabled(false);
-            } else {
-                k->setAllDimensionsEnabled(true);
-            }
-            if (nbStrokeWithoutCloneFunctions) {
-                bool isCloneKnob = false;
-                for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2!=_imp->cloneKnobs.end(); ++it2) {
-                    if (it2->lock() == k) {
-                        isCloneKnob = true;
-                    }
+            if (k == strengthKnob) {
+                if (nbStrokeWithoutStrength) {
+                    k->setAllDimensionsEnabled(false);
+                } else {
+                    k->setAllDimensionsEnabled(true);
                 }
-                k->setAllDimensionsEnabled(!isCloneKnob);
             } else {
-                k->setAllDimensionsEnabled(true);
+                
+                if (nbStrokeWithoutCloneFunctions) {
+                    bool isCloneKnob = false;
+                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2!=_imp->cloneKnobs.end(); ++it2) {
+                        if (it2->lock() == k) {
+                            isCloneKnob = true;
+                        }
+                    }
+                    k->setAllDimensionsEnabled(!isCloneKnob);
+                } else {
+                    k->setAllDimensionsEnabled(true);
+                }
             }
             if (nbUnlockedBeziers >= 2 || nbUnlockedStrokes >= 2) {
                 k->setDirty(true);
