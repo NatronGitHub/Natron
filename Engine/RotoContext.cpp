@@ -4562,13 +4562,25 @@ RotoStrokeItem::onRotoPaintOutputChannelsChanged()
         nodes.push_back(_imp->frameHoldNode.get());
     }
     for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        
+        std::list<KnobI*> knobs;
         boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName("Output_channels");
-        if (!channelsKnob) {
-            continue;
+        if (channelsKnob) {
+            knobs.push_back(channelsKnob.get());
         }
-        Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(channelsKnob.get());
-        if (nodeChannels) {
-            nodeChannels->setValue(outputchans_i, 0);
+        boost::shared_ptr<KnobI> aChans = (*it)->getKnobByName("A_channels");
+        if (aChans) {
+            knobs.push_back(aChans.get());
+        }
+        boost::shared_ptr<KnobI> bChans = (*it)->getKnobByName("B_channels");
+        if (bChans) {
+            knobs.push_back(bChans.get());
+        }
+        for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
+            Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(*it);
+            if (nodeChannels) {
+                nodeChannels->setValue(outputchans_i, 0);
+            }
         }
     }
 }
