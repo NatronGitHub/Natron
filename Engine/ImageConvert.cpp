@@ -332,16 +332,17 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         }
                         
                         for (int k = 0; k < maxColorComps; ++k) {
+                            SRCPIX sourcePixel = k < srcNComps ? srcPixels[k] : 0.;
                             if (!useColorspaces || (!srcLut && !dstLut)) {
                                 DSTPIX pix;
                                 if (dstMaxValue == 255) {
-                                    float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    float pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;
                                     
                                 } else {
-                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(sourcePixel);
                                 }
                                 dstPixels[k] =  pix;
                             } else {
@@ -350,7 +351,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 
                                 ///Unpremult before doing colorspace conversion from linear to X
                                 if (unpremultChannel) {
-                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                     pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
                                     if (srcLut) {
                                         pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
@@ -358,14 +359,14 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                     
                                 } else if (srcLut) {
                                     if (srcMaxValue == 255) {
-                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(sourcePixel);
                                     } else if (srcMaxValue == 65535) {
-                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
+                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(sourcePixel);
                                     } else {
-                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(sourcePixel);
                                     }
                                 } else {
-                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                 }
                                 
                                 ///Apply dst color-space
