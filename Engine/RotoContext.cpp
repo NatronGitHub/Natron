@@ -7997,7 +7997,8 @@ RotoContextPrivate::renderDot(cairo_t* cr,
     
     if (!opacityStops.empty()) {
         cairo_pattern_t* pattern;
-        int pressureInt = int(pressure * (ROTO_PRESSURE_LEVELS-1) + 0.5);
+        // sometimes, Qt gives a pressure level > 1... so we clamp it
+        int pressureInt = int(std::max(0., std::min(pressure, 1.)) * (ROTO_PRESSURE_LEVELS-1) + 0.5);
         assert(pressureInt >= 0 && pressureInt < ROTO_PRESSURE_LEVELS);
         if (dotPatterns[pressureInt]) {
             pattern = dotPatterns[pressureInt];
