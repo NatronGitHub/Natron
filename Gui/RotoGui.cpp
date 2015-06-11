@@ -104,6 +104,7 @@ enum EventStateEnum
     eEventStateDraggingBBoxMidLeft,
     eEventStateBuildingStroke,
     eEventStateDraggingCloneOffset,
+    eEventStateDraggingBrushSize,
 };
 
 enum HoverStateEnum
@@ -234,7 +235,8 @@ struct RotoGui::RotoGuiPrivate
     int shiftDown;
     int ctrlDown;
     bool lastTabletDownTriggeredEraser;
-
+    QPointF mouseCenterOnSizeChange;
+    
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
                    ViewerTab* tab,
@@ -300,6 +302,7 @@ struct RotoGui::RotoGuiPrivate
     , shiftDown(0)
     , ctrlDown(0)
     , lastTabletDownTriggeredEraser(false)
+    , mouseCenterOnSizeChange()
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = eRotoTypeRotopainting;
@@ -1041,8 +1044,12 @@ RotoGui::setCurrentTool(RotoGui::RotoToolEnum tool,
                         bool emitSignal)
 {
     QList<QAction*> actions = _imp->selectTool->actions();
-    actions.append( _imp->pointsEditionTool->actions() );
-    actions.append( _imp->bezierEditionTool->actions() );
+    if (_imp->pointsEditionTool) {
+        actions.append( _imp->pointsEditionTool->actions() );
+    }
+    if (_imp->bezierEditionTool) {
+        actions.append( _imp->bezierEditionTool->actions() );
+    }
     if (_imp->paintBrushTool) {
         actions.append(_imp->paintBrushTool->actions());
     }
@@ -1660,6 +1667,13 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 shadow.y = 2. / (projection[5] * viewportSize.second);
                 
                 double halfBrush = brushSize / 2.;
+                
+                QPointF ellipsePos;
+                if (_imp->state == eEventStateDraggingBrushSize) {
+                    ellipsePos = _imp->mouseCenterOnSizeChange;
+                } else {
+                    ellipsePos = _imp->lastMousePos;
+                }
                 for (int l = 0; l < 2; ++l) {
                     
                     glMatrixMode(GL_PROJECTION);
@@ -1667,7 +1681,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     // translate (1,-1) pixels
                     glTranslated(direction * shadow.x, -direction * shadow.y, 0);
                     glMatrixMode(GL_MODELVIEW);
-                    drawEllipse(_imp->lastMousePos.x(),_imp->lastMousePos.y(),halfBrush,halfBrush,l, .8f, .8f, .8f);
+                    drawEllipse(ellipsePos.x(),ellipsePos.y(),halfBrush,halfBrush,l, .8f, .8f, .8f);
                     
                     glColor3f(.6f*l, .6f*l, .6f*l);
 
@@ -1677,19 +1691,19 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         
                         if (_imp->state == eEventStateDraggingCloneOffset) {
                             //draw a line between the center of the 2 ellipses
-                            glVertex2d(_imp->lastMousePos.x(),_imp->lastMousePos.y());
-                            glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() + _imp->rotoData->cloneOffset.second);
+                            glVertex2d(ellipsePos.x(),ellipsePos.y());
+                            glVertex2d(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y() + _imp->rotoData->cloneOffset.second);
                         }
                         //draw a cross in the center of the source ellipse
-                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second - halfBrush);
-                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() +  _imp->rotoData->cloneOffset.second + halfBrush);
-                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first - halfBrush,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second);
-                        glVertex2d(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first + halfBrush,_imp->lastMousePos.y()  + _imp->rotoData->cloneOffset.second);
+                        glVertex2d(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y()  + _imp->rotoData->cloneOffset.second - halfBrush);
+                        glVertex2d(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y() +  _imp->rotoData->cloneOffset.second + halfBrush);
+                        glVertex2d(ellipsePos.x() + _imp->rotoData->cloneOffset.first - halfBrush,ellipsePos.y()  + _imp->rotoData->cloneOffset.second);
+                        glVertex2d(ellipsePos.x() + _imp->rotoData->cloneOffset.first + halfBrush,ellipsePos.y()  + _imp->rotoData->cloneOffset.second);
                         glEnd();
                         
                         
                         //draw the source ellipse
-                        drawEllipse(_imp->lastMousePos.x() + _imp->rotoData->cloneOffset.first,_imp->lastMousePos.y() + _imp->rotoData->cloneOffset.second,halfBrush,halfBrush,l, .6f, .6f, .6f);
+                        drawEllipse(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y() + _imp->rotoData->cloneOffset.second,halfBrush,halfBrush,l, .6f, .6f, .6f);
                     }
                 }
             }
@@ -2520,6 +2534,9 @@ RotoGui::penDown(double /*scaleX*/,
             
             if (_imp->selectedTool == eRotoToolClone && modCASIsControl(e)) {
                 _imp->state = eEventStateDraggingCloneOffset;
+            } else if (modCASIsShift(e)) {
+                _imp->state = eEventStateDraggingBrushSize;
+                _imp->mouseCenterOnSizeChange = pos;
             } else {
                 Natron::Point p;
                 p.x = pos.x();
@@ -2934,6 +2951,12 @@ RotoGui::penMotion(double /*scaleX*/,
     case eEventStateDraggingCloneOffset: {
         _imp->rotoData->cloneOffset.first -= dx;
         _imp->rotoData->cloneOffset.second -= dy;
+    }   break;
+    case eEventStateDraggingBrushSize: {
+        double size = _imp->sizeSpinbox->value();
+        size += ((dx + dy) / 2.);
+        _imp->sizeSpinbox->setValue(std::max(1.,size));
+        
     }   break;
     case eEventStateNone:
     default:
