@@ -3454,7 +3454,7 @@ void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -3466,7 +3466,7 @@ void
 KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {

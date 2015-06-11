@@ -3270,7 +3270,7 @@ ViewerGL::updateColorPicker(int textureIndex,
                             int x,
                             int y)
 {
-    if (_imp->pickerState != ePickerStateInactive || _imp->viewerTab->getGui()->isGUIFrozen()) {
+    if (_imp->pickerState != ePickerStateInactive || !_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->isGUIFrozen()) {
         return;
     }
 
@@ -4363,7 +4363,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const RectD & dispW, // in canonical coordinates
                                       int texIndex)
 {
-    if (_imp->viewerTab->getGui()->isGUIFrozen()) {
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->isGUIFrozen()) {
         return;
     }
     

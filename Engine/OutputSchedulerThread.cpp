@@ -2430,7 +2430,7 @@ ViewerDisplayScheduler::onRenderStopped(bool /*/aborted*/)
     ///Refresh all previews in the tree
     _viewer->getNode()->refreshPreviewsRecursivelyUpstream(_viewer->getTimeline()->currentFrame());
     
-    if (_viewer->getApp()->isGuiFrozen()) {
+    if (!_viewer->getApp() || _viewer->getApp()->isGuiFrozen()) {
         getEngine()->s_refreshAllKnobs();
     }
 }

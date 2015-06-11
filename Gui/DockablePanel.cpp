@@ -2287,7 +2287,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"),&menu);
         menu.addAction(removeAnimation);
         
-        if (master || _imp->_holder->getApp()->isGuiFrozen()) {
+        if (master || !_imp->_holder || !_imp->_holder->getApp() || _imp->_holder->getApp()->isGuiFrozen()) {
             setKeys->setEnabled(false);
             removeAnimation->setEnabled(false);
         }
@@ -2638,7 +2638,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
     
-    if (master || node->getDagGui()->getGui()->isGUIFrozen()) {
+    if (master || !node->getDagGui() || !node->getDagGui()->getGui() || node->getDagGui()->getGui()->isGUIFrozen()) {
         importPresets->setEnabled(false);
         exportAsPresets->setEnabled(false);
         setKeyOnAll->setEnabled(false);

@@ -3925,7 +3925,7 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
-    if (_imp->_gui->isGUIFrozen()) {
+    if (!_imp->_gui || _imp->_gui->isGUIFrozen()) {
         return;
     }
 

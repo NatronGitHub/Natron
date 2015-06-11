@@ -4317,7 +4317,7 @@ Node::purgeAllInstancesCaches()
 bool
 Node::notifyInputNIsRendering(int inputNb)
 {
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return false;
     }
     
@@ -4354,7 +4354,7 @@ Node::notifyInputNIsFinishedRendering(int inputNb)
 bool
 Node::notifyRenderingStarted()
 {
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return false;
     }
     

@@ -3048,7 +3048,7 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    if (getGui()->isGUIFrozen()) {
+    if (!getGui() || getGui()->isGUIFrozen()) {
         return;
     }
     QString oldText = _imp->_cacheSizeText->toPlainText();

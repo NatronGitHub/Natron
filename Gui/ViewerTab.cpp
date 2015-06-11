@@ -1347,11 +1347,15 @@ ViewerTab::startPause(bool b)
 void
 ViewerTab::abortRendering()
 {
-    _imp->play_Forward_Button->setDown(false);
-    _imp->play_Backward_Button->setDown(false);
-    _imp->play_Forward_Button->setChecked(false);
-    _imp->play_Backward_Button->setChecked(false);
-    if (_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+    if (_imp->play_Forward_Button) {
+        _imp->play_Forward_Button->setDown(false);
+        _imp->play_Forward_Button->setChecked(false);
+    }
+    if (_imp->play_Backward_Button) {
+        _imp->play_Backward_Button->setDown(false);
+        _imp->play_Backward_Button->setChecked(false);
+    }
+    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(false);
     }
     ///Abort all viewers because they are all synchronised.
@@ -1372,13 +1376,17 @@ ViewerTab::onEngineStarted(bool forward)
         return;
     }
     
-    _imp->play_Forward_Button->setDown(forward);
-    _imp->play_Forward_Button->setChecked(forward);
-    
-    _imp->play_Backward_Button->setDown(!forward);
-    _imp->play_Backward_Button->setChecked(!forward);
+    if (_imp->play_Forward_Button) {
+        _imp->play_Forward_Button->setDown(forward);
+        _imp->play_Forward_Button->setChecked(forward);
+    }
 
-    if (!_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+    if (_imp->play_Backward_Button) {
+        _imp->play_Backward_Button->setDown(!forward);
+        _imp->play_Backward_Button->setChecked(!forward);
+    }
+
+    if (_imp->gui && !_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(true);
     }
 }
@@ -1390,16 +1398,16 @@ ViewerTab::onEngineStopped()
         return;
     }
     
-    if (_imp->play_Forward_Button->isDown()) {
+    if (_imp->play_Forward_Button && _imp->play_Forward_Button->isDown()) {
         _imp->play_Forward_Button->setDown(false);
         _imp->play_Forward_Button->setChecked(false);
     }
     
-    if (_imp->play_Backward_Button->isDown()) {
+    if (_imp->play_Backward_Button && _imp->play_Backward_Button->isDown()) {
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
-    if (_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(false);
     }
 }
@@ -1740,7 +1748,7 @@ ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
 
-    if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || _imp->gui->isGUIFrozen()) {
+    if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || !_imp->gui || _imp->gui->isGUIFrozen()) {
         return;
     }
     
@@ -3885,8 +3893,12 @@ void
 ViewerTab::onVideoEngineStopped()
 {
     ///Refresh knobs
-    if (_imp->gui->isGUIFrozen()) {
-        _imp->gui->getNodeGraph()->refreshNodesKnobsAtTime(_imp->timeLineGui->getTimeline()->currentFrame());
+    if (_imp->gui && _imp->gui->isGUIFrozen()) {
+        NodeGraph* graph = _imp->gui->getNodeGraph();
+        if (graph && _imp->timeLineGui) {
+            boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
+            graph->refreshNodesKnobsAtTime(timeline->currentFrame());
+        }
     }
 }
 
