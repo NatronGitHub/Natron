@@ -5440,8 +5440,8 @@ RotoStrokeItem::resetCloneTransformCenter()
 RectD
 RotoStrokeItem::computeBoundingBox(int time) const
 {
-
     RectD bbox;
+    QMutexLocker k(&itemMutex);
     bool bboxSet = false;
     
     double halfBrushSize = _imp->brushSize->getValueAtTime(time) / 2. + 1;
@@ -5449,6 +5449,10 @@ RotoStrokeItem::computeBoundingBox(int time) const
     KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
     KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
     KeyFrameSet pCurve = _imp->pressureCurve.getKeyFrames_mt_safe();
+    
+    if (xCurve.empty()) {
+        return RectD();
+    }
     
     assert(xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size());
     
@@ -5483,12 +5487,16 @@ RotoStrokeItem::computeBoundingBox(int time) const
         RectD subBox;
         
         double pressure = std::max(pIt->getValue(), pNext->getValue());
-        
-        subBox.x1 = std::min(xIt->getValue(), xNext->getValue());
-        subBox.x2 = std::max(xIt->getValue(), xNext->getValue());
-        subBox.y1 = std::min(yIt->getValue(), yNext->getValue());
-        subBox.y2 = std::max(yIt->getValue(), yNext->getValue());
-        
+        Point p0,p1,p2,p3;
+        p0.x = xIt->getValue();
+        p0.y = yIt->getValue();
+        p1.x = p0.x + xIt->getRightDerivative() / 3.;
+        p1.y = p0.y + yIt->getRightDerivative() / 3.;
+        p3.x = xNext->getValue();
+        p3.y = yNext->getValue();
+        p2.x = p3.x - xNext->getLeftDerivative() / 3.;
+        p2.y = p3.y - yNext->getLeftDerivative() / 3.;
+        bezierPointBboxUpdate(p0,p1,p2,p3,&subBox);
         subBox.x1 -= halfBrushSize * pressure;
         subBox.x2 += halfBrushSize * pressure;
         subBox.y1 -= halfBrushSize * pressure;
@@ -5502,17 +5510,12 @@ RotoStrokeItem::computeBoundingBox(int time) const
         }
     }
     return bbox;
-
 }
 
 RectD
 RotoStrokeItem::getBoundingBox(int time) const
 {
 
-    QMutexLocker k(&itemMutex);
-    if (_imp->xCurve.getKeyFramesCount() == 0) {
-        return RectD();
-    }
     
     bool isActivated = getActivatedKnob()->getValueAtTime(time);
     if (!isActivated)  {
