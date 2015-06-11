@@ -1056,9 +1056,8 @@ public:
     void attachStrokeToNodes();
     
     bool getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
-                                            RectD* wholeBbox, int* newAge);
+                                             int* newAge);
     
-    void clearChangesUpToAge(int age);
     
     void setStrokeFinished();
     

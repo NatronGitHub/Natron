@@ -290,6 +290,138 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
     }
 }
 
+
+static bool isRotoPaintNodeInputRecursive(Natron::Node* node,const NodePtr& rotoPaintNode) {
+    
+    if (node == rotoPaintNode.get()) {
+        return true;
+    }
+    int maxInputs = node->getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        NodePtr input = node->getInput(i);
+        if (input) {
+            if (input == rotoPaintNode) {
+                return true;
+            } else {
+                bool ret = isRotoPaintNodeInputRecursive(input.get(), rotoPaintNode);
+                if (ret) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& rotoPaintNode, const RectD& lastStrokeBbox,
+                                            bool invalidate)
+{
+    if (isRotoPaintNodeInputRecursive(node, rotoPaintNode)) {
+        if (invalidate) {
+            node->invalidateLastPaintStrokeDataNoRotopaint();
+        } else {
+            node->setLastPaintStrokeDataNoRotopaint(lastStrokeBbox);
+        }
+        
+        if (node == rotoPaintNode.get()) {
+            return;
+        }
+        int maxInputs = node->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            NodePtr input = node->getInput(i);
+            if (input) {
+                updateLastStrokeDataRecursively(input.get(), rotoPaintNode, lastStrokeBbox, invalidate);
+            }
+        }
+    }
+}
+
+
+class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
+{
+    NodePtr rotoNode;
+    NodeList rotoPaintNodes;
+    NodePtr viewerNode;
+    NodePtr viewerInputNode;
+public:
+    
+    ViewerParallelRenderArgsSetter(NodeCollection* n,
+                                   int time,
+                                   int view,
+                                   bool isRenderUserInteraction,
+                                   bool isSequential,
+                                   bool canAbort,
+                                   U64 renderAge,
+                                   Natron::OutputEffectInstance* renderRequester,
+                                   int textureIndex,
+                                   const TimeLine* timeline,
+                                   bool isAnalysis,
+                                   const NodePtr& rotoPaintNode,
+                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke,
+                                   const NodePtr& viewerInput)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis)
+    , rotoNode(rotoPaintNode)
+    , rotoPaintNodes()
+    , viewerNode(renderRequester->getNode())
+    , viewerInputNode()
+    {
+        if (rotoNode) {
+            boost::shared_ptr<RotoContext> roto = rotoNode->getRotoContext();
+            assert(roto);
+            if (activeStroke) {
+                
+                roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+                RectD wholeStrokeRod;
+                RectD lastStrokeBbox;
+                int lastAge,newAge;
+                NodePtr mergeNode = activeStroke->getMergeNode();
+                lastAge = mergeNode->getStrokeImageAge();
+                activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &newAge);
+                if (lastAge == -1) {
+                    wholeStrokeRod = lastStrokeBbox;
+                } else {
+                    wholeStrokeRod = mergeNode->getPaintStrokeRoD_duringPainting();
+                    wholeStrokeRod.merge(lastStrokeBbox);
+                }
+                
+                for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                    
+                    bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
+                    
+                    (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
+                    if (isStrokeNode) {
+                        (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
+                    }
+                }
+                updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
+            }
+        }
+        
+        ///There can be a case where the viewer input tree does not belong to the project, for example
+        ///for the File Dialog preview.
+        if (viewerInput && !viewerInput->getGroup()) {
+            viewerInputNode = viewerInput;
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, viewerInput->getCurrentRenderThreadSafety());
+        }
+    }
+    
+    virtual ~ViewerParallelRenderArgsSetter()
+    {
+        if (rotoNode) {
+            for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+            }
+            updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
+        }
+        if (viewerInputNode) {
+            viewerInputNode->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        }
+    }
+};
+
+
+
 Natron::StatusEnum
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
@@ -308,20 +440,63 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         eStatusFailed, eStatusFailed
     };
 
+    boost::shared_ptr<RotoStrokeItem> activeStroke;
+    if (rotoPaintNode) {
+        activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
+        if (!activeStroke) {
+            return eStatusReplyDefault;
+        }
+    }
+    
+    
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerArgs);
-        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, args[i].get());
+        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
+            break;
+        }
+        
+        U64 renderAge = _imp->getRenderAge(i);
+
+        ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
+                                           time,
+                                           view,
+                                           true,
+                                           false,
+                                           canAbort,
+                                           renderAge,
+                                           this,
+                                           i,
+                                           getTimeline().get(),
+                                           false,
+                                           rotoPaintNode,
+                                           activeStroke,
+                                           NodePtr());
+        
+        
+
+        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge, args[i].get());
+        
+        
+        if (status[i] != eStatusFailed && args[i] && args[i]->params) {
+            assert(args[i]->params->textureIndex == i);
+            status[i] = renderViewer_internal(view, QThread::currentThread() == qApp->thread(), false, viewerHash, canAbort,rotoPaintNode, false, *args[i]);
+            if (status[i] == eStatusReplyDefault) {
+                args[i].reset();
+            }
+        }
+
+        
     }
     
     if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
         disconnectViewer();
         return eStatusFailed;
     }
-    Natron::StatusEnum ret =  renderViewer(view,QThread::currentThread() == qApp->thread(),false,viewerHash,canAbort,rotoPaintNode, args);
+
     *argsA = args[0];
     *argsB = args[1];
-    return ret;
+    return eStatusOK;
     
 }
 
@@ -332,6 +507,7 @@ ViewerInstance::renderViewer(int view,
                              U64 viewerHash,
                              bool canAbort,
                              const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                             bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2])
 {
     if (!_imp->uiContext) {
@@ -347,7 +523,7 @@ ViewerInstance::renderViewer(int view,
         
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, *args[i]);
+            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, useTLS, *args[i]);
             if (ret[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -456,128 +632,20 @@ static bool copyAndSwap(const TextureRect& srcRect,
     return true;
 }
 
-static bool isRotoPaintNodeInputRecursive(Natron::Node* node,const NodePtr& rotoPaintNode) {
-    
-    if (node == rotoPaintNode.get()) {
-        return true;
-    }
-    int maxInputs = node->getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr input = node->getInput(i);
-        if (input) {
-            if (input == rotoPaintNode) {
-                return true;
-            } else {
-                bool ret = isRotoPaintNodeInputRecursive(input.get(), rotoPaintNode);
-                if (ret) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& rotoPaintNode, const RectD& lastStrokeBbox,
-                                            bool invalidate)
+Natron::StatusEnum
+ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+                                                           bool isSequential,
+                                                           bool canAbort,
+                                                           int view,
+                                                           int textureIndex,
+                                                           U64 viewerHash,
+                                                           const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                           bool useTLS,
+                                                           ViewerArgs* outArgs)
 {
-    if (isRotoPaintNodeInputRecursive(node, rotoPaintNode)) {
-        if (invalidate) {
-            node->invalidateLastPaintStrokeDataNoRotopaint();
-        } else {
-            node->setLastPaintStrokeDataNoRotopaint(lastStrokeBbox);
-        }
-        
-        if (node == rotoPaintNode.get()) {
-            return;
-        }
-        int maxInputs = node->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = node->getInput(i);
-            if (input) {
-                updateLastStrokeDataRecursively(input.get(), rotoPaintNode, lastStrokeBbox, invalidate);
-            }
-        }
-    }
+    U64 renderAge = _imp->getRenderAge(textureIndex);
+    return getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, outArgs);
 }
-
-class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
-{
-    NodePtr rotoNode;
-    NodeList rotoPaintNodes;
-    NodePtr viewerNode;
-    NodePtr viewerInputNode;
-public:
-    
-    ViewerParallelRenderArgsSetter(NodeCollection* n,
-                                   int time,
-                                   int view,
-                                   bool isRenderUserInteraction,
-                                   bool isSequential,
-                                   bool canAbort,
-                                   U64 renderAge,
-                                   Natron::OutputEffectInstance* renderRequester,
-                                   int textureIndex,
-                                   const TimeLine* timeline,
-                                   bool isAnalysis,
-                                   const NodePtr& rotoPaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke,
-                                   const NodePtr& viewerInput)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis)
-    , rotoNode(rotoPaintNode)
-    , rotoPaintNodes()
-    , viewerNode(renderRequester->getNode())
-    , viewerInputNode()
-    {
-        if (rotoNode) {
-            boost::shared_ptr<RotoContext> roto = rotoNode->getRotoContext();
-            assert(roto);
-            if (activeStroke) {
-                
-                roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
-                RectD wholeStrokeRod;
-                RectD lastStrokeBbox;
-                int lastAge,newAge;
-                lastAge = activeStroke->getMergeNode()->getStrokeImageAge();
-                activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &newAge);
-                
-                for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                    
-                    bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
-                    
-                    (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
-                    if (isStrokeNode) {
-                        (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
-                    }
-                }
-                updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
-            }
-        }
-        
-        ///There can be a case where the viewer input tree does not belong to the project, for example
-        ///for the File Dialog preview.
-        if (viewerInput && !viewerInput->getGroup()) {
-            viewerInputNode = viewerInput;
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, viewerInput->getCurrentRenderThreadSafety());
-        }
-    }
-    
-    virtual ~ViewerParallelRenderArgsSetter()
-    {
-        if (rotoNode) {
-            for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-                (*it)->invalidateLastStrokeData();
-            }
-            updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
-        }
-        if (viewerInputNode) {
-            viewerInputNode->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        }
-    }
-};
-
 
 Natron::StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
@@ -587,9 +655,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int textureIndex,
                                                  U64 viewerHash,
                                                  const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                 bool useTLS,
+                                                 U64 renderAge,
                                                  ViewerArgs* outArgs)
 {
-    U64 renderAge = _imp->getRenderAge(textureIndex);
     
     
     if (textureIndex == 0) {
@@ -682,17 +751,20 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
         
     ///need to set TLS for getROD()
-    ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
-                                       time,
-                                       view,
-                                       !isSequential,  // is this render due to user interaction ?
-                                       isSequential, // is this sequential ?
-                                       canAbort,
-                                       renderAge,
-                                       this,
-                                       textureIndex,
-                                       getTimeline().get(),
-                                       false);
+    boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
+    if (useTLS) {
+        frameArgs.reset(new ParallelRenderArgsSetter(getApp()->getProject().get(),
+                                                     time,
+                                                     view,
+                                                     !isSequential,  // is this render due to user interaction ?
+                                                     isSequential, // is this sequential ?
+                                                     canAbort,
+                                                     renderAge,
+                                                     this,
+                                                     textureIndex,
+                                                     getTimeline().get(),
+                                                     false));
+    }
     
     /**
      * @brief Start flagging that we're rendering for as long as the viewer is active.
@@ -911,6 +983,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       U64 viewerHash,
                                       bool canAbort,
                                       boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                      bool useTLS,
                                       ViewerArgs& inArgs)
 {
     //Do not call this if the texture is already cached.
@@ -970,34 +1043,24 @@ ViewerInstance::renderViewer_internal(int view,
     FrameEntryLocker entryLocker(_imp.get());
     
     
-    boost::shared_ptr<RotoStrokeItem> activeStroke;
-    if (rotoPaintNode) {
-        activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
-        if (!activeStroke) {
-            rotoPaintNode.reset();
-            //This render is no longer useful because another one has been triggered from the penUp handler.
-            if (!isSequentialRender && canAbort) {
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            return eStatusReplyDefault;
-        }
-    }
     ///Make sure the parallel render args are set on the thread and die when rendering is finished
-    ViewerParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
-                                             inArgs.params->time,
-                                             view,
-                                             !isSequentialRender,
-                                             isSequentialRender,
-                                             canAbort,
-                                             inArgs.params->renderAge,
-                                             this,
-                                             inArgs.params->textureIndex,
-                                             getTimeline().get(),
-                                             false,
-                                             rotoPaintNode,
-                                             activeStroke,
-                                             inArgs.activeInputToRender->getNode());
-    
+    boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
+    if (useTLS) {
+        frameArgs.reset(new ViewerParallelRenderArgsSetter(getApp()->getProject().get(),
+                                                           inArgs.params->time,
+                                                           view,
+                                                           !isSequentialRender,
+                                                           isSequentialRender,
+                                                           canAbort,
+                                                           inArgs.params->renderAge,
+                                                           this,
+                                                           inArgs.params->textureIndex,
+                                                           getTimeline().get(),
+                                                           false,
+                                                           rotoPaintNode,
+                                                           boost::shared_ptr<RotoStrokeItem>(),
+                                                           inArgs.activeInputToRender->getNode()));
+    }
 
     
     ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion

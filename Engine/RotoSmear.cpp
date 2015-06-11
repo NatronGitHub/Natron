@@ -24,7 +24,7 @@ struct RotoSmearPrivate
     , lastCur()
     , lastDistToNext(0)
     {
-        
+        lastCur.first.x = lastCur.first.y = INT_MIN;
     }
 };
 
@@ -215,7 +215,7 @@ RotoSmear::render(const RenderActionArgs& args)
     boost::shared_ptr<RotoContext> context = stroke->getContext();
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
-    bool isFirstStrokeTick = duringPainting && node->isFirstPaintStrokeRenderTick();
+    
     
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
@@ -223,11 +223,17 @@ RotoSmear::render(const RenderActionArgs& args)
     //stroke->evaluateStroke(0, &points);
     node->getLastPaintStrokePoints(args.time, &points);
     
-    
-    if (isFirstStrokeTick || !duringPainting) {
+    bool isFirstStrokeTick = false;
+    std::pair<Point,double> lastCur;
+    if (!duringPainting) {
         QMutexLocker k(&_imp->smearDataMutex);
         _imp->lastCur.first.x = INT_MIN;
         _imp->lastCur.first.y = INT_MIN;
+        lastCur = _imp->lastCur;
+    } else {
+        QMutexLocker k(&_imp->smearDataMutex);
+        isFirstStrokeTick = _imp->lastCur.first.x == INT_MIN && _imp->lastCur.first.y == INT_MIN;
+        lastCur = _imp->lastCur;
     }
     
     if ((int)points.size() <= 1) {
@@ -314,12 +320,7 @@ RotoSmear::render(const RenderActionArgs& args)
         double distToNext = 0;
 
         
-        {
-            QMutexLocker k(&_imp->smearDataMutex);
-            lastCur = _imp->lastCur;
-        }
-        
-        if (isFirstStrokeTick || !duringPainting || (lastCur.first.x == INT_MIN && lastCur.first.y == INT_MIN)) {
+        if (isFirstStrokeTick || !duringPainting) {
             //This is the very first dot we render
             prev = *it;
             ++it;
@@ -397,6 +398,5 @@ RotoSmear::render(const RenderActionArgs& args)
             _imp->lastCur = cur;
         }
     }
-    node->updateLastPaintStrokeAge();
     return Natron::eStatusOK;
 }

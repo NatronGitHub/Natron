@@ -986,18 +986,6 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Natron::Node> mergeNode;
     boost::shared_ptr<Natron::Node> timeOffsetNode, frameHoldNode;
     
-    
-    int lastTickAge;
-
-    struct StrokeTickData
-    {
-        RectD tickBbox;
-        RectD wholeBbox;
-        std::list<std::pair<Natron::Point,double> > points;
-    };
-    
-    std::map<int,StrokeTickData> strokeTicks;
-    
     mutable QMutex strokeDotPatternsMutex;
     std::vector<cairo_pattern_t*> strokeDotPatterns;
     
@@ -1030,8 +1018,6 @@ struct RotoStrokeItemPrivate
     , mergeNode()
     , timeOffsetNode()
     , frameHoldNode()
-    , lastTickAge(-1)
-    , strokeTicks()
     , strokeDotPatternsMutex()
     , strokeDotPatterns()
     {

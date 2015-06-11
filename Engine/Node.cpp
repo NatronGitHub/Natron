@@ -266,8 +266,7 @@ struct Node::Implementation
     , lastStrokeMovementBbox()
     , strokeBitmapCleared(false)
     , wholeStrokeBbox()
-    , strokeImageAge(-1)
-    , strokeAgeToRender(-1)
+    , lastStrokeIndex(-1)
     , strokeImage()
     , lastStrokePoints()
     , distToNextIn(0.)
@@ -471,7 +470,7 @@ struct Node::Implementation
     RectD lastStrokeMovementBbox;
     bool strokeBitmapCleared;
     RectD wholeStrokeBbox;
-    int strokeImageAge, strokeAgeToRender;
+    int lastStrokeIndex;
     ImagePtr strokeImage;
     std::list<std::pair<Natron::Point,double> > lastStrokePoints;
     double distToNextIn,distToNextOut;
@@ -739,15 +738,6 @@ Node::revertToPluginThreadSafety()
 }
 
 void
-Node::invalidateLastStrokeData()
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
-    assert(stroke);
-    stroke->clearChangesUpToAge(_imp->strokeAgeToRender);
-}
-
-void
 Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
                                 const RectD& wholeBbox,const RectD& lastPointsBbox)
 {
@@ -759,7 +749,7 @@ Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Poi
         _imp->lastStrokePoints = points;
         _imp->lastStrokeMovementBbox = lastPointsBbox;
         _imp->wholeStrokeBbox = wholeBbox;
-        _imp->strokeAgeToRender = newAge;
+        _imp->lastStrokeIndex = newAge;
         _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
     }
@@ -776,7 +766,6 @@ Node::setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox)
         _imp->duringPaintStrokeCreation = true;
     }
     _imp->liveInstance->setDuringPaintStrokeCreationThreadLocal(true);
-    //_imp->liveInstance->clearActionsCache();
 }
 
 void
@@ -787,8 +776,14 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
         _imp->lastStrokeMovementBbox.clear();
         _imp->duringPaintStrokeCreation = false;
     }
-   // _imp->liveInstance->clearActionsCache();
 
+}
+
+RectD
+Node::getPaintStrokeRoD_duringPainting() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->wholeStrokeBbox;
 }
 
 void
@@ -846,22 +841,16 @@ bool
 Node::isFirstPaintStrokeRenderTick() const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->strokeImageAge == -1;
+    return _imp->lastStrokeIndex == -1;
 }
 
 int
 Node::getStrokeImageAge() const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->strokeImageAge;
+    return _imp->lastStrokeIndex;
 }
 
-void
-Node::updateLastPaintStrokeAge()
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    _imp->strokeImageAge = _imp->strokeAgeToRender;
-}
 
 boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
@@ -878,8 +867,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     assert(stroke);
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
-        _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
-    _imp->strokeImageAge = _imp->strokeAgeToRender;
+    _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
 
     return _imp->strokeImage;
 }

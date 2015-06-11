@@ -3925,7 +3925,6 @@ Bezier::save(RotoItemSerialization* obj) const
             }
             
         }
-        s->_isStroke = dynamic_cast<const RotoStrokeItem*>(this) != 0;
     }
     
     RotoDrawableItem::save(obj);
@@ -5087,63 +5086,64 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         return;
     }
     
-    
-    assert(xCurve.size() == 2);
-    
-    double x1,y1,press1,x2,y2,press2;
-    double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
-    x1 = xIt->getValue();
-    y1 = yIt->getValue();
-    press1 = pIt->getValue();
-    x2 = xNext->getValue();
-    y2 = yNext->getValue();
-    press2 = pNext->getValue();
-    
-    
-    x1pr = x1 + xIt->getRightDerivative() / 3.;
-    y1pr = y1 + yIt->getRightDerivative() / 3.;
-    press1pr = press1 + pIt->getRightDerivative() / 3.;
-    x2pl = x2 - xNext->getLeftDerivative() / 3.;
-    y2pl = y2 - yNext->getLeftDerivative() / 3.;
-    press2pl = press2 - pNext->getLeftDerivative() / 3.;
-    /*
-     * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
-     */
-    double dx1,dy1,dx2,dy2,dx3,dy3;
-    dx1 = x1pr - x1;
-    dy1 = y1pr - y1;
-    dx2 = x2pl - x1pr;
-    dy2 = y2pl - y1pr;
-    dx3 = x2 - x2pl;
-    dy3 = y2 - y2pl;
-    double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-    std::sqrt(dx2 * dx2 + dy2 * dy2) +
-    std::sqrt(dx3 * dx3 + dy3 * dy3);
-    double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
-    
-    double incr = 1. / (double)(nbPointsPerSegment - 1);
-    
-    double pressure = pressureAffectsSize ? std::max(press1, press2) : 1.;
-
-    for (double t = 0.; t <= 1.; t += incr) {
+    double pressure = 0;
+    for (; xNext != xCurve.end() ;
+         ++xIt, ++yIt, ++pIt,++xNext, ++yNext, ++pNext) {
         
-        Point p;
-        p.x = bezier(x1, x1pr, x2pl, x2, t);
-        p.y = bezier(y1, y1pr, y2pl, y2, t);
+        double x1,y1,press1,x2,y2,press2;
+        double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
+        x1 = xIt->getValue();
+        y1 = yIt->getValue();
+        press1 = pIt->getValue();
+        x2 = xNext->getValue();
+        y2 = yNext->getValue();
+        press2 = pNext->getValue();
         
-        if (bbox) {
-            bbox->x1 = std::min(p.x,bbox->x1);
-            bbox->x2 = std::max(p.x,bbox->x2);
-            bbox->y1 = std::min(p.y,bbox->y1);
-            bbox->y2 = std::max(p.y,bbox->y2);
+        
+        x1pr = x1 + xIt->getRightDerivative() / 3.;
+        y1pr = y1 + yIt->getRightDerivative() / 3.;
+        press1pr = press1 + pIt->getRightDerivative() / 3.;
+        x2pl = x2 - xNext->getLeftDerivative() / 3.;
+        y2pl = y2 - yNext->getLeftDerivative() / 3.;
+        press2pl = press2 - pNext->getLeftDerivative() / 3.;
+        /*
+         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+         */
+        double dx1,dy1,dx2,dy2,dx3,dy3;
+        dx1 = x1pr - x1;
+        dy1 = y1pr - y1;
+        dx2 = x2pl - x1pr;
+        dy2 = y2pl - y1pr;
+        dx3 = x2 - x2pl;
+        dy3 = y2 - y2pl;
+        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        
+        double incr = 1. / (double)(nbPointsPerSegment - 1);
+        
+        pressure = std::max(pressure,pressureAffectsSize ? std::max(press1, press2) : 1.);
+        
+        for (double t = 0.; t <= 1.; t += incr) {
+            
+            Point p;
+            p.x = bezier(x1, x1pr, x2pl, x2, t);
+            p.y = bezier(y1, y1pr, y2pl, y2, t);
+            
+            if (bbox) {
+                bbox->x1 = std::min(p.x,bbox->x1);
+                bbox->x2 = std::max(p.x,bbox->x2);
+                bbox->y1 = std::min(p.y,bbox->y1);
+                bbox->y2 = std::max(p.y,bbox->y2);
+            }
+            
+            double pi = bezier(press1, press1pr, press2pl, press2, t);
+            p.x /= pot;
+            p.y /= pot;
+            points->push_back(std::make_pair(p, pi));
         }
-        
-        double pi = bezier(press1, press1pr, press2pl, press2, t);
-        p.x /= pot;
-        p.y /= pot;
-        points->push_back(std::make_pair(p, pi));
-    }
-    
+    } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
     if (bbox) {
         bbox->x1 -= halfBrushSize * pressure;
         bbox->x2 += halfBrushSize * pressure;
@@ -5234,7 +5234,6 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
     assert(QThread::currentThread() == qApp->thread());
 
 
-    RotoStrokeItemPrivate::StrokeTickData data;
     boost::shared_ptr<RotoStrokeItem> thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>(shared_from_this());
     assert(thisShared);
     {
@@ -5247,61 +5246,36 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
             }
         }
         
-        Curve tmpX,tmpY,tmpP;
         {
             KeyFrame k;
-            int nK = _imp->xCurve.getKeyFramesCount();
-            k.setTime(nK);
+            int nk = _imp->xCurve.getKeyFramesCount();
+            k.setTime(nk);
             k.setValue(rawPoints.first.x);
-            if (nK > 0) {
-                KeyFrame prev;
-                bool ok = _imp->xCurve.getKeyFrameWithIndex(nK - 1, &prev);
-                assert(ok);
-                tmpX.addKeyFrame(prev);
-            }
+            //Set the previous keyframe to Free so its tangents don't get overwritten
             _imp->xCurve.addKeyFrame(k);
-            tmpX.addKeyFrame(k);
+            _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+            _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
         }
         {
             KeyFrame k;
-            int nK = _imp->yCurve.getKeyFramesCount();
-            k.setTime(_imp->yCurve.getKeyFramesCount());
+            int nk = _imp->yCurve.getKeyFramesCount();
+            k.setTime(nk);
             k.setValue(rawPoints.first.y);
-            if (nK > 0) {
-                KeyFrame prev;
-                bool ok = _imp->yCurve.getKeyFrameWithIndex(nK - 1, &prev);
-                assert(ok);
-                tmpY.addKeyFrame(prev);
-            }
             _imp->yCurve.addKeyFrame(k);
-            tmpY.addKeyFrame(k);
+            _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+            _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
         }
         
         {
             KeyFrame k;
-            k.setTime(_imp->pressureCurve.getKeyFramesCount());
+            int nk = _imp->pressureCurve.getKeyFramesCount();
+            k.setTime(nk);
             k.setValue(rawPoints.second);
-            int nK = _imp->pressureCurve.getKeyFramesCount();
-            if (nK > 0) {
-                KeyFrame prev;
-                bool ok = _imp->pressureCurve.getKeyFrameWithIndex(nK - 1, &prev);
-                assert(ok);
-                tmpP.addKeyFrame(prev);
-            }
             _imp->pressureCurve.addKeyFrame(k);
-            tmpP.addKeyFrame(k);
+            _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+            _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
         }
         
-        double brushSize = (_imp->brushSize->getValue() / 2.);
-
-        bool pressureAffectsSize = _imp->pressureSize->getValue();
-        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), 0, brushSize, pressureAffectsSize, &data.points, &data.tickBbox);
-        _imp->bbox.merge(data.tickBbox);
-        data.wholeBbox = _imp->bbox;
-
-        
-        ++_imp->lastTickAge;
-        _imp->strokeTicks.insert(std::make_pair(_imp->lastTickAge, data));
         
     } // QMutexLocker k(&itemMutex);
     
@@ -5340,84 +5314,50 @@ RotoStrokeItem::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stro
 }
 
 bool
-RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
-                                        RectD* wholeBbox, int* newAge)
+RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
+                                                   std::list<std::pair<Natron::Point,double> >* points,
+                                                   RectD* pointsBbox,
+                                                   int* newAge)
 {
     QMutexLocker k(&itemMutex);
-    if (lastAge != -1) {
-        std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator found = _imp->strokeTicks.find(lastAge);
-        if (found == _imp->strokeTicks.end()) {
-            if (_imp->strokeTicks.empty()) {
-                return false;
-            } else {
-                found = _imp->strokeTicks.begin();
-            }
-        } else {
-            ++found;
-            if (found == _imp->strokeTicks.end()) {
-                //nothing has changed so far
-                return false;
-            }
-        }
-        bool bboxSet = false;
-        bool wholeBboxSet = false;
-        for (std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator it = found; it!=_imp->strokeTicks.end(); ++it) {
-            points->insert(points->end(), it->second.points.begin(),it->second.points.end());
-            if (!bboxSet) {
-                *pointsBbox = it->second.tickBbox;
-                bboxSet = true;
-            } else {
-                pointsBbox->merge(it->second.tickBbox);
-            }
-            if (!wholeBboxSet) {
-                *wholeBbox = it->second.wholeBbox;
-                wholeBboxSet = true;
-            } else {
-                wholeBbox->merge(it->second.wholeBbox);
-            }
-            *newAge = it->first;
-        }
-    } else {
-        if (_imp->strokeTicks.empty()) {
-            return false;
-        }
-        bool bboxSet = false;
-        bool wholeBboxSet = false;
-        for (std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator it = _imp->strokeTicks.begin(); it!=_imp->strokeTicks.end(); ++it) {
-            points->insert(points->end(), it->second.points.begin(),it->second.points.end());
-            if (!bboxSet) {
-                *pointsBbox = it->second.tickBbox;
-                bboxSet = true;
-            } else {
-                pointsBbox->merge(it->second.tickBbox);
-            }
-            if (!wholeBboxSet) {
-                *wholeBbox = it->second.wholeBbox;
-                wholeBboxSet = true;
-            } else {
-                wholeBbox->merge(it->second.wholeBbox);
-            }
-            *newAge = it->first;
-        }
+    assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount() && _imp->xCurve.getKeyFramesCount() == _imp->pressureCurve.getKeyFramesCount());
+    
+    KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
+    KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
+    KeyFrameSet pCurve = _imp->pressureCurve.getKeyFrames_mt_safe();
+    
+    if (lastAge == -1) {
+        lastAge = 0;
     }
+    
+    assert(lastAge < (int)xCurve.size());
+    
+    KeyFrameSet  realX,realY,realP;
+    KeyFrameSet::iterator xIt = xCurve.begin();
+    KeyFrameSet::iterator yIt = yCurve.begin();
+    KeyFrameSet::iterator pIt = pCurve.begin();
+    std::advance(xIt, lastAge);
+    std::advance(yIt, lastAge);
+    std::advance(pIt, lastAge);
+    
+    *newAge = (int)xCurve.size() - 1;
+    
+    for (; xIt != xCurve.end(); ++xIt,++yIt,++pIt) {
+        realX.insert(*xIt);
+        realY.insert(*yIt);
+        realP.insert(*pIt);
+    }
+    
+    if (realX.empty()) {
+        return false;
+    }
+    
+    double halfBrushSize = _imp->brushSize->getValue() / 2.;
+    bool pressureSize = _imp->pressureSize->getValue();
+    evaluateStrokeInternal(realX, realY, realP, 0, halfBrushSize, pressureSize, points, pointsBbox);
     return true;
-
 }
 
-void
-RotoStrokeItem::clearChangesUpToAge(int age)
-{
-    QMutexLocker k(&itemMutex);
-    std::map<int,RotoStrokeItemPrivate::StrokeTickData>::iterator found = _imp->strokeTicks.find(age);
-    std::map<int,RotoStrokeItemPrivate::StrokeTickData> newDatas;
-    if (found == _imp->strokeTicks.end()) {
-        return;
-    }
-
-    newDatas.insert(found,_imp->strokeTicks.end());
-    _imp->strokeTicks = newDatas;
-
-}
 
 void
 RotoStrokeItem::clone(const RotoItem* other)
@@ -5504,7 +5444,7 @@ RotoStrokeItem::computeBoundingBox(int time) const
     RectD bbox;
     bool bboxSet = false;
     
-    double halfBrushSize = _imp->brushSize->getValueAtTime(time) / 2.;
+    double halfBrushSize = _imp->brushSize->getValueAtTime(time) / 2. + 1;
     
     KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
     KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
@@ -5578,11 +5518,9 @@ RotoStrokeItem::getBoundingBox(int time) const
     if (!isActivated)  {
         return RectD();
     }
-    if (!_imp->finished) {
-        return _imp->bbox;
-    } else {
-        return computeBoundingBox(time);
-    }
+
+    return computeBoundingBox(time);
+    
 }
 
 void
@@ -6299,6 +6237,7 @@ RotoContext::getMaskRegionOfDefinition(int time,
                                        RectD* rod) // rod is in canonical coordinates
 const
 {
+    
     QMutexLocker l(&_imp->rotoContextMutex);
     bool first = true;
 
@@ -6322,7 +6261,12 @@ const
                     }
                 }
             } else if (isStroke) {
-                RectD strokeRod = isStroke->getBoundingBox(time);
+                RectD strokeRod;
+                if (isStroke == _imp->strokeBeingPainted.get()) {
+                    strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
+                } else {
+                    strokeRod = isStroke->getBoundingBox(time);
+                }
                 if (first) {
                     first = false;
                     *rod = strokeRod;

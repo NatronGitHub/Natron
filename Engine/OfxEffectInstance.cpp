@@ -144,7 +144,7 @@ public:
         if (planeSet) {
             effect->discardClipsPlaneBeingRendered();
         }
-        if (skipDiscarding) {
+        if (!skipDiscarding) {
             //Make sure that the images being rendered TLS is being cleared otherwise it will crash
             OFX::Host::ImageEffect::ClipInstance* ofxClip  = effect->getClip(kOfxImageEffectOutputClipName);
             assert(ofxClip);

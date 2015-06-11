@@ -2367,7 +2367,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, NodePtr(), args[i].get());
+            status[i] = _viewer->getRenderViewerArgsAndCheckCache_public(time, true, true, view, i, viewerHash, NodePtr(), true, args[i].get());
         }
        
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
@@ -2389,7 +2389,7 @@ private:
         
         if ((args[0] && status[0] != eStatusFailed) || (args[1] && status[1] != eStatusFailed)) {
             try {
-                stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), args);
+                stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), true,  args);
             } catch (...) {
                 stat = eStatusFailed;
             }
@@ -2755,7 +2755,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     try {
         if (!args.isRotoPaintRequest) {
             stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,
-                                             NodePtr(),args.args);
+                                             NodePtr(), true, args.args);
         } else {
             stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest,
                                                              &args.args[0],&args.args[1]);
@@ -3002,7 +3002,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     if (!isUserRotopainting) {
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash,isUserRotopainting, args[i].get());
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,isUserRotopainting, true, args[i].get());
         }
         
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {

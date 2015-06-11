@@ -379,16 +379,16 @@ public:
     //////////////////////////////////////////////////////////////////////////////
     void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
                                    const RectD& wholeBbox,const RectD& lastPointsBbox);
-    void invalidateLastStrokeData();
     
     //Used by nodes below the rotopaint tree to optimize the RoI
     void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
     void invalidateLastPaintStrokeDataNoRotopaint();
     
     void getPaintStrokeRoD(int time,RectD* bbox) const;
+    RectD getPaintStrokeRoD_duringPainting() const;
+    
     bool isFirstPaintStrokeRenderTick() const;
     int getStrokeImageAge() const;
-    void updateLastPaintStrokeAge();
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
