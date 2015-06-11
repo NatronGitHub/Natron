@@ -1137,7 +1137,7 @@ Image::fillZero(const RectI& roi)
     
     char* dstPixels = (char*)pixelAt(intersection.x1, intersection.y1);
     assert(dstPixels);
-    for (int y = intersection.y1; y < intersection.y2; ++y, dstPixels += roiMemSize) {
+    for (int y = intersection.y1; y < intersection.y2; ++y, dstPixels += rowSize) {
         memset(dstPixels, 0, roiMemSize);
     }
 }
