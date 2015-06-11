@@ -221,6 +221,7 @@ struct ViewerGL::Implementation
     , subsequentMousePressIsTablet(false)
     , pressureOnPress(1.)
     , pressureOnRelease(1.)
+    , wheelDeltaSeekFrame(0)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -340,7 +341,11 @@ struct ViewerGL::Implementation
 
     Natron::PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;
-    double pressureOnPress,pressureOnRelease;
+    double pressureOnPress, pressureOnRelease;
+
+    int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
+
+public:
     
     bool isNearbyWipeCenter(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight ) const;
     bool isNearbyWipeRotateBar(const QPointF & pos,double zoomScreenPixelWidth, double zoomScreenPixelHeight) const;
@@ -3348,6 +3353,19 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (!_imp->viewerTab) {
         return;
     }
+    if (modCASIsControl(e)) {
+        _imp->wheelDeltaSeekFrame += e->delta();
+        // 120 is a standard wheel mouse click, but mice may be more accurate (eg apple magic mouse)
+        if (_imp->wheelDeltaSeekFrame <= -120) {
+            _imp->wheelDeltaSeekFrame += 120;
+            _imp->viewerTab->nextFrame();
+        } else if (_imp->wheelDeltaSeekFrame >= 120) {
+            _imp->wheelDeltaSeekFrame -= 120;
+            _imp->viewerTab->previousFrame();
+        }
+        return;
+    }
+    
     Gui* gui = _imp->viewerTab->getGui();
     if (!gui) {
         return;
