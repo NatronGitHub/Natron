@@ -1358,13 +1358,15 @@ ViewerTab::abortRendering()
     if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(false);
     }
-    ///Abort all viewers because they are all synchronised.
-    const std::list<ViewerTab*> & activeNodes = _imp->gui->getViewersList();
+    if (_imp->gui) {
+        ///Abort all viewers because they are all synchronised.
+        const std::list<ViewerTab*> & activeNodes = _imp->gui->getViewersList();
 
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            viewer->getRenderEngine()->abortRendering(true);
+        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+            ViewerInstance* viewer = (*it)->getInternalNode();
+            if (viewer) {
+                viewer->getRenderEngine()->abortRendering(true);
+            }
         }
     }
 }

@@ -446,7 +446,11 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
                                                OfxRectD* ret) const
 {
     
-    boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
+    boost::shared_ptr<RotoStrokeItem> attachedStroke;
+    if (_nodeInstance) {
+        assert(_nodeInstance->getNode());
+        attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
+    }
     RectD rod;
     if (attachedStroke && (isMask() || getName() == "Roto")) {
         _nodeInstance->getNode()->getPaintStrokeRoD(time, &rod);

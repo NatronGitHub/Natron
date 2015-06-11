@@ -1897,6 +1897,7 @@ PasteItemUndoCommand::redo()
         ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
         ///have not been refreshed and the selected item is linked to those dirty knobs
         _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
+#pragma message WARN("BUG?????? according to the above code, isBezier may be NULL")
         isBezier->clone(front.rotoItem.get());
         isBezier->setScriptName( _oldTargetItem->getScriptName() );
         _roto->updateItemGui(_targetTreeItem);
