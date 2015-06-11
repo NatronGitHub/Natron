@@ -1258,6 +1258,10 @@ EffectInstance::getImage(int inputNb,
         }
     }
     
+    if (roi.isNull()) {
+        return ImagePtr();
+    }
+    
     
     if (isIdentity) {
         assert(inputNbIdentity != -2);

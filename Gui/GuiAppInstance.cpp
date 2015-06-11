@@ -1039,8 +1039,11 @@ GuiAppInstance::isUserScrubbingSlider() const
 void
 GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
 {
-    QMutexLocker k(&_imp->userIsPaintingMutex);
-    _imp->userIsPainting = rotopaintNode;
+    {
+        QMutexLocker k(&_imp->userIsPaintingMutex);
+        _imp->userIsPainting = rotopaintNode;
+    }
+    _imp->_gui->onFreezeUIButtonClicked(rotopaintNode.get() != 0);
 }
 
 boost::shared_ptr<Natron::Node>

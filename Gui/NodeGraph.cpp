@@ -603,7 +603,11 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    if (getGui() && getGui()->getApp() && getGui()->getApp()->getProject()->isLoadingProjectInternal()) {
+    AppInstance* app = 0;
+    if (getGui()) {
+        app = getGui()->getApp();
+    }
+    if (app && app->getProject()->isLoadingProjectInternal()) {
         return;
     }
     if (_imp->_refreshOverlays) {
@@ -3044,6 +3048,9 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
+    if (getGui()->isGUIFrozen()) {
+        return;
+    }
     QString oldText = _imp->_cacheSizeText->toPlainText();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
