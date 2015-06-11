@@ -2080,8 +2080,22 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         
         
     }
-
+    
     if (stat != kOfxStatOK) {
+        
+        if (!getNode()->hasPersistentMessage()) {
+            QString err;
+            err.append(QObject::tr("Render failed: "));
+            if (stat == kOfxStatErrImageFormat) {
+                err.append(QObject::tr("Bad image format was supplied by "));
+                err.append(NATRON_APPLICATION_NAME);
+            } else if (stat == kOfxStatErrMemory) {
+                err.append(QObject::tr("Out of memory!"));
+            } else {
+                err.append(QObject::tr("Unknown failure reason"));
+            }
+            setPersistentMessage(Natron::eMessageTypeError, err.toStdString());
+        }
         return eStatusFailed;
     } else {
         return eStatusOK;
