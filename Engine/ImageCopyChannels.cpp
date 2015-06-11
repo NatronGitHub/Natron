@@ -48,67 +48,76 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
     for (int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps)) {
         for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
             const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
-            PIX srcA = 0;
+            PIX srcA = src_pixels ? maxValue : 0; /* be opaque for anything that doesn't contain alpha */
             if ((srcNComps == 1 || srcNComps == 4) && src_pixels) {
                 srcA = src_pixels[srcNComps - 1];
             }
 
-#define DOCHANNEL(c) \
-            if (!src_pixels || c >= srcNComps) { \
-                dst_pixels[c] = 0; \
-            } else if (originalPremult) { \
-                if (srcA == 0) { \
-                    dst_pixels[c] = 0; \
-                } else if (premult) { \
-                    if (doA) { \
+#define DOCHANNEL(c)                                                    \
+            if (srcNComps == 1 || !src_pixels || c >= srcNComps) {      \
+                dst_pixels[c] = 0;                                      \
+            } else if (originalPremult) {                               \
+                if (srcA == 0) {                                        \
+                    dst_pixels[c] = src_pixels[c]; /* don't try to unpremult, just copy */ \
+                } else if (premult) {                                   \
+                    if (doA) {                                          \
                         dst_pixels[c] = src_pixels[c]; /* dst will have same alpha as src, just copy src */ \
-                    } else { \
-                        dst_pixels[c] = (src_pixels[c] / (float)srcA) * dst_pixels[srcNComps - 1]; /* dst keeps its alpha, unpremult src and repremult */ \
-                    } \
-                } else { \
+                    } else {                                            \
+                        dst_pixels[c] = (src_pixels[c] / (float)srcA) * dstAorig; /* dst keeps its alpha, unpremult src and repremult */ \
+                    }                                                   \
+                } else {                                                \
                     dst_pixels[c] = (src_pixels[c] / (float)srcA) * maxValue; /* dst is not premultiplied, unpremult src */ \
-                } \
-            } else { \
-                if (premult) { \
-                    if (doA) { \
+                }                                                       \
+            } else {                                                    \
+                if (premult) {                                          \
+                    if (doA) {                                          \
                         dst_pixels[c] = (src_pixels[c] / (float)maxValue) * srcA; /* dst will have same alpha as src, just premult src with its alpha */ \
-                    } else { \
-                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * dst_pixels[srcNComps - 1]; /* dst keeps its alpha, premult src with dst's alpha */ \
-                    } \
-                } else { \
+                    } else {                                            \
+                        dst_pixels[c] = (src_pixels[c] / (float)maxValue) * dstAorig; /* dst keeps its alpha, premult src with dst's alpha */ \
+                    }                                                   \
+                } else {                                                \
                     dst_pixels[c] = src_pixels[c]; /* neither src nor dst is not premultiplied */ \
-                } \
-            } \
+                }                                                       \
+            }
 
+            PIX dstAorig = maxValue;
+            if (dstNComps == 1 || dstNComps == 4) {
+                dstAorig = dst_pixels[dstNComps - 1];
+            }
             if (doR) {
                 DOCHANNEL(0);
+                assert(dst_pixels[0] == dst_pixels[0]);
             }
             if (doG) {
                 DOCHANNEL(1);
+                assert(dst_pixels[1] == dst_pixels[1]);
             }
             if (doB) {
                 DOCHANNEL(2);
+                assert(dst_pixels[2] == dst_pixels[2]);
             }
             if (doA) {
                 if (premult) {
-                    PIX dstAorig = 0;
-                    if (dstNComps == 1 || dstNComps == 4) {
-                        dstAorig = dst_pixels[srcNComps - 1];
-                    }
                     if (dstAorig != 0) {
                         // unpremult, then premult
                         if (dstNComps >= 2 && !doR) {
-                            dst_pixels[0] = (dst_pixels[0] / (float)dst_pixels[srcNComps - 1]) * srcA;
+                            dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
+                            assert(dst_pixels[0] == dst_pixels[0]);
                         }
                         if (dstNComps >= 2 && !doG) {
-                            dst_pixels[1] = (dst_pixels[1] / (float)dst_pixels[srcNComps - 1]) * srcA;
+                            dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
+                            assert(dst_pixels[1] == dst_pixels[1]);
                         }
                         if (dstNComps >= 2 && !doB) {
-                            dst_pixels[2] = (dst_pixels[2] / (float)dst_pixels[srcNComps - 1]) * srcA;
+                            dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
+                            assert(dst_pixels[2] == dst_pixels[2]);
                         }
                     }
                 }
-                dst_pixels[srcNComps - 1] = srcA;
+                if (dstNComps == 1 || dstNComps == 4) {
+                    dst_pixels[dstNComps - 1] = srcA;
+                    assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]);
+                }
             }
         }
     }
