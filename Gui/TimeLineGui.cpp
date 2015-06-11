@@ -161,10 +161,7 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     if (_imp->timeline) {
         //connect the internal timeline to the gui
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
-                         this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
-        
-        
+
         //connect the gui to the internal timeline
         QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );

@@ -506,6 +506,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
     NodePtr rotoNode;
     NodeList rotoPaintNodes;
     NodePtr viewerNode;
+    NodePtr viewerInputNode;
 public:
     
     ViewerParallelRenderArgsSetter(NodeCollection* n,
@@ -520,11 +521,13 @@ public:
                                    const TimeLine* timeline,
                                    bool isAnalysis,
                                    const NodePtr& rotoPaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke)
+                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke,
+                                   const NodePtr& viewerInput)
     : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
     , viewerNode(renderRequester->getNode())
+    , viewerInputNode()
     {
         if (rotoNode) {
             boost::shared_ptr<RotoContext> roto = rotoNode->getRotoContext();
@@ -551,6 +554,13 @@ public:
                 updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
             }
         }
+        
+        ///There can be a case where the viewer input tree does not belong to the project, for example
+        ///for the File Dialog preview.
+        if (viewerInput && !viewerInput->getGroup()) {
+            viewerInputNode = viewerInput;
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, viewerInput->getCurrentRenderThreadSafety());
+        }
     }
     
     virtual ~ViewerParallelRenderArgsSetter()
@@ -561,6 +571,9 @@ public:
                 (*it)->invalidateLastStrokeData();
             }
             updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
+        }
+        if (viewerInputNode) {
+            viewerInputNode->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }
 };
@@ -982,7 +995,8 @@ ViewerInstance::renderViewer_internal(int view,
                                              getTimeline().get(),
                                              false,
                                              rotoPaintNode,
-                                             activeStroke);
+                                             activeStroke,
+                                             inArgs.activeInputToRender->getNode());
     
 
     
