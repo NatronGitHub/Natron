@@ -2062,14 +2062,19 @@ AppManager::getPluginBinary(const QString & pluginId,
         assert(!foundID->second.empty());
         
         if (majorVersion == -1) {
+            // -1 means we want to load the highest version existing
             return *foundID->second.rbegin();
         }
         
+        ///Try to find the exact version
         for (PluginMajorsOrdered::const_iterator it = foundID->second.begin(); it != foundID->second.end(); ++it) {
             if (((*it)->getMajorVersion() == majorVersion)) {
                 return *it;
             }
         }
+        
+        ///Could not find the exact version... let's just use the highest version found
+        return *foundID->second.rbegin();
     }
     QString exc = QString("Couldn't find a plugin attached to the ID %1, with a major version of %2")
     .arg(pluginId)
@@ -2681,7 +2686,7 @@ AppManager::writeToOfxLog_mt_safe(const QString & str)
 {
     QMutexLocker l(&_imp->_ofxLogMutex);
 
-    _imp->_ofxLog.append(str + '\n');
+    _imp->_ofxLog.append(str + '\n' + '\n');
 }
 
 void

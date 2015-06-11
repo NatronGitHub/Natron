@@ -1229,7 +1229,10 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         } else if (isRegular) {
             boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
-                appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
+                QString err = _publicInterface->getScriptName_mt_safe().c_str();
+                err.append(QObject::tr(": Could not find a parameter named ") );
+                err.append(QString((*it)->getName().c_str()));
+                appPTR->writeToOfxLog_mt_safe(err);
                 continue;
             }
             isRegular->restoreKnobLinks(knob,allNodes);
@@ -1252,7 +1255,10 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
+            QString err = getScriptName_mt_safe().c_str();
+            err.append(QObject::tr(": Could not find a parameter named ") );
+            err.append(QString((*it)->getName().c_str()));
+            appPTR->writeToOfxLog_mt_safe(err);
             continue;
         }
         (*it)->restoreKnobLinks(knob,allNodes);
