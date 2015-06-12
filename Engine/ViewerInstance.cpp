@@ -2457,7 +2457,11 @@ ViewerInstance::onInputChanged(int inputNb)
             if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
                 _imp->activeInputs[0] = inputNb;
             } else {
-                _imp->activeInputs[1] = inputNb;
+                if (_imp->uiContext->getCompositingOperator() != Natron::eViewerCompositingOperatorNone) {
+                    _imp->activeInputs[1] = inputNb;
+                } else {
+                    _imp->activeInputs[1] = -1;
+                }
             }
         }
     }

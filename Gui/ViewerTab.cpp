@@ -3162,7 +3162,10 @@ ViewerTab::onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperato
     }
     
     _imp->secondInputImage->setEnabled_natron(newOp != eViewerCompositingOperatorNone);
-
+    if (newOp == eViewerCompositingOperatorNone) {
+        _imp->secondInputImage->setCurrentIndex_no_emit(0);
+        _imp->viewerNode->setInputB(-1);
+    }
     
     if (newOp == eViewerCompositingOperatorNone || !_imp->secondInputImage->getEnabled_natron()  || _imp->secondInputImage->activeIndex() == 0) {
         manageSlotsForInfoWidget(1, false);
