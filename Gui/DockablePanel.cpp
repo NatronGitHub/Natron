@@ -260,7 +260,7 @@ struct DockablePanelPrivate
     Button* _redoButton;
     Button* _restoreDefaultsButton;
     bool _minimized; /*!< true if the panel is minimized*/
-    QUndoStack* _undoStack; /*!< undo/redo stack*/
+    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     bool _floating; /*!< true if the panel is floating*/
     FloatingWidget* _floatingWidget;
 
@@ -296,7 +296,8 @@ struct DockablePanelPrivate
                          DockablePanel::HeaderModeEnum headerMode,
                          bool useScrollAreasForTabs,
                          const QString & defaultPageName,
-                         const QString& helpToolTip)
+                         const QString& helpToolTip,
+                         const boost::shared_ptr<QUndoStack>& stack)
     : _publicInterface(publicI)
     ,_gui(gui)
     ,_container(container)
@@ -324,7 +325,7 @@ struct DockablePanelPrivate
     ,_redoButton(NULL)
     ,_restoreDefaultsButton(NULL)
     ,_minimized(false)
-    ,_undoStack(new QUndoStack)
+    ,_undoStack(stack)
     ,_floating(false)
     ,_floatingWidget(NULL)
     ,_knobs()
@@ -343,6 +344,9 @@ struct DockablePanelPrivate
     ,_pagesEnabled(true)
     ,_iconLabel(0)
     {
+        if (!_undoStack) {
+            _undoStack.reset(new QUndoStack());
+        }
     }
 
     /*inserts a new page to the dockable panel.*/
@@ -373,13 +377,14 @@ DockablePanel::DockablePanel(Gui* gui ,
                              QVBoxLayout* container,
                              HeaderModeEnum headerMode,
                              bool useScrollAreasForTabs,
+                             const boost::shared_ptr<QUndoStack>& stack,
                              const QString & initialName,
                              const QString & helpToolTip,
                              bool createDefaultPage,
                              const QString & defaultPageName,
                              QWidget *parent)
 : QFrame(parent)
-, _imp(new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName,helpToolTip))
+, _imp(new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName,helpToolTip,stack))
 {
     assert(holder);
     holder->setPanelPointer(this);
@@ -676,8 +681,6 @@ DockablePanel::~DockablePanel()
 //        _imp->_holder->discardPanelPointer();
 //    }
     getGui()->removeVisibleDockablePanel(this);
-
-    delete _imp->_undoStack;
 
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
@@ -2062,7 +2065,7 @@ DockablePanel::getContainer() const
     return _imp->_container;
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 DockablePanel::getUndoStack() const
 {
     return _imp->_undoStack;
@@ -2536,6 +2539,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
+                    NodeUi->getUndoStack(),
                     NodeUi->getNode()->getLabel().c_str(),
                     NodeUi->getNode()->getDescription().c_str(),
                     false,

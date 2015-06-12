@@ -141,24 +141,16 @@ public:
         eHeaderModeNoHeader
     };
 
-    explicit DockablePanel(Gui* gui
-                           ,
-                           KnobHolder* holder
-                           ,
-                           QVBoxLayout* container
-                           ,
-                           HeaderModeEnum headerMode
-                           ,
-                           bool useScrollAreasForTabs
-                           ,
-                           const QString & initialName = QString()
-                           ,
-                           const QString & helpToolTip = QString()
-                           ,
-                           bool createDefaultPage = false
-                           ,
-                           const QString & defaultPageName = QString("Default")
-                           ,
+    explicit DockablePanel(Gui* gui,
+                           KnobHolder* holder,
+                           QVBoxLayout* container,
+                           HeaderModeEnum headerMode,
+                           bool useScrollAreasForTabs,
+                           const boost::shared_ptr<QUndoStack>& stack,
+                           const QString & initialName = QString(),
+                           const QString & helpToolTip = QString(),
+                           bool createDefaultPage = false,
+                           const QString & defaultPageName = QString("Default"),
                            QWidget *parent = 0);
 
     virtual ~DockablePanel() OVERRIDE;
@@ -167,7 +159,7 @@ public:
 
     const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
     QVBoxLayout* getContainer() const;
-    QUndoStack* getUndoStack() const;
+    boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     bool isClosed() const;
     bool isFloating() const;

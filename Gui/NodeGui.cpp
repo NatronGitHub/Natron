@@ -225,6 +225,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _mtSafeWidth(0)
 , _mtSafeHeight(0)
 , _defaultOverlay()
+, _undoStack(new QUndoStack())
 {
 }
 
@@ -700,8 +701,8 @@ NodeGui::togglePreview()
 void
 NodeGui::removeUndoStack()
 {
-    if ( _graph && _graph->getGui() && getUndoStack() ) {
-        _graph->getGui()->removeUndoStack( getUndoStack() );
+    if ( _graph && _graph->getGui() && _undoStack ) {
+        _graph->getGui()->removeUndoStack( _undoStack.get() );
     }
 }
 
@@ -2011,14 +2012,10 @@ NodeGui::copyFrom(const NodeGuiSerialization & obj)
     resize(w,h);
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 NodeGui::getUndoStack() const
 {
-    if (_settingsPanel) {
-        return _settingsPanel->getUndoStack();
-    } else {
-        return NULL;
-    }
+    return _undoStack;
 }
 
 void

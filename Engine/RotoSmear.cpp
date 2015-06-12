@@ -236,9 +236,6 @@ RotoSmear::render(const RenderActionArgs& args)
         lastCur = _imp->lastCur;
     }
     
-    if ((int)points.size() <= 1) {
-        return eStatusOK;
-    }
     
     ComponentsNeededMap neededComps;
     bool processAll;
@@ -305,7 +302,7 @@ RotoSmear::render(const RenderActionArgs& args)
             plane->second->pasteFrom(*bgImg,args.roi, false);
         }
         
-        if (brushSpacing == 0 || (writeOnEnd - writeOnStart) <= 0. || visiblePortion.empty()) {
+        if (brushSpacing == 0 || (writeOnEnd - writeOnStart) <= 0. || visiblePortion.empty() || points.size() <= 1) {
             continue;
         }
         

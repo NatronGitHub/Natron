@@ -720,9 +720,9 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     
     getGui()->getApp()->setCreatingNode(false);
 
-    QUndoStack* nodeStack = node_ui->getUndoStack();
+    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
-        _imp->_gui->registerNewUndoStack(nodeStack);
+        _imp->_gui->registerNewUndoStack(nodeStack.get());
     }
     
     if (pushUndoRedoCommand) {

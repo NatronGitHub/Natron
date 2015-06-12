@@ -57,6 +57,7 @@ class LinkArrow;
 class MultiInstancePanel;
 class QMenu;
 class NodeGroup;
+class QUndoStack;
 class NodeCollection;
 namespace Natron {
 class ChannelSet;
@@ -269,7 +270,7 @@ public:
 
     void removeSettingsPanel();
 
-    QUndoStack* getUndoStack() const;
+    boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     void removeUndoStack();
 
@@ -624,7 +625,8 @@ private:
     int _mtSafeWidth,_mtSafeHeight;
     
     boost::shared_ptr<DefaultOverlay> _defaultOverlay;
-    
+    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
+
 };
 
 

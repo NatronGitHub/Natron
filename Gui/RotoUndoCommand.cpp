@@ -1891,15 +1891,14 @@ PasteItemUndoCommand::redo()
             }
             
         }
-        _oldTargetItem->clone(isBezier);
+        _oldTargetItem->clone(_targetItem.get());
         assert(_pastedItems.size() == 1);
         PastedItem & front = _pastedItems.front();
         ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
         ///have not been refreshed and the selected item is linked to those dirty knobs
         _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
-#pragma message WARN("BUG?????? according to the above code, isBezier may be NULL")
-        isBezier->clone(front.rotoItem.get());
-        isBezier->setScriptName( _oldTargetItem->getScriptName() );
+        _targetItem->clone(front.rotoItem.get());
+        _targetItem->setScriptName( _oldTargetItem->getScriptName() );
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
     } else {
