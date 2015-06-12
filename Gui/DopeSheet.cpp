@@ -32,6 +32,7 @@ typedef std::pair<QTreeWidgetItem *, DSNode *> TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 1;
+const int QTREEWIDGETITEM_IS_BUNDLE_ROLE = Qt::UserRole + 2;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -402,12 +403,13 @@ SequenceTime DopeSheet::getCurrentFrame() const
 
 DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
 {
-    DSNodeRows::const_iterator clickedDSNode;
     QTreeWidgetItem *itemIt = treeItem;
 
-    while ( (clickedDSNode = _imp->nodeRows.find(itemIt)) == _imp->nodeRows.end() ) {
+    DSNodeRows::const_iterator clickedDSNode = _imp->nodeRows.find(itemIt);
+    while (clickedDSNode == _imp->nodeRows.end()) {
         if (itemIt->parent()) {
             itemIt = itemIt->parent();
+            clickedDSNode = _imp->nodeRows.find(itemIt);
         }
     }
 
@@ -586,7 +588,21 @@ std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
         }
     }
 
+    dsGroup->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
+
     return ret;
+}
+
+bool DopeSheet::isRangeBasedNode(DopeSheet::NodeType nodeType) const
+{
+    return (nodeType >= DopeSheet::NodeTypeReader &&
+            nodeType <= DopeSheet::NodeTypeGroup);
+}
+
+bool DopeSheet::canContainOtherNodes(DopeSheet::NodeType nodeType) const
+{
+    return (nodeType >= (DopeSheet::NodeTypeReader + 1) &&
+            nodeType <= DopeSheet::NodeTypeGroup);
 }
 
 bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
@@ -632,6 +648,8 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
 
     _imp->getInputsConnected_recursive(dsNode->getNode().get(), &ret);
 
+    dsNode->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
+
     return ret;
 }
 
@@ -642,6 +660,11 @@ Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const
     Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getNode().get());
 
     return nearestReader;
+}
+
+bool DopeSheet::isBundle(DSNode *dsNode) const
+{
+    return (dsNode->getTreeItem()->data(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE).toBool());
 }
 
 bool DopeSheet::nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const

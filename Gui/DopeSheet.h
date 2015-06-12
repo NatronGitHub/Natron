@@ -151,11 +151,16 @@ public:
     DSNode *getGroupDSNode(DSNode *dsNode) const;
     std::vector<DSNode *> getNodesFromGroup(DSNode *dsGroup) const;
 
+    bool isRangeBasedNode(DopeSheet::NodeType nodeType) const;
+    bool canContainOtherNodes(DopeSheet::NodeType nodeType) const;
+
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
     DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
     Natron::Node *getNearestReader(DSNode *timeNode) const;
+
+    bool isBundle(DSNode *dsNode) const;
 
     bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const;
 

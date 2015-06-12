@@ -165,15 +165,13 @@ void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewI
 {
     QTreeWidgetItem *item = m_hierarchyView->itemFromIndex(index);
 
-    QStyleOptionViewItemV4 newOpt = option;
-    initStyleOption(&newOpt, index);
-
     painter->save();
 
-    QColor itemFontColor = (item->isSelected()) ? Qt::white : Qt::black;
+    boost::shared_ptr<Settings> appSettings = appPTR->getCurrentSettings();
+    double r, g, b;
+    appSettings->getTextColor(&r, &g, &b);
 
-    painter->setFont(item->font(0));
-    painter->setPen(itemFontColor);
+    painter->setPen(QColor::fromRgbF(r, g, b));
     painter->drawText(option.rect, Qt::AlignVCenter, item->text(0));
 
     painter->restore();
@@ -205,8 +203,18 @@ public:
 
     DSNode *itemBelowIsNode(QTreeWidgetItem *item) const;
 
+    QRect getBranchRect(QTreeWidgetItem *item) const;
+    QRect getArrowRect(QTreeWidgetItem *item) const;
+    QRect getParentArrowRect(QTreeWidgetItem *item, const QRect &branchRect) const;
+
+    QColor getDullColor(const QColor &color) const;
+
     // item painting
     void drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const;
+    void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
+    void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
+    void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow,
+                                  QTreeWidgetItem *item, const QRect &rowRect) const;
 
     // keyframe selection
     void selectSelectedKeyframesItems(bool selected);
@@ -436,6 +444,50 @@ DSNode *HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
     return ret;
 }
 
+QRect HierarchyViewPrivate::getBranchRect(QTreeWidgetItem *item) const
+{
+    QRect itemRect = q_ptr->visualItemRect(item);
+
+    return QRect(q_ptr->rect().left(), itemRect.top(),
+                 itemRect.left(), itemRect.height());
+}
+
+QRect HierarchyViewPrivate::getArrowRect(QTreeWidgetItem *item) const
+{
+    QRect branchRect = getBranchRect(item);
+
+    if (!item->parent()) {
+        return branchRect;
+    }
+
+    int parentBranchRectRight = q_ptr->visualItemRect(item->parent()).left();
+    int arrowRectWidth  = branchRect.right() - parentBranchRectRight;
+
+    return QRect(parentBranchRectRight, branchRect.top(),
+                 arrowRectWidth, branchRect.height());
+}
+
+QRect HierarchyViewPrivate::getParentArrowRect(QTreeWidgetItem *item, const QRect &branchRect) const
+{
+    if (!item->parent()) {
+        return branchRect;
+    }
+
+    int parentBranchRectRight = q_ptr->visualItemRect(item->parent()).left();
+    int arrowRectWidth  = branchRect.right() - parentBranchRectRight;
+
+    return QRect(parentBranchRectRight, branchRect.top(),
+                 arrowRectWidth, branchRect.height());
+}
+
+QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
+{
+    QColor ret = color;
+    ret.setAlpha(87);
+
+    return ret;
+}
+
 void HierarchyViewPrivate::drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const
 {
     std::string iconFilePath = dsNode->getNode()->getPluginIconFilePath();
@@ -456,6 +508,66 @@ void HierarchyViewPrivate::drawPluginIcon(QPainter *p, DSNode *dsNode, const QRe
             p->drawPixmap(pluginIconRect, pix);
         }
     }
+}
+
+void HierarchyViewPrivate::drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect)
+{
+    QTreeWidgetItem *itemIt = item;
+
+    while (itemIt) {
+        DSNode *parentDSNode = model->findParentDSNode(itemIt);
+        QTreeWidgetItem *parentItem = parentDSNode->getTreeItem();
+        QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
+
+        QRect target = getArrowRect(parentItem);
+        target.setTop(itemRect.top());
+        target.setBottom(itemRect.bottom());
+
+        p->fillRect(target, nodeColor);
+
+        itemIt = parentItem->parent();
+    }
+}
+
+void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const
+{
+    int lineWidth = (NODE_SEPARATION_WIDTH / 2);
+    int lineBegin = q_ptr->rect().left();
+
+    if (DSNode *parentNode = model->findDSNode(item->parent())) {
+        lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+    }
+
+    QPen pen(Qt::black);
+    pen.setWidth(lineWidth);
+
+    p->setPen(pen);
+    p->drawLine(lineBegin, rowRect.top() + lineWidth - 1,
+                rowRect.right(), rowRect.top() + lineWidth - 1);
+}
+
+void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow,
+                                                    QTreeWidgetItem *item, const QRect &rowRect) const
+{
+    int lineWidth = (NODE_SEPARATION_WIDTH / 2);
+    int lineBegin = q_ptr->rect().left();
+
+    if (model->canContainOtherNodes(dsNode->getDSNodeType())) {
+        if (item->isExpanded() && !itemHasNoChildVisible(item)) {
+            lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
+        }
+    }
+    else if (DSNode *parentNode = model->findDSNode(nodeBelow->getTreeItem()->parent())) {
+        lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+    }
+
+    QPen pen(Qt::black);
+    pen.setWidth(lineWidth);
+
+    p->setPen(pen);
+
+    p->drawLine(lineBegin, rowRect.bottom() - lineWidth + 2,
+                rowRect.right(), rowRect.bottom() - lineWidth + 2);
 }
 
 void HierarchyViewPrivate::selectSelectedKeyframesItems(bool aselect)
@@ -692,48 +804,42 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
     QRect itemRect = visualItemRect(item);
     QRect branchRect(0, rowRect.y(), itemRect.x(), rowRect.height());
 
-    QStyleOptionViewItemV4 newOpt = viewOptions();
-    newOpt.rect = itemRect;
-
     // Draw row
     {
         painter->save();
 
-        QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+        QColor nodeColor = dsNode->getNodeGui()->getCurrentColor();
+        QColor nodeColorDull = _imp->getDullColor(nodeColor);
 
-        painter->fillRect(rowRect, fillColor);
+        QColor fillColor;
+        if (drawPluginIconToo) {
+            fillColor = nodeColor;
+        }
+
+        if (item->parent()) {
+            fillColor = nodeColorDull;
+        }
+
+        painter->fillRect(itemRect.adjusted(-1, 0, 0, 0), fillColor);
+
+        // Draw the item text
+        QStyleOptionViewItemV4 newOpt = viewOptions();
+        newOpt.rect = itemRect;
 
         itemDelegate()->paint(painter, newOpt, index);
 
+        _imp->drawColoredIndicators(painter, item, itemRect);
+
+        // Fill the branch rect with color and indicator
         drawBranches(painter, branchRect, index);
 
-        // Draw the plugin icon and half-separation at node item top
         if (drawPluginIconToo) {
             _imp->drawPluginIcon(painter, dsNode, rowRect);
-
-            int lineWidth = (NODE_SEPARATION_WIDTH / 2);
-
-            QPen pen(Qt::black);
-            pen.setWidth(lineWidth);
-
-            painter->setPen(pen);
-            painter->drawLine(rect().left(), rowRect.top() + lineWidth - 1,
-                              rowRect.right(), rowRect.top() + lineWidth - 1);
+            _imp->drawNodeTopSeparation(painter, item, rowRect);
         }
 
-        // And draw the other half at last item
-        /* We use this trick because of the artifacts that appear if the
-        painter draw something outside its rect */
-        if (_imp->itemBelowIsNode(item)) {
-            int lineWidth = (NODE_SEPARATION_WIDTH / 2);
-
-            QPen pen(Qt::black);
-            pen.setWidth(lineWidth);
-
-            painter->setPen(pen);
-
-            painter->drawLine(rect().left(), rowRect.bottom() - lineWidth + 2,
-                              rowRect.right(), rowRect.bottom() - lineWidth + 2);
+        if (DSNode *nodeBelow = _imp->itemBelowIsNode(item)) {
+            _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, item, rowRect);
         }
 
         painter->restore();
@@ -743,11 +849,37 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    DSNode *dsNode = _imp->getDSNodeFromItem(item);
+    DSNode *parentDSNode = _imp->getDSNodeFromItem(item);
 
-    QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
+    {
+        QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
+        QColor nodeColorDull = _imp->getDullColor(nodeColor);
 
-    painter->fillRect(rect, fillColor);
+        // Paint with a dull color to the right edge of the node branch rect
+        QRect nodeItemBranchRect = _imp->getBranchRect(parentDSNode->getTreeItem());
+
+        QRect rectForDull(nodeItemBranchRect.right(), rect.top(),
+                          rect.right() - nodeItemBranchRect.right(), rect.height());
+        painter->fillRect(rectForDull, nodeColorDull);
+
+        // Draw the branch indicator
+        QStyleOptionViewItemV4 option = viewOptions();
+        option.rect = _imp->getParentArrowRect(item, rect);
+        option.displayAlignment = Qt::AlignCenter;
+
+        bool hasChildren = (item->childCount() && !itemHasNoChildVisible(item));
+        bool expanded = item->isExpanded();
+
+        if (hasChildren) {
+            option.state = QStyle::State_Children;
+        }
+
+        if (expanded) {
+            option.state |= QStyle::State_Open;
+        }
+
+        style()->drawPrimitive(QStyle::PE_IndicatorBranch, &option, painter, this);
+    }
 }
 
 
@@ -810,8 +942,6 @@ public:
     std::vector<DSSelectedKey> isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
 
     double clampedMouseOffset(double fromTime, double toTime);
-
-    bool isRangeBasedNode(DopeSheet::NodeType nodeType) const;
 
     // Textures
     void generateKeyframeTextures();
@@ -1032,7 +1162,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 
             QRectF treeItemRect = hierarchyView->getItemRect(dsNode);
 
-            if (isRangeBasedNode(nodeType)) {
+            if (model->isRangeBasedNode(nodeType)) {
                 FrameRange range = nodeRanges.at(dsNode);
 
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
@@ -1225,12 +1355,6 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
     keyDragLastMovement = totalMovement;
 
     return dt;
-}
-
-bool DopeSheetViewPrivate::isRangeBasedNode(DopeSheet::NodeType nodeType) const
-{
-    return (nodeType >= DopeSheet::NodeTypeReader &&
-            nodeType <= DopeSheet::NodeTypeGroup);
 }
 
 void DopeSheetViewPrivate::generateKeyframeTextures()
@@ -1461,7 +1585,7 @@ void DopeSheetViewPrivate::drawRows() const
 
             DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
 
-            if (isRangeBasedNode(nodeType)) {
+            if (model->isRangeBasedNode(nodeType)) {
                 drawClip(dsNode);
             }
 
@@ -1612,8 +1736,6 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 
             Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
             assert(firstFrameKnob);
-            Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
-            assert(lastFrameKnob);
 
             double speedValue = 1.0f;
 
@@ -2285,8 +2407,6 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         assert(firstFrameKnob);
         Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("lastFrame").get());
         assert(lastFrameKnob);
-        Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("originalFrameRange").get());
-        assert(originalFrameRangeKnob);
 
         int startingTimeValue = startingTimeKnob->getValue();
         int firstFrameValue = firstFrameKnob->getValue();
@@ -3368,7 +3488,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                 QRectF treeItemRect = _imp->hierarchyView->getItemRect(dsNode);
 
-                if (_imp->isRangeBasedNode(nodeType)) {
+                if (_imp->model->isRangeBasedNode(nodeType)) {
                     FrameRange range = _imp->nodeRanges[dsNode];
                     QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                              QPointF(range.second, treeItemRect.bottom() + 1)));
