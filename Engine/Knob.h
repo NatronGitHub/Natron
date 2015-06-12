@@ -1403,7 +1403,7 @@ private:
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
+    bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
 
 public:
 
