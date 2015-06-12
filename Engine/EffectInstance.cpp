@@ -120,7 +120,8 @@ namespace  {
             RoDCacheMap _rodCache;
             
             ActionsCacheInstance()
-            : _timeDomain()
+            : _hash(0)
+            , _timeDomain()
             , _timeDomainSet(false)
             , _identityCache()
             , _rodCache()

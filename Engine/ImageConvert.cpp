@@ -137,14 +137,13 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
     Natron::ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
     Natron::ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
     int nComp = (int)srcImg.getComponentsCount();
-    const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
-    const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
+    const Natron::Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
+    const Natron::Color::Lut* const dstLut_ = lutFromColorspace(dstColorSpace);
 
     
     ///no colorspace conversion applied when luts are the same
-    if (srcLut == dstLut) {
-        srcLut = dstLut = 0;
-    }
+    const Natron::Color::Lut* const srcLut = (srcLut_ == dstLut_) ? 0 : srcLut_;
+    const Natron::Color::Lut* const dstLut = (srcLut_ == dstLut_) ? 0 : dstLut_;
     if (intersection.isNull()) {
         return;
     }
@@ -254,8 +253,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
         return;
     }
     
-    const Natron::Color::Lut* srcLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)srcColorSpace) : 0;
-    const Natron::Color::Lut* dstLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)dstColorSpace) : 0;
+    const Natron::Color::Lut* const srcLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)srcColorSpace) : 0;
+    const Natron::Color::Lut* const dstLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)dstColorSpace) : 0;
     
     for (int y = 0; y < renderWindow.height(); ++y) {
         
@@ -319,10 +318,10 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
                         
-                        bool unpremultChannel = (srcNComps == 4 &&
-                                                 dstNComps == 3 &&
-                                                 requiresUnpremult);
-                        
+                        const bool unpremultChannel = (srcNComps == 4 &&
+                                                       dstNComps == 3 &&
+                                                       requiresUnpremult);
+
                         ///This is only set if unpremultChannel is true
                         float alphaForUnPremult;
                         if (unpremultChannel) {

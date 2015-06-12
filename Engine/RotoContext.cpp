@@ -5055,12 +5055,18 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     KeyFrameSet::const_iterator yIt = yCurve.begin();
     KeyFrameSet::const_iterator pIt = pCurve.begin();
     KeyFrameSet::const_iterator xNext = xIt;
+    if (xNext != xCurve.end()) {
+        ++xNext;
+    }
     KeyFrameSet::const_iterator yNext = yIt;
+    if (yNext != yCurve.end()) {
+        ++yNext;
+    }
     KeyFrameSet::const_iterator pNext = pIt;
-    ++xNext;
-    ++yNext;
-    ++pNext;
-    
+    if (pNext != pCurve.end()) {
+        ++pNext;
+    }
+
 
     int pot = 1 << mipMapLevel;
     
@@ -5087,25 +5093,26 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     }
     
     double pressure = 0;
-    for (; xNext != xCurve.end() ;
-         ++xIt, ++yIt, ++pIt,++xNext, ++yNext, ++pNext) {
+    for ( ;
+         xNext != xCurve.end() && yNext != yCurve.end() && pNext != pCurve.end();
+         ++xIt, ++yIt, ++pIt, ++xNext, ++yNext, ++pNext) {
         
-        double x1,y1,press1,x2,y2,press2;
-        double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
-        x1 = xIt->getValue();
-        y1 = yIt->getValue();
-        press1 = pIt->getValue();
-        x2 = xNext->getValue();
-        y2 = yNext->getValue();
-        press2 = pNext->getValue();
+        assert(xIt != xCurve.end() && yIt != yCurve.end() && pIt != pCurve.end());
+
+        double x1 = xIt->getValue();
+        double y1 = yIt->getValue();
+        double press1 = pIt->getValue();
+        double x2 = xNext->getValue();
+        double y2 = yNext->getValue();
+        double press2 = pNext->getValue();
         
         
-        x1pr = x1 + xIt->getRightDerivative() / 3.;
-        y1pr = y1 + yIt->getRightDerivative() / 3.;
-        press1pr = press1 + pIt->getRightDerivative() / 3.;
-        x2pl = x2 - xNext->getLeftDerivative() / 3.;
-        y2pl = y2 - yNext->getLeftDerivative() / 3.;
-        press2pl = press2 - pNext->getLeftDerivative() / 3.;
+        double x1pr = x1 + xIt->getRightDerivative() / 3.;
+        double y1pr = y1 + yIt->getRightDerivative() / 3.;
+        double press1pr = press1 + pIt->getRightDerivative() / 3.;
+        double x2pl = x2 - xNext->getLeftDerivative() / 3.;
+        double y2pl = y2 - yNext->getLeftDerivative() / 3.;
+        double press2pl = press2 - pNext->getLeftDerivative() / 3.;
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
          */
