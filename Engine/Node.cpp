@@ -6497,7 +6497,7 @@ Node::refreshChannelSelectors(bool setValues)
                         gotMotionFw = true;
                     } else if (it2->first.getLayerName() == kNatronDisparityLeftPlaneName) {
                         gotDisparityLeft = true;
-                    } else if (it2->first.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
+                    } else if (it2->first.getLayerName() == kNatronDisparityRightPlaneName) {
                         gotDisparityRight = true;
                     }
                 }
