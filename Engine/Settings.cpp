@@ -437,33 +437,33 @@ Settings::initializeKnobs()
 
     // Create the dope sheet editor settings page
     _dopeSheetEditorBackgroundColor = Natron::createKnob<Color_Knob>(this, "Sheet background color", 3);
-    _dopeSheetEditorBackgroundColor->setName("dopesheeteditorBackgroundColor");
+    _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
     _dopeSheetEditorBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorBackgroundColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorBackgroundColor);
 
     _dopeSheetEditorRootSectionBackgroundColor = Natron::createKnob<Color_Knob>(this, "Root section background color", 4);
-    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheeteditorRootSectionBackgroundColor");
+    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
     _dopeSheetEditorRootSectionBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorRootSectionBackgroundColor->setAddNewLine(false);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
 
     _dopeSheetEditorKnobSectionBackgroundColor = Natron::createKnob<Color_Knob>(this, "Knob section background color", 4);
-    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheeteditorKnobSectionBackgroundColor");
+    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
     _dopeSheetEditorKnobSectionBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
 
     _dopeSheetEditorScaleColor = Natron::createKnob<Color_Knob>(this, "Sheet scale color", 3);
-    _dopeSheetEditorScaleColor->setName("dopesheeteditorazeazeazeazeazelor");
+    _dopeSheetEditorScaleColor->setName("dopesheetScale");
     _dopeSheetEditorScaleColor->setAnimationEnabled(false);
     _dopeSheetEditorScaleColor->setSimplified(true);
     _dopeSheetEditorScaleColor->setAddNewLine(false);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorScaleColor);
 
     _dopeSheetEditorGridColor = Natron::createKnob<Color_Knob>(this, "Sheet grid color", 3);
-    _dopeSheetEditorGridColor->setName("dopesheeteditorGridColor");
+    _dopeSheetEditorGridColor->setName("dopesheetGrid");
     _dopeSheetEditorGridColor->setAnimationEnabled(false);
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
