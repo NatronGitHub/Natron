@@ -236,7 +236,14 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
 {
     int maxColorComps = std::min(dstNComps, 3);
     
-    
+#pragma message WARN("TODO: remove template and function parameter channelForAlpha")
+    // what is the (costly) template parameter channelForAlpha for? shouldn' it be computed from srcNComps???
+    // In this case, it can be discarded from the template and function parameters
+    assert((channelForAlpha == 0 && srcNComps == 1) ||
+           (channelForAlpha == -1 && srcNComps == 2) ||
+           (channelForAlpha == -1 && srcNComps == 3) ||
+           (channelForAlpha == 3 && srcNComps == 4));
+
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(renderWindow.x1, renderWindow.y1);
@@ -289,17 +296,21 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                     
                     switch (srcNComps) {
                         case 4:
+                            assert(channelForAlpha == 3);
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
                             break;
                         case 3:
                             // RGB is opaque but the channelForAlpha can be 0-2
+                            assert(channelForAlpha == -1);
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
                         case 2:
                             // XY is opaque but the channelForAlpha can be 0-1
+                            assert(channelForAlpha == -1);
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
                         case 1:
+                            assert(channelForAlpha == 0);
                             pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
                             break;
                     }
@@ -318,8 +329,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
                         
-                        const bool unpremultChannel = (srcNComps == 4 &&
-                                                       dstNComps == 3 &&
+                        const bool unpremultChannel = (//srcNComps == 4 && // test already done in convertToFormatInternalForDepth
+                                                       //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
                                                        requiresUnpremult);
 
                         ///This is only set if unpremultChannel is true
@@ -474,6 +485,7 @@ Image::convertToFormatInternal(const RectI & renderWindow,
 
     assert(!renderWindow.isNull() && renderWindow.width() > 0 && renderWindow.height() > 0);
 
+    // isn't channelForAlpha linked to
     if (channelForAlpha != -1) {
         switch (srcNComps) {
             case 3:
@@ -500,26 +512,26 @@ Image::convertToFormatInternal(const RectI & renderWindow,
         }
 
     }
-    
-    switch (channelForAlpha) {
-        case -1:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, -1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 0:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 0>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 1:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 2:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 2>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 3:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 3>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        default:
-            assert(false);
-            break;
+
+    // channelForAlpha seems to be related to srcNComps and requiresUnpremult.
+    // why not compute it directly in
+    if (channelForAlpha == -1) {
+        assert(srcNComps == 2 || srcNComps == 3); // if this assert does not break, channelForAlpha may actually be useless
+        convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, -1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
+    } else if (channelForAlpha == 0) {
+        assert(srcNComps == 1); // if this assert does not break, channelForAlpha may actually be useless
+        convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 0>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
+    } else if (channelForAlpha == 1) {
+        assert(false); // is it possible?
+        convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
+    } else if (channelForAlpha == 2) {
+        assert(false); // is it possible?
+        convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 2>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
+    } else if (channelForAlpha == 3) {
+        assert(srcNComps == 4); // if this assert does not break, channelForAlpha may actually be useless
+        convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 3>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
+    } else {
+        assert(false);
     }
 
 } // convertToFormatInternal
@@ -540,7 +552,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
 {
     int dstNComp = dstImg.getComponents().getNumComponents();
     int srcNComp = srcImg.getComponents().getNumComponents();
-    
+
+    if (requiresUnpremult) {
+        // see convertToFormatInternalForColorSpace : it is only used in one case!
+        assert(srcNComp == 4 &&
+               dstNComp == 3);
+    }
+
     switch (srcNComp) {
         case 1:
             switch (dstNComp) {
@@ -550,7 +568,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,3>(renderWindow,srcImg, dstImg,
@@ -558,7 +577,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,4>(renderWindow,srcImg, dstImg,
@@ -566,7 +586,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 default:
                     assert(false);
@@ -581,7 +602,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                    /*requiresUnpremult=*/false);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,3>(renderWindow,srcImg, dstImg,
@@ -589,7 +611,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,4>(renderWindow,srcImg, dstImg,
@@ -597,7 +620,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 default:
                     assert(false);
@@ -612,7 +636,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 2:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,2>(renderWindow,srcImg, dstImg,
@@ -620,7 +645,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,4>(renderWindow,srcImg, dstImg,
@@ -628,7 +654,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 default:
                     assert(false);
@@ -643,7 +670,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 2:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,2>(renderWindow,srcImg, dstImg,
@@ -651,7 +679,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          /*requiresUnpremult=*/false);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,3>(renderWindow,srcImg, dstImg,
@@ -659,7 +688,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
                                                                                           useAlpha0,
-                                                                                          copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,
+                                                                                          requiresUnpremult); // only case where requiresUnpremult seems to be useful
                     break;
                 default:
                     assert(false);
