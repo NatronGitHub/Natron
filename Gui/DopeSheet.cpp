@@ -316,7 +316,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 
     // Determinate the node type
     // It will be useful to identify and sort tree items
-    DopeSheet::NodeType nodeType = DopeSheet::NodeTypeCommon;
+    DopeSheet::ItemType nodeType = DopeSheet::ItemTypeCommon;
 
     NodePtr node = nodeGui->getNode();
     Natron::EffectInstance *effectInstance = node->getLiveInstance();
@@ -326,23 +326,23 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
     if (pluginID == PLUGINID_OFX_READOIIO
             || pluginID == PLUGINID_OFX_READFFMPEG
             || pluginID == PLUGINID_OFX_READPFM) {
-        nodeType = DopeSheet::NodeTypeReader;
+        nodeType = DopeSheet::ItemTypeReader;
     }
     else if (dynamic_cast<NodeGroup *>(effectInstance)) {
-        nodeType = DopeSheet::NodeTypeGroup;
+        nodeType = DopeSheet::ItemTypeGroup;
     }
     else if (pluginID == PLUGINID_OFX_RETIME) {
-        nodeType = DopeSheet::NodeTypeRetime;
+        nodeType = DopeSheet::ItemTypeRetime;
     }
     else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
-        nodeType = DopeSheet::NodeTypeTimeOffset;
+        nodeType = DopeSheet::ItemTypeTimeOffset;
     }
     else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
-        nodeType = DopeSheet::NodeTypeFrameRange;
+        nodeType = DopeSheet::ItemTypeFrameRange;
     }
 
     // Discard specific nodes
-    if (nodeType == DopeSheet::NodeTypeCommon) {
+    if (nodeType == DopeSheet::ItemTypeCommon) {
         if (dynamic_cast<GroupInput *>(effectInstance) ||
                 dynamic_cast<GroupOutput *>(effectInstance)) {
             return;
@@ -572,7 +572,7 @@ DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 
 std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
 {
-    assert(dsGroup->getDSNodeType() == DopeSheet::NodeTypeGroup);
+    assert(dsGroup->getItemType() == DopeSheet::ItemTypeGroup);
 
     NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getNode()->getLiveInstance());
     assert(nodeGroup);
@@ -593,16 +593,16 @@ std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
     return ret;
 }
 
-bool DopeSheet::isRangeBasedNode(DopeSheet::NodeType nodeType) const
+bool DopeSheet::isRangeBasedNode(DopeSheet::ItemType nodeType) const
 {
-    return (nodeType >= DopeSheet::NodeTypeReader &&
-            nodeType <= DopeSheet::NodeTypeGroup);
+    return (nodeType >= DopeSheet::ItemTypeReader &&
+            nodeType <= DopeSheet::ItemTypeGroup);
 }
 
-bool DopeSheet::canContainOtherNodes(DopeSheet::NodeType nodeType) const
+bool DopeSheet::canContainOtherNodes(DopeSheet::ItemType nodeType) const
 {
-    return (nodeType >= (DopeSheet::NodeTypeReader + 1) &&
-            nodeType <= DopeSheet::NodeTypeGroup);
+    return (nodeType >= (DopeSheet::ItemTypeReader + 1) &&
+            nodeType <= DopeSheet::ItemTypeGroup);
 }
 
 bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
@@ -665,23 +665,6 @@ Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const
 bool DopeSheet::isBundle(DSNode *dsNode) const
 {
     return (dsNode->getTreeItem()->data(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE).toBool());
-}
-
-bool DopeSheet::nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const
-{
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
-
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
-         it != knobs.end();
-         ++it) {
-        boost::shared_ptr<KnobI> knob = *it;
-
-        if (knob->hasAnimation()) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 DSKeyPtrList DopeSheet::getSelectedKeyframes() const
@@ -1001,7 +984,7 @@ void DopeSheet::emit_keyframeSelectionChanged()
     Q_EMIT keyframeSelectionChanged();
 }
 
-DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::NodeType nodeType)
+DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::ItemType nodeType)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
@@ -1164,7 +1147,7 @@ public:
 
     DopeSheet *dopeSheetModel;
 
-    DopeSheet::NodeType nodeType;
+    DopeSheet::ItemType nodeType;
 
     boost::shared_ptr<NodeGui> nodeGui;
 
@@ -1195,7 +1178,7 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
     boost::shared_ptr<KnobI> knob = knobGui->getKnob();
 
     if (knob->getDimension() <= 1) {
-        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem(), DopeSheet::ItemTypeKnobDim);
         nameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, 0);
         nameItem->setText(0, knob->getDescription().c_str());
         nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
@@ -1203,13 +1186,13 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
         dsKnob = new DSKnob(nameItem, knobGui);
     }
     else {
-        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem(), DopeSheet::ItemTypeKnobRoot);
         multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
         multiDimRootNameItem->setText(0, knob->getDescription().c_str());
         multiDimRootNameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
 
         for (int i = 0; i < knob->getDimension(); ++i) {
-            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
+            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem, DopeSheet::ItemTypeKnobDim);
             dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
             dimItem->setText(0, knob->getDimensionName(i).c_str());
             dimItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
@@ -1245,7 +1228,7 @@ void DSNodePrivate::initGroupNode()
 }
 
 DSNode::DSNode(DopeSheet *model,
-               DopeSheet::NodeType nodeType,
+               DopeSheet::ItemType nodeType,
                const boost::shared_ptr<NodeGui> &nodeGui,
                QTreeWidgetItem *nameItem) :
     QObject(),
@@ -1275,7 +1258,7 @@ DSNode::DSNode(DopeSheet *model,
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
     // the group's clip rect
-    if (_imp->nodeType == DopeSheet::NodeTypeGroup) {
+    if (_imp->nodeType == DopeSheet::ItemTypeGroup) {
         _imp->initGroupNode();
     }
 }
@@ -1333,15 +1316,15 @@ DSKnobRow DSNode::getChildData() const
     return _imp->knobRows;
 }
 
-DopeSheet::NodeType DSNode::getDSNodeType() const
+DopeSheet::ItemType DSNode::getItemType() const
 {
     return _imp->nodeType;
 }
 
 bool DSNode::isTimeNode() const
 {
-    return (_imp->nodeType >= DopeSheet::NodeTypeRetime)
-            && (_imp->nodeType < DopeSheet::NodeTypeGroup);
+    return (_imp->nodeType >= DopeSheet::ItemTypeRetime)
+            && (_imp->nodeType < DopeSheet::ItemTypeGroup);
 }
 
 

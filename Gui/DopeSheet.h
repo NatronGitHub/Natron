@@ -112,16 +112,22 @@ class DopeSheet: public QObject
     Q_OBJECT
 
 public:
-    enum NodeType
+    typedef QTreeWidgetItem TreeItem;
+
+    enum ItemType
     {
-        NodeTypeCommon = 1001,
+        ItemTypeCommon = 1001,
 
         // Range-based nodes
-        NodeTypeReader,
-        NodeTypeRetime,
-        NodeTypeTimeOffset,
-        NodeTypeFrameRange,
-        NodeTypeGroup
+        ItemTypeReader,
+        ItemTypeRetime,
+        ItemTypeTimeOffset,
+        ItemTypeFrameRange,
+        ItemTypeGroup,
+
+        // Others
+        ItemTypeKnobRoot,
+        ItemTypeKnobDim
     };
 
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
@@ -151,8 +157,8 @@ public:
     DSNode *getGroupDSNode(DSNode *dsNode) const;
     std::vector<DSNode *> getNodesFromGroup(DSNode *dsGroup) const;
 
-    bool isRangeBasedNode(DopeSheet::NodeType nodeType) const;
-    bool canContainOtherNodes(DopeSheet::NodeType nodeType) const;
+    bool isRangeBasedNode(DopeSheet::ItemType nodeType) const;
+    bool canContainOtherNodes(DopeSheet::ItemType nodeType) const;
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
@@ -161,8 +167,6 @@ public:
     Natron::Node *getNearestReader(DSNode *timeNode) const;
 
     bool isBundle(DSNode *dsNode) const;
-
-    bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui) const;
 
     // Keyframe selection logic
     DSKeyPtrList getSelectedKeyframes() const;
@@ -174,12 +178,12 @@ public:
     bool keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const;
     DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
 
+    // User interaction
     void clearKeyframeSelection();
     void deleteSelectedKeyframes();
     void selectAllKeyframes();
     void selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey> *result);
 
-    // User interaction
     void moveSelectedKeys(double dt);
     void trimReaderLeft(DSNode *reader, double newFirstFrame);
     void trimReaderRight(DSNode *reader, double newLastFrame);
@@ -207,7 +211,7 @@ Q_SIGNALS:
     void keyframeSelectionChanged();
 
 private: /* functions */
-    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, NodeType nodeType);
+    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType nodeType);
 
 private Q_SLOTS:
     void onSettingsPanelCloseChanged(bool closed);
@@ -255,7 +259,7 @@ class DSNode : public QObject
 
 public:
     DSNode(DopeSheet *model,
-           DopeSheet::NodeType nodeType,
+           DopeSheet::ItemType nodeType,
            const boost::shared_ptr<NodeGui> &nodeGui,
            QTreeWidgetItem *nameItem);
     ~DSNode();
@@ -267,7 +271,7 @@ public:
 
     DSKnobRow getChildData() const;
 
-    DopeSheet::NodeType getDSNodeType() const;
+    DopeSheet::ItemType getItemType() const;
 
     bool isTimeNode() const;
 

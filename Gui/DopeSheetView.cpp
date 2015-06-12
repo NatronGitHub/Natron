@@ -94,6 +94,23 @@ bool itemHasNoChildVisible(QTreeWidgetItem *item)
     return true;
 }
 
+bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
+{
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
+
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+         it != knobs.end();
+         ++it) {
+        boost::shared_ptr<KnobI> knob = *it;
+
+        if (knob->hasAnimation()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // anon namespace
 
 
@@ -141,15 +158,15 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
-    DopeSheet::NodeType nodeType = DopeSheet::NodeType(item->type());
+    DopeSheet::ItemType nodeType = DopeSheet::ItemType(item->type());
     int newItemHeight = 0;
 
     switch (nodeType) {
-    case DopeSheet::NodeTypeReader:
-    case DopeSheet::NodeTypeRetime:
-    case DopeSheet::NodeTypeTimeOffset:
-    case DopeSheet::NodeTypeFrameRange:
-    case DopeSheet::NodeTypeGroup:
+    case DopeSheet::ItemTypeReader:
+    case DopeSheet::ItemTypeRetime:
+    case DopeSheet::ItemTypeTimeOffset:
+    case DopeSheet::ItemTypeFrameRange:
+    case DopeSheet::ItemTypeGroup:
         newItemHeight = 10;
         break;
     default:
@@ -169,7 +186,13 @@ void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewI
 
     boost::shared_ptr<Settings> appSettings = appPTR->getCurrentSettings();
     double r, g, b;
-    appSettings->getTextColor(&r, &g, &b);
+
+    if (item->isSelected()) {
+        appSettings->getTextColor(&r, &g, &b);
+    }
+    else {
+        r = g = b = 0.11f;
+    }
 
     painter->setPen(QColor::fromRgbF(r, g, b));
     painter->drawText(option.rect, Qt::AlignVCenter, item->text(0));
@@ -240,7 +263,7 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
 void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
-    DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+    DopeSheet::ItemType nodeType = dsNode->getItemType();
 
     DSNode *isAffectedByTimeNode = model->getNearestTimeNodeFromOutputs(dsNode);
     DSNode *isFromGroup = model->getGroupDSNode(dsNode);
@@ -269,7 +292,7 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
             input->getTreeItem()->setExpanded(true);
         }
     }
-    else if (nodeType == DopeSheet::NodeTypeGroup) {
+    else if (nodeType == DopeSheet::ItemTypeGroup) {
         std::vector<DSNode *> childNodes = model->getNodesFromGroup(dsNode);
 
         for (std::vector<DSNode *>::const_iterator it = childNodes.begin(); it != childNodes.end(); ++it) {
@@ -364,12 +387,12 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 
     bool showNode = nodeGui->isSettingsPanelVisible();
 
-    DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+    DopeSheet::ItemType nodeType = dsNode->getItemType();
 
-    if (nodeType == DopeSheet::NodeTypeCommon) {
-        showNode = model->nodeHasAnimation(nodeGui);
+    if (nodeType == DopeSheet::ItemTypeCommon) {
+        showNode = nodeHasAnimation(nodeGui);
     }
-    else if (nodeType == DopeSheet::NodeTypeGroup) {
+    else if (nodeType == DopeSheet::ItemTypeGroup) {
         NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
 
         showNode = showNode && !model->groupSubNodesAreHidden(group);
@@ -552,7 +575,7 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
     int lineWidth = (NODE_SEPARATION_WIDTH / 2);
     int lineBegin = q_ptr->rect().left();
 
-    if (model->canContainOtherNodes(dsNode->getDSNodeType())) {
+    if (model->canContainOtherNodes(dsNode->getItemType())) {
         if (item->isExpanded() && !itemHasNoChildVisible(item)) {
             lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
         }
@@ -716,7 +739,7 @@ void HierarchyView::onNodeSettingsPanelOpened(DSNode *dsNode)
 
 void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
 {
-    assert(dsNode->getDSNodeType() == DopeSheet::NodeTypeGroup);
+    assert(dsNode->getItemType() == DopeSheet::ItemTypeGroup);
 
     _imp->checkNodeVisibleState(dsNode);
 }
@@ -811,13 +834,12 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
         QColor nodeColor = dsNode->getNodeGui()->getCurrentColor();
         QColor nodeColorDull = _imp->getDullColor(nodeColor);
 
-        QColor fillColor;
-        if (drawPluginIconToo) {
-            fillColor = nodeColor;
-        }
+        QColor fillColor = nodeColorDull;
 
-        if (item->parent()) {
-            fillColor = nodeColorDull;
+        if (drawPluginIconToo) {
+            if (_imp->model->isBundle(dsNode)) {
+                fillColor = nodeColor;
+            }
         }
 
         painter->fillRect(itemRect.adjusted(-1, 0, 0, 0), fillColor);
@@ -1158,7 +1180,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 
         if (dsNodeIt != dsNodeItems.end()) {
             DSNode *dsNode = (*dsNodeIt).second;
-            DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+            DopeSheet::ItemType nodeType = dsNode->getItemType();
 
             QRectF treeItemRect = hierarchyView->getItemRect(dsNode);
 
@@ -1168,12 +1190,12 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                    QPointF(range.second, treeItemRect.bottom() + 1)));
 
-                if (nodeType == DopeSheet::NodeTypeGroup) {
+                if (nodeType == DopeSheet::ItemTypeGroup) {
                     if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
                         ret = getCursorForEventState(DopeSheetView::esGroupRepos);
                     }
                 }
-                else if (nodeType == DopeSheet::NodeTypeReader) {
+                else if (nodeType == DopeSheet::ItemTypeReader) {
                     if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
                         if (isNearByClipRectLeft(zoomCoords.x(), nodeClipRect)) {
                             ret = getCursorForEventState(DopeSheetView::esReaderLeftTrim);
@@ -1190,7 +1212,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                     }
                 }
             }
-            else if (nodeType == DopeSheet::NodeTypeCommon) {
+            else if (nodeType == DopeSheet::ItemTypeCommon) {
                 std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
 
                 if (!keysUnderMouse.empty()) {
@@ -1554,9 +1576,7 @@ void DopeSheetViewPrivate::drawRows() const
         for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
-            DSNode *dsNode = (*it).second;
-
-            QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+            DopeSheet::TreeItem *treeItem = (*it).first;
 
             if(treeItem->isHidden()) {
                 continue;
@@ -1571,6 +1591,8 @@ void DopeSheetViewPrivate::drawRows() const
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+            DSNode *dsNode = (*it).second;
+
             drawNodeRow(dsNode);
 
             DSKnobRow knobItems = dsNode->getChildData();
@@ -1583,13 +1605,13 @@ void DopeSheetViewPrivate::drawRows() const
                 drawKnobRow(dsKnob);
             }
 
-            DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+            DopeSheet::ItemType nodeType = dsNode->getItemType();
 
             if (model->isRangeBasedNode(nodeType)) {
                 drawClip(dsNode);
             }
 
-            if (nodeType != DopeSheet::NodeTypeGroup) {
+            if (nodeType != DopeSheet::ItemTypeGroup) {
                 drawKeyframes(dsNode);
             }
         }
@@ -1731,7 +1753,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         fillColor = QColor::fromHsl(fillColor.hslHue(), 50, fillColor.lightness());
 
         // If necessary, draw the original frame range line
-        if (dsNode->getDSNodeType() == DopeSheet::NodeTypeReader) {
+        if (dsNode->getItemType() == DopeSheet::ItemTypeReader) {
             NodePtr node = dsNode->getNode();
 
             Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
@@ -1740,7 +1762,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
             double speedValue = 1.0f;
 
             if (DSNode *nearestRetimer = model->getNearestTimeNodeFromOutputs(dsNode)) {
-                if (nearestRetimer->getDSNodeType() == DopeSheet::NodeTypeRetime) {
+                if (nearestRetimer->getItemType() == DopeSheet::ItemTypeRetime) {
                     Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(nearestRetimer->getNode()->getKnobByName("speed").get());
                     assert(speedKnob);
 
@@ -1952,7 +1974,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             }
 
             // Draw keyframe in node row
-            if (dsNode->getDSNodeType() == DopeSheet::NodeTypeCommon) {
+            if (dsNode->getItemType() == DopeSheet::ItemTypeCommon) {
                 double keyTime = (*it).first;
                 double y = hierarchyView->getItemRect(dsNode).center().y();
 
@@ -2352,22 +2374,22 @@ void DopeSheetViewPrivate::computeRangesBelow(DSNode *dsNode)
 
 void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 {
-    DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+    DopeSheet::ItemType nodeType = dsNode->getItemType();
 
     switch (nodeType) {
-    case DopeSheet::NodeTypeReader:
+    case DopeSheet::ItemTypeReader:
         computeReaderRange(dsNode);
         break;
-    case DopeSheet::NodeTypeRetime:
+    case DopeSheet::ItemTypeRetime:
         computeRetimeRange(dsNode);
         break;
-    case DopeSheet::NodeTypeTimeOffset:
+    case DopeSheet::ItemTypeTimeOffset:
         computeTimeOffsetRange(dsNode);
         break;
-    case DopeSheet::NodeTypeFrameRange:
+    case DopeSheet::ItemTypeFrameRange:
         computeFRRange(dsNode);
         break;
-    case DopeSheet::NodeTypeGroup:
+    case DopeSheet::ItemTypeGroup:
         computeGroupRange(dsNode);
         break;
     default:
@@ -3169,12 +3191,12 @@ void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 
 void DopeSheetView::onNodeAdded(DSNode *dsNode)
 {
-    DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+    DopeSheet::ItemType nodeType = dsNode->getItemType();
     NodePtr node = dsNode->getNode();
 
     bool mustComputeNodeRange = true;
 
-    if (nodeType == DopeSheet::NodeTypeCommon) {
+    if (nodeType == DopeSheet::ItemTypeCommon) {
         if (_imp->model->isPartOfGroup(dsNode)) {
             const KnobsAndGuis &knobs = dsNode->getNodeGui()->getKnobs();
 
@@ -3194,7 +3216,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
 
         mustComputeNodeRange = false;
     }
-    else if (nodeType == DopeSheet::NodeTypeReader) {
+    else if (nodeType == DopeSheet::ItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
         boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
@@ -3212,7 +3234,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         // starting time is updated when it's modified. Thus we avoid two
         // refreshes of the view.
     }
-    else if (nodeType == DopeSheet::NodeTypeRetime) {
+    else if (nodeType == DopeSheet::ItemTypeRetime) {
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName("speed")->getSignalSlotHandler();
         assert(speedKnob);
         boost::shared_ptr<KnobSignalSlotHandler> durationKnob = node->getKnobByName("duration")->getSignalSlotHandler();
@@ -3224,14 +3246,14 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         connect(durationKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
     }
-    else if (nodeType == DopeSheet::NodeTypeTimeOffset) {
+    else if (nodeType == DopeSheet::ItemTypeTimeOffset) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName("timeOffset")->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
         connect(timeOffsetKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
     }
-    else if (nodeType == DopeSheet::NodeTypeFrameRange) {
+    else if (nodeType == DopeSheet::ItemTypeFrameRange) {
         boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName("frameRange")->getSignalSlotHandler();
         assert(frameRangeKnob);
 
@@ -3484,7 +3506,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
                 DSNode *dsNode = (*dsNodeIt).second;
-                DopeSheet::NodeType nodeType = dsNode->getDSNodeType();
+                DopeSheet::ItemType nodeType = dsNode->getItemType();
 
                 QRectF treeItemRect = _imp->hierarchyView->getItemRect(dsNode);
 
@@ -3493,14 +3515,14 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                              QPointF(range.second, treeItemRect.bottom() + 1)));
 
-                    if (nodeType == DopeSheet::NodeTypeGroup) {
+                    if (nodeType == DopeSheet::ItemTypeGroup) {
                         if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
                             _imp->currentEditedGroup = dsNode;
 
                             _imp->eventState = DopeSheetView::esGroupRepos;
                         }
                     }
-                    else if (nodeType == DopeSheet::NodeTypeReader) {
+                    else if (nodeType == DopeSheet::ItemTypeReader) {
                         if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
                             _imp->currentEditedReader = dsNode;
 
@@ -3524,7 +3546,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         }
                     }
                 }
-                else if (nodeType == DopeSheet::NodeTypeCommon) {
+                else if (nodeType == DopeSheet::ItemTypeCommon) {
                     std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
