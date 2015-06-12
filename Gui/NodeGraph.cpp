@@ -1436,8 +1436,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         break;
                     }
          
-                    if (linkRetCode == Natron::Node::eCanConnectInput_ok && n->getNode()->getLiveInstance()->isReader() &&
-                        nodeHoldingEdge->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
+                    if (linkRetCode == Natron::Node::eCanConnectInput_ok && nodeHoldingEdge->getNode()->getLiveInstance()->isReader() &&
+                        n->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
                         Natron::warningDialog(tr("Reader input").toStdString(), tr("Connecting an input to a Reader node "
                                                                                    "is only useful when using the RunScript node "
                                                                                    "so that the Reader automatically reads an image "
