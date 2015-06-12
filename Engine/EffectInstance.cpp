@@ -2893,6 +2893,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
         int maxInput = getMaxInputCount();
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
         for (int i = 0; i < maxInput; ++i) {
             
             EffectInstance* input = getInput(i);
@@ -2900,12 +2901,16 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 continue;
             }
             RectD inputRod;
-            bool isProjectFormat;
-            ParallelRenderArgs inputFrameArgs = input->getParallelRenderArgsTLS();
-            U64 inputHash = inputFrameArgs.validArgs ? inputFrameArgs.nodeHash : input->getHash();
-            Natron::StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
-            if (stat != eStatusOK && !inputRod.isNull()) {
-                break;
+            if (attachedStroke && (isInputMask(i) || isInputRotoBrush(i))) {
+                getNode()->getPaintStrokeRoD(args.time, &inputRod);
+            } else {
+                bool isProjectFormat;
+                ParallelRenderArgs inputFrameArgs = input->getParallelRenderArgsTLS();
+                U64 inputHash = inputFrameArgs.validArgs ? inputFrameArgs.nodeHash : input->getHash();
+                Natron::StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
+                if (stat != eStatusOK && !inputRod.isNull()) {
+                    break;
+                }
             }
             if (!inputsIntersectionSet) {
                 inputsIntersection = inputRod;
