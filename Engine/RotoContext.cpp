@@ -5448,6 +5448,7 @@ RectD
 RotoStrokeItem::computeBoundingBox(int time) const
 {
     RectD bbox;
+    
     QMutexLocker k(&itemMutex);
     bool bboxSet = false;
     
@@ -5492,6 +5493,10 @@ RotoStrokeItem::computeBoundingBox(int time) const
     for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt, ++xNext, ++yNext, ++pNext) {
         
         RectD subBox;
+        subBox.x1 = std::numeric_limits<double>::infinity();
+        subBox.x2 = -std::numeric_limits<double>::infinity();
+        subBox.y1 = std::numeric_limits<double>::infinity();
+        subBox.y2 = -std::numeric_limits<double>::infinity();
         
         double pressure = std::max(pIt->getValue(), pNext->getValue());
         Point p0,p1,p2,p3;
@@ -7736,7 +7741,6 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     RectI pixelRod;
     bbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
-    
     
     ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
     ///just remove the old image from the cache to recycle memory.

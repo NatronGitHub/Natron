@@ -2896,14 +2896,16 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
         for (int i = 0; i < maxInput; ++i) {
             
-            EffectInstance* input = getInput(i);
-            if (!input) {
-                continue;
-            }
+            
             RectD inputRod;
             if (attachedStroke && (isInputMask(i) || isInputRotoBrush(i))) {
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
             } else {
+                
+                EffectInstance* input = getInput(i);
+                if (!input) {
+                    continue;
+                }
                 bool isProjectFormat;
                 ParallelRenderArgs inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = inputFrameArgs.validArgs ? inputFrameArgs.nodeHash : input->getHash();
