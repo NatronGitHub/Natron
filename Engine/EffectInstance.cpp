@@ -270,7 +270,7 @@ namespace  {
                 if (it->_hash == hash) {
                     *first = it->_timeDomain.min;
                     *last = it->_timeDomain.max;
-                    return false;
+                    return true;
                 }
             }
             return false;
