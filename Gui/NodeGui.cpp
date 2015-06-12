@@ -1522,7 +1522,7 @@ NodeGui::setUserSelected(bool b)
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
-        if ( b && isSettingsPanelVisible() && getNode()->isRotoNode() ) {
+        if ( b && isSettingsPanelVisible() && (getNode()->isRotoNode() || getNode()->isRotoPaintingNode())) {
             _graph->getGui()->setRotoInterface(this);
         }
     }
