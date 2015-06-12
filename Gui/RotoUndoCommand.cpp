@@ -1545,9 +1545,22 @@ RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
       , _items()
 {
     for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        
+        QTreeWidgetItem* parentItem = (*it)->parent();
+        bool foundParent = false;
+        for (QList<QTreeWidgetItem*>::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            if ((*it2) == parentItem) {
+                foundParent = true;
+                break;
+            }
+        }
+        if (foundParent) {
+            //Not necessary to add this item to the list since the parent is going to remove it anyway
+            continue;
+        }
         RemovedItem r;
         r.treeItem = *it;
-        r.parentTreeItem = r.treeItem->parent();
+        r.parentTreeItem = parentItem;
         r.item = _roto->getRotoItemForTreeItem(r.treeItem);
         assert(r.item);
         if (r.parentTreeItem) {
@@ -1842,7 +1855,10 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                 it->itemCopy = copy;
             } else {
                 assert(srcLayer);
-                boost::shared_ptr<RotoLayer> copy( new RotoLayer(*srcLayer) );
+                boost::shared_ptr<RotoLayer> copy( new RotoLayer(srcLayer->getContext(),
+                                                                 "",
+                                                                 boost::shared_ptr<RotoLayer>()) );
+                copy->clone(srcLayer.get());
                 setItemCopyNameRecursive( roto, copy );
                 it->itemCopy = copy;
             }

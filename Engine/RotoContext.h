@@ -502,7 +502,7 @@ public:
 
     virtual ~RotoLayer();
 
-    //void clone(const RotoLayer & other);
+    virtual void clone(const RotoItem* other) OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -1107,6 +1107,8 @@ public:
     
     void deactivateNodes();
     void activateNodes();
+    
+    void disconnectNodes();
     
     void refreshNodesConnections();
 
