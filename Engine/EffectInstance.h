@@ -45,6 +45,7 @@
 #define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
 #define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
 #define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
+#define PLUGINID_OFX_RUNSCRIPT    "fr.inria.openfx.RunScript"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")

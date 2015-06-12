@@ -801,7 +801,7 @@ ComboBox::itemIndex(const QString & str) const
         return -1;
     }
     for (U32 i = 0; i < _rootNode->children.size(); ++i) {
-        if (_rootNode->children[i]->isLeaf->text() == str) {
+        if (_rootNode->children[i]->text == str) {
             return i;
         }
     }

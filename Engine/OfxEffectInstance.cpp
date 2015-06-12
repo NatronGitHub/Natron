@@ -52,6 +52,8 @@
 #include "Engine/Node.h"
 #include "Engine/Transform.h"
 
+#define READER_INPUT_NAME "Sync"
+
 using namespace Natron;
 using std::cout; using std::endl;
 
@@ -826,7 +828,11 @@ OfxEffectInstance::getInputLabel(int inputNb) const
 
     MappedInputV copy = inputClipsCopyWithoutOutput();
     if ( inputNb < (int)copy.size() ) {
-        return copy[inputNb]->getShortLabel();
+        if (_context != eContextReader) {
+            return copy[inputNb]->getShortLabel();
+        } else {
+            return READER_INPUT_NAME;
+        }
     } else {
         return EffectInstance::getInputLabel(inputNb);
     }

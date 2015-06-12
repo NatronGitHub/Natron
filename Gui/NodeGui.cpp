@@ -1423,10 +1423,11 @@ NodeGui::setOptionalInputsVisible(bool visible)
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
         
+        bool isReader = node->getLiveInstance()->isReader();
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
-            if (node->getLiveInstance()->isInputOptional(i) &&
+            if (isReader || (node->getLiveInstance()->isInputOptional(i) &&
                 node->getLiveInstance()->isInputMask(i) &&
-                !_inputEdges[i]->isRotoEdge()) {
+                !_inputEdges[i]->isRotoEdge())) {
                 
                 bool nodeVisible = visible;
                 if (!visible && node->getRealInput(i) ) {
