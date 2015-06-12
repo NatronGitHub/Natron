@@ -1660,6 +1660,23 @@ Node::abortAnyProcessing()
 }
 
 void
+Node::setMustQuitProcessing(bool mustQuit)
+{
+    
+    {
+        QMutexLocker k(&_imp->mustQuitProcessingMutex);
+        _imp->mustQuitProcessing = mustQuit;
+    }
+    if (isRotoPaintingNode()) {
+        NodeList rotopaintNodes;
+        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
+        for (NodeList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
+            (*it)->setMustQuitProcessing(mustQuit);
+        }
+    }
+}
+
+void
 Node::quitAnyProcessing()
 {
     {
@@ -1668,10 +1685,6 @@ Node::quitAnyProcessing()
         _imp->nodeIsDequeuingCond.wakeAll();
     }
     
-    {
-        QMutexLocker k(&_imp->mustQuitProcessingMutex);
-        _imp->mustQuitProcessing = true;
-    }
     
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
     
@@ -1679,6 +1692,14 @@ Node::quitAnyProcessing()
         isOutput->getRenderEngine()->quitEngine();
     }
     _imp->abortPreview();
+    
+    if (isRotoPaintingNode()) {
+        NodeList rotopaintNodes;
+        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
+        for (NodeList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
+            (*it)->quitAnyProcessing();
+        }
+    }
     
 }
 

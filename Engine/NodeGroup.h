@@ -206,6 +206,9 @@ public:
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
      **/
     void quitAnyProcessingForAllNodes();
+
+public:
+    
     
     /**
      * @brief Computes the union of the frame range of all readers in the group and subgroups.

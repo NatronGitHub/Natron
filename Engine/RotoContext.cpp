@@ -4134,8 +4134,11 @@ Bezier::isFeatherPolygonClockwiseOrientedInternal(int time) const
         if (kfCount > 0 && _imp->finished) {
             computePolygonOrientation(time, false);
             it = _imp->isClockwiseOriented.find(time);
-            assert(it != _imp->isClockwiseOriented.end());
-            return it->second;
+            if (it != _imp->isClockwiseOriented.end()) {
+                return it->second;
+            } else {
+                return false;
+            }
         } else {
             return _imp->isClockwiseOrientedStatic;
         }

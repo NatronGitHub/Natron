@@ -225,17 +225,35 @@ NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) co
 
 }
 
-void
-NodeCollection::quitAnyProcessingForAllNodes()
+static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
 {
-    NodeList nodes = getNodes();
+    NodeList nodes = grp->getNodes();
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->setMustQuitProcessing(mustQuit);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            setMustQuitProcessingRecursive(mustQuit,isGrp);
+        }
+    }
+}
+
+static void quitAnyProcessingInternal(NodeCollection* grp) {
+    NodeList nodes = grp->getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->quitAnyProcessing();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->quitAnyProcessingForAllNodes();
+            quitAnyProcessingInternal(isGrp);
         }
     }
+}
+
+void
+NodeCollection::quitAnyProcessingForAllNodes()
+{
+    setMustQuitProcessingRecursive(true, this);
+    quitAnyProcessingInternal(this);
+    setMustQuitProcessingRecursive(false, this);
 }
 
 bool

@@ -26,6 +26,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Project.h"
+#include "Engine/Node.h"
 #include "Gui/RotoGui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/RotoPanel.h"
@@ -583,7 +585,11 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
 {
-    
+    /*
+     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
+     * are deleted so that the ThreadLocalStorage used is correctly cleared.
+     */
+    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
 }
 
 void

@@ -2965,9 +2965,9 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
             _imp->requestsQueue.push_back(NULL);
+            _imp->notifyFrameProduced(BufferableObjectList(), NULL);
             _imp->requestsQueueNotEmpty.wakeOne();
         }
-        
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
@@ -3151,6 +3151,9 @@ ViewerCurrentFrameRequestRendererBackup::run()
                 if (!_imp->requestsQueue.empty()) {
                     hasRequest = true;
                     firstRequest = _imp->requestsQueue.front();
+                    if (!firstRequest.viewer) {
+                        hasRequest = false;
+                    }
                     _imp->requestsQueue.pop_front();
                 }
             }

@@ -1420,7 +1420,8 @@ EffectInstance::getImage(int inputNb,
             
             Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth(inputImg->getBitDepth());
             
-            bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
+            bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied &&
+            inputImg->getComponents().getNumComponents() == 4 && prefComps.getNumComponents() == 3;
             inputImg->convertToFormat(inputImg->getBounds(),
                                       colorspace, colorspace,
                                       channelForMask, false, unPremultIfNeeded, remappedImg.get());
@@ -3406,7 +3407,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 
                 tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), args.roi, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
                 
-                bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied;
+                bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied && it->second.downscaleImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
                 
                 if (useAlpha0ForRGBToRGBAConversion) {
                     it->second.downscaleImage->convertToFormatAlpha0(args.roi,
@@ -4469,6 +4470,8 @@ EffectInstance::renderHandler(RenderArgs & args,
         //Check for NaNs
         for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
             
+            bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
+            
             if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
                 qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
             }
@@ -4483,7 +4486,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.renderMappedImage->getBitDepth()),
-                                                                   -1, false, unPremultIfNeeded, it->second.renderMappedImage.get());
+                                                                   -1, false, unPremultRequired, it->second.renderMappedImage.get());
                     } else {
                         it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
                     }
@@ -4517,7 +4520,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, unPremultIfNeeded, tmp.get());
+                                                                 -1, false, unPremultRequired, tmp.get());
                             tmp->downscaleMipMap(it->second.tmpImage->getRoD(),
                                                  actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
                         } else {
@@ -4546,7 +4549,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                 it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
-                                                                     -1, false, unPremultIfNeeded, it->second.fullscaleImage.get());
+                                                                     -1, false, unPremultRequired, it->second.fullscaleImage.get());
                             } else {
                                 
                                 /*
@@ -4583,7 +4586,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, unPremultIfNeeded, it->second.downscaleImage.get());
+                                                                 -1, false, unPremultRequired, it->second.downscaleImage.get());
                         } else {
                             
                             /*

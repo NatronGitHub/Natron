@@ -156,6 +156,7 @@ public:
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */
+    void setMustQuitProcessing(bool mustQuit);
     void quitAnyProcessing();
 
     /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
