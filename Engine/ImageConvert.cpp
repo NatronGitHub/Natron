@@ -223,7 +223,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
     }
 } // convertToFormatInternal_sameComps
 
-template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
 bool requiresUnpremult, bool useColorspaces>
 void
 Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
@@ -232,8 +232,39 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                             bool copyBitmap,
                                             bool useAlpha0,
                                             Natron::ViewerColorSpaceEnum srcColorSpace,
-                                            Natron::ViewerColorSpaceEnum dstColorSpace)
+                                            Natron::ViewerColorSpaceEnum dstColorSpace,
+                                            int channelForAlpha)
 {
+    
+    
+    if (channelForAlpha != -1) {
+        switch (srcNComps) {
+            case 3:
+                if (channelForAlpha > 2) {
+                    channelForAlpha = -1;
+                }
+                break;
+            case 2:
+                if (channelForAlpha > 1) {
+                    channelForAlpha = -1;
+                }
+            default:
+                break;
+        }
+    } else {
+        switch (srcNComps) {
+            case 4:
+                channelForAlpha = 3;
+                break;
+            case 3:
+            case 1:
+            default:
+                break;
+        }
+        
+    }
+
+    
     int maxColorComps = std::min(dstNComps, 3);
     
     
@@ -419,7 +450,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
     
 }
 
-template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
 bool requiresUnpremult>
 void
 Image::convertToFormatInternalForUnpremult(const RectI & renderWindow,
@@ -428,35 +459,15 @@ Image::convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                            Natron::ViewerColorSpaceEnum srcColorSpace,
                                            Natron::ViewerColorSpaceEnum dstColorSpace,
                                            bool useAlpha0,
-                                           bool copyBitmap)
+                                           bool copyBitmap,
+                                           int channelForAlpha)
 {
     if (srcColorSpace == Natron::eViewerColorSpaceLinear && dstColorSpace == Natron::eViewerColorSpaceLinear) {
-        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, requiresUnpremult, false>(renderWindow, srcImg, dstImg, copyBitmap,useAlpha0, srcColorSpace, dstColorSpace);
+        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, false>(renderWindow, srcImg, dstImg, copyBitmap,useAlpha0, srcColorSpace, dstColorSpace,channelForAlpha);
     } else {
-        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, requiresUnpremult, true>(renderWindow, srcImg, dstImg, copyBitmap, useAlpha0, srcColorSpace, dstColorSpace);
+        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, true>(renderWindow, srcImg, dstImg, copyBitmap, useAlpha0, srcColorSpace, dstColorSpace, channelForAlpha);
     }
 }
-
-template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha>
-void
-Image::convertToFormatInternalForAlpha(const RectI & renderWindow,
-                                             const Image & srcImg,
-                                       Image & dstImg,
-                                       Natron::ViewerColorSpaceEnum srcColorSpace,
-                                       Natron::ViewerColorSpaceEnum dstColorSpace,
-                                       bool useAlpha0,
-                                       bool copyBitmap,
-                                       bool requiresUnpremult)
-{
-    if (requiresUnpremult) {
-        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, true>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap);
-    } else {
-        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, false>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap);
-
-    }
-}
-
-
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
 void
@@ -470,59 +481,14 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                                bool copyBitmap,
                                bool requiresUnpremult)
 {
-    
-
-    assert(!renderWindow.isNull() && renderWindow.width() > 0 && renderWindow.height() > 0);
-
-    if (channelForAlpha != -1) {
-        switch (srcNComps) {
-            case 3:
-                if (channelForAlpha > 2) {
-                    channelForAlpha = -1;
-                }
-                break;
-            case 2:
-                if (channelForAlpha > 1) {
-                    channelForAlpha = -1;
-                }
-            default:
-                break;
-        }
+    if (requiresUnpremult) {
+        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, true>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,channelForAlpha);
     } else {
-        switch (srcNComps) {
-            case 4:
-                channelForAlpha = 3;
-                break;
-            case 3:
-            case 1:
-             default:
-                break;
-        }
+        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, false>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,channelForAlpha);
 
     }
-    
-    switch (channelForAlpha) {
-        case -1:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, -1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 0:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 0>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 1:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 2:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 2>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        case 3:
-            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 3>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,useAlpha0,copyBitmap,requiresUnpremult);
-            break;
-        default:
-            assert(false);
-            break;
-    }
+}
 
-} // convertToFormatInternal
 
 
 
