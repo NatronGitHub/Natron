@@ -1395,7 +1395,9 @@ public:
 private:
 
    
-    virtual void unSlave(int dimension,Natron::ValueChangedReasonEnum reason,bool copyState) OVERRIDE FINAL;
+    virtual void unSlave(int dimension,
+                         Natron::ValueChangedReasonEnum reason,
+                         bool copyState) OVERRIDE FINAL;
 
     
        /**
@@ -1403,7 +1405,11 @@ private:
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
+    bool setValueAtTime(int time,
+                        const T & v,
+                        int dimension,
+                        Natron::ValueChangedReasonEnum reason,
+                        KeyFrame* newKey);
 
 public:
 
@@ -1412,8 +1418,10 @@ public:
      * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
      * then a new keyframe will be set at the current time.
      **/
-    ValueChangedReturnCodeEnum setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
-                                        KeyFrame* newKey) WARN_UNUSED_RETURN;
+    ValueChangedReturnCodeEnum setValue(const T & v,
+                                        int dimension,
+                                        Natron::ValueChangedReasonEnum reason,
+                                        KeyFrame* newKey);
 
     
    
@@ -1423,11 +1431,24 @@ public:
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
-    ValueChangedReturnCodeEnum setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
+    ValueChangedReturnCodeEnum setValue(const T & value,
+                                        int dimension,
+                                        bool turnOffAutoKeying = false);
     
-    void setValues(const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason);
-    void setValues(const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason);
-    void setValues(const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason);
+    void setValues(const T& value0,
+                   const T& value1,
+                   Natron::ValueChangedReasonEnum reason);
+
+    void setValues(const T& value0,
+                   const T& value1,
+                   const T& value2,
+                   Natron::ValueChangedReasonEnum reason);
+
+    void setValues(const T& value0,
+                   const T& value1,
+                   const T& value2,
+                   const T& value3,
+                   Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief Calls setValue 
@@ -1436,31 +1457,54 @@ public:
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCodeEnum
      **/
-    ValueChangedReturnCodeEnum onValueChanged(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey);
+    ValueChangedReturnCodeEnum onValueChanged(const T & v,
+                                              int dimension,
+                                              Natron::ValueChangedReasonEnum reason,
+                                              KeyFrame* newKey);
     
     /**
      * @brief Calls setValue with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
-    ValueChangedReturnCodeEnum setValueFromPlugin(const T & value,int dimension);
+    ValueChangedReturnCodeEnum setValueFromPlugin(const T & value,
+                                                  int dimension);
 
     /**
      * @brief This is called by the plugin when a set value call would happen during  an interact action.
      **/
-    void requestSetValueOnUndoStack(const T & value,int dimension);
+    void requestSetValueOnUndoStack(const T & value,
+                                    int dimension);
 
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
-    void setValueAtTime(int time,const T & v,int dimension);
+    void setValueAtTime(int time,
+                        const T & v,
+                        int dimension);
     
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
-    void setValueAtTimeFromPlugin(int time,const T & v,int dimension);
+    void setValueAtTimeFromPlugin(int time,
+                                  const T & v,
+                                  int dimension);
     
-    void setValuesAtTime(int time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason);
-    void setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason);
-    void setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason);
+    void setValuesAtTime(int time,
+                         const T& value0,
+                         const T& value1,
+                         Natron::ValueChangedReasonEnum reason);
+
+    void setValuesAtTime(int time,
+                         const T& value0,
+                         const T& value1,
+                         const T& value2,
+                         Natron::ValueChangedReasonEnum reason);
+
+    void setValuesAtTime(int time,
+                         const T& value0,
+                         const T& value1,
+                         const T& value2,
+                         const T& value3,
+                         Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.
@@ -1468,7 +1512,9 @@ public:
      * @returns True if a keyframe was found at the given index and for the given dimension,
      * false otherwise.
      **/
-    T getKeyFrameValueByIndex(int dimension,int index,bool* ok) const WARN_UNUSED_RETURN;
+    T getKeyFrameValueByIndex(int dimension,
+                              int index,
+                              bool* ok) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueForEachDimension() but MT thread-safe.
