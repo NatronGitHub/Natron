@@ -1175,6 +1175,7 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
         QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
         nameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, 0);
         nameItem->setText(0, knob->getDescription().c_str());
+        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
 
         dsKnob = new DSKnob(nameItem, knobGui);
     }
@@ -1182,11 +1183,13 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
         QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
         multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
         multiDimRootNameItem->setText(0, knob->getDescription().c_str());
+        multiDimRootNameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
 
         for (int i = 0; i < knob->getDimension(); ++i) {
             QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
             dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
             dimItem->setText(0, knob->getDimensionName(i).c_str());
+            dimItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
         }
 
         dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
