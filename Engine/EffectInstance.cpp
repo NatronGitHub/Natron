@@ -6334,19 +6334,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 Natron::EffectInstance*
 EffectInstance::getNearestNonIdentity(int time)
 {
-    U64 hash;
-    bool hashSet = false;
-    if (_imp->frameRenderArgs.hasLocalData()) {
-        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            hash = args.nodeHash;
-            hashSet = true;
-        }
-    }
-    
-    if (!hashSet) {
-         hash = getHash();
-    }
+    U64 hash = getRenderHash();
 
     RenderScale scale;
     scale.x = scale.y = 1.;

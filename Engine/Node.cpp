@@ -4471,6 +4471,9 @@ static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std
 void
 Node::refreshPreviewsRecursivelyDownstream(int time)
 {
+    if (!getNodeGui()) {
+        return;
+    }
     std::list<Node*> marked;
     refreshPreviewsRecursivelyDownstreamInternal(time,this,marked);
 }

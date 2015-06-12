@@ -1750,7 +1750,12 @@ ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
 
-    if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || !_imp->gui || _imp->gui->isGUIFrozen()) {
+    if ( !_imp->app ||
+        !_imp->viewer ||
+        _imp->app->isClosing() ||
+        isFileDialogViewer() ||
+        !_imp->gui ||
+        (_imp->gui->isGUIFrozen() && !_imp->app->getIsUserPainting())) {
         return;
     }
     

@@ -2942,8 +2942,9 @@ RotoGui::penMotion(double /*scaleX*/,
             p.x = pos.x();
             p.y = pos.y();
             if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure))) {
+                _imp->lastMousePos = pos;
                 _imp->context->evaluateChange_noIncrement();
-                didSomething = true;
+                return true;
             }
         }
         break;
