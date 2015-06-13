@@ -1059,7 +1059,7 @@ Knob<T>::makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key)
     } else {
         keyFrameValue = (double)v;
     }
-    if (boost::math::isnan(keyFrameValue) || boost::math::isinf(keyFrameValue)) {
+    if (keyFrameValue != keyFrameValue || boost::math::isinf(keyFrameValue)) { // check for NaN or infinity
         *key = KeyFrame( (double)time,getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time,keyFrameValue );

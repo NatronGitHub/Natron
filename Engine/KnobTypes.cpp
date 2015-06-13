@@ -1357,9 +1357,9 @@ Parametric_Knob::addControlPoint(int dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return eStatusFailed;
     }
@@ -1377,9 +1377,9 @@ Parametric_Knob::addHorizontalControlPoint(int dimension,double key,double value
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return eStatusFailed;
     }
