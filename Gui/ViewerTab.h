@@ -250,6 +250,9 @@ public:
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
+    bool isViewersSynchroEnabled() const;
+    
+    void synchronizeOtherViewersProjection();
     
 public Q_SLOTS:
 
@@ -375,6 +378,8 @@ public Q_SLOTS:
     
     void onGammaSliderEditingFinished(bool hasMovedOnce);
     void onGainSliderEditingFinished(bool hasMovedOnce);
+    
+    void onSyncViewersButtonPressed(bool clicked);
     
 private:
     

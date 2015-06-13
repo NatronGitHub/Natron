@@ -167,6 +167,7 @@ struct ViewerTabPrivate
     ComboBox* alphaChannelChoice;
     ChannelsComboBox* viewerChannels;
     ComboBox* zoomCombobox;
+    Button* syncViewerButton;
     Button* centerViewerButton;
     Button* clipToProjectFormatButton;
     Button* enableViewerRoI;
@@ -283,6 +284,7 @@ struct ViewerTabPrivate
     , alphaChannelChoice(NULL)
     , viewerChannels(NULL)
     , zoomCombobox(NULL)
+    , syncViewerButton(NULL)
     , centerViewerButton(NULL)
     , clipToProjectFormatButton(NULL)
     , enableViewerRoI(NULL)
@@ -495,6 +497,21 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->zoomCombobox->setMaximumWidthFromText("100000%");
 
     _imp->firstRowLayout->addWidget(_imp->zoomCombobox);
+    
+    QPixmap lockEnabled,lockDisabled;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &lockEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, &lockDisabled);
+    
+    QIcon lockIcon;
+    lockIcon.addPixmap(lockEnabled, QIcon::Normal, QIcon::On);
+    lockIcon.addPixmap(lockDisabled, QIcon::Normal, QIcon::Off);
+    _imp->syncViewerButton = new Button(lockIcon,"",_imp->firstSettingsRow);
+    _imp->syncViewerButton->setCheckable(true);
+    _imp->syncViewerButton->setToolTip(Qt::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
+    _imp->syncViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->syncViewerButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect(_imp->syncViewerButton, SIGNAL(clicked(bool)), this,SLOT(onSyncViewersButtonPressed(bool)));
+    _imp->firstRowLayout->addWidget(_imp->syncViewerButton);
 
     _imp->centerViewerButton = new Button(_imp->firstSettingsRow);
     _imp->centerViewerButton->setFocusPolicy(Qt::NoFocus);
@@ -4482,5 +4499,42 @@ ViewerTab::onGainSliderEditingFinished(bool hasMovedOnce)
     bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
     if (autoProxyEnabled && hasMovedOnce) {
         getGui()->renderAllViewers();
+    }
+}
+
+bool
+ViewerTab::isViewersSynchroEnabled() const
+{
+    return _imp->syncViewerButton->isDown();
+}
+
+void
+ViewerTab::synchronizeOtherViewersProjection()
+{
+    
+    double left,bottom,factor,par;
+    _imp->viewer->getProjection(&left, &bottom, &factor, &par);
+    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        if ((*it) != this) {
+            (*it)->getViewer()->setProjection(left, bottom, factor, par);
+            (*it)->getInternalNode()->renderCurrentFrame(false);
+            
+        }
+    }
+    
+}
+
+void
+ViewerTab::onSyncViewersButtonPressed(bool clicked)
+{
+
+    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->_imp->syncViewerButton->setDown(clicked);
+        (*it)->_imp->syncViewerButton->setChecked(clicked);
+    }
+    if (clicked) {
+        synchronizeOtherViewersProjection();
     }
 }

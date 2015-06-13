@@ -3010,6 +3010,11 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
                 _imp->zoomOrPannedSinceLastFit = true;
             }
             _imp->oldClick = newClick;
+            
+            if (_imp->viewerTab->isViewersSynchroEnabled()) {
+                _imp->viewerTab->synchronizeOtherViewersProjection();
+            }
+            
             _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
             
             //  else {
@@ -3043,6 +3048,10 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
             }
             assert(zoomValue > 0);
             Q_EMIT zoomChanged(zoomValue);
+            
+            if (_imp->viewerTab->isViewersSynchroEnabled()) {
+                _imp->viewerTab->synchronizeOtherViewersProjection();
+            }
             
             //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
             _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -3408,6 +3417,9 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     assert(zoomValue > 0);
     Q_EMIT zoomChanged(zoomValue);
 
+    if (_imp->viewerTab->isViewersSynchroEnabled()) {
+        _imp->viewerTab->synchronizeOtherViewersProjection();
+    }
 
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
     
@@ -3505,6 +3517,10 @@ ViewerGL::fitImageToFormat()
             zoomFactorInt = 1;
         }
         Q_EMIT zoomChanged(zoomFactorInt);
+    }
+    
+    if (_imp->viewerTab->isViewersSynchroEnabled()) {
+        _imp->viewerTab->synchronizeOtherViewersProjection();
     }
     
     if (newMipMapLevel != oldMipMapLevel) {
@@ -4081,6 +4097,7 @@ ViewerGL::setProjection(double zoomLeft,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QMutexLocker l(&_imp->zoomCtxMutex);
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+    Q_EMIT zoomChanged(100 * zoomFactor);
 }
 
 bool
