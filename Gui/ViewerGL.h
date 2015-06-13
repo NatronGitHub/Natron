@@ -265,6 +265,11 @@ public:
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+    
+    /**
+     * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
+     **/
+    bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
 

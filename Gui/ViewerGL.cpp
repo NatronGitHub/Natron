@@ -4083,6 +4083,20 @@ ViewerGL::setProjection(double zoomLeft,
     _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
+bool
+ViewerGL::isVisibleInViewport(const RectD& rectangle) const
+{
+    RectD bbox;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        bbox.x1 = _imp->zoomCtx.left();
+        bbox.y1 = _imp->zoomCtx.bottom();
+        bbox.x2 = _imp->zoomCtx.right();
+        bbox.y2 = _imp->zoomCtx.top();
+    }
+    return bbox.intersects(rectangle);
+}
+
 void
 ViewerGL::setUserRoIEnabled(bool b)
 {

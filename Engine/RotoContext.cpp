@@ -294,20 +294,37 @@ bezierSegmentBboxUpdate(const BezierCP & first,
                         const BezierCP & last,
                         int time,
                         unsigned int mipMapLevel,
+                        const Transform::Matrix3x3& transform,
                         RectD* bbox) ///< input/output
 {
     Point p0,p1,p2,p3;
-    
+    Transform::Point3D p0M,p1M,p2M,p3M;
     assert(bbox);
     
     try {
-        first.getPositionAtTime(time, &p0.x, &p0.y);
-        first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
-        last.getPositionAtTime(time, &p3.x, &p3.y);
-        last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+        first.getPositionAtTime(time, &p0M.x, &p0M.y);
+        first.getRightBezierPointAtTime(time, &p1M.x, &p1M.y);
+        last.getPositionAtTime(time, &p3M.x, &p3M.y);
+        last.getLeftBezierPointAtTime(time, &p2M.x, &p2M.y);
     } catch (const std::exception & e) {
         assert(false);
     }
+    p0M.z = p1M.z = p2M.z = p3M.z = 1;
+    
+    p0M = Transform::matApply(transform, p0M);
+    p1M = Transform::matApply(transform, p1M);
+    p2M = Transform::matApply(transform, p2M);
+    p3M = Transform::matApply(transform, p3M);
+    
+    p0.x = p0M.x / p0M.z;
+    p1.x = p1M.x / p1M.z;
+    p2.x = p2M.x / p2M.z;
+    p3.x = p3M.x / p3M.z;
+    
+    p0.y = p0M.y / p0M.z;
+    p1.y = p1M.y / p1M.z;
+    p2.y = p2M.y / p2M.z;
+    p3.y = p3M.y / p3M.z;
     
     if (mipMapLevel > 0) {
         int pot = 1 << mipMapLevel;
@@ -331,6 +348,7 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
                             bool finished,
                             int time,
                             unsigned int mipMapLevel,
+                            const Transform::Matrix3x3& transform,
                             RectD* bbox) ///< input/output
 {
     if ( points.empty() ) {
@@ -353,7 +371,7 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, bbox);
+        bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, transform, bbox);
         
         // increment for next iteration
         if (next != points.end()) {
@@ -371,19 +389,34 @@ bezierSegmentEval(const BezierCP & first,
                   int time,
                   unsigned int mipMapLevel,
                   int nbPointsPerSegment,
+                  const Transform::Matrix3x3& transform,
                   std::list< Point >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
 {
+    Transform::Point3D p0M,p1M,p2M,p3M;
     Point p0,p1,p2,p3;
     
     try {
-        first.getPositionAtTime(time, &p0.x, &p0.y);
-        first.getRightBezierPointAtTime(time, &p1.x, &p1.y);
-        last.getPositionAtTime(time, &p3.x, &p3.y);
-        last.getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+        first.getPositionAtTime(time, &p0M.x, &p0M.y);
+        first.getRightBezierPointAtTime(time, &p1M.x, &p1M.y);
+        last.getPositionAtTime(time, &p3M.x, &p3M.y);
+        last.getLeftBezierPointAtTime(time, &p2M.x, &p2M.y);
     } catch (const std::exception & e) {
         assert(false);
     }
+    
+    p0M.z = p1M.z = p2M.z = p3M.z = 1;
+    
+    p0M = matApply(transform, p0M);
+    p1M = matApply(transform, p1M);
+    p2M = matApply(transform, p2M);
+    p3M = matApply(transform, p3M);
+    
+    p0.x = p0M.x / p0M.z; p0.y = p0M.y / p0M.z;
+    p1.x = p1M.x / p1M.z; p1.y = p1M.y / p1M.z;
+    p2.x = p2M.x / p2M.z; p2.y = p2M.y / p2M.z;
+    p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
+
     
     if (mipMapLevel > 0) {
         int pot = 1 << mipMapLevel;
@@ -1978,6 +2011,27 @@ boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const
     return _imp->color;
 }
 
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getCenterKnob() const
+{
+    return _imp->center;
+}
+
+void
+RotoDrawableItem::setKeyframeOnAllTransformParameters(int time)
+{
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), 0);
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), 1);
+    
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), 0);
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), 1);
+    
+    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), 0);
+    
+    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), 0);
+    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), 0);
+}
+
 const std::list<boost::shared_ptr<KnobI> >&
 RotoDrawableItem::getKnobs() const
 {
@@ -1985,7 +2039,64 @@ RotoDrawableItem::getKnobs() const
 }
 
 
+void
+RotoDrawableItem::getTransformAtTime(int time,Transform::Matrix3x3* matrix) const
+{
+    double tx = _imp->translate->getValueAtTime(time, 0);
+    double ty = _imp->translate->getValueAtTime(time, 1);
+    double sx = _imp->scale->getValueAtTime(time, 0);
+    double sy = _imp->scaleUniform->getValueAtTime(time) ? sx : _imp->scale->getValueAtTime(time, 1);
+    double skewX = _imp->skewX->getValueAtTime(time, 0);
+    double skewY = _imp->skewY->getValueAtTime(time, 0);
+    double rot = _imp->rotate->getValueAtTime(time, 0);
+    double centerX = _imp->center->getValueAtTime(time, 0);
+    double centerY = _imp->center->getValueAtTime(time, 1);
+    bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
+    *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
+}
 
+/**
+ * @brief Set the transform at the given time
+ **/
+void
+RotoDrawableItem::setTransform(int time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY)
+{
+    
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    
+    if (autoKeying) {
+        _imp->translate->setValueAtTime(time, tx, 0);
+        _imp->translate->setValueAtTime(time, ty, 1);
+        
+        _imp->scale->setValueAtTime(time, sx, 0);
+        _imp->scale->setValueAtTime(time, sy, 1);
+        
+        _imp->center->setValueAtTime(time, centerX, 0);
+        _imp->center->setValueAtTime(time, centerY, 1);
+        
+        _imp->rotate->setValueAtTime(time, rot, 0);
+        
+        _imp->skewX->setValueAtTime(time, skewX, 0);
+        _imp->skewY->setValueAtTime(time, skewY, 0);
+    } else {
+        _imp->translate->setValue(tx, 0);
+        _imp->translate->setValue(ty, 1);
+        
+        _imp->scale->setValue(sx, 0);
+        _imp->scale->setValue(sy, 1);
+        
+        _imp->center->setValue(centerX, 0);
+        _imp->center->setValue(centerY, 1);
+        
+        _imp->rotate->setValue(rot, 0);
+        
+        _imp->skewX->setValue(skewX, 0);
+        _imp->skewY->setValue(skewY, 0);
+
+    }
+    
+    onTransformSet(time);
+}
 
 ////////////////////////////////////Layer////////////////////////////////////
 
@@ -2683,10 +2794,44 @@ Bezier::setCurveFinished(bool finished)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    int time = getContext()->getTimelineCurrentTime();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    Point center;
+    bool centerSet = false;
     {
         QMutexLocker l(&itemMutex);
         _imp->finished = finished;
+        
+        ///Compute the value of the center knob
+        center.x = center.y = 0;
+        
+        if (finished) {
+            for (BezierCPs::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
+                double x,y;
+                (*it)->getPositionAtTime(time, &x, &y);
+                center.x += x;
+                center.y += y;
+            }
+            centerSet = !_imp->points.empty();
+        }
     }
+    if (centerSet) {
+        center.x /= (double)_imp->points.size();
+        center.y /= (double)_imp->points.size();
+        boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
+        if (autoKeying) {
+            centerKnob->setValueAtTime(time, center.x, 0);
+            centerKnob->setValueAtTime(time, center.y, 1);
+            
+            //Also set a keyframe on all transform parameters
+            setKeyframeOnAllTransformParameters(time);
+        } else  {
+            centerKnob->setValue(center.x, 0);
+            centerKnob->setValue(center.y, 1);
+        }
+        
+    }
+
     refreshPolygonOrientation();
 }
 
@@ -3139,6 +3284,11 @@ Bezier::setPointAtIndex(bool feather,
 }
 
 
+void
+Bezier::onTransformSet(int time)
+{
+    refreshPolygonOrientation(time);
+}
 
 void
 Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
@@ -3182,6 +3332,9 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
         Q_EMIT keyframeSet(time);
     }
 }
+
+
+
 
 
 void
@@ -3440,15 +3593,21 @@ Bezier::getKeyframesCount() const
 }
 
 void
-Bezier::deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time,unsigned int mipMapLevel,
+Bezier::deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps,
+                    int time,
+                    unsigned int mipMapLevel,
                     bool finished,
-                 int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox)
+                    int nBPointsPerSegment,
+                    const Transform::Matrix3x3& transform,
+                    std::list<Natron::Point>* points, RectD* bbox)
 {
     BezierCPs::const_iterator next = cps.begin();
     
     if (next != cps.end()) {
         ++next;
     }
+    
+    
     for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
         if ( next == cps.end() ) {
             if (!finished) {
@@ -3456,7 +3615,7 @@ Bezier::deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time
             }
             next = cps.begin();
         }
-        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nBPointsPerSegment, points,bbox);
+        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nBPointsPerSegment, transform, points,bbox);
         
         // increment for next iteration
         if (next != cps.end()) {
@@ -3472,8 +3631,10 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
                                    std::list< Natron::Point >* points,
                                    RectD* bbox) const
 {
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    deCastelJau(_imp->points, time, mipMapLevel, _imp->finished, nbPointsPerSegment, points, bbox);
+    deCastelJau(_imp->points, time, mipMapLevel, _imp->finished, nbPointsPerSegment, transform, points, bbox);
 }
 
 void
@@ -3508,6 +3669,10 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
     if (nextCp != _imp->points.end()) {
         ++nextCp;
     }
+    
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, &transform);
+    
     for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end();
          ++it) {
         if ( next == _imp->featherPoints.end() ) {
@@ -3523,7 +3688,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
             continue;
         }
 
-        bezierSegmentEval(*(*it),*(*next), time, mipMapLevel, nbPointsPerSegment, points, bbox);
+        bezierSegmentEval(*(*it),*(*next), time, mipMapLevel, nbPointsPerSegment, transform, points, bbox);
 
         // increment for next iteration
         if (itCp != _imp->featherPoints.end()) {
@@ -3550,12 +3715,15 @@ Bezier::getBoundingBox(int time) const
     bbox.y1 = std::numeric_limits<double>::infinity();
     bbox.y2 = -std::numeric_limits<double>::infinity();
     
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, &transform);
+    
     QMutexLocker l(&itemMutex);
-    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, &bbox);
+    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, transform , &bbox);
     
     
     if (useFeatherPoints()) {
-        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
+        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, transform, &bbox);
         // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
         // enclosing the real bbox and close enough
         double featherDistance = getFeatherDistance(time);
@@ -5067,6 +5235,7 @@ static void
 evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
                        const KeyFrameSet& pCurve,
+                       const Transform::Matrix3x3& transform,
                        unsigned int mipMapLevel,
                        double halfBrushSize,
                        bool pressureAffectsSize,
@@ -5107,9 +5276,13 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     int pot = 1 << mipMapLevel;
     
     if (xCurve.size() == 1) {
-        Natron::Point p;
+        Transform::Point3D p;
         p.x = xIt->getValue();
         p.y = yIt->getValue();
+        p.z = 1.;
+        
+        p = Transform::matApply(transform, p);
+        
         Natron::Point pixelPoint;
         pixelPoint.x = p.x / pot;
         pixelPoint.y = p.y / pot;
@@ -5137,18 +5310,28 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 
         double x1 = xIt->getValue();
         double y1 = yIt->getValue();
+        double z1 = 1.;
         double press1 = pIt->getValue();
         double x2 = xNext->getValue();
         double y2 = yNext->getValue();
+        double z2 = 1;
         double press2 = pNext->getValue();
         
         
         double x1pr = x1 + xIt->getRightDerivative() / 3.;
         double y1pr = y1 + yIt->getRightDerivative() / 3.;
+        double z1pr = 1.;
         double press1pr = press1 + pIt->getRightDerivative() / 3.;
         double x2pl = x2 - xNext->getLeftDerivative() / 3.;
         double y2pl = y2 - yNext->getLeftDerivative() / 3.;
+        double z2pl = 1;
         double press2pl = press2 - pNext->getLeftDerivative() / 3.;
+        
+        Transform::matApply(transform, &x1, &y1, &z1);
+        Transform::matApply(transform, &x1pr, &y1pr, &z1pr);
+        Transform::matApply(transform, &x2pl, &y2pl, &z2pl);
+        Transform::matApply(transform, &x2, &y2, &z2);
+        
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
          */
@@ -5198,6 +5381,10 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 void
 RotoStrokeItem::setStrokeFinished()
 {
+    int time = getContext()->getTimelineCurrentTime();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    Point center;
+    bool centerSet = false;
     {
         QMutexLocker k(&itemMutex);
         _imp->finished = true;
@@ -5209,7 +5396,41 @@ RotoStrokeItem::setStrokeFinished()
             }
         }
         _imp->strokeDotPatterns.clear();
+        
+        ///Compute the value of the center knob
+        center.x = center.y = 0;
+        
+        KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
+        KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
+        assert(xCurve.size() == yCurve.size());
+        
+        KeyFrameSet::iterator xIt = xCurve.begin();
+        KeyFrameSet::iterator yIt = yCurve.begin();
+        for (; xIt != xCurve.end(); ++xIt, ++yIt) {
+            center.x += xIt->getValue();
+            center.y += yIt->getValue();
+        }
+        centerSet = !xCurve.empty();
+        if (centerSet) {
+            center.x /= (double)xCurve.size();
+            center.y /= (double)yCurve.size();
+        }
     }
+    if (centerSet) {
+        
+
+        boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
+        if (autoKeying) {
+            centerKnob->setValueAtTime(time, center.x, 0);
+            centerKnob->setValueAtTime(time, center.y, 1);
+            setKeyframeOnAllTransformParameters(time);
+        } else  {
+            centerKnob->setValue(center.x, 0);
+            centerKnob->setValue(center.y, 1);
+        }
+        
+    }
+    
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(false);
         _imp->effectNode->incrementKnobsAge();
@@ -5362,6 +5583,10 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
                                                    RectD* pointsBbox,
                                                    int* newAge)
 {
+    
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(getContext()->getTimelineCurrentTime(), &transform);
+    
     QMutexLocker k(&itemMutex);
     assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount() && _imp->xCurve.getKeyFramesCount() == _imp->pressureCurve.getKeyFramesCount());
     
@@ -5397,7 +5622,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
     
     double halfBrushSize = _imp->brushSize->getValue() / 2.;
     bool pressureSize = _imp->pressureSize->getValue();
-    evaluateStrokeInternal(realX, realY, realP, 0, halfBrushSize, pressureSize, points, pointsBbox);
+    evaluateStrokeInternal(realX, realY, realP, transform, 0, halfBrushSize, pressureSize, points, pointsBbox);
     return true;
 }
 
@@ -5485,6 +5710,9 @@ RotoStrokeItem::computeBoundingBox(int time) const
 {
     RectD bbox;
     
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, &transform);
+    
     QMutexLocker k(&itemMutex);
     bool bboxSet = false;
     
@@ -5511,9 +5739,11 @@ RotoStrokeItem::computeBoundingBox(int time) const
     ++pNext;
     
     if (xCurve.size() == 1) {
-        Natron::Point p;
+        Transform::Point3D p;
         p.x = xIt->getValue();
         p.y = yIt->getValue();
+        p.z = 1.;
+        p = Transform::matApply(transform, p);
         double pressure = pIt->getValue();
         bbox.x1 = p.x;
         bbox.x2 = p.x;
@@ -5535,7 +5765,8 @@ RotoStrokeItem::computeBoundingBox(int time) const
         subBox.y2 = -std::numeric_limits<double>::infinity();
         
         double pressure = std::max(pIt->getValue(), pNext->getValue());
-        Point p0,p1,p2,p3;
+        Transform::Point3D p0,p1,p2,p3;
+        p0.z = p1.z = p2.z = p3.z = 1;
         p0.x = xIt->getValue();
         p0.y = yIt->getValue();
         p1.x = p0.x + xIt->getRightDerivative() / 3.;
@@ -5544,7 +5775,20 @@ RotoStrokeItem::computeBoundingBox(int time) const
         p3.y = yNext->getValue();
         p2.x = p3.x - xNext->getLeftDerivative() / 3.;
         p2.y = p3.y - yNext->getLeftDerivative() / 3.;
-        bezierPointBboxUpdate(p0,p1,p2,p3,&subBox);
+        
+        
+        p0 = Transform::matApply(transform, p0);
+        p1 = Transform::matApply(transform, p1);
+        p2 = Transform::matApply(transform, p2);
+        p3 = Transform::matApply(transform, p3);
+        
+        Point p0_,p1_,p2_,p3_;
+        p0_.x = p0.x; p0_.y = p0.y;
+        p1_.x = p1.x; p1_.y = p1.y;
+        p2_.x = p2.x; p2_.y = p2.y;
+        p3_.x = p3.x; p3_.y = p3.y;
+        
+        bezierPointBboxUpdate(p0_,p1_,p2_,p3_,&subBox);
         subBox.x1 -= halfBrushSize * pressure;
         subBox.x2 += halfBrushSize * pressure;
         subBox.y1 -= halfBrushSize * pressure;
@@ -5580,6 +5824,9 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, int time, std::list<std
 {
     KeyFrameSet xSet,ySet,pSet;
     
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, &transform);
+    
     {
         QMutexLocker k(&itemMutex);
         xSet = _imp->xCurve.getKeyFrames_mt_safe();
@@ -5589,45 +5836,8 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, int time, std::list<std
     assert(xSet.size() == ySet.size() && xSet.size() == pSet.size());
     double brushSize = _imp->brushSize->getValueAtTime(time) / 2.;
     bool pressureAffectsSize = _imp->pressureSize->getValueAtTime(time);
-    if (xSet.size() > 2) {
-        //Split all curves into small temp curves of 2 points, so that the interpolation yields
-        //derivative which are the same whether we are building up the stroke (actively drawing) or rendering
-        //the full stroke
-        KeyFrameSet::iterator xIt = xSet.begin();
-        KeyFrameSet::iterator yIt = ySet.begin();
-        KeyFrameSet::iterator pIt = pSet.begin();
-        KeyFrameSet::iterator xNext = xIt;
-        KeyFrameSet::iterator yNext = yIt;
-        KeyFrameSet::iterator pNext = pIt;
-        ++xNext;
-        ++yNext;
-        ++pNext;
-        bool isFirst = true;
-        for (; xNext != xSet.end(); ++xIt,++yIt,++pIt,++xNext,++yNext,++pNext) {
-            Curve xTmp,yTmp,pTmp;
-            xTmp.addKeyFrame(*xIt);
-            xTmp.addKeyFrame(*xNext);
-            yTmp.addKeyFrame(*yIt);
-            yTmp.addKeyFrame(*yNext);
-            pTmp.addKeyFrame(*pIt);
-            pTmp.addKeyFrame(*pNext);
-            RectD tmpBox;
-            evaluateStrokeInternal(xTmp.getKeyFrames_mt_safe(),yTmp.getKeyFrames_mt_safe(),pTmp.getKeyFrames_mt_safe(),mipMapLevel,brushSize,pressureAffectsSize, points,&tmpBox);
-            if (isFirst) {
-                if (bbox) {
-                    *bbox = tmpBox;
-                }
-                isFirst = false;
-            } else {
-                if (bbox) {
-                    bbox->merge(tmpBox);
-                }
-            }
-            
-        }
-    } else {
-        evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,brushSize, pressureAffectsSize, points,bbox);
-    }
+    evaluateStrokeInternal(xSet,ySet,pSet, transform, mipMapLevel,brushSize, pressureAffectsSize, points,bbox);
+    
     
 }
 
@@ -8302,13 +8512,16 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
         featherDist /= (1 << mipmapLevel);
     }
     
+    Transform::Matrix3x3 transform;
+    bezier->getTransformAtTime(time, &transform);
+    
     
     renderFeather(bezier, time, mipmapLevel, inverted, shapeColor, opacity, featherDist, fallOff, mesh);
     
     
     if (!inverted) {
         // strangely, the above-mentioned cairo bug doesn't affect this function
-        renderInternalShape(time, mipmapLevel, shapeColor, opacity, cr, mesh, cps);
+        renderInternalShape(time, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
 #ifdef NATRON_ROTO_INVERTIBLE
     } else {
 #pragma message WARN("doesn't work! the image should be infinite for this to work!")
@@ -8553,6 +8766,7 @@ RotoContextPrivate::renderInternalShape(int time,
                                         unsigned int mipmapLevel,
                                         double shapeColor[3],
                                         double opacity,
+                                        const Transform::Matrix3x3& transform,
                                         cairo_t* cr,
                                         cairo_pattern_t* mesh,
                                         const BezierCPs & cps)
@@ -8702,8 +8916,12 @@ RotoContextPrivate::renderInternalShape(int time,
         ++nextPoint;
     }
 
-    Point initCp;
+    
+    Transform::Point3D initCp;
     (*point)->getPositionAtTime(time, &initCp.x,&initCp.y);
+    initCp.z = 1.;
+    initCp = Transform::matApply(transform, initCp);
+    
     adjustToPointToScale(mipmapLevel,initCp.x,initCp.y);
 
     cairo_move_to(cr, initCp.x,initCp.y);
@@ -8712,16 +8930,23 @@ RotoContextPrivate::renderInternalShape(int time,
         if ( nextPoint == cps.end() ) {
             nextPoint = cps.begin();
         }
+        
+        Transform::Point3D right,nextLeft,next;
+        (*point)->getRightBezierPointAtTime(time, &right.x, &right.y);
+        right.z = 1;
+        (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeft.x, &nextLeft.y);
+        nextLeft.z = 1;
+        (*nextPoint)->getPositionAtTime(time, &next.x, &next.y);
+        next.z = 1;
 
-        double rightX,rightY,nextX,nextY,nextLeftX,nextLeftY;
-        (*point)->getRightBezierPointAtTime(time, &rightX, &rightY);
-        (*nextPoint)->getLeftBezierPointAtTime(time, &nextLeftX, &nextLeftY);
-        (*nextPoint)->getPositionAtTime(time, &nextX, &nextY);
-
-        adjustToPointToScale(mipmapLevel,rightX,rightY);
-        adjustToPointToScale(mipmapLevel,nextX,nextY);
-        adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
-        cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
+        right = Transform::matApply(transform, right);
+        nextLeft = Transform::matApply(transform, nextLeft);
+        next = Transform::matApply(transform, next);
+        
+        adjustToPointToScale(mipmapLevel,right.x,right.y);
+        adjustToPointToScale(mipmapLevel,next.x,next.y);
+        adjustToPointToScale(mipmapLevel,nextLeft.x,nextLeft.y);
+        cairo_curve_to(cr, right.x, right.y, nextLeft.x, nextLeft.y, next.x, next.y);
 
         // increment for next iteration
         ++point;

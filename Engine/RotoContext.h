@@ -454,11 +454,20 @@ public:
 #endif
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
+    boost::shared_ptr<Double_Knob> getCenterKnob() const;
+    
+    void setKeyframeOnAllTransformParameters(int time);
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
     virtual RectD getBoundingBox(int time) const = 0;
 
+    void getTransformAtTime(int time,Transform::Matrix3x3* matrix) const;
+    
+    /**
+     * @brief Set the transform at the given time
+     **/
+    void setTransform(int time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
     
 Q_SIGNALS:
 
@@ -475,6 +484,7 @@ Q_SIGNALS:
 
 protected:
     
+    virtual void onTransformSet(int /*time*/) {}
     
     void addKnob(const boost::shared_ptr<KnobI>& knob);
 
@@ -686,6 +696,7 @@ private:
     
 public:
 
+    
     /**
      * @brief Transforms the given point at the given time by the given matrix.
      **/
@@ -789,7 +800,10 @@ public:
 
     static void deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time, unsigned int mipMapLevel,
                             bool finished,
-                            int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox);
+                            int nBPointsPerSegment,
+                            const Transform::Matrix3x3& transform,
+                            std::list<Natron::Point>* points,
+                            RectD* bbox);
     
     static void point_line_intersection(const Natron::Point &p1,
                             const Natron::Point &p2,
@@ -945,6 +959,8 @@ public:
 
     void setAutoOrientationComputation(bool autoCompute);
 private:
+    
+    virtual void onTransformSet(int time) OVERRIDE FINAL;
     
     bool isFeatherPolygonClockwiseOrientedInternal(int time) const;
     

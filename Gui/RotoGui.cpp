@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
 #include "Engine/RotoContextPrivate.h"
+#include "Engine/Transform.h"
 
 #include <ofxNatron.h>
 
@@ -1323,7 +1324,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
     int time = _imp->context->getTimelineCurrentTime();
     std::pair<double,double> pixelScale;
     std::pair<double,double> viewportSize;
-
+    
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     _imp->viewer->getViewportSize(viewportSize.first, viewportSize.second);
 
@@ -1382,11 +1383,15 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 
             } else if (isBezier) {
                 ///draw the bezier
-#pragma message WARN("Roto drawing: please update this algorithm")
-                // Please update this algorithm:
-                // It should first compute the bbox (this is cheap)
-                // then check if the bbox is visible
+                // check if the bbox is visible
                 // if the bbox is visible, compute the polygon and draw it.
+                
+                
+                RectD bbox = isBezier->getBoundingBox(time);
+                if (!_imp->viewer->isVisibleInViewport(bbox)) {
+                    continue;
+                }
+                
                 std::list< Point > points;
                 isBezier->evaluateAtTime_DeCasteljau(time,0, 100, &points, NULL);
                 
@@ -1417,12 +1422,6 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 
                 if ( isFeatherVisible() ) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-#pragma message WARN("Roto drawing: please update this algorithm")
-                    
-                    // Plese update this algorithm:
-                    // It should first compute the bbox (this is cheap)
-                    // then check if the bbox is visible
-                    // if the bbox is visible, compute the polygon and draw it.
                     isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, true, &featherPoints, &featherBBox);
                     
                     if ( !featherPoints.empty() ) {
@@ -1448,6 +1447,10 @@ RotoGui::drawOverlays(double /*scaleX*/,
     
                 
                 if (selected && !locked) {
+                    
+                    Transform::Matrix3x3 transform;
+                    isBezier->getTransformAtTime(time, &transform);
+                    
                     const std::list< boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
                     const std::list< boost::shared_ptr<BezierCP> > & featherPts = isBezier->getFeatherPoints();
                     assert( cps.size() == featherPts.size() );
@@ -1482,10 +1485,22 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         assert(itF != featherPts.end()); // because cps.size() == featherPts.size()
 
                         double x,y;
-                        (*it2)->getPositionAtTime(time, &x, &y);
+                        Transform::Point3D p,pF;
+                        (*it2)->getPositionAtTime(time, &p.x, &p.y);
+                        p.z = 1.;
 
                         double xF,yF;
-                        (*itF)->getPositionAtTime(time, &xF, &yF);
+                        (*itF)->getPositionAtTime(time, &pF.x, &pF.y);
+                        pF.z = 1.;
+                        
+                        p = Transform::matApply(transform, p);
+                        pF = Transform::matApply(transform, pF);
+                        
+                        x = p.x;
+                        y = p.y;
+                        xF = pF.x;
+                        yF = pF.y;
+                        
                         ///draw the feather point only if it is distinct from the associated point
                         bool drawFeather = isFeatherVisible();
                         if (drawFeather) {

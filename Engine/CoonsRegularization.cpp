@@ -14,6 +14,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/Interpolation.h"
+#include "Engine/Transform.h"
 
 using namespace Natron;
 
@@ -763,7 +764,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     
     std::list<Point> discretizedPolygon;
     RectD bbox;
-    Bezier::deCastelJau(patch, time, 0, true, -1, &discretizedPolygon, &bbox);
+    Bezier::deCastelJau(patch, time, 0, true, -1, Transform::Matrix3x3(), &discretizedPolygon, &bbox);
     Point pointInside = findPointInside(patch, time);
 #pragma message WARN("Compute winding number correctly without decastelJau")
     int sign;
