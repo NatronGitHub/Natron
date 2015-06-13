@@ -50,6 +50,9 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
             const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
             PIX srcA = src_pixels ? maxValue : 0; /* be opaque for anything that doesn't contain alpha */
             if ((srcNComps == 1 || srcNComps == 4) && src_pixels) {
+#             ifdef DEBUG
+                assert(src_pixels[srcNComps - 1] == src_pixels[srcNComps - 1]); // check for NaN
+#             endif
                 srcA = src_pixels[srcNComps - 1];
             }
 
@@ -82,19 +85,40 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
 
             PIX dstAorig = maxValue;
             if (dstNComps == 1 || dstNComps == 4) {
+#             ifdef DEBUG
+                assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
+#             endif
                 dstAorig = dst_pixels[dstNComps - 1];
             }
             if (doR) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[0] == src_pixels[0]); // check for NaN
+                assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#             endif
                 DOCHANNEL(0);
-                assert(dst_pixels[0] == dst_pixels[0]);
+#             ifdef DEBUG
+                assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#             endif
             }
             if (doG) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[1] == src_pixels[1]); // check for NaN
+                assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#             endif
                 DOCHANNEL(1);
-                assert(dst_pixels[1] == dst_pixels[1]);
+#             ifdef DEBUG
+                assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#             endif
             }
             if (doB) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[2] == src_pixels[2]); // check for NaN
+                assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#             endif
                 DOCHANNEL(2);
-                assert(dst_pixels[2] == dst_pixels[2]);
+#             ifdef DEBUG
+                assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#             endif
             }
             if (doA) {
                 if (premult) {
@@ -102,21 +126,29 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
                         // unpremult, then premult
                         if (dstNComps >= 2 && !doR) {
                             dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
-                            assert(dst_pixels[0] == dst_pixels[0]);
+#                         ifdef DEBUG
+                            assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#                         endif
                         }
                         if (dstNComps >= 2 && !doG) {
                             dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
-                            assert(dst_pixels[1] == dst_pixels[1]);
+#                         ifdef DEBUG
+                            assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#                         endif
                         }
                         if (dstNComps >= 2 && !doB) {
                             dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
-                            assert(dst_pixels[2] == dst_pixels[2]);
+#                         ifdef DEBUG
+                            assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#                         endif
                         }
                     }
                 }
                 if (dstNComps == 1 || dstNComps == 4) {
                     dst_pixels[dstNComps - 1] = srcA;
-                    assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]);
+#                 ifdef DEBUG
+                    assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
+#                 endif
                 }
             }
         }

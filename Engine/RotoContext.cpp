@@ -7522,8 +7522,11 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
                 default:
                     break;
             }
-            
-            
+#         ifdef DEBUG
+            for (int c = 0; c < dstNComps; ++c) {
+                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+            }
+#         endif
         }
     }
 
@@ -7605,7 +7608,6 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
                 case 1:
                     assert(srcNComps == dstNComps);
                     dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;
-                    assert(!boost::math::isnan(dstPix[x]));
                     break;
                 case 3:
                     assert(srcNComps == dstNComps);
@@ -7621,8 +7623,11 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
                 default:
                     break;
             }
-            
-            
+#         ifdef DEBUG
+            for (int c = 0; c < dstNComps; ++c) {
+                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+            }
+#         endif
         }
     }
     
@@ -7700,6 +7705,11 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
         assert(srcPix);
         
         for (int x = 0; x < roi.width(); ++x) {
+#         ifdef DEBUG
+            for (int c = 0; c < srcNComps; ++c) {
+                assert(srcPix[x * srcNComps + c] == srcPix[x * srcNComps + c]); // check for NaN
+            }
+#         endif
             if (dstNComps == 1) {
                 dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
             } else if (dstNComps == 4) {
@@ -7717,7 +7727,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                     dstPix[x * dstNComps + 3] = pix / maxValue * 255.f;
                 }
             }
-            assert(!boost::math::isnan(dstPix[x]));
+            // no need to check for NaN, dstPix is unsigned char
         }
     }
 
@@ -8224,7 +8234,8 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
 
 
-static double hardnessGaussLookup(double f)
+static inline
+double hardnessGaussLookup(double f)
 {
     //2 hyperbolas + 1 parabola to approximate a gauss function
     if (f < -0.5) {
@@ -8702,7 +8713,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
         p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
         p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
-        
+
         
         ///move to the initial point
         cairo_mesh_pattern_begin_patch(mesh);

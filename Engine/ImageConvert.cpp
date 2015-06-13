@@ -164,10 +164,12 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
+#                 ifdef DEBUG
+                    assert(srcPixels[k] == srcPixels[k]); // check for NaN
+#                 endif
+                    DSTPIX pix;
                     if ( k == 3 || (!srcLut && !dstLut) ) {
-                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
-                        dstPixels[k] =  pix;
-
+                         pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
                     } else {
                         float pixFloat;
 
@@ -183,8 +185,6 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                             pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                         }
 
-
-                        DSTPIX pix;
                         if (dstDepth == eImageBitDepthByte) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
                             error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
@@ -199,8 +199,11 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                             }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
-                        dstPixels[k] =  pix;
                     }
+                    dstPixels[k] =  pix;
+#                 ifdef DEBUG
+                    assert(dstPixels[k] == dstPixels[k]); // check for NaN
+#                 endif
                 }
 
                 if (backward) {
@@ -345,15 +348,19 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                     }
                     
                     dstPixels[0] = pix;
-                    
+#                 ifdef DEBUG
+                    assert(dstPixels[0] == dstPixels[0]); // check for NaN
+#                 endif
                 } else { // if (dstNComps == 1) {
                     
                     if (srcNComps == 1) {
                         DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
                         for (int k = 0; k < dstNComps; ++k) {
                             dstPixels[k] = pix;
+#                         ifdef DEBUG
+                            assert(dstPixels[k] == dstPixels[k]); // check for NaN
+#                         endif
                         }
-                        
                     } else {
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
@@ -372,8 +379,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         
                         for (int k = 0; k < maxColorComps; ++k) {
                             SRCPIX sourcePixel = k < srcNComps ? srcPixels[k] : 0.;
+                            DSTPIX pix;
                             if (!useColorspaces || (!srcLut && !dstLut)) {
-                                DSTPIX pix;
                                 if (dstMaxValue == 255) {
                                     float pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
@@ -383,7 +390,6 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 } else {
                                     pix = convertPixelDepth<SRCPIX, DSTPIX>(sourcePixel);
                                 }
-                                dstPixels[k] =  pix;
                             } else {
                                 ///For RGB channels
                                 float pixFloat;
@@ -409,7 +415,6 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 }
                                 
                                 ///Apply dst color-space
-                                DSTPIX pix;
                                 if (dstMaxValue == 255) {
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
@@ -425,9 +430,12 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                     }
                                     pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                 }
-                                dstPixels[k] =  pix;
                             } // if (!useColorspaces || (!srcLut && !dstLut)) {
-                        } // for (int k = 0; k < maxColorComps; ++k) {
+                            dstPixels[k] =  pix;
+#                 ifdef DEBUG
+                            assert(dstPixels[k] == dstPixels[k]); // check for NaN
+#                 endif
+                       } // for (int k = 0; k < maxColorComps; ++k) {
                         
                         if (dstNComps == 4) {
                             // For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA or XY--->RGBA

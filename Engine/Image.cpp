@@ -16,9 +16,9 @@
 #include "Image.h"
 
 #include <QDebug>
-#ifndef Q_MOC_RUN
-#include <boost/math/special_functions/fpclassify.hpp>
-#endif
+//#ifndef Q_MOC_RUN
+//#include <boost/math/special_functions/fpclassify.hpp>
+//#endif
 #include "Engine/AppManager.h"
 
 using namespace Natron;
@@ -1598,7 +1598,7 @@ Image::checkForNaNs(const RectI& roi)
         for (;pix < end; ++pix) {
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
-            if (boost::math::isnan(*pix)/* || boost::math::isinf(*pix)*/) {
+            if (*pix != *pix) { // check for NaN
                 *pix = 1.;
                 hasnan = true;
             }

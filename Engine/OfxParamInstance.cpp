@@ -3169,11 +3169,11 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if (boost::math::isnan(time) ||
+    if (time != time || // check for NaN
         boost::math::isinf(time) ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return kOfxStatFailed;
     }
