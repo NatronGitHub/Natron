@@ -106,7 +106,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
-#define NATRON_SCENE_MIN 0
+#define NATRON_SCENE_MIN INT_MIN
 #define NATRON_SCENE_MAX INT_MAX
 
 using namespace Natron;
