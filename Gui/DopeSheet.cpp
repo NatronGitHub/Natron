@@ -56,22 +56,6 @@ bool nodeCanAnimate(const NodePtr &node)
     return false;
 }
 
-/**
- * @brief itemHasNoChildVisible
- *
- * Returns true if all childs of 'item' are hidden, otherwise returns
- * false.
- */
-bool itemHasNoChildVisible(QTreeWidgetItem *item)
-{
-    for (int i = 0; i < item->childCount(); ++i) {
-        if (!item->child(i)->isHidden())
-            return false;
-    }
-
-    return true;
-}
-
 } // anon namespace
 
 
