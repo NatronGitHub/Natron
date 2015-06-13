@@ -3405,17 +3405,17 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             {
                 Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
                 
-                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), args.roi, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
+                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), roi, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
                 
                 bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied && it->second.downscaleImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
                 
                 if (useAlpha0ForRGBToRGBAConversion) {
-                    it->second.downscaleImage->convertToFormatAlpha0(args.roi,
+                    it->second.downscaleImage->convertToFormatAlpha0(roi,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());
                 } else {
-                    it->second.downscaleImage->convertToFormat(args.roi,
+                    it->second.downscaleImage->convertToFormat(roi,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());

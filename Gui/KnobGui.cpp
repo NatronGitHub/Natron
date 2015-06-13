@@ -2227,7 +2227,9 @@ KnobGui::onFrozenChanged(bool frozen)
         if ( !frozen && knob->isSlave(i) ) {
             continue;
         }
-        setReadOnly_(frozen, i);
+        if (knob->isEnabled(i)) {
+            setReadOnly_(frozen, i);
+        }
     }
 }
 
