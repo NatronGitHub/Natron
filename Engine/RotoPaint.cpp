@@ -42,7 +42,9 @@ RotoPaint::~RotoPaint()
 std::string
 RotoPaint::getInputLabel (int inputNb) const
 {
-    if (inputNb == 0) {
+    if (inputNb == 10) {
+        return "Mask";
+    } else if (inputNb == 1) {
         return "Bg";
     } else {
         std::stringstream ss;
@@ -51,12 +53,21 @@ RotoPaint::getInputLabel (int inputNb) const
     }
 }
 
-void
-RotoPaint::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+bool
+RotoPaint::isInputMask(int inputNb) const
 {
-    comps->push_back(ImageComponents::getRGBAComponents());
-    comps->push_back(ImageComponents::getRGBComponents());
-    comps->push_back(ImageComponents::getXYComponents());
+    return inputNb == 10;
+}
+
+void
+RotoPaint::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
+{
+    
+    if (inputNb != 10) {
+        comps->push_back(ImageComponents::getRGBAComponents());
+        comps->push_back(ImageComponents::getRGBComponents());
+        comps->push_back(ImageComponents::getXYComponents());
+    }
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 
@@ -74,16 +85,15 @@ RotoPaint::initializeKnobs()
 
 
 void
-RotoPaint::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
-    
-//    EffectInstance* input = getInput(0);
-//    if (input) {
-//        return input->getPreferredDepthAndComponents(-1, comp, depth);
-//    } else {
+
+    if (inputNb != 10) {
         comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
-//    }
+    } else {
+        comp->push_back(ImageComponents::getAlphaComponents());
+    }
+    *depth = eImageBitDepthFloat;
 }
 
 
@@ -136,6 +146,36 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     return Natron::eStatusOK;
 }
 
+bool
+RotoPaint::isIdentity(SequenceTime time,
+                      const RenderScale & scale,
+                      const RectI & roi,
+                      int view,
+                      SequenceTime* inputTime,
+                      int* inputNb)
+{
+    boost::shared_ptr<Node> node = getNode();
+    EffectInstance* maskInput = getInput(10);
+    if (maskInput) {
+        
+        RectD maskRod;
+        bool isProjectFormat;
+        (void)maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
+        RectI maskPixelRod;
+        maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
+        if (!maskPixelRod.intersects(roi)) {
+            *inputTime = time;
+            *inputNb = 0;
+            return true;
+        }
+    }
+    
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = node->getRotoContext()->getCurvesByRenderOrder();
+    if (items.empty()) {
+        return true;
+    }
+    return false;
+}
 
 class RotoPaintParallelArgsSetter
 {

@@ -1345,6 +1345,10 @@ public:
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
 
 
+    /**
+     * @brief Reimplement to control how the host adds the RGBA checkboxes.
+     * @returns True if you want the host to add the RGBA checkboxes, false otherwise.
+     **/
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
     {
         *defaultR = true;
@@ -1353,6 +1357,21 @@ public:
         *defaultA = true;
         return true;
     }
+
+    /**
+     * @brief Reimplement to activate host masking
+     * Note that in this case this is expected that getMaxInputCount returns the number of inputs *with* the mask.
+     * The function getInputLabel should also return the appropriate label for the mask. 
+     * The function isInputMask should also return true for this mask index.
+     * The mask will be the last input, i.e its index will be getMaxInputCount() - 1. 
+     **/
+    virtual bool isHostMaskingEnabled() const { return false; }
+
+    /**
+    * @brief Reimplement to activate host mixing
+    **/
+    virtual bool isHostMixingEnabled() const { return false; }
+
 
 private:
 
@@ -1706,6 +1725,7 @@ private:
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels,
                                           const boost::shared_ptr<Natron::Image>& originalInputImage,
+                                          const boost::shared_ptr<Natron::Image>& maskImage,
                                           Natron::ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender& planes);
 

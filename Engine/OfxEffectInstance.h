@@ -282,6 +282,10 @@ public:
     virtual void clearTransform(int inputNb) OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 

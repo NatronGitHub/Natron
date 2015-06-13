@@ -625,9 +625,10 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
  **/
 static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
-    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER ||
-        plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT) {
+    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
         return 10;
+    } else if (plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT) {
+        return 11;
     }
     
     if (!ofxDesc) {

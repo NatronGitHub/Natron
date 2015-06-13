@@ -3181,3 +3181,16 @@ OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG,
     }
     return true;
 }
+
+bool
+OfxEffectInstance::isHostMaskingEnabled() const
+{
+    return effectInstance()->isHostMaskingEnabled();
+}
+
+bool
+OfxEffectInstance::isHostMixingEnabled() const
+{
+    return effectInstance()->isHostMixingEnabled();
+}
+

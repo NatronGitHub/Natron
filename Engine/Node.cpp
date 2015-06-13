@@ -398,7 +398,7 @@ struct Node::Implementation
     boost::weak_ptr<String_Knob> afterRender;
     
     boost::weak_ptr<Bool_Knob> enabledChan[4];
-
+    boost::weak_ptr<Double_Knob> mixWithSource;
     
     std::map<int,ChannelSelector> channelsSelectors;
     std::map<int,MaskSelector> maskSelectors;
@@ -2277,16 +2277,16 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 }
             }
             
-            bool useChannels = !_imp->liveInstance->isMultiPlanar() &&
-            !_imp->liveInstance->isReader() &&
-            !_imp->liveInstance->isWriter() &&
-            !_imp->liveInstance->isTrackerNode() &&
-            !dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+            bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
-            if (useChannels) {
-                const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
-                ///find in all knobs a page param to set this param into
-                boost::shared_ptr<Page_Knob> mainPage;
+            
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !isReaderOrWriterOrTrackerOrGroup;
+            
+            ///find in all knobs a page param to set this param into
+            boost::shared_ptr<Page_Knob> mainPage;
+            const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
+
+            if (!isReaderOrWriterOrTrackerOrGroup) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<Page_Knob> p = boost::dynamic_pointer_cast<Page_Knob>(knobs[i]);
                     if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
@@ -2299,6 +2299,10 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     mainPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Settings");
                 }
                 assert(mainPage);
+            }
+            
+            if (useChannels) {
+                
                 
                 //There are a A and B inputs and the plug-in is not multi-planar, propose 2 layer selectors for the inputs.
                 if (foundA != -1 && foundB != -1) {
@@ -2349,8 +2353,20 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         _imp->enabledChan[i] = foundEnabled[i];
                     }
                 }
+            } // useChannels
+            
+            //Create the mix
+            if (!isReaderOrWriterOrTrackerOrGroup && _imp->liveInstance->isHostMixingEnabled()) {
+                boost::shared_ptr<Double_Knob> mixKnob = Natron::createKnob<Double_Knob>(_imp->liveInstance.get(), "Mix", 1, false);
+                mixKnob->setName("hostMix");
+                mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
+                mixKnob->setMinimum(0.);
+                mixKnob->setMaximum(1.);
+                mixKnob->setDefaultValue(1.);
+                mainPage->addKnob(mixKnob);
+                _imp->mixWithSource = mixKnob;
             }
-        }
+        } // !isBd
         boost::shared_ptr<String_Knob> nodeLabel = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(nodeLabel);
@@ -6706,6 +6722,13 @@ Node::getUserComponents(std::list<Natron::ImageComponents>* comps)
 {
     QMutexLocker k(&_imp->createdComponentsMutex);
     *comps = _imp->createdComponents;
+}
+
+double
+Node::getHostMixingValue(int time) const
+{
+    boost::shared_ptr<Double_Knob> mix = _imp->mixWithSource.lock();
+    return mix ? mix->getValueAtTime(time) : 1.;
 }
 
 //////////////////////////////////

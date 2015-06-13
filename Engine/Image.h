@@ -724,6 +724,13 @@ namespace Natron {
                                      Natron::ImagePremultiplicationEnum originalImagePremult,
                                      const bool* processChannels,
                                      const boost::shared_ptr<Image>& originalImage);
+        
+        void applyMaskMix(const RectI& roi,
+                          const Image* maskImg,
+                          const Image* originalImg,
+                          bool masked,
+                          bool maskInvert,
+                          float mix);
 
         /**
          * @brief returns true if image contains NaNs or infinite values, and fix them.
@@ -735,6 +742,46 @@ namespace Natron {
         void copyBitmapPortion(const RectI& roi, const Image& other);
         
     private:
+        
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
+        void applyMaskMixForMaskInvert(const RectI& roi,
+                                   const Image* maskImg,
+                                   const Image* originalImg,
+                                   float mix);
+
+        
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
+        void applyMaskMixForMasked(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool maskInvert,
+                                          float mix);
+
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue>
+        void applyMaskMixForDepth(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
+
+        
+        
+        template<int srcNComps, int dstNComps>
+        void applyMaskMixForDstComponents(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
+        
+        template<int srcNComps>
+        void applyMaskMixForSrcComponents(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
         void copyUnProcessedChannelsForPremult(const RectI& roi,
@@ -831,8 +878,7 @@ namespace Natron {
     PIX clamp(PIX v);
 
     template <typename PIX,int maxVal>
-    PIX
-            clampInternal(PIX v)
+    PIX clampInternal(PIX v)
     {
         if (v > maxVal) {
             return maxVal;
@@ -859,6 +905,12 @@ namespace Natron {
     {
         return clampInternal<double, 1>(v);
     }
+    
+    template<typename PIX>
+    PIX clampIfInt(PIX v);
+    template<> inline unsigned char clampIfInt(unsigned char v) { return clampInternal<unsigned char, 255>(v); }
+    template<> inline unsigned short clampIfInt(unsigned short v) { return clampInternal<unsigned short, 65525>(v); }
+    template<> inline float clampIfInt(float v) { return v; }
     
     typedef boost::shared_ptr<Natron::Image> ImagePtr;
     typedef std::list<ImagePtr> ImageList;

@@ -969,6 +969,7 @@ public:
     
     void removeParameterFromPython(const std::string& parameterName);
 
+    double getHostMixingValue(int time) const;
     
 private:
     

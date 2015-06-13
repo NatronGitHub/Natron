@@ -81,6 +81,7 @@ SOURCES += \
     ImageCopyChannels.cpp \
     ImageComponents.cpp \
     ImageKey.cpp \
+    ImageMaskMix.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
     Knob.cpp \

@@ -40,7 +40,7 @@ public:
     
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return 10;
+        return 11;
     }
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
@@ -63,6 +63,8 @@ public:
     }
 
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;  
 
     virtual bool isInputOptional(int /*inputNb*/) const
     {
@@ -105,13 +107,22 @@ public:
 
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
+    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
+
 
 private:
 
     virtual Natron::StatusEnum
     getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    
+    virtual bool isIdentity(SequenceTime time,
+                        const RenderScale & scale,
+                        const RectI & roi,
+                        int view,
+                        SequenceTime* inputTime,
+                        int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+        
 
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

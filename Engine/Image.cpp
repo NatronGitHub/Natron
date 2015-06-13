@@ -2099,3 +2099,4 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
         }
     }
 }
+

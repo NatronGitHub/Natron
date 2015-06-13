@@ -3786,6 +3786,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
      * All channels will be taken from this input if some channels are marked to be not processed
      */
     int preferredInput = getNode()->getPreferredInput();
+    if (preferredInput != -1 && isInputMask(preferredInput)) {
+        preferredInput = -1;
+    }
     
     assert(_imp->frameRenderArgs.hasLocalData());
     const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
@@ -4092,10 +4095,14 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     scopedArgs.setArgs_secondPass(rectToRender.inputRois,firstFrame,lastFrame);
     RenderArgs & args = scopedArgs.getLocalData();
     
-    ImagePtr originalInputImage;
+    ImagePtr originalInputImage, maskImage;
     Natron::ImagePremultiplicationEnum originalImagePremultiplication;
     InputImagesMap::const_iterator foundPrefInput = rectToRender.imgs.find(preferredInput);
+    InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
     
+    if (isHostMaskingEnabled()) {
+        foundMaskInput = rectToRender.imgs.find(getMaxInputCount() - 1);
+    }
     
     std::map<int,Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes.inputPremult.find(preferredInput);
     if (foundPrefPremult != planes.inputPremult.end()) {
@@ -4106,6 +4113,9 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     
     if (foundPrefInput != rectToRender.imgs.end() && !foundPrefInput->second.empty()) {
         originalInputImage = foundPrefInput->second.front();
+    }
+    if (foundMaskInput != rectToRender.imgs.end() && !foundMaskInput->second.empty()) {
+        maskImage = foundMaskInput->second.front();
     }
     
 #ifndef NDEBUG
@@ -4193,6 +4203,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         outputClipPrefsComps,
                                                         processChannels,
                                                         originalInputImage,
+                                                        maskImage,
                                                         originalImagePremultiplication,
                                                         planes);
     if (handlerRet == eRenderingFunctorRetOK) {
@@ -4222,6 +4233,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                               bool* processChannels,
                               const boost::shared_ptr<Natron::Image>& originalInputImage,
+                              const boost::shared_ptr<Natron::Image>& maskImage,
                               Natron::ImagePremultiplicationEnum originalImagePremultiplication,
                               ImagePlanesToRender& planes)
 {
@@ -4241,7 +4253,6 @@ EffectInstance::renderHandler(RenderArgs & args,
            renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
 # endif
     
-   
     
     RenderActionArgs actionArgs;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
@@ -4467,7 +4478,11 @@ EffectInstance::renderHandler(RenderArgs & args,
         return eRenderingFunctorRetAborted;
     } else {
     
-        //Check for NaNs
+        bool useMaskMix = isHostMaskingEnabled() || isHostMixingEnabled();
+        double mix = useMaskMix ? getNode()->getHostMixingValue(time) : 1.;
+        bool doMask = useMaskMix ? getNode()->isMaskEnabled(getMaxInputCount() - 1) : false;
+        
+        //Check for NaNs, copy to output image and mark for rendered
         for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
             
             bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
@@ -4532,7 +4547,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                                                                  actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
 
                         }
+                        
                         it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
+                        if (useMaskMix) {
+                            it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                        }
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     } else { // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                         
@@ -4545,11 +4564,16 @@ EffectInstance::renderHandler(RenderArgs & args,
                                 /*
                                  * BitDepth/Components conversion required
                                  */
+                                
                                 it->second.tmpImage->copyUnProcessedChannels(it->second.tmpImage->getBounds(), planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
+                                if (useMaskMix) {
+                                    it->second.tmpImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                                }
                                 it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
                                                                      -1, false, unPremultRequired, it->second.fullscaleImage.get());
+                                
                             } else {
                                 
                                 /*
@@ -4559,8 +4583,17 @@ EffectInstance::renderHandler(RenderArgs & args,
                                 assert(prefInput != -1);
                                 RectI roiPixel;
                                 ImagePtr originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                
+                                
                                 if (originalInputImageFullScale) {
+                                   
                                     it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImageFullScale);
+                                    if (useMaskMix) {
+                                        ImagePtr originalMaskFullScale = getImage(getMaxInputCount() - 1, time, actionArgs.mappedScale, view, NULL, ImageComponents::getAlphaComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                        if (originalMaskFullScale) {
+                                            it->second.fullscaleImage->applyMaskMix(actionArgs.roi, originalMaskFullScale.get(), originalInputImageFullScale.get(), doMask, false, mix);
+                                        }
+                                    }
                                 }
                                 it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
                             }
@@ -4597,7 +4630,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                         }
 
                     }
+                    
                     it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
+                    if (useMaskMix) {
+                        it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                    }
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
                 
                 } // if (renderFullScaleThenDownscale) {
