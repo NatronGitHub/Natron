@@ -44,7 +44,7 @@ RotoPaint::getInputLabel (int inputNb) const
 {
     if (inputNb == 10) {
         return "Mask";
-    } else if (inputNb == 1) {
+    } else if (inputNb == 0) {
         return "Bg";
     } else {
         std::stringstream ss;
