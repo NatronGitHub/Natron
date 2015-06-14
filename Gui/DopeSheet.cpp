@@ -1322,7 +1322,8 @@ bool DSNode::containsNodeContext() const
         int childType = _imp->nameItem->child(i)->type();
 
         if (childType != DopeSheet::ItemTypeKnobDim
-                && childType != DopeSheet::ItemTypeKnobRoot) {
+                && childType != DopeSheet::ItemTypeKnobRoot
+                && childType != DopeSheet::ItemTypeReader) {
             return true;
         }
 
