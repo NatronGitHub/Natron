@@ -1465,6 +1465,9 @@ EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
+        if (isInputMask(i)) {
+            continue;
+        }
         Natron::EffectInstance* input = getInput(i);
         if (input) {
             RectD inputRod;

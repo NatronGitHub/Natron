@@ -356,9 +356,16 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
     }
     if (points.size() == 1) {
         // only one point
-        Point p0;
+        Transform::Point3D p0;
         const boost::shared_ptr<BezierCP>& p = points.front();
         p->getPositionAtTime(time, &p0.x, &p0.y);
+        p0.z = 1;
+        p0 = Transform::matApply(transform, p0);
+        bbox->x1 = p0.x;
+        bbox->x2 = p0.x;
+        bbox->y1 = p0.y;
+        bbox->y2 = p0.y;
+        return;
     }
     BezierCPs::const_iterator next = points.begin();
     if (next != points.end()) {
