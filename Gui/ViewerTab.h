@@ -85,35 +85,34 @@ public:
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays(double scaleX,double scaleY) const;
+    void drawOverlays(double scaleX, double scaleY) const;
 
-    bool notifyOverlaysPenDown(double scaleX, double scaleY, double pressure, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e,
-                                  double pressure);
+    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool notifyOverlaysPenUp(double scaleX, double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyDown(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyUp(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysFocusGained(double scaleX,double scaleY);
+    bool notifyOverlaysFocusGained(double scaleX, double scaleY);
 
-    bool notifyOverlaysFocusLost(double scaleX,double scaleY);
+    bool notifyOverlaysFocusLost(double scaleX, double scaleY);
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, double pressure,  Natron::PenType pen,bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QInputEvent* e, double pressure);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, QKeyEvent* e, Natron::Key k,
                                         Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX,double scaleY, QKeyEvent* e, Natron::Key k,
                                           Natron::KeyboardModifiers km);
 public:
     

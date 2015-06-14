@@ -1025,6 +1025,18 @@ private:
 };
 
 
+struct RotoPoint
+{
+    Natron::Point pos;
+    double pressure;
+    double timestamp;
+
+    RotoPoint(const Natron::Point &pos_, double pressure_, double timestamp_)
+    : pos(pos_), pressure(pressure_), timestamp(timestamp_) {}
+
+    RotoPoint(double x, double y, double pressure_, double timestamp_)
+    : pressure(pressure_), timestamp(timestamp_) { pos.x = x; pos.y = y; }
+};
 
 /**
  * @class Base class for all strokes
@@ -1051,7 +1063,7 @@ public:
      * @brief Appends to the paint stroke the raw points list.
      * @returns True if the number of points is > 1
      **/
-    bool appendPoint(const std::pair<Natron::Point,double>& rawPoints);
+    bool appendPoint(const RotoPoint& p);
     
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);

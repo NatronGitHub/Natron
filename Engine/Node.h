@@ -917,11 +917,11 @@ public:
     
     void drawDefaultOverlay(double scaleX,double scaleY);
     
-    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
     bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     

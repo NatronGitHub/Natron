@@ -1309,11 +1309,11 @@ public:
 
     void drawOverlay_public(double scaleX,double scaleY);
 
-    bool onOverlayPenDown_public(double scaleX,double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double scaleX,double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double scaleX,double scaleY, double pressure, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDown_public(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
@@ -1433,27 +1433,27 @@ protected:
 
     virtual bool onOverlayPenDown(double /*scaleX*/,
                                   double /*scaleY*/,
-                                  double /*pressure*/,
                                   const QPointF & /*viewportPos*/,
-                                  const QPointF & /*pos*/) WARN_UNUSED_RETURN
+                                  const QPointF & /*pos*/,
+                                  double /*pressure*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayPenMotion(double /*scaleX*/,
                                     double /*scaleY*/,
-                                    double /*pressure*/,
                                     const QPointF & /*viewportPos*/,
-                                    const QPointF & /*pos*/) WARN_UNUSED_RETURN
+                                    const QPointF & /*pos*/,
+                                    double /*pressure*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayPenUp(double /*scaleX*/,
                                 double /*scaleY*/,
-                                double /*pressure*/,
                                 const QPointF & /*viewportPos*/,
-                                const QPointF & /*pos*/) WARN_UNUSED_RETURN
+                                const QPointF & /*pos*/,
+                                double /*pressure*/) WARN_UNUSED_RETURN
     {
         return false;
     }

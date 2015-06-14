@@ -4999,9 +4999,9 @@ EffectInstance::drawOverlay_public(double scaleX,
 bool
 EffectInstance::onOverlayPenDown_public(double scaleX,
                                         double scaleY,
-                                        double pressure,
                                         const QPointF & viewportPos,
-                                        const QPointF & pos)
+                                        const QPointF & pos,
+                                        double pressure)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -5013,9 +5013,9 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(scaleX,scaleY, pressure,  viewportPos, pos);
+        ret = onOverlayPenDown(scaleX, scaleY, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos);
+            ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -5027,9 +5027,9 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
 bool
 EffectInstance::onOverlayPenMotion_public(double scaleX,
                                           double scaleY,
-                                          double pressure, 
                                           const QPointF & viewportPos,
-                                          const QPointF & pos)
+                                          const QPointF & pos,
+                                          double pressure)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -5040,9 +5040,9 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(scaleX,scaleY,pressure, viewportPos, pos);
+    bool ret = onOverlayPenMotion(scaleX, scaleY, viewportPos, pos, pressure);
     if (!ret) {
-        ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos);
+        ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
     }
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
@@ -5054,9 +5054,9 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
 bool
 EffectInstance::onOverlayPenUp_public(double scaleX,
                                       double scaleY,
-                                      double pressure,
                                       const QPointF & viewportPos,
-                                      const QPointF & pos)
+                                      const QPointF & pos,
+                                      double pressure)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -5067,9 +5067,9 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(scaleX,scaleY, pressure, viewportPos, pos);
+        ret = onOverlayPenUp(scaleX, scaleY, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos);
+            ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }

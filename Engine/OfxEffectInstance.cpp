@@ -2216,9 +2216,9 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 bool
 OfxEffectInstance::onOverlayPenDown(double scaleX,
                                     double scaleY,
-                                    double pressure,
                                     const QPointF & viewportPos,
-                                    const QPointF & pos)
+                                    const QPointF & pos,
+                                    double pressure)
 {
     if (!_initialized) {
         return false;
@@ -2266,9 +2266,9 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
 bool
 OfxEffectInstance::onOverlayPenMotion(double scaleX,
                                       double scaleY,
-                                      double pressure,
                                       const QPointF & viewportPos,
-                                      const QPointF & pos)
+                                      const QPointF & pos,
+                                      double pressure)
 {
     if (!_initialized) {
         return false;
@@ -2315,9 +2315,9 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
 bool
 OfxEffectInstance::onOverlayPenUp(double scaleX,
                                   double scaleY,
-                                  double pressure,
                                   const QPointF & viewportPos,
-                                  const QPointF & pos)
+                                  const QPointF & pos,
+                                  double pressure)
 {
     if (!_initialized) {
         return false;

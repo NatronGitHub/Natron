@@ -223,7 +223,7 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
         updateGL();
     }
@@ -242,7 +242,7 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
         updateGL();
     }
@@ -261,7 +261,7 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, pos, viewportPos, 1.);
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
         updateGL();
     }

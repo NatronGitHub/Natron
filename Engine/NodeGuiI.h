@@ -89,23 +89,23 @@ public :
      **/
     virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) = 0;
     
-    virtual void drawDefaultOverlay(double scaleX,double scaleY)  = 0;
+    virtual void drawDefaultOverlay(double scaleX, double scaleY)  = 0;
     
-    virtual bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    virtual bool onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    virtual bool onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyUpDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) = 0;
+    virtual bool onOverlayKeyRepeatDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) = 0;
     
-    virtual bool onOverlayFocusGainedDefault(double scaleX,double scaleY) = 0;
+    virtual bool onOverlayFocusGainedDefault(double scaleX, double scaleY) = 0;
     
-    virtual bool onOverlayFocusLostDefault(double scaleX,double scaleY) = 0;
+    virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) = 0;
     
     virtual bool hasDefaultOverlay() const = 0;
     

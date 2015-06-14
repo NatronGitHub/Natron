@@ -196,7 +196,6 @@ public:
 
     virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
     
-
 public Q_SLOTS:
 
 
@@ -421,7 +420,7 @@ private:
 
 private:
     
-    bool penMotionInternal(int x, int y, double pressure, QInputEvent* event);
+    bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.
@@ -538,6 +537,8 @@ private:
      * @brief X and Y are in widget coords!
      **/
     bool pickColor(double x,double y);
+
+    static double currentTimeForEvent(QInputEvent* e);
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
