@@ -5327,16 +5327,16 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         double y2 = yNext->getValue();
         double z2 = 1;
         double press2 = pNext->getValue();
-        
-        
-        double x1pr = x1 + xIt->getRightDerivative() / 3.;
-        double y1pr = y1 + yIt->getRightDerivative() / 3.;
+        double dt = (xNext->getTime() - xIt->getTime());
+
+        double x1pr = x1 + dt * xIt->getRightDerivative() / 3.;
+        double y1pr = y1 + dt * yIt->getRightDerivative() / 3.;
         double z1pr = 1.;
-        double press1pr = press1 + pIt->getRightDerivative() / 3.;
-        double x2pl = x2 - xNext->getLeftDerivative() / 3.;
-        double y2pl = y2 - yNext->getLeftDerivative() / 3.;
+        double press1pr = press1 + dt * pIt->getRightDerivative() / 3.;
+        double x2pl = x2 - dt * xNext->getLeftDerivative() / 3.;
+        double y2pl = y2 - dt * yNext->getLeftDerivative() / 3.;
         double z2pl = 1;
-        double press2pl = press2 - pNext->getLeftDerivative() / 3.;
+        double press2pl = press2 - dt * pNext->getLeftDerivative() / 3.;
         
         Transform::matApply(transform, &x1, &y1, &z1);
         Transform::matApply(transform, &x1pr, &y1pr, &z1pr);
@@ -5528,18 +5528,68 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         double t = nk;
 #pragma message WARN("TODO: use timestamp for roto time")
 #else
-        double t = p.timestamp;
-        if (t == 0.) {
+        double t;
+        if (nk == 0) {
+            t = 0.;
+        } else if (p.timestamp == 0.) {
             t = nk; // some systems may not have a proper timestamp use a dummy one
+        } else {
+            // TODO: subtract t0, the timestamp of the first point in the stroke
+            t = p.timestamp - t0;
         }
+        printf("t=%g\n",t);
 #endif
 
-        // TODO: if it's at least the 3rd point in curve, add intermediate point if...
-#pragma message WARN("TODO")
+        // if it's at least the 3rd point in curve, add intermediate point if
+        // the time since last keyframe is larger that the time to the previous one...
+        if (nk >= 2) {
+            KeyFrame xp, xpp;
+            bool valid;
+            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 1, &xp);
+            assert(valid);
+            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 2, &xpp);
+            assert(valid);
+
+            double tp = xp.getTime();
+            double tpp = xpp.getTime();
+            if ( tp != tpp && ((t - tp) > (tp - tpp))) {
+                printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
+                // add a keyframe to avoid overshoot when the pen stops suddenly and starts again much later
+                KeyFrame yp, ypp;
+                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 1, &yp);
+                assert(valid);
+                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 2, &ypp);
+                assert(valid);
+                KeyFrame pp, ppp;
+                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 1, &pp);
+                assert(valid);
+                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 2, &ppp);
+                assert(valid);
+                double tn = tp + (tp - tpp);
+                KeyFrame xn, yn, pn;
+                double alpha = (t - tp)/(tp - tpp);
+                xn.setTime(tn);
+                yn.setTime(tn);
+                pn.setTime(tn);
+                xn.setValue(xp.getValue()*(1-alpha)+p.pos.x*alpha);
+                yn.setValue(yp.getValue()*(1-alpha)+p.pos.y*alpha);
+                pn.setValue(pp.getValue()*(1-alpha)+p.pressure*alpha);
+                _imp->xCurve.addKeyFrame(xn);
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                _imp->yCurve.addKeyFrame(yn);
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                _imp->pressureCurve.addKeyFrame(pn);
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                ++nk;
+            }
+        }
 
         {
             KeyFrame k;
-            k.setTime(p.timestamp);
+            k.setTime(t);
             k.setValue(p.pos.x);
             //Set the previous keyframe to Free so its tangents don't get overwritten
             _imp->xCurve.addKeyFrame(k);
@@ -5548,7 +5598,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         }
         {
             KeyFrame k;
-            k.setTime(p.timestamp);
+            k.setTime(t);
             k.setValue(p.pos.y);
             _imp->yCurve.addKeyFrame(k);
             _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
@@ -5557,7 +5607,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         
         {
             KeyFrame k;
-            k.setTime(p.timestamp);
+            k.setTime(t);
             k.setValue(p.pressure);
             _imp->pressureCurve.addKeyFrame(k);
             _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
@@ -5788,18 +5838,19 @@ RotoStrokeItem::computeBoundingBox(int time) const
         subBox.x2 = -std::numeric_limits<double>::infinity();
         subBox.y1 = std::numeric_limits<double>::infinity();
         subBox.y2 = -std::numeric_limits<double>::infinity();
-        
+        double dt = xNext->getTime() - xIt->getTime();
+
         double pressure = std::max(pIt->getValue(), pNext->getValue());
         Transform::Point3D p0,p1,p2,p3;
         p0.z = p1.z = p2.z = p3.z = 1;
         p0.x = xIt->getValue();
         p0.y = yIt->getValue();
-        p1.x = p0.x + xIt->getRightDerivative() / 3.;
-        p1.y = p0.y + yIt->getRightDerivative() / 3.;
+        p1.x = p0.x + dt * xIt->getRightDerivative() / 3.;
+        p1.y = p0.y + dt * yIt->getRightDerivative() / 3.;
         p3.x = xNext->getValue();
         p3.y = yNext->getValue();
-        p2.x = p3.x - xNext->getLeftDerivative() / 3.;
-        p2.y = p3.y - yNext->getLeftDerivative() / 3.;
+        p2.x = p3.x - dt * xNext->getLeftDerivative() / 3.;
+        p2.y = p3.y - dt * yNext->getLeftDerivative() / 3.;
         
         
         p0 = Transform::matApply(transform, p0);
