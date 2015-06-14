@@ -2672,7 +2672,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, _imp->pressureOnPress, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, e);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale, scale, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2835,7 +2835,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
     unsigned int mipMapLevel = getCurrentRenderScale();
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(scale,scale, _imp->pressureOnRelease, QMouseEventLocalPos(e), zoomPos, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(scale, scale, QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease, e) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2846,7 +2846,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!penMotionInternal(e->x(), e->y(), 1., e)) {
+    if (!penMotionInternal(e->x(), e->y(), /*pressure=*/1., currentTimeForEvent(e), e)) {
         QGLWidget::mouseMoveEvent(e);
     }
 } // mouseMoveEvent
@@ -2878,7 +2878,7 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         QGLWidget::tabletEvent(e);
     }   break;
     case QEvent::TabletMove: {
-        if (!penMotionInternal(e->x(), e->y(), e->pressure(), e)) {
+        if (!penMotionInternal(e->x(), e->y(), e->pressure(), currentTimeForEvent(e), e)) {
             QGLWidget::tabletEvent(e);
         } else {
             e->accept();
@@ -2891,7 +2891,7 @@ ViewerGL::tabletEvent(QTabletEvent* e)
 }
 
 bool
-ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
+ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3234,7 +3234,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, QInputEvent* e)
             unsigned int mipMapLevel = getCurrentRenderScale();
             double scale = 1. / (1 << mipMapLevel);
             if ( _imp->overlay &&
-                _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, localPos, zoomPos, e, pressure) ) {
+                _imp->viewerTab->notifyOverlaysPenMotion(scale, scale, localPos, zoomPos, pressure, timestamp, e) ) {
                 mustRedraw = true;
                 overlaysCaughtByPlugin = true;
             }
@@ -3266,7 +3266,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
     }
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale,scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale, scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
         updateGL();
     }
     QGLWidget::mouseDoubleClickEvent(e);
@@ -5238,4 +5238,21 @@ ViewerGL::getViewerFrameRange(int* first,int* last) const
 {
     _imp->viewerTab->getTimelineBounds(first, last);
 }
+
+double
+ViewerGL::currentTimeForEvent(QInputEvent* e)
+{
+#if QT_VERSION >= 0x050000
+    // timestamp() is usually in milliseconds
+    if (e->timestamp()) {
+        return (double)e->timestamp() / 1000000;
+    }
+#else
+    // Qt 4 has no event timestamp, use gettimeofday (defined in Timer.cpp for windows)
+    struct timeval now;
+    gettimeofday(&now, 0);
+    return now.tv_sec + now.tv_usec / 1000000.0;
+#endif
+}
+
 

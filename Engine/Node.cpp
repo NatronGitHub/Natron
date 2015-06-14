@@ -4919,7 +4919,7 @@ Node::shouldDrawOverlay() const
 }
 
 void
-Node::drawDefaultOverlay(double scaleX,double scaleY)
+Node::drawDefaultOverlay(double scaleX, double scaleY)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
@@ -4928,37 +4928,37 @@ Node::drawDefaultOverlay(double scaleX,double scaleY)
 }
 
 bool
-Node::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+Node::onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos);
+        return nodeGui->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+Node::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos);
+        return nodeGui->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+Node::onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos);
+        return nodeGui->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {

@@ -5504,7 +5504,7 @@ RotoStrokeItem::attachStrokeToNodes()
 }
 
 bool
-RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
+RotoStrokeItem::appendPoint(const RotoPoint& p)
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -5520,12 +5520,27 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
                 _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
             }
         }
-        
+        assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount() &&
+               _imp->xCurve.getKeyFramesCount() == _imp->pressureCurve.getKeyFramesCount());
+        int nk = _imp->xCurve.getKeyFramesCount();
+
+#if 1
+        double t = nk;
+#pragma message WARN("TODO: use timestamp for roto time")
+#else
+        double t = p.timestamp;
+        if (t == 0.) {
+            t = nk; // some systems may not have a proper timestamp use a dummy one
+        }
+#endif
+
+        // TODO: if it's at least the 3rd point in curve, add intermediate point if...
+#pragma message WARN("TODO")
+
         {
             KeyFrame k;
-            int nk = _imp->xCurve.getKeyFramesCount();
-            k.setTime(nk);
-            k.setValue(rawPoints.first.x);
+            k.setTime(p.timestamp);
+            k.setValue(p.pos.x);
             //Set the previous keyframe to Free so its tangents don't get overwritten
             _imp->xCurve.addKeyFrame(k);
             _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
@@ -5533,9 +5548,8 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
         }
         {
             KeyFrame k;
-            int nk = _imp->yCurve.getKeyFramesCount();
-            k.setTime(nk);
-            k.setValue(rawPoints.first.y);
+            k.setTime(p.timestamp);
+            k.setValue(p.pos.y);
             _imp->yCurve.addKeyFrame(k);
             _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
             _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
@@ -5543,9 +5557,8 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints)
         
         {
             KeyFrame k;
-            int nk = _imp->pressureCurve.getKeyFramesCount();
-            k.setTime(nk);
-            k.setValue(rawPoints.second);
+            k.setTime(p.timestamp);
+            k.setValue(p.pressure);
             _imp->pressureCurve.addKeyFrame(k);
             _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
             _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
@@ -6294,7 +6307,6 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
         select(curve, RotoItem::eSelectionReasonOther);
     }
     return curve;
-
 }
 
 boost::shared_ptr<Bezier>

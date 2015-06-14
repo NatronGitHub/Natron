@@ -373,7 +373,7 @@ struct RotoGui::RotoGuiPrivate
     
     void toggleToolsSelection(QToolButton* selected);
     
-    void makeStroke(const Natron::Point& p, double pressure);
+    void makeStroke(const RotoPoint& p);
 };
 
 
@@ -2187,11 +2187,12 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 bool
 RotoGui::penDown(double /*scaleX*/,
                  double /*scaleY*/,
+                 Natron::PenType pen,
+                 bool isTabletEvent,
                  const QPointF & /*viewportPos*/,
                  const QPointF & pos,
                  double pressure,
-                 Natron::PenType pen,
-                 bool isTabletEvent,
+                 double timestamp,
                  QMouseEvent* e)
 {
     std::pair<double, double> pixelScale;
@@ -2553,11 +2554,8 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->state = eEventStateDraggingBrushSize;
                 _imp->mouseCenterOnSizeChange = pos;
             } else {
-                Natron::Point p;
-                p.x = pos.x();
-                p.y = pos.y();
                 _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
-                _imp->makeStroke(p, pressure);
+                _imp->makeStroke(RotoPoint(pos.x(), pos.y(), pressure, timestamp));
                 _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
@@ -2623,7 +2621,9 @@ RotoGui::penMotion(double /*scaleX*/,
                    double /*scaleY*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
-                   QInputEvent* e, double pressure)
+                   double pressure,
+                   double timestamp,
+                   QInputEvent* e)
 {
     std::pair<double, double> pixelScale;
 
@@ -2953,10 +2953,8 @@ RotoGui::penMotion(double /*scaleX*/,
     }
     case eEventStateBuildingStroke: {
         if (_imp->rotoData->strokeBeingPaint) {
-            Natron::Point p;
-            p.x = pos.x();
-            p.y = pos.y();
-            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure))) {
+            RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
+            if (_imp->rotoData->strokeBeingPaint->appendPoint(p)) {
                 _imp->lastMousePos = pos;
                 _imp->context->evaluateChange_noIncrement();
                 return true;
@@ -3023,6 +3021,8 @@ RotoGui::penUp(double /*scaleX*/,
                double /*scaleY*/,
                const QPointF & /*viewportPos*/,
                const QPointF & /*pos*/,
+               double /* pressure */,
+               double /* timestamp */,
                QMouseEvent* /*e*/)
 {
     if (_imp->evaluateOnPenUp) {
@@ -3075,7 +3075,7 @@ RotoGui::penUp(double /*scaleX*/,
 }
 
 void
-RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p, double pressure)
+RotoGui::RotoGuiPrivate::makeStroke(const RotoPoint& p)
 {
     Natron::RotoStrokeType strokeType;
     std::string itemName;
@@ -3169,7 +3169,7 @@ RotoGui::RotoGuiPrivate::makeStroke(const Natron::Point& p, double pressure)
         sourceTypeKnob->setValue(sourceType_i, 0);
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
-    rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,pressure));
+    rotoData->strokeBeingPaint->appendPoint(p);
     
     context->clearSelection(RotoItem::eSelectionReasonOther);
     context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);

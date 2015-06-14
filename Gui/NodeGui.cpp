@@ -3417,40 +3417,40 @@ NodeGui::drawDefaultOverlay(double scaleX,double scaleY)
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
 
-       return _defaultOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+       return _defaultOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         
-        return _defaultOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+        return _defaultOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         
-        return _defaultOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+        return _defaultOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }

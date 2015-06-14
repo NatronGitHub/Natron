@@ -341,6 +341,7 @@ TrackerGui::penDown(double scaleX,
                     double scaleY,
                     const QPointF & viewportPos,
                     const QPointF & pos,
+                    double pressure,
                     QMouseEvent* e)
 {
     std::pair<double,double> pixelScale;
@@ -355,7 +356,7 @@ TrackerGui::penDown(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenDown_public(scaleX,scaleY, 1., viewportPos, pos);
+            didSomething = effect->onOverlayPenDown_public(scaleX, scaleY, viewportPos, pos, pressure);
         }
     }
 
@@ -422,6 +423,7 @@ TrackerGui::penMotion(double scaleX,
                       double scaleY,
                       const QPointF & viewportPos,
                       const QPointF & pos,
+                      double pressure,
                       QInputEvent* /*e*/)
 {
     bool didSomething = false;
@@ -434,7 +436,7 @@ TrackerGui::penMotion(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            if ( effect->onOverlayPenMotion_public(scaleX,scaleY, 1., viewportPos, pos) ) {
+            if ( effect->onOverlayPenMotion_public(scaleX, scaleY, viewportPos, pos, pressure) ) {
                 didSomething = true;
             }
         }
@@ -454,6 +456,7 @@ TrackerGui::penUp(double scaleX,
                   double scaleY,
                   const QPointF & viewportPos,
                   const QPointF & pos,
+                  double pressure,
                   QMouseEvent* /*e*/)
 {
     bool didSomething = false;
@@ -466,7 +469,7 @@ TrackerGui::penUp(double scaleX,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenUp_public(scaleX,scaleY, 1.,viewportPos, pos);
+            didSomething = effect->onOverlayPenUp_public(scaleX, scaleY, viewportPos, pos, pressure);
             if (didSomething) {
                 return true;
             }
