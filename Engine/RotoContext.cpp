@@ -827,12 +827,16 @@ BezierCP::removeAnimation(int currentTime)
 {
     {
         QMutexLocker k(&_imp->staticPositionMutex);
-        _imp->x = _imp->curveX->getValueAt(currentTime);
-        _imp->y = _imp->curveY->getValueAt(currentTime);
-        _imp->leftX = _imp->curveLeftBezierX->getValueAt(currentTime);
-        _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
-        _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
-        _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
+        try {
+            _imp->x = _imp->curveX->getValueAt(currentTime);
+            _imp->y = _imp->curveY->getValueAt(currentTime);
+            _imp->leftX = _imp->curveLeftBezierX->getValueAt(currentTime);
+            _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
+            _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
+            _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
+        } catch (const std::exception & e) {
+            //
+        }
     }
     _imp->curveX->clearKeyFrames();
     _imp->curveY->clearKeyFrames();
