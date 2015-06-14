@@ -1889,6 +1889,8 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                 QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, y));
 
                 bool keyframeIsSelected = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf);
+                bool kfIsSelectedOrHighlighted = keyframeIsSelected
+                        || selectionRect.contains(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
                 bool drawInDimRow = (knobTreeItem->parent()->isExpanded());
@@ -1899,7 +1901,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                 if (drawInDimRow) {
                     DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType(kf.getInterpolation(),
-                                                                                              keyframeIsSelected);
+                                                                                              kfIsSelectedOrHighlighted);
 
                     if (texType != DopeSheetViewPrivate::kfTextureNone) {
                         drawTexturedKeyframe(texType, zoomKfRect);
@@ -2476,16 +2478,6 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esSelectionByRect:
     {
         computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
-
-        std::vector<DSSelectedKey> tempSelection;
-        createSelectionFromRect(rectToZoomCoordinates(selectionRect), &tempSelection);
-
-        if (modCASIsShift(e)) {
-            model->getSelectionModel()->makeBooleanSelection(tempSelection);
-        }
-        else {
-            model->getSelectionModel()->makeSelection(tempSelection);
-        }
 
         q_ptr->redraw();
 
@@ -3448,12 +3440,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        if (modCASIsShift(e)) {
-                            _imp->model->getSelectionModel()->makeBooleanSelection(keysUnderMouse);
-                        }
-                        else {
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
-                        }
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -3467,12 +3454,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        if (modCASIsShift(e)) {
-                            _imp->model->getSelectionModel()->makeBooleanSelection(keysUnderMouse);
-                        }
-                        else {
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
-                        }
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -3531,7 +3513,13 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
     bool mustRedraw = false;
 
     if (_imp->eventState == DopeSheetView::esSelectionByRect) {
-        if (_imp->model->getSelectionModel()->getSelectedKeyframesCount() > 1) {
+        if (_imp->selectionRect.isValid()) {
+
+            std::vector<DSSelectedKey> tempSelection;
+            _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect), &tempSelection);
+
+            _imp->model->getSelectionModel()->makeSelection(tempSelection);
+
             _imp->computeSelectedKeysBRect();
         }
 

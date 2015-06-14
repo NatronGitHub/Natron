@@ -270,8 +270,6 @@ public:
     void selectAllKeyframes();
     void selectKeyframes(DSKnob *dsKnob, std::vector<DSSelectedKey> *result);
 
-    void makeBooleanSelection(const std::vector<DSSelectedKey> &keys);
-
     void clearKeyframeSelection();
     void makeSelection(const std::vector<DSSelectedKey> &keys);
 

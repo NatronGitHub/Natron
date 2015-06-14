@@ -1011,26 +1011,6 @@ void DopeSheetSelectionModel::selectKeyframes(DSKnob *dsKnob, std::vector<DSSele
     }
 }
 
-void DopeSheetSelectionModel::makeBooleanSelection(const std::vector<DSSelectedKey> &keys)
-{
-    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        DSSelectedKey key = (*it);
-
-        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
-
-        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
-            DSKeyPtr selected(new DSSelectedKey(key));
-
-            _imp->selectedKeyframes.push_back(selected);
-        }
-        else {
-            _imp->selectedKeyframes.erase(isAlreadySelected);
-        }
-    }
-
-    Q_EMIT keyframeSelectionChanged();
-}
-
 void DopeSheetSelectionModel::clearKeyframeSelection()
 {
     if (_imp->selectedKeyframes.empty()) {
