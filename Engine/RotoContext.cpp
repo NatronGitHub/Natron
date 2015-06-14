@@ -5773,6 +5773,7 @@ RotoStrokeItem::computeBoundingBox(int time) const
         bbox.x2 = p.x;
         bbox.y1 = p.y;
         bbox.y2 = p.y;
+#pragma message WARN("BUG: multiply by pressure only if pressure affects size!!!")
         bbox.x1 -= halfBrushSize * pressure;
         bbox.x2 += halfBrushSize * pressure;
         bbox.y1 -= halfBrushSize * pressure;
@@ -5813,6 +5814,7 @@ RotoStrokeItem::computeBoundingBox(int time) const
         p3_.x = p3.x; p3_.y = p3.y;
         
         bezierPointBboxUpdate(p0_,p1_,p2_,p3_,&subBox);
+#pragma message WARN("BUG: multiply by pressure only if pressure affects size!!!")
         subBox.x1 -= halfBrushSize * pressure;
         subBox.x2 += halfBrushSize * pressure;
         subBox.y1 -= halfBrushSize * pressure;
