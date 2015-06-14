@@ -5168,7 +5168,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
             int leftBound = INT_MIN,rightBound = INT_MAX;
-            _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound);
+            _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
     
             if (leftBound != INT_MIN && rightBound != INT_MAX) {
                 getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);

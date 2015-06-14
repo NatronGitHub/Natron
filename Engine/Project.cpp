@@ -823,14 +823,12 @@ Project::initializeKnobs()
     _imp->projectName->setIsPersistant(false);
     _imp->projectName->setAsLabel();
     _imp->projectName->setAnimationEnabled(false);
-    _imp->projectName->setEnabled(0, false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
     
     _imp->projectPath = Natron::createKnob<String_Knob>(this, "Project path");
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
-    _imp->projectPath->setEnabled(0, false);
     _imp->projectPath->setAnimationEnabled(false);
     _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
