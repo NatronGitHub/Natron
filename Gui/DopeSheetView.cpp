@@ -3227,13 +3227,8 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     else if (nodeType == DopeSheet::ItemTypeRetime) {
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName("speed")->getSignalSlotHandler();
         assert(speedKnob);
-        boost::shared_ptr<KnobSignalSlotHandler> durationKnob = node->getKnobByName("duration")->getSignalSlotHandler();
-        assert(durationKnob);
 
         connect(speedKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
-
-        connect(durationKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
     }
     else if (nodeType == DopeSheet::ItemTypeTimeOffset) {
