@@ -51,6 +51,11 @@
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
+//This controls how many frames a plug-in can pre-fetch (per view and per input)
+//This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
+//do not all stick altogether in memory
+#define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
+
 using namespace Natron;
 
 
@@ -3585,8 +3590,12 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
                 
                 for (std::map<int, std::vector<OfxRangeD> >::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                     
+                    int nbFramesPreFetched = 0;
                     for (U32 range = 0; range < it2->second.size(); ++range) {
-                        for (int f = std::floor(it2->second[range].min + 0.5); f <= std::floor(it2->second[range].max + 0.5); ++f) {
+                        
+                        for (int f = std::floor(it2->second[range].min + 0.5);
+                             f <= std::floor(it2->second[range].max + 0.5) && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
+                             ++f) {
                             
                             
                             RenderScale scaleOne;
@@ -3626,6 +3635,9 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
                                 if (*it3) {
                                     foundInputImages->second.push_back(*it3);
                                 }
+                            }
+                            if (!inputImgs.empty()) {
+                                ++nbFramesPreFetched;
                             }
                         }
                     }
