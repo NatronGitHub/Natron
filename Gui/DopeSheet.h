@@ -150,7 +150,6 @@ public:
     DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
     DSKnob *findDSKnob(KnobGui *knobGui) const;
 
-    QTreeWidgetItem *findTreeItemForDim(const DSKnob *dsKnob, int dimension) const;
     int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
 
     bool isPartOfGroup(DSNode *dsNode) const;
@@ -238,6 +237,7 @@ public:
     ~DSKnob();
 
     QTreeWidgetItem *getTreeItem() const;
+    QTreeWidgetItem *findDimTreeItem(int dimension) const;
 
     KnobGui *getKnobGui() const;
     boost::shared_ptr<KnobI> getInternalKnob() const;

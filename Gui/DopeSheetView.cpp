@@ -422,7 +422,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
                 showKnob = true;
             }
 
-            QTreeWidgetItem *dimItem = model->findTreeItemForDim(dsKnob, i);
+            QTreeWidgetItem *dimItem = dsKnob->findDimTreeItem(i);
             dimItem->setHidden(!showDim);
         }
     }
@@ -687,19 +687,9 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 HierarchyView::~HierarchyView()
 {}
 
-QRectF HierarchyView::getItemRect(const DSNode *dsNode) const
-{
-    return visualItemRect(dsNode->getTreeItem());
-}
-
-QRectF HierarchyView::getItemRect(const DSKnob *dsKnob) const
-{
-    return visualItemRect(dsKnob->getTreeItem());
-}
-
 QRectF HierarchyView::getItemRectForDim(const DSKnob *dsKnob, int dim) const
 {
-    return visualItemRect(_imp->model->findTreeItemForDim(dsKnob, dim));
+    return visualItemRect(dsKnob->findDimTreeItem(dim));
 }
 
 DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
@@ -1325,7 +1315,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob
             QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
             if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
+                DSSelectedKey key(dsKnob, kf, dsKnob->findDimTreeItem(i), i);
                 ret.push_back(key);
             }
         }
@@ -1355,7 +1345,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode
                 QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
                 if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                    DSSelectedKey key(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i);
+                    DSSelectedKey key(dsKnob, kf, dsKnob->findDimTreeItem(i), i);
                     ret.push_back(key);
                 }
             }
@@ -2677,7 +2667,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::createSelectionFromRect(const Q
 
                     if ((rect.left() <= x) && (rect.right() >= x)
                             && (rect.top() >= rowCenterY) && (rect.bottom() <= rowCenterY)) {
-                        ret.push_back(DSSelectedKey(dsKnob, kf, model->findTreeItemForDim(dsKnob, i), i));
+                        ret.push_back(DSSelectedKey(dsKnob, kf, dsKnob->findDimTreeItem(i), i));
                     }
                 }
             }

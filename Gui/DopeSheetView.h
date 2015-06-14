@@ -48,9 +48,12 @@ public:
     explicit HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent = 0);
     ~HierarchyView();
 
-    QRectF getItemRect(const DSNode *dsNode) const;
+    template <typename T>
+    QRectF getItemRect(const T *dopeSheetContext) const
+    {
+        return visualItemRect(dopeSheetContext->getTreeItem());
+    }
 
-    QRectF getItemRect(const DSKnob *dsKnob) const;
     QRectF getItemRectForDim(const DSKnob *dsKnob, int dim) const;
 
     DSKnob *getDSKnobAt(const QPoint &point, int *dimension) const;

@@ -191,7 +191,7 @@ void DopeSheetPrivate::selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSe
          ++kIt) {
         KeyFrame kf = (*kIt);
 
-        result->push_back(DSSelectedKey(dsKnob, kf, q_ptr->findTreeItemForDim(dsKnob, dim), dim));
+        result->push_back(DSSelectedKey(dsKnob, kf, dsKnob->findDimTreeItem(dim), dim));
     }
 }
 
@@ -503,29 +503,6 @@ DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
     return NULL;
 }
 
-QTreeWidgetItem *DopeSheet::findTreeItemForDim(const DSKnob *dsKnob, int dimension) const
-{
-    if ( (dsKnob->isMultiDim() && (dimension == -1) )  || (!dsKnob->isMultiDim() && !dimension) ) {
-        return dsKnob->getTreeItem();
-    }
-
-    QTreeWidgetItem *ret = 0;
-
-    QTreeWidgetItem *knobRootItem = dsKnob->getTreeItem();
-
-    for (int i = 0; i < knobRootItem->childCount(); ++i) {
-        QTreeWidgetItem *child = knobRootItem->child(i);
-
-        if (dimension == child->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt()) {
-            ret = child;
-
-            break;
-        }
-    }
-
-    return ret;
-}
-
 int DopeSheet::getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const
 {
     assert(dsKnob->isMultiDim());
@@ -782,7 +759,7 @@ void DopeSheet::selectAllKeyframes()
                 for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
                     KeyFrame kf = *it;
 
-                    DSSelectedKey key (dsKnob, kf, findTreeItemForDim(dsKnob, i), i);
+                    DSSelectedKey key (dsKnob, kf, dsKnob->findDimTreeItem(i), i);
 
                     DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
 
@@ -1086,6 +1063,27 @@ DSKnob::~DSKnob()
 QTreeWidgetItem *DSKnob::getTreeItem() const
 {
     return _imp->nameItem;
+}
+
+QTreeWidgetItem *DSKnob::findDimTreeItem(int dimension) const
+{
+    if ( (isMultiDim() && (dimension == -1) )  || (!isMultiDim() && !dimension) ) {
+        return _imp->nameItem;
+    }
+
+    QTreeWidgetItem *ret = 0;
+
+    for (int i = 0; i < _imp->nameItem->childCount(); ++i) {
+        QTreeWidgetItem *child = _imp->nameItem->child(i);
+
+        if (dimension == child->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt()) {
+            ret = child;
+
+            break;
+        }
+    }
+
+    return ret;
 }
 
 /**
