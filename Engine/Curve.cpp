@@ -546,7 +546,7 @@ Curve::getKeyFrameWithIndex(int index,
 {
     assert(k);
     QMutexLocker l(&_imp->_lock);
-    if ( index >= (int)_imp->keyFrames.size() ) {
+    if (index < 0 || (int)_imp->keyFrames.size() <= index ) {
         return false;
     }
     *k = *atIndex(index);
