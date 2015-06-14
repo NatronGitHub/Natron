@@ -49,14 +49,12 @@ public:
     ~HierarchyView();
 
     template <typename T>
-    QRectF getItemRect(const T *dopeSheetContext) const
+    QRect getItemRect(const T *dopeSheetContext) const
     {
         return visualItemRect(dopeSheetContext->getTreeItem());
     }
 
-    QRectF getItemRectForDim(const DSKnob *dsKnob, int dim) const;
-
-    DSKnob *getDSKnobAt(const QPoint &point, int *dimension) const;
+    DSKnob *getDSKnobAt(const QPoint &point) const;
 
 private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
@@ -90,8 +88,6 @@ class DopeSheetView : public QGLWidget, public OverlaySupport
     Q_OBJECT
 
 public:
-    friend class DopeSheetViewPrivate;
-
     enum EventStateEnum
     {
         esNoEditingState,
@@ -176,12 +172,6 @@ private Q_SLOTS:
 
     void copySelectedKeyframes();
     void pasteKeyframes();
-
-private: /* functions */
-    void renderText(double x, double y,
-                    const QString &text,
-                    const QColor &color,
-                    const QFont &font) const;
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;

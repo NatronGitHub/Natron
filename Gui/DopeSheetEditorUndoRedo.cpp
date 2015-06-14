@@ -106,7 +106,7 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DSKeyPtr selectedKey = (*it);
 
-        KnobHolder *holder = selectedKey->dsKnob->getKnobGui()->getKnob()->getHolder();
+        KnobHolder *holder = selectedKey->context->getKnobGui()->getKnob()->getHolder();
 
         knobHolders.insert(holder);
     }
@@ -120,16 +120,16 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DSKeyPtr selectedKey = (*it);
 
-        boost::shared_ptr<KnobI> knob = selectedKey->dsKnob->getKnobGui()->getKnob();
+        boost::shared_ptr<KnobI> knob = selectedKey->context->getKnobGui()->getKnob();
 
         knob->moveValueAtTime(selectedKey->key.getTime(),
-                              selectedKey->dimension,
+                              selectedKey->context->getDimension(),
                               dt, 0, &selectedKey->key);
     }
 
     renderOnce(&knobHolders);
 
-    _model->emit_keyframeSelectionChanged();
+    _model->getSelectionModel()->emit_keyframeSelectionChanged();
 }
 
 int DSMoveKeysCommand::id() const
@@ -191,7 +191,7 @@ void DSLeftTrimReaderCommand::redo()
 
 void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
 
     KnobHolder *holder = firstFrameKnob->getHolder();
@@ -256,7 +256,7 @@ void DSRightTrimReaderCommand::redo()
 
 void DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("lastFrame").get());
     assert(lastFrameKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -342,7 +342,7 @@ bool DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 
 void DSSlipReaderCommand::slipReader(double dt)
 {
-    NodePtr node = _dsNodeReader->getNode();
+    NodePtr node = _dsNodeReader->getInternalNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -401,7 +401,7 @@ void DSMoveReaderCommand::redo()
 
 void DSMoveReaderCommand::moveReader(double time)
 {
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getNode()->getKnobByName("timeOffset").get());
+    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("timeOffset").get());
     assert(timeOffsetKnob);
 
     KnobHolder *holder = timeOffsetKnob->getHolder();
@@ -465,18 +465,18 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
     for (std::vector<DSSelectedKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DSSelectedKey selected = (*it);
-        KnobGui *knobGui = selected.dsKnob->getKnobGui();
+        KnobGui *knobGui = selected.context->getKnobGui();
 
         if (add) {
-            knobGui->setKeyframe(selected.key.getTime(), selected.key, selected.dimension);
+            knobGui->setKeyframe(selected.key.getTime(), selected.key, selected.context->getDimension());
         }
         else {
-            knobGui->removeKeyFrame(selected.key.getTime(), selected.dimension);
-            selected.dimTreeItem->setSelected(false);
+            knobGui->removeKeyFrame(selected.key.getTime(), selected.context->getDimension());
+            selected.context->getTreeItem()->setSelected(false);
         }
     }
 
-    _model->emit_keyframeSelectionChanged();
+    _model->getSelectionModel()->emit_keyframeSelectionChanged();
 }
 
 
@@ -525,7 +525,7 @@ bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
 
 void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 {
-    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getNode()->getLiveInstance());
+    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getInternalNode()->getLiveInstance());
     NodeList nodes = group->getNodes();
 
     std::set<KnobHolder *> knobHolders;
@@ -578,7 +578,7 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 
     renderOnce(&knobHolders);
 
-    _model->clearKeyframeSelection();
+    _model->getSelectionModel()->clearKeyframeSelection();
     _model->emit_modelChanged();
 }
 
@@ -609,7 +609,7 @@ void DSChangeNodeLabelCommand::redo()
 
 void DSChangeNodeLabelCommand::changeNodeLabel(const QString &label)
 {
-    _dsNode->getNode()->setLabel(label.toStdString());
+    _dsNode->getInternalNode()->setLabel(label.toStdString());
     _dsNode->getTreeItem()->setText(0, label);
 }
 
@@ -641,7 +641,7 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
     for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
         Natron::KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
 
-        it->_key->dsKnob->getKnobGui()->getKnob()->setInterpolationAtTime(it->_key->dimension,
+        it->_key->context->getKnobGui()->getKnob()->setInterpolationAtTime(it->_key->context->getDimension(),
                                                                           it->_key->key.getTime(),
                                                                           interp,
                                                                           &it->_key->key);
@@ -678,7 +678,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
     for (std::vector<DSSelectedKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DSSelectedKey key = (*it);
 
-        boost::shared_ptr<KnobI> knob = key.dsKnob->getInternalKnob();
+        boost::shared_ptr<KnobI> knob = key.context->getInternalKnob();
         knob->beginChanges();
 
         SequenceTime currentTime = _model->getCurrentFrame();
@@ -692,17 +692,17 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
 
             if (isDouble) {
-                isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime), key.dimension);
+                isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime), key.context->getDimension());
             } else if (isBool) {
-                isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime), key.dimension);
+                isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime), key.context->getDimension());
             } else if (isInt) {
-                isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime), key.dimension);
+                isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime), key.context->getDimension());
             } else if (isString) {
-                isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime), key.dimension);
+                isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime), key.context->getDimension());
             }
         }
         else {
-            knob->deleteValueAtTime(currentTime, key.dimension);
+            knob->deleteValueAtTime(currentTime, key.context->getDimension());
         }
 
         knob->endChanges();

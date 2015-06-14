@@ -12,6 +12,7 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QDebug>
 #include <QTreeWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -23,10 +24,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/Macros.h"
 
 class DopeSheetEditorPrivate;
-class DSKnobPrivate;
-class DopeSheetEditor;
 class DopeSheetPrivate;
-class DopeSheetView;
+class DopeSheetSelectionModel;
+class DopeSheetSelectionModelPrivate;
+class DSKnobPrivate;
 class DSNodePrivate;
 class Gui;
 class HierarchyView;
@@ -45,61 +46,8 @@ class DSKnob;
 class DSNode;
 
 typedef std::map<QTreeWidgetItem *, DSNode *> DSNodeRows;
-typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRow;
+typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRows;
 // typedefs
-
-
-/**
- * @brief The DSSelectedKey struct
- *
- *
- */
-struct DSSelectedKey
-{
-    DSSelectedKey(DSKnob *knob, KeyFrame kf, QTreeWidgetItem *treeItem, int dim) :
-        dsKnob(knob),
-        key(kf),
-        dimTreeItem(treeItem),
-        dimension(dim)
-    {}
-
-    DSSelectedKey(const DSSelectedKey &other) :
-        dsKnob(other.dsKnob),
-        key(other.key),
-        dimTreeItem(other.dimTreeItem),
-        dimension(other.dimension)
-    {}
-
-    friend bool operator==(const DSSelectedKey &key1, const DSSelectedKey &key2)
-    {
-        if (key1.dsKnob != key2.dsKnob) {
-            return false;
-        }
-
-        if (key1.key != key2.key) {
-            return false;
-        }
-
-        if (key1.dimTreeItem != key2.dimTreeItem) {
-            return false;
-        }
-
-        if (key1.dimension != key2.dimension) {
-            return false;
-        }
-
-        return true;
-    }
-
-    DSKnob *dsKnob;
-    KeyFrame key;
-    QTreeWidgetItem *dimTreeItem;
-    int dimension;
-};
-
-
-typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
-typedef std::list<DSKeyPtr> DSKeyPtrList;
 
 
 /**
@@ -147,7 +95,7 @@ public:
     DSNode *findDSNode(Natron::Node *node) const;
     DSNode *findDSNode(const boost::shared_ptr<KnobI> knob) const;
 
-    DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
+    DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem) const;
     DSKnob *findDSKnob(KnobGui *knobGui) const;
 
     int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
@@ -156,32 +104,16 @@ public:
     DSNode *getGroupDSNode(DSNode *dsNode) const;
     std::vector<DSNode *> getNodesFromGroup(DSNode *dsGroup) const;
 
-    bool isRangeBasedNode(DopeSheet::ItemType nodeType) const;
-    bool canContainOtherNodes(DopeSheet::ItemType nodeType) const;
-
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
     DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
     Natron::Node *getNearestReader(DSNode *timeNode) const;
 
-    bool isBundle(DSNode *dsNode) const;
-
-    // Keyframe selection logic
-    DSKeyPtrList getSelectedKeyframes() const;
-    int getSelectedKeyframesCount() const;
-
-    void makeSelection(const std::vector<DSSelectedKey> &keys);
-    void makeBooleanSelection(const std::vector<DSSelectedKey> &keys);
-
-    bool keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const;
-    DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
+    DopeSheetSelectionModel *getSelectionModel() const;
 
     // User interaction
-    void clearKeyframeSelection();
     void deleteSelectedKeyframes();
-    void selectAllKeyframes();
-    void selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey> *result);
 
     void moveSelectedKeys(double dt);
     void trimReaderLeft(DSNode *reader, double newFirstFrame);
@@ -197,7 +129,6 @@ public:
     void setUndoStackActive();
 
     void emit_modelChanged();
-    void emit_keyframeSelectionChanged();
 
 Q_SIGNALS:
     void modelChanged();
@@ -206,11 +137,9 @@ Q_SIGNALS:
     void groupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
     void keyframeSetOrRemoved(DSKnob *dsKnob);
-    void keyframeSelectionAboutToBeCleared();
-    void keyframeSelectionChanged();
 
 private: /* functions */
-    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType nodeType);
+    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType itemType);
 
 private Q_SLOTS:
     void onSettingsPanelCloseChanged(bool closed);
@@ -223,16 +152,50 @@ private:
 
 
 /**
+ * @brief The DSNode class
+ *
+ *
+ */
+class DSNode
+{
+public:
+    DSNode(DopeSheet *model,
+           DopeSheet::ItemType itemType,
+           const boost::shared_ptr<NodeGui> &nodeGui,
+           QTreeWidgetItem *nameItem);
+    ~DSNode();
+
+    QTreeWidgetItem *getTreeItem() const;
+
+    boost::shared_ptr<NodeGui> getNodeGui() const;
+    boost::shared_ptr<Natron::Node> getInternalNode() const;
+
+    DSKnobRows getChildData() const;
+
+    DopeSheet::ItemType getItemType() const;
+
+    bool isTimeNode() const;
+
+    bool isRangeDrawingEnabled() const;
+
+    bool canContainOtherNodeContexts() const;
+    bool containsNodeContext() const;
+
+private:
+    boost::scoped_ptr<DSNodePrivate> _imp;
+};
+
+
+/**
  * @brief The DSKnob class
  *
  *
  */
-class DSKnob : public QObject
+class DSKnob
 {
-    Q_OBJECT
-
 public:
-    DSKnob(QTreeWidgetItem *nameItem,
+    DSKnob(int dimension,
+           QTreeWidgetItem *nameItem,
            KnobGui *knobGui);
     ~DSKnob();
 
@@ -243,40 +206,93 @@ public:
     boost::shared_ptr<KnobI> getInternalKnob() const;
 
     bool isMultiDim() const;
+    int getDimension() const;
 
 private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
 };
 
 /**
- * @brief The DSNode class
+ * @brief The DSSelectedKey struct
  *
  *
  */
-class DSNode : public QObject
+struct DSSelectedKey
+{
+    DSSelectedKey(DSKnob *knob, KeyFrame kf) :
+        context(knob),
+        key(kf)
+    {
+        assert(context->getDimension() != -1);
+    }
+
+    DSSelectedKey(const DSSelectedKey &other) :
+        context(other.context),
+        key(other.key)
+    {}
+
+    friend bool operator==(const DSSelectedKey &key, const DSSelectedKey &other)
+    {
+        if (key.context != other.context) {
+            return false;
+        }
+
+        if (key.key != other.key) {
+            return false;
+        }
+
+        if (key.context->getTreeItem() != other.context->getTreeItem()) {
+            return false;
+        }
+
+        if (key.context->getDimension() != other.context->getDimension()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    DSKnob *context;
+    KeyFrame key;
+};
+
+typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
+typedef std::list<DSKeyPtr> DSKeyPtrList;
+
+class DopeSheetSelectionModel : public QObject
 {
     Q_OBJECT
 
 public:
-    DSNode(DopeSheet *model,
-           DopeSheet::ItemType nodeType,
-           const boost::shared_ptr<NodeGui> &nodeGui,
-           QTreeWidgetItem *nameItem);
-    ~DSNode();
+    DopeSheetSelectionModel(DopeSheet *dopeSheet);
+    ~DopeSheetSelectionModel();
 
-    QTreeWidgetItem *getTreeItem() const;
+    void selectAllKeyframes();
+    void selectKeyframes(DSKnob *dsKnob, std::vector<DSSelectedKey> *result);
 
-    boost::shared_ptr<NodeGui> getNodeGui() const;
-    boost::shared_ptr<Natron::Node> getNode() const;
+    void makeBooleanSelection(const std::vector<DSSelectedKey> &keys);
 
-    DSKnobRow getChildData() const;
+    void clearKeyframeSelection();
+    void makeSelection(const std::vector<DSSelectedKey> &keys);
 
-    DopeSheet::ItemType getItemType() const;
+    bool isEmpty() const;
 
-    bool isTimeNode() const;
+    DSKeyPtrList getSelectedKeyframes() const;
+    std::vector<DSSelectedKey> getSelectionCopy() const;
+
+    int getSelectedKeyframesCount() const;
+
+    bool keyframeIsSelected(DSKnob *dsKnob, const KeyFrame &keyframe) const;
+    DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
+
+    void emit_keyframeSelectionChanged();
+
+Q_SIGNALS:
+    void keyframeSelectionAboutToBeCleared();
+    void keyframeSelectionChanged();
 
 private:
-    boost::scoped_ptr<DSNodePrivate> _imp;
+    boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
 
 

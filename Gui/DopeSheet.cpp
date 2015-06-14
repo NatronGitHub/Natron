@@ -74,15 +74,14 @@ public:
 
     void pushUndoCommand(QUndoCommand *cmd);
 
-    void selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result);
-
     bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
     bool canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const;
 
     /* attributes */
     DopeSheet *q_ptr;
     DSNodeRows nodeRows;
-    DSKeyPtrList selectedKeyframes;
+
+    DopeSheetSelectionModel *selectionModel;
 
     boost::scoped_ptr<QUndoStack> undoStack;
 
@@ -94,8 +93,8 @@ public:
 DopeSheetPrivate::DopeSheetPrivate(DopeSheet *qq) :
     q_ptr(qq),
     nodeRows(),
-    selectedKeyframes(),
-    undoStack(new QUndoStack(q_ptr)),
+    selectionModel(new DopeSheetSelectionModel(qq)),
+    undoStack(new QUndoStack(qq)),
     keyframesClipboard(),
     timeline()
 {
@@ -104,7 +103,7 @@ DopeSheetPrivate::DopeSheetPrivate(DopeSheet *qq) :
 
 DopeSheetPrivate::~DopeSheetPrivate()
 {
-    selectedKeyframes.clear();
+    delete selectionModel;
 }
 
 Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node) const
@@ -182,19 +181,6 @@ void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
     undoStack->push(cmd);
 }
 
-void DopeSheetPrivate::selectKeyframes(DSKnob *dsKnob, int dim, std::vector<DSSelectedKey> *result)
-{
-    KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
-
-    for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-         kIt != keyframes.end();
-         ++kIt) {
-        KeyFrame kf = (*kIt);
-
-        result->push_back(DSSelectedKey(dsKnob, kf, dsKnob->findDimTreeItem(dim), dim));
-    }
-}
-
 bool DopeSheetPrivate::canTrimLeft(double newFirstFrame, double currentLastFrame) const
 {
     if (newFirstFrame < 1) {
@@ -260,9 +246,9 @@ std::pair<double, double> DopeSheet::getKeyframeRange() const
 
         DSNode *dsNode = (*it).second;
 
-        DSKnobRow dsKnobItems = dsNode->getChildData();
+        DSKnobRows dsKnobItems = dsNode->getChildData();
 
-        for (DSKnobRow::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+        for (DSKnobRows::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
             if ((*itKnob).first->isHidden()) {
                 continue;
             }
@@ -418,7 +404,7 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
          ++it) {
         DSNode *dsNode = (*it).second;
 
-        if (dsNode->getNode().get() == node) {
+        if (dsNode->getInternalNode().get() == node) {
             return dsNode;
         }
     }
@@ -431,9 +417,9 @@ DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
     for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobRow knobRows = dsNode->getChildData();
+        DSKnobRows knobRows = dsNode->getChildData();
 
-        for (DSKnobRow::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
+        for (DSKnobRows::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnob *dsKnob = (*knobIt).second;
 
             if (dsKnob->getKnobGui()->getKnob() == knob) {
@@ -445,17 +431,15 @@ DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
     return NULL;
 }
 
-DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const
+DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem) const
 {
-    assert(dimension);
-
     DSKnob *ret = 0;
 
     DSNode *dsNode = findParentDSNode(knobTreeItem);
 
-    DSKnobRow knobRows = dsNode->getChildData();
+    DSKnobRows knobRows = dsNode->getChildData();
 
-    DSKnobRow::const_iterator clickedDSKnob;
+    DSKnobRows::const_iterator clickedDSKnob;
     QTreeWidgetItem *itemIt = knobTreeItem;
 
     while ( (clickedDSKnob = knobRows.find(itemIt)) == knobRows.end()) {
@@ -469,18 +453,6 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
 
     ret = clickedDSKnob->second;
 
-    if (ret->isMultiDim()) {
-        if (itemIt != knobTreeItem) {
-            *dimension = getDim(ret, knobTreeItem);
-        }
-        else {
-            *dimension = -1;
-        }
-    }
-    else {
-        *dimension = 0;
-    }
-
     return ret;
 }
 
@@ -489,9 +461,9 @@ DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
     for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSKnobRow knobRows = dsNode->getChildData();
+        DSKnobRows knobRows = dsNode->getChildData();
 
-        for (DSKnobRow::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
+        for (DSKnobRows::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             DSKnob *dsKnob = (*knobIt).second;
 
             if (dsKnob->getKnobGui() == knobGui) {
@@ -503,24 +475,16 @@ DSKnob *DopeSheet::findDSKnob(KnobGui *knobGui) const
     return NULL;
 }
 
-int DopeSheet::getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const
-{
-    assert(dsKnob->isMultiDim());
-    assert(dsKnob->getTreeItem()->indexOfChild(item) != -1);
-
-    return item->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt();
-}
-
 bool DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNode()->getGroup());
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getInternalNode()->getGroup());
 
     return (parentGroup);
 }
 
 DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNode()->getGroup());
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getInternalNode()->getGroup());
 
     DSNode *parentGroupDSNode = 0;
 
@@ -535,7 +499,7 @@ std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
 {
     assert(dsGroup->getItemType() == DopeSheet::ItemTypeGroup);
 
-    NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getNode()->getLiveInstance());
+    NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getInternalNode()->getLiveInstance());
     assert(nodeGroup);
 
     std::vector<DSNode *> ret;
@@ -552,18 +516,6 @@ std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
     dsGroup->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
 
     return ret;
-}
-
-bool DopeSheet::isRangeBasedNode(DopeSheet::ItemType nodeType) const
-{
-    return (nodeType >= DopeSheet::ItemTypeReader &&
-            nodeType <= DopeSheet::ItemTypeGroup);
-}
-
-bool DopeSheet::canContainOtherNodes(DopeSheet::ItemType nodeType) const
-{
-    return (nodeType >= (DopeSheet::ItemTypeReader + 1) &&
-            nodeType <= DopeSheet::ItemTypeGroup);
 }
 
 bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
@@ -598,7 +550,7 @@ bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
  */
 DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
 {
-    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getNode().get());
+    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getInternalNode().get());
 
     return findDSNode(timeNode);
 }
@@ -607,7 +559,7 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
 {
     std::vector<DSNode *> ret;
 
-    _imp->getInputsConnected_recursive(dsNode->getNode().get(), &ret);
+    _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
 
     dsNode->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
 
@@ -618,190 +570,37 @@ Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const
 {
     assert(timeNode->isTimeNode());
 
-    Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getNode().get());
+    Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getInternalNode().get());
 
     return nearestReader;
 }
 
-bool DopeSheet::isBundle(DSNode *dsNode) const
+DopeSheetSelectionModel *DopeSheet::getSelectionModel() const
 {
-    return (dsNode->getTreeItem()->data(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE).toBool());
-}
-
-DSKeyPtrList DopeSheet::getSelectedKeyframes() const
-{
-    return _imp->selectedKeyframes;
-}
-
-int DopeSheet::getSelectedKeyframesCount() const
-{
-    return _imp->selectedKeyframes.size();
-}
-
-void DopeSheet::makeSelection(const std::vector<DSSelectedKey> &keys)
-{
-    Q_EMIT keyframeSelectionAboutToBeCleared();
-
-    _imp->selectedKeyframes.clear();
-
-    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        DSSelectedKey key = (*it);
-
-        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
-
-        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
-            DSKeyPtr selected(new DSSelectedKey(key));
-
-            _imp->selectedKeyframes.push_back(selected);
-        }
-    }
-
-    Q_EMIT keyframeSelectionChanged();
-}
-
-void DopeSheet::makeBooleanSelection(const std::vector<DSSelectedKey> &keys)
-{
-    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        DSSelectedKey key = (*it);
-
-        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
-
-        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
-            DSKeyPtr selected(new DSSelectedKey(key));
-
-            _imp->selectedKeyframes.push_back(selected);
-        }
-        else {
-            _imp->selectedKeyframes.erase(isAlreadySelected);
-        }
-    }
-
-    Q_EMIT keyframeSelectionChanged();
-}
-
-bool DopeSheet::keyframeIsSelected(int dimension, DSKnob *dsKnob, const KeyFrame &keyframe) const
-{
-    DSKeyPtrList::const_iterator isSelected = _imp->selectedKeyframes.end();
-
-    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        DSKeyPtr selectedKey = (*it);
-
-        if (selectedKey->dimension != dimension) {
-            continue;
-        }
-
-        if (selectedKey->dsKnob == dsKnob && selectedKey->key == keyframe) {
-            isSelected = it;
-            break;
-        }
-    }
-
-    return (isSelected != _imp->selectedKeyframes.end());
-}
-
-DSKeyPtrList::iterator DopeSheet::keyframeIsSelected(const DSSelectedKey &key) const
-{
-    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        DSKeyPtr selectedKey = (*it);
-
-        if (*(selectedKey.get()) == key) {
-            return it;
-        }
-    }
-
-    return _imp->selectedKeyframes.end();
-}
-
-void DopeSheet::clearKeyframeSelection()
-{
-    if (_imp->selectedKeyframes.empty()) {
-        return;
-    }
-
-    Q_EMIT keyframeSelectionAboutToBeCleared();
-
-    _imp->selectedKeyframes.clear();
-
-    Q_EMIT keyframeSelectionChanged();
+    return _imp->selectionModel;
 }
 
 void DopeSheet::deleteSelectedKeyframes()
 {
-    if (_imp->selectedKeyframes.empty()) {
+    if (_imp->selectionModel->isEmpty()) {
         return;
     }
 
-    Q_EMIT keyframeSelectionAboutToBeCleared();
+    std::vector<DSSelectedKey> toRemove =_imp->selectionModel->getSelectionCopy();
 
-    std::vector<DSSelectedKey> toRemove;
-    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        toRemove.push_back(DSSelectedKey(**it));
-    }
-
-    _imp->selectedKeyframes.clear();
+    _imp->selectionModel->clearKeyframeSelection();
 
     _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
 }
 
-void DopeSheet::selectAllKeyframes()
-{
-    for (DSNodeRows::const_iterator it = _imp->nodeRows.begin(); it != _imp->nodeRows.end(); ++it) {
-        DSNode *dsNode = (*it).second;
-
-        DSKnobRow dsKnobItems = dsNode->getChildData();
-
-        for (DSKnobRow::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
-            DSKnob *dsKnob = (*itKnob).second;
-
-            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
-
-                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-                    KeyFrame kf = *it;
-
-                    DSSelectedKey key (dsKnob, kf, dsKnob->findDimTreeItem(i), i);
-
-                    DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
-
-                    if (isAlreadySelected == _imp->selectedKeyframes.end()) {
-                        DSKeyPtr selected(new DSSelectedKey(key));
-
-                        _imp->selectedKeyframes.push_back(selected);
-                    }
-                }
-            }
-        }
-    }
-
-    Q_EMIT keyframeSelectionChanged();
-}
-
-void DopeSheet::selectKeyframes(QTreeWidgetItem *item, std::vector<DSSelectedKey> *result)
-{
-    int dim = -2;
-
-    if (DSKnob *dsKnob = findDSKnob(item, &dim)) {
-        boost::shared_ptr<KnobI> knob = dsKnob->getInternalKnob();
-
-        if (dim == -1) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                _imp->selectKeyframes(dsKnob, i, result);
-            }
-        }
-        else {
-            _imp->selectKeyframes(dsKnob, dim, result);
-        }
-    }
-}
-
 void DopeSheet::moveSelectedKeys(double dt)
 {
-    _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
+    _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectionModel->getSelectedKeyframes(), dt, this));
 }
 
 void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 {
-    NodePtr node = reader->getNode();
+    NodePtr node = reader->getInternalNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -821,7 +620,7 @@ void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
 
 void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
 {
-    NodePtr node = reader->getNode();
+    NodePtr node = reader->getInternalNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -843,7 +642,7 @@ void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
 
 void DopeSheet::slipReader(DSNode *reader, double dt)
 {
-    NodePtr node = reader->getNode();
+    NodePtr node = reader->getInternalNode();
 
     Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
@@ -866,7 +665,7 @@ void DopeSheet::slipReader(DSNode *reader, double dt)
 
 void DopeSheet::moveReader(DSNode *reader, double time)
 {
-    NodePtr node = reader->getNode();
+    NodePtr node = reader->getInternalNode();
 
     Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
     assert(timeOffsetKnob);
@@ -881,13 +680,17 @@ void DopeSheet::moveGroup(DSNode *group, double dt)
 
 void DopeSheet::copySelectedKeys()
 {
-    if (_imp->selectedKeyframes.empty()) {
+    if (_imp->selectionModel->isEmpty()) {
         return;
     }
 
     _imp->keyframesClipboard.clear();
 
-    for (DSKeyPtrList::const_iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+    DSKeyPtrList selectedKeyframes = _imp->selectionModel->getSelectedKeyframes();
+
+    for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin();
+         it != selectedKeyframes.end();
+         ++it) {
         DSKeyPtr selectedKey = (*it);
 
         _imp->keyframesClipboard.push_back(*selectedKey);
@@ -902,7 +705,7 @@ void DopeSheet::pasteKeys()
         DSSelectedKey key = (*it);
 
         // Retrieve the tree item associated with the key dimension
-        QTreeWidgetItem *dimTreeItem = key.dimTreeItem;
+        QTreeWidgetItem *dimTreeItem = key.context->getTreeItem();
 
         if (dimTreeItem->isSelected()) {
             toPaste.push_back(key);
@@ -914,13 +717,17 @@ void DopeSheet::pasteKeys()
 
 void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
 {
-    if (_imp->selectedKeyframes.empty()) {
+
+    if (_imp->selectionModel->isEmpty()) {
         return;
     }
 
+    DSKeyPtrList selectedKeyframes = _imp->selectionModel->getSelectedKeyframes();
     std::list<DSKeyInterpolationChange> changes;
 
-    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+    for (DSKeyPtrList::iterator it = selectedKeyframes.begin();
+         it != selectedKeyframes.end();
+         ++it) {
         DSKeyPtr keyPtr = (*it);
         DSKeyInterpolationChange change(keyPtr->key.getInterpolation(), keyType, keyPtr);
 
@@ -940,21 +747,16 @@ void DopeSheet::emit_modelChanged()
     Q_EMIT modelChanged();
 }
 
-void DopeSheet::emit_keyframeSelectionChanged()
-{
-    Q_EMIT keyframeSelectionChanged();
-}
-
-DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::ItemType nodeType)
+DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::ItemType itemType)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
     NodePtr node = nodeGui->getNode();
 
-    QTreeWidgetItem *nameItem = new QTreeWidgetItem(nodeType);
+    QTreeWidgetItem *nameItem = new QTreeWidgetItem(itemType);
     nameItem->setText(0, node->getLabel().c_str());
 
-    DSNode *dsNode = new DSNode(this, nodeType, nodeGui, nameItem);
+    DSNode *dsNode = new DSNode(this, itemType, nodeGui, nameItem);
 
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
             this, SLOT(onSettingsPanelCloseChanged(bool)));
@@ -1010,12 +812,14 @@ public:
     ~DSKnobPrivate();
 
     /* attributes */
+    int dimension;
     QTreeWidgetItem *nameItem;
     KnobGui *knobGui;
     boost::shared_ptr<KnobI> knob;
 };
 
 DSKnobPrivate::DSKnobPrivate() :
+    dimension(-2),
     nameItem(0),
     knobGui(0),
     knob()
@@ -1045,13 +849,14 @@ DSKnobPrivate::~DSKnobPrivate()
  *
  * /!\ We should improve the classes design.
  */
-DSKnob::DSKnob(QTreeWidgetItem *nameItem,
+DSKnob::DSKnob(int dimension,
+               QTreeWidgetItem *nameItem,
                KnobGui *knobGui) :
-    QObject(),
     _imp(new DSKnobPrivate)
 {
     assert(knobGui);
 
+    _imp->dimension = dimension;
     _imp->nameItem = nameItem;
     _imp->knobGui = knobGui;
     _imp->knob = knobGui->getKnob();
@@ -1108,8 +913,220 @@ boost::shared_ptr<KnobI> DSKnob::getInternalKnob() const
  */
 bool DSKnob::isMultiDim() const
 {
-    return (_imp->knobGui->getKnob()->getDimension() > 1);
+    return (_imp->dimension == -1);
 }
+
+int DSKnob::getDimension() const
+{
+    return _imp->dimension;
+}
+
+
+////////////////////////// DopeSheetSelectionModel //////////////////////////
+
+class DopeSheetSelectionModelPrivate
+{
+public:
+    DopeSheetSelectionModelPrivate() :
+        selectedKeyframes()
+    {
+
+    }
+
+    ~DopeSheetSelectionModelPrivate()
+    {
+        selectedKeyframes.clear();
+    }
+
+    /* attributes */
+    DopeSheet *dopeSheet;
+    DSKeyPtrList selectedKeyframes;
+};
+
+DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet) :
+    _imp(new DopeSheetSelectionModelPrivate)
+{
+    _imp->dopeSheet = dopeSheet;
+}
+
+DopeSheetSelectionModel::~DopeSheetSelectionModel()
+{
+
+}
+
+void DopeSheetSelectionModel::selectAllKeyframes()
+{
+    std::vector<DSSelectedKey> result;
+
+    DSNodeRows nodeRows = _imp->dopeSheet->getNodeRows();
+
+    for (DSNodeRows::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
+        DSNode *dsNode = (*it).second;
+
+        DSKnobRows dsKnobItems = dsNode->getChildData();
+
+        for (DSKnobRows::const_iterator itKnob = dsKnobItems.begin();
+             itKnob != dsKnobItems.end();
+             ++itKnob) {
+            selectKeyframes((*itKnob).second, &result);
+        }
+    }
+
+    makeSelection(result);
+}
+
+void DopeSheetSelectionModel::selectKeyframes(DSKnob *dsKnob, std::vector<DSSelectedKey> *result)
+{
+    assert(dsKnob);
+
+    int dim = dsKnob->getDimension();
+
+    int startDim = 0;
+    int endDim = dsKnob->getInternalKnob()->getDimension();
+
+    if (dim > -1) {
+        startDim = dim;
+        endDim = dim + 1;
+    }
+
+    for (int i = startDim; i < endDim; ++i) {
+        KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+
+        for (KeyFrameSet::const_iterator kIt = keyframes.begin();
+             kIt != keyframes.end();
+             ++kIt) {
+            KeyFrame kf = (*kIt);
+
+            DSKnob *context = 0;
+            if (dim == -1) {
+                QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
+                context = _imp->dopeSheet->findDSKnob(childItem);
+            }
+            else {
+                context = dsKnob;
+            }
+
+            result->push_back(DSSelectedKey(context, kf));
+        }
+    }
+}
+
+void DopeSheetSelectionModel::makeBooleanSelection(const std::vector<DSSelectedKey> &keys)
+{
+    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
+
+        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+            DSKeyPtr selected(new DSSelectedKey(key));
+
+            _imp->selectedKeyframes.push_back(selected);
+        }
+        else {
+            _imp->selectedKeyframes.erase(isAlreadySelected);
+        }
+    }
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheetSelectionModel::clearKeyframeSelection()
+{
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
+    Q_EMIT keyframeSelectionAboutToBeCleared();
+
+    _imp->selectedKeyframes.clear();
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheetSelectionModel::makeSelection(const std::vector<DSSelectedKey> &keys)
+{
+    Q_EMIT keyframeSelectionAboutToBeCleared();
+
+    _imp->selectedKeyframes.clear();
+
+    for (std::vector<DSSelectedKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        DSSelectedKey key = (*it);
+
+        DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
+
+        if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+            DSKeyPtr selected(new DSSelectedKey(key));
+
+            _imp->selectedKeyframes.push_back(selected);
+        }
+    }
+
+    Q_EMIT keyframeSelectionChanged();
+}
+
+bool DopeSheetSelectionModel::isEmpty() const
+{
+    return _imp->selectedKeyframes.empty();
+}
+
+DSKeyPtrList DopeSheetSelectionModel::getSelectedKeyframes() const
+{
+    return _imp->selectedKeyframes;
+}
+
+std::vector<DSSelectedKey> DopeSheetSelectionModel::getSelectionCopy() const
+{
+    std::vector<DSSelectedKey> ret;
+
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin();
+         it != _imp->selectedKeyframes.end();
+         ++it) {
+        ret.push_back(DSSelectedKey(**it));
+    }
+
+    return ret;
+}
+
+int DopeSheetSelectionModel::getSelectedKeyframesCount() const
+{
+    return _imp->selectedKeyframes.size();
+}
+
+bool DopeSheetSelectionModel::keyframeIsSelected(DSKnob *dsKnob, const KeyFrame &keyframe) const
+{
+    DSKeyPtrList::const_iterator isSelected = _imp->selectedKeyframes.end();
+
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        if (selectedKey->context == dsKnob && selectedKey->key == keyframe) {
+            isSelected = it;
+            break;
+        }
+    }
+
+    return (isSelected != _imp->selectedKeyframes.end());
+}
+
+DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DSSelectedKey &key) const
+{
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        if (*(selectedKey.get()) == key) {
+            return it;
+        }
+    }
+
+    return _imp->selectedKeyframes.end();
+}
+
+void DopeSheetSelectionModel::emit_keyframeSelectionChanged()
+{
+    Q_EMIT keyframeSelectionChanged();
+}
+
 
 ////////////////////////// DSNode //////////////////////////
 
@@ -1120,7 +1137,7 @@ public:
     ~DSNodePrivate();
 
     /* functions */
-    DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
+    void createDSKnobs(KnobGui *knobGui, DSNode *dsNode);
 
     void initGroupNode();
 
@@ -1135,7 +1152,7 @@ public:
 
     QTreeWidgetItem *nameItem;
 
-    DSKnobRow knobRows;
+    DSKnobRows knobRows;
 
     bool isSelected;
 };
@@ -1153,10 +1170,8 @@ DSNodePrivate::DSNodePrivate(DSNode *qq) :
 DSNodePrivate::~DSNodePrivate()
 {}
 
-DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
+void DSNodePrivate::createDSKnobs(KnobGui *knobGui, DSNode *dsNode)
 {
-    DSKnob *dsKnob = 0;
-
     boost::shared_ptr<KnobI> knob = knobGui->getKnob();
 
     if (knob->getDimension() <= 1) {
@@ -1165,22 +1180,27 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
         nameItem->setText(0, knob->getDescription().c_str());
         nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
 
-        dsKnob = new DSKnob(nameItem, knobGui);
+        DSKnob *dsKnob = new DSKnob(0, nameItem, knobGui);
+        knobRows.insert(TreeItemAndDSKnob(nameItem, dsKnob));
     }
     else {
-        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem(), DopeSheet::ItemTypeKnobRoot);
-        multiDimRootNameItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
-        multiDimRootNameItem->setText(0, knob->getDescription().c_str());
-        multiDimRootNameItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
+        QTreeWidgetItem *multiDimRootItem = new QTreeWidgetItem(dsNode->getTreeItem(), DopeSheet::ItemTypeKnobRoot);
+        multiDimRootItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, -1);
+        multiDimRootItem->setText(0, knob->getDescription().c_str());
+        multiDimRootItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
+
+        DSKnob *rootDSKnob = new DSKnob(-1, multiDimRootItem, knobGui);
+        knobRows.insert(TreeItemAndDSKnob(multiDimRootItem, rootDSKnob));
 
         for (int i = 0; i < knob->getDimension(); ++i) {
-            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem, DopeSheet::ItemTypeKnobDim);
+            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootItem, DopeSheet::ItemTypeKnobDim);
             dimItem->setData(0, QTREEWIDGETITEM_DIM_ROLE, i);
             dimItem->setText(0, knob->getDimensionName(i).c_str());
             dimItem->setFlags(nameItem->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
-        }
 
-        dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
+            DSKnob *dimDSKnob = new DSKnob(i, dimItem, knobGui);
+            knobRows.insert(TreeItemAndDSKnob(dimItem, dimDSKnob));
+        }
     }
 
     QObject::connect(knobGui, SIGNAL(keyFrameSet()),
@@ -1188,8 +1208,6 @@ DSKnob *DSNodePrivate::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
 
     QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
                      dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
-
-    return dsKnob;
 }
 
 void DSNodePrivate::initGroupNode()
@@ -1210,14 +1228,13 @@ void DSNodePrivate::initGroupNode()
 }
 
 DSNode::DSNode(DopeSheet *model,
-               DopeSheet::ItemType nodeType,
+               DopeSheet::ItemType itemType,
                const boost::shared_ptr<NodeGui> &nodeGui,
                QTreeWidgetItem *nameItem) :
-    QObject(),
     _imp(new DSNodePrivate(this))
 {
     _imp->dopeSheetModel = model;
-    _imp->nodeType = nodeType;
+    _imp->nodeType = itemType;
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
 
@@ -1233,9 +1250,7 @@ DSNode::DSNode(DopeSheet *model,
             continue;
         }
 
-        DSKnob *dsKnob = _imp->createDSKnob(knobGui, this);
-
-        _imp->knobRows.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
+        _imp->createDSKnobs(knobGui, this);
     }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
@@ -1252,7 +1267,7 @@ DSNode::DSNode(DopeSheet *model,
  */
 DSNode::~DSNode()
 {
-    for (DSKnobRow::iterator it = _imp->knobRows.begin();
+    for (DSKnobRows::iterator it = _imp->knobRows.begin();
          it != _imp->knobRows.end();
          ++it) {
         delete (*it).second;
@@ -1283,7 +1298,7 @@ boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
     return _imp->nodeGui;
 }
 
-boost::shared_ptr<Natron::Node> DSNode::getNode() const
+boost::shared_ptr<Natron::Node> DSNode::getInternalNode() const
 {
     return _imp->nodeGui->getNode();
 }
@@ -1293,7 +1308,7 @@ boost::shared_ptr<Natron::Node> DSNode::getNode() const
  *
  *
  */
-DSKnobRow DSNode::getChildData() const
+DSKnobRows DSNode::getChildData() const
 {
     return _imp->knobRows;
 }
@@ -1307,6 +1322,32 @@ bool DSNode::isTimeNode() const
 {
     return (_imp->nodeType >= DopeSheet::ItemTypeRetime)
             && (_imp->nodeType < DopeSheet::ItemTypeGroup);
+}
+
+bool DSNode::isRangeDrawingEnabled() const
+{
+    return (_imp->nodeType >= DopeSheet::ItemTypeReader &&
+            _imp->nodeType <= DopeSheet::ItemTypeGroup);
+}
+
+bool DSNode::canContainOtherNodeContexts() const
+{
+    return (_imp->nodeType >= (DopeSheet::ItemTypeReader + 1)
+            && _imp->nodeType <= DopeSheet::ItemTypeGroup);
+}
+
+bool DSNode::containsNodeContext() const
+{
+    for (int i = 0; i < _imp->nameItem->childCount(); ++i) {
+        int childType = _imp->nameItem->child(i)->type();
+
+        if (childType != DopeSheet::ItemTypeKnobDim
+                && childType != DopeSheet::ItemTypeKnobRoot) {
+            return true;
+        }
+
+    }
+    return false;
 }
 
 
@@ -1445,3 +1486,4 @@ void DopeSheetEditor::toggleTripleSync(bool enabled)
 {
     _imp->gui->setTripleSyncEnabled(enabled);
 }
+
