@@ -1936,13 +1936,13 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                 KeyFrame kf = (*kIt);
 
                 double keyTime = kf.getTime();
-                double y = hierarchyView->getItemRect(dsKnob).center().y();
+                double rowCenterY = hierarchyView->getItemRect(dsKnob).center().y();
 
-                QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, y));
+                QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, rowCenterY));
 
                 bool keyframeIsSelected = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf);
                 bool kfIsSelectedOrHighlighted = keyframeIsSelected
-                        || selectionRect.contains(zoomKfRect);
+                        || selectionRect.intersects(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
                 bool drawInDimRow = (knobTreeItem->parent()->isExpanded());
@@ -2631,6 +2631,8 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
 
 void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vector<DSSelectedKey> *result)
 {
+    QRectF zoomCoordsRect = rectToZoomCoordinates(rect);
+
     DSNodeRows dsNodes = model->getNodeRows();
 
     for (DSNodeRows::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
@@ -2653,12 +2655,12 @@ void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vect
                  ++kIt) {
                 KeyFrame kf = (*kIt);
 
-                double rowCenterY = hierarchyView->getItemRect(dsKnob).center().y();
-
                 double x = kf.getTime();
+                double y = hierarchyView->getItemRect(dsKnob).center().y();
 
-                if ((rect.left() <= x) && (rect.right() >= x)
-                        && (rect.top() >= rowCenterY) && (rect.bottom() <= rowCenterY)) {
+                QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(x, y));
+
+                if (zoomCoordsRect.intersects(zoomKfRect)) {
                     result->push_back(DSSelectedKey(dsKnob, kf));
                 }
             }
