@@ -623,7 +623,9 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
     int lineBegin = q_ptr->rect().left();
 
     if (dsNode->containsNodeContext()) {
-        lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
+        if (dsNode->getTreeItem()->isExpanded()) {
+            lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
+        }
     }
     else if (DSNode *parentNode = model->findDSNode(nodeBelow->getTreeItem()->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
