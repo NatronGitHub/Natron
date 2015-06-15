@@ -1752,7 +1752,7 @@ NodeGui::activate(bool triggerRender)
     }
     _graph->restoreFromTrash(this);
     _graph->getGui()->getCurveEditor()->addNode(shared_from_this());
-    _graph->getGui()->getDopeSheetEditor()->addNode(shared_from_this());
+    _graph->getGui()->addNodeGuiToDopeSheetEditor(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;

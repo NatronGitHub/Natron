@@ -63,9 +63,6 @@ private Q_SLOTS:
     void onNodeSettingsPanelOpened(DSNode *dsNode);
     void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
 
-    void onKeyframeSelectionAboutToBeCleared();
-    void onKeyframeSelectionChanged();
-
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 

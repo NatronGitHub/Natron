@@ -2497,7 +2497,7 @@ DockablePanel::scanForNewKnobs()
         getGui()->getCurveEditor()->addNode(node);
 
         getGui()->getDopeSheetEditor()->removeNode(node.get());
-        getGui()->getDopeSheetEditor()->addNode(node);
+        getGui()->addNodeGuiToDopeSheetEditor(node);
     }
 }
 

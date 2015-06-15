@@ -37,6 +37,24 @@ const int QTREEWIDGETITEM_IS_BUNDLE_ROLE = Qt::UserRole + 2;
 
 ////////////////////////// Helpers //////////////////////////
 
+bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
+{
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
+
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+         it != knobs.end();
+         ++it) {
+        boost::shared_ptr<KnobI> knob = *it;
+
+        if (knob->hasAnimation()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 namespace {
 
 bool nodeCanAnimate(const NodePtr &node)
@@ -377,6 +395,10 @@ DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
 
     DSNodeRows::const_iterator clickedDSNode = _imp->nodeRows.find(itemIt);
     while (clickedDSNode == _imp->nodeRows.end()) {
+        if (!itemIt) {
+            return NULL;
+        }
+
         if (itemIt->parent()) {
             itemIt = itemIt->parent();
             clickedDSNode = _imp->nodeRows.find(itemIt);
@@ -872,7 +894,7 @@ QTreeWidgetItem *DSKnob::getTreeItem() const
 
 QTreeWidgetItem *DSKnob::findDimTreeItem(int dimension) const
 {
-    if ( (isMultiDim() && (dimension == -1) )  || (!isMultiDim() && !dimension) ) {
+    if ( (isMultiDimRoot() && (dimension == -1) )  || (!isMultiDimRoot() && !dimension) ) {
         return _imp->nameItem;
     }
 
@@ -911,7 +933,7 @@ boost::shared_ptr<KnobI> DSKnob::getInternalKnob() const
  *
  *
  */
-bool DSKnob::isMultiDim() const
+bool DSKnob::isMultiDimRoot() const
 {
     return (_imp->dimension == -1);
 }
@@ -1322,8 +1344,7 @@ bool DSNode::containsNodeContext() const
         int childType = _imp->nameItem->child(i)->type();
 
         if (childType != DopeSheet::ItemTypeKnobDim
-                && childType != DopeSheet::ItemTypeKnobRoot
-                && childType != DopeSheet::ItemTypeReader) {
+                && childType != DopeSheet::ItemTypeKnobRoot) {
             return true;
         }
 
@@ -1467,4 +1488,3 @@ void DopeSheetEditor::toggleTripleSync(bool enabled)
 {
     _imp->gui->setTripleSyncEnabled(enabled);
 }
-

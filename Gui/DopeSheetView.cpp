@@ -94,21 +94,24 @@ bool childrenAreHidden(QTreeWidgetItem *item)
     return true;
 }
 
-bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
+bool itemIsVisibleFromOutside(QTreeWidgetItem *item)
 {
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
+    bool ret = true;
 
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
-         it != knobs.end();
-         ++it) {
-        boost::shared_ptr<KnobI> knob = *it;
+    QTreeWidgetItem *it = item->parent();
 
-        if (knob->hasAnimation()) {
-            return true;
+    while (it) {
+        if (!it->isExpanded()) {
+            ret = false;
+
+            break;
         }
+
+        it = it->parent();
     }
 
-    return false;
+    return ret;
+
 }
 
 int firstVisibleParentCenterY(QTreeWidgetItem * item)
@@ -288,9 +291,9 @@ public:
     void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow, const QRect &rowRect) const;
 
     // keyframe selection
-    void selectSelectedKeyframesItems(bool selected);
-
     void selectKeyframes(const QList<QTreeWidgetItem *> &items);
+
+    void blockSelectionSignals(bool block);
 
     /* attributes */
     HierarchyView *q_ptr;
@@ -366,7 +369,9 @@ void HierarchyViewPrivate::checkNodeItem(DSNode *dsNode)
             knobItem->setExpanded(true);
         }
 
-        checkKnobVisibleState(dsKnob);
+        if (dsKnob->getDimension() <= 0) {
+            checkKnobVisibleState(dsKnob);
+        }
     }
 }
 
@@ -456,27 +461,30 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 
 void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
-    QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
+    int dim = dsKnob->getDimension();
+    assert(dim <= 0);
+
     KnobGui *knobGui = dsKnob->getKnobGui();
 
-    bool showKnob = false;
+    bool showContext = false;
 
-    if (dsKnob->isMultiDim()) {
+    if (dsKnob->isMultiDimRoot()) {
         for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
-            bool showDim = knobGui->getCurve(i)->isAnimated();
+            bool curveIsAnimated = knobGui->getCurve(i)->isAnimated();
 
-            if (!showKnob && showDim) {
-                showKnob = true;
+            dsKnob->findDimTreeItem(i)->setHidden(!curveIsAnimated);
+
+            if (curveIsAnimated) {
+                showContext = true;
             }
-
-            dsKnob->findDimTreeItem(i)->setHidden(!showDim);
         }
     }
     else {
-        showKnob = knobGui->getCurve(0)->isAnimated();
+        showContext = knobGui->getCurve(dim)->isAnimated();
     }
 
-    treeItem->setHidden(!showKnob);
+    QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
+    treeItem->setHidden(!showContext);
 
     // Check the node item
     DSNode *parentNode = model->findParentDSNode(treeItem);
@@ -640,35 +648,6 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
                 rowRect.right(), rowRect.bottom() - lineWidth + 2);
 }
 
-void HierarchyViewPrivate::selectSelectedKeyframesItems(bool aselect)
-{
-    QObject::disconnect(q_ptr, SIGNAL(itemSelectionChanged()),
-                        q_ptr, SLOT(onItemSelectionChanged()));
-
-    DSKeyPtrList selectedKeyframes = model->getSelectionModel()->getSelectedKeyframes();
-
-    for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        DSKeyPtr selectedKey = (*it);
-
-        if (selectedKey->context->getTreeItem()->isSelected() != aselect) {
-            selectedKey->context->getTreeItem()->setSelected(aselect);
-        }
-
-        QTreeWidgetItem *knobItem = selectedKey->context->getTreeItem();
-        if (knobItem->isSelected() != aselect) {
-            knobItem->setSelected(aselect);
-        }
-
-        QTreeWidgetItem *knobItemParent = knobItem->parent();
-        if (knobItemParent->isSelected() != aselect) {
-            knobItemParent->setSelected(aselect);
-        }
-    }
-
-    QObject::connect(q_ptr, SIGNAL(itemSelectionChanged()),
-                     q_ptr, SLOT(onItemSelectionChanged()));
-}
-
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
     std::vector<DSSelectedKey> keys;
@@ -684,6 +663,17 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
     model->getSelectionModel()->makeSelection(keys);
 }
 
+void HierarchyViewPrivate::blockSelectionSignals(bool block)
+{
+    if (block) {
+        QObject::disconnect(q_ptr, SIGNAL(itemSelectionChanged()),
+                            q_ptr, SLOT(onItemSelectionChanged()));
+    }
+    else {
+        QObject::connect(q_ptr, SIGNAL(itemSelectionChanged()),
+                         q_ptr, SLOT(onItemSelectionChanged()));
+    }
+}
 
 /**
  * @brief HierarchyView::HierarchyView
@@ -708,12 +698,6 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 
     connect(model, SIGNAL(groupNodeSettingsPanelCloseChanged(DSNode*)),
             this, SLOT(onGroupNodeSettingsPanelCloseChanged(DSNode*)));
-
-    connect(model->getSelectionModel(), SIGNAL(keyframeSelectionAboutToBeCleared()),
-            this, SLOT(onKeyframeSelectionAboutToBeCleared()));
-
-    connect(model->getSelectionModel(), SIGNAL(keyframeSelectionChanged()),
-            this, SLOT(onKeyframeSelectionChanged()));
 
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
@@ -760,7 +744,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     _imp->processChildNodes(dsNode);
 
     QTreeWidgetItem *treeItemParent = _imp->getParentItem(treeItem);
-    treeItemParent->takeChild(treeItemParent->indexOfChild(treeItem));
+    treeItemParent->removeChild(treeItem);
 }
 
 void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
@@ -780,21 +764,10 @@ void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
     _imp->checkNodeVisibleState(dsNode);
 }
 
-void HierarchyView::onKeyframeSelectionAboutToBeCleared()
-{
-    qDebug() << "HierarchyView::onKeyframeSelectionAboutToBeCleared";
-    _imp->selectSelectedKeyframesItems(false);
-}
-
-void HierarchyView::onKeyframeSelectionChanged()
-{
-    qDebug() << "HierarchyView::onKeyframeSelectionChanged";
-    _imp->selectSelectedKeyframesItems(true);
-}
-
 void HierarchyView::onItemSelectionChanged()
 {
-    qDebug() << "HierarchyView::onItemSelectionChanged";
+    _imp->blockSelectionSignals(true);
+
     if (selectedItems().empty()) {
         _imp->model->getSelectionModel()->clearKeyframeSelection();
     }
@@ -805,6 +778,8 @@ void HierarchyView::onItemSelectionChanged()
 
         _imp->selectKeyframes(selectedItems());
     }
+
+    _imp->blockSelectionSignals(false);
 }
 
 /**
@@ -1655,7 +1630,7 @@ void DopeSheetViewPrivate::drawRows() const
         for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
-            DopeSheet::TreeItem *treeItem = (*it).first;
+            QTreeWidgetItem *treeItem = (*it).first;
 
             if(treeItem->isHidden()) {
                 continue;
@@ -1754,7 +1729,7 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
     double bkR, bkG, bkB, bkA;
-    if (dsKnob->isMultiDim()) {
+    if (dsKnob->isMultiDimRoot()) {
         settings->getDopeSheetEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
     }
     else {
@@ -1955,11 +1930,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         || selectionRect.intersects(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
-                bool drawInDimRow = (knobTreeItem->parent()->isExpanded());
-
-                if (knobTreeItem->parent()->parent()) {
-                    drawInDimRow = drawInDimRow && knobTreeItem->parent()->parent()->isExpanded();
-                }
+                bool drawInDimRow = itemIsVisibleFromOutside(knobTreeItem);
 
                 if (drawInDimRow) {
                     DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType(kf.getInterpolation(),
@@ -1968,6 +1939,36 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                     if (texType != DopeSheetViewPrivate::kfTextureNone) {
                         drawTexturedKeyframe(texType, zoomKfRect);
                     }
+                }
+
+                // Draw keyframe in the root sections too
+                DopeSheetViewPrivate::KeyframeTexture rootKfTexType = (kfIsSelectedOrHighlighted)
+                        ? DopeSheetViewPrivate::kfTextureRootSelected
+                        : DopeSheetViewPrivate::kfTextureRoot;
+
+                QTreeWidgetItem *knobParentItem = knobTreeItem->parent();
+                DSNode *nodeContext = model->findDSNode(knobParentItem);
+
+                bool drawInMultidimRootRow = itemIsVisibleFromOutside(knobParentItem);
+
+                if (drawInMultidimRootRow) {
+                    if (!nodeContext) {
+                        double newCenterY = hierarchyView->visualItemRect(knobParentItem).center().y();
+                        zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, newCenterY));
+
+                        drawTexturedKeyframe(rootKfTexType, zoomKfRect);
+                    }
+                }
+
+                nodeContext = model->findParentDSNode(knobParentItem);
+
+                bool drawInNodeRoot = itemIsVisibleFromOutside(nodeContext->getTreeItem());
+
+                if (drawInNodeRoot) {
+                    double newCenterY = hierarchyView->getItemRect(nodeContext).center().y();
+                    zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, newCenterY));
+
+                    drawTexturedKeyframe(rootKfTexType, zoomKfRect);
                 }
             }
         }
@@ -2336,8 +2337,6 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
             y = firstVisibleParentCenterY(keyItem);
         }
 
-        assert(y != 0);
-
         ys.insert(y);
     }
 
@@ -2347,7 +2346,14 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
 
     // Adjust the bottom to the node item top
     QTreeWidgetItem *topMostItem = hierarchyView->itemAt(0, *(ys.begin()));
-    QTreeWidgetItem *topMostItemNodeItem = model->findParentDSNode(topMostItem)->getTreeItem();
+    DSNode *parentDSNode = model->findParentDSNode(topMostItem);
+
+    if (!parentDSNode) {
+        return;
+    }
+
+    QTreeWidgetItem *topMostItemNodeItem = parentDSNode->getTreeItem();
+
     double bottom = hierarchyView->visualItemRect(topMostItemNodeItem).top();
 
     double left = *(keyTimes.begin());
@@ -2502,28 +2508,30 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     NodePtr node = group->getInternalNode();
 
     FrameRange range;
-
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
+    std::set<double> times;
 
     NodeList nodes = dynamic_cast<NodeGroup *>(node->getLiveInstance())->getNodes();
 
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it);
 
-        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
-
-
-        if (!nodeGui->getSettingPanel() || !nodeGui->getSettingPanel()->isVisible()) {
+        if (!model->findDSNode(node.get())) {
             continue;
         }
 
-        const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getKnobs();
+        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
 
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+        if (!nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible()) {
+            continue;
+        }
+
+        const KnobsAndGuis &knobs = nodeGui->getKnobs();
+
+        for (KnobsAndGuis::const_iterator it = knobs.begin();
              it != knobs.end();
              ++it) {
-            boost::shared_ptr<KnobI> knob = (*it);
+            KnobGui *knobGui = (*it).second;
+            boost::shared_ptr<KnobI> knob = knobGui->getKnob();
 
             if (!knob->isAnimationEnabled() || !knob->hasAnimation()) {
                 continue;
@@ -2536,20 +2544,20 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
                         continue;
                     }
 
-                    dimFirstKeys.push_back(keyframes.begin()->getTime());
-                    dimLastKeys.push_back(keyframes.rbegin()->getTime());
+                    times.insert(keyframes.begin()->getTime());
+                    times.insert(keyframes.rbegin()->getTime());
                 }
             }
         }
     }
 
-    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
+    if (times.size() <= 1) {
         range.first = 0;
         range.second = 0;
     }
     else {
-        range.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-        range.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+        range.first = *times.begin();
+        range.second = *times.rbegin();
     }
 
     nodeRanges[group] = range;
@@ -2964,8 +2972,6 @@ void DopeSheetView::redraw()
 {
     running_in_main_thread();
 
-    qDebug() << "redraw";
-
     update();
 }
 
@@ -3167,8 +3173,6 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
     Q_UNUSED(sTime);
     Q_UNUSED(reason);
 
-    qDebug() << "DopeSheetView::onTimeLineFrameChanged";
-
     running_in_main_thread();
 
     if (_imp->gui->isGUIFrozen()) {
@@ -3182,7 +3186,6 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 
 void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 {
-    qDebug() << "DopeSheetView::onTimeLineBoundariesChanged";
     running_in_main_thread();
 
     redraw();
@@ -3281,7 +3284,6 @@ void DopeSheetView::onNodeAboutToBeRemoved(DSNode *dsNode)
 
 void DopeSheetView::onKeyframeChanged()
 {
-    qDebug() << "DopeSheetView::onKeyframeChanged";
     QObject *signalSender = sender();
 
     DSNode *dsNode = 0;
@@ -3324,10 +3326,6 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 
 void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
 {
-    Q_UNUSED(item);
-
-    qDebug() << "DopeSheetView::onHierarchyViewItemExpandedOrCollapsed";
-
     // Compute the range rects of affected items
     if (DSNode *dsNode = _imp->model->findParentDSNode(item)) {
         _imp->computeRangesBelow(dsNode);
@@ -3352,7 +3350,6 @@ void DopeSheetView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
 
 void DopeSheetView::onKeyframeSelectionChanged()
 {
-    qDebug() << "DopeSheetView::onKeyframeSelectionChanged";
     _imp->computeSelectedKeysBRect();
 
     redraw();

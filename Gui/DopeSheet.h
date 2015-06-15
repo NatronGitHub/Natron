@@ -50,6 +50,9 @@ typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRows;
 // typedefs
 
 
+bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);
+
+
 /**
  * @brief The DopeSheet class
  *
@@ -60,8 +63,6 @@ class DopeSheet: public QObject
     Q_OBJECT
 
 public:
-    typedef QTreeWidgetItem TreeItem;
-
     enum ItemType
     {
         ItemTypeCommon = 1001,
@@ -205,7 +206,7 @@ public:
     KnobGui *getKnobGui() const;
     boost::shared_ptr<KnobI> getInternalKnob() const;
 
-    bool isMultiDim() const;
+    bool isMultiDimRoot() const;
     int getDimension() const;
 
 private:
