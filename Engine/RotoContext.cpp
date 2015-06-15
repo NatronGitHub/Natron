@@ -5550,7 +5550,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
             double tp = xp.getTime();
             double tpp = xpp.getTime();
             if ( t != tp && tp != tpp && ((t - tp) > (tp - tpp))) {
-                printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
+                //printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
                 // add a keyframe to avoid overshoot when the pen stops suddenly and starts again much later
                 KeyFrame yp, ypp;
                 valid = _imp->yCurve.getKeyFrameWithIndex(nk - 1, &yp);
