@@ -111,20 +111,28 @@ bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
     return false;
 }
 
-QTreeWidgetItem *firstParentCollapsed(QTreeWidgetItem * item)
+int firstVisibleParentCenterY(QTreeWidgetItem * item)
 {
-    QTreeWidgetItem *it = item;
+    int ret = 0;
 
-    while (QTreeWidgetItem *itParent = it->parent()) {
-        if (!itParent->isExpanded()) {
-            return itParent;
+    QTreeWidgetItem *it = item->parent();
+
+    while (it) {
+        assert(it->treeWidget());
+
+        QRect itemRect = it->treeWidget()->visualItemRect(it);
+
+        if (itemRect.isNull()) {
+            it = it->parent();
         }
         else {
-            it = itParent;
+            ret = itemRect.center().y();
+
+            break;
         }
     }
 
-    return NULL;
+    return ret;
 }
 
 QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item)
@@ -2317,17 +2325,28 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
 
         QRect keyItemRect = hierarchyView->visualItemRect(keyItem);
 
+        double y;
+
         if (!keyItemRect.isNull() && !keyItemRect.isEmpty()) {
-            ys.insert(keyItemRect.center().y());
+            y = keyItemRect.center().y();
         }
         else {
-            QTreeWidgetItem *fpc = firstParentCollapsed(keyItem);
-            ys.insert(hierarchyView->visualItemRect(fpc).center().y());
+            y = firstVisibleParentCenterY(keyItem);
         }
+
+        assert(y != 0);
+
+        ys.insert(y);
     }
 
-    double bottom = *(ys.begin());
-    double top = *(ys.rbegin());
+    // Adjust the top to the associated item bottom
+    QTreeWidgetItem *bottomMostItem = hierarchyView->itemAt(0, *(ys.rbegin()));
+    double top = hierarchyView->visualItemRect(bottomMostItem).bottom();
+
+    // Adjust the bottom to the node item top
+    QTreeWidgetItem *topMostItem = hierarchyView->itemAt(0, *(ys.begin()));
+    QTreeWidgetItem *topMostItemNodeItem = model->findParentDSNode(topMostItem)->getTreeItem();
+    double bottom = hierarchyView->visualItemRect(topMostItemNodeItem).top();
 
     double left = *(keyTimes.begin());
     double right = *(keyTimes.rbegin());
@@ -2339,13 +2358,10 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
     selectedKeysBRect.setBottomRight(bottomRight);
 
     if (!selectedKeysBRect.isNull()) {
-        const int SELECTED_KF_BBOX_BOUNDS_OFFSET = 4;
-
         double xAdjustOffset = (zoomContext.toZoomCoordinates(left, 0).x() -
                                 zoomContext.toZoomCoordinates(left - KF_X_OFFSET, 0).x());
 
-        selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
-                                 xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
+        selectedKeysBRect.adjust(-xAdjustOffset, 0, xAdjustOffset, 0);
     }
 }
 
