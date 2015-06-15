@@ -277,8 +277,7 @@ public:
     void drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const;
     void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
-    void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow,
-                                  QTreeWidgetItem *item, const QRect &rowRect) const;
+    void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow, const QRect &rowRect) const;
 
     // keyframe selection
     void selectSelectedKeyframesItems(bool selected);
@@ -609,8 +608,8 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
                 rowRect.right(), rowRect.top() + lineWidth - 1);
 }
 
-void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow,
-                                                    QTreeWidgetItem *item, const QRect &rowRect) const
+void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
+                                                    DSNode *nodeBelow, const QRect &rowRect) const
 {
     int lineWidth = (NODE_SEPARATION_WIDTH / 2);
     int lineBegin = q_ptr->rect().left();
@@ -888,7 +887,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
         }
 
         if (DSNode *nodeBelow = _imp->itemBelowIsNode(item)) {
-            _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, item, rowRect);
+            _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, rowRect);
         }
 
         painter->restore();
