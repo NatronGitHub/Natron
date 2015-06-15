@@ -377,24 +377,27 @@ public:
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
                 lastAge = mergeNode->getStrokeImageAge();
-                activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &newAge);
-                if (lastAge == -1) {
-                    wholeStrokeRod = lastStrokeBbox;
-                } else {
-                    wholeStrokeRod = mergeNode->getPaintStrokeRoD_duringPainting();
-                    wholeStrokeRod.merge(lastStrokeBbox);
-                }
-                
-                for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                    
-                    bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
-                    
-                    (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
-                    if (isStrokeNode) {
-                        (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &newAge)) {
+                    if (lastAge == -1) {
+                        wholeStrokeRod = lastStrokeBbox;
+                    } else {
+                        wholeStrokeRod = mergeNode->getPaintStrokeRoD_duringPainting();
+                        wholeStrokeRod.merge(lastStrokeBbox);
                     }
+                    
+                    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                        
+                        bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
+                        
+                        (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
+                        if (isStrokeNode) {
+                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
+                        }
+                    }
+                    updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
+                } else {
+                    rotoNode.reset();
                 }
-                updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
             }
         }
         

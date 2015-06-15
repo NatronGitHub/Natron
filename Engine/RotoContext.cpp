@@ -5665,6 +5665,9 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
     KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
     KeyFrameSet pCurve = _imp->pressureCurve.getKeyFrames_mt_safe();
     
+    if (xCurve.empty()) {
+        return false;
+    }
     if (lastAge == -1) {
         lastAge = 0;
     }

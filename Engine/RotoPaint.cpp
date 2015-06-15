@@ -286,7 +286,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     args.mappedScale,
                                     mipMapLevel,
                                     args.view,
-                                    false,
+                                    args.byPassCache,
                                     args.roi,
                                     RectD(),
                                     neededComps,

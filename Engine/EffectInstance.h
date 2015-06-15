@@ -772,6 +772,7 @@ public:
         bool isRenderResponseToUserInteraction;
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
+        bool byPassCache;
     };
 
 protected:
@@ -1550,6 +1551,7 @@ private:
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
+                                          bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels);
@@ -1660,6 +1662,7 @@ private:
         double par;
         Natron::ImageBitDepthEnum outputClipPrefDepth;
         std::list<Natron::ImageComponents> outputClipPrefsComps;
+        bool byPassCache;
         bool* processChannels;
         ImagePlanesToRender planes;
     };
@@ -1683,6 +1686,7 @@ private:
                                                   int time,
                                                   int view,
                                                   const double par,
+                                                  bool byPassCache,
                                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                                   bool* processChannels,
@@ -1721,6 +1725,7 @@ private:
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
                                           const RectI & downscaledRectToRender,
+                                          bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels,

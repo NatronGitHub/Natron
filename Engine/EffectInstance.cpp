@@ -3307,6 +3307,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                               nodeHash,
                                               renderFullScaleThenDownscale,
                                               renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                              byPassCache,
                                               outputDepth,
                                               outputClipPrefComps,
                                               processChannels);
@@ -3668,6 +3669,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   U64 nodeHash,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
+                                  bool byPassCache,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                   bool* processChannels)
@@ -3828,6 +3830,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.time = time;
             tiledArgs.view = view;
             tiledArgs.par = par;
+            tiledArgs.byPassCache = byPassCache;
             tiledArgs.outputClipPrefDepth = outputClipPrefDepth;
             tiledArgs.outputClipPrefsComps = outputClipPrefsComps;
             tiledArgs.processChannels = processChannels;
@@ -3878,7 +3881,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 
                 
                 
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
                 
                 if (functorRet == eRenderingFunctorRetFailed || functorRet == eRenderingFunctorRetAborted) {
                     renderStatus = functorRet;
@@ -3933,6 +3936,7 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const Re
                                 args.time,
                                 args.view,
                                 args.par,
+                                args.byPassCache,
                                 args.outputClipPrefDepth,
                                 args.outputClipPrefsComps,
                                 args.processChannels,
@@ -3956,6 +3960,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       int time,
                                       int view,
                                       const double par,
+                                      bool byPassCache,
                                       Natron::ImageBitDepthEnum outputClipPrefDepth,
                                       const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                       bool* processChannels,
@@ -4214,6 +4219,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         isSequentialRender,
                                                         isRenderResponseToUserInteraction,
                                                         downscaledRectToRender,
+                                                        byPassCache,
                                                         outputClipPrefDepth,
                                                         outputClipPrefsComps,
                                                         processChannels,
@@ -4244,6 +4250,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               bool isSequentialRender,
                               bool isRenderResponseToUserInteraction,
                               const RectI & downscaledRectToRender,
+                              bool byPassCache,
                               Natron::ImageBitDepthEnum outputClipPrefDepth,
                               const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                               bool* processChannels,
@@ -4270,6 +4277,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     
     RenderActionArgs actionArgs;
+    actionArgs.byPassCache = byPassCache;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();
