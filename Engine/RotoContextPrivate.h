@@ -1026,6 +1026,7 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Int_Knob> timeOffset;
     boost::shared_ptr<Choice_Knob> timeOffsetMode;
     Curve xCurve,yCurve,pressureCurve;
+    double curveT0; // timestamp of the first point in curve
     RectD bbox;
     
     /*
