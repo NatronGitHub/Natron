@@ -127,6 +127,31 @@ QTreeWidgetItem *firstParentCollapsed(QTreeWidgetItem * item)
     return NULL;
 }
 
+QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item)
+{
+    QTreeWidgetItem *ret = 0;
+
+    if (!item->childCount()) {
+        ret = item;
+    }
+
+    for (int i = item->childCount() - 1; i >= 0; --i) {
+        QTreeWidgetItem *child = item->child(i);
+
+        if (!child->isHidden()) {
+            ret = child;
+
+            break;
+        }
+    }
+
+    if (!ret) {
+        ret = item;
+    }
+
+    return ret;
+}
+
 } // anon namespace
 
 
@@ -967,6 +992,8 @@ public:
 
     double clampedMouseOffset(double fromTime, double toTime);
 
+    int getHeightForItemAndChildren(QTreeWidgetItem *item) const;
+
     // Textures
     void generateKeyframeTextures();
     DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
@@ -985,6 +1012,8 @@ public:
     void drawKeyframes(DSNode *dsNode) const;
 
     void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const;
+
+    void drawGroupOverlay(DSNode *dsNode, DSNode *group) const;
 
     void drawProjectBounds() const;
     void drawCurrentFrameIndicator();
@@ -1398,6 +1427,28 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
     return dt;
 }
 
+int DopeSheetViewPrivate::getHeightForItemAndChildren(QTreeWidgetItem *item) const
+{
+    assert(!item->isHidden());
+
+    // If the node item is collapsed
+    if (!item->isExpanded()) {
+        return hierarchyView->visualItemRect(item).height() + 1;
+    }
+
+    // Get the "bottom-most" item
+    QTreeWidgetItem *lastChild = lastVisibleChild(item);
+
+    if (lastChild->childCount() > 0 && lastChild->isExpanded()) {
+        lastChild = lastVisibleChild(lastChild);
+    }
+
+    int top = hierarchyView->visualItemRect(item).top();
+    int bottom = hierarchyView->visualItemRect(lastChild).bottom();
+
+    return (bottom - top) + 1;
+}
+
 void DopeSheetViewPrivate::generateKeyframeTextures()
 {
     kfTexturesImages[0].load(NATRON_IMAGES_PATH "interp_constant.png");
@@ -1622,6 +1673,10 @@ void DopeSheetViewPrivate::drawRows() const
                 DSKnob *dsKnob = (*it2).second;
 
                 drawKnobRow(dsKnob);
+            }
+
+            if (DSNode *group = model->getGroupDSNode(dsNode)) {
+                drawGroupOverlay(dsNode, group);
             }
 
             DopeSheet::ItemType nodeType = dsNode->getItemType();
@@ -1945,6 +2000,38 @@ void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTe
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_TEXTURE_2D);
+}
+
+void DopeSheetViewPrivate::drawGroupOverlay(DSNode *dsNode, DSNode *group) const
+{
+    // Get the overlay color
+    double r, g, b;
+    dsNode->getNodeGui()->getColor(&r, &g, &b);
+
+    // Compute the area to fill
+    int height = getHeightForItemAndChildren(dsNode->getTreeItem()) ;
+    QRectF nameItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
+    int top = nameItemRect.top();
+
+    FrameRange groupRange = nodeRanges.at(group);
+    int left = groupRange.first;
+
+    QRectF overlayRect = rectToZoomCoordinates(QRectF(left, top,
+                                                      (groupRange.second - groupRange.first), height));
+
+    // Perform drawing
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
+        glColor4f(r, g, b, 0.30f);
+
+        glBegin(GL_QUADS);
+        glVertex2f(overlayRect.left(), overlayRect.top());
+        glVertex2f(overlayRect.left(), overlayRect.bottom());
+        glVertex2f(overlayRect.right(), overlayRect.bottom());
+        glVertex2f(overlayRect.right(), overlayRect.top());
+        glEnd();
+    }
 }
 
 void DopeSheetViewPrivate::drawProjectBounds() const
