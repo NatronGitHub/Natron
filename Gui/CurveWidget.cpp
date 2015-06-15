@@ -2863,6 +2863,11 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
             return;
         }
         std::vector<KeyFrame> keys(1);
+        if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesTimeClampedToIntegers()) {
+            xCurve = std::floor(xCurve + 0.5);
+        } else if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
+            xCurve = double((bool)xCurve);
+        }
         keys[0] = KeyFrame(xCurve,yCurve);
         
        
