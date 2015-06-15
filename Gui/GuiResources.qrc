@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file alias="CHANGELOG.md">../CHANGELOG.md</file>
         <file alias="CONTRIBUTORS.txt">../CONTRIBUTORS.txt</file>
         <file alias="LICENSE.txt">../LICENSE.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
@@ -46,12 +47,16 @@
         <file>Resources/Images/GroupingIcons/Set3/transform_grouping_3.png</file>
         <file>Resources/Images/addKF.png</file>
         <file>Resources/Images/addPoints.png</file>
+        <file>Resources/Images/addTrack.png</file>
         <file>Resources/Images/autoKeyingDisabled.png</file>
         <file>Resources/Images/autoKeyingEnabled.png</file>
+        <file>Resources/Images/back1.png</file>
+        <file>Resources/Images/backdrop_icon.png</file>
         <file>Resources/Images/bezier.png</file>
         <file>Resources/Images/bezier32.png</file>
         <file>Resources/Images/bold_checked.png</file>
         <file>Resources/Images/bold_unchecked.png</file>
+        <file>Resources/Images/bounce.png</file>
         <file>Resources/Images/centerViewer.png</file>
         <file>Resources/Images/checkbox.png</file>
         <file>Resources/Images/checkbox_animation1_checked.png</file>
@@ -62,6 +67,10 @@
         <file>Resources/Images/checkbox_animation2_checked_hovered.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked.png</file>
         <file>Resources/Images/checkbox_animation2_unchecked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_checked.png</file>
+        <file>Resources/Images/checkbox_animation3_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked_hovered.png</file>
         <file>Resources/Images/checkbox_checked.png</file>
         <file>Resources/Images/checkbox_checked_hovered.png</file>
         <file>Resources/Images/checkbox_checked_readonly.png</file>
@@ -69,136 +78,60 @@
         <file>Resources/Images/checkbox_dirty_unchecked.png</file>
         <file>Resources/Images/checkbox_hovered.png</file>
         <file>Resources/Images/checkbox_unchecked_readonly.png</file>
+        <file>Resources/Images/checkerboard_off.png</file>
+        <file>Resources/Images/checkerboard_on.png</file>
         <file>Resources/Images/clearAnimation.png</file>
         <file>Resources/Images/clearAnimationBw.png</file>
         <file>Resources/Images/clearAnimationFw.png</file>
+        <file>Resources/Images/clearOutput.png</file>
+        <file>Resources/Images/cliptoprojectDisabled.png</file>
+        <file>Resources/Images/cliptoprojectEnabled.png</file>
         <file>Resources/Images/close.png</file>
         <file>Resources/Images/closePanel.png</file>
+        <file>Resources/Images/closeTab.png</file>
+        <file>Resources/Images/closeTab_hovered.png</file>
         <file>Resources/Images/color_picker.png</file>
         <file>Resources/Images/colorwheel.png</file>
+        <file>Resources/Images/colorwheel_overlay.png</file>
+        <file>Resources/Images/combobox.png</file>
         <file>Resources/Images/cursor.png</file>
         <file>Resources/Images/curve.png</file>
         <file>Resources/Images/cuspPoints.png</file>
+        <file>Resources/Images/diskcache_icon.png</file>
+        <file>Resources/Images/dot_icon.png</file>
         <file>Resources/Images/ellipse.png</file>
+        <file>Resources/Images/enter_group.png</file>
+        <file>Resources/Images/execScript.png</file>
+        <file>Resources/Images/expoOFF.png</file>
+        <file>Resources/Images/expoON.png</file>
         <file>Resources/Images/featherDisabled.png</file>
         <file>Resources/Images/featherEnabled.png</file>
         <file>Resources/Images/featherLinkDisabled.png</file>
         <file>Resources/Images/featherLinkEnabled.png</file>
         <file>Resources/Images/firstFrame.png</file>
         <file>Resources/Images/forward1.png</file>
+        <file>Resources/Images/gammaOFF.png</file>
+        <file>Resources/Images/gammaON.png</file>
+        <file>Resources/Images/group_icon.png</file>
         <file>Resources/Images/groupbox_folded.png</file>
         <file>Resources/Images/groupbox_unfolded.png</file>
         <file>Resources/Images/help.png</file>
+        <file>Resources/Images/hide_unmodified.png</file>
+        <file>Resources/Images/input_icon.png</file>
         <file>Resources/Images/inverted.png</file>
         <file>Resources/Images/italic_checked.png</file>
         <file>Resources/Images/italic_unchecked.png</file>
         <file>Resources/Images/lastFrame.png</file>
         <file>Resources/Images/layer.png</file>
         <file>Resources/Images/layout.png</file>
+        <file>Resources/Images/layout_anchor.png</file>
+        <file>Resources/Images/linkCursor.png</file>
+        <file>Resources/Images/loadAndExecScript.png</file>
+        <file>Resources/Images/loadProjectSplashscreen.png</file>
+        <file>Resources/Images/loadScript.png</file>
         <file>Resources/Images/locked.png</file>
         <file>Resources/Images/loopmode.png</file>
         <file>Resources/Images/maximize.png</file>
-        <file>Resources/Images/minimize.png</file>
-        <file>Resources/Images/natronIcon256_linux.png</file>
-        <file>Resources/Images/nextIncr.png</file>
-        <file>Resources/Images/nextKF.png</file>
-        <file>Resources/Images/open-file.png</file>
-        <file>Resources/Images/openCloseCurve.png</file>
-        <file>Resources/Images/openeffects.png</file>
-        <file>Resources/Images/play.png</file>
-        <file>Resources/Images/prevKF.png</file>
-        <file>Resources/Images/previousIncr.png</file>
-        <file>Resources/Images/readImage.png</file>
-        <file>Resources/Images/rectangle.png</file>
-        <file>Resources/Images/redo.png</file>
-        <file>Resources/Images/redo_grayscale.png</file>
-        <file>Resources/Images/refresh.png</file>
-        <file>Resources/Images/removeFeather.png</file>
-        <file>Resources/Images/removeKF.png</file>
-        <file>Resources/Images/removePoints.png</file>
-        <file>Resources/Images/renderScale.png</file>
-        <file>Resources/Images/renderScale_checked.png</file>
-        <file>Resources/Images/rewind.png</file>
-        <file>Resources/Images/rippleEditDisabled.png</file>
-        <file>Resources/Images/rippleEditEnabled.png</file>
-        <file>Resources/Images/scrollbarButton_down.png</file>
-        <file>Resources/Images/scrollbarButton_left.png</file>
-        <file>Resources/Images/scrollbarButton_right.png</file>
-        <file>Resources/Images/scrollbarButton_up.png</file>
-        <file>Resources/Images/scrollbarHandle_horizontal.png</file>
-        <file>Resources/Images/scrollbarHandle_vertical.png</file>
-        <file>Resources/Images/selectCurves.png</file>
-        <file>Resources/Images/selectFeather.png</file>
-        <file>Resources/Images/selectPoints.png</file>
-        <file>Resources/Images/smoothPoints.png</file>
-        <file>Resources/Images/splashscreen.png</file>
-        <file>Resources/Images/splitHorizontally.png</file>
-        <file>Resources/Images/splitVertically.png</file>
-        <file>Resources/Images/stickySelectionDisabled.png</file>
-        <file>Resources/Images/stickySelectionEnabled.png</file>
-        <file>Resources/Images/stop.png</file>
-        <file>Resources/Images/undo.png</file>
-        <file>Resources/Images/undo_grayscale.png</file>
-        <file>Resources/Images/uninverted.png</file>
-        <file>Resources/Images/unlocked.png</file>
-        <file>Resources/Images/unvisible.png</file>
-        <file>Resources/Images/updateViewerDisabled.png</file>
-        <file>Resources/Images/updateViewerEnabled.png</file>
-        <file>Resources/Images/visible.png</file>
-        <file>Resources/Images/writeImage.png</file>
-        <file>Resources/Stylesheets/mainstyle.qss</file>
-        <file>Resources/Images/cliptoprojectDisabled.png</file>
-        <file>Resources/Images/cliptoprojectEnabled.png</file>
-        <file>Resources/Images/restoreDefaultDisabled.png</file>
-        <file>Resources/Images/restoreDefaultEnabled.png</file>
-        <file>Resources/Images/viewer_roiDisabled.png</file>
-        <file>Resources/Images/viewer_roiEnabled.png</file>
-        <file>Resources/Images/layout_anchor.png</file>
-        <file>Resources/Images/settings.png</file>
-        <file>Resources/Images/bounce.png</file>
-        <file>Resources/Images/play_enabled.png</file>
-        <file>Resources/Images/playOnce.png</file>
-        <file>Resources/Images/rewind_enabled.png</file>
-        <file>Resources/Images/turbo_off.png</file>
-        <file>Resources/Images/turbo_on.png</file>
-        <file>Resources/Images/viewer_icon.png</file>
-        <file>Resources/Images/checkerboard_off.png</file>
-        <file>Resources/Images/checkerboard_on.png</file>
-        <file>Resources/Images/zebra_off.png</file>
-        <file>Resources/Images/zebra_on.png</file>
-        <file>Resources/Images/closeTab.png</file>
-        <file>Resources/Images/closeTab_hovered.png</file>
-        <file>Resources/Images/combobox.png</file>
-        <file>Resources/Images/pressed_combobox.png</file>
-        <file>Resources/Images/back1.png</file>
-        <file>Resources/Images/treeview_end.png</file>
-        <file>Resources/Images/treeview_more.png</file>
-        <file>Resources/Images/treeview_vline.png</file>
-        <file>Resources/Images/refreshActive.png</file>
-        <file>Resources/Images/checkbox_animation3_checked_hovered.png</file>
-        <file>Resources/Images/checkbox_animation3_checked.png</file>
-        <file>Resources/Images/checkbox_animation3_unchecked_hovered.png</file>
-        <file>Resources/Images/checkbox_animation3_unchecked.png</file>
-        <file>Resources/Images/hide_unmodified.png</file>
-        <file>Resources/Images/unhide_unmodified.png</file>
-        <file>../CHANGELOG.md</file>
-        <file>Resources/Images/natronProjectIcon_linux.png</file>
-        <file>Resources/Images/addTrack.png</file>
-        <file>Resources/Images/backdrop_icon.png</file>
-        <file>Resources/Images/diskcache_icon.png</file>
-        <file>Resources/Images/dot_icon.png</file>
-        <file>Resources/Images/colorwheel_overlay.png</file>
-        <file>Resources/Images/roto_merge.png</file>
-        <file>Resources/Images/clearOutput.png</file>
-        <file>Resources/Images/execScript.png</file>
-        <file>Resources/Images/loadAndExecScript.png</file>
-        <file>Resources/Images/loadScript.png</file>
-        <file>Resources/Images/nextScript.png</file>
-        <file>Resources/Images/outputPanelActivated.png</file>
-        <file>Resources/Images/outputPanelDeactivated.png</file>
-        <file>Resources/Images/previousScript.png</file>
-        <file>Resources/Images/saveScript.png</file>
-        <file>Resources/Images/loadProjectSplashscreen.png</file>
         <file>Resources/Images/merge_difference.png</file>
         <file>Resources/Images/merge_divide.png</file>
         <file>Resources/Images/merge_matte.png</file>
@@ -209,15 +142,43 @@
         <file>Resources/Images/merge_over.png</file>
         <file>Resources/Images/merge_plus.png</file>
         <file>Resources/Images/merge_screen.png</file>
-        <file>Resources/Images/group_icon.png</file>
-        <file>Resources/Images/input_icon.png</file>
+        <file>Resources/Images/minimize.png</file>
+        <file>Resources/Images/natronIcon256_linux.png</file>
+        <file>Resources/Images/natronProjectIcon_linux.png</file>
+        <file>Resources/Images/nextIncr.png</file>
+        <file>Resources/Images/nextKF.png</file>
+        <file>Resources/Images/nextScript.png</file>
+        <file>Resources/Images/open-file.png</file>
+        <file>Resources/Images/openCloseCurve.png</file>
+        <file>Resources/Images/openeffects.png</file>
+        <file>Resources/Images/outputPanelActivated.png</file>
+        <file>Resources/Images/outputPanelDeactivated.png</file>
         <file>Resources/Images/output_icon.png</file>
-        <file>Resources/Images/enter_group.png</file>
-        <file>Resources/Images/gammaOFF.png</file>
-        <file>Resources/Images/gammaON.png</file>
-        <file>Resources/Images/linkCursor.png</file>
-        <file>Resources/Images/expoOFF.png</file>
-        <file>Resources/Images/expoON.png</file>
+        <file>Resources/Images/play.png</file>
+        <file>Resources/Images/playOnce.png</file>
+        <file>Resources/Images/play_enabled.png</file>
+        <file>Resources/Images/pressed_combobox.png</file>
+        <file>Resources/Images/prevKF.png</file>
+        <file>Resources/Images/previousIncr.png</file>
+        <file>Resources/Images/previousScript.png</file>
+        <file>Resources/Images/readImage.png</file>
+        <file>Resources/Images/rectangle.png</file>
+        <file>Resources/Images/redo.png</file>
+        <file>Resources/Images/redo_grayscale.png</file>
+        <file>Resources/Images/refresh.png</file>
+        <file>Resources/Images/refreshActive.png</file>
+        <file>Resources/Images/removeFeather.png</file>
+        <file>Resources/Images/removeKF.png</file>
+        <file>Resources/Images/removePoints.png</file>
+        <file>Resources/Images/renderScale.png</file>
+        <file>Resources/Images/renderScale_checked.png</file>
+        <file>Resources/Images/restoreDefaultDisabled.png</file>
+        <file>Resources/Images/restoreDefaultEnabled.png</file>
+        <file>Resources/Images/rewind.png</file>
+        <file>Resources/Images/rewind_enabled.png</file>
+        <file>Resources/Images/rippleEditDisabled.png</file>
+        <file>Resources/Images/rippleEditEnabled.png</file>
+        <file>Resources/Images/roto_merge.png</file>
         <file>Resources/Images/rotopaint_blur.png</file>
         <file>Resources/Images/rotopaint_buildup_off.png</file>
         <file>Resources/Images/rotopaint_buildup_on.png</file>
@@ -231,5 +192,44 @@
         <file>Resources/Images/rotopaint_sharpen.png</file>
         <file>Resources/Images/rotopaint_smear.png</file>
         <file>Resources/Images/rotopaint_solid.png</file>
+        <file>Resources/Images/saveScript.png</file>
+        <file>Resources/Images/scrollbarButton_down.png</file>
+        <file>Resources/Images/scrollbarButton_left.png</file>
+        <file>Resources/Images/scrollbarButton_right.png</file>
+        <file>Resources/Images/scrollbarButton_up.png</file>
+        <file>Resources/Images/scrollbarHandle_horizontal.png</file>
+        <file>Resources/Images/scrollbarHandle_vertical.png</file>
+        <file>Resources/Images/selectCurves.png</file>
+        <file>Resources/Images/selectFeather.png</file>
+        <file>Resources/Images/selectPoints.png</file>
+        <file>Resources/Images/settings.png</file>
+        <file>Resources/Images/smoothPoints.png</file>
+        <file>Resources/Images/splashscreen.png</file>
+        <file>Resources/Images/splitHorizontally.png</file>
+        <file>Resources/Images/splitVertically.png</file>
+        <file>Resources/Images/stickySelectionDisabled.png</file>
+        <file>Resources/Images/stickySelectionEnabled.png</file>
+        <file>Resources/Images/stop.png</file>
+        <file>Resources/Images/treeview_end.png</file>
+        <file>Resources/Images/treeview_more.png</file>
+        <file>Resources/Images/treeview_vline.png</file>
+        <file>Resources/Images/turbo_off.png</file>
+        <file>Resources/Images/turbo_on.png</file>
+        <file>Resources/Images/undo.png</file>
+        <file>Resources/Images/undo_grayscale.png</file>
+        <file>Resources/Images/unhide_unmodified.png</file>
+        <file>Resources/Images/uninverted.png</file>
+        <file>Resources/Images/unlocked.png</file>
+        <file>Resources/Images/unvisible.png</file>
+        <file>Resources/Images/updateViewerDisabled.png</file>
+        <file>Resources/Images/updateViewerEnabled.png</file>
+        <file>Resources/Images/viewer_icon.png</file>
+        <file>Resources/Images/viewer_roiDisabled.png</file>
+        <file>Resources/Images/viewer_roiEnabled.png</file>
+        <file>Resources/Images/visible.png</file>
+        <file>Resources/Images/writeImage.png</file>
+        <file>Resources/Images/zebra_off.png</file>
+        <file>Resources/Images/zebra_on.png</file>
+        <file>Resources/Stylesheets/mainstyle.qss</file>
     </qresource>
 </RCC>
