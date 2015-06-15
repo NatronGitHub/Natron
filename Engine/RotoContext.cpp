@@ -5524,24 +5524,21 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
                _imp->xCurve.getKeyFramesCount() == _imp->pressureCurve.getKeyFramesCount());
         int nk = _imp->xCurve.getKeyFramesCount();
 
-#if 1
-        double t = nk;
-#pragma message WARN("TODO: use timestamp for roto time")
-#else
         double t;
         if (nk == 0) {
             t = 0.;
+            // set time origin for this curve
+            _imp->curveT0 = p.timestamp;
         } else if (p.timestamp == 0.) {
             t = nk; // some systems may not have a proper timestamp use a dummy one
         } else {
-            // TODO: subtract t0, the timestamp of the first point in the stroke
-            t = p.timestamp - t0;
+            t = p.timestamp - _imp->curveT0;
         }
-        printf("t=%g\n",t);
-#endif
+        //printf("t=%g\n",t);
 
         // if it's at least the 3rd point in curve, add intermediate point if
         // the time since last keyframe is larger that the time to the previous one...
+        // This avoids overshooting when the pen suddenly stops, and restarts much later
         if (nk >= 2) {
             KeyFrame xp, xpp;
             bool valid;
@@ -5552,7 +5549,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
 
             double tp = xp.getTime();
             double tpp = xpp.getTime();
-            if ( tp != tpp && ((t - tp) > (tp - tpp))) {
+            if ( t != tp && tp != tpp && ((t - tp) > (tp - tpp))) {
                 printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
                 // add a keyframe to avoid overshoot when the pen stops suddenly and starts again much later
                 KeyFrame yp, ypp;
@@ -5567,7 +5564,8 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
                 assert(valid);
                 double tn = tp + (tp - tpp);
                 KeyFrame xn, yn, pn;
-                double alpha = (t - tp)/(tp - tpp);
+                double alpha = (tp - tpp)/(t - tp);
+                assert(0 < alpha && alpha < 1);
                 xn.setTime(tn);
                 yn.setTime(tn);
                 pn.setTime(tn);
@@ -5575,14 +5573,11 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
                 yn.setValue(yp.getValue()*(1-alpha)+p.pos.y*alpha);
                 pn.setValue(pp.getValue()*(1-alpha)+p.pressure*alpha);
                 _imp->xCurve.addKeyFrame(xn);
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
                 _imp->yCurve.addKeyFrame(yn);
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
                 _imp->pressureCurve.addKeyFrame(pn);
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
                 ++nk;
             }
         }
