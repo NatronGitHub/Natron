@@ -21,6 +21,7 @@
 #include <limits>
 
 #include <QLineF>
+#include <QtDebug>
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -5526,6 +5527,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
 
         double t;
         if (nk == 0) {
+            qDebug() << "start stroke!";
             t = 0.;
             // set time origin for this curve
             _imp->curveT0 = p.timestamp;
@@ -5534,7 +5536,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         } else {
             t = p.timestamp - _imp->curveT0;
         }
-        //printf("t=%g\n",t);
+        qDebug("t[%d]=%g",nk,t);
 
         // if it's at least the 3rd point in curve, add intermediate point if
         // the time since last keyframe is larger that the time to the previous one...
