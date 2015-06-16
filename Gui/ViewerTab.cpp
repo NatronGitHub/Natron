@@ -1201,6 +1201,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     refreshLayerAndAlphaChannelComboBox();
     
     QTimer::singleShot(25, _imp->timeLineGui, SLOT(recenterOnBounds()));
+    
+    
+    //Refresh the viewport lock state
+    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    if (!viewers.empty()) {
+        ViewerTab* other = viewers.front();
+        if (other->isViewersSynchroEnabled()) {
+            double left,bottom,factor,par;
+            other->getViewer()->getProjection(&left, &bottom, &factor, &par);
+            _imp->viewer->setProjection(left, bottom, factor, par);
+            _imp->syncViewerButton->setDown(true);
+            _imp->syncViewerButton->setChecked(true);
+        }
+    }
 
 }
 
