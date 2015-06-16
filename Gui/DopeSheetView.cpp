@@ -2431,6 +2431,10 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
                      startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
 
     nodeRanges[reader] = range;
+
+    if (DSNode *isInGroup = model->getGroupDSNode(reader)) {
+        computeGroupRange(isInGroup);
+    }
 }
 
 void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
@@ -2523,6 +2527,26 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 
         if (!nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible()) {
             continue;
+        }
+
+        std::string pluginID = node->getPluginID();
+
+        if (pluginID == PLUGINID_OFX_READOIIO ||
+                pluginID == PLUGINID_OFX_READFFMPEG ||
+                pluginID == PLUGINID_OFX_READPFM) {
+            Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get());
+            assert(startingTimeKnob);
+            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+            assert(firstFrameKnob);
+            Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+            assert(lastFrameKnob);
+
+            int startingTimeValue = startingTimeKnob->getValue();
+            int firstFrameValue = firstFrameKnob->getValue();
+            int lastFrameValue = lastFrameKnob->getValue();
+
+            times.insert(startingTimeValue);
+            times.insert(startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
         }
 
         const KnobsAndGuis &knobs = nodeGui->getKnobs();
