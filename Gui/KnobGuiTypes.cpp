@@ -203,13 +203,13 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0,false),
-                                         ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeInt,getGui(),Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+        QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
         
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
@@ -455,16 +455,18 @@ Int_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Int_KnobGui::onSliderEditingFinished()
+Int_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
-    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-
-    if (!penUpOnly) {
-        return;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        sliderEditingEnd(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
     }
-    double d = _slider->getPosition();
-    sliderEditingEnd(d);
 }
 
 void
@@ -1028,13 +1030,13 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0,false),
-                                         ScaleSliderQWidget::eDataTypeDouble, Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeDouble,getGui(), Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
+        QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
         containerLayout->addWidget(_slider);
         sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
         onDisplayMinMaxChanged(dispmin, dispmax);
@@ -1284,16 +1286,18 @@ Double_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Double_KnobGui::onSliderEditingFinished()
+Double_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
-    bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-
-    if (!penUpOnly) {
-        return;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        sliderEditingEnd(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
     }
-    double d = _slider->getPosition();
-    sliderEditingEnd(d);
 }
 
 void
@@ -1846,6 +1850,7 @@ void
 Choice_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new ComboBox( layout->parentWidget() );
+    _comboBox->setCascading(_knob.lock()->isCascading());
     onEntriesPopulated();
 
     QObject::connect( _comboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );
@@ -2273,9 +2278,10 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         slidermax = 1.;
     }
     _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0,false),
-                                     ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear, boxContainers);
+                                     ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
+    QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
     _slider->hide();
     
     colorContainer = new QWidget(mainContainer);
@@ -2285,6 +2291,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setSpacing(0);
     
     _colorLabel = new ColorPickerLabel(this,colorContainer);
+    _colorLabel->setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+                                                       "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
+                                                       "To deselect the picker left click anywhere."
+                                                       "Note that by default %1 converts to linear the color picked\n"
+                                                       "because all the processing pipeline is linear, but you can turn this off in the\n"
+                                                       "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
+
     _colorLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
@@ -2371,6 +2384,21 @@ Color_KnobGui::onSliderValueChanged(double v)
         }
     }
     onColorChanged();
+}
+
+void
+Color_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
+{
+    assert(_knob.lock()->isEnabled(0));
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+    bool autoProxyEnabled = settings->isAutoProxyEnabled();
+    if (onEditingFinishedOnly) {
+        double v = _slider->getPosition();
+        onSliderValueChanged(v);
+    } else if (autoProxyEnabled && hasMovedOnce) {
+        getGui()->renderAllViewers();
+    }
 }
 
 void
@@ -2951,18 +2979,15 @@ ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
       , _pickingEnabled(false)
     , _knob(knob)
 {
-    setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
-                                            "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
-                                            "To deselect the picker left click anywhere."
-                                            "Note that by default %1 converts to linear the color picked\n"
-                                            "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                            "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
     setMouseTracking(true);
 }
 
 void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
+    if (!_knob) {
+        return;
+    }
     _pickingEnabled = !_pickingEnabled;
     Q_EMIT pickingEnabled(_pickingEnabled);
     setColor(_currentColor); //< refresh the icon
@@ -2997,7 +3022,9 @@ ColorPickerLabel::setEnabledMode(bool enabled)
     if (!enabled && _pickingEnabled) {
         _pickingEnabled = false;
         setColor(_currentColor);
-        _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+        if (_knob) {
+            _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+        }
     }
 }
 
@@ -3006,7 +3033,7 @@ ColorPickerLabel::setColor(const QColor & color)
 {
     _currentColor = color;
 
-    if (_pickingEnabled) {
+    if (_pickingEnabled && _knob) {
         //draw the picker on top of the label
         QPixmap pickerIcon;
         appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerIcon);
@@ -3265,7 +3292,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont(QApplication::font());
-            _fontCombo->setToolTip( tr("Font") );
+            _fontCombo->setToolTip(Qt::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontCombo);
 
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -3273,7 +3300,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect( _fontSizeSpinBox,SIGNAL( valueChanged(double) ),this,SLOT( onFontSizeChanged(double) ) );
-            _fontSizeSpinBox->setToolTip( tr("Font size") );
+            _fontSizeSpinBox->setToolTip(Qt::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
 
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -3286,7 +3313,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip( tr("Bold") );
+            _setBoldButton->setToolTip(Qt::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect( _setBoldButton,SIGNAL( clicked(bool) ),this,SLOT( boldChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -3297,7 +3324,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
-            _setItalicButton->setToolTip( tr("Italic") );
+            _setItalicButton->setToolTip(Qt::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect( _setItalicButton,SIGNAL( clicked(bool) ),this,SLOT( italicChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -3306,7 +3333,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
-            _fontColorButton->setToolTip( tr("Font color") );
+            _fontColorButton->setToolTip(Qt::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );
             _richTextOptionsLayout->addWidget(_fontColorButton);

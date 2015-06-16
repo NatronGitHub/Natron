@@ -278,7 +278,11 @@ public:
     
     static void extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees);
     
-
+    void closeProject(bool aboutToQuit)
+    {
+        reset(aboutToQuit);
+    }
+    
 public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();
@@ -286,7 +290,7 @@ public Q_SLOTS:
     ///Closes the project, clearing all nodes and reseting the project name
     void closeProject()
     {
-        reset();
+        closeProject(false);
     }
     
     void onAutoSaveFutureFinished();
@@ -324,7 +328,7 @@ private:
     /**
      * @brief Resets the project state clearing all nodes and the project name.
      **/
-    void reset();
+    void reset(bool aboutToQuit);
 
     /**
      * @brief Must be implemented to initialize any knob using the

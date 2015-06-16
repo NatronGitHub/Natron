@@ -33,6 +33,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ticks.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/Gui.h"
 
 #define TICK_HEIGHT 7
 #define SLIDER_WIDTH 4
@@ -41,7 +42,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 struct ScaleSliderQWidgetPrivate
 {
-    
+    Gui* gui;
     ZoomContext zoomCtx;
     QPointF oldClick;
     double minimum,maximum;
@@ -66,9 +67,11 @@ struct ScaleSliderQWidgetPrivate
                               double min,
                               double max,
                               double initialPos,
+                              Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
                               Natron::ScaleTypeEnum type)
-    : zoomCtx()
+    : gui(gui)
+    , zoomCtx()
     , oldClick()
     , minimum(min)
     , maximum(max)
@@ -96,10 +99,11 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
                                        DataTypeEnum dataType,
+                                       Gui* gui,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,dataType,type))
+    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,gui,dataType,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
@@ -176,6 +180,9 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
         QPoint newClick =  e->pos();
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
+        if (_imp->gui) {
+            _imp->gui->setUserScrubbingSlider(true);
+        }
         seekInternal(v);
     }
 }
@@ -184,7 +191,12 @@ void
 ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
-        Q_EMIT editingFinished();
+        bool hasMoved = true;
+        if (_imp->gui) {
+            hasMoved = _imp->gui->isUserScrubbingSlider();
+            _imp->gui->setUserScrubbingSlider(false);
+        }
+        Q_EMIT editingFinished(hasMoved);
     }
     QWidget::mouseReleaseEvent(e);
 }

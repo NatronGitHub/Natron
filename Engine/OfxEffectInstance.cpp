@@ -52,6 +52,8 @@
 #include "Engine/Node.h"
 #include "Engine/Transform.h"
 
+#define READER_INPUT_NAME "Sync"
+
 using namespace Natron;
 using std::cout; using std::endl;
 
@@ -132,9 +134,9 @@ public:
                 if (!it->second.empty()) {
                     const ImagePtr& img = it->second.front();
                     assert(img);
-                    effect->setInputClipPlane(it->first, img->getComponents());
+                    effect->setInputClipPlane(it->first, true, img->getComponents());
                 } else {
-                    effect->setInputClipPlane(it->first, ImageComponents::getNoneComponents());
+                    effect->setInputClipPlane(it->first, false, ImageComponents::getNoneComponents());
                 }
             }
         }
@@ -144,7 +146,7 @@ public:
         if (planeSet) {
             effect->discardClipsPlaneBeingRendered();
         }
-        if (skipDiscarding) {
+        if (!skipDiscarding) {
             //Make sure that the images being rendered TLS is being cleared otherwise it will crash
             OFX::Host::ImageEffect::ClipInstance* ofxClip  = effect->getClip(kOfxImageEffectOutputClipName);
             assert(ofxClip);
@@ -170,7 +172,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 , _created(false)
 , _initialized(false)
 , _renderButton()
-, _renderSafety(EffectInstance::eRenderSafetyUnsafe)
+, _renderSafety(Natron::eRenderSafetyUnsafe)
 , _wasRenderSafetySet(false)
 , _renderSafetyLock(new QReadWriteLock)
 , _context(eContextNone)
@@ -826,7 +828,11 @@ OfxEffectInstance::getInputLabel(int inputNb) const
 
     MappedInputV copy = inputClipsCopyWithoutOutput();
     if ( inputNb < (int)copy.size() ) {
-        return copy[inputNb]->getShortLabel();
+        if (_context != eContextReader) {
+            return copy[inputNb]->getShortLabel();
+        } else {
+            return READER_INPUT_NAME;
+        }
     } else {
         return EffectInstance::getInputLabel(inputNb);
     }
@@ -1173,13 +1179,13 @@ clipPrefsProxy(OfxEffectInstance* self,
         assert(foundClipPrefs != clipPrefs.end());
         
         ///Set the clip to have the same components as the output components if it is supported
-        if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+        /*if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
             ///we only take into account non mask clips for the most components
             if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
                 foundClipPrefs->second.components = foundOutputPrefs->second.components;
                 hasChanged = true;
             }
-        }
+        }*/
         
         if (instance) {
             
@@ -1500,7 +1506,6 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     }
 
     RectD::ofxRectDToRectD(ofxRod, rod);
-
     return eStatusOK;
 
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
@@ -1625,43 +1630,31 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         throw std::runtime_error("getFramesNeeded action failed");
     }
-    if (stat != kOfxStatReplyDefault) {
-        
-        for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-            assert(clip);
-            if (clip) {
-                EffectInstance* inputNode = clip->getAssociatedNode();
-                RectD inputRoi; // input RoI in canonical coordinates
-                inputRoi.x1 = it->second.x1;
-                inputRoi.x2 = it->second.x2;
-                inputRoi.y1 = it->second.y1;
-                inputRoi.y2 = it->second.y2;
-
-                ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
-                ///infinite rod.
-                ifInfiniteclipRectToProjectDefault(&inputRoi);
-                //if (!inputRoi.isNull()) {
-                    ret->insert( std::make_pair(inputNode,inputRoi) );
-                //}
-            }
-        }
-        
-    } else if (stat == kOfxStatReplyDefault) {
-        
-        const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = effectInstance()->getClips();
-        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            if (!it->second->isOutput()) {
-                OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
-                EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
-                if (inputNode) {
-                    ret->insert( std::make_pair(inputNode, renderWindow) );
-                }
-                assert(natronClip);
-            }
+    
+    //Default behaviour already handled in getRegionOfInterestAction
+    
+    for (std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin(); it != inputRois.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+        assert(clip);
+        if (clip) {
+            EffectInstance* inputNode = clip->getAssociatedNode();
+            RectD inputRoi; // input RoI in canonical coordinates
+            inputRoi.x1 = it->second.x1;
+            inputRoi.x2 = it->second.x2;
+            inputRoi.y1 = it->second.y1;
+            inputRoi.y2 = it->second.y2;
+            
+            ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
+            ///infinite rod.
+            ifInfiniteclipRectToProjectDefault(&inputRoi);
+            //if (!inputRoi.isNull()) {
+            ret->insert( std::make_pair(inputNode,inputRoi) );
+            //}
         }
     }
-
+    
+    
+    
 } // getRegionsOfInterest
 
 Natron::EffectInstance::FramesNeededMap
@@ -2040,7 +2033,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         RectI dstRod;
         dstRodCanonical.toPixelEnclosing(args.mappedScale, firstPlane.second->getPixelAspectRatio(), &dstRod);
 
-        if ( !supportsTiles() ) {
+        if ( !supportsTiles() && !isDuringPaintStrokeCreationThreadLocal()) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
             //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
             assert(dstRod.x1 == dstBounds.x1);
@@ -2093,8 +2086,22 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         
         
     }
-
+    
     if (stat != kOfxStatOK) {
+        
+        if (!getNode()->hasPersistentMessage()) {
+            QString err;
+            err.append(QObject::tr("Render failed: "));
+            if (stat == kOfxStatErrImageFormat) {
+                err.append(QObject::tr("Bad image format was supplied by "));
+                err.append(NATRON_APPLICATION_NAME);
+            } else if (stat == kOfxStatErrMemory) {
+                err.append(QObject::tr("Out of memory!"));
+            } else {
+                err.append(QObject::tr("Unknown failure reason"));
+            }
+            setPersistentMessage(Natron::eMessageTypeError, err.toStdString());
+        }
         return eStatusFailed;
     } else {
         return eStatusOK;
@@ -2107,7 +2114,7 @@ OfxEffectInstance::supportsMultipleClipsPAR() const
     return _effect->supportsMultipleClipPARs();
 }
 
-EffectInstance::RenderSafetyEnum
+Natron::RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
     {
@@ -2120,18 +2127,18 @@ OfxEffectInstance::renderThreadSafety() const
         QWriteLocker writeL(_renderSafetyLock);
         const std::string & safety = _effect->getRenderThreadSafety();
         if (safety == kOfxImageEffectRenderUnsafe) {
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _renderSafety = EffectInstance::eRenderSafetyInstanceSafe;
+            _renderSafety = Natron::eRenderSafetyInstanceSafe;
         } else if (safety == kOfxImageEffectRenderFullySafe) {
             if ( _effect->getHostFrameThreading() ) {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafeFrame;
+                _renderSafety =  Natron::eRenderSafetyFullySafeFrame;
             } else {
-                _renderSafety =  EffectInstance::eRenderSafetyFullySafe;
+                _renderSafety =  Natron::eRenderSafetyFullySafe;
             }
         } else {
             qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _renderSafety =  EffectInstance::eRenderSafetyUnsafe;
+            _renderSafety =  Natron::eRenderSafetyUnsafe;
         }
         _wasRenderSafetySet = true;
 
@@ -2210,7 +2217,8 @@ bool
 OfxEffectInstance::onOverlayPenDown(double scaleX,
                                     double scaleY,
                                     const QPointF & viewportPos,
-                                    const QPointF & pos)
+                                    const QPointF & pos,
+                                    double pressure)
 {
     if (!_initialized) {
         return false;
@@ -2237,7 +2245,7 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
          */
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
+        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, pressure);
         
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
@@ -2259,7 +2267,8 @@ bool
 OfxEffectInstance::onOverlayPenMotion(double scaleX,
                                       double scaleY,
                                       const QPointF & viewportPos,
-                                      const QPointF & pos)
+                                      const QPointF & pos,
+                                      double pressure)
 {
     if (!_initialized) {
         return false;
@@ -2287,7 +2296,7 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
             stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
         } else {*/
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
+        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, pressure);
         /*}*/
         
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
@@ -2307,7 +2316,8 @@ bool
 OfxEffectInstance::onOverlayPenUp(double scaleX,
                                   double scaleY,
                                   const QPointF & viewportPos,
-                                  const QPointF & pos)
+                                  const QPointF & pos,
+                                  double pressure)
 {
     if (!_initialized) {
         return false;
@@ -2333,7 +2343,7 @@ OfxEffectInstance::onOverlayPenUp(double scaleX,
                                             0);
          */
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, 1.);
+        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, pressure);
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -3148,5 +3158,39 @@ bool
 OfxEffectInstance::doesTemporalClipAccess() const
 {
     return effectInstance()->temporalAccess();
+}
+
+bool
+OfxEffectInstance::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+{
+    std::string defaultChannels = effectInstance()->getProps().getStringProperty(kNatronOfxImageEffectPropChannelSelector);
+    if (defaultChannels == kOfxImageComponentNone) {
+        return false;
+    }
+    if (defaultChannels == kOfxImageComponentRGBA) {
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    } else if (defaultChannels == kOfxImageComponentRGB) {
+        *defaultR = *defaultG = *defaultB = true;
+        *defaultA = false;
+    } else if (defaultChannels == kOfxImageComponentAlpha) {
+        *defaultR = *defaultG = *defaultB = false;
+        *defaultA = true;
+    } else {
+        qDebug() << getScriptName_mt_safe().c_str() <<"Invalid value given to property" << kNatronOfxImageEffectPropChannelSelector << "defaulting to RGBA checked";
+        *defaultR = *defaultG = *defaultB = *defaultA = true;
+    }
+    return true;
+}
+
+bool
+OfxEffectInstance::isHostMaskingEnabled() const
+{
+    return effectInstance()->isHostMaskingEnabled();
+}
+
+bool
+OfxEffectInstance::isHostMixingEnabled() const
+{
+    return effectInstance()->isHostMixingEnabled();
 }
 

@@ -47,6 +47,7 @@ class AppInstance;
 class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
+class QInputEvent;
 struct TextureRect;
 class Format;
 
@@ -104,7 +105,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    OpenGLViewerI::BitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual Natron::ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -195,7 +196,6 @@ public:
 
     virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
     
-
 public Q_SLOTS:
 
 
@@ -264,6 +264,11 @@ public:
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+    
+    /**
+     * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
+     **/
+    bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
 
@@ -401,7 +406,8 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
+    
     /**
      *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
      **/
@@ -413,6 +419,8 @@ private:
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;
 
 private:
+    
+    bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.
@@ -529,6 +537,8 @@ private:
      * @brief X and Y are in widget coords!
      **/
     bool pickColor(double x,double y);
+
+    static double currentTimeForEvent(QInputEvent* e);
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details

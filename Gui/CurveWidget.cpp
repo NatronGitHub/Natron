@@ -2866,6 +2866,11 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
             return;
         }
         std::vector<KeyFrame> keys(1);
+        if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesTimeClampedToIntegers()) {
+            xCurve = std::floor(xCurve + 0.5);
+        } else if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
+            xCurve = double((bool)xCurve);
+        }
         keys[0] = KeyFrame(xCurve,yCurve);
         
 
@@ -3076,7 +3081,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateDraggingTimeline;
         _imp->_lastMousePos = e->pos();
         // no need to set _imp->_dragStartPoint
-
         // no need to updateGL()
         return;
     }
@@ -3172,6 +3176,16 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
     if (_imp->_selectedKeyFrames.size() > 1) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
+    if (prevState == eEventStateDraggingTimeline) {
+        if (_imp->_gui->isUserScrubbingSlider()) {
+            _imp->_gui->setUserScrubbingSlider(false);
+            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+            if (autoProxyEnabled) {
+                _imp->_gui->renderAllViewers();
+            }
+        }
+    }
+    
     if (prevState == eEventStateSelecting) { // should other cases be considered?
         update();
     }
@@ -3293,6 +3307,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         break;
 
     case eEventStateDraggingTimeline:
+        _imp->_gui->setUserScrubbingSlider(true);
         _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
         _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
         break;
@@ -3942,7 +3957,7 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
-    if (_imp->_gui->isGUIFrozen()) {
+    if (!_imp->_gui || _imp->_gui->isGUIFrozen()) {
         return;
     }
 
@@ -4079,8 +4094,6 @@ void
 CurveWidget::focusInEvent(QFocusEvent* e)
 {
     QGLWidget::focusInEvent(e);
-
-    _imp->_undoStack->setActive();
 }
 
 void

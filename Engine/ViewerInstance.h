@@ -73,15 +73,34 @@ public:
 
     
     
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+                                                        bool isSequential,
+                                                        bool canAbort,
+                                                        int view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        bool useTLS,
+                                                        ViewerArgs* outArgs);
+
+    
+private:
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
     Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
-                                                        int view, int textureIndex, U64 viewerHash,
+                                                        int view,
+                                                        int textureIndex,
+                                                        U64 viewerHash,
+                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        bool useTLS,
+                                                        U64 renderAge,
                                                         ViewerArgs* outArgs);
 
+public:
+    
     
     /**
      * @brief This function renders the image at time 'time' on the viewer.
@@ -94,9 +113,19 @@ public:
      * and then render to the PBO.
      **/
     Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
-                                U64 viewerHash,
+                                    U64 viewerHash,
                                     bool canAbort,
-                                boost::shared_ptr<ViewerArgs> args[2]) WARN_UNUSED_RETURN;
+                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                    bool useTLS,
+                                    boost::shared_ptr<ViewerArgs> args[2]) WARN_UNUSED_RETURN;
+    
+    Natron::StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
+                                                    bool canAbort,
+                                                    int view,
+                                                    U64 viewerHash,
+                                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    boost::shared_ptr<ViewerArgs>* argsA,
+                                                    boost::shared_ptr<ViewerArgs>* argsB);
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
@@ -189,6 +218,8 @@ public:
     
     struct ViewerInstancePrivate;
     
+    float interpolateGammaLut(float value);
+    
 public Q_SLOTS:
     
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
@@ -269,9 +300,9 @@ private:
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::EffectInstance::eRenderSafetyFullySafe;
+        return Natron::eRenderSafetyFullySafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
@@ -284,6 +315,8 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
+                                            boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                             bool useTLS,
                                             ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -18,6 +18,9 @@
 #include "ViewerInstance.h"
 
 #include <map>
+#include <vector>
+#include <cmath>
+#include <cassert>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>
@@ -28,6 +31,8 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
+
+#define GAMMA_LUT_NB_VALUES 1023
 
 namespace Natron {
 class FrameEntry;
@@ -90,6 +95,7 @@ public:
     , textureRect()
     , srcPremult(Natron::eImagePremultiplicationOpaque)
     , bytesCount(0)
+    , depth()
     , gain(1.)
     , gamma(1.)
     , offset(0.)
@@ -125,6 +131,7 @@ public:
     TextureRect textureRect;
     Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
+    Natron::ImageBitDepthEnum depth;
     double gain;
     double gamma;
     double offset;
@@ -171,6 +178,10 @@ public:
     , lastRenderedHashMutex()
     , lastRenderedHash(0)
     , lastRenderedHashValid(false)
+    , gammaLookupMutex()
+    , gammaLookup()
+    , lastRotoPaintTickParamsMutex()
+    , lastRotoPaintTickParams()
     , renderAgeMutex()
     , renderAge()
     , displayAge()
@@ -181,6 +192,7 @@ public:
             renderAge[i] = 1;
             displayAge[i] = 0;
         }
+        
     }
     
     
@@ -325,6 +337,34 @@ public:
         return false;
     }
 
+    
+    void fillGammaLut(double gamma) {
+        gammaLookup.resize(GAMMA_LUT_NB_VALUES + 1);
+        for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
+            
+            double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
+            double value = std::pow(parametricPos, gamma);
+            // set that in the lut
+            gammaLookup[position] = (float)std::max(0.,std::min(1.,value));
+        }
+    }
+    
+    float lookupGammaLut(float value) const
+    {
+        if (value < 0.) {
+            return 0.;
+        } else if (value > 1.) {
+            return 1.;
+        } else {
+            int i = (int)(value * GAMMA_LUT_NB_VALUES);
+            assert(0 <= i && i <= GAMMA_LUT_NB_VALUES);
+            float alpha = std::max(0.f,std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f));
+            float a = gammaLookup[i];
+            float b = (i  < GAMMA_LUT_NB_VALUES) ? gammaLookup[i + 1] : 0.f;
+            return a * (1.f - alpha) + b * alpha;
+        }
+
+    }
 
 public Q_SLOTS:
 
@@ -376,6 +416,12 @@ public:
     QWaitCondition textureBeingRenderedCond;
     std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     
+    mutable QMutex gammaLookupMutex;
+    std::vector<float> gammaLookup; // protected by gammaLookupMutex
+    
+    //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
+    mutable QMutex lastRotoPaintTickParamsMutex;
+    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams;
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

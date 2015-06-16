@@ -549,11 +549,13 @@ struct ViewerArgs;
 struct CurrentFrameFunctorArgs
 {
     int view;
+    int time;
     ViewerInstance* viewer;
     U64 viewerHash;
     RequestedFrame* request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
+    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
     boost::shared_ptr<ViewerArgs> args[2];
 };
 

@@ -52,8 +52,10 @@ namespace Natron {
     {
     public:
         Bitmap(const RectI & bounds)
-            : _bounds(bounds)
-            , _map( bounds.area() )
+        : _bounds(bounds)
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
+        , _map( bounds.area() )
         {
             //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -63,11 +65,13 @@ namespace Natron {
         }
 
         Bitmap()
-            : _bounds()
-            , _map()
+        : _bounds()
+        , _dirtyZone()
+        , _dirtyZoneSet(false)
+        , _map()
         {
         }
-
+        
         void initialize(const RectI & bounds)
         {
             _bounds = bounds;
@@ -129,8 +133,22 @@ namespace Natron {
         
         void copyBitmapPortion(const RectI& roi, const Bitmap& other);
         
+        void setDirtyZone(const RectI& zone) {
+            _dirtyZone = zone;
+            _dirtyZoneSet = true;
+        }
+        
     private:
         RectI _bounds;
+        
+        /**
+         * This represents the zone that has potentially something to render. In minimalNonMarkedRects
+         * we intersect the region of interest with the dirty zone. This is useful to optimize the bitmap checking
+         * when we are sure multiple threads are not using the image and we have a very small RoI to render.
+         * For now it's only used for the rotopaint while painting.
+         **/
+        RectI _dirtyZone;
+        bool _dirtyZoneSet;
         std::vector<char> _map;
     };
 
@@ -163,10 +181,7 @@ namespace Natron {
               const boost::shared_ptr<Natron::ImageParams>& params);
 
         
-        virtual ~Image()
-        {
-            deallocate();
-        }
+        virtual ~Image();
         
         bool usesBitMap() const { return _useBitmap; }
 
@@ -196,9 +211,6 @@ namespace Natron {
                                                          const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
 
         
-#ifdef DEBUG
-        void checkBounds_debug();
-#endif
 
        // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 
@@ -206,7 +218,7 @@ namespace Natron {
          * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
          * a new buffer. This is not thread-safe and should be called only while under an ImageLocker 
          **/
-        void ensureBounds(const RectI& newBounds);
+        bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false, bool setBitmapTo1 = false);
         
         /**
      * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
@@ -270,6 +282,7 @@ namespace Natron {
             return this->_params->getComponents();
         }
 
+        void setBitmapDirtyZone(const RectI& zone);
         
         /**
      * @brief This function returns true if the components 'from' have enough components to
@@ -445,7 +458,6 @@ namespace Natron {
                                           Image & dstImg,
                                           Natron::ViewerColorSpaceEnum srcColorSpace,
                                           Natron::ViewerColorSpaceEnum dstColorSpace,
-                                          bool invert,
                                           bool copyBitmap);
         
         template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
@@ -456,9 +468,36 @@ namespace Natron {
                                 Natron::ViewerColorSpaceEnum srcColorSpace,
                                 Natron::ViewerColorSpaceEnum dstColorSpace,
                                 int channelForAlpha,
-                                bool invert,
+                                bool useAlpha0,
                                 bool copyBitmap,
                                 bool requiresUnpremult);
+        
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
+        bool requiresUnpremult>
+        static void convertToFormatInternalForUnpremult(const RectI & renderWindow,
+                                                        const Image & srcImg,
+                                                        Image & dstImg,
+                                                        Natron::ViewerColorSpaceEnum srcColorSpace,
+                                                        Natron::ViewerColorSpaceEnum dstColorSpace,
+                                                        bool useAlpha0,
+                                                        bool copyBitmap,
+                                                        int channelForAlpha);
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,
+        bool requiresUnpremult, bool useColorspaces>
+        static void convertToFormatInternalForColorSpace(const RectI & renderWindow,
+                                                         const Image & srcImg,
+                                                         Image & dstImg,
+                                                         bool copyBitmap,
+                                                         bool useAlpha0,
+                                                         Natron::ViewerColorSpaceEnum srcColorSpace,
+                                                         Natron::ViewerColorSpaceEnum dstColorSpace,
+                                                         int channelForAlpha);
+        
+        
         
         
         template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
@@ -469,7 +508,7 @@ namespace Natron {
                                         Natron::ViewerColorSpaceEnum srcColorSpace,
                                         Natron::ViewerColorSpaceEnum dstColorSpace,
                                         int channelForAlpha,
-                                        bool invert,
+                                        bool useAlpha0,
                                         bool copyBitmap,
                                         bool requiresUnpremult);
     public:
@@ -481,9 +520,14 @@ namespace Natron {
          * are already rendered in the image. It aims to return the minimal
          * area to render. Since this problem is quite hard to solve,the different portions
          * of image returned may contain already rendered pixels.
+         * 
+         * Note that if the RoI is larger than the bounds of the image, the out of bounds portions
+         * will be added to the resulting list of rectangles.
          **/
 #if NATRON_ENABLE_TRIMAP
-        void getRestToRender_trimap(const RectI & regionOfInterest,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
+        void getRestToRender_trimap(const RectI & regionOfInterest,
+                                    std::list<RectI>& ret,
+                                    bool* isBeingRenderedElsewhere) const
         {
             if (!_useBitmap) {
                 return;
@@ -549,8 +593,9 @@ namespace Natron {
                 return;
             }
             QWriteLocker locker(&_entryLock);
-            
-            _bitmap.clear(roi);
+            RectI intersection;
+            _bounds.intersect(roi, &intersection);
+            _bitmap.clear(intersection);
         }
         
         /**
@@ -560,6 +605,8 @@ namespace Natron {
      * be used.
      **/
         void fill(const RectI & roi,float r,float g,float b,float a);
+        
+        void fillZero(const RectI& roi);
 
         /**
      * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
@@ -570,15 +617,6 @@ namespace Natron {
                   float alphaValue = 1.f)
         {
             fill(rect,colorValue,colorValue,colorValue,alphaValue);
-        }
-
-        /**
-     * @brief Fills the entire image with the given R,G,B value and an alpha value.
-     **/
-        void defaultInitialize(float colorValue = 0.f,
-                               float alphaValue = 1.f)
-        {
-            fill(_bounds,colorValue,alphaValue);
         }
 
         /**
@@ -639,8 +677,6 @@ namespace Natron {
          * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
          * fill the alpha. If it is -1 it indicates you want to clear the mask.
          *
-         * @param invert If true the channels will be inverted when converting.
-         *
          * @param copyBitMap The bitmap will also be copied.
          *
          * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
@@ -655,12 +691,46 @@ namespace Natron {
                              Natron::ViewerColorSpaceEnum srcColorSpace,
                              Natron::ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
-                             bool invert,
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
         
-        void copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        void convertToFormatAlpha0(const RectI & renderWindow,
+                             Natron::ViewerColorSpaceEnum srcColorSpace,
+                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                             int channelForAlpha,
+                             bool copyBitMap,
+                             bool requiresUnpremult,
+                             Natron::Image* dstImg) const;
+        
+    private:
+        
+        
+        void convertToFormatCommon(const RectI & renderWindow,
+                             Natron::ViewerColorSpaceEnum srcColorSpace,
+                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                             int channelForAlpha,
+                             bool useAlpha0,
+                             bool copyBitMap,
+                             bool requiresUnpremult,
+                             Natron::Image* dstImg) const;
+        
+    public:
+        
+        
+        
+        void copyUnProcessedChannels(const RectI& roi,
+                                     Natron::ImagePremultiplicationEnum outputPremult,
+                                     Natron::ImagePremultiplicationEnum originalImagePremult,
+                                     const bool* processChannels,
+                                     const boost::shared_ptr<Image>& originalImage);
+        
+        void applyMaskMix(const RectI& roi,
+                          const Image* maskImg,
+                          const Image* originalImg,
+                          bool masked,
+                          bool maskInvert,
+                          float mix);
 
         /**
          * @brief returns true if image contains NaNs or infinite values, and fix them.
@@ -673,16 +743,77 @@ namespace Natron {
         
     private:
         
-        template <typename PIX,int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-        void copyUnProcessedChannelsForChannels(const RectI& roi,const boost::shared_ptr<Image>& originalImage);
-        
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
+        void applyMaskMixForMaskInvert(const RectI& roi,
+                                   const Image* maskImg,
+                                   const Image* originalImg,
+                                   float mix);
 
         
-        template <typename PIX,int srcNComps, int dstNComps>
-        void copyUnProcessedChannelsForComponents(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
+        void applyMaskMixForMasked(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool maskInvert,
+                                          float mix);
+
+        template<int srcNComps, int dstNComps, typename PIX, int maxValue>
+        void applyMaskMixForDepth(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
+
         
-        template <typename PIX>
-        void copyUnProcessedChannelsForDepth(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        
+        template<int srcNComps, int dstNComps>
+        void applyMaskMixForDstComponents(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
+        
+        template<int srcNComps>
+        void applyMaskMixForSrcComponents(const RectI& roi,
+                                          const Image* maskImg,
+                                          const Image* originalImg,
+                                          bool masked,
+                                          bool maskInvert,
+                                          float mix);
+
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
+        void copyUnProcessedChannelsForPremult(const RectI& roi,
+                                               const boost::shared_ptr<Image>& originalImage);
+
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
+        void copyUnProcessedChannelsForChannels(bool premult,
+                                                const RectI& roi,
+                                                const boost::shared_ptr<Image>& originalImage,
+                                                bool originalPremult);
+
+
+
+        template <typename PIX, int maxValue,int srcNComps, int dstNComps>
+        void copyUnProcessedChannelsForComponents(bool premult,
+                                                  const RectI& roi,
+                                                  bool doR,
+                                                  bool doG,
+                                                  bool doB,
+                                                  bool doA,
+                                                  const boost::shared_ptr<Image>& originalImage,
+                                                  bool originalPremult);
+        
+        template <typename PIX, int maxValue>
+        void copyUnProcessedChannelsForDepth(bool premult,
+                                             const RectI& roi,
+                                             bool doR,
+                                             bool doG,
+                                             bool doB,
+                                             bool doA,
+                                             const boost::shared_ptr<Image>& originalImage,
+                                             bool originalPremult);
 
 
         
@@ -724,6 +855,9 @@ namespace Natron {
 
         template <typename PIX, int maxValue>
         void fillForDepth(const RectI & roi,float r,float g,float b,float a);
+        
+        template <typename PIX,int maxValue, int nComps>
+        void fillForDepthForComponents(const RectI & roi_,  float r,float g, float b, float a);
 
         template<typename PIX>
         void scaleBoxForDepth(const RectI & roi, Natron::Image* output) const;
@@ -744,8 +878,7 @@ namespace Natron {
     PIX clamp(PIX v);
 
     template <typename PIX,int maxVal>
-    PIX
-            clampInternal(PIX v)
+    PIX clampInternal(PIX v)
     {
         if (v > maxVal) {
             return maxVal;
@@ -772,6 +905,12 @@ namespace Natron {
     {
         return clampInternal<double, 1>(v);
     }
+    
+    template<typename PIX>
+    PIX clampIfInt(PIX v);
+    template<> inline unsigned char clampIfInt(unsigned char v) { return clampInternal<unsigned char, 255>(v); }
+    template<> inline unsigned short clampIfInt(unsigned short v) { return clampInternal<unsigned short, 65525>(v); }
+    template<> inline float clampIfInt(float v) { return v; }
     
     typedef boost::shared_ptr<Natron::Image> ImagePtr;
     typedef std::list<ImagePtr> ImageList;

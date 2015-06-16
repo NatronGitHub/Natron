@@ -46,6 +46,7 @@ class RotoGui;
 class NodeGui;
 class TimeLine;
 class TrackerGui;
+class QInputEvent;
 struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab
@@ -84,34 +85,34 @@ public:
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays(double scaleX,double scaleY) const;
+    void drawOverlays(double scaleX, double scaleY) const;
 
-    bool notifyOverlaysPenDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysKeyDown(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyDown(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysKeyUp(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyUp(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysKeyRepeat(double scaleX,double scaleY,QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(double scaleX, double scaleY, QKeyEvent* e);
 
-    bool notifyOverlaysFocusGained(double scaleX,double scaleY);
+    bool notifyOverlaysFocusGained(double scaleX, double scaleY);
 
-    bool notifyOverlaysFocusLost(double scaleX,double scaleY);
+    bool notifyOverlaysFocusLost(double scaleX, double scaleY);
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, QKeyEvent* e, Natron::Key k,
                                         Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX,double scaleY, QKeyEvent* e, Natron::Key k,
                                           Natron::KeyboardModifiers km);
 public:
     
@@ -250,6 +251,9 @@ public:
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
+    bool isViewersSynchroEnabled() const;
+    
+    void synchronizeOtherViewersProjection();
     
 public Q_SLOTS:
 
@@ -372,6 +376,12 @@ public Q_SLOTS:
     void onGainSliderChanged(double v);
 
     void onGainSpinBoxValueChanged(double value);
+    
+    void onGammaSliderEditingFinished(bool hasMovedOnce);
+    void onGainSliderEditingFinished(bool hasMovedOnce);
+    
+    void onSyncViewersButtonPressed(bool clicked);
+    
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

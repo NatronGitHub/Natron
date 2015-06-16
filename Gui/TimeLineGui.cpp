@@ -188,10 +188,7 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     if (_imp->timeline) {
         //connect the internal timeline to the gui
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
-                             this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
-        
-        
+
         //connect the gui to the internal timeline
         QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
@@ -655,7 +652,6 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
             }
         } else {
             _imp->state = eTimelineStateDraggingCursor;
-            _imp->gui->setUserScrubbingTimeline(true);
             seek(tseq);
         }
     }
@@ -678,7 +674,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->timeline->currentFrame() ) {
-            
+            _imp->gui->setUserScrubbingSlider(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
             Q_EMIT frameChanged(tseq);
         }
@@ -740,18 +736,30 @@ void
 TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 {
     if (_imp->state == eTimelineStateDraggingCursor) {
-        _imp->gui->setUserScrubbingTimeline(false);
+        
+        bool wasScrubbing = false;
+        if (_imp->gui->isUserScrubbingSlider()) {
+            _imp->gui->setUserScrubbingSlider(false);
+            wasScrubbing = true;
+        }
         _imp->gui->refreshAllPreviews();
-        bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        
+        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
+        bool autoProxyEnabled = settings->isAutoProxyEnabled();
+        
+        
         if (onEditingFinishedOnly) {
             double t = toTimeLineCoordinates(e->x(),0).x();
             SequenceTime tseq = std::floor(t + 0.5);
-            if ( tseq != _imp->timeline->currentFrame() ) {
+            if ( (tseq != _imp->timeline->currentFrame()) ) {
 
                 _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
                 Q_EMIT frameChanged(tseq);
             }
 
+        } else if (autoProxyEnabled && wasScrubbing) {
+            _imp->gui->getApp()->renderAllViewers();
         }
     }
 

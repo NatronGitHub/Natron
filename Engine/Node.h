@@ -61,6 +61,8 @@ class NodeGuiI;
 class RotoContext;
 class NodeCollection;
 class RotoStrokeItem;
+class RectD;
+class RectI;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -154,6 +156,7 @@ public:
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */
+    void setMustQuitProcessing(bool mustQuit);
     void quitAnyProcessing();
 
     /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
@@ -263,6 +266,8 @@ public:
      **/
     boost::shared_ptr<RotoContext> getRotoContext() const;
 
+    U64 getRotoAge() const;
+    
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -367,6 +372,41 @@ public:
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
     
+    void setRenderThreadSafety(Natron::RenderSafetyEnum safety);
+    Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    void revertToPluginThreadSafety();
+    
+    /////////////////////ROTO-PAINT related functionnalities//////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+    void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
+                                   const RectD& wholeBbox,const RectD& lastPointsBbox);
+    
+    //Used by nodes below the rotopaint tree to optimize the RoI
+    void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
+    void invalidateLastPaintStrokeDataNoRotopaint();
+    
+    void getPaintStrokeRoD(int time,RectD* bbox) const;
+    RectD getPaintStrokeRoD_duringPainting() const;
+    
+    bool isFirstPaintStrokeRenderTick() const;
+    int getStrokeImageAge() const;
+    void getLastPaintStrokeRoD(RectD* pointsBbox) ;
+    bool isLastPaintStrokeBitmapCleared() const;
+    void clearLastPaintStrokeRoD();
+    void getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const;
+    boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+                                                                const RectI& roi,
+                                                                double par,
+                                                                const Natron::ImageComponents& components,
+                                                                Natron::ImageBitDepthEnum depth) const;
+    
+    void setWhileCreatingPaintStroke(bool creating);
+    bool isDuringPaintStrokeCreation() const;
+    ////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////
+    
+    void setProcessChannelsValues(bool doR,bool doG, bool doB, bool doA);
+    
 private:
     
     int getPreferredInputInternal(bool connected) const;
@@ -421,6 +461,11 @@ public:
      */
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber);
 
+    bool connectInputBase(const boost::shared_ptr<Node>& input,int inputNumber)
+    {
+        return Node::connectInput(input, inputNumber);
+    }
+    
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
        -1.
@@ -474,6 +519,11 @@ public:
      **/
     void attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke);
     boost::shared_ptr<RotoStrokeItem> getAttachedStrokeItem() const;
+    
+    //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
+    //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
+    //won't be able to paint the alpha channel
+    bool usesAlpha0ToConvertFromRGBToRGBA() const;
     
 protected:
     
@@ -867,11 +917,11 @@ public:
     
     void drawDefaultOverlay(double scaleX,double scaleY);
     
-    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
     bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
@@ -919,6 +969,7 @@ public:
     
     void removeParameterFromPython(const std::string& parameterName);
 
+    double getHostMixingValue(int time) const;
     
 private:
     
@@ -1092,6 +1143,12 @@ public:
         return _maxInputs;
     }
 
+
+
+    /**
+     * @brief Same as connectInputBase but if another input is already connected to 'input' then
+     * it will disconnect it prior to connecting the input of the given number.
+     **/
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
 
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;

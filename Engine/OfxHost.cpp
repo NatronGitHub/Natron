@@ -193,6 +193,10 @@ Natron::OfxHost::setProperties()
     ///Natron extensions
     _properties.setIntProperty(kNatronOfxHostIsNatron, 1);
     _properties.setIntProperty(kNatronOfxParamHostPropSupportsDynamicChoices, 1);
+    _properties.setIntProperty(kNatronOfxParamPropChoiceCascading, 1);
+    _properties.setStringProperty(kNatronOfxImageEffectPropChannelSelector, kOfxImageComponentRGBA);
+    _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
+    _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 #endif
     
 }
@@ -414,6 +418,17 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
     }
+    
+    //Create the mask clip if needed
+    if (desc->isHostMaskingEnabled()) {
+        const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& clips = desc->getClips();
+        std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator found = clips.find("Mask");
+        if (found == clips.end()) {
+            desc->defineClip("Mask");
+        }
+    }
+
+    
     *ctx = OfxEffectInstance::mapToContextEnum(context);
     return desc;
 }

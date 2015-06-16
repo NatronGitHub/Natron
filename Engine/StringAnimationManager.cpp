@@ -246,6 +246,30 @@ StringAnimationManager::clone(const StringAnimationManager & other)
     _imp->keyframes = other._imp->keyframes;
 }
 
+bool
+StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & other)
+{
+    QMutexLocker l(&_imp->keyframesMutex);
+    QMutexLocker l2(&other._imp->keyframesMutex);
+    bool hasChanged = false;
+    if (_imp->keyframes.size() != other._imp->keyframes.size()) {
+        hasChanged = true;
+    }
+    if (!hasChanged) {
+        Keyframes::const_iterator oit = other._imp->keyframes.begin();
+        for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it,++oit) {
+            if (it->time != oit->time || it->value != oit->value) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+    if (hasChanged) {
+        _imp->keyframes = other._imp->keyframes;
+    }
+    return hasChanged;
+}
+
 void
 StringAnimationManager::clone(const StringAnimationManager & other,
                               SequenceTime offset,

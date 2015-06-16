@@ -183,6 +183,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _internalNode()
 , _selected(false)
 , _settingNameFromGui(false)
+, _panelOpenedBeforeDeactivate(false)
 , _pluginIcon(NULL)
 , _pluginIconFrame(NULL)
 , _mergeIcon(NULL)
@@ -225,6 +226,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _mtSafeWidth(0)
 , _mtSafeHeight(0)
 , _defaultOverlay()
+, _undoStack(new QUndoStack())
 {
 }
 
@@ -416,7 +418,7 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
         QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
-        if (getNode()->isRotoNode()) {
+        if (getNode()->isRotoNode() || getNode()->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
         if (getNode()->isTrackerNode()) {
@@ -610,8 +612,8 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
     _expressionIndicator = new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                                 exprGrad,QColor(255,255,255),this);
-    _expressionIndicator->setToolTip( tr("This node has one or several expression(s) involving values of parameters of other "
-                                         "nodes in the project. Hover the mouse on the green connections to see what are the effective links.") );
+    _expressionIndicator->setToolTip(Qt::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
+                                         "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
@@ -701,8 +703,8 @@ NodeGui::togglePreview()
 void
 NodeGui::removeUndoStack()
 {
-    if ( _graph && _graph->getGui() && getUndoStack() ) {
-        _graph->getGui()->removeUndoStack( getUndoStack() );
+    if ( _graph && _graph->getGui() && _undoStack ) {
+        _graph->getGui()->removeUndoStack( _undoStack.get() );
     }
 }
 
@@ -1422,11 +1424,12 @@ NodeGui::setOptionalInputsVisible(bool visible)
 
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
-
+        
+        bool isReader = node->getLiveInstance()->isReader();
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
-            if (node->getLiveInstance()->isInputOptional(i) &&
+            if (isReader || (node->getLiveInstance()->isInputOptional(i) &&
                 node->getLiveInstance()->isInputMask(i) &&
-                !_inputEdges[i]->isRotoEdge()) {
+                !_inputEdges[i]->isRotoEdge())) {
                 
                 bool nodeVisible = visible;
                 if (!visible && node->getRealInput(i) ) {
@@ -1521,7 +1524,7 @@ NodeGui::setUserSelected(bool b)
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
-        if ( b && isSettingsPanelVisible() && getNode()->isRotoNode() ) {
+        if ( b && isSettingsPanelVisible() && (getNode()->isRotoNode() || getNode()->isRotoPaintingNode())) {
             _graph->getGui()->setRotoInterface(this);
         }
     }
@@ -1709,7 +1712,7 @@ NodeGui::showGui()
     if (viewer) {
         _graph->getGui()->activateViewerTab(viewer);
     } else {
-        if ( isSettingsPanelVisible() ) {
+        if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(true);
         }
         if ( node->isRotoNode() ) {
@@ -1751,8 +1754,7 @@ NodeGui::activate(bool triggerRender)
         }
     }
     _graph->restoreFromTrash(this);
-    _graph->getGui()->getCurveEditor()->addNode(shared_from_this());
-    _graph->getGui()->addNodeGuiToDopeSheetEditor(shared_from_this());
+    //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
@@ -1800,7 +1802,8 @@ NodeGui::hideGui()
             _graph->getGui()->deactivateViewerTab(isViewer);
         }
     } else {
-        if ( isSettingsPanelVisible() ) {
+        _panelOpenedBeforeDeactivate = isSettingsPanelVisible();
+        if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(false);
         }
 
@@ -2013,14 +2016,10 @@ NodeGui::copyFrom(const NodeGuiSerialization & obj)
     resize(w,h);
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 NodeGui::getUndoStack() const
 {
-    if (_settingsPanel) {
-        return _settingsPanel->getUndoStack();
-    } else {
-        return NULL;
-    }
+    return _undoStack;
 }
 
 void
@@ -3148,14 +3147,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
                                                "places in the application. Generally this contains domain and sub-domains names "
                                                "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
                                                "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
-                                               " search-paths will take precedence over the other."),Qt::WhiteSpaceNormal);
+                                               " search-paths will take precedence over the other."), Qt::WhiteSpaceNormal);
     _imp->idEdit = new LineEdit(this);
     _imp->idEdit->setPlaceholderText("org.organization.pyplugs.XXX");
     _imp->idEdit->setToolTip(idTt);
 
 
     _imp->labelLabel = new Natron::Label(tr("Label"),this);
-    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
+    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
     _imp->labelEdit->setPlaceholderText("MyPlugin");
@@ -3165,7 +3164,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
     _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
     QString groupingTt = Qt::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
-                                                     "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/' "),Qt::WhiteSpaceNormal);
+                                                     "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
 
     _imp->groupingEdit = new LineEdit(this);
@@ -3175,7 +3174,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
     _imp->iconPathLabel = new Natron::Label(tr("Icon relative path"),this);
     QString iconTt = Qt::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
-                                                 "The path is relative to the Python script."),Qt::WhiteSpaceNormal);
+                                                 "The path is relative to the Python script."), Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
     _imp->iconPath->setPlaceholderText("Label.png");
@@ -3183,13 +3182,13 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
     _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
     QString descTt =  Qt::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
-                                                  " \"?\" button on the settings panel of the node."),Qt::WhiteSpaceNormal);
+                                                  " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new LineEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
 
     _imp->fileLabel = new Natron::Label(tr("Directory"),this);
-    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory where to export the Python script"),Qt::WhiteSpaceNormal);
+    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
 
@@ -3421,40 +3420,40 @@ NodeGui::drawDefaultOverlay(double scaleX,double scaleY)
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
 
-       return _defaultOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+       return _defaultOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
-
-        return _defaultOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+        
+        return _defaultOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
-
-        return _defaultOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), 1.);
+        
+        return _defaultOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }

@@ -85,9 +85,9 @@ protected:
 
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::EffectInstance::eRenderSafetyInstanceSafe;
+        return Natron::eRenderSafetyInstanceSafe;
     }
 
 private:

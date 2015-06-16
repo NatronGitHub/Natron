@@ -72,7 +72,7 @@
 #include "Engine/BackDrop.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoContext.h"
-
+#include "Engine/RotoSmear.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
@@ -1121,7 +1121,7 @@ AppManager::loadInternal(const CLArgs& cl)
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
               _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
             try {
-                mainInstance->getProject()->closeProject();
+                mainInstance->getProject()->closeProject(true);
             } catch (std::logic_error) {
                 // ignore
             }
@@ -1610,6 +1610,24 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
                        NATRON_IMAGES_PATH "GroupingIcons/Set3/paint_grouping_3.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
+    {
+        boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&RotoSmear::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+                        "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+
 #endif
 }
 
@@ -2020,7 +2038,6 @@ AppManager::getPluginBinary(const QString & pluginId,
 {
     PluginsMap::const_iterator foundID = _imp->_plugins.end();
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        QString realID;
         if (convertToLowerCase &&
             !pluginId.startsWith(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.")) {
             
@@ -2045,14 +2062,19 @@ AppManager::getPluginBinary(const QString & pluginId,
         assert(!foundID->second.empty());
         
         if (majorVersion == -1) {
+            // -1 means we want to load the highest version existing
             return *foundID->second.rbegin();
         }
         
+        ///Try to find the exact version
         for (PluginMajorsOrdered::const_iterator it = foundID->second.begin(); it != foundID->second.end(); ++it) {
             if (((*it)->getMajorVersion() == majorVersion)) {
                 return *it;
             }
         }
+        
+        ///Could not find the exact version... let's just use the highest version found
+        return *foundID->second.rbegin();
     }
     QString exc = QString("Couldn't find a plugin attached to the ID %1, with a major version of %2")
     .arg(pluginId)
@@ -2664,7 +2686,7 @@ AppManager::writeToOfxLog_mt_safe(const QString & str)
 {
     QMutexLocker l(&_imp->_ofxLogMutex);
 
-    _imp->_ofxLog.append(str + '\n');
+    _imp->_ofxLog.append(str + '\n' + '\n');
 }
 
 void
@@ -3531,8 +3553,11 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
 
 }
       
-bool isPluginCreatable(const std::string& /*pluginID*/)
+bool isPluginCreatable(const std::string& pluginID)
 {
+    if (pluginID == PLUGINID_NATRON_ROTOSMEAR) {
+        return false;
+    }
     return true;
 }
     
@@ -3667,7 +3692,10 @@ getGroupInfos(const std::string& modulePath,
     
     std::string err;
     if (!interpretPythonScript(toRun, &err, 0)) {
-        qDebug() << "Python group load failure:" << err.c_str();
+        QString logStr("Python group load failure: ");
+        logStr.append(err.c_str());
+        appPTR->writeToOfxLog_mt_safe(logStr);
+        qDebug() << logStr;
         return false;
     }
     

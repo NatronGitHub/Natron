@@ -10,7 +10,9 @@ CONFIG += moc
 CONFIG += boost qt expat cairo python shiboken pyside
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
-QT -= gui
+
+# Don't uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
+#QT -= gui
 
 
 precompile_header {
@@ -75,8 +77,11 @@ SOURCES += \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
+    ImageConvert.cpp \
+    ImageCopyChannels.cpp \
     ImageComponents.cpp \
     ImageKey.cpp \
+    ImageMaskMix.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
     Knob.cpp \
@@ -117,6 +122,7 @@ SOURCES += \
     RotoContext.cpp \
     RotoPaint.cpp \
     RotoSerialization.cpp  \
+    RotoSmear.cpp \
     RotoWrapper.cpp \
     ScriptObject.cpp \
     Settings.cpp \
@@ -250,6 +256,7 @@ HEADERS += \
     RotoContextPrivate.h \
     RotoPaint.h \
     RotoSerialization.h \
+    RotoSmear.h \
     RotoWrapper.h \
     ScriptObject.h \
     Settings.h \

@@ -446,24 +446,33 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
                                                OfxRectD* ret) const
 {
     
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx;
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
-        RectD rod;
-        if (attachedStroke) {
-            rod = attachedStroke->getBoundingBox(time);
-        } else {
-            rotoCtx = _nodeInstance->getNode()->getRotoContext();
-            assert(rotoCtx);
-            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
-        }
-        
+    boost::shared_ptr<RotoStrokeItem> attachedStroke;
+    if (_nodeInstance) {
+        assert(_nodeInstance->getNode());
+        attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
+    }
+    RectD rod;
+    if (attachedStroke && (isMask() || getName() == "Roto")) {
+        _nodeInstance->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
         ret->y2 = rod.y2;
         return;
+    } else {
+        boost::shared_ptr<RotoContext> rotoCtx = _nodeInstance->getNode()->getRotoContext();
+        if (rotoCtx && getName() == "Roto") {
+            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+            ret->x1 = rod.x1;
+            ret->x2 = rod.x2;
+            ret->y1 = rod.y1;
+            ret->y2 = rod.y2;
+            return;
+        }
     }
+    
+    
+    
     
     
     if (associatedNode) {
@@ -829,21 +838,23 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    std::string components;
+    Natron::ImageComponents components;
     if (_lastActionData.hasLocalData()) {
         ActionLocalData & args = _lastActionData.localData();
         if (args.clipComponentsValid) {
+            if (!args.hasImage) {
+                return 0;
+            }
             components = args.clipComponents;
         }
     }
-    if (components.empty()) {
-        components = _components;
-    } else if (components == kOfxImageComponentNone) {
-        return 0;
+    if (components.getNumComponents() == 0) {
+        std::list<ImageComponents> comps = ofxComponentsToNatronComponents(_components);
+        assert(!comps.empty());
+        components = comps.front();
     }
-    std::list<Natron::ImageComponents> comp = ofxComponentsToNatronComponents(components);
-    assert(!comp.empty());
-    std::string plane = natronsPlaneToOfxPlane(comp.front());
+
+    std::string plane = natronsPlaneToOfxPlane(components);
     return getImagePlane(time, view, plane, optionalBounds);
 } // getStereoscopicImage
 
@@ -948,7 +959,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         std::list<ImageComponents> requestedComps;
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,inputImages);
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,_nodeInstance,inputImages);
         ImageList planes;
         EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());
@@ -1299,11 +1310,12 @@ OfxClipInstance::clearOfxImagesTLS()
 }
 
 void
-OfxClipInstance::setClipComponentTLS(const std::string& components)
+OfxClipInstance::setClipComponentTLS(bool hasImage,const Natron::ImageComponents& components)
 {
     ActionLocalData & args = _lastActionData.localData();
     args.clipComponents = components;
     args.clipComponentsValid = true;
+    args.hasImage = hasImage;
 }
 
 void
@@ -1311,8 +1323,8 @@ OfxClipInstance::clearClipComponentsTLS()
 {
     assert(_lastActionData.hasLocalData());
     ActionLocalData & args = _lastActionData.localData();
-    args.clipComponents.clear();
     args.clipComponentsValid = false;
+    args.clipComponents = ImageComponents::getNoneComponents();
 }
 
 const std::string &

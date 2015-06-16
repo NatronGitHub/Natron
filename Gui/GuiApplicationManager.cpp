@@ -896,7 +896,58 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "enter_group.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-
+            case NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED:
+                img.load(NATRON_IMAGES_PATH "rotopaint_buildup_on.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED:
+                img.load(NATRON_IMAGES_PATH "rotopaint_buildup_off.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_BLUR:
+                img.load(NATRON_IMAGES_PATH "rotopaint_blur.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_BURN:
+                img.load(NATRON_IMAGES_PATH "rotopaint_burn.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_CLONE:
+                img.load(NATRON_IMAGES_PATH "rotopaint_clone.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_DODGE:
+                img.load(NATRON_IMAGES_PATH "rotopaint_dodge.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_ERASER:
+                img.load(NATRON_IMAGES_PATH "rotopaint_eraser.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED:
+                img.load(NATRON_IMAGES_PATH "rotopaint_pressure_on.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED:
+                img.load(NATRON_IMAGES_PATH "rotopaint_pressure_off.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_REVEAL:
+                img.load(NATRON_IMAGES_PATH "rotopaint_reveal.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_SHARPEN:
+                img.load(NATRON_IMAGES_PATH "rotopaint_sharpen.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_SMEAR:
+                img.load(NATRON_IMAGES_PATH "rotopaint_smear.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTOPAINT_SOLID:
+                img.load(NATRON_IMAGES_PATH "rotopaint_solid.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_INTERP_LINEAR:
                 img.load(NATRON_IMAGES_PATH "interp_linear.png");
                 *pix = QPixmap::fromImage(img);
@@ -929,6 +980,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "interp_curve_z.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+
             default:
                 assert(!"Missing image.");
         } // switch
@@ -1233,12 +1285,21 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
 void
 GuiApplicationManagerPrivate::createColorPickerCursor()
 {
-    QPixmap pickerPix;
-
-    appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_PICKER, &pickerPix);
-    pickerPix = pickerPix.scaled(16, 16);
-    pickerPix.setMask( pickerPix.createHeuristicMask() );
-    _colorPickerCursor = new QCursor( pickerPix,0,pickerPix.height() );
+    QImage originalImage;
+    originalImage.load(NATRON_IMAGES_PATH "color_picker.png");
+    originalImage = originalImage.scaled(16, 16);
+    QImage dstImage(32,32,QImage::Format_ARGB32);
+    dstImage.fill(QColor(0,0,0,0));
+    
+    int oW = originalImage.width();
+    int oH = originalImage.height();
+    for (int y = 0; y < oH; ++y) {
+        for (int x = 0; x < oW; ++x) {
+            dstImage.setPixel(x + oW, y, originalImage.pixel(x, y));
+        }
+    }
+    QPixmap pix = QPixmap::fromImage(dstImage);
+    _colorPickerCursor = new QCursor(pix);
 }
 
 bool
@@ -1916,6 +1977,10 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, kShortcutDescActionRotoSelectionTool, Qt::NoModifier, Qt::Key_Q);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, kShortcutDescActionRotoAddTool, Qt::NoModifier, Qt::Key_D);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, kShortcutDescActionRotoEditTool, Qt::NoModifier, Qt::Key_V);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, kShortcutDescActionRotoBrushTool, Qt::NoModifier, Qt::Key_N);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, kShortcutDescActionRotoCloneTool, Qt::NoModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, kShortcutDescActionRotoEffectTool, Qt::NoModifier, Qt::Key_X);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, kShortcutDescActionRotoColorTool, Qt::NoModifier, Qt::Key_E);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeLeft, kShortcutDescActionRotoNudgeLeft, Qt::AltModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeBottom, kShortcutDescActionRotoNudgeBottom, Qt::AltModifier, Qt::Key_Down);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, kShortcutDescActionRotoNudgeRight, Qt::AltModifier, Qt::Key_Right);

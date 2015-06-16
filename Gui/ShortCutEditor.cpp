@@ -239,7 +239,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                    "Note that internally " NATRON_APPLICATION_NAME " does an emulation of a three-button mouse "
                                    "if your computer doesn't have one, that is: \n"
                                    "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
-                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."),Qt::WhiteSpaceNormal) );
+                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."), Qt::WhiteSpaceNormal) );
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
     
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
@@ -275,7 +275,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
 
     _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
-    _imp->validateButton->setToolTip( tr("Validates the shortcut on the field editor and set the selected shortcut.") );
+    _imp->validateButton->setToolTip(Qt::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
     QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
 

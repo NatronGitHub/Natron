@@ -441,7 +441,10 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
             }
             if (newSrc) {
                 ///also disconnect any current connection between the inspector and the _newSrc
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+                ///if this is a viewer only
+                if (dynamic_cast<ViewerInstance*>(inspector->getLiveInstance())) {
+                    _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
+                }
                 _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
             }
         }

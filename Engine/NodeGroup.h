@@ -206,6 +206,9 @@ public:
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
      **/
     void quitAnyProcessingForAllNodes();
+
+public:
+    
     
     /**
      * @brief Computes the union of the frame range of all readers in the group and subgroups.
@@ -293,7 +296,7 @@ public:
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     
-    ~ParallelRenderArgsSetter();
+    virtual ~ParallelRenderArgsSetter();
 };
 
 
@@ -338,9 +341,9 @@ public:
         grouping->push_back(PLUGIN_GROUP_OTHER);
     }
     
-    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return EffectInstance::eRenderSafetyFullySafeFrame;
+        return Natron::eRenderSafetyFullySafeFrame;
     }
     
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN

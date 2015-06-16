@@ -790,6 +790,9 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->setDefaultValue(def,0);
     
+    bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
+    choice->setCascading(cascading);
+    
     bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
     if (canAddOptions) {
         choice->setHostCanAddOptions(true);
@@ -3166,11 +3169,11 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if (boost::math::isnan(time) ||
+    if (time != time || // check for NaN
         boost::math::isinf(time) ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return kOfxStatFailed;
     }

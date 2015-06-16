@@ -1492,8 +1492,18 @@ static bool parseTokenFrom(int fromDim,
     std::locale loc;
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
+    int nClosingParenthesisMet = 0;
     while (i >= 0) {
-        if (std::isspace(str[i],loc)) {
+        if (str[i] == ')') {
+            ++nClosingParenthesisMet;
+        }
+        if (std::isspace(str[i],loc) ||
+            str[i] == '+' ||
+            str[i] == '-' ||
+            str[i] == '*' ||
+            str[i] == '/' ||
+            str[i] == '%' ||
+            (str[i] == '(' && !nClosingParenthesisMet)) {
             break;
         }
         --i;
@@ -2251,7 +2261,7 @@ KnobHelper::slaveTo(int dimension,
         
     }
     
-    clone(other,dimension);
+    bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
     
     if (_signalSlotHandler) {
         ///Notify we want to refresh
@@ -2259,7 +2269,10 @@ KnobHelper::slaveTo(int dimension,
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
     }
-    evaluateValueChange(dimension, reason);
+    
+    if (hasChanged) {
+        evaluateValueChange(dimension, reason);
+    }
 
     ///Register this as a listener of the master
     if (helper) {
@@ -2587,6 +2600,30 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
     } catch(...) {
         ///ignore errors
     }
+}
+
+bool
+KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
+{
+    assert((int)_imp->expressions.size() == getDimension());
+    bool ret = false;
+    try {
+        int dims = std::min(getDimension(),other->getDimension());
+        for (int i = 0; i < dims; ++i) {
+            if (i == dimension || dimension == -1) {
+                std::string expr = other->getExpression(i);
+                bool hasRet = other->isExpressionUsingRetVariable(i);
+                if (!expr.empty() && (expr != _imp->expressions[i].originalExpression || hasRet != _imp->expressions[i].hasRet)) {
+                    (void)setExpression(i, expr,hasRet);
+                    cloneExpressionsResults(other,i);
+                    ret = true;
+                }
+            }
+        }
+    } catch(...) {
+        ///ignore errors
+    }
+    return ret;
 }
 
 void
@@ -3417,7 +3454,7 @@ void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -3429,7 +3466,7 @@ void
 KnobHolder::refreshInstanceSpecificKnobsOnly(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (getApp()->isGuiFrozen()) {
+    if (!getApp() || getApp()->isGuiFrozen()) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -3807,6 +3844,17 @@ AnimatingString_KnobHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
     if (isAnimatedString) {
         _animation->clone( isAnimatedString->getAnimation() );
     }
+}
+
+bool
+AnimatingString_KnobHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
+{
+    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
+    
+    if (isAnimatedString) {
+       return  _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
+    }
+    return false;
 }
 
 void

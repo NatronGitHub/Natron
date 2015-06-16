@@ -179,6 +179,8 @@ Matrix3x3 matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where
 Matrix3x3 matMul(const Matrix3x3 & m1, const Matrix3x3 & m2);
 
 Point3D matApply(const Matrix3x3 & m,const Point3D & p);
+    
+void matApply(const Matrix3x3 & m,double* x, double *y, double *z);
 
 struct Matrix4x4
 {

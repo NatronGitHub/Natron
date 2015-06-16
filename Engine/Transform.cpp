@@ -235,6 +235,18 @@ matApply(const Matrix3x3 & m,
 
     return ret;
 }
+    
+void matApply(const Matrix3x3 & m,double* x, double *y, double *z)
+{
+    double tmpX,tmpY,tmpZ;
+    tmpX = m.a * *x + m.b * *y + m.c * *z;
+    tmpY = m.d * *x + m.e * *y + m.f * *z;
+    tmpZ = m.g * *x + m.h * *y + m.i * *z;
+    
+    *x = tmpX;
+    *y = tmpY;
+    *z = tmpZ;
+}
 
 Matrix4x4::Matrix4x4()
 {

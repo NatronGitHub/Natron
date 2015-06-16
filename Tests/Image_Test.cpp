@@ -66,6 +66,35 @@ TEST(BitmapTest,SimpleRect) {
     bm.minimalNonMarkedRects(rod, nonRenderedRects);
     ASSERT_TRUE( nonRenderedRects.empty() );
     ASSERT_TRUE( !memchr( map,0,rod.area() ) );
+    
+    ///More complex example where A,B,C,D are not rendered check that both trimap & bitmap yield the same result
+    // BBBBBBBBBBBBBB
+    // BBBBBBBBBBBBBB
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // AAAAAAAAAAAAAA
+    bm.clear(rod);
+    
+    RectI xBox(20,20,80,80);
+    bm.markForRendered(xBox);
+    nonRenderedRects.clear();
+    bm.minimalNonMarkedRects(rod, nonRenderedRects);
+    EXPECT_TRUE(nonRenderedRects.size() == 4);
+    nonRenderedRects.clear();
+    bool beingRenderedElseWhere = false;
+    bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
+    EXPECT_TRUE(nonRenderedRects.size() == 4);
+    ASSERT_TRUE(beingRenderedElseWhere == false);
+    
+    nonRenderedRects.clear();
+    //Mark the A rectangle as being rendered
+    RectI aBox(0,0,20,20);
+    bm.markForRendering(aBox);
+    bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
+    ASSERT_TRUE(beingRenderedElseWhere == true);
+    EXPECT_TRUE(nonRenderedRects.size() == 3);
 }
 
 TEST(ImageKeyTest,Equality) {

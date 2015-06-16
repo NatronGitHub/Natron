@@ -532,8 +532,8 @@ Settings::initializeKnobs()
     textureModes.push_back("Byte");
     helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
                                       "by the CPU. As a results, the size of cached textures is smaller.");
-    textureModes.push_back("16bits half-float");
-    helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
+    //textureModes.push_back("16bits half-float");
+    //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
     textureModes.push_back("32bits floating-point");
     helpStringsTextureModes.push_back("Post-processing done by the viewer (such as colorspace conversion) is done "
                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.");
@@ -581,6 +581,28 @@ Settings::initializeKnobs()
                               "change the input A of the viewer, leaving the input B intact.");
     _autoWipe->setAnimationEnabled(false);
     _viewersTab->addKnob(_autoWipe);
+    
+    _autoProxyWhenScrubbingTimeline = Natron::createKnob<Bool_Knob>(this, "Automatically enable proxy when scrubbing the timeline");
+    _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
+    _autoProxyWhenScrubbingTimeline->setHintToolTip("When checked, the proxy mode will be at least at the level "
+                                                    "indicated by the auto-proxy parameter.");
+    _autoProxyWhenScrubbingTimeline->setAnimationEnabled(false);
+    _autoProxyWhenScrubbingTimeline->setAddNewLine(false);
+    _viewersTab->addKnob(_autoProxyWhenScrubbingTimeline);
+    
+    
+    _autoProxyLevel = Natron::createKnob<Choice_Knob>(this, "Auto-proxy level");
+    _autoProxyLevel->setName("autoProxyLevel");
+    _autoProxyLevel->setAnimationEnabled(false);
+    std::vector<std::string> autoProxyChoices;
+    autoProxyChoices.push_back("2");
+    autoProxyChoices.push_back("4");
+    autoProxyChoices.push_back("8");
+    autoProxyChoices.push_back("16");
+    autoProxyChoices.push_back("32");
+    _autoProxyLevel->populateChoices(autoProxyChoices);
+    _viewersTab->addKnob(_autoProxyLevel);
+    
     
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
@@ -1076,6 +1098,8 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
     _autoWipe->setDefaultValue(false);
+    _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
+    _autoProxyLevel->setDefaultValue(1);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1670,6 +1694,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
+    } else if (k == _autoProxyWhenScrubbingTimeline.get()) {
+        _autoProxyLevel->setSecret(!_autoProxyWhenScrubbingTimeline->getValue());
     } else if (!_restoringSettings &&
                (k == _sunkenColor.get() ||
                 k == _baseColor.get() ||
@@ -1692,14 +1718,21 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _dopeSheetEditorKnobSectionBackgroundColor.get() ||
                 k == _dopeSheetEditorScaleColor.get() ||
                 k == _dopeSheetEditorGridColor.get())) {
-        appPTR->reloadStylesheets();
-    }
+                    appPTR->reloadStylesheets();
+                }
 } // onKnobValueChanged
 
-int
+Natron::ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
-    return _texturesMode->getValue();
+    int v = _texturesMode->getValue();
+    if (v == 0) {
+        return Natron::eImageBitDepthByte;
+    } else if (v == 1) {
+        return Natron::eImageBitDepthFloat;
+    } else {
+        return Natron::eImageBitDepthByte;
+    }
 }
 
 int
@@ -2837,14 +2870,16 @@ Settings::getCurveEditorScaleColor(double* r,double* g,double* b) const
     *b = _curveEditorScaleColor->getValue(2);
 }
 
-void Settings::getDopeSheetEditorBackgroundColor(double *r, double *g, double *b) const
+void
+Settings::getDopeSheetEditorBackgroundColor(double *r, double *g, double *b) const
 {
     *r = _dopeSheetEditorBackgroundColor->getValue(0);
     *g = _dopeSheetEditorBackgroundColor->getValue(1);
     *b = _dopeSheetEditorBackgroundColor->getValue(2);
 }
 
-void Settings::getDopeSheetEditorRootRowBackgroundColor(double *r, double *g, double *b, double *a) const
+void
+Settings::getDopeSheetEditorRootRowBackgroundColor(double *r, double *g, double *b, double *a) const
 {
     *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(0);
     *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(1);
@@ -2852,7 +2887,8 @@ void Settings::getDopeSheetEditorRootRowBackgroundColor(double *r, double *g, do
     *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(3);
 }
 
-void Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r, double *g, double *b, double *a) const
+void
+Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r, double *g, double *b, double *a) const
 {
     *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(0);
     *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(1);
@@ -2860,17 +2896,30 @@ void Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r, double *g, do
     *a = _dopeSheetEditorKnobSectionBackgroundColor->getValue(3);
 }
 
-void Settings::getDopeSheetEditorScaleColor(double *r, double *g, double *b) const
+void
+Settings::getDopeSheetEditorScaleColor(double *r, double *g, double *b) const
 {
     *r = _dopeSheetEditorScaleColor->getValue(0);
     *g = _dopeSheetEditorScaleColor->getValue(1);
     *b = _dopeSheetEditorScaleColor->getValue(2);
 }
 
-void Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const
+void
+Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const
 {
     *r = _dopeSheetEditorGridColor->getValue(0);
     *g = _dopeSheetEditorGridColor->getValue(1);
     *b = _dopeSheetEditorGridColor->getValue(2);
 }
 
+bool
+Settings::isAutoProxyEnabled() const
+{
+    return _autoProxyWhenScrubbingTimeline->getValue();
+}
+
+unsigned int
+Settings::getAutoProxyMipMapLevel() const
+{
+    return (unsigned int)_autoProxyLevel->getValue() + 1;
+}

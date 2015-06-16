@@ -207,13 +207,28 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                 ,minorVersion,it->get(),false,group) );
         }
         if (!n) {
-            QString text( QObject::tr("The node ") );
+            QString text( QObject::tr("ERROR: The node ") );
             text.append( pluginID.c_str() );
-            text.append( QObject::tr(" was found in the script but doesn't seem \n"
-                                     "to exist in the currently loaded plug-ins.") );
+            text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
+            text.append( QObject::tr(" was found in the script but does not"
+                                     " exist in the loaded plug-ins.") );
             appPTR->writeToOfxLog_mt_safe(text);
             mustShowErrorsLog = true;
             continue;
+        } else {
+            if (n->getPlugin() && n->getPlugin()->getMajorVersion() != (int)majorVersion) {
+                QString text( QObject::tr("WARNING: The node ") );
+                text.append((*it)->getNodeScriptName().c_str());
+                text.append(" (");
+                text.append( pluginID.c_str() );
+                text.append(")");
+                text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
+                text.append( QObject::tr(" was found in the script but was loaded"
+                                         " with version %3.%4 instead").arg(n->getPlugin()->getMajorVersion()).arg(n->getPlugin()->getMinorVersion()) );
+                appPTR->writeToOfxLog_mt_safe(text);
+                mustShowErrorsLog = true;
+
+            }
         }
         if ( n->isOutputNode() ) {
             *hasProjectAWriter = true;

@@ -437,6 +437,16 @@ public:
     
     bool getHostCanAddOptions() const;
 
+    void setCascading(bool cascading)
+    {
+        _isCascading = cascading;
+    }
+    
+    bool isCascading() const
+    {
+        return _isCascading;
+    }
+    
 Q_SIGNALS:
 
     void populated();
@@ -453,6 +463,7 @@ private:
     std::vector<std::string> _entriesHelp;
     bool _addNewChoice;
     static const std::string _typeNameStr;
+    bool _isCascading;
 };
 
 /******************************SEPARATOR_KNOB**************************************/
@@ -861,6 +872,7 @@ private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };

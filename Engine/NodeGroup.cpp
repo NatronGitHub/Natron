@@ -225,17 +225,35 @@ NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) co
 
 }
 
-void
-NodeCollection::quitAnyProcessingForAllNodes()
+static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
 {
-    NodeList nodes = getNodes();
+    NodeList nodes = grp->getNodes();
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->setMustQuitProcessing(mustQuit);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            setMustQuitProcessingRecursive(mustQuit,isGrp);
+        }
+    }
+}
+
+static void quitAnyProcessingInternal(NodeCollection* grp) {
+    NodeList nodes = grp->getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->quitAnyProcessing();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->quitAnyProcessingForAllNodes();
+            quitAnyProcessingInternal(isGrp);
         }
     }
+}
+
+void
+NodeCollection::quitAnyProcessingForAllNodes()
+{
+    setMustQuitProcessingRecursive(true, this);
+    quitAnyProcessingInternal(this);
+    setMustQuitProcessingRecursive(false, this);
 }
 
 bool
@@ -862,7 +880,11 @@ NodeCollection::setParallelRenderArgs(int time,
         
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+        U64 rotoAge = (*it)->getRotoAge();
+        bool duringPaintStrokeCreation = (*it)->isDuringPaintStrokeCreation();
+        Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(),
+                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, safety);
         
         if ((*it)->isMultiInstance()) {
             
@@ -874,7 +896,8 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), renderAge,renderRequester, textureIndex, timeline, isAnalysis);
+                Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, childSafety);
                 
             }
         }
@@ -966,7 +989,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
 : collection(n)
 , argsMap()
 {
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis);
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge, renderRequester,textureIndex,timeline,isAnalysis);
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
@@ -1874,7 +1897,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
-    WRITE_INDENT(1); WRITE_STRING("param.setHelp(\"" + ESC(help) + "\")");
+    WRITE_INDENT(1); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
     if (knob->isNewLineActivated()) {
         WRITE_INDENT(1); WRITE_STRING("param.setAddNewLine(True)");
     } else {

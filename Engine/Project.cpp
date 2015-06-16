@@ -137,7 +137,7 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave)
 {
 
-    reset();
+    reset(false);
 
     try {
         QString realPath = path;
@@ -823,14 +823,12 @@ Project::initializeKnobs()
     _imp->projectName->setIsPersistant(false);
     _imp->projectName->setAsLabel();
     _imp->projectName->setAnimationEnabled(false);
-    _imp->projectName->setEnabled(0, false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
     
     _imp->projectPath = Natron::createKnob<String_Knob>(this, "Project path");
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
-    _imp->projectPath->setEnabled(0, false);
     _imp->projectPath->setAnimationEnabled(false);
     _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
@@ -1390,14 +1388,14 @@ Project::autoSavesDir()
 void
 Project::resetProject()
 {
-    reset();
+    reset(false);
     if (!appPTR->isBackground()) {
         createViewer();
     }
 }
 
 void
-Project::reset()
+Project::reset(bool aboutToQuit)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -1433,27 +1431,30 @@ Project::reset()
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes(true);
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     
-    beginChanges();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            knobs[i]->resetToDefaultValue(j);
+    if (!aboutToQuit) {
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+        
+        beginChanges();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+                knobs[i]->resetToDefaultValue(j);
+            }
         }
+        
+        
+        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
+        
+        endChanges(true);
     }
     
-    
-    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    
-    endChanges(true);
-
     _imp->projectClosing = false;
 }
-
-bool
-Project::isAutoSetProjectFormatEnabled() const
-{
-    QMutexLocker l(&_imp->formatMutex);
+    
+    bool
+    Project::isAutoSetProjectFormatEnabled() const
+    {
+        QMutexLocker l(&_imp->formatMutex);
     return _imp->autoSetProjectFormat;
 }
     

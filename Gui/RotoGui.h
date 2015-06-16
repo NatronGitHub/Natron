@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+class QInputEvent;
 class QMouseEvent;
 class QToolBar;
 class QWidget;
@@ -68,12 +69,17 @@ public:
     bool getIsSelected() const;
     void setIsSelected(bool s);
     
+public Q_SLOTS:
+    
+    void handleLongPress();
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     
     bool isSelected;
+    bool wasMouseReleased;
 };
 
 class RotoGui
@@ -169,13 +175,13 @@ public:
 
     void drawOverlays(double scaleX, double scaleY) const;
 
-    bool penDown(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
 
@@ -285,6 +291,14 @@ public Q_SLOTS:
     void cuspSelectedCurve();
     void removeFeatherForSelectedCurve();
     void lockSelectedCurves();
+    
+    void onColorWheelButtonClicked();
+    void onDialogCurrentColorChanged(const QColor& color);
+    
+    void onPressureOpacityClicked(bool isDown);
+    void onPressureSizeClicked(bool isDown);
+    void onPressureHardnessClicked(bool isDown);
+    void onBuildupClicked(bool isDown);
     
 private:
 

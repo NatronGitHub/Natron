@@ -202,7 +202,8 @@ private:
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
-    bool _isUserScrubbingTimeline; //< true if the user is actively moving the cursor on the timeline. False on mouse release.
+    mutable QMutex _isUserScrubbingSliderMutex;
+    bool _isUserScrubbingSlider; //< true if the user is actively moving the cursor on the timeline or a slider. False on mouse release.
     GuiAppInstance* _appInstance; //< ptr to the appInstance
 
     ///Dialogs handling members
@@ -383,7 +384,8 @@ struct GuiPrivate
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
         : _gui(gui)
-        , _isUserScrubbingTimeline(false)
+        , _isUserScrubbingSliderMutex()
+        , _isUserScrubbingSlider(false)
         , _appInstance(app)
         , _uiUsingMainThreadCond()
         , _uiUsingMainThread(false)
@@ -697,12 +699,12 @@ Gui::abortProject(bool quitApp)
 
         assert(_imp->_appInstance);
 
-        _imp->_appInstance->getProject()->closeProject();
+        _imp->_appInstance->getProject()->closeProject(true);
         _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
         _imp->_appInstance->resetPreviewProvider();
-        _imp->_appInstance->getProject()->closeProject();
+        _imp->_appInstance->getProject()->closeProject(false);
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
     }
@@ -718,9 +720,8 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
-        Natron::errorDialog("Full Screen", tr("Please select a window first").toStdString(), false);
-
-        return;
+        qApp->setActiveWindow(this);
+        activeWin = this;
     }
 
     if ( activeWin->isFullScreen() ) {
@@ -4349,15 +4350,17 @@ Gui::getAvailablePaneName(const QString & baseName) const
 }
 
 void
-Gui::setUserScrubbingTimeline(bool b)
+Gui::setUserScrubbingSlider(bool b)
 {
-    _imp->_isUserScrubbingTimeline = b;
+    QMutexLocker k(&_imp->_isUserScrubbingSliderMutex);
+    _imp->_isUserScrubbingSlider = b;
 }
 
 bool
-Gui::isUserScrubbingTimeline() const
+Gui::isUserScrubbingSlider() const
 {
-    return _imp->_isUserScrubbingTimeline;
+    QMutexLocker k(&_imp->_isUserScrubbingSliderMutex);
+    return _imp->_isUserScrubbingSlider;
 }
 
 bool
@@ -4921,6 +4924,50 @@ Gui::moveEvent(QMoveEvent* e)
     setMtSafePosition( p.x(), p.y() );
 }
 
+
+#if 0
+bool
+Gui::event(QEvent* e)
+{
+    switch (e->type()) {
+        case QEvent::TabletEnterProximity:
+        case QEvent::TabletLeaveProximity:
+        case QEvent::TabletMove:
+        case QEvent::TabletPress:
+        case QEvent::TabletRelease:
+        {
+            QTabletEvent *tEvent = dynamic_cast<QTabletEvent *>(e);
+            const std::list<ViewerTab*>& viewers = getViewersList();
+            for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+                QPoint widgetPos = (*it)->mapToGlobal((*it)->mapFromParent((*it)->pos()));
+                QRect r(widgetPos.x(),widgetPos.y(),(*it)->width(),(*it)->height());
+                if (r.contains(tEvent->globalPos())) {
+                    QTabletEvent te(tEvent->type()
+                                    , mapFromGlobal(tEvent->pos())
+                                    , tEvent->globalPos()
+                                    , tEvent->hiResGlobalPos()
+                                    , tEvent->device()
+                                    , tEvent->pointerType()
+                                    , tEvent->pressure()
+                                    , tEvent->xTilt()
+                                    , tEvent->yTilt()
+                                    , tEvent->tangentialPressure()
+                                    , tEvent->rotation()
+                                    , tEvent->z()
+                                    , tEvent->modifiers()
+                                    , tEvent->uniqueId());
+                    qApp->sendEvent((*it)->getViewer(), &te);
+                    return true;
+                }
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    return QMainWindow::event(e);
+}
+#endif
 void
 Gui::resizeEvent(QResizeEvent* e)
 {

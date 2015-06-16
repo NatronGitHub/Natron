@@ -1754,7 +1754,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip( tr("Input the name of a node in the current project.") );
+    _imp->nodeSelectionCombo->setToolTip(Qt::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
@@ -2227,7 +2227,9 @@ KnobGui::onFrozenChanged(bool frozen)
         if ( !frozen && knob->isSlave(i) ) {
             continue;
         }
-        setReadOnly_(frozen, i);
+        if (knob->isEnabled(i)) {
+            setReadOnly_(frozen, i);
+        }
     }
 }
 
@@ -2346,7 +2348,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
                                                                    "as series of statement. The return value should be then assigned to the "
                                                                    "\"ret\" variable. When unchecked the expression must not contain "
                                                                    "any new line character and the result will be interpreted from the "
-                                                                   "interpretation of the single line."),Qt::WhiteSpaceNormal));
+                                                                   "interpretation of the single line."), Qt::WhiteSpaceNormal));
         _imp->useRetButton->setCheckable(true);
         bool checked = !initialScript.isEmpty() && retVariable;
         _imp->useRetButton->setChecked(checked);

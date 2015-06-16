@@ -69,7 +69,10 @@ struct GuiAppInstancePrivate
 
     std::string declareAppAndParamsString;
     int overlayRedrawRequests;
-
+    
+    mutable QMutex userIsPaintingMutex;
+    boost::shared_ptr<Natron::Node> userIsPainting;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -83,6 +86,8 @@ struct GuiAppInstancePrivate
     , loadProjectSplash(0)
     , declareAppAndParamsString()
     , overlayRedrawRequests(0)
+    , userIsPaintingMutex()
+    , userIsPainting()
     {
     }
 
@@ -459,7 +464,7 @@ GuiAppInstance::getGui() const
 bool
 GuiAppInstance::shouldRefreshPreview() const
 {
-    return !_imp->_gui->isUserScrubbingTimeline();
+    return !_imp->_gui->isUserScrubbingSlider();
 }
 
 
@@ -1023,4 +1028,27 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
         (*it2)->renderCurrentFrame(false);
     }
     AppInstance::onGroupCreationFinished(node);
+}
+
+bool
+GuiAppInstance::isUserScrubbingSlider() const
+{
+    return _imp->_gui ? _imp->_gui->isUserScrubbingSlider() : false;
+}
+
+void
+GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
+{
+    {
+        QMutexLocker k(&_imp->userIsPaintingMutex);
+        _imp->userIsPainting = rotopaintNode;
+    }
+    _imp->_gui->onFreezeUIButtonClicked(rotopaintNode.get() != 0);
+}
+
+boost::shared_ptr<Natron::Node>
+GuiAppInstance::getIsUserPainting() const
+{
+    QMutexLocker k(&_imp->userIsPaintingMutex);
+    return _imp->userIsPainting;
 }

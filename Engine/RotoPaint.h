@@ -13,7 +13,6 @@
 
 #include "Engine/EffectInstance.h"
 
-struct RotoPaintPrivate;
 class RotoPaint : public Natron::EffectInstance
 {
 public:
@@ -41,7 +40,7 @@ public:
     
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return 10;
+        return 11;
     }
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
@@ -65,6 +64,8 @@ public:
 
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;  
+
     virtual bool isInputOptional(int /*inputNb*/) const
     {
         return true;
@@ -74,9 +75,9 @@ public:
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return EffectInstance::eRenderSafetyFullySafeFrame;
+        return Natron::eRenderSafetyFullySafeFrame;
     }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -103,15 +104,29 @@ public:
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+
+    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
+
+
 private:
 
     virtual Natron::StatusEnum
     getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
+    virtual bool isIdentity(SequenceTime time,
+                        const RenderScale & scale,
+                        const RectI & roi,
+                        int view,
+                        SequenceTime* inputTime,
+                        int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+        
+
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    boost::scoped_ptr<RotoPaintPrivate> _imp;
 
 };
 

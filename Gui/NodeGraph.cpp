@@ -106,7 +106,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
-#define NATRON_SCENE_MIN 0
+#define NATRON_SCENE_MIN INT_MIN
 #define NATRON_SCENE_MAX INT_MAX
 
 using namespace Natron;
@@ -603,7 +603,11 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    if (getGui() && getGui()->getApp() && getGui()->getApp()->getProject()->isLoadingProjectInternal()) {
+    AppInstance* app = 0;
+    if (getGui()) {
+        app = getGui()->getApp();
+    }
+    if (app && app->getProject()->isLoadingProjectInternal()) {
         return;
     }
     if (_imp->_refreshOverlays) {
@@ -716,9 +720,9 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     
     getGui()->getApp()->setCreatingNode(false);
 
-    QUndoStack* nodeStack = node_ui->getUndoStack();
+    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
-        _imp->_gui->registerNewUndoStack(nodeStack);
+        _imp->_gui->registerNewUndoStack(nodeStack.get());
     }
     
     if (pushUndoRedoCommand) {
@@ -796,13 +800,13 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             }
             ///case b)
             else if (node->getNode()->isInputNode()) {
-//                if (selected->getNode()->isInputNode()) {
-//                    ///case 2-b) just do default we don't know what else to do
-//                    behavior = 0;
-//                } else {
+                if (selected->getNode()->getLiveInstance()->isReader()) {
+                    ///case 2-b) just do default we don't know what else to do
+                    behavior = 0;
+                } else {
                     ///case 3-b): connect the created node as input of the selected node
                     behavior = 1;
-//                }
+                }
             }
             ///case c) connect created as output of the selected node
             else {
@@ -894,58 +898,65 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             
         } else {
             
-            
-            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
-            QPointF selectedCenter = selectedBbox.center();
-            
-            double y = selectedCenter.y() - selectedNodeSize.height() / 2.
-            - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
-            double x = selectedCenter.x() + nbConnectedInput * 150;
-            
-            position.setX(x  - createdNodeSize.width() / 2.);
-            position.setY(y);
-            
-            int index = selectedNodeInternal->getPreferredInputForConnection();
-            if (index != -1) {
+            ViewerInstance* isSelectedViewer = dynamic_cast<ViewerInstance*>(selectedNodeInternal->getLiveInstance());
+            if (isSelectedViewer) {
+                //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
+                position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
+                position.setY( ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. );
+            } else {
                 
-                ///Create a dot to make things nicer
-                CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    false, //< don't autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    true,
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    createdNodeInternal->getGroup());
-                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
-                assert(dotNode);
-                boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-                assert(dotNodeGui_i);
-                NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
-                assert(dotGui);
+                QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+                QPointF selectedCenter = selectedBbox.center();
                 
-                double dotW,dotH;
-                dotGui->getSize(&dotW,&dotH);
-                QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
-                dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
-                dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
+                double y = selectedCenter.y() - selectedNodeSize.height() / 2.
+                - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+                double x = selectedCenter.x() + nbConnectedInput * 150;
                 
-                ///connect the nodes
+                position.setX(x  - createdNodeSize.width() / 2.);
+                position.setY(y);
                 
                 int index = selectedNodeInternal->getPreferredInputForConnection();
-                
-                bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
-                assert(ok);
-                
-                proj->connectNodes(0, createdNodeInternal, dotNode.get());
-                
-            }
-        }
+                if (index != -1) {
+                    
+                    ///Create a dot to make things nicer
+                    CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                        std::string(),
+                                        -1,
+                                        -1,
+                                        false, //< don't autoconnect
+                                        INT_MIN,
+                                        INT_MIN,
+                                        true,
+                                        true,
+                                        true,
+                                        QString(),
+                                        CreateNodeArgs::DefaultValuesList(),
+                                        createdNodeInternal->getGroup());
+                    boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                    assert(dotNode);
+                    boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+                    assert(dotNodeGui_i);
+                    NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
+                    assert(dotGui);
+                    
+                    double dotW,dotH;
+                    dotGui->getSize(&dotW,&dotH);
+                    QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                    dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
+                    dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
+                    
+                    ///connect the nodes
+                    
+                    int index = selectedNodeInternal->getPreferredInputForConnection();
+                    
+                    bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
+                    assert(ok);
+                    
+                    proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                    
+                }
+            } // if (isSelectedViewer) {
+        } // if (nbConnectedInput == 0) {
     }
     ///pop it below the selected node
     else {
@@ -968,7 +979,9 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 assert(*it);
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
-                assert(output_i);
+                if (!output_i) {
+                    continue;
+                }
                 NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
                 assert(output);
                 if (output) {
@@ -1423,6 +1436,13 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         break;
                     }
          
+                    if (linkRetCode == Natron::Node::eCanConnectInput_ok && nodeHoldingEdge->getNode()->getLiveInstance()->isReader() &&
+                        n->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
+                        Natron::warningDialog(tr("Reader input").toStdString(), tr("Connecting an input to a Reader node "
+                                                                                   "is only useful when using the RunScript node "
+                                                                                   "so that the Reader automatically reads an image "
+                                                                                   "when the render of the RunScript is done.").toStdString());
+                    }
                     _imp->_arrowSelected->stackBefore( n.get() );
                     pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
                 } else {
@@ -1468,7 +1488,13 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             
                             break;
                         }
-                        
+                        if (linkRetCode == Natron::Node::eCanConnectInput_ok && n->getNode()->getLiveInstance()->isReader() &&
+                            nodeHoldingEdge->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
+                            Natron::warningDialog(tr("Reader input").toStdString(), tr("Connecting an input to a Reader node "
+                                                                                       "is only useful when using the RunScript node "
+                                                                                       "so that the Reader automatically reads an image "
+                                                                                       "when the render of the RunScript is done.").toStdString());
+                        }
                         Edge* foundInput = n->getInputArrow(preferredInput);
                         assert(foundInput);
                         pushUndoCommand( new ConnectCommand( this,foundInput,
@@ -1801,7 +1827,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
                 boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
-
+                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader();
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
@@ -1815,7 +1841,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 break;
                             }
                         }
-                        if (isAlreadyAnOutput) {
+                        if (selectedNodeIsReader || isAlreadyAnOutput) {
                             continue;
                         }
                         QRectF nodeBbox = (*it)->boundingRectWithEdges();
@@ -2283,16 +2309,17 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
                 boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
-                assert(output);
-                if ( output->getIsSelected() && modCASIsShift(e) ) {
-                    std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
-                                                                                       _imp->_selection.end(),lastSelected);
-                    if ( found != _imp->_selection.end() ) {
-                        lastSelected->setUserSelected(false);
-                        _imp->_selection.erase(found);
+                if (output) {
+                    if ( output->getIsSelected() && modCASIsShift(e) ) {
+                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
+                                                                                           _imp->_selection.end(),lastSelected);
+                        if ( found != _imp->_selection.end() ) {
+                            lastSelected->setUserSelected(false);
+                            _imp->_selection.erase(found);
+                        }
+                    } else {
+                        selectNode( output, modCASIsShift(e) );
                     }
-                } else {
-                    selectNode( output, modCASIsShift(e) );
                 }
             }
         }
@@ -3041,6 +3068,9 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
+    if (!getGui() || getGui()->isGUIFrozen()) {
+        return;
+    }
     QString oldText = _imp->_cacheSizeText->toPlainText();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
@@ -4159,7 +4189,6 @@ NodeGraph::focusInEvent(QFocusEvent* e)
     if (_imp->_gui) {
         _imp->_gui->setLastSelectedGraph(this);
     }
-    _imp->_undoStack->setActive();
 }
 
 void

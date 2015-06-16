@@ -21,14 +21,6 @@
 
 using namespace Natron;
 
-struct RotoPaintPrivate
-{
-    RotoPaintPrivate()
-    {
-        
-    }
-};
-
 std::string
 RotoPaint::getDescription() const
 {
@@ -50,7 +42,9 @@ RotoPaint::~RotoPaint()
 std::string
 RotoPaint::getInputLabel (int inputNb) const
 {
-    if (inputNb == 0) {
+    if (inputNb == 10) {
+        return "Mask";
+    } else if (inputNb == 0) {
         return "Bg";
     } else {
         std::stringstream ss;
@@ -59,12 +53,21 @@ RotoPaint::getInputLabel (int inputNb) const
     }
 }
 
-void
-RotoPaint::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+bool
+RotoPaint::isInputMask(int inputNb) const
 {
-    comps->push_back(ImageComponents::getRGBAComponents());
-    comps->push_back(ImageComponents::getRGBComponents());
-    comps->push_back(ImageComponents::getXYComponents());
+    return inputNb == 10;
+}
+
+void
+RotoPaint::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
+{
+    
+    if (inputNb != 10) {
+        comps->push_back(ImageComponents::getRGBAComponents());
+        comps->push_back(ImageComponents::getRGBComponents());
+        comps->push_back(ImageComponents::getXYComponents());
+    }
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 
@@ -82,28 +85,28 @@ RotoPaint::initializeKnobs()
 
 
 void
-RotoPaint::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
-    EffectInstance* input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
+
+    if (inputNb != 10) {
         comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
+    } else {
+        comp->push_back(ImageComponents::getAlphaComponents());
     }
+    *depth = eImageBitDepthFloat;
 }
 
 
 Natron::ImagePremultiplicationEnum
 RotoPaint::getOutputPremultiplication() const
 {
-    EffectInstance* input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
+  
+//    EffectInstance* input = getInput(0);
+//    if (input) {
+//        return input->getOutputPremultiplication();
+//    } else {
         return eImagePremultiplicationPremultiplied;
-    }
-    
+//    }
 }
 
 double
@@ -121,11 +124,10 @@ RotoPaint::getPreferredAspectRatio() const
 void
 RotoPaint::onInputChanged(int inputNb)
 {
-    if (inputNb != 0) {
-        return;
-    }
+    
     boost::shared_ptr<Node> inputNode = getNode()->getInput(0);
     getNode()->getRotoContext()->onRotoPaintInputChanged(inputNode);
+    EffectInstance::onInputChanged(inputNb);
     
 }
 
@@ -136,8 +138,45 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     
     RectD maskRod;
     getNode()->getRotoContext()->getMaskRegionOfDefinition(time, view, &maskRod);
-    rod->merge(maskRod);
+    if (rod->isNull()) {
+        *rod = maskRod;
+    } else {
+        rod->merge(maskRod);
+    }
     return Natron::eStatusOK;
+}
+
+bool
+RotoPaint::isIdentity(SequenceTime time,
+                      const RenderScale & scale,
+                      const RectI & roi,
+                      int view,
+                      SequenceTime* inputTime,
+                      int* inputNb)
+{
+    boost::shared_ptr<Node> node = getNode();
+    EffectInstance* maskInput = getInput(10);
+    if (maskInput) {
+        
+        RectD maskRod;
+        bool isProjectFormat;
+        (void)maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
+        RectI maskPixelRod;
+        maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
+        if (!maskPixelRod.intersects(roi)) {
+            *inputTime = time;
+            *inputNb = 0;
+            return true;
+        }
+    }
+    
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = node->getRotoContext()->getCurvesByRenderOrder();
+    if (items.empty()) {
+        *inputNb = 0;
+        *inputTime = time;
+        return true;
+    }
+    return false;
 }
 
 class RotoPaintParallelArgsSetter
@@ -158,11 +197,14 @@ public:
                                 bool isAnalysis)
     : _nodes(nodes)
     {
+        
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+            Natron::RenderSafetyEnum safety = liveInstance->renderThreadSafety();
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, false, safety);
         }
+
     }
     
     ~RotoPaintParallelArgsSetter()
@@ -201,7 +243,7 @@ RotoPaint::render(const RenderActionArgs& args)
             if (bgImg) {
                 plane->second->pasteFrom(*bgImg, args.roi, false);
             } else {
-                plane->second->fill(args.roi, 0., 0., 0., 0.);
+                plane->second->fillZero(args.roi);
             }
             
         }
@@ -211,23 +253,30 @@ RotoPaint::render(const RenderActionArgs& args)
         NodeList rotoPaintNodes;
         roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         
-        
-        RotoPaintParallelArgsSetter frameArgs(rotoPaintNodes,
-                                              args.time,
-                                              args.view,
-                                              args.isRenderResponseToUserInteraction,
-                                              args.isSequentialRender,
-                                              false,
-                                              0, //render Age
-                                              0, // viewer requester
-                                              0, //texture index
-                                              getApp()->getTimeLine().get(),
-                                              false);
-        
         const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
         RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
         assert(firstStroke);
-        boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();
+        boost::shared_ptr<Node> bottomMerge = firstStroke->getMergeNode();
+        
+        bool duringPaintStroke = bottomMerge->isDuringPaintStrokeCreation();
+        
+        boost::shared_ptr<RotoPaintParallelArgsSetter> frameArgs;
+        if (!duringPaintStroke) {
+            //In the other case this is handled by the viewer TLS
+            frameArgs.reset(new RotoPaintParallelArgsSetter(rotoPaintNodes,
+                                                            args.time,
+                                                            args.view,
+                                                            args.isRenderResponseToUserInteraction,
+                                                            args.isSequentialRender,
+                                                            false,
+                                                            0, //render Age
+                                                            0, // viewer requester
+                                                            0, //texture index
+                                                            getApp()->getTimeLine().get(),
+                                                            false ));
+        }
+        
+        
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
 
@@ -241,7 +290,8 @@ RotoPaint::render(const RenderActionArgs& args)
                                     args.roi,
                                     RectD(),
                                     neededComps,
-                                    bgDepth);
+                                    bgDepth,
+                                    this);
         ImageList rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
@@ -249,17 +299,44 @@ RotoPaint::render(const RenderActionArgs& args)
         } else if (code == eRenderRoIRetCodeAborted) {
             return Natron::eStatusOK;
         } else if (rotoPaintImages.empty()) {
+            for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+                 plane != args.outputPlanes.end(); ++plane) {
+                
+                plane->second->fillZero(args.roi);
+                
+                
+            }
             return Natron::eStatusOK;
         }
-        
         assert(rotoPaintImages.size() == args.outputPlanes.size());
         
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
-            plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+            if ((*rotoImagesIt)->getComponents() != plane->second->getComponents()) {
+                
+                (*rotoImagesIt)->convertToFormat(args.roi,
+                                                 getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                                                 getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+                                                 , false, false, plane->second.get());
+            } else {
+                plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+            }
         }
     }
     
     return Natron::eStatusOK;
+}
+
+void
+RotoPaint::clearLastRenderedImage()
+{
+    EffectInstance::clearLastRenderedImage();
+    NodeList rotoPaintNodes;
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    assert(roto);
+    roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+        (*it)->clearLastRenderedImage();
+    }
 }

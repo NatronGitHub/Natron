@@ -57,6 +57,7 @@ class LinkArrow;
 class MultiInstancePanel;
 class QMenu;
 class NodeGroup;
+class QUndoStack;
 class NodeCollection;
 namespace Natron {
 class ChannelSet;
@@ -269,7 +270,7 @@ public:
 
     void removeSettingsPanel();
 
-    QUndoStack* getUndoStack() const;
+    boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     void removeUndoStack();
 
@@ -351,23 +352,23 @@ public:
     
     boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
     
-    virtual void drawDefaultOverlay(double scaleX,double scaleY)  OVERRIDE FINAL;
+    virtual void drawDefaultOverlay(double scaleX, double scaleY)  OVERRIDE FINAL;
     
-    virtual bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyUpDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyRepeatDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusGainedDefault(double scaleX,double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusGainedDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusLostDefault(double scaleX,double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool hasDefaultOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -545,6 +546,8 @@ private:
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
     
+    bool _panelOpenedBeforeDeactivate;
+    
     QGraphicsPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
     
@@ -622,7 +625,8 @@ private:
     int _mtSafeWidth,_mtSafeHeight;
     
     boost::shared_ptr<DefaultOverlay> _defaultOverlay;
-    
+    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
+
 };
 
 

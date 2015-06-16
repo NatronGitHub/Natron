@@ -72,7 +72,7 @@ public:
     virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
-    int getViewersBitDepth() const;
+    Natron::ImageBitDepthEnum getViewersBitDepth() const;
 
     int getViewerTilesPowerOf2() const;
 
@@ -279,7 +279,10 @@ public:
     void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getDopeSheetEditorScaleColor(double* r,double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
-
+    
+    bool isAutoProxyEnabled() const;
+    unsigned int getAutoProxyMipMapLevel() const;
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -355,6 +358,9 @@ private:
     boost::shared_ptr<Color_Knob> _checkerboardColor1;
     boost::shared_ptr<Color_Knob> _checkerboardColor2;
     boost::shared_ptr<Bool_Knob> _autoWipe;
+    boost::shared_ptr<Bool_Knob> _autoProxyWhenScrubbingTimeline;
+    boost::shared_ptr<Choice_Knob> _autoProxyLevel;
+    
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _autoTurbo;
     boost::shared_ptr<Bool_Knob> _useNodeGraphHints;

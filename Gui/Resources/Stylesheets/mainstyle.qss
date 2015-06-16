@@ -302,6 +302,23 @@ RotoToolButton[isSelected="true"]
     border: 1px solid %1;
 }
 
+RotoToolButton
+{
+    border: 0px ;
+}
+
+RotoToolButton[isSelected="false"]:pressed {
+    border: 0px;
+}
+RotoToolButton[isSelected="true"]:pressed {
+    border: 1px solid %1;
+}
+
+
+RotoToolButton:focus {
+    border: 0px;
+}
+
 QDialogButtonBox {
     background-color: %3;
 }
@@ -372,8 +389,9 @@ QDockWidget {
 }
 
 QTabWidget::pane {
-    border:0px;
+    border:1px solid black;
 }
+
 
 QLineEdit {
     border: 1px solid;

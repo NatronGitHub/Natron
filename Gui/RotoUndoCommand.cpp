@@ -26,6 +26,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Project.h"
+#include "Engine/Node.h"
 #include "Gui/RotoGui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/RotoPanel.h"
@@ -583,7 +585,11 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
 {
-    
+    /*
+     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
+     * are deleted so that the ThreadLocalStorage used is correctly cleared.
+     */
+    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
 }
 
 void
@@ -1234,6 +1240,7 @@ MakeBezierUndoCommand::redo()
                 _lastPointAdded = lastIndex;
             }
         } else {
+            assert(_newCurve);
             _oldCurve->clone(_newCurve.get());
             int lastIndex = _newCurve->getControlPointsCount() - 1;
             assert(lastIndex >= 0);
@@ -1241,7 +1248,11 @@ MakeBezierUndoCommand::redo()
             _newCurve->moveLeftBezierPoint(lastIndex,_time, -_dx, -_dy);
             _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
         }
-        boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
+        
+        boost::shared_ptr<RotoItem> parentItem;
+        if (_newCurve->getParentLayer()) {
+            parentItem =  _roto->getContext()->getItemByName(_newCurve->getParentLayer()->getScriptName());
+        }
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_newCurve);
@@ -1540,9 +1551,22 @@ RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
       , _items()
 {
     for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        
+        QTreeWidgetItem* parentItem = (*it)->parent();
+        bool foundParent = false;
+        for (QList<QTreeWidgetItem*>::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            if ((*it2) == parentItem) {
+                foundParent = true;
+                break;
+            }
+        }
+        if (foundParent) {
+            //Not necessary to add this item to the list since the parent is going to remove it anyway
+            continue;
+        }
         RemovedItem r;
         r.treeItem = *it;
-        r.parentTreeItem = r.treeItem->parent();
+        r.parentTreeItem = parentItem;
         r.item = _roto->getRotoItemForTreeItem(r.treeItem);
         assert(r.item);
         if (r.parentTreeItem) {
@@ -1662,6 +1686,9 @@ DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
         Item i;
         i.dropped = *it;
         i.oldParentItem = (*it)->dropped->parent();
+        if (!i.oldParentItem) {
+            continue;
+        }
         i.oldParentLayer = (*it)->droppedRotoItem->getParentLayer();
         if (i.oldParentLayer) {
             i.indexInOldLayer = i.oldParentLayer->getChildIndex( (*it)->droppedRotoItem );
@@ -1807,16 +1834,37 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
             boost::shared_ptr<Bezier> srcBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
             boost::shared_ptr<RotoLayer> srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
-
+            boost::shared_ptr<RotoStrokeItem> srcStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
             if (srcBezier) {
-                boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),srcBezier->getScriptName(),
+                std::string name = getItemCopyName(roto, it->rotoItem);
+                boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),name,
                                                            srcBezier->getParentLayer()) );
                 copy->clone(srcBezier.get());
-                copy->setScriptName( getItemCopyName(roto, it->rotoItem));
+                //clone overwrittes the script name, don't forget to set it back
+                copy->setScriptName(name);
+                copy->setLabel(name);
+                it->itemCopy = copy;
+            } else if (srcStroke) {
+                std::string name = getItemCopyName(roto, it->rotoItem);
+                boost::shared_ptr<RotoStrokeItem> copy(new RotoStrokeItem(srcStroke->getBrushType(),
+                                                                          srcStroke->getContext(),
+                                                                          name,
+                                                                          boost::shared_ptr<RotoLayer>()));
+                if (srcStroke->getParentLayer()) {
+                    srcStroke->getParentLayer()->insertItem(copy, 0);
+                }
+                copy->clone(srcStroke.get());
+                copy->attachStrokeToNodes();
+                //clone overwrittes the script name, don't forget to set it back
+                copy->setScriptName(name);
+                copy->setLabel(name);
                 it->itemCopy = copy;
             } else {
                 assert(srcLayer);
-                boost::shared_ptr<RotoLayer> copy( new RotoLayer(*srcLayer) );
+                boost::shared_ptr<RotoLayer> copy( new RotoLayer(srcLayer->getContext(),
+                                                                 "",
+                                                                 boost::shared_ptr<RotoLayer>()) );
+                copy->clone(srcLayer.get());
                 setItemCopyNameRecursive( roto, copy );
                 it->itemCopy = copy;
             }
@@ -1832,12 +1880,9 @@ void
 PasteItemUndoCommand::undo()
 {
     if (_mode == ePasteModeCopyToItem) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
-        assert(isBezier);
         assert(_oldTargetItem);
         _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
-        boost::shared_ptr<Bezier> old = boost::dynamic_pointer_cast<Bezier>(_oldTargetItem);
-        isBezier->clone(old.get());
+        _targetItem->clone(_oldTargetItem.get());
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
     } else {
@@ -1856,18 +1901,26 @@ PasteItemUndoCommand::redo()
 {
     if (_mode == ePasteModeCopyToItem) {
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
-        assert(isBezier);
-        _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer()) );
-        _oldTargetItem->clone(isBezier);
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
+        if (isBezier) {
+            _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer()) );
+        } else if (isStroke) {
+            boost::shared_ptr<RotoStrokeItem> oldStroke( new RotoStrokeItem(isStroke->getBrushType(),isStroke->getContext(),isStroke->getScriptName(),boost::shared_ptr<RotoLayer>()) );
+            oldStroke->attachStrokeToNodes();
+            _oldTargetItem = oldStroke;
+            if (isStroke->getParentLayer()) {
+                isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
+            }
+            
+        }
+        _oldTargetItem->clone(_targetItem.get());
         assert(_pastedItems.size() == 1);
         PastedItem & front = _pastedItems.front();
-        Bezier* toCopy = dynamic_cast<Bezier*>( front.rotoItem.get() );
-
         ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
         ///have not been refreshed and the selected item is linked to those dirty knobs
         _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
-        isBezier->clone(toCopy);
-        isBezier->setScriptName( _oldTargetItem->getScriptName() );
+        _targetItem->clone(front.rotoItem.get());
+        _targetItem->setScriptName( _oldTargetItem->getScriptName() );
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
     } else {
@@ -1875,8 +1928,8 @@ PasteItemUndoCommand::redo()
         assert(isLayer);
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
             assert(it->itemCopy);
-            it->itemCopy->setParentLayer(isLayer);
-            _roto->getContext()->addItem(isLayer, isLayer->getItems().size(), it->itemCopy, RotoItem::eSelectionReasonOther);
+            //it->itemCopy->setParentLayer(isLayer);
+            _roto->getContext()->addItem(isLayer, 0, it->itemCopy, RotoItem::eSelectionReasonOther);
         }
     }
 
@@ -1896,17 +1949,35 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     _item.treeItem = items;
     _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
     assert( _item.item->getParentLayer() );
-    Bezier* isBezier = dynamic_cast<Bezier*>( _item.item.get() );
-    RotoLayer* isLayer = dynamic_cast<RotoLayer*>( _item.item.get() );
+    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>( _item.item );
+    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( _item.item);
+    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
     if (isBezier) {
-        _item.duplicatedItem.reset( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer()) );
-        _item.duplicatedItem->clone(isBezier);
+        std::string name = getItemCopyName(roto, isBezier);
+        _item.duplicatedItem.reset( new Bezier(isBezier->getContext(),name,isBezier->getParentLayer()) );
+        _item.duplicatedItem->clone(isBezier.get());
+        //clone has overwritten the name
+        _item.duplicatedItem->setScriptName(name);
+        _item.duplicatedItem->setLabel(name);
+    } else if (isStroke) {
+        std::string name = getItemCopyName(roto, isStroke);
+        boost::shared_ptr<RotoStrokeItem> strokeCopy( new RotoStrokeItem(isStroke->getBrushType(),isStroke->getContext(),name, boost::shared_ptr<RotoLayer>()) );
+        strokeCopy->attachStrokeToNodes();
+        _item.duplicatedItem = strokeCopy;
+        if (isStroke->getParentLayer()) {
+            isStroke->getParentLayer()->insertItem(_item.duplicatedItem, 0);
+        }
+        _item.duplicatedItem->clone(isStroke.get());
+        //clone has overwritten the name
+        _item.duplicatedItem->setScriptName(name);
+        _item.duplicatedItem->setLabel(name);
+
     } else {
         assert(isLayer);
         _item.duplicatedItem.reset( new RotoLayer(*isLayer) );
+        setItemCopyNameRecursive( roto, _item.duplicatedItem );
     }
 
-    setItemCopyNameRecursive( roto, _item.duplicatedItem );
 }
 
 DuplicateItemUndoCommand::~DuplicateItemUndoCommand()
@@ -1925,7 +1996,7 @@ void
 DuplicateItemUndoCommand::redo()
 {
     _roto->getContext()->addItem(_item.item->getParentLayer(),
-                                 _item.item->getParentLayer()->getItems().size(), _item.duplicatedItem, RotoItem::eSelectionReasonOther);
+                                 0, _item.duplicatedItem, RotoItem::eSelectionReasonOther);
 
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Duplicate item(s) of %2").arg( _roto->getNodeName().c_str() ) );

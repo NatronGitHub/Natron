@@ -18,6 +18,10 @@
 
 #include <vector>
 #include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
@@ -34,6 +38,17 @@ class QAction;
 
 class MenuWithToolTips;
 
+struct ComboBoxMenuNode
+{
+    MenuWithToolTips* isMenu;
+    QAction* isLeaf;
+    QString text;
+    std::vector<boost::shared_ptr<ComboBoxMenuNode> > children;
+    ComboBoxMenuNode* parent;
+    
+    ComboBoxMenuNode() : isMenu(0), isLeaf(0), text(), children(), parent(0) {}
+};
+
 class ComboBox
     : public QFrame
 {
@@ -49,12 +64,13 @@ private:
     bool _clicked;
     bool _dirty;
     bool _altered;
+    bool _cascading;
+    int _cascadingIndex;
     
     int _currentIndex;
     QString _currentText;
     std::vector<int> _separators;
-    std::vector<QAction*> _actions;
-    MenuWithToolTips* _menu;
+    boost::shared_ptr<ComboBoxMenuNode> _rootNode;
     
     mutable QSize _sh; ///size hint
     mutable QSize _msh; ///minmum size hint
@@ -69,11 +85,23 @@ public:
     virtual ~ComboBox() OVERRIDE
     {
     }
+    
+    void setCascading(bool cascading)
+    {
+        _cascading = cascading;
+    }
 
     /*Insert a new item BEFORE the specified index.*/
     void insertItem( int index,const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
     
     void addAction(QAction* action);
+    
+private:
+    
+    void addActionPrivate(QAction* action);
+    
+public:
+    
     
     void addItem( const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
     

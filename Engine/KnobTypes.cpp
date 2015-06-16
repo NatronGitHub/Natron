@@ -559,6 +559,7 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
 : Knob<int>(holder, description, dimension,declaredByPlugin)
 , _entriesMutex()
 , _addNewChoice(false)
+, _isCascading(false)
 {
 }
 
@@ -1356,9 +1357,9 @@ Parametric_Knob::addControlPoint(int dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return eStatusFailed;
     }
@@ -1376,9 +1377,9 @@ Parametric_Knob::addHorizontalControlPoint(int dimension,double key,double value
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
-        boost::math::isnan(key) ||
+        key != key || // check for NaN
         boost::math::isinf(key) ||
-        boost::math::isnan(value) ||
+        value != value || // check for NaN
         boost::math::isinf(value)) {
         return eStatusFailed;
     }
@@ -1557,6 +1558,22 @@ Parametric_Knob::cloneExtraData(KnobI* other,int dimension )
             }
         }
     }
+}
+
+bool
+Parametric_Knob::cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension) {
+    bool hasChanged = false;
+    ///Mt-safe as Curve is MT-safe
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(other);
+    
+    if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
+        for (int i = 0; i < getDimension(); ++i) {
+            if (i == dimension || dimension == -1) {
+                hasChanged |= _curves[i]->cloneAndCheckIfChanged( *isParametric->getParametricCurve(i) );
+            }
+        }
+    }
+    return hasChanged;
 }
 
 void
