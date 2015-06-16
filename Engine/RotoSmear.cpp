@@ -163,10 +163,7 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
     RectI prevDotBounds;
     prevDotRoD.toPixelEnclosing(mipmapLevel, outputImage->getPixelAspectRatio(), &prevDotBounds);
     
-    //assert(prevDotBounds.width() == nextDotBounds.width() && prevDotBounds.height() == nextDotBounds.height());
     
-    
-    float fgPixels[4];
     
     ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
@@ -191,16 +188,16 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
              ++maskPixels) {
             
             
-            for (int k = 0; k < nComps; ++k) {
-                fgPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : dstPixels[k];
+            if (srcPixels) {
+                for (int k = 0; k < nComps; ++k) {
+                    dstPixels[k] = srcPixels[k] * *maskPixels + dstPixels[k] * (1. - *maskPixels);
+                }
+                
+                if (srcPixels) {
+                    srcPixels += nComps;
+                }
             }
             
-            for (int k = 0; k < nComps; ++k) {
-                dstPixels[k] = fgPixels[k] + dstPixels[k] * (1. - *maskPixels);
-            }
-            if (srcPixels) {
-                srcPixels += nComps;
-            }
         }
     }
     
