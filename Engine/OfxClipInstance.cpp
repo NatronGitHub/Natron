@@ -459,7 +459,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         ret->y1 = rod.y1;
         ret->y2 = rod.y2;
         return;
-    } else {
+    } else if (_nodeInstance) {
         boost::shared_ptr<RotoContext> rotoCtx = _nodeInstance->getNode()->getRotoContext();
         if (rotoCtx && getName() == "Roto") {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
@@ -470,10 +470,6 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
             return;
         }
     }
-    
-    
-    
-    
     
     if (associatedNode) {
         bool isProjectFormat;
