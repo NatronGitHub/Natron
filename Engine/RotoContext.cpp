@@ -68,6 +68,10 @@
 // http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
 #define ROTO_PRESSURE_LEVELS 512
 
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923
+#endif
+
 using namespace Natron;
 
 
@@ -2061,6 +2065,7 @@ RotoDrawableItem::getTransformAtTime(int time,Transform::Matrix3x3* matrix) cons
     double skewX = _imp->skewX->getValueAtTime(time, 0);
     double skewY = _imp->skewY->getValueAtTime(time, 0);
     double rot = _imp->rotate->getValueAtTime(time, 0);
+    rot = rot * M_PI / 180.0;
     double centerX = _imp->center->getValueAtTime(time, 0);
     double centerY = _imp->center->getValueAtTime(time, 1);
     bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
