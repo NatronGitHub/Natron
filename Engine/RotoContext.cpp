@@ -4740,6 +4740,7 @@ RotoStrokeItem::~RotoStrokeItem()
             _imp->strokeDotPatterns[i] = 0;
         }
     }
+    deactivateNodes();
 }
 
 void
@@ -5067,7 +5068,9 @@ RotoStrokeItem::deactivateNodes()
     if (_imp->effectNode) {
         _imp->effectNode->deactivate(std::list< Node* >(),true,false,false,false);
     }
-    _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
+    if (_imp->mergeNode) {
+        _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->deactivate(std::list< Node* >(),true,false,false,false);
     }
