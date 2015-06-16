@@ -19,7 +19,7 @@
 using namespace Natron;
 
 #ifndef M_PI_2
-#define M_PI_2 1.57079632679489661923
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
 

@@ -92,6 +92,12 @@ GCC_DIAG_OFF(deprecated-declarations)
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
+#ifndef M_PI_2
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
+#endif
+#ifndef M_PI_4
+#define M_PI_4      0.785398163397448309615660845819875721  /* pi/4           */
+#endif
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -206,7 +212,7 @@ struct ViewerGL::Implementation
     , clipToDisplayWindow(true) // protected by mutex
     , wipeControlsMutex()
     , mixAmount(1.) // protected by mutex
-    , wipeAngle(M_PI / 2.) // protected by mutex
+    , wipeAngle(M_PI_2) // protected by mutex
     , wipeCenter()
     , selectionRectangle()
     , checkerboardTextureID(0)
@@ -717,7 +723,6 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     ///Compute a second point on the plane separator line
     ///we don't really care how far it is from the center point, it just has to be on the line
     QPointF firstPoint,secondPoint;
-    double mpi2 = M_PI / 2.;
     QPointF center;
     double angle;
     {
@@ -731,8 +736,8 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     double maxSize = std::max(texRectClipped.x2 - texRectClipped.x1,texRectClipped.y2 - texRectClipped.y1) * 10000.;
     double xmax,ymax;
 
-    xmax = std::cos(angle + mpi2) * maxSize;
-    ymax = std::sin(angle + mpi2) * maxSize;
+    xmax = std::cos(angle + M_PI_2) * maxSize;
+    ymax = std::sin(angle + M_PI_2) * maxSize;
 
     firstPoint.setX(center.x() - xmax);
     firstPoint.setY(center.y() - ymax);
@@ -1571,10 +1576,9 @@ ViewerGL::drawWipeControl()
         mixAmount = _imp->mixAmount;
     }
     double alphaMix1,alphaMix0,alphaCurMix;
-    double mpi8 = M_PI / 8;
 
-    alphaMix1 = wipeAngle + mpi8;
-    alphaMix0 = wipeAngle + 3. * mpi8;
+    alphaMix1 = wipeAngle + M_PI_4 / 2;
+    alphaMix0 = wipeAngle + 3. * M_PI_4 / 2;
     alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
     QPointF mix0Pos,mixPos,mix1Pos;
     
@@ -1608,10 +1612,10 @@ ViewerGL::drawWipeControl()
     rotateAxisLeft.setX(wipeCenter.x() - std::cos(wipeAngle) * rotateOffsetX);
     rotateAxisLeft.setY( wipeCenter.y() - (std::sin(wipeAngle) * rotateOffsetY) );
 
-    oppositeAxisTop.setX( wipeCenter.x() + std::cos(wipeAngle + M_PI / 2.) * (rotateW / 2.) );
-    oppositeAxisTop.setY( wipeCenter.y() + std::sin(wipeAngle + M_PI / 2.) * (rotateH / 2.) );
-    oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI / 2.) * (rotateW / 2.) );
-    oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI / 2.) * (rotateH / 2.) );
+    oppositeAxisTop.setX( wipeCenter.x() + std::cos(wipeAngle + M_PI_2) * (rotateW / 2.) );
+    oppositeAxisTop.setY( wipeCenter.y() + std::sin(wipeAngle + M_PI_2) * (rotateH / 2.) );
+    oppositeAxisBottom.setX( wipeCenter.x() - std::cos(wipeAngle + M_PI_2) * (rotateW / 2.) );
+    oppositeAxisBottom.setY( wipeCenter.y() - std::sin(wipeAngle + M_PI_2) * (rotateH / 2.) );
 
     {
         GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
@@ -1668,7 +1672,7 @@ ViewerGL::drawWipeControl()
                 arrowRadius.y = 10. * zoomScreenPixelHeight;
 
                 glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
-                glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
+                glRotatef(wipeAngle * 180.0 / M_PI, 0, 0, 1);
                 //  center the oval at x_center, y_center
                 glTranslatef (arrowCenterX, 0., 0);
                 //  draw the oval using line segments
@@ -1710,7 +1714,7 @@ ViewerGL::drawWipeControl()
             glEnd();
             glPointSize(1.);
             
-            _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
+            _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI_4 / 2, wipeAngle + 3. * M_PI_4 / 2);
       
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
@@ -3201,8 +3205,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             QMutexLocker l(&_imp->wipeControlsMutex);
             double angle = std::atan2( zoomPos.y() - _imp->wipeCenter.y(), zoomPos.x() - _imp->wipeCenter.x() );
             _imp->wipeAngle = angle;
-            double mpi2 = M_PI / 2.;
-            double closestPI2 = mpi2 * std::floor( (_imp->wipeAngle + M_PI / 4.) / mpi2 );
+            double closestPI2 = M_PI_2 * std::floor(_imp->wipeAngle / M_PI_2 + 0.5);
             if (std::fabs(_imp->wipeAngle - closestPI2) < 0.1) {
                 // snap to closest multiple of PI / 2.
                 _imp->wipeAngle = closestPI2;
@@ -4576,10 +4579,9 @@ ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF & pos,
     ///mix 1 is at rotation bar + pi / 8
     ///mix 0 is at rotation bar + 3pi / 8
     double alphaMix1,alphaMix0,alphaCurMix;
-    double mpi8 = M_PI / 8;
 
-    alphaMix1 = wipeAngle + mpi8;
-    alphaMix0 = wipeAngle + 3. * mpi8;
+    alphaMix1 = wipeAngle + M_PI_4 / 2;
+    alphaMix0 = wipeAngle + 3 * M_PI_4 / 2;
     alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
     QPointF mixPos;
     double mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;

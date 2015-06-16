@@ -31,6 +31,9 @@
 #ifndef M_PI_2
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
+#ifndef M_PI_4
+#define M_PI_4      0.785398163397448309615660845819875721  /* pi/4           */
+#endif
 
 #define EDGE_LENGTH_MIN 0.1
 
@@ -435,7 +438,7 @@ Edge::initLine()
     } else {
         arrowSize = 7. * sc;
     }
-    double headAngle = 3. * M_PI / 4.;
+    double headAngle = 3. * M_PI_4;
     QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
                                             std::cos(a + headAngle) * arrowSize);
     QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,
@@ -516,8 +519,8 @@ Edge::dragSource(const QPointF & src)
     double arrowSize = 5;
     QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + 2 * M_PI / 3) * arrowSize,
+                                            std::cos(a + 2 * M_PI / 3) * arrowSize);
     _arrowHead.clear();
     _arrowHead << line().p1() << arrowP1 << arrowP2;
 
@@ -540,8 +543,8 @@ Edge::dragDest(const QPointF & dst)
     double arrowSize = 5;
     QPointF arrowP1 = line().p1() + QPointF(std::sin(a + M_PI / 3) * arrowSize,
                                             std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                            std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    QPointF arrowP2 = line().p1() + QPointF(std::sin(a + 2 * M_PI / 3) * arrowSize,
+                                            std::cos(a + 2 * M_PI / 3) * arrowSize);
     _arrowHead.clear();
     _arrowHead << line().p1() << arrowP1 << arrowP2;
 }
@@ -737,8 +740,8 @@ LinkArrow::refreshPosition()
     qreal arrowSize = 10. * scale();
     QPointF arrowP1 = middle + QPointF(std::sin(a + M_PI / 3) * arrowSize,
                                        std::cos(a + M_PI / 3) * arrowSize);
-    QPointF arrowP2 = middle + QPointF(std::sin(a + M_PI - M_PI / 3) * arrowSize,
-                                       std::cos(a + M_PI - M_PI / 3) * arrowSize);
+    QPointF arrowP2 = middle + QPointF(std::sin(a + 2 * M_PI / 3) * arrowSize,
+                                       std::cos(a + 2 * M_PI / 3) * arrowSize);
 
     _arrowHead.clear();
     _arrowHead << middle << arrowP1 << arrowP2;
