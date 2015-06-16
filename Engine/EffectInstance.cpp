@@ -2902,13 +2902,17 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
         int maxInput = getMaxInputCount();
+        bool hasMask = false;
+        
         boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
         for (int i = 0; i < maxInput; ++i) {
             
+            bool isMask = isInputMask(i) || isInputRotoBrush(i);
             
             RectD inputRod;
-            if (attachedStroke && (isInputMask(i) || isInputRotoBrush(i))) {
+            if (attachedStroke && isMask) {
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
+                hasMask = true;
             } else {
                 
                 EffectInstance* input = getInput(i);
@@ -2922,6 +2926,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 if (stat != eStatusOK && !inputRod.isNull()) {
                     break;
                 }
+                hasMask = true;
             }
             if (!inputsIntersectionSet) {
                 inputsIntersection = inputRod;
@@ -2935,7 +2940,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 inputsIntersection.intersect(inputRod, &inputsIntersection);
             }
         }
-        if (inputsIntersectionSet && hasDifferentRods) {
+        if (inputsIntersectionSet && (hasMask || hasDifferentRods)) {
             inputsIntersection.toPixelEnclosing(mipMapLevel, par, &inputsRoDIntersectionPixel);
             tryIdentityOptim = true;
         }
