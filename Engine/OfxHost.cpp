@@ -424,7 +424,15 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
         const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& clips = desc->getClips();
         std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator found = clips.find("Mask");
         if (found == clips.end()) {
-            desc->defineClip("Mask");
+            OFX::Host::ImageEffect::ClipDescriptor* clip = desc->defineClip("Mask");
+            OFX::Host::Property::Set& props = clip->getProps();
+            props.setIntProperty(kOfxImageClipPropIsMask, 1);
+            props.setStringProperty(kOfxImageEffectPropSupportedComponents, kOfxImageComponentAlpha, 0);
+            if (context == kOfxImageEffectContextGeneral) {
+                props.setIntProperty(kOfxImageClipPropOptional, 1);
+            }
+            props.setIntProperty(kOfxImageEffectPropSupportsTiles, desc->getProps().getIntProperty(kOfxImageEffectPropSupportsTiles) != 0);
+            props.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 0);
         }
     }
 
