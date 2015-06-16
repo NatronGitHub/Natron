@@ -2630,10 +2630,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esReaderRepos:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
-            int mouseOffset = (lastZoomCoordsOnMousePress.x() - lastTimeOffsetOnMousePress);
-            double newTime = (currentTime - mouseOffset);
-
-            model->moveReader(currentEditedReader, newTime);
+            model->moveReader(currentEditedReader, dt);
         }
 
         break;

@@ -300,8 +300,6 @@ std::pair<double, double> DopeSheet::getKeyframeRange() const
 
 void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 {
-    nodeGui->ensurePanelCreated();
-
     // Determinate the node type
     // It will be useful to identify and sort tree items
     DopeSheet::ItemType nodeType = DopeSheet::ItemTypeCommon;
@@ -348,6 +346,8 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
             return;
         }
     }
+
+    nodeGui->ensurePanelCreated();
 
     DSNode *dsNode = createDSNode(nodeGui, nodeType);
 
@@ -685,14 +685,9 @@ void DopeSheet::slipReader(DSNode *reader, double dt)
     }
 }
 
-void DopeSheet::moveReader(DSNode *reader, double time)
+void DopeSheet::moveReader(DSNode *reader, double dt)
 {
-    NodePtr node = reader->getInternalNode();
-
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
-    assert(timeOffsetKnob);
-
-    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, timeOffsetKnob->getValue(), time, this));
+    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt, this));
 }
 
 void DopeSheet::moveGroup(DSNode *group, double dt)

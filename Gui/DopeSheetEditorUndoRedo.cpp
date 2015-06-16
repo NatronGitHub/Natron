@@ -376,14 +376,12 @@ void DSSlipReaderCommand::slipReader(double dt)
 ////////////////////////// DSMoveReaderCommand //////////////////////////
 
 DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
-                                         double oldTime,
-                                         double newTime,
+                                         double dt,
                                          DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeReader(dsNodeReader),
-    _oldTime(oldTime),
-    _newTime(newTime),
+    _dt(dt),
     _model(model)
 {
     setText(QObject::tr("Move reader"));
@@ -391,24 +389,24 @@ DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
 
 void DSMoveReaderCommand::undo()
 {
-    moveReader(_oldTime);
+    moveReader(-_dt);
 }
 
 void DSMoveReaderCommand::redo()
 {
-    moveReader(_newTime);
+    moveReader(_dt);
 }
 
 void DSMoveReaderCommand::moveReader(double time)
 {
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("timeOffset").get());
-    assert(timeOffsetKnob);
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("startingTime").get());
+    assert(startingTimeKnob);
 
-    KnobHolder *holder = timeOffsetKnob->getHolder();
+    KnobHolder *holder = startingTimeKnob->getHolder();
     Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
 
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges(true);
 
     Q_UNUSED(r);
@@ -433,7 +431,7 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    _newTime = cmd->_oldTime;
+    _dt += cmd->_dt;
 
     return true;
 }

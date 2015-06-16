@@ -148,7 +148,7 @@ class DSMoveReaderCommand : public QUndoCommand
 {
 public:
     DSMoveReaderCommand(DSNode *dsNodeReader,
-                        double oldTime, double newTime,
+                        double dt,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
 
@@ -163,8 +163,7 @@ private:
 
 private:
     DSNode *_dsNodeReader;
-    double _oldTime;
-    double _newTime;
+    double _dt;
     DopeSheet *_model;
 };
 

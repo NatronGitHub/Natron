@@ -120,7 +120,7 @@ public:
     void trimReaderLeft(DSNode *reader, double newFirstFrame);
     void trimReaderRight(DSNode *reader, double newLastFrame);
     void slipReader(DSNode *reader, double dt);
-    void moveReader(DSNode *reader, double time);
+    void moveReader(DSNode *reader, double dt);
     void moveGroup(DSNode *group, double dt);
     void copySelectedKeys();
     void pasteKeys();
