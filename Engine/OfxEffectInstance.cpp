@@ -242,7 +242,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _clipsInfos.resize(clips.size());
         for (int i = 0; i < (int)clips.size(); ++i) {
             ClipsInfo info;
-            info.rotoBrush = clips[i]->getName() == "Roto" && getNode()->isRotoNode();
+            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
             _clipsInfos[i] = info;
