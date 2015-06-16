@@ -70,6 +70,23 @@ void renderOnce(std::set<KnobHolder *> *holders)
     }
 }
 
+void moveReader(const NodePtr &reader, double time)
+{
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName("startingTime").get());
+    assert(startingTimeKnob);
+
+    KnobHolder *holder = startingTimeKnob->getHolder();
+    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+
+    effectInstance->beginChanges();
+    KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    effectInstance->endChanges(true);
+
+    Q_UNUSED(r);
+
+    renderOnce(effectInstance);
+}
+
 } // anon namespace
 
 
@@ -389,29 +406,12 @@ DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
 
 void DSMoveReaderCommand::undo()
 {
-    moveReader(-_dt);
+    moveReader(_dsNodeReader->getInternalNode(), -_dt);
 }
 
 void DSMoveReaderCommand::redo()
 {
-    moveReader(_dt);
-}
-
-void DSMoveReaderCommand::moveReader(double time)
-{
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("startingTime").get());
-    assert(startingTimeKnob);
-
-    KnobHolder *holder = startingTimeKnob->getHolder();
-    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
-
-    effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
-
-    Q_UNUSED(r);
-
-    renderOnce(effectInstance);
+    moveReader(_dsNodeReader->getInternalNode(), _dt);
 }
 
 int DSMoveReaderCommand::id() const
@@ -491,12 +491,12 @@ DSMoveGroupCommand::DSMoveGroupCommand(DSNode *dsNodeGroup, double dt, DopeSheet
 
 void DSMoveGroupCommand::undo()
 {
-    moveGroupKeyframes(-_dt);
+    moveGroup(-_dt);
 }
 
 void DSMoveGroupCommand::redo()
 {
-    moveGroupKeyframes(_dt);
+    moveGroup(_dt);
 }
 
 int DSMoveGroupCommand::id() const
@@ -521,7 +521,7 @@ bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
     return true;
 }
 
-void DSMoveGroupCommand::moveGroupKeyframes(double dt)
+void DSMoveGroupCommand::moveGroup(double dt)
 {
     NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getInternalNode()->getLiveInstance());
     NodeList nodes = group->getNodes();
@@ -536,10 +536,21 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
             continue;
         }
 
-        if (!nodeGui->getSettingPanel() || !nodeGui->getSettingPanel()->isVisible()) {
+        if (!nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible()) {
             continue;
         }
 
+        NodePtr node = nodeGui->getNode();
+        std::string pluginID = node->getPluginID();
+
+        // Move readers
+        if (pluginID == PLUGINID_OFX_READOIIO ||
+                pluginID == PLUGINID_OFX_READFFMPEG ||
+                pluginID == PLUGINID_OFX_READPFM) {
+            moveReader(node, dt);
+        }
+
+        // Move keyframes
         const KnobsAndGuis &knobs = nodeGui->getKnobs();
 
         for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {

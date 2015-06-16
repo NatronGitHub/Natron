@@ -159,9 +159,6 @@ public:
     bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
-    void moveReader(double time);
-
-private:
     DSNode *_dsNodeReader;
     double _dt;
     DopeSheet *_model;
@@ -212,7 +209,7 @@ public:
     bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
-    void moveGroupKeyframes(double dt);
+    void moveGroup(double dt);
 
 private:
     DSNode *_dsNodeGroup;

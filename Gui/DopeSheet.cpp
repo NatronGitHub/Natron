@@ -1215,7 +1215,7 @@ void DSNodePrivate::initGroupNode()
         NodePtr subNode = (*it);
         boost::shared_ptr<NodeGui> subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
 
-        if (!subNodeGui->getSettingPanel() || !subNodeGui->getSettingPanel()->isVisible()) {
+        if (!subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
             continue;
         }
 
