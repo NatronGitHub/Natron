@@ -12,7 +12,6 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QDebug>
 #include <QTreeWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -311,7 +310,7 @@ public:
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
 
-    void frame(double xMin, double xMax);
+    void centerOn(double xMin, double xMax);
 
 public Q_SLOTS:
     void toggleTripleSync(bool enabled);

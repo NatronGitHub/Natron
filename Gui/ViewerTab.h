@@ -255,6 +255,8 @@ public:
     
     void synchronizeOtherViewersProjection();
     
+    void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+
 public Q_SLOTS:
 
     void startPause(bool);

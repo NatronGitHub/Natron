@@ -108,6 +108,8 @@ public:
     
     void setFrameRangeEdited(bool edited);
 
+    void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+
 public Q_SLOTS:
     
     void recenterOnBounds();

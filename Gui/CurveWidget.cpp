@@ -3815,7 +3815,7 @@ CurveWidgetPrivate::insertSelectedKeyFrameConditionnaly(const KeyPtr &key)
 void
 CurveWidgetPrivate::updateDopeSheetViewFrameRange()
 {
-    _gui->getDopeSheetEditor()->frame(zoomCtx.left(), zoomCtx.right());
+    _gui->getDopeSheetEditor()->centerOn(zoomCtx.left(), zoomCtx.right());
 }
 
 void

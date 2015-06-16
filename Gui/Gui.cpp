@@ -5477,6 +5477,6 @@ void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
     for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         ViewerTab *v = (*it);
 
-        v->centerOn(left, right);
+        v->centerOn_tripleSync(left, right);
     }
 }

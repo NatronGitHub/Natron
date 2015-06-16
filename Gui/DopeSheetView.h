@@ -106,7 +106,7 @@ public:
                            QWidget *parent = 0);
     ~DopeSheetView();
 
-    void frame(double xMin, double xMax);
+    void centerOn(double xMin, double xMax);
 
     SequenceTime getCurrentFrame() const;
 
@@ -157,7 +157,7 @@ private Q_SLOTS:
     // Actions
     void selectAllKeyframes();
     void deleteSelectedKeyframes();
-    void frame();
+    void centerOn();
 
     void constantInterpSelectedKeyframes();
     void linearInterpSelectedKeyframes();

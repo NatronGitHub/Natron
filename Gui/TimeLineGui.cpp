@@ -147,8 +147,8 @@ struct TimelineGuiPrivate
     {
         double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
 
-        gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left, zoomRight);
-        gui->getDopeSheetEditor()->frame(tlZoomCtx.left, zoomRight);
+        gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
+        gui->getDopeSheetEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
     }
 
     void updateOpenedViewersFrameRanges()
@@ -635,6 +635,11 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
     }
     if (buttonDownIsMiddle(e)) {
         centerOn(leftBound, rightBound);
+
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->updateEditorFrameRanges();
+            _imp->updateOpenedViewersFrameRanges();
+        }
     } else {
         _imp->lastMouseEventWidgetCoord = e->pos();
         double t = toTimeLineCoordinates(e->x(),0).x();
@@ -828,6 +833,19 @@ TimeLineGui::recenterOnBounds()
     SequenceTime first,last;
     getBounds(&first, &last);
     centerOn(first,last);
+}
+
+void
+TimeLineGui::centerOn_tripleSync(SequenceTime left,
+                                 SequenceTime right)
+{
+    double curveWidth = right - left;
+    double w = width();
+
+    _imp->tlZoomCtx.left = left;
+    _imp->tlZoomCtx.zoomFactor = w / curveWidth;
+
+    update();
 }
 
 void

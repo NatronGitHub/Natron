@@ -460,8 +460,6 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem) const
     DSNode *dsNode = findParentDSNode(knobTreeItem);
     DSKnobRows knobRows = dsNode->getChildData();
 
-    qDebug() << knobTreeItem->text(0) << dsNode->getTreeItem()->text(0);
-
     DSKnobRows::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
 
     if (clickedDSKnob == knobRows.end()) {
@@ -1470,9 +1468,9 @@ void DopeSheetEditor::removeNode(NodeGui *node)
     _imp->model->removeNode(node);
 }
 
-void DopeSheetEditor::frame(double xMin, double xMax)
+void DopeSheetEditor::centerOn(double xMin, double xMax)
 {
-    _imp->dopeSheetView->frame(xMin, xMax);
+    _imp->dopeSheetView->centerOn(xMin, xMax);
 }
 
 void DopeSheetEditor::toggleTripleSync(bool enabled)
