@@ -246,15 +246,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
-            OFX::Host::ImageEffect::ClipInstance* clip = _effect->getClip( clips[i]->getName() );
-            assert(clip);
-            info.clip = dynamic_cast<OfxClipInstance*>(clip);
-            assert(info.clip);
             _clipsInfos[i] = info;
         }
         
-        _outputClip = dynamic_cast<OfxClipInstance*>(_effect->getClip(kOfxImageEffectOutputClipName));
-        assert(_outputClip);
+        
 
         beginChanges();
         OfxStatus stat;
@@ -263,6 +258,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             stat = _effect->populate();
             
+            
+            for (int i = 0; i < (int)clips.size(); ++i) {
+                _clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>(_effect->getClip(clips[i]->getName()));
+                assert(_clipsInfos[i].clip);
+            }
+            
+            _outputClip = dynamic_cast<OfxClipInstance*>(_effect->getClip(kOfxImageEffectOutputClipName));
+            assert(_outputClip);
             
             initializeContextDependentParams();
             
