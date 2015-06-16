@@ -43,6 +43,7 @@ class Button_Knob;
 class OverlaySupport;
 class NodeSerialization;
 class KnobSerialization;
+class OfxClipInstance;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -299,6 +300,8 @@ public:
 
     static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason);
 
+    int getClipInputNumber(const OfxClipInstance* clip) const;
+    
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
@@ -407,8 +410,10 @@ private:
         bool optional;
         bool mask;
         bool rotoBrush;
+        OfxClipInstance* clip;
     };
     std::vector<ClipsInfo> _clipsInfos;
+    OfxClipInstance* _outputClip;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

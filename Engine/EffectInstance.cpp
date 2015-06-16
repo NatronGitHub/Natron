@@ -5619,7 +5619,9 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     
     
     NodePtr node  = getNode();
-
+    if (!node) {
+        return;
+    }
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;

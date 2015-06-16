@@ -1216,16 +1216,7 @@ OfxClipInstance::getInputNb() const
     if (_isOutput) {
         return -1;
     }
-    int index = 0;
-    OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if ( inputs[i]->getName() == getName() ) {
-            index = i;
-            break;
-        }
-    }
-
-    return index;
+    return _nodeInstance->getClipInputNumber(this);
 }
 
 Natron::EffectInstance*
