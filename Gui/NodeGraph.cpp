@@ -872,7 +872,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         
         if (nbConnectedInput == 0) {
             
-            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF selectedNodeMiddlePos = selected->getPos_mt_safe() +
             QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
             
             
@@ -965,7 +965,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
-            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF selectedNodeMiddlePos = selected->getPos_mt_safe() +
             QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
             
             ///actually move the created node where the selected node is
@@ -1182,7 +1182,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 }
             }
 
-            _imp->_lastNodeDragStartPoint = selected->pos();
+            _imp->_lastNodeDragStartPoint = selected->getPos_mt_safe();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {
                 selectNode(selected,true); ///< don't wipe the selection
@@ -1240,7 +1240,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         
         _imp->_evtState = eEventStateDraggingNode;
-        _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
+        _imp->_lastNodeDragStartPoint = dotNodeGui->getPos_mt_safe();
         didSomething = true;
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
@@ -2009,7 +2009,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
-        QPointF p = _imp->_backdropResized->scenePos();
+        QPointF p = _imp->_backdropResized->getPos_mt_safe();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
@@ -3631,7 +3631,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     n->incrementKnobsAge();
     
     gui->copyFrom(guiSerialization);
-    QPointF newPos = gui->pos() + offset;
+    QPointF newPos = gui->getPos_mt_safe() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
     
@@ -4003,14 +4003,15 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
+    _imp->_root->setPos(0,0);
+
     if (_imp->_selection.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
-
 
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->scenePos();
+                QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax,pos.x() + size.width() );
                 ymin = std::min( ymin,pos.y() );
@@ -4022,7 +4023,7 @@ NodeGraph::centerOnAllNodes()
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */(*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->scenePos();
+                QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax,pos.x() + size.width() );
                 ymin = std::min( ymin,pos.y() );
@@ -4693,4 +4694,10 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
     ///Now that all nodes have been duplicated, try to restore nodes connections
     _imp->restoreConnections(clipboard.nodes, newNodes);
 
+}
+
+QPointF
+NodeGraph::getRootPos() const
+{
+    return _imp->_root->pos();
 }

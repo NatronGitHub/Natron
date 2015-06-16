@@ -2175,7 +2175,7 @@ QPointF
 NodeGui::getPos_mt_safe() const
 {
     QMutexLocker l(&positionMutex);
-
+    
     return pos();
 }
 

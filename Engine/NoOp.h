@@ -82,6 +82,8 @@ public:
     }
     
     
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
+    
 private:
 
     /**
