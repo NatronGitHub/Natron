@@ -71,6 +71,7 @@ void running_in_main_thread() {
 
 void running_in_main_context(const QGLWidget *glWidget) {
     assert(glWidget->context() == QGLContext::currentContext());
+    Q_UNUSED(glWidget);
 }
 
 void running_in_main_thread_and_context(const QGLWidget *glWidget) {
