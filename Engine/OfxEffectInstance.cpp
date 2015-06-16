@@ -29,7 +29,6 @@
 
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
-#include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 

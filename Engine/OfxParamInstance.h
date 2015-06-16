@@ -32,7 +32,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 //ofx
-#include "ofxhImageEffect.h"
+#include <ofxhImageEffect.h>
 #include "ofxCore.h"
 #include "ofxhParametricParam.h"
 

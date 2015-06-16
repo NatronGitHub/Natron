@@ -26,7 +26,10 @@ CLANG_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/list.hpp>
+GCC_DIAG_OFF(sign-compare)
+//vector.hpp:216:18: warning: comparison of integers of different signs: 'int' and 'base_type' (aka 'unsigned long') [-Wsign-compare]
 #include <boost/serialization/vector.hpp>
+GCC_DIAG_ON(sign-compare)
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 #endif
