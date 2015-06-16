@@ -3330,29 +3330,29 @@ RotoGui::keyDown(double /*scaleX*/,
             _imp->computeSelectedCpsBBOX();
         }
         didSomething = true;
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
         _imp->selectTool->handleSelection();
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
         if (_imp->bezierEditionTool) {
             _imp->bezierEditionTool->handleSelection();
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
         if (_imp->pointsEditionTool) {
             _imp->pointsEditionTool->handleSelection();
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
         if (_imp->paintBrushTool) {
             _imp->paintBrushTool->handleSelection();
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
         if (_imp->cloneBrushTool) {
             _imp->cloneBrushTool->handleSelection();
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
         if (_imp->effectBrushTool) {
             _imp->effectBrushTool->handleSelection();
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
+    } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
         if (_imp->mergeBrushTool) {
             _imp->mergeBrushTool->handleSelection();
         }
