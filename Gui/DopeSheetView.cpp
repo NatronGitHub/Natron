@@ -1926,9 +1926,9 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                 QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(keyTime, rowCenterY));
 
-                bool keyframeIsSelected = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf);
-                bool kfIsSelectedOrHighlighted = keyframeIsSelected
-                        || selectionRect.intersects(zoomKfRect);
+                bool kfIsSelectedOrHighlighted = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf)
+                        || ( selectionRect.intersects(zoomKfRect)
+                             || rectToZoomCoordinates(selectedKeysBRect).intersects(zoomKfRect) );
 
                 // Draw keyframe in the knob dim row only if it's visible
                 bool drawInDimRow = itemIsVisibleFromOutside(knobTreeItem);
