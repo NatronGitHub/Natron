@@ -241,6 +241,8 @@ public:
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
+    void notifyGuiClosing();
+    
 Q_SIGNALS:
 
     /**

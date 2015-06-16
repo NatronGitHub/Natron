@@ -3189,6 +3189,10 @@ ViewerTab::notifyAppClosing()
     _imp->gui = 0;
     _imp->timeLineGui->discardGuiPointer();
     _imp->app = 0;
+    
+    for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.begin() ; it!=_imp->rotoNodes.end(); ++it) {
+        it->second->notifyGuiClosing();
+    }
 }
 
 void

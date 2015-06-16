@@ -4573,3 +4573,11 @@ RotoGui::onBuildupClicked(bool isDown)
 {
     _imp->buildUpButton->setDown(isDown);
 }
+
+void
+RotoGui::notifyGuiClosing()
+{
+    _imp->viewerTab = 0;
+    _imp->viewer = 0;
+    _imp->rotoData->strokeBeingPaint.reset();
+}
