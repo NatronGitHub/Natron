@@ -45,7 +45,8 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     }
     setFixedHeight(20);
     setStyleSheet( QString("background-color: black;\n"
-                           "color : rgba(200,200,200,255); ") );
+                           "color : rgba(200,200,200,255);\n"
+                           "QToolTip { background-color: black;}") );
     
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     
