@@ -1723,6 +1723,12 @@ Node::removeReferences(bool ensureThreadsFinished)
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     deleteNodeVariableToPython(getFullyQualifiedName());
+    
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        disconnectInput(i);
+    }
+    
     _imp->liveInstance.reset();
     if (getGroup()) {
         getGroup()->removeNode(shared_from_this());
