@@ -257,6 +257,8 @@ public Q_SLOTS:
 
     void moveCurveEditorHere();
 
+    void moveDopeSheetEditorHere();
+
     void newHistogramHere();
 
     void movePropertiesBinHere();
