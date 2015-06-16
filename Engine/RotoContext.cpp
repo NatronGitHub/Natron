@@ -68,8 +68,8 @@
 // http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
 #define ROTO_PRESSURE_LEVELS 512
 
-#ifndef M_PI_2
-#define M_PI_2 1.57079632679489661923
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
 using namespace Natron;
