@@ -1054,8 +1054,7 @@ RotoItemEditorContext::RotoItemEditorContext(QTreeWidget* tree,
     QString name(_imp->curve->getLabel().c_str());
     _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText(0, name);
-    QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
-    QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
+    
     
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
 
@@ -1238,6 +1237,9 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
     _imp->curveItem->setText(0, "Animation");
     
     CurveWidget* cw = widget->getCurveWidget();
+    
+    QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
+    QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
     
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
     _imp->animCurve = new BezierCPCurveGui(cw, curve, roto, getName(), QColor(255,255,255), 1.);

@@ -6200,6 +6200,19 @@ RotoContext::~RotoContext()
 }
 
 boost::shared_ptr<RotoLayer>
+RotoContext::getOrCreateBaseLayer()
+{
+    QMutexLocker k(&_imp->rotoContextMutex);
+    if (_imp->layers.empty()) {
+        k.unlock();
+        addLayer();
+        k.relock();
+    }
+    assert(!_imp->layers.empty());
+    return _imp->layers.front();
+}
+
+boost::shared_ptr<RotoLayer>
 RotoContext::addLayerInternal(bool declarePython)
 {
     boost::shared_ptr<RotoContext> this_shared = shared_from_this();
@@ -6216,7 +6229,7 @@ RotoContext::addLayerInternal(bool declarePython)
         boost::shared_ptr<RotoLayer> parentLayer;
         {
             QMutexLocker l(&_imp->rotoContextMutex);
-            deepestLayer = findDeepestSelectedLayer();
+            deepestLayer = _imp->findDeepestSelectedLayer();
 
             if (!deepestLayer) {
                 ///find out if there's a base layer, if so add to the base layer,
@@ -6408,7 +6421,7 @@ RotoContext::makeBezier(double x,
     {
 
         QMutexLocker l(&_imp->rotoContextMutex);
-        boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
+        boost::shared_ptr<RotoLayer> deepestLayer = _imp->findDeepestSelectedLayer();
 
 
         if (!deepestLayer) {
@@ -6459,7 +6472,7 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
         QMutexLocker l(&_imp->rotoContextMutex);
         ++_imp->age; // increase age 
         
-        boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
+        boost::shared_ptr<RotoLayer> deepestLayer = _imp->findDeepestSelectedLayer();
         
         
         if (!deepestLayer) {
@@ -7508,32 +7521,14 @@ boost::shared_ptr<RotoLayer>
 RotoContext::getDeepestSelectedLayer() const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
-
     return findDeepestSelectedLayer();
 }
 
 boost::shared_ptr<RotoLayer>
 RotoContext::findDeepestSelectedLayer() const
 {
-    assert( !_imp->rotoContextMutex.tryLock() );
-
-    int minLevel = -1;
-    boost::shared_ptr<RotoLayer> minLayer;
-    for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = _imp->selectedItems.begin();
-         it != _imp->selectedItems.end(); ++it) {
-        int lvl = (*it)->getHierarchyLevel();
-        if (lvl > minLevel) {
-            boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-            if (isLayer) {
-                minLayer = isLayer;
-            } else {
-                minLayer = (*it)->getParentLayer();
-            }
-            minLevel = lvl;
-        }
-    }
-
-    return minLayer;
+    QMutexLocker k(&_imp->rotoContextMutex);
+    return _imp->findDeepestSelectedLayer();
 }
 
 void

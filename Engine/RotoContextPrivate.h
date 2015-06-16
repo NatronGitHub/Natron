@@ -1889,6 +1889,31 @@ struct RotoContextPrivate
         QMutexLocker l(&rotoContextMutex);
         ++age;
     }
+    
+    boost::shared_ptr<RotoLayer>
+    findDeepestSelectedLayer() const
+    {
+        assert( !rotoContextMutex.tryLock() );
+        
+        int minLevel = -1;
+        boost::shared_ptr<RotoLayer> minLayer;
+        for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = selectedItems.begin();
+             it != selectedItems.end(); ++it) {
+            int lvl = (*it)->getHierarchyLevel();
+            if (lvl > minLevel) {
+                boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+                if (isLayer) {
+                    minLayer = isLayer;
+                } else {
+                    minLayer = (*it)->getParentLayer();
+                }
+                minLevel = lvl;
+            }
+        }
+        
+        return minLayer;
+    }
+
 
     void renderInternal(cairo_t* cr,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                         unsigned int mipmapLevel,int time);

@@ -1030,6 +1030,8 @@ struct RotoPoint
     Natron::Point pos;
     double pressure;
     double timestamp;
+    
+    RotoPoint() : pos(), pressure(0), timestamp(0) {}
 
     RotoPoint(const Natron::Point &pos_, double pressure_, double timestamp_)
     : pos(pos_), pressure(pressure_), timestamp(timestamp_) {}
@@ -1186,6 +1188,8 @@ public:
     bool isRotoPaint() const;
     
     void createBaseLayer();
+    
+    boost::shared_ptr<RotoLayer> getOrCreateBaseLayer() ;
 
     /**
      * @brief Returns true when the context is empty (it has no shapes)
@@ -1453,6 +1457,12 @@ public:
     void setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke);
     boost::shared_ptr<RotoStrokeItem> getStrokeBeingPainted() const;
     
+    /**
+     * @brief First searches through the selected layer which one is the deepest in the hierarchy.
+     * If nothing is found, it searches through the selected items and find the deepest selected item's layer
+     **/
+    boost::shared_ptr<RotoLayer> findDeepestSelectedLayer() const;
+    
 Q_SIGNALS:
 
     /**
@@ -1491,11 +1501,7 @@ private:
 
     void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
 
-    /**
-     * @brief First searches through the selected layer which one is the deepest in the hierarchy.
-     * If nothing is found, it searches through the selected items and find the deepest selected item's layer
-     **/
-    boost::shared_ptr<RotoLayer> findDeepestSelectedLayer() const;
+   
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 

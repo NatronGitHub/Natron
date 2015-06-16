@@ -373,7 +373,7 @@ struct RotoGui::RotoGuiPrivate
     
     void toggleToolsSelection(QToolButton* selected);
     
-    void makeStroke(const RotoPoint& p);
+    void makeStroke(bool prepareForLater,const RotoPoint& p);
 };
 
 
@@ -1107,6 +1107,11 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
                                        bool emitSignal)
 {
     QPoint data = action->data().toPoint();
+
+    if (_imp->selectedTool == (RotoToolEnum)data.x()) {
+        return;
+    }
+
     RotoRoleEnum actionRole = (RotoRoleEnum)data.y();
     QToolButton* toolButton = 0;
     RotoRoleEnum previousRole = getCurrentRole();
@@ -1209,6 +1214,10 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     _imp->selectedTool = (RotoToolEnum)data.x();
     if (emitSignal) {
         Q_EMIT selectedToolChanged( (int)_imp->selectedTool );
+    }
+    
+    if (_imp->context->isRotoPaint() && _imp->selectedTool != eRotoToolSelectAll) {
+        _imp->makeStroke(true, RotoPoint());
     }
 } // onToolActionTriggeredInternal
 
@@ -2604,7 +2613,7 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->mouseCenterOnSizeChange = pos;
             } else {
                 _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
-                _imp->makeStroke(RotoPoint(pos.x(), pos.y(), pressure, timestamp));
+                _imp->makeStroke(false, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
                 _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
@@ -3105,8 +3114,8 @@ RotoGui::penUp(double /*scaleX*/,
         _imp->context->getNode()->getApp()->setUserIsPainting(boost::shared_ptr<Node>());
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
+        _imp->makeStroke(true, RotoPoint());
         _imp->context->evaluateChange();
-        _imp->rotoData->strokeBeingPaint.reset();
     }
     
     _imp->state = eEventStateNone;
@@ -3124,7 +3133,7 @@ RotoGui::penUp(double /*scaleX*/,
 }
 
 void
-RotoGui::RotoGuiPrivate::makeStroke(const RotoPoint& p)
+RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
 {
     Natron::RotoStrokeType strokeType;
     std::string itemName;
@@ -3169,7 +3178,21 @@ RotoGui::RotoGuiPrivate::makeStroke(const RotoPoint& p)
             assert(false);
             return;
     }
-    rotoData->strokeBeingPaint = context->makeStroke(strokeType, itemName, false);
+    
+    if (!prepareForLater) {
+        assert(rotoData->strokeBeingPaint);
+        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
+        if (!layer) {
+            layer = context->getOrCreateBaseLayer();
+        }
+        assert(layer);
+        context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
+        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
+    } else {
+        std::string name = context->generateUniqueName(itemName);
+        rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
+        rotoData->strokeBeingPaint->attachStrokeToNodes();
+    }
     assert(rotoData->strokeBeingPaint);
     boost::shared_ptr<Color_Knob> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
     boost::shared_ptr<Choice_Knob> operatorKnob = rotoData->strokeBeingPaint->getOperatorKnob();
@@ -3218,7 +3241,9 @@ RotoGui::RotoGuiPrivate::makeStroke(const RotoPoint& p)
         sourceTypeKnob->setValue(sourceType_i, 0);
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
-    rotoData->strokeBeingPaint->appendPoint(p);
+    if (!prepareForLater) {
+        rotoData->strokeBeingPaint->appendPoint(p);
+    }
     
     //context->clearSelection(RotoItem::eSelectionReasonOther);
     //context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
