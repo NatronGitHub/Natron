@@ -5250,6 +5250,7 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
         return (double)e->timestamp() / 1000000;
     }
 #else
+    (void)e;
     // Qt 4 has no event timestamp, use gettimeofday (defined in Timer.cpp for windows)
     struct timeval now;
     gettimeofday(&now, 0);
