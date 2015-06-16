@@ -1192,6 +1192,24 @@ RotoItemEditorContext::recursiveSelect(QTreeWidgetItem* cur,bool mustSelect,
     }
 }
 
+const std::list<NodeCurveEditorElement*>&
+RotoItemEditorContext::getElements() const
+{
+    return _imp->knobs;
+}
+
+NodeCurveEditorElement*
+RotoItemEditorContext::findElement(KnobGui* knob,int dimension) const
+{
+    const std::string& name = knob->getKnob()->getName();
+    for (std::list<NodeCurveEditorElement*>::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if ((*it)->getInternalKnob()->getName() == name && (*it)->getDimension() == dimension) {
+            return *it;
+        }
+    }
+    return 0;
+}
+
 struct BezierEditorContextPrivate {
     
   
