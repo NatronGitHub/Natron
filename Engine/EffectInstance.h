@@ -37,6 +37,7 @@
 #define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
 #define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
 #define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
+#define CLIP_OFX_ROTO             "Roto" // The Roto input clip from the Roto plugin
 #define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
@@ -778,6 +779,7 @@ public:
         bool isRenderResponseToUserInteraction;
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
+        bool byPassCache;
     };
 
 protected:
@@ -1556,6 +1558,7 @@ private:
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
+                                          bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels);
@@ -1666,6 +1669,7 @@ private:
         double par;
         Natron::ImageBitDepthEnum outputClipPrefDepth;
         std::list<Natron::ImageComponents> outputClipPrefsComps;
+        bool byPassCache;
         bool* processChannels;
         ImagePlanesToRender planes;
     };
@@ -1689,6 +1693,7 @@ private:
                                                   int time,
                                                   int view,
                                                   const double par,
+                                                  bool byPassCache,
                                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                                   bool* processChannels,
@@ -1727,6 +1732,7 @@ private:
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
                                           const RectI & downscaledRectToRender,
+                                          bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels,

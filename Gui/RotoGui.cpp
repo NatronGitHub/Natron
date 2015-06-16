@@ -3171,8 +3171,8 @@ RotoGui::RotoGuiPrivate::makeStroke(const RotoPoint& p)
     }
     rotoData->strokeBeingPaint->appendPoint(p);
     
-    context->clearSelection(RotoItem::eSelectionReasonOther);
-    context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
+    //context->clearSelection(RotoItem::eSelectionReasonOther);
+    //context->select(rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
 }
 
 void

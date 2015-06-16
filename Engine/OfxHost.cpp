@@ -42,9 +42,15 @@ CLANG_DIAG_ON(deprecated-register)
 #endif
 #include <ofxNatron.h>
 
+#include "Global/Macros.h"
 //ofx host support
 #include <ofxhPluginAPICache.h>
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 #include <ofxhParam.h>
@@ -424,7 +430,15 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
         const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& clips = desc->getClips();
         std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator found = clips.find("Mask");
         if (found == clips.end()) {
-            desc->defineClip("Mask");
+            OFX::Host::ImageEffect::ClipDescriptor* clip = desc->defineClip("Mask");
+            OFX::Host::Property::Set& props = clip->getProps();
+            props.setIntProperty(kOfxImageClipPropIsMask, 1);
+            props.setStringProperty(kOfxImageEffectPropSupportedComponents, kOfxImageComponentAlpha, 0);
+            if (context == kOfxImageEffectContextGeneral) {
+                props.setIntProperty(kOfxImageClipPropOptional, 1);
+            }
+            props.setIntProperty(kOfxImageEffectPropSupportsTiles, desc->getProps().getIntProperty(kOfxImageEffectPropSupportsTiles) != 0);
+            props.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 0);
         }
     }
 

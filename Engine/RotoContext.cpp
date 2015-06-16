@@ -68,6 +68,10 @@
 // http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
 #define ROTO_PRESSURE_LEVELS 512
 
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
 using namespace Natron;
 
 
@@ -2061,6 +2065,7 @@ RotoDrawableItem::getTransformAtTime(int time,Transform::Matrix3x3* matrix) cons
     double skewX = _imp->skewX->getValueAtTime(time, 0);
     double skewY = _imp->skewY->getValueAtTime(time, 0);
     double rot = _imp->rotate->getValueAtTime(time, 0);
+    rot = rot * M_PI / 180.0;
     double centerX = _imp->center->getValueAtTime(time, 0);
     double centerY = _imp->center->getValueAtTime(time, 1);
     bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
@@ -5665,6 +5670,9 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
     KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
     KeyFrameSet pCurve = _imp->pressureCurve.getKeyFrames_mt_safe();
     
+    if (xCurve.empty()) {
+        return false;
+    }
     if (lastAge == -1) {
         lastAge = 0;
     }
@@ -5783,6 +5791,7 @@ RotoStrokeItem::computeBoundingBox(int time) const
     
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
+    bool pressureAffectsSize = _imp->pressureSize->getValueAtTime(time);
     
     QMutexLocker k(&itemMutex);
     bool bboxSet = false;
@@ -5815,12 +5824,11 @@ RotoStrokeItem::computeBoundingBox(int time) const
         p.y = yIt->getValue();
         p.z = 1.;
         p = Transform::matApply(transform, p);
-        double pressure = pIt->getValue();
+        double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
         bbox.x1 = p.x;
         bbox.x2 = p.x;
         bbox.y1 = p.y;
         bbox.y2 = p.y;
-#pragma message WARN("BUG: multiply by pressure only if pressure affects size!!!")
         bbox.x1 -= halfBrushSize * pressure;
         bbox.x2 += halfBrushSize * pressure;
         bbox.y1 -= halfBrushSize * pressure;
@@ -5837,7 +5845,7 @@ RotoStrokeItem::computeBoundingBox(int time) const
         subBox.y2 = -std::numeric_limits<double>::infinity();
         double dt = xNext->getTime() - xIt->getTime();
 
-        double pressure = std::max(pIt->getValue(), pNext->getValue());
+        double pressure = pressureAffectsSize ? std::max(pIt->getValue(), pNext->getValue()) : 1.;
         Transform::Point3D p0,p1,p2,p3;
         p0.z = p1.z = p2.z = p3.z = 1;
         p0.x = xIt->getValue();
@@ -5862,7 +5870,6 @@ RotoStrokeItem::computeBoundingBox(int time) const
         p3_.x = p3.x; p3_.y = p3.y;
         
         bezierPointBboxUpdate(p0_,p1_,p2_,p3_,&subBox);
-#pragma message WARN("BUG: multiply by pressure only if pressure affects size!!!")
         subBox.x1 -= halfBrushSize * pressure;
         subBox.x2 += halfBrushSize * pressure;
         subBox.y1 -= halfBrushSize * pressure;

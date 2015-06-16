@@ -17,7 +17,14 @@
 #include <vector>
 #include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_OFF(unused-parameter)
+// boost/optional/optional.hpp:1254:53: warning: unused parameter 'out' [-Wunused-parameter]
 #include <boost/math/special_functions/cbrt.hpp>
+GCC_DIAG_ON(unused-parameter)
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
 
 using namespace Natron;
 

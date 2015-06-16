@@ -932,7 +932,7 @@ struct RotoDrawableItemPrivate
         
         
         
-        translate.reset(new Double_Knob(NULL, kRotoDrawableItemRotateParamLabel, 2, false));
+        translate.reset(new Double_Knob(NULL, kRotoDrawableItemTranslateParamLabel, 2, false));
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip(kRotoDrawableItemTranslateParamHint);
         translate->populate();

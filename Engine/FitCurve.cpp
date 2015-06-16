@@ -7,6 +7,10 @@
 
 #include <cmath>
 
+#ifndef M_PI_2
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
+#endif
+
 using namespace FitCurve;
 using namespace Natron;
 
@@ -494,7 +498,7 @@ void FitCurve::fit_cubic(const std::vector<Point>& points, double error,std::vec
             double distV = std::sqrt(v.x * v.x + v.y * v.y);
             assert(distV != 0);
             double alpha = std::acos(distU / distV);
-            if (alpha > M_PI / 2.) {
+            if (alpha > M_PI_2) {
                 std::vector<Point> subset;
                 
                 for (std::list<Point>::iterator it2 = newPoints.begin(); it2!=next; ++it2) {

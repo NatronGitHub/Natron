@@ -29,7 +29,12 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 //ofx
-#include "ofxhImageEffect.h"
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+#include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/EffectInstance.h"
 
@@ -43,6 +48,7 @@ class Button_Knob;
 class OverlaySupport;
 class NodeSerialization;
 class KnobSerialization;
+class OfxClipInstance;
 namespace Natron {
 class Node;
 class OfxImageEffectInstance;
@@ -299,6 +305,8 @@ public:
 
     static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason);
 
+    int getClipInputNumber(const OfxClipInstance* clip) const;
+    
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
@@ -407,8 +415,10 @@ private:
         bool optional;
         bool mask;
         bool rotoBrush;
+        OfxClipInstance* clip;
     };
     std::vector<ClipsInfo> _clipsInfos;
+    OfxClipInstance* _outputClip;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

@@ -15,7 +15,10 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
+GCC_DIAG_OFF(sign-compare)
+//vector.hpp:216:18: warning: comparison of integers of different signs: 'int' and 'base_type' (aka 'unsigned long') [-Wsign-compare]
 #include <boost/serialization/vector.hpp>
+GCC_DIAG_ON(sign-compare)
 #endif
 using namespace Natron;
 

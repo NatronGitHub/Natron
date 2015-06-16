@@ -29,7 +29,6 @@
 
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
-#include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
@@ -182,6 +181,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 #endif
 , _nbSourceClips(0)
 , _clipsInfos()
+, _outputClip(0)
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
@@ -242,11 +242,13 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _clipsInfos.resize(clips.size());
         for (int i = 0; i < (int)clips.size(); ++i) {
             ClipsInfo info;
-            info.rotoBrush = clips[i]->getName() == "Roto" && getNode()->isRotoNode();
+            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
             _clipsInfos[i] = info;
         }
+        
+        
 
         beginChanges();
         OfxStatus stat;
@@ -255,6 +257,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             stat = _effect->populate();
             
+            
+            for (int i = 0; i < (int)clips.size(); ++i) {
+                _clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>(_effect->getClip(clips[i]->getName()));
+                assert(_clipsInfos[i].clip);
+            }
+            
+            _outputClip = dynamic_cast<OfxClipInstance*>(_effect->getClip(kOfxImageEffectOutputClipName));
+            assert(_outputClip);
             
             initializeContextDependentParams();
             
@@ -825,16 +835,11 @@ std::string
 OfxEffectInstance::getInputLabel(int inputNb) const
 {
     assert(_context != eContextNone);
-
-    MappedInputV copy = inputClipsCopyWithoutOutput();
-    if ( inputNb < (int)copy.size() ) {
-        if (_context != eContextReader) {
-            return copy[inputNb]->getShortLabel();
-        } else {
-            return READER_INPUT_NAME;
-        }
+    assert(inputNb >= 0 &&  inputNb < (int)_clipsInfos.size());
+    if (_context != eContextReader) {
+        return _clipsInfos[inputNb].clip->getShortLabel();
     } else {
-        return EffectInstance::getInputLabel(inputNb);
+        return READER_INPUT_NAME;
     }
 }
 
@@ -847,9 +852,8 @@ OfxEffectInstance::inputClipsCopyWithoutOutput() const
     MappedInputV copy;
     for (U32 i = 0; i < clips.size(); ++i) {
         assert(clips[i]);
-        if (clips[i]->getShortLabel() != kOfxImageEffectOutputClipName) {
+        if (!clips[i]->isOutput()) {
             copy.push_back(clips[i]);
-            // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
         }
     }
 
@@ -860,12 +864,8 @@ OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
     assert(_context != eContextNone);
-    OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
-    assert( inputNo < (int)clips.size() );
-    OFX::Host::ImageEffect::ClipInstance* clip = _effect->getClip( clips[inputNo]->getName() );
-    assert(clip);
-
-    return dynamic_cast<OfxClipInstance*>(clip);
+    assert( inputNo < (int)_clipsInfos.size() );
+    return _clipsInfos[inputNo].clip;
 }
 
 int
@@ -3194,3 +3194,17 @@ OfxEffectInstance::isHostMixingEnabled() const
     return effectInstance()->isHostMixingEnabled();
 }
 
+int
+OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
+{
+    
+    for (std::size_t i = 0; i < _clipsInfos.size(); ++i) {
+        if (_clipsInfos[i].clip == clip) {
+            return (int)i;
+        }
+    }
+    if (clip == _outputClip) {
+        return -1;
+    }
+    return 0;
+}

@@ -393,7 +393,7 @@ bool
 OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
+    if ( (getName() == CLIP_OFX_ROTO) && _nodeInstance->getNode()->isRotoNode() ) {
         return true;
     } else {
         if (_isOutput) {
@@ -452,16 +452,16 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
     }
     RectD rod;
-    if (attachedStroke && (isMask() || getName() == "Roto")) {
+    if (attachedStroke && (isMask() || getName() == CLIP_OFX_ROTO)) {
         _nodeInstance->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
         ret->y2 = rod.y2;
         return;
-    } else {
+    } else if (_nodeInstance) {
         boost::shared_ptr<RotoContext> rotoCtx = _nodeInstance->getNode()->getRotoContext();
-        if (rotoCtx && getName() == "Roto") {
+        if (rotoCtx && getName() == CLIP_OFX_ROTO) {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
             ret->x1 = rod.x1;
             ret->x2 = rod.x2;
@@ -470,11 +470,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
             return;
         }
     }
-    
-    
-    
-    
-    
+
     if (associatedNode) {
         bool isProjectFormat;
         
@@ -1220,23 +1216,14 @@ OfxClipInstance::getInputNb() const
     if (_isOutput) {
         return -1;
     }
-    int index = 0;
-    OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if ( inputs[i]->getName() == getName() ) {
-            index = i;
-            break;
-        }
-    }
-
-    return index;
+    return _nodeInstance->getClipInputNumber(this);
 }
 
 Natron::EffectInstance*
 OfxClipInstance::getAssociatedNode() const
 {
     assert(_nodeInstance);
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
+    if ( (getName() == CLIP_OFX_ROTO) && _nodeInstance->getNode()->isRotoNode() ) {
         return _nodeInstance;
     }
     if (_isOutput) {

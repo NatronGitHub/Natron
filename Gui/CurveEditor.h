@@ -50,6 +50,8 @@ class KnobGui;
 class KnobI;
 class BezierCP;
 class Bezier;
+class RotoDrawableItem;
+class RotoStrokeItem;
 class LineEdit;
 class RotoItem;
 class RotoContext;
@@ -200,9 +202,64 @@ private:
 
 
 class RotoCurveEditorContext;
+
+struct RotoItemEditorContextPrivate;
+class RotoItemEditorContext
+: public QObject
+{
+    Q_OBJECT
+    
+public:
+    
+    RotoItemEditorContext(QTreeWidget* tree,
+                        CurveEditor* widget,
+                        const boost::shared_ptr<RotoDrawableItem>& curve,
+                        RotoCurveEditorContext* context);
+    
+    virtual ~RotoItemEditorContext();
+
+    //Called when the destr. of RotoCurveEditorContext is called to prevent
+    //the tree items to be deleted twice due to Qt's parenting
+    void preventItemDeletion();
+    
+    QTreeWidgetItem* getItem() const;
+    
+    boost::shared_ptr<RotoDrawableItem> getRotoItem() const;
+    
+    QString getName() const;
+    
+    boost::shared_ptr<RotoContext> getContext() const;
+    
+    const std::list<NodeCurveEditorElement*>& getElements() const;
+    
+    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
+    
+    void recursiveSelect(QTreeWidgetItem* cur,bool mustSelect,
+                               std::vector<CurveGui*> *curves);
+    
+    CurveEditor* getWidget() const;
+
+public Q_SLOTS:
+    
+    void onNameChanged(const QString & name);
+    
+    void onKeyframeAdded();
+    
+    void onKeyframeRemoved();
+    
+    
+protected:
+    
+    virtual void getAnimCurveAndItem(QTreeWidgetItem** /*item*/,CurveGui** /*curve*/) const {}
+    
+private:
+    
+    boost::scoped_ptr<RotoItemEditorContextPrivate> _imp;
+};
+
 struct BezierEditorContextPrivate;
 class BezierEditorContext
-: public QObject
+: public RotoItemEditorContext
 {
     Q_OBJECT
     
@@ -215,29 +272,10 @@ public:
     
     virtual ~BezierEditorContext() OVERRIDE;
     
-    //Called when the destr. of RotoCurveEditorContext is called to prevent
-    //the tree items to be deleted twice due to Qt's parenting
-    void preventItemDeletion();
+    virtual void getAnimCurveAndItem(QTreeWidgetItem** item,CurveGui** curve) const OVERRIDE FINAL;
     
-    boost::shared_ptr<Bezier> getBezier() const;
     
-    QTreeWidgetItem* getItem() const;
-    
-    boost::shared_ptr<RotoContext> getContext() const;
-    
-    const std::list<NodeCurveEditorElement*>& getElements() const;
-    
-    void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
-                             std::vector<CurveGui*> *curves);
-    
-    NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
-public Q_SLOTS:
-    
-    void onNameChanged(const QString & name);
-    
-    void onKeyframeAdded();
-    
-    void onKeyframeRemoved();
+
 private:
        
     boost::scoped_ptr<BezierEditorContextPrivate> _imp;
@@ -268,7 +306,7 @@ public:
     
     void setVisible(bool visible);
     
-    const std::list<BezierEditorContext*>& getElements() const;
+    const std::list<RotoItemEditorContext*>& getElements() const;
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
