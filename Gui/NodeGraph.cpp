@@ -1841,7 +1841,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 break;
                             }
                         }
-                        if (selectedNodeIsReader || isAlreadyAnOutput) {
+                        if (isAlreadyAnOutput) {
                             continue;
                         }
                         QRectF nodeBbox = (*it)->boundingRectWithEdges();
@@ -1882,6 +1882,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 }
                                 
                             } else {
+                                
+                                if (selectedNodeIsReader) {
+                                    continue;
+                                }
                                 
                                 edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
                                 
