@@ -1027,6 +1027,7 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Choice_Knob> timeOffsetMode;
     Curve xCurve,yCurve,pressureCurve;
     double curveT0; // timestamp of the first point in curve
+    double lastTimestamp;
     RectD bbox;
     
     /*
@@ -1074,6 +1075,12 @@ struct RotoStrokeItemPrivate
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
     , timeOffset(new Int_Knob(NULL, kRotoBrushTimeOffsetParamLabel, 1, false))
     , timeOffsetMode(new Choice_Knob(NULL, kRotoBrushTimeOffsetModeParamLabel, 1, false))
+    , xCurve()
+    , yCurve()
+    , pressureCurve()
+    , curveT0(0)
+    , lastTimestamp(0)
+    , bbox()
     , effectNode()
     , mergeNode()
     , timeOffsetNode()

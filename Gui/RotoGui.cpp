@@ -1380,6 +1380,55 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 }
                 glEnd();
                 
+#ifdef DEBUG
+                KeyFrameSet xSet = isStroke->getXControlPoints().getKeyFrames_mt_safe();
+                KeyFrameSet ySet = isStroke->getYControlPoints().getKeyFrames_mt_safe();
+                assert(xSet.size() == ySet.size());
+                if (xSet.size() > 2) {
+                    KeyFrameSet::iterator xIt = xSet.begin();
+                    ++xIt;
+                    KeyFrameSet::iterator yIt = ySet.begin();
+                    ++yIt;
+                    KeyFrameSet::iterator xNext = xIt;
+                    ++xNext;
+                    KeyFrameSet::iterator yNext = yIt;
+                    ++yNext;
+                    KeyFrameSet::iterator xPrev = xSet.begin();
+                    KeyFrameSet::iterator yPrev = ySet.begin();
+                    for (; xNext != xSet.end(); ++xIt, ++yIt, ++xPrev, ++yPrev,++xNext, ++yNext) {
+                        
+                        double x = xIt->getValue();
+                        double y = yIt->getValue();
+                        
+                        double dtr = xNext->getTime() - xIt->getTime();
+                        double dtl = xIt->getTime() - xPrev->getTime();
+                        assert(dtr >= 0 && dtl >= 0);
+                        
+                        double lx = x - dtl * xIt->getLeftDerivative() / 3.;
+                        double ly = y - dtl * yIt->getLeftDerivative() / 3.;
+                        double rx = x + dtr * xIt->getRightDerivative() / 3.;
+                        double ry = y + dtr * yIt->getRightDerivative() / 3.;
+                        
+                        
+                        glBegin(GL_LINE_STRIP);
+                        glColor3f(0., 0.8, 0.8);
+                        glVertex2d(lx,ly);
+                        glVertex2d(x,y);
+                        glVertex2d(rx,ry);
+                        glEnd();
+                        glBegin(GL_POINTS);
+                        glColor3f(1., 1., 0.);
+                        glVertex2d(lx, ly);
+                        glColor3f(1., 0., 0.);
+                        glVertex2d(x,y);
+                        glColor3f(1., 1., 0.);
+                        glVertex2d(rx,ry);
+                        glEnd();
+                        
+                    }
+                }
+#endif
+                
                 
             } else if (isBezier) {
                 ///draw the bezier
@@ -2957,7 +3006,7 @@ RotoGui::penMotion(double /*scaleX*/,
             if (_imp->rotoData->strokeBeingPaint->appendPoint(p)) {
                 _imp->lastMousePos = pos;
                 _imp->context->evaluateChange_noIncrement();
-                return true;
+                return false;
             }
         }
         break;

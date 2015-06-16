@@ -1127,6 +1127,8 @@ public:
     void evaluateStroke(unsigned int mipMapLevel, int time, std::list<std::pair<Natron::Point,double> >* points,
                         RectD* bbox = 0) const;
     
+    const Curve& getXControlPoints() const;
+    const Curve& getYControlPoints() const;
     
     boost::shared_ptr<Natron::Node> getEffectNode() const;
     boost::shared_ptr<Natron::Node> getMergeNode() const;

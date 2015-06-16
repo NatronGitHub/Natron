@@ -5541,8 +5541,18 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         } else {
             t = p.timestamp - _imp->curveT0;
         }
+        if (nk > 0) {
+            //Clamp timestamps difference to 1e-3 in case Qt delivers its events all at once
+            double dt = t - _imp->lastTimestamp;
+            if (dt < 0.01) {
+                qDebug() << "dt is lower than 0.01!";
+                t = _imp->lastTimestamp + 0.01;
+            }
+        }
+        _imp->lastTimestamp = t;
         qDebug("t[%d]=%g",nk,t);
 
+#if 0
         // if it's at least the 3rd point in curve, add intermediate point if
         // the time since last keyframe is larger that the time to the previous one...
         // This avoids overshooting when the pen suddenly stops, and restarts much later
@@ -5580,31 +5590,42 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
                 yn.setValue(yp.getValue()*(1-alpha)+p.pos.y*alpha);
                 pn.setValue(pp.getValue()*(1-alpha)+p.pressure*alpha);
                 _imp->xCurve.addKeyFrame(xn);
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
                 _imp->yCurve.addKeyFrame(yn);
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
                 _imp->pressureCurve.addKeyFrame(pn);
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeSmooth, nk);
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
                 ++nk;
             }
         }
-
+#endif
+        bool addKeyFrameOk;
         {
             KeyFrame k;
             k.setTime(t);
             k.setValue(p.pos.x);
             //Set the previous keyframe to Free so its tangents don't get overwritten
-            _imp->xCurve.addKeyFrame(k);
-            _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-            _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            addKeyFrameOk = _imp->xCurve.addKeyFrame(k);
+            if (addKeyFrameOk) {
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+                //_imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            } else {
+                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
+                //_imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
+            }
         }
         {
             KeyFrame k;
             k.setTime(t);
             k.setValue(p.pos.y);
             _imp->yCurve.addKeyFrame(k);
-            _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-            _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            if (addKeyFrameOk) {
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+                //_imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            } else {
+                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
+                //_imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
+            }
         }
         
         {
@@ -5612,8 +5633,13 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
             k.setTime(t);
             k.setValue(p.pressure);
             _imp->pressureCurve.addKeyFrame(k);
-            _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCubic, nk);
-            _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            if (addKeyFrameOk) {
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+               // _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
+            } else {
+                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
+                //_imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
+            }
         }
         
         
@@ -5756,6 +5782,91 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->pressureCurve.clone(s->_pressureCurve);
         resetNodesThreadSafety();
     }
+    
+    boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
+    if (operation) {
+        int op_i = getOperatorKnob()->getValue();
+        operation->setValue(op_i, 0);
+    }
+
+    
+    if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
+        boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+        Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+        if (translate) {
+            translate->clone(_imp->cloneTranslate.get());
+        }
+        boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+        Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+        if (rotate) {
+            rotate->clone(_imp->cloneRotate.get());
+        }
+        boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+        Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+        if (scale) {
+            scale->clone(_imp->cloneScale.get());
+        }
+        boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+        Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+        if (uniform) {
+            uniform->clone(_imp->cloneScaleUniform.get());
+        }
+        boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+        Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+        if (skewX) {
+            skewX->clone(_imp->cloneSkewX.get());
+        }
+        boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+        Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+        if (skewY) {
+            skewY->clone(_imp->cloneSkewY.get());
+        }
+        boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+        Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+        if (skewOrder) {
+            skewOrder->clone(_imp->cloneSkewOrder.get());
+        }
+        boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+        Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+        if (center) {
+            center->clone(_imp->cloneCenter.get());
+            
+        }
+        boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+        Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+        if (filter) {
+            filter->clone(_imp->cloneFilter.get());
+        }
+        boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+        Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+        if (bo) {
+            bo->clone(_imp->cloneBlackOutside.get());
+            
+        }
+        
+        int offsetMode_i = _imp->timeOffsetMode->getValue();
+        boost::shared_ptr<KnobI> offsetKnob;
+        
+        if (offsetMode_i == 0) {
+            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+        } else {
+            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+        }
+        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        if (offset) {
+            offset->clone(_imp->timeOffset.get());
+        }
+
+        
+    } else if (_imp->type == eRotoStrokeTypeBlur) {
+        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+        if (isDbl) {
+            isDbl->clone(_imp->effectStrength.get());
+        }
+    }
+    
     setStrokeFinished();
 
     
@@ -5897,6 +6008,22 @@ RotoStrokeItem::getBoundingBox(int time) const
 
     return computeBoundingBox(time);
     
+}
+
+const Curve&
+RotoStrokeItem::getXControlPoints() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker k(&itemMutex);
+    return _imp->xCurve;
+}
+
+const Curve&
+RotoStrokeItem::getYControlPoints() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker k(&itemMutex);
+    return _imp->yCurve;
 }
 
 void
