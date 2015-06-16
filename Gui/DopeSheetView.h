@@ -54,7 +54,7 @@ public:
         return visualItemRect(dopeSheetContext->getTreeItem());
     }
 
-    DSKnob *getDSKnobAt(const QPoint &point) const;
+    DSKnob *getDSKnobAt(int y) const;
 
 private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);

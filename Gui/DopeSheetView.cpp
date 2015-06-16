@@ -722,9 +722,9 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 HierarchyView::~HierarchyView()
 {}
 
-DSKnob *HierarchyView::getDSKnobAt(const QPoint &point) const
+DSKnob *HierarchyView::getDSKnobAt(int y) const
 {
-    QTreeWidgetItem *itemUnderPoint = itemAt(0, point.y());
+    QTreeWidgetItem *itemUnderPoint = itemAt(5, y);
 
     return _imp->model->findDSKnob(itemUnderPoint);
 }
@@ -1194,7 +1194,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
         ret = getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
     }
     // Or does he hovering on a row's element ?
-    else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(0, widgetCoords.y())) {
+    else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(5, widgetCoords.y())) {
         DSNodeRows dsNodeItems = model->getNodeRows();
         DSNodeRows::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
@@ -1241,8 +1241,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             }
         }
         else {
-            QPointF widgetPos = zoomContext.toWidgetCoordinates(zoomCoords.x(), zoomCoords.y());
-            DSKnob *dsKnob =  hierarchyView->getDSKnobAt(QPoint(widgetPos.x(), widgetPos.y()));
+            DSKnob *dsKnob =  hierarchyView->getDSKnobAt(widgetCoords.y());
 
             std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords);
 
@@ -1321,6 +1320,8 @@ bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zo
 
 std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords) const
 {
+    assert(dsKnob);
+
     std::vector<DSSelectedKey> ret;
 
     boost::shared_ptr<KnobI> knob = dsKnob->getKnobGui()->getKnob();
@@ -3570,7 +3571,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             }
             // Or search for a keyframe
             else {
-                DSKnob *dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos());
+                DSKnob *dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos().y());
 
                 if (dsKnob) {
                     std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());

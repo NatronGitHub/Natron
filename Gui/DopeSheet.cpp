@@ -458,22 +458,18 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem) const
     DSKnob *ret = 0;
 
     DSNode *dsNode = findParentDSNode(knobTreeItem);
-
     DSKnobRows knobRows = dsNode->getChildData();
 
-    DSKnobRows::const_iterator clickedDSKnob;
-    QTreeWidgetItem *itemIt = knobTreeItem;
+    qDebug() << knobTreeItem->text(0) << dsNode->getTreeItem()->text(0);
 
-    while ( (clickedDSKnob = knobRows.find(itemIt)) == knobRows.end()) {
-        if (itemIt->parent()) {
-            itemIt = itemIt->parent();
-        }
-        else {
-            return NULL;
-        }
+    DSKnobRows::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
+
+    if (clickedDSKnob == knobRows.end()) {
+        ret = NULL;
     }
-
-    ret = clickedDSKnob->second;
+    else {
+        ret = clickedDSKnob->second;
+    }
 
     return ret;
 }
@@ -721,12 +717,12 @@ void DopeSheet::pasteKeys()
     for (std::vector<DSSelectedKey>::const_iterator it = _imp->keyframesClipboard.begin(); it != _imp->keyframesClipboard.end(); ++it) {
         DSSelectedKey key = (*it);
 
-        // Retrieve the tree item associated with the key dimension
-        QTreeWidgetItem *dimTreeItem = key.context->getTreeItem();
+//        // Retrieve the tree item associated with the key dimension
+//        QTreeWidgetItem *dimTreeItem = key.context->getTreeItem();
 
-        if (dimTreeItem->isSelected()) {
-            toPaste.push_back(key);
-        }
+//        if (dimTreeItem->isSelected()) {
+        toPaste.push_back(key);
+//        }
     }
 
     _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, this));
