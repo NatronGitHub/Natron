@@ -279,6 +279,8 @@ public:
     void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getDopeSheetEditorScaleColor(double* r,double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
+
+    void getPluginIconFrameColor(int *r, int *g, int *b) const;
     
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;

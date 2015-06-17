@@ -3549,8 +3549,10 @@ NodeGui::removeDefaultOverlay(KnobI* knob)
 void
 NodeGui::setPluginIconFilePath(const std::string& filePath)
 {
+    boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
+
     QPixmap p(filePath.c_str());
-    if (p.isNull() || !appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+    if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
     p = p.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
@@ -3564,7 +3566,10 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
         _pluginIcon->setZValue(getBaseDepth() + 1);
         _pluginIconFrame = new QGraphicsRectItem(this);
         _pluginIconFrame->setZValue(getBaseDepth());
-        _pluginIconFrame->setBrush(QColor(50,50,50));
+
+        int r, g, b;
+        currentSettings->getPluginIconFrameColor(&r, &g, &b);
+        _pluginIconFrame->setBrush(QColor(r, g, b));
     }
 
     if (_pluginIcon) {

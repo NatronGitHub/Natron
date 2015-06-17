@@ -286,7 +286,7 @@ public:
     QColor getDullColor(const QColor &color) const;
 
     // item painting
-    void drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const;
+    void drawPluginIconArea(QPainter *p, DSNode *dsNode, const QRect &rowRect, bool drawPluginIcon) const;
     void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
     void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow, const QRect &rowRect) const;
@@ -567,7 +567,7 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
     return ret;
 }
 
-void HierarchyViewPrivate::drawPluginIcon(QPainter *p, DSNode *dsNode, const QRect &rowRect) const
+void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, DSNode *dsNode, const QRect &rowRect, bool drawPluginIcon) const
 {
     std::string iconFilePath = dsNode->getInternalNode()->getPluginIconFilePath();
 
@@ -578,13 +578,22 @@ void HierarchyViewPrivate::drawPluginIcon(QPainter *p, DSNode *dsNode, const QRe
             pix = pix.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2, NATRON_MEDIUM_BUTTON_SIZE - 2,
                              Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-            QRect pluginIconRect = rowRect;
-            pluginIconRect.setSize(pix.size());
-            pluginIconRect.moveRight(rowRect.right() - 2);
-            pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
+            QRect areaRect = rowRect;
+            areaRect.setWidth(pix.width() + 4);
+            areaRect.moveRight(rowRect.right());
+
+            int r, g ,b;
+            appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
+            p->fillRect(areaRect, QColor(r, g, b));
+
+            QRect pluginAreaRect = rowRect;
+            pluginAreaRect.setSize(pix.size());
+            pluginAreaRect.moveCenter(QPoint(areaRect.center().x(),
                                              rowRect.center().y()));
 
-            p->drawPixmap(pluginIconRect, pix);
+            if (drawPluginIcon) {
+                p->drawPixmap(pluginAreaRect, pix);
+            }
         }
     }
 }
@@ -853,8 +862,9 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
         // Fill the branch rect with color and indicator
         drawBranches(painter, branchRect, index);
 
+        _imp->drawPluginIconArea(painter, dsNode, rowRect, drawPluginIconToo);
+
         if (drawPluginIconToo) {
-            _imp->drawPluginIcon(painter, dsNode, rowRect);
             _imp->drawNodeTopSeparation(painter, item, rowRect);
         }
 

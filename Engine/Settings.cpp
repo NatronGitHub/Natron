@@ -2912,6 +2912,13 @@ Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const
     *b = _dopeSheetEditorGridColor->getValue(2);
 }
 
+void Settings::getPluginIconFrameColor(int *r, int *g, int *b) const
+{
+    *r = 50;
+    *g = 50;
+    *b = 50;
+}
+
 bool
 Settings::isAutoProxyEnabled() const
 {
