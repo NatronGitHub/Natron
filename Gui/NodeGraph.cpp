@@ -106,8 +106,9 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
-#define NATRON_SCENE_MIN INT_MIN
-#define NATRON_SCENE_MAX INT_MAX
+#define NATRON_SCENE_MAX 1e6
+#define NATRON_SCENE_MIN 0
+
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -4003,7 +4004,7 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    _imp->_root->setPos(0,0);
+    //_imp->_root->setPos(0,0);
 
     if (_imp->_selection.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
@@ -4032,8 +4033,8 @@ NodeGraph::centerOnAllNodes()
         }
 
     }
-    QRectF rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
-    fitInView(rect,Qt::KeepAspectRatio);
+    QRectF bbox( xmin,ymin,(xmax - xmin),(ymax - ymin) );
+    fitInView(bbox,Qt::KeepAspectRatio);
     
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
     assert(currentZoomFactor != 0);

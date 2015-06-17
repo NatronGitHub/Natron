@@ -1784,7 +1784,9 @@ CurveWidgetPrivate::selectCurve(CurveGui* curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    if (!curve) {
+        return;
+    }
     for (Curves::const_iterator it = _curves.begin(); it != _curves.end(); ++it) {
         (*it)->setSelected(false);
     }
