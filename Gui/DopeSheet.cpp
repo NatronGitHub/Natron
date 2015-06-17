@@ -32,7 +32,6 @@ typedef std::pair<QTreeWidgetItem *, DSNode *> TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 1;
-const int QTREEWIDGETITEM_IS_BUNDLE_ROLE = Qt::UserRole + 2;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -529,8 +528,6 @@ std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
         }
     }
 
-    dsGroup->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
-
     return ret;
 }
 
@@ -576,8 +573,6 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
     std::vector<DSNode *> ret;
 
     _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
-
-    dsNode->getTreeItem()->setData(0, QTREEWIDGETITEM_IS_BUNDLE_ROLE, !ret.empty());
 
     return ret;
 }
