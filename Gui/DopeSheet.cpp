@@ -376,6 +376,8 @@ void DopeSheet::removeNode(NodeGui *node)
 
     DSNode *dsNode = (*toRemove).second;
 
+    _imp->selectionModel->onNodeAboutToBeRemoved(dsNode);
+
     Q_EMIT nodeAboutToBeRemoved(dsNode);
 
     _imp->nodeRows.erase(toRemove);
@@ -1111,6 +1113,21 @@ DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DSSelec
 void DopeSheetSelectionModel::emit_keyframeSelectionChanged()
 {
     Q_EMIT keyframeSelectionChanged();
+}
+
+void DopeSheetSelectionModel::onNodeAboutToBeRemoved(DSNode *removed)
+{
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin();
+         it != _imp->selectedKeyframes.end();) {
+        DSKeyPtr key = (*it);
+
+        if (_imp->dopeSheet->findDSNode(key->context->getInternalKnob()) == removed) {
+            it = _imp->selectedKeyframes.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
 }
 
 

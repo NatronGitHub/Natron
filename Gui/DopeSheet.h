@@ -136,6 +136,7 @@ Q_SIGNALS:
     void nodeSettingsPanelOpened(DSNode *dsNode);
     void groupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
+    void nodeRemoved(DSNode *dsNode);
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
@@ -284,6 +285,8 @@ public:
     DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
 
     void emit_keyframeSelectionChanged();
+
+    void onNodeAboutToBeRemoved(DSNode *removed);
 
 Q_SIGNALS:
     void keyframeSelectionAboutToBeCleared();

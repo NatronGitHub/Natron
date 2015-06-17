@@ -3302,6 +3302,8 @@ void DopeSheetView::onNodeAboutToBeRemoved(DSNode *dsNode)
         _imp->nodeRanges.erase(toRemove);
     }
 
+    _imp->computeSelectedKeysBRect();
+
     redraw();
 }
 
