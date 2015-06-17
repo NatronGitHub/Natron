@@ -873,7 +873,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         
         if (nbConnectedInput == 0) {
             
-            QPointF selectedNodeMiddlePos = selected->getPos_mt_safe() +
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
             QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
             
             
@@ -966,7 +966,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
         if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
-            QPointF selectedNodeMiddlePos = selected->getPos_mt_safe() +
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
             QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
             
             ///actually move the created node where the selected node is
@@ -2010,7 +2010,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
-        QPointF p = _imp->_backdropResized->getPos_mt_safe();
+        QPointF p = _imp->_backdropResized->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
