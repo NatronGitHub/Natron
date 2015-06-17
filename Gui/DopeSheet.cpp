@@ -627,7 +627,7 @@ void DopeSheet::trimReaderLeft(DSNode *reader, double newFirstFrame)
     }
 
     if (_imp->canTrimLeft(newFirstFrame, lastFrameKnob->getValue())) {
-        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame, this));
+        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(node.get(), firstFrame, newFirstFrame, this));
     }
 }
 
@@ -649,7 +649,7 @@ void DopeSheet::trimReaderRight(DSNode *reader, double newLastFrame)
     }
 
     if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
-        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, this));
+        _imp->pushUndoCommand(new DSRightTrimReaderCommand(node.get(), lastFrame, newLastFrame, this));
     }
 }
 
@@ -672,18 +672,18 @@ void DopeSheet::slipReader(DSNode *reader, double dt)
                      && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
 
     if (canSlip) {
-        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+        _imp->pushUndoCommand(new DSSlipReaderCommand(node.get(), dt, this));
     }
 }
 
 void DopeSheet::moveReader(DSNode *reader, double dt)
 {
-    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt, this));
+    _imp->pushUndoCommand(new DSMoveReaderCommand(reader->getNodeGui()->getNode().get(), dt, this));
 }
 
 void DopeSheet::moveGroup(DSNode *group, double dt)
 {
-    _imp->pushUndoCommand(new DSMoveGroupCommand(group, dt, this));
+    _imp->pushUndoCommand(new DSMoveGroupCommand(group->getInternalNode().get(), dt, this));
 }
 
 void DopeSheet::copySelectedKeys()

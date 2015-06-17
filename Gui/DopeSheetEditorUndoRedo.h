@@ -22,6 +22,10 @@ class DopeSheet;
 class DSSelectedKey;
 class DSNode;
 
+namespace Natron {
+class Node;
+}
+
 typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
 
@@ -62,7 +66,7 @@ private:
 class DSLeftTrimReaderCommand : public QUndoCommand
 {
 public:
-    DSLeftTrimReaderCommand(DSNode *dsNodeReader,
+    DSLeftTrimReaderCommand(Natron::Node *reader,
                             double oldTime,
                             double newTime,
                             DopeSheet *model,
@@ -78,7 +82,7 @@ private:
     void trimLeft(double firstFrame);
 
 private:
-    DSNode *_dsNodeReader;
+    Natron::Node *_reader;
     double _oldTime;
     double _newTime;
     DopeSheet *_model;
@@ -93,7 +97,7 @@ private:
 class DSRightTrimReaderCommand : public QUndoCommand
 {
 public:
-    DSRightTrimReaderCommand(DSNode *dsNodeReader,
+    DSRightTrimReaderCommand(Natron::Node *reader,
                              double oldTime,
                              double newTime,
                              DopeSheet *model,
@@ -109,7 +113,7 @@ private:
     void trimRight(double lastFrame);
 
 private:
-    DSNode *_dsNodeReader;
+    Natron::Node *_reader;
     double _oldTime;
     double _newTime;
     DopeSheet *_model;
@@ -118,7 +122,7 @@ private:
 class DSSlipReaderCommand : public QUndoCommand
 {
 public:
-    DSSlipReaderCommand(DSNode *dsNodeReader,
+    DSSlipReaderCommand(Natron::Node *reader,
                         double dt,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
@@ -133,7 +137,7 @@ private:
     void slipReader(double dt);
 
 private:
-    DSNode *_dsNodeReader;
+    Natron::Node *_reader;
     double _dt;
     DopeSheet *_model;
 };
@@ -147,7 +151,7 @@ private:
 class DSMoveReaderCommand : public QUndoCommand
 {
 public:
-    DSMoveReaderCommand(DSNode *dsNodeReader,
+    DSMoveReaderCommand(Natron::Node *reader,
                         double dt,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
@@ -159,7 +163,7 @@ public:
     bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
-    DSNode *_dsNodeReader;
+    Natron::Node *_reader;
     double _dt;
     DopeSheet *_model;
 };
@@ -197,7 +201,7 @@ private:
 class DSMoveGroupCommand : public QUndoCommand
 {
 public:
-    DSMoveGroupCommand(DSNode *dsNodeGroup,
+    DSMoveGroupCommand(Natron::Node *group,
                        double dt,
                        DopeSheet *model,
                        QUndoCommand *parent = 0);
@@ -212,37 +216,10 @@ private:
     void moveGroup(double dt);
 
 private:
-    DSNode *_dsNodeGroup;
+    Natron::Node *_group;
     double _dt;
     DopeSheet *_model;
 };
-
-
-/**
- * @brief The DSChangeNodeLabelCommand class
- *
- *
- */
-class DSChangeNodeLabelCommand : public QUndoCommand
-{
-public:
-    DSChangeNodeLabelCommand(DSNode *dsNode,
-                             const QString &oldLabel,
-                             const QString &newLabel,
-                             QUndoCommand *parent = 0);
-
-    void undo() OVERRIDE FINAL;
-    void redo() OVERRIDE FINAL;
-
-private:
-    void changeNodeLabel(const QString &label);
-
-private:
-    DSNode *_dsNode;
-    QString _oldLabel;
-    QString _newLabel;
-};
-
 
 
 /**

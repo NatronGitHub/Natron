@@ -70,7 +70,7 @@ void renderOnce(std::set<KnobHolder *> *holders)
     }
 }
 
-void moveReader(const NodePtr &reader, double time)
+void moveReader(Natron::Node *reader, double time)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName("startingTime").get());
     assert(startingTimeKnob);
@@ -182,13 +182,13 @@ bool DSMoveKeysCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 
-DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(DSNode *dsNodeReader,
+DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(Natron::Node *reader,
                                                  double oldTime,
                                                  double newTime,
                                                  DopeSheet *model,
                                                  QUndoCommand *parent) :
     QUndoCommand(parent),
-    _dsNodeReader(dsNodeReader),
+    _reader(reader),
     _oldTime(oldTime),
     _newTime(newTime),
     _model(model)
@@ -208,7 +208,7 @@ void DSLeftTrimReaderCommand::redo()
 
 void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_reader->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
 
     KnobHolder *holder = firstFrameKnob->getHolder();
@@ -236,7 +236,7 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if (cmd->_dsNodeReader != _dsNodeReader) {
+    if (cmd->_reader != _reader) {
         return false;
     }
 
@@ -248,12 +248,12 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSRightTrimReaderCommand //////////////////////////
 
-DSRightTrimReaderCommand::DSRightTrimReaderCommand(DSNode *dsNodeReader,
+DSRightTrimReaderCommand::DSRightTrimReaderCommand(Natron::Node *reader,
                                                    double oldTime, double newTime,
                                                    DopeSheet *model,
                                                    QUndoCommand *parent) :
     QUndoCommand(parent),
-    _dsNodeReader(dsNodeReader),
+    _reader(reader),
     _oldTime(oldTime),
     _newTime(newTime),
     _model(model)
@@ -273,7 +273,7 @@ void DSRightTrimReaderCommand::redo()
 
 void DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_dsNodeReader->getInternalNode()->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_reader->getKnobByName("lastFrame").get());
     assert(lastFrameKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -301,7 +301,7 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if (cmd->_dsNodeReader != _dsNodeReader) {
+    if (cmd->_reader != _reader) {
         return false;
     }
 
@@ -313,12 +313,12 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSSlipReaderCommand //////////////////////////
 
-DSSlipReaderCommand::DSSlipReaderCommand(DSNode *dsNodeReader,
+DSSlipReaderCommand::DSSlipReaderCommand(Natron::Node *dsNodeReader,
                                          double dt,
                                          DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
-    _dsNodeReader(dsNodeReader),
+    _reader(dsNodeReader),
     _dt(dt),
     _model(model)
 {
@@ -348,7 +348,7 @@ bool DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if (cmd->_dsNodeReader != _dsNodeReader) {
+    if (cmd->_reader != _reader) {
         return false;
     }
 
@@ -359,13 +359,11 @@ bool DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 
 void DSSlipReaderCommand::slipReader(double dt)
 {
-    NodePtr node = _dsNodeReader->getInternalNode();
-
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(_reader->getKnobByName("firstFrame").get());
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(_reader->getKnobByName("lastFrame").get());
     assert(lastFrameKnob);
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(_reader->getKnobByName("timeOffset").get());
     assert(startingTimeKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -392,12 +390,12 @@ void DSSlipReaderCommand::slipReader(double dt)
 
 ////////////////////////// DSMoveReaderCommand //////////////////////////
 
-DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
+DSMoveReaderCommand::DSMoveReaderCommand(Natron::Node *reader,
                                          double dt,
                                          DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
-    _dsNodeReader(dsNodeReader),
+    _reader(reader),
     _dt(dt),
     _model(model)
 {
@@ -406,12 +404,12 @@ DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
 
 void DSMoveReaderCommand::undo()
 {
-    moveReader(_dsNodeReader->getInternalNode(), -_dt);
+    moveReader(_reader, -_dt);
 }
 
 void DSMoveReaderCommand::redo()
 {
-    moveReader(_dsNodeReader->getInternalNode(), _dt);
+    moveReader(_reader, _dt);
 }
 
 int DSMoveReaderCommand::id() const
@@ -427,7 +425,7 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if (cmd->_dsNodeReader != _dsNodeReader) {
+    if (cmd->_reader != _reader) {
         return false;
     }
 
@@ -480,9 +478,9 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 
 ////////////////////////// DSMoveGroupCommand //////////////////////////
 
-DSMoveGroupCommand::DSMoveGroupCommand(DSNode *dsNodeGroup, double dt, DopeSheet *model, QUndoCommand *parent) :
+DSMoveGroupCommand::DSMoveGroupCommand(Natron::Node *group, double dt, DopeSheet *model, QUndoCommand *parent) :
     QUndoCommand(parent),
-    _dsNodeGroup(dsNodeGroup),
+    _group(group),
     _dt(dt),
     _model(model)
 {
@@ -512,7 +510,7 @@ bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if (cmd->_dsNodeGroup != _dsNodeGroup) {
+    if (cmd->_group != _group) {
         return false;
     }
 
@@ -523,7 +521,7 @@ bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
 
 void DSMoveGroupCommand::moveGroup(double dt)
 {
-    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getInternalNode()->getLiveInstance());
+    NodeGroup *group = dynamic_cast<NodeGroup *>(_group->getLiveInstance());
     NodeList nodes = group->getNodes();
 
     std::set<KnobHolder *> knobHolders;
@@ -547,7 +545,7 @@ void DSMoveGroupCommand::moveGroup(double dt)
         if (pluginID == PLUGINID_OFX_READOIIO ||
                 pluginID == PLUGINID_OFX_READFFMPEG ||
                 pluginID == PLUGINID_OFX_READPFM) {
-            moveReader(node, dt);
+            moveReader(node.get(), dt);
         }
 
         // Move keyframes
@@ -589,37 +587,6 @@ void DSMoveGroupCommand::moveGroup(double dt)
 
     _model->getSelectionModel()->clearKeyframeSelection();
     _model->emit_modelChanged();
-}
-
-
-////////////////////////// DSChangeNodeLabel //////////////////////////
-
-DSChangeNodeLabelCommand::DSChangeNodeLabelCommand(DSNode *dsNode,
-                                                   const QString &oldLabel,
-                                                   const QString &newLabel,
-                                                   QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _dsNode(dsNode),
-    _oldLabel(oldLabel),
-    _newLabel(newLabel)
-{
-    setText(QObject::tr("Change node label"));
-}
-
-void DSChangeNodeLabelCommand::undo()
-{
-    changeNodeLabel(_oldLabel);
-}
-
-void DSChangeNodeLabelCommand::redo()
-{
-    changeNodeLabel(_newLabel);
-}
-
-void DSChangeNodeLabelCommand::changeNodeLabel(const QString &label)
-{
-    _dsNode->getInternalNode()->setLabel(label.toStdString());
-    _dsNode->getTreeItem()->setText(0, label);
 }
 
 
