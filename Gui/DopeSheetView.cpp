@@ -1805,7 +1805,7 @@ void DopeSheetViewPrivate::drawRange(DSNode *dsNode) const
             float clipRectCenterY = clipRectZoomCoords.center().y();
 
             GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            glLineWidth(1);
+            glLineWidth(2);
 
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
