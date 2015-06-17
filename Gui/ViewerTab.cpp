@@ -80,7 +80,7 @@ namespace {
 struct InputName
 {
     QString name;
-    EffectInstance* input;
+    boost::weak_ptr<Natron::Node> input;
 };
 
 typedef std::map<int,InputName> InputNamesMap;
@@ -3479,11 +3479,11 @@ void
 ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
-    EffectInstance* inp = 0;
+    NodePtr inp;
     std::vector<boost::shared_ptr<Natron::Node> > inputs  = _imp->viewerNode->getNode()->getInputs_mt_safe();
     if (inputNb >= 0 && inputNb < (int)inputs.size()) {
         if (inputs[inputNb]) {
-            inp = inputs[inputNb]->getLiveInstance();
+            inp = inputs[inputNb];
         }
     }
     
@@ -3491,18 +3491,22 @@ ViewerTab::onInputChanged(int inputNb)
     if (inp) {
         InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getNode()->getLabel();
+            NodePtr input = found->second.input.lock();
+            if (!input) {
+                return;
+            }
+            const std::string & curInputName = input->getLabel();
             found->second.input = inp;
             int indexInA = _imp->firstInputImage->itemIndex( curInputName.c_str() );
             int indexInB = _imp->secondInputImage->itemIndex( curInputName.c_str() );
             assert(indexInA != -1 && indexInB != -1);
-            found->second.name = inp->getNode()->getLabel().c_str();
+            found->second.name = inp->getLabel().c_str();
             _imp->firstInputImage->setItemText(indexInA, found->second.name);
             _imp->secondInputImage->setItemText(indexInB, found->second.name);
         } else {
             InputName inpName;
             inpName.input = inp;
-            inpName.name = inp->getNode()->getLabel().c_str();
+            inpName.name = inp->getLabel().c_str();
             _imp->inputNamesMap.insert( std::make_pair(inputNb,inpName) );
             _imp->firstInputImage->addItem(inpName.name);
             _imp->secondInputImage->addItem(inpName.name);
@@ -3512,7 +3516,12 @@ ViewerTab::onInputChanged(int inputNb)
 
         ///The input has been disconnected
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getNode()->getLabel();
+            
+            NodePtr input = found->second.input.lock();
+            if (!input) {
+                return;
+            }
+            const std::string & curInputName = input->getLabel();
             _imp->firstInputImage->blockSignals(true);
             _imp->secondInputImage->blockSignals(true);
             _imp->firstInputImage->removeItem( curInputName.c_str() );
