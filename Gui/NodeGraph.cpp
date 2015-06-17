@@ -1884,9 +1884,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                             } else {
                                 
-                                if (selectedNodeIsReader) {
-                                    continue;
-                                }
+                                
                                 
                                 edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
                                 
@@ -1897,7 +1895,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                                 if ( edge && edge->isOutputEdge() ) {
                                     
-                                    
+                                    if (selectedNodeIsReader) {
+                                        continue;
+                                    }
                                     int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
                                     if (prefInput == -1) {
                                         edge = 0;
@@ -1911,6 +1911,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 }
                                 
                                 if ( edge && !edge->isOutputEdge() ) {
+                                    
+                                    if ((*it)->getNode()->getLiveInstance()->isReader()) {
+                                        edge = 0;
+                                        continue;
+                                    }
                                     
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&

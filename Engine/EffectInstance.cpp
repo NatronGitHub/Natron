@@ -3316,7 +3316,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                               outputDepth,
                                               outputClipPrefComps,
                                               processChannels);
-        }
+        } // if (hasSomethingToRender) {
         
         renderAborted = aborted();
 #if NATRON_ENABLE_TRIMAP
@@ -3342,7 +3342,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
         }
 #endif
-    }
+    } // if (!hasSomethingToRender && !planesToRender.isBeingRenderedElsewhere) {
     
     
     if (renderAborted && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
