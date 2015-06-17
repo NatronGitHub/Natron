@@ -60,8 +60,6 @@ private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
     void onKeyframeSetOrRemoved(DSKnob *dsKnob);
-    void onNodeSettingsPanelOpened(DSNode *dsNode);
-    void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
 
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
@@ -151,7 +149,6 @@ private Q_SLOTS:
     void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
     void onHierarchyViewScrollbarMoved(int);
 
-    void onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void onKeyframeSelectionChanged();
 
     // Actions

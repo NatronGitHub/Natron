@@ -133,8 +133,6 @@ public:
 Q_SIGNALS:
     void modelChanged();
     void nodeAdded(DSNode *dsNode);
-    void nodeSettingsPanelOpened(DSNode *dsNode);
-    void groupNodeSettingsPanelCloseChanged(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
     void nodeRemoved(DSNode *dsNode);
     void keyframeSetOrRemoved(DSKnob *dsKnob);
@@ -143,7 +141,6 @@ private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType itemType);
 
 private Q_SLOTS:
-    void onSettingsPanelCloseChanged(bool closed);
     void onNodeNameChanged(const QString &name);
     void onKeyframeSetOrRemoved();
 

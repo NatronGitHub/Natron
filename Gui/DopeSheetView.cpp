@@ -264,7 +264,7 @@ public:
 
     /* functions */
     void insertNodeItem(DSNode *dsNode);
-    void checkNodeItem(DSNode *dsNode);
+    void checkKnobsVisibleState(DSNode *dsNode);
     void processChildNodes(DSNode *dsNode);
 
     DSNode *getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
@@ -340,7 +340,7 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
             DSNode *input = (*it);
 
             moveChildTo(input, dsNode);
-            checkNodeItem(input);
+            checkKnobsVisibleState(input);
             input->getTreeItem()->setExpanded(true);
         }
     }
@@ -351,13 +351,13 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
             DSNode *child = (*it);
 
             moveChildTo(child, dsNode);
-            checkNodeItem(child);
+            checkKnobsVisibleState(child);
             child->getTreeItem()->setExpanded(true);
         }
     }
 }
 
-void HierarchyViewPrivate::checkNodeItem(DSNode *dsNode)
+void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
 {
     DSKnobRows knobRows = dsNode->getChildData();
 
@@ -391,7 +391,7 @@ void HierarchyViewPrivate::processChildNodes(DSNode *dsNode)
             newParent->addChild(child);
 
             child->setExpanded(true);
-            checkNodeItem(nodeToMove);
+            checkKnobsVisibleState(nodeToMove);
         }
     }
 }
@@ -449,7 +449,7 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     else if (nodeType == DopeSheet::ItemTypeGroup) {
         NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
 
-        showNode = showNode && !model->groupSubNodesAreHidden(group);
+        showNode = showNode && (!model->groupSubNodesAreHidden(group) || !dsNode->getTreeItem()->childCount());
     }
 
     dsNode->getTreeItem()->setHidden(!showNode);
@@ -694,12 +694,6 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
     connect(model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
             this, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
 
-    connect(model, SIGNAL(nodeSettingsPanelOpened(DSNode*)),
-            this, SLOT(onNodeSettingsPanelOpened(DSNode*)));
-
-    connect(model, SIGNAL(groupNodeSettingsPanelCloseChanged(DSNode*)),
-            this, SLOT(onGroupNodeSettingsPanelCloseChanged(DSNode*)));
-
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
 
@@ -733,9 +727,11 @@ DSKnob *HierarchyView::getDSKnobAt(int y) const
 void HierarchyView::onNodeAdded(DSNode *dsNode)
 {
     _imp->insertNodeItem(dsNode);
-    _imp->checkNodeItem(dsNode);
+    _imp->checkKnobsVisibleState(dsNode);
 
     dsNode->getTreeItem()->setExpanded(true);
+
+    _imp->checkNodeVisibleState(dsNode);
 }
 
 void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
@@ -746,23 +742,13 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
 
     QTreeWidgetItem *treeItemParent = _imp->getParentItem(treeItem);
     treeItemParent->removeChild(treeItem);
+
+    _imp->checkNodeVisibleState(dsNode);
 }
 
 void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
 {
     _imp->checkKnobVisibleState(dsKnob);
-}
-
-void HierarchyView::onNodeSettingsPanelOpened(DSNode *dsNode)
-{
-    _imp->checkNodeItem(dsNode);
-}
-
-void HierarchyView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
-{
-    assert(dsNode->getItemType() == DopeSheet::ItemTypeGroup);
-
-    _imp->checkNodeVisibleState(dsNode);
 }
 
 void HierarchyView::onItemSelectionChanged()
@@ -2938,9 +2924,6 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
     connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
             this, SLOT(onNodeAboutToBeRemoved(DSNode *)));
 
-    connect(model, SIGNAL(groupNodeSettingsPanelCloseChanged(DSNode*)),
-            this, SLOT(onGroupNodeSettingsPanelCloseChanged(DSNode*)));
-
     connect(_imp->model, SIGNAL(modelChanged()),
             this, SLOT(redraw()));
 
@@ -3364,13 +3347,6 @@ void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item
 void DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
 {
     redraw();
-}
-
-void DopeSheetView::onGroupNodeSettingsPanelCloseChanged(DSNode *dsNode)
-{
-    if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
-        _imp->computeGroupRange(parentGroupDSNode);
-    }
 }
 
 void DopeSheetView::onKeyframeSelectionChanged()

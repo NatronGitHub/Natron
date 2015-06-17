@@ -766,33 +766,11 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeS
 
     DSNode *dsNode = new DSNode(this, itemType, nodeGui, nameItem);
 
-    connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-            this, SLOT(onSettingsPanelCloseChanged(bool)));
-
     connect(node.get(), SIGNAL(labelChanged(QString)),
             this, SLOT(onNodeNameChanged(QString)));
 
     return dsNode;
 }
-
-void DopeSheet::onSettingsPanelCloseChanged(bool closed)
-{
-    Q_UNUSED(closed);
-
-    DSNode *dsNode = findDSNode(qobject_cast<Natron::Node *>(sender()));
-
-    if (!dsNode) {
-        return;
-    }
-
-    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
-        Q_EMIT groupNodeSettingsPanelCloseChanged(parentGroupDSNode);
-    }
-    else {
-        Q_EMIT nodeSettingsPanelOpened(dsNode);
-    }
-}
-
 void DopeSheet::onNodeNameChanged(const QString &name)
 {
     Natron::Node *node = qobject_cast<Natron::Node *>(sender());
@@ -1224,9 +1202,6 @@ void DSNodePrivate::initGroupNode()
         if (!subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
             continue;
         }
-
-        QObject::connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-                         dopeSheetModel, SLOT(onSettingsPanelCloseChanged(bool)));
     }
 }
 
