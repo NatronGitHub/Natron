@@ -3984,7 +3984,9 @@ String_KnobGui::updateGUI(int /*dimension*/)
         int selectionStart = cursor.selectionStart();
         int selectionEnd = cursor.selectionEnd();
         QString txt( value.c_str() );
-        txt = removeAutoAddedHtmlTags(txt);
+        if (_knob.lock()->usesRichText()) {
+            txt = removeAutoAddedHtmlTags(txt);
+        }
 
         _textEdit->setPlainText(txt);
 
