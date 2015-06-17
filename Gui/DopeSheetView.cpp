@@ -1785,15 +1785,6 @@ void DopeSheetViewPrivate::drawRange(DSNode *dsNode) const
 
             double speedValue = 1.0f;
 
-            if (DSNode *nearestRetimer = model->getNearestTimeNodeFromOutputs(dsNode)) {
-                if (nearestRetimer->getItemType() == DopeSheet::ItemTypeRetime) {
-                    Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(nearestRetimer->getInternalNode()->getKnobByName("speed").get());
-                    assert(speedKnob);
-
-                    speedValue = speedKnob->getValue();
-                }
-            }
-
             Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
             assert(originalFrameRangeKnob);
 
@@ -2432,6 +2423,10 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 
     if (DSNode *isInGroup = model->getGroupDSNode(reader)) {
         computeGroupRange(isInGroup);
+    }
+
+    if (DSNode *isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader)) {
+        computeNodeRange(isConnectedToTimeNode);
     }
 }
 
