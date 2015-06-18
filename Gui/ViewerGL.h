@@ -321,6 +321,7 @@ public:
     bool getZoomOrPannedSinceLastFit() const;
 
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;

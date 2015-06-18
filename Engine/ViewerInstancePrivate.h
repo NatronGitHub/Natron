@@ -173,7 +173,7 @@ public:
     , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
     , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
-    , activeInputsMutex()
+    , activeInputsMutex(QMutex::Recursive)
     , activeInputs()
     , lastRenderedHashMutex()
     , lastRenderedHash(0)

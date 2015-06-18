@@ -4637,6 +4637,12 @@ ViewerGL::getCompositingOperator() const
     return _imp->viewerTab->getCompositingOperator();
 }
 
+void
+ViewerGL::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+{
+    _imp->viewerTab->setCompositingOperator(op);
+}
+
 
 void
 ViewerGL::getTextureColorAt(int x,

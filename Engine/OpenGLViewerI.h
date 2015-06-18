@@ -157,6 +157,10 @@ public:
      **/
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
+    /**
+     * @brief Set the current compositing operator
+     **/
+    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) = 0;
     
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
