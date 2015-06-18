@@ -27,7 +27,13 @@
 
 #include "Global/Macros.h"
 
+#include "Global/Macros.h"
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
