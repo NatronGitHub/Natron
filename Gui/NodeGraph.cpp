@@ -1917,6 +1917,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                         continue;
                                     }
                                     
+                                    if ((*it)->getNode()->getLiveInstance()->isInputRotoBrush(edge->getInputNumber())) {
+                                        edge = 0;
+                                        continue;
+                                    }
+                                    
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
                                         !selectedNodeInternalNode->isInputNode()) {
