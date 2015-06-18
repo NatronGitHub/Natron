@@ -6671,6 +6671,7 @@ RotoContext::isNearbyBezier(double x,
     assert( QThread::currentThread() == qApp->thread() );
 
     QMutexLocker l(&_imp->rotoContextMutex);
+    std::list<std::pair<boost::shared_ptr<Bezier>, std::pair<int,double> > > nearbyBeziers;
     for (std::list< boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
         const RotoItems & items = (*it)->getItems();
         for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
@@ -6679,13 +6680,33 @@ RotoContext::isNearbyBezier(double x,
                 double param;
                 int i = b->isPointOnCurve(x, y, acceptance, &param,feather);
                 if (i != -1) {
-                    *index = i;
-                    *t = param;
-
-                    return b;
+                    nearbyBeziers.push_back(std::make_pair(b, std::make_pair(i, param)));
                 }
             }
         }
+    }
+    
+    std::list<std::pair<boost::shared_ptr<Bezier>, std::pair<int,double> > >::iterator firstNotSelected = nearbyBeziers.end();
+    for (std::list<std::pair<boost::shared_ptr<Bezier>, std::pair<int,double> > >::iterator it = nearbyBeziers.begin(); it!=nearbyBeziers.end(); ++it) {
+        bool foundSelected = false;
+        for (std::list<boost::shared_ptr<RotoItem> >::iterator it2 = _imp->selectedItems.begin(); it2 != _imp->selectedItems.end(); ++it2) {
+            if (it2->get() == it->first.get()) {
+                foundSelected = true;
+                break;
+            }
+        }
+        if (foundSelected) {
+            *index = it->second.first;
+            *t = it->second.second;
+            return it->first;
+        } else if (firstNotSelected == nearbyBeziers.end()) {
+            firstNotSelected = it;
+        }
+    }
+    if (firstNotSelected != nearbyBeziers.end()) {
+        *index = firstNotSelected->second.first;
+        *t = firstNotSelected->second.second;
+        return firstNotSelected->first;
     }
 
     return boost::shared_ptr<Bezier>();
