@@ -2833,8 +2833,10 @@ Bezier::setCurveFinished(bool finished)
         }
     }
     if (centerSet) {
-        center.x /= (double)_imp->points.size();
-        center.y /= (double)_imp->points.size();
+        size_t np = _imp->points.size();
+        assert(np > 0);
+        center.x /= np;
+        center.y /= np;
         boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
         if (autoKeying) {
             centerKnob->setValueAtTime(time, center.x, 0);
@@ -5295,7 +5297,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 
     int pot = 1 << mipMapLevel;
     
-    if (xCurve.size() == 1) {
+    if (xCurve.size() == 1 && xIt != xCurve.end() && yIt != yCurve.end() && pIt != pCurve.end()) {
+        assert(xNext == xCurve.end() && yNext == yCurve.end() && pNext == pCurve.end());
         Transform::Point3D p;
         p.x = xIt->getValue();
         p.y = yIt->getValue();

@@ -970,9 +970,7 @@ public:
 
 protected:
 
-virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
-{
-}
+    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/) {}
 
 public:
 
@@ -1218,7 +1216,10 @@ public:
         std::map<int,Natron::ImagePremultiplicationEnum> inputPremult;
         
         ImagePlanesToRender()
-        : rectsToRender(), planes(), isBeingRenderedElsewhere(false)
+        : rectsToRender()
+        , planes()
+        , isBeingRenderedElsewhere(false)
+        , outputPremult(eImagePremultiplicationPremultiplied)
         {
         
         }

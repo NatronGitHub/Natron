@@ -275,7 +275,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
     }
 
     
-    int maxColorComps = std::min(dstNComps, 3);
+    const int maxColorComps = std::min(dstNComps, 3);
+    assert(maxColorComps <= 3);
 
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
