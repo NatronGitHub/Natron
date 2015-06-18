@@ -25,7 +25,11 @@
 
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 

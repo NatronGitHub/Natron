@@ -21,7 +21,9 @@ CLANG_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
+GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/vector.hpp>
+GCC_DIAG_ON(sign-compare)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/version.hpp>
 #endif

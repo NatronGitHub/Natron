@@ -86,9 +86,9 @@ struct NodeBackDropPrivate
 
 NodeBackDrop::NodeBackDrop(NodeGraph* dag,
                            QGraphicsItem* parent)
-    : QGraphicsRectItem(parent)
-      , NamedKnobHolder( dag->getGui()->getApp() )
-      , _imp( new NodeBackDropPrivate(this,dag) )
+: NamedKnobHolder( dag->getGui()->getApp() )
+, QGraphicsRectItem(parent)
+, _imp( new NodeBackDropPrivate(this,dag) )
 {
 }
 
