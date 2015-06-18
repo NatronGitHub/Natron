@@ -1814,8 +1814,11 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
 
     //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
     if (getHolder()) {
-        EXPR_RECURSION_LEVEL();
-        _imp->parseListenersFromExpression(dimension);        
+        {
+            EXPR_RECURSION_LEVEL();
+            _imp->parseListenersFromExpression(dimension);
+        }
+        getHolder()->updateHasAnimation();
     }
     
     //Notify the expr. has changed
@@ -1882,6 +1885,9 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
     }
     if (clearResults) {
         clearExpressionsResults(dimension);
+    }
+    if (getHolder()) {
+        getHolder()->updateHasAnimation();
     }
     expressionChanged(dimension);
     

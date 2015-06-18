@@ -272,6 +272,7 @@ struct Node::Implementation
     , distToNextIn(0.)
     , distToNextOut(0.)
     , useAlpha0ToConvertFromRGBToRGBA(false)
+    , isBeingDestroyed(false)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -479,6 +480,8 @@ struct Node::Implementation
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     bool useAlpha0ToConvertFromRGBToRGBA;
+    
+    bool isBeingDestroyed;
 };
 
 /**
@@ -1714,6 +1717,9 @@ Node::removeReferences(bool ensureThreadsFinished)
     if (!_imp->liveInstance) {
         return;
     }
+    
+    _imp->isBeingDestroyed = true;
+    
     if (ensureThreadsFinished) {
         getApp()->getProject()->ensureAllProcessingThreadsFinished();
     }
@@ -3430,6 +3436,11 @@ Node::disconnectInput(int inputNumber)
         _imp->inputs[inputNumber].reset();
         
     }
+    
+    if (_imp->isBeingDestroyed) {
+        return -1;
+    }
+    
     Q_EMIT inputChanged(inputNumber);
     onInputChanged(inputNumber);
     computeHash();
@@ -6656,6 +6667,8 @@ Node::refreshChannelSelectors(bool setValues)
                 if (it2->isColorPlane()) {
                     if (channels.size() == 1 || channels.size() == 4) {
                         alphaIndex = choices.size() - 1;
+                    } else {
+                        alphaIndex = 0;
                     }
                     gotColor = true;
                 }

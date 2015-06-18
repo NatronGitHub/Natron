@@ -2652,6 +2652,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateDraggingWipeCenter;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         _imp->overlay &&
@@ -2660,6 +2661,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateDraggingWipeMixHandle;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         _imp->overlay &&
@@ -2668,6 +2670,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateRotatingWipeHandle;
         overlaysCaught = true;
+        mustRedraw = true;
     }
 
     // process plugin overlays
@@ -2711,6 +2714,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottom edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2719,6 +2723,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the left edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiLeftEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2726,6 +2731,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the right edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiRightEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2734,6 +2740,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the top edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2743,6 +2750,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
+            mustRedraw = true;
         }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2751,6 +2759,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the topleft corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopLeft;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2759,6 +2768,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the topright corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopRight;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2767,6 +2777,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottomleft corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomLeft;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2775,6 +2786,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottomright corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomRight;
         overlaysCaught = true;
+        mustRedraw = true;
     }
 
     if (!overlaysCaught &&

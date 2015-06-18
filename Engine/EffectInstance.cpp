@@ -5305,7 +5305,9 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     bool ret = false;
     
-    if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+    if (getHasAnimation()) {
+        ret = false;
+    } else if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;

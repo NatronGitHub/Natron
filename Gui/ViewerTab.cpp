@@ -3407,7 +3407,9 @@ ViewerTab::onActiveInputsChanged()
     if ( foundA != _imp->inputNamesMap.end() ) {
         int indexInA = _imp->firstInputImage->itemIndex(foundA->second.name);
         assert(indexInA != -1);
-        _imp->firstInputImage->setCurrentIndex_no_emit(indexInA);
+        if (indexInA != -1) {
+            _imp->firstInputImage->setCurrentIndex_no_emit(indexInA);
+        }
     } else {
         _imp->firstInputImage->setCurrentIndex_no_emit(0);
     }
