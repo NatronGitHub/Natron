@@ -438,6 +438,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     ///This is used only by the rotopaint while drawing. We must clear the action cache of the rotopaint node before calling
     ///getRoD or this will not work
     assert(rotoPaintNode);
+    if (!rotoPaintNode->getLiveInstance()) {
+        return eStatusFailed;
+    }
     rotoPaintNode->getLiveInstance()->clearActionsCache();
     
     Natron::StatusEnum status[2] = {

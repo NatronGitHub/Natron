@@ -106,6 +106,7 @@ enum EventStateEnum
     eEventStateBuildingStroke,
     eEventStateDraggingCloneOffset,
     eEventStateDraggingBrushSize,
+    eEventStateDraggingBrushOpacity,
 };
 
 enum HoverStateEnum
@@ -1304,9 +1305,9 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
 } // drawSelectedCp
 
 static void
-drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r, double g, double b)
+drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r, double g, double b, double a)
 {
-    glColor3f(r*l, g*l, b*l);
+    glColor3f(r*l*a, g*l*a, b*l*a);
     
     glPushMatrix();
     //  center the oval at x_center, y_center
@@ -1742,11 +1743,13 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 double halfBrush = brushSize / 2.;
                 
                 QPointF ellipsePos;
-                if (_imp->state == eEventStateDraggingBrushSize) {
+                if (_imp->state == eEventStateDraggingBrushSize || _imp->state == eEventStateDraggingBrushOpacity) {
                     ellipsePos = _imp->mouseCenterOnSizeChange;
                 } else {
                     ellipsePos = _imp->lastMousePos;
                 }
+                double opacity = _imp->opacitySpinbox->value();
+
                 for (int l = 0; l < 2; ++l) {
                     
                     glMatrixMode(GL_PROJECTION);
@@ -1754,9 +1757,9 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     // translate (1,-1) pixels
                     glTranslated(direction * shadow.x, -direction * shadow.y, 0);
                     glMatrixMode(GL_MODELVIEW);
-                    drawEllipse(ellipsePos.x(),ellipsePos.y(),halfBrush,halfBrush,l, .8f, .8f, .8f);
+                    drawEllipse(ellipsePos.x(),ellipsePos.y(),halfBrush,halfBrush,l, 1.f, 1.f, 1.f, opacity);
                     
-                    glColor3f(.6f*l, .6f*l, .6f*l);
+                    glColor3f(.5f*l*opacity, .5f*l*opacity, .5f*l*opacity);
 
                     
                     if (_imp->selectedTool == eRotoToolClone) {
@@ -1776,7 +1779,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         
                         
                         //draw the source ellipse
-                        drawEllipse(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y() + _imp->rotoData->cloneOffset.second,halfBrush,halfBrush,l, .6f, .6f, .6f);
+                        drawEllipse(ellipsePos.x() + _imp->rotoData->cloneOffset.first,ellipsePos.y() + _imp->rotoData->cloneOffset.second,halfBrush,halfBrush,l, 1.f, 1.f, 1.f, opacity / 2.);
                     }
                 }
             }
@@ -2611,6 +2614,9 @@ RotoGui::penDown(double /*scaleX*/,
             } else if (modCASIsShift(e)) {
                 _imp->state = eEventStateDraggingBrushSize;
                 _imp->mouseCenterOnSizeChange = pos;
+            } else if (modCASIsControl(e)) {
+                _imp->state = eEventStateDraggingBrushOpacity;
+                _imp->mouseCenterOnSizeChange = pos;
             } else {
                 _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
                 _imp->makeStroke(false, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
@@ -2696,7 +2702,7 @@ RotoGui::penMotion(double /*scaleX*/,
     double cpTol = kControlPointSelectionTolerance * pixelScale.first;
     
     if (_imp->context->isRotoPaint() && _imp->selectedRole != _imp->selectTool) {
-        if (!_imp->rotoData->strokeBeingPaint) {
+        if (_imp->state != eEventStateBuildingStroke) {
             _imp->viewer->setCursor(Qt::CrossCursor);
         } else {
             _imp->viewer->setCursor(Qt::BlankCursor);
@@ -3028,7 +3034,19 @@ RotoGui::penMotion(double /*scaleX*/,
         double size = _imp->sizeSpinbox->value();
         size += ((dx + dy) / 2.);
         _imp->sizeSpinbox->setValue(std::max(1.,size));
-        
+        didSomething = true;
+    }   break;
+    case eEventStateDraggingBrushOpacity: {
+        double opa = _imp->opacitySpinbox->value();
+        double newOpa = opa + ((dx + dy) / 2.);
+        if (opa != 0) {
+            newOpa = std::max(0.,std::min(1.,newOpa / opa));
+            newOpa = newOpa > 0 ? std::min(1.,opa + 0.05) : std::max(0.,opa - 0.05);
+        } else {
+            newOpa = newOpa < 0 ? .0 : 0.05;
+        }
+        _imp->opacitySpinbox->setValue(newOpa);
+        didSomething = true;
     }   break;
     case eEventStateNone:
     default:
