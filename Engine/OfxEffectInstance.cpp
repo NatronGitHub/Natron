@@ -121,7 +121,7 @@ protected:
 class RenderThreadStorageSetter : public ClipsThreadStorageSetter {
 public:
     
-    RenderThreadStorageSetter(OfxImageEffectInstance* effect,
+    RenderThreadStorageSetter(OfxEffectInstance* effect,
                               bool skipDiscarding,     //< this is in case a recursive action is called
                               bool setView,
                               int view,
@@ -130,21 +130,24 @@ public:
                               bool setPlane,
                               const Natron::ImageComponents& currentPlane,
                               const EffectInstance::InputImagesMap& inputImages)
-    : ClipsThreadStorageSetter(effect,skipDiscarding,setView, view, setMipmapLevel, mipMapLevel)
+    : ClipsThreadStorageSetter(effect->effectInstance(),skipDiscarding,setView, view, setMipmapLevel, mipMapLevel)
     , planeSet(setPlane)
     {
+        OfxImageEffectInstance* instance = effect->effectInstance();
+        
         if (setPlane) {
-            effect->setClipsPlaneBeingRendered(currentPlane);
+            instance->setClipsPlaneBeingRendered(currentPlane);
             for (EffectInstance::InputImagesMap::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
                 if (!it->second.empty()) {
                     const ImagePtr& img = it->second.front();
                     assert(img);
-                    effect->setInputClipPlane(it->first, true, img->getComponents());
+                    instance->setInputClipPlane(it->first, true, img->getComponents());
                 } else {
-                    effect->setInputClipPlane(it->first, false, ImageComponents::getNoneComponents());
+                    instance->setInputClipPlane(it->first, false, ImageComponents::getNoneComponents());
                 }
             }
         }
+        
     }
     
     virtual ~RenderThreadStorageSetter() {
@@ -948,6 +951,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
                                              false);
+    
+    EffectPointerThreadProperty_RAII propHolder_raii(this);
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     
@@ -2068,7 +2073,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         SET_CAN_SET_VALUE(false);
         
         
-        RenderThreadStorageSetter clipSetter(effectInstance(),
+        RenderThreadStorageSetter clipSetter(this,
                                              skipDiscarding,
                                              true, //< setView ?
                                              args.view,

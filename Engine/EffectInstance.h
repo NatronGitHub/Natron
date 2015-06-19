@@ -60,6 +60,9 @@
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 
+
+#define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
+
 class QThread;
 class Hash64;
 class Format;
@@ -1743,6 +1746,14 @@ private:
 };
 
 
+class EffectPointerThreadProperty_RAII
+{
+public:
+    
+    EffectPointerThreadProperty_RAII(Natron::EffectInstance* effect);
+    
+    ~EffectPointerThreadProperty_RAII();
+};
 
 
 

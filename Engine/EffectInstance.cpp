@@ -719,6 +719,19 @@ public:
     }
 };
 
+
+
+EffectPointerThreadProperty_RAII::EffectPointerThreadProperty_RAII(EffectInstance* effect)
+{
+    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((QObject*)effect));
+}
+
+EffectPointerThreadProperty_RAII::~EffectPointerThreadProperty_RAII()
+{
+    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((void*)0));
+}
+
+
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,const boost::shared_ptr<Natron::Image> & img)
 {
@@ -3760,22 +3773,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
          */
-        
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
-        if (attachedStroke) {
-            NodeList rotoPaintNodes;
-            attachedStroke->getContext()->getRotoPaintTreeNodes(&rotoPaintNodes);
-            for (NodeList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
-                ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
-                if (args.validArgs) {
-                    tlsCopy.insert(std::make_pair(*it, args));
-                }
-            }
-        }
         getApp()->getProject()->getParallelRenderArgs(tlsCopy);
-
-
     }
     
     int firstFrame, lastFrame;
@@ -5250,6 +5248,7 @@ Natron::StatusEnum
 EffectInstance::render_public(const RenderActionArgs& args)
 {
     NON_RECURSIVE_ACTION();
+    EffectPointerThreadProperty_RAII propHolder_raii(this);
     return render(args);
 
 }
@@ -6165,6 +6164,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  true);
 
         RECURSIVE_ACTION();
+        EffectPointerThreadProperty_RAII propHolder_raii(this);
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
