@@ -1864,7 +1864,7 @@ RotoDrawableItem::isActivated(int time) const
 //    if (deactivated) {
 //        return false;
 //    } else {
-    return _imp->activated->getValueAtTime(time);
+    return isGloballyActivated() && _imp->activated->getValueAtTime(time);
 //    }
 }
 
