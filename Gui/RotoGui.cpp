@@ -689,7 +689,8 @@ RotoGui::RotoGui(NodeGui* node,
         
         _imp->brushButtonsBarLayout->addSpacing(5);
         
-        QString opacitytt = Qt::convertFromPlainText(tr("The opacity of the next brush stroke to be painted."), Qt::WhiteSpaceNormal);
+        QString opacitytt = Qt::convertFromPlainText(tr("The opacity of the next brush stroke to be painted. Use CTRL + SHIFT + drag "
+                                                        "with the mouse to change the opacity."), Qt::WhiteSpaceNormal);
         _imp->opacityLabel = new Natron::Label(tr("Opacity:"),_imp->brushButtonsBar);
         _imp->opacityLabel->setToolTip(opacitytt);
         _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
@@ -724,7 +725,8 @@ RotoGui::RotoGui(NodeGui* node,
         
         _imp->brushButtonsBarLayout->addSpacing(5);
         
-        QString sizett = Qt::convertFromPlainText(tr("The size of the next brush stroke to be painted."), Qt::WhiteSpaceNormal);
+        QString sizett = Qt::convertFromPlainText(tr("The size of the next brush stroke to be painted. Use SHIFT + drag with the mouse "
+                                                     "to change the size."), Qt::WhiteSpaceNormal);
         _imp->sizeLabel = new Natron::Label(tr("Size:"),_imp->brushButtonsBar);
         _imp->sizeLabel->setToolTip(sizett);
         _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
@@ -2614,7 +2616,7 @@ RotoGui::penDown(double /*scaleX*/,
             } else if (modCASIsShift(e)) {
                 _imp->state = eEventStateDraggingBrushSize;
                 _imp->mouseCenterOnSizeChange = pos;
-            } else if (modCASIsControl(e)) {
+            } else if (modCASIsControlShift(e)) {
                 _imp->state = eEventStateDraggingBrushOpacity;
                 _imp->mouseCenterOnSizeChange = pos;
             } else {
