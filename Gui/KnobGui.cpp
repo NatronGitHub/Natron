@@ -373,6 +373,8 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         return;
     }
 
+    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp();
+    
     createAnimationMenu(_imp->copyRightClickMenu,dimension);
 
     _imp->copyRightClickMenu->addSeparator();
@@ -382,25 +384,26 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
     
     int dim = knob->getDimension();
     
-    const char* copyValuesStr = dim > 1 ? "Copy Values" : "Copy Value";
-    const char* pasteValuesStr = dim > 1 ? "Paste Values" : "Paste Value";
-    
-    QAction* copyValuesAction = new QAction(tr(copyValuesStr),_imp->copyRightClickMenu);
-    copyValuesAction->setData( QVariant(dimension) );
-    QObject::connect( copyValuesAction,SIGNAL( triggered() ),this,SLOT( onCopyValuesActionTriggered() ) );
-    _imp->copyRightClickMenu->addAction(copyValuesAction);
-
-    if (!isSlave) {
-        bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
-        QAction* pasteAction = new QAction(tr(pasteValuesStr),_imp->copyRightClickMenu);
-        pasteAction->setData( QVariant(dimension) );
-        QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteValuesActionTriggered() ) );
-        _imp->copyRightClickMenu->addAction(pasteAction);
-        if (isClipBoardEmpty || !enabled) {
-            pasteAction->setEnabled(false);
+    if (isAppKnob) {
+        const char* copyValuesStr = dim > 1 ? "Copy Values" : "Copy Value";
+        const char* pasteValuesStr = dim > 1 ? "Paste Values" : "Paste Value";
+        
+        QAction* copyValuesAction = new QAction(tr(copyValuesStr),_imp->copyRightClickMenu);
+        copyValuesAction->setData( QVariant(dimension) );
+        QObject::connect( copyValuesAction,SIGNAL( triggered() ),this,SLOT( onCopyValuesActionTriggered() ) );
+        _imp->copyRightClickMenu->addAction(copyValuesAction);
+        
+        if (!isSlave) {
+            bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
+            QAction* pasteAction = new QAction(tr(pasteValuesStr),_imp->copyRightClickMenu);
+            pasteAction->setData( QVariant(dimension) );
+            QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteValuesActionTriggered() ) );
+            _imp->copyRightClickMenu->addAction(pasteAction);
+            if (isClipBoardEmpty || !enabled) {
+                pasteAction->setEnabled(false);
+            }
         }
     }
-
     QAction* resetDefaultAction = new QAction(tr("Reset to default"),_imp->copyRightClickMenu);
     resetDefaultAction->setData( QVariant(dimension) );
     QObject::connect( resetDefaultAction,SIGNAL( triggered() ),this,SLOT( onResetDefaultValuesActionTriggered() ) );
@@ -409,7 +412,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         resetDefaultAction->setEnabled(false);
     }
 
-    if (!isSlave && enabled) {
+    if (isAppKnob && !isSlave && enabled) {
         _imp->copyRightClickMenu->addSeparator();
         QAction* linkToAction = new QAction(tr("Link to"),_imp->copyRightClickMenu);
         linkToAction->setData(dimension);
@@ -433,7 +436,6 @@ void
 KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-
     menu->clear();
     bool isOnKeyFrame = false;
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -467,7 +469,9 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     }
     bool isSlaved = (dimension == -1 || dimension == 0) ? isSlaved0 : knob->isSlave(dimension);
 
-    if ( knob->isAnimationEnabled() ) {
+    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp() != 0;
+    
+    if ( isAppKnob && knob->isAnimationEnabled() ) {
         if (!hasDimensionSlaved) {
             if (knob->getDimension() > 1) {
                 ///Multi-dim actions
@@ -605,103 +609,104 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
     } //if ( knob->isAnimationEnabled() ) {
     
-    menu->addSeparator();
-    std::string hasExpr = knob->getExpression(0);
-    if ((dimension != -1 || knob->getDimension() == 1) && isEnabled) {
-        
-        
-        QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
-        QObject::connect(setExprAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-        setExprAction->setData(dimension);
-        menu->addAction(setExprAction);
-        
-        QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
-        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-        clearExprAction->setData(dimension);
-        clearExprAction->setEnabled(!hasExpr.empty());
-        menu->addAction(clearExprAction);
-        
-    }
-    
-    if (knob->getDimension() > 1 && isEnabled) {
-        QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
-                                              tr("Set expression (all dimensions)"),menu);
-        setExprsAction->setData(-1);
-        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-        menu->addAction(setExprsAction);
-        
-        QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
-        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-        clearExprAction->setData(-1);
-        menu->addAction(clearExprAction);
-        
-        
-    }
-    
-    ///find-out to which node that master knob belongs to
-    assert( getKnob()->getHolder()->getApp() );
-    KnobHolder* holder = knob->getHolder();
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-    
-    boost::shared_ptr<NodeCollection> collec ;
-    NodeGroup* isCollecGroup = 0;
-    if (isEffect) {
-        collec = isEffect->getNode()->getGroup();
-        isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
-    }
-    
-    
-    if (isSlaved) {
+    if (isAppKnob) {
         menu->addSeparator();
-        
-        std::string knobName;
-        if (dimension != -1 || knob->getDimension() == 1) {
-            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
-            assert(master.second);
+        std::string hasExpr = knob->getExpression(0);
+        if ((dimension != -1 || knob->getDimension() == 1) && isEnabled) {
             
-            assert(collec);
-            NodeList nodes = collec->getNodes();
-            if (isCollecGroup) {
-                nodes.push_back(isCollecGroup->getNode());
-            }
-            for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
-                bool shouldStop = false;
-                for (U32 j = 0; j < knobs.size(); ++j) {
-                    if ( knobs[j].get() == master.second.get() ) {
-                        knobName.append((*it)->getScriptName() );
-                        shouldStop = true;
+            
+            QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
+            QObject::connect(setExprAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+            setExprAction->setData(dimension);
+            menu->addAction(setExprAction);
+            
+            QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
+            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+            clearExprAction->setData(dimension);
+            clearExprAction->setEnabled(!hasExpr.empty());
+            menu->addAction(clearExprAction);
+            
+        }
+        
+        if (knob->getDimension() > 1 && isEnabled) {
+            QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
+                                                  tr("Set expression (all dimensions)"),menu);
+            setExprsAction->setData(-1);
+            QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+            menu->addAction(setExprsAction);
+            
+            QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
+            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+            clearExprAction->setData(-1);
+            menu->addAction(clearExprAction);
+            
+            
+        }
+        
+        ///find-out to which node that master knob belongs to
+        KnobHolder* holder = knob->getHolder();
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+        
+        boost::shared_ptr<NodeCollection> collec ;
+        NodeGroup* isCollecGroup = 0;
+        if (isEffect) {
+            collec = isEffect->getNode()->getGroup();
+            isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
+        }
+        
+        
+        if (isSlaved) {
+            menu->addSeparator();
+            
+            std::string knobName;
+            if (dimension != -1 || knob->getDimension() == 1) {
+                std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
+                assert(master.second);
+                
+                assert(collec);
+                NodeList nodes = collec->getNodes();
+                if (isCollecGroup) {
+                    nodes.push_back(isCollecGroup->getNode());
+                }
+                for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                    const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
+                    bool shouldStop = false;
+                    for (U32 j = 0; j < knobs.size(); ++j) {
+                        if ( knobs[j].get() == master.second.get() ) {
+                            knobName.append((*it)->getScriptName() );
+                            shouldStop = true;
+                            break;
+                        }
+                    }
+                    if (shouldStop) {
                         break;
                     }
                 }
-                if (shouldStop) {
-                    break;
-                }
-            }
-            knobName.append(".");
-            knobName.append( master.second->getName() );
-            if (master.second->getDimension() > 1) {
                 knobName.append(".");
-                knobName.append( master.second->getDimensionName(master.first) );
+                knobName.append( master.second->getName() );
+                if (master.second->getDimension() > 1) {
+                    knobName.append(".");
+                    knobName.append( master.second->getDimensionName(master.first) );
+                }
+                
             }
-            
+            QString actionText = tr("Unlink");
+            if (!knobName.empty()) {
+                actionText.append(" from ");
+                actionText.append(knobName.c_str());
+            }
+            QAction* unlinkAction = new QAction(actionText,menu);
+            unlinkAction->setData( QVariant(dimension) );
+            QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
+            menu->addAction(unlinkAction);
         }
-        QString actionText = tr("Unlink");
-        if (!knobName.empty()) {
-            actionText.append(" from ");
-            actionText.append(knobName.c_str());
+        
+        if (isCollecGroup) {
+            QAction* createMasterOnGroup = new QAction(tr("Create master on group"),menu);
+            QObject::connect( createMasterOnGroup,SIGNAL( triggered() ),this,SLOT( onCreateMasterOnGroupActionTriggered() ) );
+            menu->addAction(createMasterOnGroup);
         }
-        QAction* unlinkAction = new QAction(actionText,menu);
-        unlinkAction->setData( QVariant(dimension) );
-        QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
-        menu->addAction(unlinkAction);
-    }
-    
-    if (isCollecGroup) {
-        QAction* createMasterOnGroup = new QAction(tr("Create master on group"),menu);
-        QObject::connect( createMasterOnGroup,SIGNAL( triggered() ),this,SLOT( onCreateMasterOnGroupActionTriggered() ) );
-        menu->addAction(createMasterOnGroup);
-    }
+    } // if (isAppKnob)
 } // createAnimationMenu
 
 void
