@@ -1477,7 +1477,21 @@ AppManager::onAllPluginsLoaded()
             PluginMajorsOrdered::iterator other = it2->second.begin();
             QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
-                labelWithoutSuffix = (*first)->getPluginLabel();
+                QString otherGrouping = (*other)->getGrouping().join("/");
+                
+                const QStringList& thisGroupingSplit = (*first)->getGrouping();
+                QString thisGrouping = thisGroupingSplit.join("/");
+                if (otherGrouping == thisGrouping) {
+                    labelWithoutSuffix = (*first)->getPluginLabel();
+                } else {
+                    if (!thisGrouping.isEmpty()) {
+                        
+                        
+                        labelWithoutSuffix.append(" [");
+                        labelWithoutSuffix.append(thisGroupingSplit[thisGroupingSplit.size() - 1]);
+                        labelWithoutSuffix.append(']');
+                    }
+                }
                 break;
             }
         }
