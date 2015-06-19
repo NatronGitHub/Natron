@@ -169,7 +169,7 @@ TabGroup::addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name)
         tab = new QWidget(_tabWidget);
         tabLayout = new QGridLayout(tab);
         tabLayout->setColumnStretch(1, 1);
-        tabLayout->setContentsMargins(0, 0, 0, 0);
+        //tabLayout->setContentsMargins(0, 0, 0, 0);
         tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
         _tabWidget->addTab(tab,name);
         _tabs.push_back(group);
@@ -1593,7 +1593,7 @@ DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
-    tabLayout->setContentsMargins(1, 1, 1, 1);
+    //tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
     
