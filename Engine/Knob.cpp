@@ -1832,6 +1832,17 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
     return _imp->expressions[dimension].hasRet;
 }
 
+bool
+KnobHelper::getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const
+{
+    QMutexLocker k(&_imp->expressionMutex);
+    if (!_imp->expressions[dimension].expression.empty()) {
+        dependencies = _imp->expressions[dimension].dependencies;
+        return true;
+    }
+    return false;
+}
+
 void
 KnobHelper::clearExpression(int dimension,bool clearResults)
 {

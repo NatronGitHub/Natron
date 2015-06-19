@@ -1941,7 +1941,6 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
         /*
          * If getting the transform does not succeed, then this effect is treated as any other ones.
          */
-        assert(canApplyTransform);
         Natron::StatusEnum stat = getTransform_public(args.time, args.scale, args.view, &inputToTransform, &thisNodeTransform);
         if (stat == eStatusOK) {
             getTransformSucceeded = true;
@@ -1951,8 +1950,6 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
     
     if ((canTransform && getTransformSucceeded) || (!canTransform && canApplyTransform && !inputHoldingTransforms.empty())) {
         
-        assert(!inputHoldingTransforms.empty());
-      
         for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
             
             EffectInstance* input = getInput(*it);
@@ -5304,9 +5301,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     bool ret = false;
     
-    if (getHasAnimation()) {
-        ret = false;
-    } else if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+     if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;

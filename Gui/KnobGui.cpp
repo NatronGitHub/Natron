@@ -1092,6 +1092,9 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
             }
         }
     }
+    if (knob->getHolder()) {
+        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), Natron::eValueChangedReasonNatronGuiEdited);
+    }
     Q_EMIT keyInterpolationChanged();
 
 }

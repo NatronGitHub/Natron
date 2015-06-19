@@ -1058,7 +1058,7 @@ int
 Curve::getKeyFramesCount() const
 {
     QMutexLocker l(&_imp->_lock);
-
+    
     return (int)_imp->keyFrames.size();
 }
 
