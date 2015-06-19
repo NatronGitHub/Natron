@@ -95,6 +95,8 @@ public:
     DSNode *findDSNode(Natron::Node *node) const;
     DSNode *findDSNode(const boost::shared_ptr<KnobI> knob) const;
 
+    DSNode *getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
+
     DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem) const;
     DSKnob *findDSKnob(KnobGui *knobGui) const;
 
@@ -102,12 +104,11 @@ public:
 
     bool isPartOfGroup(DSNode *dsNode) const;
     DSNode *getGroupDSNode(DSNode *dsNode) const;
-    std::vector<DSNode *> getNodesFromGroup(DSNode *dsGroup) const;
-
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
+    std::vector<DSNode *> getImportantNodes(DSNode *dsNode) const;
+
     DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
-    std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
     Natron::Node *getNearestReader(DSNode *timeNode) const;
 
     DopeSheetSelectionModel *getSelectionModel() const;

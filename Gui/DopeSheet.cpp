@@ -454,6 +454,20 @@ DSNode *DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
     return NULL;
 }
 
+DSNode *DopeSheet::getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode) const
+{
+    DSNode *dsNode = findDSNode(item);
+
+    if (!dsNode) {
+        dsNode = findParentDSNode(item);
+    }
+    else if (itemIsNode) {
+        *itemIsNode = true;
+    }
+
+    return dsNode;
+}
+
 DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem) const
 {
     DSKnob *ret = 0;
@@ -512,27 +526,6 @@ DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
     return parentGroupDSNode;
 }
 
-std::vector<DSNode *> DopeSheet::getNodesFromGroup(DSNode *dsGroup) const
-{
-    assert(dsGroup->getItemType() == DopeSheet::ItemTypeGroup);
-
-    NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsGroup->getInternalNode()->getLiveInstance());
-    assert(nodeGroup);
-
-    std::vector<DSNode *> ret;
-
-    NodeList nodes = nodeGroup->getNodes();
-    for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr childNode = (*it);
-
-        if (DSNode *isInDopeSheet = findDSNode(childNode.get())) {
-            ret.push_back(isInDopeSheet);
-        }
-    }
-
-    return ret;
-}
-
 bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
 {
     bool ret = true;
@@ -558,6 +551,33 @@ bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
     return ret;
 }
 
+std::vector<DSNode *> DopeSheet::getImportantNodes(DSNode *dsNode) const
+{
+    std::vector<DSNode *> ret;
+
+    DopeSheet::ItemType nodeType = dsNode->getItemType();
+
+    if (nodeType == DopeSheet::ItemTypeGroup) {
+        NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsNode->getInternalNode()->getLiveInstance());
+        assert(nodeGroup);
+
+        NodeList nodes = nodeGroup->getNodes();
+        for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr childNode = (*it);
+
+            if (DSNode *isInDopeSheet = findDSNode(childNode.get())) {
+                ret.push_back(isInDopeSheet);
+            }
+        }
+    }
+    else if (dsNode->isTimeNode()) {
+        _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
+    }
+
+
+    return ret;
+}
+
 /**
  * @brief DopeSheet::getNearestRetimeFromOutputs
  *
@@ -568,15 +588,6 @@ DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
     Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getInternalNode().get());
 
     return findDSNode(timeNode);
-}
-
-std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
-{
-    std::vector<DSNode *> ret;
-
-    _imp->getInputsConnected_recursive(dsNode->getInternalNode().get(), &ret);
-
-    return ret;
 }
 
 Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const

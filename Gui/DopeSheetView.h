@@ -48,13 +48,11 @@ public:
     explicit HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent = 0);
     ~HierarchyView();
 
-    template <typename T>
-    QRect getItemRect(const T *dopeSheetContext) const
-    {
-        return visualItemRect(dopeSheetContext->getTreeItem());
-    }
-
     DSKnob *getDSKnobAt(int y) const;
+
+protected:
+    virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
 
 private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
@@ -63,10 +61,6 @@ private Q_SLOTS:
 
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
-
-protected:
-    virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
 
 private:
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
