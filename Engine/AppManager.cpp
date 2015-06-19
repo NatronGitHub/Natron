@@ -1483,14 +1483,6 @@ AppManager::onAllPluginsLoaded()
                 QString thisGrouping = thisGroupingSplit.join("/");
                 if (otherGrouping == thisGrouping) {
                     labelWithoutSuffix = (*first)->getPluginLabel();
-                } else {
-                    if (!thisGrouping.isEmpty()) {
-                        
-                        
-                        labelWithoutSuffix.append(" [");
-                        labelWithoutSuffix.append(thisGroupingSplit[thisGroupingSplit.size() - 1]);
-                        labelWithoutSuffix.append(']');
-                    }
                 }
                 break;
             }
