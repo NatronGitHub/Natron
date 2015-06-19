@@ -1505,29 +1505,30 @@ CurveEditor::setSelectedCurve(CurveGui* curve)
         boost::shared_ptr<KnobI> knob = knobCurve->getInternalKnob();
         assert(knob);
         KnobHolder* holder = knob->getHolder();
-        assert(holder);
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
-        assert(effect);
-        ss << effect->getNode()->getFullyQualifiedName();
-        ss << '.';
-        ss << knob->getName();
-        if (knob->getDimension() > 1) {
+        if (holder) {
+            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+            assert(effect);
+            ss << effect->getNode()->getFullyQualifiedName();
             ss << '.';
-            ss << knob->getDimensionName(knobCurve->getDimension());
+            ss << knob->getName();
+            if (knob->getDimension() > 1) {
+                ss << '.';
+                ss << knob->getDimensionName(knobCurve->getDimension());
+            }
+            _imp->knobLabel->setText(ss.str().c_str());
+            _imp->knobLabel->setAltered(false);
+            std::string expr = knob->getExpression(knobCurve->getDimension());
+            if (!expr.empty()) {
+                _imp->knobLineEdit->setText(expr.c_str());
+                double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
+                _imp->resultLabel->setText("= " + QString::number(v));
+            } else {
+                _imp->knobLineEdit->clear();
+                _imp->resultLabel->setText("= ");
+            }
+            _imp->knobLineEdit->setReadOnly(false);
+            _imp->resultLabel->setAltered(false);
         }
-        _imp->knobLabel->setText(ss.str().c_str());
-        _imp->knobLabel->setAltered(false);
-        std::string expr = knob->getExpression(knobCurve->getDimension());
-        if (!expr.empty()) {
-            _imp->knobLineEdit->setText(expr.c_str());
-            double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
-            _imp->resultLabel->setText("= " + QString::number(v));
-        } else {
-            _imp->knobLineEdit->clear();
-            _imp->resultLabel->setText("= ");
-        }
-        _imp->knobLineEdit->setReadOnly(false);
-                _imp->resultLabel->setAltered(false);
     } else {
         _imp->knobLabel->setText(tr("No curve selected"));
         _imp->knobLabel->setAltered(true);
