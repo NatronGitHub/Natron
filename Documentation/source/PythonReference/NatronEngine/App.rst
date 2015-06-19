@@ -25,7 +25,7 @@ Functions
 *    def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 *    def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 *    def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
-
+*    def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
 
 .. _app.details:
 
@@ -210,5 +210,11 @@ In Natron there's only a single internal timeline and all Viewers are synchronis
 timeline. If the user seeks a specific frames, then all Viewers will render that frame.
 
 
+.. method:: NatronEngine.App.writeToScriptEditor(message)
+
+	:param message: :class:`str<NatronEngine.std::string>` 
+	
+Writes the given *message* to the Script Editor panel of Natron. This can be useful to 
+inform the user of various informations, warnings or errors. 
 
 

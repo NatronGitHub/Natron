@@ -231,3 +231,9 @@ App::getProjectParam(const std::string& name) const
     }
     return Effect::createParamWrapperForKnob(knob);
 }
+
+void
+App::writeToScriptEditor(const std::string& message)
+{
+    _instance->appendToScriptEditor(message);
+}

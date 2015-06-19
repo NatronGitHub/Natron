@@ -1571,8 +1571,22 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     double v = isDouble->getValue(i, true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isChoice) {
-                    int v = isInt->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("options = param.getOptions()");
+                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("foundOption = False");
+                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("for i in range(len(options)):");
+                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("if options[i] == " + ESC(isChoice->getActiveEntryText_mt_safe()) + ":");
+                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("param.setValue(i)");
+                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("foundOption = True");
+                    WRITE_INDENT(innerIdent + 2); WRITE_STATIC_LINE("break");
+                    WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("if not foundOption:");
+                    std::stringstream error;
+                    error << "Could not set option for parameter " << isChoice->getName() ;
+                    KnobHolder* holder = isChoice->getHolder();
+                    EffectInstance* instance = dynamic_cast<EffectInstance*>(holder);
+                    if (instance) {
+                        error << " of node " << instance->getNode()->getFullyQualifiedName();
+                    }
+                    WRITE_INDENT(innerIdent + 1); WRITE_STRING("app.writeToScriptEditor(" + ESC(error.str()) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");

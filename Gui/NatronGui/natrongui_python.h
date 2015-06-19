@@ -55,8 +55,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <QMultiMap>
 
 // Type indices
-#define SBK_PYTABWIDGET_IDX                                          4
 #define SBK_PYVIEWER_IDX                                             5
+#define SBK_PYTABWIDGET_IDX                                          4
 #define SBK_PYGUIAPPLICATION_IDX                                     1
 #define SBK_GUIAPP_IDX                                               0
 #define SBK_PYPANEL_IDX                                              3
@@ -89,8 +89,8 @@ namespace Shiboken
 {
 
 // PyType functions, to get the PyObjectType for a type T
-template<> inline PyTypeObject* SbkType< ::PyTabWidget >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyViewer >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYVIEWER_IDX]); }
+template<> inline PyTypeObject* SbkType< ::PyTabWidget >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyGuiApplication >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX]); }
 template<> inline PyTypeObject* SbkType< ::GuiApp >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_GUIAPP_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyPanel >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYPANEL_IDX]); }

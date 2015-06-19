@@ -103,7 +103,7 @@ static PyObject* Sbk_LayerFunc_getChildren(PyObject* self)
             std::list<ItemBase*> items = cppSelf->getChildren();
             PyObject* ret = PyList_New((int) items.size());
             int idx = 0;
-            for (std::list<ItemBase*>::iterator it = items.begin(); it != items.end(); ++it, ++idx) {
+            for (std::list<ItemBase*>::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
             PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], *it);
             // Ownership transferences.
             Shiboken::Object::getOwnership(item);

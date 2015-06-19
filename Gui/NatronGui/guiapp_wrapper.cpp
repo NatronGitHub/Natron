@@ -301,7 +301,7 @@ static PyObject* Sbk_GuiAppFunc_getSelectedNodes(PyObject* self, PyObject* args,
             std::list<Effect*> effects = cppSelf->getSelectedNodes(cppArg0);
             PyObject* ret = PyList_New((int) effects.size());
             int idx = 0;
-            for (std::list<Effect*>::iterator it = effects.begin(); it != effects.end(); ++it, ++idx) {
+            for (std::list<Effect*>::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
             PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], *it);
             // Ownership transferences.
             Shiboken::Object::getOwnership(item);
