@@ -421,7 +421,7 @@ public:
     
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRotoPaintTickParamsMutex;
-    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams;
+    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams[2];
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

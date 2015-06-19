@@ -219,7 +219,8 @@ ViewerInstance::clearLastRenderedImage()
         _imp->uiContext->clearLastRenderedImage();
     }
     QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
-    _imp->lastRotoPaintTickParams.reset();
+    _imp->lastRotoPaintTickParams[0].reset();
+    _imp->lastRotoPaintTickParams[1].reset();
 }
 
 void
@@ -1079,7 +1080,7 @@ ViewerInstance::renderViewer_internal(int view,
             
             
             QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
-            if (_imp->lastRotoPaintTickParams && inArgs.params->mipMapLevel == _imp->lastRotoPaintTickParams->mipMapLevel && inArgs.params->textureRect.contains(_imp->lastRotoPaintTickParams->textureRect)) {
+            if (_imp->lastRotoPaintTickParams[inArgs.params->textureIndex] && inArgs.params->mipMapLevel == _imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->mipMapLevel && inArgs.params->textureRect.contains(_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->textureRect)) {
                 
                 //Overwrite the RoI to only the last portion rendered
                 RectD lastPaintBbox;
@@ -1089,15 +1090,15 @@ ViewerInstance::renderViewer_internal(int view,
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
 
                 
-                assert(_imp->lastRotoPaintTickParams->ramBuffer);
+                assert(_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->ramBuffer);
                 inArgs.params->ramBuffer =  0;
-                bool mustFreeSource = copyAndSwap(_imp->lastRotoPaintTickParams->textureRect, inArgs.params->textureRect, inArgs.params->bytesCount, inArgs.params->depth,_imp->lastRotoPaintTickParams->ramBuffer, &inArgs.params->ramBuffer);
+                bool mustFreeSource = copyAndSwap(_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->textureRect, inArgs.params->textureRect, inArgs.params->bytesCount, inArgs.params->depth,_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->ramBuffer, &inArgs.params->ramBuffer);
                 if (mustFreeSource) {
-                    _imp->lastRotoPaintTickParams->mustFreeRamBuffer = true;
+                    _imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->mustFreeRamBuffer = true;
                 } else {
-                    _imp->lastRotoPaintTickParams->mustFreeRamBuffer = false;
+                    _imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->mustFreeRamBuffer = false;
                 }
-                _imp->lastRotoPaintTickParams.reset();
+                _imp->lastRotoPaintTickParams[inArgs.params->textureIndex].reset();
                 if (!inArgs.params->ramBuffer) {
                     return eStatusFailed;
                 }
@@ -1105,12 +1106,12 @@ ViewerInstance::renderViewer_internal(int view,
                 inArgs.params->mustFreeRamBuffer = true;
                 inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
             }
-            _imp->lastRotoPaintTickParams = inArgs.params;
+            _imp->lastRotoPaintTickParams[inArgs.params->textureIndex] = inArgs.params;
         } else {
             
             {
                 QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
-                _imp->lastRotoPaintTickParams.reset();
+                _imp->lastRotoPaintTickParams[inArgs.params->textureIndex].reset();
             }
             
             inArgs.params->mustFreeRamBuffer = true;
@@ -1121,7 +1122,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         {
             QMutexLocker k(&_imp->lastRotoPaintTickParamsMutex);
-            _imp->lastRotoPaintTickParams.reset();
+            _imp->lastRotoPaintTickParams[inArgs.params->textureIndex].reset();
         }
         
         // For the viewer, we need the enclosing rectangle to avoid black borders.
