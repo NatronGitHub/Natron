@@ -2113,22 +2113,29 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     std::map<NodeGui*, TrackerGui*> trackerNodes;
     std::list<NodeGui*> trackerNodesList;
     std::pair<NodeGui*, TrackerGui*> currentTracker;
-
-    if ( !_imp->_viewerTabs.empty() ) {
-        ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
-        ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
-    } else {
-        const std::list<boost::shared_ptr<NodeGui> > & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-            if ( (*it)->getNode()->getRotoContext() ) {
-                rotoNodesList.push_back( it->get() );
-                if (!currentRoto.first) {
-                    currentRoto.first = it->get();
-                }
-            } else if ( (*it)->getNode()->isPointTrackerNode() ) {
-                trackerNodesList.push_back( it->get() );
-                if (!currentTracker.first) {
-                    currentTracker.first = it->get();
+    
+    if (!viewer) {
+        return 0;
+    }
+    
+    //Don't create tracker & roto interface for file dialog preview viewer
+    if (viewer->getNode()->getScriptName() != NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) {
+        if ( !_imp->_viewerTabs.empty() ) {
+            ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
+            ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
+        } else {
+            const std::list<boost::shared_ptr<NodeGui> > & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+                if ( (*it)->getNode()->getRotoContext() ) {
+                    rotoNodesList.push_back( it->get() );
+                    if (!currentRoto.first) {
+                        currentRoto.first = it->get();
+                    }
+                } else if ( (*it)->getNode()->isPointTrackerNode() ) {
+                    trackerNodesList.push_back( it->get() );
+                    if (!currentTracker.first) {
+                        currentTracker.first = it->get();
+                    }
                 }
             }
         }
