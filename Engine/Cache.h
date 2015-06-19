@@ -26,7 +26,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
-CLANG_DIAG_OFF(deprecated)
+GCC_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutexLocker>
@@ -35,13 +35,13 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QBuffer>
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
-CLANG_DIAG_ON(deprecated)
+GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
-CLANG_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
-CLANG_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/list.hpp>
