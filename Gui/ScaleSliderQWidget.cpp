@@ -364,7 +364,9 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     }
     
     QColor textColor;
-    textColor.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
+    textColor.setRgbF(Natron::clamp<qreal>(txtR, 0., 1.),
+                      Natron::clamp<qreal>(txtG, 0., 1.),
+                      Natron::clamp<qreal>(txtB, 0., 1.));
     
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);

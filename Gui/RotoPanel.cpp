@@ -781,7 +781,9 @@ makeSolidIcon(double *color,
     QPixmap p(15,15);
     QColor c;
 
-    c.setRgbF( clamp<double>(color[0]), clamp<double>(color[1]), clamp<double>(color[2]) );
+    c.setRgbF(clamp<qreal>(color[0], 0., 1.),
+              clamp<qreal>(color[1], 0., 1.),
+              clamp<qreal>(color[2], 0., 1.));
     p.fill(c);
     icon.addPixmap(p);
 }

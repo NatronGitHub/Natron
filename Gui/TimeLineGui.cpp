@@ -389,7 +389,9 @@ TimeLineGui::paintGL()
                         alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                     }
                     QColor c;
-                    c.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
+                    c.setRgbF(Natron::clamp<qreal>(txtR, 0., 1.),
+                              Natron::clamp<qreal>(txtG, 0., 1.),
+                              Natron::clamp<qreal>(txtB, 0., 1.));
                     c.setAlpha(255 * alphaText);
                     glCheckError();
                     renderText(value, btmLeft.y(), s, c, _imp->font);
@@ -438,11 +440,15 @@ TimeLineGui::paintGL()
             std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
             QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
-                glColor4f(kfR,kfG,kfB,0.4);
-                currentColor.setRgbF(Natron::clamp(kfR), Natron::clamp(kfG), Natron::clamp(kfB));
+                glColor4f(kfR, kfG, kfB, 0.4);
+                currentColor.setRgbF(Natron::clamp<qreal>(kfR, 0., 1.),
+                                     Natron::clamp<qreal>(kfG, 0., 1.),
+                                     Natron::clamp<qreal>(kfB, 0., 1.));
             } else {
                 glColor4f(cursorR, cursorG, cursorB, 0.4);
-                currentColor.setRgbF(Natron::clamp(cursorR), Natron::clamp(cursorG), Natron::clamp(cursorB));
+                currentColor.setRgbF(Natron::clamp<qreal>(cursorR, 0., 1.),
+                                     Natron::clamp<qreal>(cursorG, 0., 1.),
+                                     Natron::clamp<qreal>(cursorB, 0., 1.));
             }
             currentColor.setAlpha(100);
 
@@ -461,11 +467,15 @@ TimeLineGui::paintGL()
         std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->timeline->currentFrame() );
         QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
-            glColor4f(kfR,kfG,kfB,1.);
-            actualCursorColor.setRgbF(Natron::clamp(kfR), Natron::clamp(kfG), Natron::clamp(kfB));
+            glColor4f(kfR, kfG, kfB, 1.);
+            actualCursorColor.setRgbF(Natron::clamp<qreal>(kfR, 0., 1.),
+                                      Natron::clamp<qreal>(kfG, 0., 1.),
+                                      Natron::clamp<qreal>(kfB, 0., 1.));
         } else {
             glColor4f(cursorR, cursorG, cursorB,1.);
-            actualCursorColor.setRgbF(Natron::clamp(cursorR), Natron::clamp(cursorG), Natron::clamp(cursorB));
+            actualCursorColor.setRgbF(Natron::clamp<qreal>(cursorR, 0., 1.),
+                                      Natron::clamp<qreal>(cursorG, 0., 1.),
+                                      Natron::clamp<qreal>(cursorB, 0., 1.));
         }
 
         QString currentFrameStr( QString::number( _imp->timeline->currentFrame() ) );
@@ -480,7 +490,9 @@ TimeLineGui::paintGL()
         glCheckErrorIgnoreOSXBug();
 
         QColor boundsColor;
-        boundsColor.setRgbF(Natron::clamp(boundsR), Natron::clamp(boundsG), Natron::clamp(boundsB));
+        boundsColor.setRgbF(Natron::clamp<qreal>(boundsR, 0., 1.),
+                            Natron::clamp<qreal>(boundsG, 0., 1.),
+                            Natron::clamp<qreal>(boundsB, 0., 1.));
         
         if ( leftBound != _imp->timeline->currentFrame() ) {
             QString leftBoundStr( QString::number(leftBound) );

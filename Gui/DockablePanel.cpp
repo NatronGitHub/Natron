@@ -531,9 +531,11 @@ DockablePanel::DockablePanel(Gui* gui ,
 
             boost::shared_ptr<NodeGuiI> gui_i = iseffect->getNode()->getNodeGui();
             assert(gui_i);
-            double r,g,b;
+            double r, g, b;
             gui_i->getColor(&r, &g, &b);
-            currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
+            currentColor.setRgbF(Natron::clamp(r, 0., 1.),
+                                 Natron::clamp(g, 0., 1.),
+                                 Natron::clamp(b, 0., 1.));
             QPixmap p(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
             p.fill(currentColor);
 

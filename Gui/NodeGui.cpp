@@ -362,7 +362,9 @@ NodeGui::initialize(NodeGraph* dag,
         settings->getDefaultNodeColor(&r, &g, &b);
     }
     QColor color;
-    color.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
+    color.setRgbF(Natron::clamp<qreal>(r, 0., 1.),
+                  Natron::clamp<qreal>(g, 0., 1.),
+                  Natron::clamp<qreal>(b, 0., 1.));
     setCurrentColor(color);
 
     if ( !internalNode->isMultiInstance() ) {

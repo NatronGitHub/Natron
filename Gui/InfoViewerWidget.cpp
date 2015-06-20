@@ -312,7 +312,7 @@ InfoViewerWidget::setColor(float r,
     double srgb_g = Color::to_func_srgb(g);
     double srgb_b = Color::to_func_srgb(b);
     QColor col;
-    col.setRgbF( Natron::clamp(srgb_r), Natron::clamp(srgb_g), Natron::clamp(srgb_b) );
+    col.setRgbF( Natron::clamp(srgb_r, 0., 1.), Natron::clamp(srgb_g, 0., 1.), Natron::clamp(srgb_b, 0., 1.) );
     QPixmap pix(15,15);
     pix.fill(col);
     color->setPixmap(pix);

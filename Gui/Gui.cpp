@@ -2000,36 +2000,57 @@ Gui::reloadStylesheet()
 void
 Gui::loadStyleSheet()
 {
-    double selR, selG, selB;
-    double baseR, baseG, baseB;
-    double sunkR, sunkG, sunkB;
-    double raisR, raisG, raisB;
-    double txtR, txtG, txtB;
-    double intR, intG, intB;
-    double kfR, kfG, kfB;
-    double eR, eG, eB;
-    double altR, altG, altB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
-    settings->getSelectionColor(&selR, &selG, &selB);
-    settings->getBaseColor(&baseR, &baseG, &baseB);
-    settings->getSunkenColor(&sunkR, &sunkG, &sunkB);
-    settings->getRaisedColor(&raisR, &raisG, &raisB);
-    settings->getTextColor(&txtR, &txtG, &txtB);
-    settings->getAltTextColor(&altR, &altG, &altB);
-    settings->getInterpolatedColor(&intR, &intG, &intB);
-    settings->getKeyframeColor(&kfR, &kfG, &kfB);
-    settings->getExprColor(&eR, &eG, &eB);
+    QString selStr, sunkStr, baseStr, raisedStr, txtStr, intStr, kfStr, eStr, altStr;
+
     //settings->
-    QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
-    QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
-    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseG) * 256).arg(Natron::clamp(baseB) * 256);
-    QString raisedStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(raisR) * 256).arg(Natron::clamp(raisG) * 256).arg(Natron::clamp(raisB) * 256);
-    QString txtStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(txtR) * 256).arg(Natron::clamp(txtG) * 256).arg(Natron::clamp(txtB) * 256);
-    QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
-    QString kfStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(kfR) * 256).arg(Natron::clamp(kfG) * 256).arg(Natron::clamp(kfB) * 256);
-    QString eStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(eR) * 256).arg(Natron::clamp(eG) * 256).arg(Natron::clamp(eB) * 256);
-    QString altStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(altR) * 256).arg(Natron::clamp(altG) * 256).arg(Natron::clamp(altB) * 256);
+    {
+        double r, g, b;
+        settings->getSelectionColor(&r, &g, &b);
+        selStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getBaseColor(&r, &g, &b);
+        baseStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getRaisedColor(&r, &g, &b);
+        raisedStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getSunkenColor(&r, &g, &b);
+        sunkStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getTextColor(&r, &g, &b);
+        txtStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getInterpolatedColor(&r, &g, &b);
+        intStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getKeyframeColor(&r, &g, &b);
+        kfStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getExprColor(&r, &g, &b);
+        eStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getAltTextColor(&r, &g, &b);
+        altStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
     if ( qss.open(QIODevice::ReadOnly

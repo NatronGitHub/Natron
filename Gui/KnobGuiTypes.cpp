@@ -2776,10 +2776,10 @@ Color_KnobGui::showColorDialog()
     }
 
     QColor curColor;
-    curColor.setRgbF(Natron::clamp(Natron::Color::to_func_srgb(curR)),
-                     Natron::clamp(Natron::Color::to_func_srgb(curG)),
-                     Natron::clamp(Natron::Color::to_func_srgb(curB)),
-                     Natron::clamp(Natron::Color::to_func_srgb(curA)));
+    curColor.setRgbF(Natron::clamp<qreal>(Natron::Color::to_func_srgb(curR), 0., 1.),
+                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curG), 0., 1.),
+                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curB), 0., 1.),
+                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curA), 0., 1.));
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
     if (!dialog.exec()) {
@@ -2912,14 +2912,10 @@ Color_KnobGui::updateLabel(double r, double g, double b, double a)
     QColor color;
     boost::shared_ptr<Color_Knob> knob = _knob.lock();
     bool simple = knob->isSimplified();
-    r = Natron::clamp(simple ? r : Natron::Color::to_func_srgb(r));
-    g = Natron::clamp(simple ? g : Natron::Color::to_func_srgb(g));
-    b = Natron::clamp(simple ? b : Natron::Color::to_func_srgb(b));
-    a = Natron::clamp(a);
-    color.setRgbF(r,
-                  g,
-                  b,
-                  a);
+    color.setRgbF(Natron::clamp<qreal>(simple ? r : Natron::Color::to_func_srgb(r), 0., 1.),
+                  Natron::clamp<qreal>(simple ? g : Natron::Color::to_func_srgb(g), 0., 1.),
+                  Natron::clamp<qreal>(simple ? b : Natron::Color::to_func_srgb(b), 0., 1.),
+                  Natron::clamp<qreal>(a, 0., 1.));
     _colorLabel->setColor(color);
 }
 
