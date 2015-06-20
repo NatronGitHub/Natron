@@ -296,6 +296,9 @@ RotoSmear::render(const RenderActionArgs& args)
         //First copy the source image if this is the first stroke tick
         
         if (isFirstStrokeTick || !duringPainting) {
+            
+            //Make sure all areas are black and transparant 
+            plane->second->fillZero(args.roi);
             plane->second->pasteFrom(*bgImg,args.roi, false);
         }
         
@@ -338,6 +341,9 @@ RotoSmear::render(const RenderActionArgs& args)
         
         while (it!=visiblePortion.end()) {
             
+            if (aborted()) {
+                return eStatusOK;
+            }
             
             //Render for each point a dot. Spacing is a percentage of brushSize:
             //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
