@@ -39,14 +39,14 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                     for (int c = 0; c < dstNComps; ++c) {
                         if (c < srcNComps) {
                             float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = (PIX)clampIfInt(v);
+                            dst_pixels[c] = clampIfInt<PIX>(v);
                         }
                         
                     }
                 } else {
                     for (int c = 0; c < dstNComps; ++c) {
                         float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = (PIX)clampIfInt(v);
+                        dst_pixels[c] = clampIfInt<PIX>(v);
                     }
                 }
                 
@@ -66,14 +66,14 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                     for (int c = 0; c < dstNComps; ++c) {
                         if (c < srcNComps) {
                             float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = (PIX)clampIfInt(v);
+                            dst_pixels[c] = clampIfInt<PIX>(v);
                         }
                         
                     }
                 } else {
                     for (int c = 0; c < dstNComps; ++c) {
                         float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = (PIX)clampIfInt(v);
+                        dst_pixels[c] = clampIfInt<PIX>(v);
                     }
                 }
             }

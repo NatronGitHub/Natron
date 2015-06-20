@@ -18,6 +18,7 @@
 
 #include <list>
 #include <map>
+#include <algorithm>
 
 #include "Global/GlobalDefines.h"
 
@@ -875,41 +876,29 @@ namespace Natron {
     DSTPIX convertPixelDepth(SRCPIX pix);
 
     template <typename PIX>
-    PIX clamp(PIX v);
-
-    template <typename PIX,int maxVal>
-    PIX clampInternal(PIX v)
-    {
-        if (v > maxVal) {
-            return maxVal;
-        }
-        if (v < 0) {
-            return 0;
-        }
-
-        return v;
-    }
+    PIX clamp(PIX x, PIX minval, PIX maxval);
 
     //template <> inline unsigned char clamp(unsigned char v) { return v; }
     //template <> inline unsigned short clamp(unsigned short v) { return v; }
     template <>
     inline float
-            clamp(float v)
+    clamp(float x, float minval, float maxval)
     {
-        return clampInternal<float, 1>(v);
+        return std::min(std::max(x, minval), maxval);
     }
 
     template <>
     inline double
-            clamp(double v)
+    clamp(double x, double minval, double maxval)
     {
-        return clampInternal<double, 1>(v);
+        return std::min(std::max(x, minval), maxval);
     }
     
     template<typename PIX>
-    PIX clampIfInt(PIX v);
-    template<> inline unsigned char clampIfInt(unsigned char v) { return clampInternal<unsigned char, 255>(v); }
-    template<> inline unsigned short clampIfInt(unsigned short v) { return clampInternal<unsigned short, 65525>(v); }
+    PIX clampIfInt(float v);
+
+    template<> inline unsigned char clampIfInt(float v) { return (unsigned char)clamp<float>(v, 0, 255); }
+    template<> inline unsigned short clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
     template<> inline float clampIfInt(float v) { return v; }
     
     typedef boost::shared_ptr<Natron::Image> ImagePtr;

@@ -33,6 +33,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/Lut.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
@@ -251,7 +252,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                     appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
                 }   break;
             }
-            fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            fillColor.setRgb(Color::floatToInt<256>(r),
+                             Color::floatToInt<256>(g),
+                             Color::floatToInt<256>(b));
 
         }
         
@@ -264,7 +267,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             double r,g,b;
             appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
             QColor c;
-            c.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            c.setRgb(Color::floatToInt<256>(r),
+                     Color::floatToInt<256>(g),
+                     Color::floatToInt<256>(b));
             fw = 2;
         }
         p.setPen(pen);
@@ -294,7 +299,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     } else {
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        textColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+        textColor.setRgb(Color::floatToInt<256>(r),
+                         Color::floatToInt<256>(g),
+                         Color::floatToInt<256>(b));
     }
     {
         Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
