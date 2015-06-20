@@ -2056,7 +2056,7 @@ Node::setNameInternal(const std::string& name)
                     bool foundEffect = false;
                     for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
                         EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
-                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) ) {
+                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) && isEffect->getNode()->isActivated() ) {
                             foundEffect = true;
                             break;
                         }

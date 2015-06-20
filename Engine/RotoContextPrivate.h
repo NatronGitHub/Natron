@@ -478,6 +478,9 @@ getNatronOperationString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeAverage:
             
             return "average";
+        case Natron::eMergeColor:
+            
+            return "color";
         case Natron::eMergeColorBurn:
             
             return "color-burn";
@@ -514,25 +517,28 @@ getNatronOperationString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeHardLight:
             
             return "hard-light";
+        case Natron::eMergeHue:
+            
+            return "hue";
         case Natron::eMergeHypot:
             
             return "hypot";
         case Natron::eMergeIn:
             
             return "in";
-        case Natron::eMergeInterpolated:
+        case Natron::eMergeLuminosity:
             
-            return "interpolated";
+            return "luminosity";
         case Natron::eMergeMask:
             
             return "mask";
         case Natron::eMergeMatte:
             
             return "matte";
-        case Natron::eMergeLighten:
+        case Natron::eMergeMax:
             
             return "max";
-        case Natron::eMergeDarken:
+        case Natron::eMergeMin:
             
             return "min";
         case Natron::eMergeMinus:
@@ -559,6 +565,9 @@ getNatronOperationString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeReflect:
             
             return "reflect";
+        case Natron::eMergeSaturation:
+            
+            return "saturation";
         case Natron::eMergeScreen:
             
             return "screen";
@@ -589,6 +598,9 @@ getNatronOperationHelpString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeAverage:
             
             return "(A + B) / 2";
+        case Natron::eMergeColor:
+            
+            return "SetLum(A, Lum(B))";
         case Natron::eMergeColorBurn:
             
             return "darken B towards A";
@@ -625,25 +637,28 @@ getNatronOperationHelpString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeHardLight:
             
             return "multiply if A < 0.5, screen if A > 0.5";
+        case Natron::eMergeHue:
+            
+            return "SetLum(SetSat(A, Sat(B)), Lum(B))";
         case Natron::eMergeHypot:
             
             return "sqrt(A*A+B*B)";
         case Natron::eMergeIn:
             
             return "Ab";
-        case Natron::eMergeInterpolated:
+        case Natron::eMergeLuminosity:
             
-            return "(like average but better and slower)";
+            return "SetLum(B, Lum(A))";
         case Natron::eMergeMask:
             
             return "Ba";
         case Natron::eMergeMatte:
             
             return "Aa + B(1-a) (unpremultiplied over)";
-        case Natron::eMergeLighten:
+        case Natron::eMergeMax:
             
             return "max(A, B)";
-        case Natron::eMergeDarken:
+        case Natron::eMergeMin:
             
             return "min(A, B)";
         case Natron::eMergeMinus:
@@ -670,6 +685,9 @@ getNatronOperationHelpString(Natron::MergingFunctionEnum operation)
         case Natron::eMergeReflect:
             
             return "A*A / (1 - B)";
+        case Natron::eMergeSaturation:
+            
+            return "SetLum(SetSat(B, Sat(A)), Lum(B))";
         case Natron::eMergeScreen:
             
             return "A+B-AB";
