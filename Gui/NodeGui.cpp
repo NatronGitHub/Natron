@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QtConcurrentRun>
 #include <QFontMetrics>
-#include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
 #include <QGridLayout>
@@ -34,6 +33,18 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
+
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/ViewerInstance.h"
+#include "Engine/OfxImageEffectInstance.h"
+#include "Engine/Project.h"
+#include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
+#include "Engine/Image.h"
+#include "Engine/Settings.h"
+#include "Engine/Plugin.h"
+#include "Engine/BackDrop.h"
+#include "Engine/Knob.h"
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -56,18 +67,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/BackDropGui.h"
 #include "Gui/DefaultOverlays.h"
+#include "Gui/Utils.h"
 
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/OfxImageEffectInstance.h"
-#include "Engine/Project.h"
-#include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/Image.h"
-#include "Engine/Settings.h"
-#include "Engine/Plugin.h"
-#include "Engine/BackDrop.h"
-#include "Engine/Knob.h"
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
 #define NATRON_EDGE_DROP_TOLERANCE 15
@@ -612,7 +613,7 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
     _expressionIndicator = new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                                 exprGrad,QColor(255,255,255),this);
-    _expressionIndicator->setToolTip(Qt::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
+    _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
 
@@ -2435,7 +2436,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
+        setToolTip( Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
         _bitDepthWarning->setToolTip(tooltip);
     } else {
         setToolTip("");
@@ -2511,7 +2512,7 @@ NodeGuiIndicator::~NodeGuiIndicator()
 void
 NodeGuiIndicator::setToolTip(const QString & tooltip)
 {
-    _imp->ellipse->setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
+    _imp->ellipse->setToolTip( Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
 }
 
 void
@@ -3142,7 +3143,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     
     
     _imp->idLabel = new Natron::Label(tr("Unique ID"),this);
-    QString idTt = Qt::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
+    QString idTt = Natron::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
                                                "places in the application. Generally this contains domain and sub-domains names "
                                                "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
                                                "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
@@ -3153,7 +3154,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
 
     _imp->labelLabel = new Natron::Label(tr("Label"),this);
-    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
+    QString labelTt = Natron::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
     _imp->labelEdit->setPlaceholderText("MyPlugin");
@@ -3162,7 +3163,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     
     
     _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
-    QString groupingTt = Qt::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
+    QString groupingTt = Natron::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
                                                      "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
     
@@ -3172,7 +3173,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     
     
     _imp->iconPathLabel = new Natron::Label(tr("Icon relative path"),this);
-    QString iconTt = Qt::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
+    QString iconTt = Natron::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
                                                  "The path is relative to the Python script."), Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
@@ -3180,14 +3181,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->iconPath->setToolTip(iconTt);
     
     _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
-    QString descTt =  Qt::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
+    QString descTt =  Natron::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
                                                   " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new LineEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
     
     _imp->fileLabel = new Natron::Label(tr("Directory"),this);
-    QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
+    QString fileTt  = Natron::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
     

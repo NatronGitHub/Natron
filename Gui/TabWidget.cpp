@@ -33,8 +33,11 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
 #include <QSplitter>
-#include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_ON(deprecated)
+
+#include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
+#include "Engine/ScriptObject.h"
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
@@ -50,10 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Menu.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
-
-#include "Engine/ViewerInstance.h"
-#include "Engine/Project.h"
-#include "Engine/ScriptObject.h"
+#include "Gui/Utils.h"
 
 #define LEFT_HAND_CORNER_BUTTON_TT "Manage the layouts for this pane"
 
@@ -135,7 +135,7 @@ TabWidget::TabWidget(Gui* gui,
 
     _imp->leftCornerButton = new Button(QIcon(pixL),"", _imp->header);
     _imp->leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->leftCornerButton->setToolTip( Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
+    _imp->leftCornerButton->setToolTip( Natron::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
     _imp->leftCornerButton->setFocusPolicy(Qt::NoFocus);
     _imp->headerLayout->addWidget(_imp->leftCornerButton);
     _imp->headerLayout->addSpacing(10);
@@ -149,7 +149,7 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addStretch();
     _imp->floatButton = new Button(QIcon(pixM),"",_imp->header);
     _imp->floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->floatButton->setToolTip( Qt::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
+    _imp->floatButton->setToolTip( Natron::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
     _imp->floatButton->setEnabled(true);
     _imp->floatButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _imp->floatButton, SIGNAL( clicked() ), this, SLOT( floatCurrentWidget() ) );
@@ -157,7 +157,7 @@ TabWidget::TabWidget(Gui* gui,
 
     _imp->closeButton = new Button(QIcon(pixC),"",_imp->header);
     _imp->closeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _imp->closeButton->setToolTip( Qt::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
+    _imp->closeButton->setToolTip( Natron::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
     _imp->closeButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _imp->closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
     _imp->headerLayout->addWidget(_imp->closeButton);
@@ -304,7 +304,7 @@ TabWidget::createMenu()
     menu.addSeparator();
     
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
-    isAnchorAction->setToolTip(Qt::convertFromPlainText(tr("The anchor pane is where viewers will be created by default."), Qt::WhiteSpaceNormal));
+    isAnchorAction->setToolTip(Natron::convertFromPlainText(tr("The anchor pane is where viewers will be created by default."), Qt::WhiteSpaceNormal));
     isAnchorAction->setCheckable(true);
     bool isVA = isAnchor();
     isAnchorAction->setChecked(isVA);
@@ -1573,7 +1573,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
         
         setObjectName(str);
     }
-    QString tt = Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) ;
+    QString tt = Natron::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) ;
     QString toPre = QString("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
     tt.prepend(toPre);
     _imp->leftCornerButton->setToolTip(tt);

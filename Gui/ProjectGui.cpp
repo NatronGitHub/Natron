@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSplitter>
 #include <QTimer>
 #include <QDebug>
-#include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -58,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/Label.h"
+#include "Gui/Utils.h"
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -157,7 +157,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
     _copyFromViewerButton = new Button(tr("Copy from"),_fromViewerLine);
-    _copyFromViewerButton->setToolTip( Qt::convertFromPlainText(
+    _copyFromViewerButton->setToolTip( Natron::convertFromPlainText(
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
                                               " indicated on the left."), Qt::WhiteSpaceNormal) );

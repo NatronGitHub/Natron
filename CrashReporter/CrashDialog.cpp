@@ -26,6 +26,7 @@
 #include <QApplication>
 #include <QLocalSocket>
 #include <QFileDialog>
+#include <QTextDocument>
 
 CallbacksManager* CallbacksManager::_instance = 0;
 

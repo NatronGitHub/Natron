@@ -120,6 +120,7 @@ SOURCES += \
     ToolButton.cpp \
     TimeLineGui.cpp \
     TrackerGui.cpp \
+    Utils.cpp \
     ViewerGL.cpp \
     ViewerTab.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
@@ -202,6 +203,7 @@ HEADERS += \
     TimeLineGui.h \
     ToolButton.h \
     TrackerGui.h \
+    Utils.h \
     ViewerGL.h \
     ViewerTab.h \
     ZoomContext.h \

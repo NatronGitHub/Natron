@@ -66,6 +66,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Label.h"
+#include "Gui/Utils.h"
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -507,7 +508,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     lockIcon.addPixmap(lockDisabled, QIcon::Normal, QIcon::Off);
     _imp->syncViewerButton = new Button(lockIcon,"",_imp->firstSettingsRow);
     _imp->syncViewerButton->setCheckable(true);
-    _imp->syncViewerButton->setToolTip(Qt::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
+    _imp->syncViewerButton->setToolTip(Natron::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
     _imp->syncViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
     _imp->syncViewerButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect(_imp->syncViewerButton, SIGNAL(clicked(bool)), this,SLOT(onSyncViewersButtonPressed(bool)));
@@ -558,7 +559,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->renderScaleCombo = new ComboBox(_imp->firstSettingsRow);
     _imp->renderScaleCombo->setFocusPolicy(Qt::NoFocus);
-    _imp->renderScaleCombo->setToolTip(Qt::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
+    _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
                                             "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
     QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel2,kShortcutDescActionProxyLevel2,
@@ -628,7 +629,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGainButton->setDown(false);
     _imp->toggleGainButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGainButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->toggleGainButton->setToolTip(Qt::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal));
+    _imp->toggleGainButton->setToolTip(Natron::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGainButton);
     QObject::connect(_imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)));
     
@@ -670,11 +671,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGammaButton->setDown(false);
     _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGammaButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->toggleGammaButton->setToolTip(Qt::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting"), Qt::WhiteSpaceNormal));
+    _imp->toggleGammaButton->setToolTip(Natron::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting"), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
     
     _imp->gammaBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
-    QString gammaTt = Qt::convertFromPlainText(tr("Gamma correction. It is applied after gain and before colorspace correction"), Qt::WhiteSpaceNormal);
+    QString gammaTt = Natron::convertFromPlainText(tr("Gamma correction. It is applied after gain and before colorspace correction"), Qt::WhiteSpaceNormal);
     _imp->gammaBox->setToolTip(gammaTt);
     QObject::connect(_imp->gammaBox,SIGNAL(valueChanged(double)), this, SLOT(onGammaSpinBoxValueChanged(double)));
     _imp->gammaBox->setValue(1.0);
@@ -710,7 +711,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setCheckable(true); 
     _imp->checkerboardButton->setChecked(false);
     _imp->checkerboardButton->setDown(false);
-    _imp->checkerboardButton->setToolTip(Qt::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
+    _imp->checkerboardButton->setToolTip(Natron::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
                                                                      "(within the project window only)."), Qt::WhiteSpaceNormal));
     _imp->checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
@@ -932,7 +933,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playbackMode_Button = new Button(_imp->playerButtonsContainer);
     _imp->playbackMode_Button->setFocusPolicy(Qt::NoFocus);
     _imp->playbackMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->playbackMode_Button->setToolTip(Qt::convertFromPlainText(tr("Behaviour to adopt when the playback\n hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
+    _imp->playbackMode_Button->setToolTip(Natron::convertFromPlainText(tr("Behaviour to adopt when the playback\n hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
     _imp->playerLayout->addWidget(_imp->playbackMode_Button);
 
 
@@ -947,7 +948,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->frameRangeEdit = new LineEdit(_imp->playerButtonsContainer);
     QObject::connect( _imp->frameRangeEdit,SIGNAL( editingFinished() ),this,SLOT( onFrameRangeEditingFinished() ) );
-    _imp->frameRangeEdit->setToolTip( Qt::convertFromPlainText(tr("Define here the timeline bounds in which the cursor will playback. Alternatively"
+    _imp->frameRangeEdit->setToolTip( Natron::convertFromPlainText(tr("Define here the timeline bounds in which the cursor will playback. Alternatively"
                                                                   " you can drag the red markers on the timeline. The frame range of the project "
                                                                   "is the part coloured in grey on the timeline."),
                                                                Qt::WhiteSpaceNormal) );
@@ -961,7 +962,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
     
-    QString canEditFpsBoxTT = Qt::convertFromPlainText(tr("When unchecked, the frame rate will be automatically set by "
+    QString canEditFpsBoxTT = Natron::convertFromPlainText(tr("When unchecked, the frame rate will be automatically set by "
                                                           " the informations of the input stream of the Viewer.  "
                                                           "When checked, you're free to set the frame rate of the Viewer.")
                                                        , Qt::WhiteSpaceNormal);

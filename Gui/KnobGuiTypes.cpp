@@ -60,6 +60,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ClickableLabel.h"
 #include "Gui/Label.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Utils.h"
 
 #include "ofxNatron.h"
 
@@ -218,7 +219,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _dimensionSwitchButton->setCheckable(true);
@@ -1046,7 +1047,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
@@ -2291,7 +2292,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setSpacing(0);
     
     _colorLabel = new ColorPickerLabel(this,colorContainer);
-    _colorLabel->setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+    _colorLabel->setToolTip( Natron::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                                        "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                                        "To deselect the picker left click anywhere."
                                                        "Note that by default %1 converts to linear the color picked\n"
@@ -2311,7 +2312,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
     _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _colorDialogButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
+    _colorDialogButton->setToolTip(Natron::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
     colorLayout->addWidget(_colorDialogButton);
@@ -2320,7 +2321,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
     _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+    _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
     _dimensionSwitchButton->setCheckable(true);
     
@@ -3288,7 +3289,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont(QApplication::font());
-            _fontCombo->setToolTip(Qt::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
+            _fontCombo->setToolTip(Natron::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontCombo);
 
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -3296,7 +3297,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect( _fontSizeSpinBox,SIGNAL( valueChanged(double) ),this,SLOT( onFontSizeChanged(double) ) );
-            _fontSizeSpinBox->setToolTip(Qt::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
+            _fontSizeSpinBox->setToolTip(Natron::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
 
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -3309,7 +3310,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip(Qt::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
+            _setBoldButton->setToolTip(Natron::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect( _setBoldButton,SIGNAL( clicked(bool) ),this,SLOT( boldChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -3320,7 +3321,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
-            _setItalicButton->setToolTip(Qt::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
+            _setItalicButton->setToolTip(Natron::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect( _setItalicButton,SIGNAL( clicked(bool) ),this,SLOT( italicChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -3329,7 +3330,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
-            _fontColorButton->setToolTip(Qt::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
+            _fontColorButton->setToolTip(Natron::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );
             _richTextOptionsLayout->addWidget(_fontColorButton);
@@ -4416,7 +4417,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     treeColumnLayout->addWidget(_tree);
 
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip( Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
+    _resetButton->setToolTip( Natron::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
     treeColumnLayout->addWidget(_resetButton);
 

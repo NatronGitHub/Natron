@@ -20,7 +20,6 @@
 #include <QtCore/QTextStream>
 #include <QWaitCondition>
 #include <QMutex>
-#include <QTextDocument> // for Qt::convertFromPlainText
 #include <QCoreApplication>
 #include <QAction>
 #include <QSettings>
@@ -107,6 +106,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
 #define kPropertiesBinName "properties"
 
@@ -1192,7 +1192,7 @@ GuiPrivate::createPropertiesBinGui()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix), "", propertiesAreaButtonsContainer);
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+    _clearAllPanelsButton->setToolTip( Natron::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL( clicked(bool) ), _gui, SLOT( clearAllVisiblePanels() ) );
@@ -1206,7 +1206,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _minimizeAllPanelsButtons->setToolTip( Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( Natron::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL( clicked(bool) ), _gui, SLOT( minimizeMaximizeAllPanels(bool) ) );
 
@@ -1214,7 +1214,7 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
+    _maxPanelsOpenedSpinBox->setToolTip( Natron::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
                                                                            "that an unlimited number of panels can be opened."),
                                                                   Qt::WhiteSpaceNormal) );
@@ -2852,7 +2852,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Qt::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( Natron::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -3506,6 +3506,52 @@ Gui::informationDialog(const std::string & title,
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
+namespace {
+    // resizable message box,
+    // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
+    // and http://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4
+    class MyMessageBox : public QMessageBox {
+    public:
+        explicit MyMessageBox(QWidget *parent = 0)
+        : QMessageBox(parent)
+        {
+            setSizeGripEnabled(true);
+        }
+
+        MyMessageBox(Icon icon, const QString &title, const QString &text,
+                    StandardButtons buttons = NoButton, QWidget *parent = 0,
+                    Qt::WindowFlags flags = Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint)
+        : QMessageBox(icon, title, text, buttons, parent, flags)
+        {
+            setSizeGripEnabled(true);
+        }
+    private:
+        bool event(QEvent *e) OVERRIDE FINAL
+        {
+            bool result = QMessageBox::event(e);
+
+            setMinimumHeight(0);
+            setMaximumHeight(QWIDGETSIZE_MAX);
+            setMinimumWidth(0);
+            setMaximumWidth(QWIDGETSIZE_MAX);
+            setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+            // make the detailed text expanding
+            QTextEdit *textEdit = findChild<QTextEdit *>();
+
+            if (textEdit) {
+                textEdit->setMinimumHeight(0);
+                textEdit->setMaximumHeight(QWIDGETSIZE_MAX);
+                textEdit->setMinimumWidth(0);
+                textEdit->setMaximumWidth(QWIDGETSIZE_MAX);
+                textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            }
+            
+            return result;
+        }
+    };
+}
+
 void
 Gui::onDoDialog(int type,
                 const QString & title,
@@ -3514,21 +3560,22 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
 
-    if (type == 0) {
+    if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setWindowFlags(critical.windowFlags() | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         ignore_result( critical.exec() );
-    } else if (type == 1) {
+    } else if (type == 1) { // warning dialog
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
         warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
         ignore_result( warning.exec() );
-    } else if (type == 2) {
-        QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+    } else if (type == 2) { // information dialog
+        // text may be very long: use resizable QMessageBox
+        MyMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
         info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
         if (msg.count() > 1000) {
@@ -3542,7 +3589,8 @@ Gui::onDoDialog(int type,
             }
         }
         ignore_result( info.exec() );
-    } else {
+    } else { // question dialog
+        assert(type == 3);
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
@@ -3632,7 +3680,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       Natron::StandardButtons buttons,
                                       int defaultB)
 {
-    QString message = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title, content, (Natron::MessageBox::MessageBoxTypeEnum)type, buttons, (Natron::StandardButtonEnum)defaultB, this);
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do Not Show This Again"), &dialog);
 

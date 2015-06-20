@@ -82,6 +82,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ScriptTextEdit.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
 using namespace Natron;
 
@@ -322,7 +323,7 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
     _imp->animationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->animationButton->setToolTip( Qt::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
+    _imp->animationButton->setToolTip( Natron::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);
 
@@ -1318,7 +1319,7 @@ KnobGui::toolTip() const
     }
 
     if ( !realTt.isEmpty() ) {
-        realTt = Qt::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+        realTt = Natron::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
         tt.append(realTt);
     }
 
@@ -1762,7 +1763,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Qt::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
@@ -2352,7 +2353,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
         
         bool retVariable = hasRetVariable();
         _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
-        _imp->useRetButton->setToolTip(Qt::convertFromPlainText(tr("When checked the Python expression will be interpreted "
+        _imp->useRetButton->setToolTip(Natron::convertFromPlainText(tr("When checked the Python expression will be interpreted "
                                                                    "as series of statement. The return value should be then assigned to the "
                                                                    "\"ret\" variable. When unchecked the expression must not contain "
                                                                    "any new line character and the result will be interpreted from the "

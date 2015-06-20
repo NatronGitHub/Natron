@@ -23,7 +23,6 @@
 #include <QFontMetrics>
 #include <QDebug>
 #include <QPainter>
-#include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
@@ -39,6 +38,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/Menu.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Utils.h"
 
 #define DROP_DOWN_ICON_SIZE 6
 
@@ -446,7 +446,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -537,7 +537,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -587,7 +587,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;

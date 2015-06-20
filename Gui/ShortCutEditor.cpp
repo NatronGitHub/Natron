@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Label.h"
+#include "Gui/Utils.h"
 
 struct GuiBoundAction
 {
@@ -232,7 +233,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
     _imp->tree->setSortingEnabled(false);
-    _imp->tree->setToolTip( Qt::convertFromPlainText(
+    _imp->tree->setToolTip( Natron::convertFromPlainText(
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                    " Note that this table also have some special assignments which also involve the mouse. "
                                    "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
@@ -275,7 +276,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutEditor);
 
     _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
-    _imp->validateButton->setToolTip(Qt::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
+    _imp->validateButton->setToolTip(Natron::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
     QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
 
