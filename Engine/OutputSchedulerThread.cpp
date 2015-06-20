@@ -2973,6 +2973,16 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         }
     }
     wait();
+    
+    ///Clear all queues
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.clear();
+    }
+    {
+        QMutexLocker k(&_imp->producedQueueMutex);
+        _imp->producedQueue.clear();
+    }
 }
 
 bool
@@ -3200,4 +3210,9 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
         }
     }
     wait();
+    //clear all queues
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.clear();
+    }
 }

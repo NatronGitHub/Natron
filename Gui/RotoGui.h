@@ -302,7 +302,10 @@ public Q_SLOTS:
     void onPressureHardnessClicked(bool isDown);
     void onBuildupClicked(bool isDown);
     
+    void onResetCloneTransformClicked();
+    
 private:
+    
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
 

@@ -212,6 +212,8 @@ struct RotoGui::RotoGuiPrivate
     SpinBox* timeOffsetSpinbox;
     ComboBox* timeOffsetMode;
     ComboBox* sourceTypeCombobox;
+    Button* resetCloneOffset;
+    
     
     RotoToolButton* selectTool;
     RotoToolButton* pointsEditionTool;
@@ -280,6 +282,7 @@ struct RotoGui::RotoGuiPrivate
     , timeOffsetSpinbox(0)
     , timeOffsetMode(0)
     , sourceTypeCombobox(0)
+    , resetCloneOffset(0)
     , selectTool(0)
     , pointsEditionTool(0)
     , bezierEditionTool(0)
@@ -842,6 +845,12 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->sourceTypeCombobox->setVisible(false);
         _imp->brushButtonsBarLayout->addWidget(_imp->sourceTypeCombobox);
         
+        _imp->resetCloneOffset = new Button(QIcon(),tr("Reset Transform"),_imp->brushButtonsBar);
+        _imp->resetCloneOffset->setToolTip(Qt::convertFromPlainText(tr("Reset the transform applied before cloning to identity."),Qt::WhiteSpaceNormal));
+        QObject::connect(_imp->resetCloneOffset, SIGNAL(clicked(bool)), this, SLOT(onResetCloneTransformClicked()));
+        _imp->brushButtonsBarLayout->addWidget(_imp->resetCloneOffset);
+        _imp->resetCloneOffset->setVisible(false);
+        
         _imp->brushButtonsBarLayout->addStretch();
     } // if (!_imp->context->isRotoPaint()) {
     
@@ -1151,6 +1160,7 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         _imp->timeOffsetMode->setVisible(true);
         _imp->timeOffsetSpinbox->setVisible(true);
         _imp->sourceTypeCombobox->setVisible(true);
+        _imp->resetCloneOffset->setVisible(true);
         if ((RotoToolEnum)data.x() == eRotoToolClone) {
             _imp->sourceTypeCombobox->setCurrentIndex_no_emit(1);
         } else if ((RotoToolEnum)data.x() == eRotoToolReveal) {
@@ -1168,6 +1178,9 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         }
         if (_imp->sourceTypeCombobox) {
             _imp->sourceTypeCombobox->setVisible(false);
+        }
+        if (_imp->resetCloneOffset) {
+            _imp->resetCloneOffset->setVisible(false);
         }
     }
     if (actionRole == eRotoRolePaintBrush || actionRole == eRotoRoleCloneBrush || actionRole == eRotoRoleMergeBrush ||
@@ -1764,7 +1777,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     glColor3f(.5f*l*opacity, .5f*l*opacity, .5f*l*opacity);
 
                     
-                    if (_imp->selectedTool == eRotoToolClone) {
+                    if ((_imp->selectedTool == eRotoToolClone || _imp->selectedTool == eRotoToolReveal) &&
+                        (_imp->rotoData->cloneOffset.first != 0 || _imp->rotoData->cloneOffset.second != 0)) {
                         glBegin(GL_LINES);
                         
                         if (_imp->state == eEventStateDraggingCloneOffset) {
@@ -2611,7 +2625,7 @@ RotoGui::penDown(double /*scaleX*/,
         case eRotoToolDodge:
         case eRotoToolBurn: {
             
-            if (_imp->selectedTool == eRotoToolClone && modCASIsControl(e)) {
+            if ((_imp->selectedTool == eRotoToolClone || _imp->selectedTool == eRotoToolReveal) && modCASIsControl(e)) {
                 _imp->state = eEventStateDraggingCloneOffset;
             } else if (modCASIsShift(e)) {
                 _imp->state = eEventStateDraggingBrushSize;
@@ -4600,4 +4614,10 @@ RotoGui::notifyGuiClosing()
     _imp->viewerTab = 0;
     _imp->viewer = 0;
     _imp->rotoData->strokeBeingPaint.reset();
+}
+
+void
+RotoGui::onResetCloneTransformClicked()
+{
+    _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
 }
