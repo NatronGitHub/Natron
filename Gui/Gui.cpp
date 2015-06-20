@@ -3574,11 +3574,16 @@ Gui::onDoDialog(int type,
         warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
         ignore_result( warning.exec() );
     } else if (type == 2) { // information dialog
-        // text may be very long: use resizable QMessageBox
-        MyMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
-        info.setTextFormat(Qt::RichText);
-        info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
-        if (msg.count() > 1000) {
+        if (msg.count() < 1000) {
+            QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+            info.setTextFormat(Qt::RichText);
+            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
+            ignore_result( info.exec() );
+        } else {
+            // text may be very long: use resizable QMessageBox
+            MyMessageBox info(QMessageBox::Information, title, msg.left(1000), QMessageBox::NoButton, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
+            info.setTextFormat(Qt::RichText);
+            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
             QGridLayout *layout = qobject_cast<QGridLayout *>( info.layout() );
             if (layout) {
                 QTextEdit *edit = new QTextEdit();
@@ -3587,8 +3592,8 @@ Gui::onDoDialog(int type,
                 edit->setHtml(msg);
                 layout->addWidget(edit, 0, 1);
             }
+            ignore_result( info.exec() );
         }
-        ignore_result( info.exec() );
     } else { // question dialog
         assert(type == 3);
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
