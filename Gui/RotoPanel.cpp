@@ -465,11 +465,6 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->treeHeader->setIcon( COL_OPERATOR, QIcon(pixmerge) );
     _imp->tree->setHeaderItem(_imp->treeHeader);
 
-    for (int i = 1; i < MAX_COLS; ++i) {
-        _imp->tree->setColumnWidth(i, 25);
-    }
-
-
 #if QT_VERSION < 0x050000
     _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
@@ -1056,6 +1051,9 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
 
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
+    
+    //We must call this otherwise this is never called by Qt for custom widgets (this is a Qt bug)
+    (void)cb->minimumSizeHint();
 }
 
 void

@@ -150,6 +150,8 @@ public:
     void setAltered(bool b);
     bool getAltered() const;
 
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 public Q_SLOTS:
 
     ///Changes the current index AND emits the signal void currentIndexChanged(int)
@@ -186,7 +188,6 @@ private:
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual QSize minimumSizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
