@@ -3270,6 +3270,10 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     pressureSizeKnob->setValue(pressSize, 0);
     pressureHardnessKnob->setValue(pressHarness, 0);
     buildUpKnob->setValue(buildUp, 0);
+    if (!prepareForLater) {
+        boost::shared_ptr<Int_Knob> lifeTimeFrameKnob = rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
+        lifeTimeFrameKnob->setValue(context->getTimelineCurrentTime(), 0);
+    }
     if (strokeType == Natron::eRotoStrokeTypeClone || strokeType == Natron::eRotoStrokeTypeReveal) {
         timeOffsetKnob->setValue(timeOffset, 0);
         timeOffsetModeKnob->setValue(timeOffsetMode_i, 0);

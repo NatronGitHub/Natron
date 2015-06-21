@@ -455,6 +455,7 @@ public:
     boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
     boost::shared_ptr<Color_Knob> getColorKnob() const;
     boost::shared_ptr<Double_Knob> getCenterKnob() const;
+    boost::shared_ptr<Int_Knob> getLifeTimeFrameKnob() const;
     
     void setKeyframeOnAllTransformParameters(int time);
 
@@ -1493,6 +1494,8 @@ public Q_SLOTS:
     void onRippleEditChanged(bool enabled);
     
     void onSelectedKnobCurveChanged();
+    
+    void onLifeTimeKnobValueChanged(int, int);
 
 private:
     

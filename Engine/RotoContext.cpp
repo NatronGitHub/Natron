@@ -1860,12 +1860,19 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
 bool
 RotoDrawableItem::isActivated(int time) const
 {
-//    bool deactivated = isDeactivatedRecursive();
-//    if (deactivated) {
-//        return false;
-//    } else {
-    return isGloballyActivated() && _imp->activated->getValueAtTime(time);
-//    }
+    if (!isGloballyActivated()) {
+        return false;
+    }
+    int lifetime_i = _imp->lifeTime->getValue();
+    if (lifetime_i == 0) {
+        return time == _imp->lifeTimeFrame->getValue();
+    } else if (lifetime_i == 1) {
+        return time <= _imp->lifeTimeFrame->getValue();
+    } else if (lifetime_i == 2) {
+        return time >= _imp->lifeTimeFrame->getValue();
+    } else {
+        return _imp->activated->getValueAtTime(time);
+    }
 }
 
 void
@@ -2031,6 +2038,12 @@ boost::shared_ptr<Double_Knob>
 RotoDrawableItem::getCenterKnob() const
 {
     return _imp->center;
+}
+
+boost::shared_ptr<Int_Knob>
+RotoDrawableItem::getLifeTimeFrameKnob() const
+{
+    return _imp->lifeTimeFrame;
 }
 
 void
@@ -6139,7 +6152,7 @@ RotoStrokeItem::getBrushCloneTranslateKnob() const
 RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
     : _imp( new RotoContextPrivate(node) )
 {
-
+    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onLifeTimeKnobValueChanged(int,int)));
 }
 
 bool
@@ -6713,6 +6726,21 @@ RotoContext::isNearbyBezier(double x,
 }
 
 void
+RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
+{
+    if ((Natron::ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
+        return;
+    }
+    int lifetime_i = _imp->lifeTime.lock()->getValue();
+    _imp->activated.lock()->setSecret(lifetime_i != 3);
+    boost::shared_ptr<Int_Knob> frame = _imp->lifeTimeFrame.lock();
+    frame->setSecret(lifetime_i == 3);
+    if (lifetime_i != 3) {
+        frame->setValue(getTimelineCurrentTime(), 0);
+    }
+}
+
+void
 RotoContext::onAutoKeyingChanged(bool enabled)
 {
     ///MT-safe: only called on the main-thread
@@ -7090,6 +7118,11 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                 k->setDirty(true);
             }
         }
+        
+        //show activated/frame knob according to lifetime
+        int lifetime_i = _imp->lifeTime.lock()->getValue();
+        _imp->activated.lock()->setSecret(lifetime_i != 3);
+        _imp->lifeTimeFrame.lock()->setSecret(lifetime_i == 3);
     }
     
     QMutexLocker l(&_imp->rotoContextMutex);

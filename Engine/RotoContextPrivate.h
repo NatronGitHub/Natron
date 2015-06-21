@@ -258,6 +258,29 @@
 #define kRotoDrawableItemCenterParamLabel "Center"
 #define kRotoDrawableItemCenterParamHint ""
 
+#define kRotoDrawableItemLifeTimeParam "lifeTime"
+#define kRotoDrawableItemLifeTimeParamLabel "Life Time"
+#define kRotoDrawableItemLifeTimeParamHint "Controls the life-time of the shape/stroke"
+
+#define kRotoDrawableItemLifeTimeAll "All"
+#define kRotoDrawableItemLifeTimeAllHelp "All frames"
+
+#define kRotoDrawableItemLifeTimeSingle "Single"
+#define kRotoDrawableItemLifeTimeSingleHelp "Only for the specified frame"
+
+#define kRotoDrawableItemLifeTimeFromStart "From start"
+#define kRotoDrawableItemLifeTimeFromStartHelp "From the start of the sequence up to the specified frame"
+
+#define kRotoDrawableItemLifeTimeToEnd "To end"
+#define kRotoDrawableItemLifeTimeToEndHelp "From the specified frame to the end of the sequence"
+
+#define kRotoDrawableItemLifeTimeCustom "Custom"
+#define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes"
+
+#define kRotoDrawableItemLifeTimeFrameParam "lifeTimeFrame"
+#define kRotoDrawableItemLifeTimeFrameParamLabel "Frame"
+#define kRotoDrawableItemLifeTimeFrameParamHint "Use this to specify the frame when in mode Single/From start/To end"
+
 class Bezier;
 
 struct BezierCPPrivate
@@ -855,7 +878,9 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<Double_Knob> feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
     boost::shared_ptr<Double_Knob> featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
                                                    //alpha value is half the original value when at half distance from the feather distance
+    boost::shared_ptr<Choice_Knob> lifeTime;
     boost::shared_ptr<Bool_Knob> activated; //< should the curve be visible/rendered ? (animable)
+    boost::shared_ptr<Int_Knob> lifeTimeFrame;
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::shared_ptr<Bool_Knob> inverted; //< invert the rendering
 #endif
@@ -877,7 +902,9 @@ struct RotoDrawableItemPrivate
     : opacity()
     , feather()
     , featherFallOff()
+    , lifeTime()
     , activated()
+    , lifeTimeFrame()
 #ifdef NATRON_ROTO_INVERTIBLE
     , inverted()
 #endif
@@ -915,6 +942,27 @@ struct RotoDrawableItemPrivate
             featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
             knobs.push_back(featherFallOff);
         }
+        
+        lifeTime.reset(new Choice_Knob(NULL, kRotoDrawableItemLifeTimeParamLabel, 1 , false));
+        lifeTime->setHintToolTip(kRotoDrawableItemLifeTimeParamHint);
+        lifeTime->populate();
+        lifeTime->setName(kRotoDrawableItemLifeTimeParam);
+        {
+            std::vector<std::string> choices;
+            choices.push_back(kRotoDrawableItemLifeTimeSingle);
+            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
+            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
+            choices.push_back(kRotoDrawableItemLifeTimeCustom);
+            lifeTime->populateChoices(choices);
+        }
+        lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
+        knobs.push_back(lifeTime);
+        
+        lifeTimeFrame.reset(new Int_Knob(NULL , kRotoDrawableItemLifeTimeFrameParamLabel, 1, false));
+        lifeTimeFrame->setHintToolTip(kRotoDrawableItemLifeTimeFrameParamHint);
+        lifeTimeFrame->setName(kRotoDrawableItemLifeTimeFrameParam);
+        lifeTimeFrame->populate();
+        knobs.push_back(lifeTimeFrame);
         
         activated.reset(new Bool_Knob(NULL, kRotoActivatedParamLabel, 1, false));
         activated->setHintToolTip(kRotoActivatedHint);
@@ -1313,7 +1361,9 @@ struct RotoContextPrivate
     boost::weak_ptr<Double_Knob> opacity;
     boost::weak_ptr<Double_Knob> feather;
     boost::weak_ptr<Double_Knob> featherFallOff;
+    boost::weak_ptr<Choice_Knob> lifeTime;
     boost::weak_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
+    boost::weak_ptr<Int_Knob> lifeTimeFrame;
 #ifdef NATRON_ROTO_INVERTIBLE
     boost::weak_ptr<Bool_Knob> inverted;
 #endif
@@ -1443,11 +1493,48 @@ struct RotoContextPrivate
             shapePage->addKnob(featherFallOffKnob);
             knobs.push_back(featherFallOffKnob);
             featherFallOff = featherFallOffKnob;
-        } 
+        }
+        
+        boost::shared_ptr<Choice_Knob> lifeTimeKnob = Natron::createKnob<Choice_Knob>(effect, kRotoDrawableItemLifeTimeParamLabel, 1, false);
+        lifeTimeKnob->setHintToolTip(kRotoDrawableItemLifeTimeParamHint);
+        lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
+        lifeTimeKnob->setAddNewLine(false);
+        lifeTimeKnob->setIsPersistant(false);
+        lifeTimeKnob->setAllDimensionsEnabled(false);
+        lifeTimeKnob->setAnimationEnabled(false);
+        {
+            std::vector<std::string> choices,helps;
+            choices.push_back(kRotoDrawableItemLifeTimeSingle);
+            helps.push_back(kRotoDrawableItemLifeTimeSingleHelp);
+            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
+            helps.push_back(kRotoDrawableItemLifeTimeFromStartHelp);
+            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
+            helps.push_back(kRotoDrawableItemLifeTimeToEndHelp);
+            choices.push_back(kRotoDrawableItemLifeTimeCustom);
+            helps.push_back(kRotoDrawableItemLifeTimeCustomHelp);
+            lifeTimeKnob->populateChoices(choices,helps);
+        }
+        lifeTimeKnob->setDefaultValue(isPaintNode ? 0 : 3);
+        shapePage->addKnob(lifeTimeKnob);
+        knobs.push_back(lifeTimeKnob);
+        lifeTime = lifeTimeKnob;
+        
+        boost::shared_ptr<Int_Knob> lifeTimeFrameKnob = Natron::createKnob<Int_Knob>(effect, kRotoDrawableItemLifeTimeFrameParamLabel, 1, false);
+        lifeTimeFrameKnob->setHintToolTip(kRotoDrawableItemLifeTimeFrameParamHint);
+        lifeTimeFrameKnob->setName(kRotoDrawableItemLifeTimeFrameParam);
+        lifeTimeFrameKnob->setSecret(!isPaintNode);
+        lifeTimeFrameKnob->setAllDimensionsEnabled(false);
+        lifeTimeFrameKnob->setAddNewLine(false);
+        lifeTimeFrameKnob->setAnimationEnabled(false);
+        shapePage->addKnob(lifeTimeFrameKnob);
+        knobs.push_back(lifeTimeFrameKnob);
+        lifeTimeFrame = lifeTimeFrameKnob;
+        
         boost::shared_ptr<Bool_Knob> activatedKnob = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
         activatedKnob->setHintToolTip(kRotoActivatedHint);
         activatedKnob->setName(kRotoActivatedParam);
-        activatedKnob->setAddNewLine(false);
+        activatedKnob->setAddNewLine(true);
+        activatedKnob->setSecret(isPaintNode);
         activatedKnob->setDefaultValue(true);
         activatedKnob->setAllDimensionsEnabled(false);
         shapePage->addKnob(activatedKnob);
