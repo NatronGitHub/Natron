@@ -177,6 +177,8 @@ Q_SIGNALS:
     void currentIndexChanged(QString);
     
     void itemNewSelected();
+    
+    void minimumSizeChanged(QSize);
 
 protected:
 

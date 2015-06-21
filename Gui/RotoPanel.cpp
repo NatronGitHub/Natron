@@ -1049,11 +1049,12 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
 
     cb->setToolTip( Natron::convertFromPlainText(QString(tt.c_str()).trimmed(), Qt::WhiteSpaceNormal) );
     cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
-
+    QObject::connect(cb, SIGNAL(minimumSizeChanged(QSize)), this, SLOT(onOperatorColMinimumSizeChanged(QSize)));
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
     
     //We must call this otherwise this is never called by Qt for custom widgets (this is a Qt bug)
     (void)cb->minimumSizeHint();
+    
 }
 
 void
@@ -2286,3 +2287,19 @@ RotoPanel::onSettingsPanelClosed(bool closed)
     }
 }
 
+void
+RotoPanel::onOperatorColMinimumSizeChanged(const QSize& size)
+{
+    
+#if QT_VERSION < 0x050000
+    _imp->tree->header()->setResizeMode(QHeaderView::Fixed);
+#else
+    _imp->tree->header()->setSectionResizeMode(QHeaderView::Fixed);
+#endif
+    _imp->tree->setColumnWidth(COL_OPERATOR, size.width());
+#if QT_VERSION < 0x050000
+    _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
+#else
+    _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#endif
+}

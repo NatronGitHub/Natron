@@ -169,6 +169,7 @@ ComboBox::updateLabel()
     _validHints = false;
     updateGeometry(); //< force a call to minmumSizeHint
     update();
+    Q_EMIT minimumSizeChanged(_msh);
 }
 
 void

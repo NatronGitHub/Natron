@@ -159,6 +159,8 @@ public Q_SLOTS:
     void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
     
     void onItemLockChanged(int reason);
+    
+    void onOperatorColMinimumSizeChanged(const QSize& size);
 
 private:
 
