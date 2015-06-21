@@ -3529,24 +3529,28 @@ namespace {
         bool event(QEvent *e) OVERRIDE FINAL
         {
             bool result = QMessageBox::event(e);
-
-            setMinimumHeight(0);
-            setMaximumHeight(QWIDGETSIZE_MAX);
-            setMinimumWidth(0);
-            setMaximumWidth(QWIDGETSIZE_MAX);
-            setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-            // make the detailed text expanding
-            QTextEdit *textEdit = findChild<QTextEdit *>();
-
-            if (textEdit) {
-                textEdit->setMinimumHeight(0);
-                textEdit->setMaximumHeight(QWIDGETSIZE_MAX);
-                textEdit->setMinimumWidth(0);
-                textEdit->setMaximumWidth(QWIDGETSIZE_MAX);
-                textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            }
             
+            //QMessageBox::event in this case will call setFixedSize on the dialog frame, making it not resizable by the user
+            if (e->type() == QEvent::LayoutRequest || e->type() == QEvent::Resize) {
+                setMinimumHeight(0);
+                setMaximumHeight(QWIDGETSIZE_MAX);
+                setMinimumWidth(0);
+                setMaximumWidth(QWIDGETSIZE_MAX);
+                setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                
+                // make the detailed text expanding
+                QTextEdit *textEdit = findChild<QTextEdit *>();
+                
+                if (textEdit) {
+                    textEdit->setMinimumHeight(0);
+                    textEdit->setMaximumHeight(QWIDGETSIZE_MAX);
+                    textEdit->setMinimumWidth(0);
+                    textEdit->setMaximumWidth(QWIDGETSIZE_MAX);
+                    textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                }
+                
+               
+            }
             return result;
         }
     };
@@ -3590,6 +3594,7 @@ Gui::onDoDialog(int type,
                 edit->setReadOnly(true);
                 edit->setAcceptRichText(true);
                 edit->setHtml(msg);
+                layout->setRowStretch(1, 0);
                 layout->addWidget(edit, 0, 1);
             }
             ignore_result( info.exec() );
