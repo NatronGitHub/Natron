@@ -3415,6 +3415,16 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             roi.intersect(it->second.fullscaleImage->getBounds(), &roi);
+            if (it->second.downscaleImage == it->second.fullscaleImage) {
+                it->second.downscaleImage.reset(new Image(it->second.fullscaleImage->getComponents(),
+                                                          it->second.fullscaleImage->getRoD(),
+                                                          downscaledImageBounds,
+                                                          args.mipMapLevel,
+                                                          it->second.fullscaleImage->getPixelAspectRatio(),
+                                                          it->second.fullscaleImage->getBitDepth(),
+                                                          false));
+            }
+            
             it->second.fullscaleImage->downscaleMipMap(it->second.fullscaleImage->getRoD(),roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get());
         }
         ///The image might need to be converted to fit the original requested format
@@ -3986,9 +3996,9 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
     RectD canonicalRectToRender;
     downscaledRectToRender.toCanonical(renderMappedMipMapLevel, par, rod, &canonicalRectToRender);
-    if (outputUseImage && mipMapLevel > 0) {
-        downscaledRectToRender = downscaledRectToRender.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
-    }
+//    if (outputUseImage && mipMapLevel > 0) {
+//        downscaledRectToRender = downscaledRectToRender.downscalePowerOfTwoSmallestEnclosing(mipMapLevel);
+//    }
     
     const PlaneToRender& firstPlaneToRender = planes.planes.begin()->second;
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
@@ -4603,13 +4613,15 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  * No conversion required, copy to output
                                  */
                                 int prefInput = getNode()->getPreferredInput();
-                                assert(prefInput != -1);
                                 RectI roiPixel;
-                                ImagePtr originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                ImagePtr originalInputImageFullScale;
+                                if (prefInput != -1) {
+                                    originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                }
                                 
                                 
                                 if (originalInputImageFullScale) {
-                                   
+                                    
                                     it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImageFullScale);
                                     if (useMaskMix) {
                                         ImagePtr originalMaskFullScale = getImage(getMaxInputCount() - 1, time, actionArgs.mappedScale, view, NULL, ImageComponents::getAlphaComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
