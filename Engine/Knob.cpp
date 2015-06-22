@@ -3434,10 +3434,14 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
         if (_imp->paramsEditRecursionLevel == 0) {
             _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
         }
-        
+        endChanges();
+
     } else if (level == KnobHolder::eMultipleParamsEditOn) {
+        beginChanges();
         _imp->paramsEditLevel = level;
     } else {
+        assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        beginChanges();
         if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
             _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
         }
