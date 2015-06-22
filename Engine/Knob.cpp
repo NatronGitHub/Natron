@@ -3437,7 +3437,6 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
         endChanges();
 
     } else if (level == KnobHolder::eMultipleParamsEditOn) {
-        beginChanges();
         _imp->paramsEditLevel = level;
     } else {
         assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);

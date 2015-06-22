@@ -2448,6 +2448,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
+                inputArgs.preComputedRoD.clear();
                 
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
                 
