@@ -24,7 +24,11 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
 #include "Engine/Curve.h"
 
 namespace Transform
@@ -38,16 +42,16 @@ class NodeCurveEditorElement;
 
 struct SelectedKey
 {
-    CurveGui* curve;
+    boost::shared_ptr<CurveGui> curve;
     KeyFrame key;
     std::pair<double,double> leftTan, rightTan;
 
     SelectedKey()
-        : curve(NULL), key()
+        : curve(), key()
     {
     }
 
-    SelectedKey(CurveGui* c,
+    SelectedKey(const boost::shared_ptr<CurveGui>& c,
                 const KeyFrame & k)
         : curve(c)
           , key(k)
@@ -86,7 +90,7 @@ public:
 
     struct KeysForCurve
     {
-        CurveGui* curve;
+        boost::weak_ptr<CurveGui> curve;
         std::vector<KeyFrame> keys;
     };
 
@@ -97,7 +101,7 @@ public:
                    QUndoCommand *parent = 0);
 
     AddKeysCommand(CurveWidget *editor,
-                   CurveGui* curve,
+                   const boost::shared_ptr<CurveGui>& curve,
                    const std::vector<KeyFrame> & keys,
                    QUndoCommand *parent = 0);
 
@@ -124,7 +128,7 @@ class RemoveKeysCommand
 {
 public:
     RemoveKeysCommand(CurveWidget* editor,
-                      const std::vector< std::pair<CurveGui*,KeyFrame > > & curveEditorElement
+                      const std::vector< std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > & curveEditorElement
                       ,
                       QUndoCommand *parent = 0);
     virtual ~RemoveKeysCommand() OVERRIDE
@@ -138,7 +142,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::vector<std::pair<CurveGui*,KeyFrame > > _keys;
+    std::vector<std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > _keys;
     CurveWidget* _curveWidget;
 };
 

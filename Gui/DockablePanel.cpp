@@ -2325,8 +2325,8 @@ DockablePanel::setKeyOnAllParameters()
         boost::shared_ptr<KnobI> knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
-                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
                     curveKeys->curve = *it2;
                     
@@ -2367,14 +2367,14 @@ DockablePanel::setKeyOnAllParameters()
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
-    std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
+    std::vector< std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > keysToRemove;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 
-                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
                     for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
                         keysToRemove.push_back( std::make_pair(*it2,*it) );

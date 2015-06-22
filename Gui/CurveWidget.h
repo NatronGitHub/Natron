@@ -286,15 +286,15 @@ public:
  
     void centerOn(double xmin,double xmax,double ymin,double ymax);
 
-    void addCurveAndSetColor(CurveGui* curve);
+    void addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve);
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<CurveGui*> & curves);
+    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves);
 
-    void showCurvesAndHideOthers(const std::vector<CurveGui*> & curves);
+    void showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves);
 
-    void getVisibleCurves(std::vector<CurveGui*>* curves) const;
+    void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
 
@@ -438,7 +438,7 @@ class ImportExportCurveDialog
 public:
 
     ImportExportCurveDialog(bool isExportDialog,
-                            const std::vector<CurveGui*> & curves,
+                            const std::vector<boost::shared_ptr<CurveGui> > & curves,
                             Gui* gui,
                             QWidget* parent = 0);
 
@@ -454,7 +454,7 @@ public:
 
     double getXEnd() const;
 
-    void getCurveColumns(std::map<int,CurveGui*>* columns) const;
+    void getCurveColumns(std::map<int,boost::shared_ptr<CurveGui> >* columns) const;
 
 public Q_SLOTS:
 
@@ -494,7 +494,7 @@ private:
     /////Columns
     struct CurveColumn
     {
-        CurveGui* _curve;
+        boost::shared_ptr<CurveGui> _curve;
         QWidget* _curveContainer;
         QHBoxLayout* _curveLayout;
         Natron::Label* _curveLabel;

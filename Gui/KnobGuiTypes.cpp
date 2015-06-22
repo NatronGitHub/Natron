@@ -4431,10 +4431,10 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     layout->addWidget(_curveWidget);
 
 
-    std::vector<CurveGui*> visibleCurves;
+    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
         QString curveName = knob->getDimensionName(i).c_str();
-        KnobCurveGui* curve = new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.);
+        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.));
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r,g,b;
@@ -4523,7 +4523,7 @@ Parametric_KnobGui::onCurveChanged(int dimension)
 void
 Parametric_KnobGui::onItemsSelectionChanged()
 {
-    std::vector<CurveGui*> curves;
+    std::vector<boost::shared_ptr<CurveGui> > curves;
 
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
@@ -4544,7 +4544,7 @@ Parametric_KnobGui::onItemsSelectionChanged()
 }
 
 void
-Parametric_KnobGui::getSelectedCurves(std::vector<CurveGui*>* selection)
+Parametric_KnobGui::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection)
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {

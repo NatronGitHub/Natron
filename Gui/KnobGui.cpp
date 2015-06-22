@@ -1048,14 +1048,14 @@ KnobGui::onRemoveAnimationActionTriggered()
     int dim = action->data().toInt();
     
     boost::shared_ptr<KnobI> knob = getKnob();
-    std::vector<std::pair<CurveGui *, KeyFrame > > toRemove;
+    std::vector<std::pair<boost::shared_ptr<CurveGui> , KeyFrame > > toRemove;
     
     
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || dim == i) {
-            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
-            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
                 for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                     toRemove.push_back( std::make_pair(*it,*it2) );
@@ -1223,8 +1223,8 @@ KnobGui::onSetKeyActionTriggered()
         
         if (dim == -1 || i == dim) {
             
-            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
-            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 boost::shared_ptr<AddKeysCommand::KeysForCurve> kfc(new AddKeysCommand::KeysForCurve());
 
                 KeyFrame kf;
@@ -1345,12 +1345,12 @@ KnobGui::onRemoveKeyActionTriggered()
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    std::vector<std::pair<CurveGui*,KeyFrame> > toRemove;
+    std::vector<std::pair<boost::shared_ptr<CurveGui> ,KeyFrame> > toRemove;
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
-            std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(this, i);
-            for (std::list<CurveGui*>::iterator it = curves.begin(); it != curves.end(); ++it) {
+            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
+            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 
                 KeyFrame kf;
                 bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
