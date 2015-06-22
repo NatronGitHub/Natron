@@ -3128,6 +3128,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
         assert(buttonsBarIndex >= 0);
         _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
+        previousBar->hide();
 
 
         ///Set the new buttons bar
@@ -3136,6 +3137,8 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         QWidget* currentBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole );
         assert(currentBar);
         _imp->mainLayout->insertWidget( viewerIndex, currentBar);
+        currentBar->show();
+        assert(_imp->mainLayout->itemAt(viewerIndex)->widget() == currentBar);
     }
 }
 

@@ -461,7 +461,7 @@ struct Node::Implementation
     mutable QMutex createdComponentsMutex;
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
     
-    boost::weak_ptr<RotoStrokeItem> paintStroke;
+    boost::weak_ptr<RotoDrawableItem> paintStroke;
     
     mutable QMutex currentThreadSafetyMutex;
     Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
@@ -747,8 +747,6 @@ Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Poi
     
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
-        assert(stroke);
         _imp->lastStrokePoints = points;
         _imp->lastStrokeMovementBbox = lastPointsBbox;
         _imp->wholeStrokeBbox = wholeBbox;
@@ -797,7 +795,7 @@ Node::getPaintStrokeRoD(int time,RectD* bbox) const
     if (duringPaintStroke) {
         *bbox = _imp->wholeStrokeBbox;
     } else {
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
         *bbox = stroke->getBoundingBox(time);
     }
@@ -834,7 +832,8 @@ Node::getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double
     if (_imp->duringPaintStrokeCreation) {
         *points = _imp->lastStrokePoints;
     } else {
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+        RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
         stroke->evaluateStroke(0, time, points);
     }
@@ -866,7 +865,8 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     
     std::list<RectI> restToRender;
-    boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     assert(stroke);
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
@@ -1029,7 +1029,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                     }
                 }
             } else {
-                boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
+                boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
@@ -1076,7 +1076,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         assert(*it);
         
         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = (*it)->getAttachedStrokeItem();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = (*it)->getAttachedRotoItem();
         if (isRotoPaint && attachedStroke && attachedStroke->getContext()->getNode().get() == this) {
             continue;
         }
@@ -4122,7 +4122,7 @@ Node::getRotoAge() const
         return _imp->rotoContext->getAge();
     }
     
-    boost::shared_ptr<RotoStrokeItem> item = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
     if (item) {
         return item->getContext()->getAge();
     }
@@ -5890,7 +5890,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         ///The node is referenced multiple times below, cache it
         return true;
     } else {
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
         if (sz == 1) {
           
             Node* output = outputs.front();
@@ -6066,7 +6066,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 
 
 void
-Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
+Node::attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->paintStroke = stroke;
@@ -6074,8 +6074,8 @@ Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
     setProcessChannelsValues(true, true, true, true);
 }
 
-boost::shared_ptr<RotoStrokeItem>
-Node::getAttachedStrokeItem() const
+boost::shared_ptr<RotoDrawableItem>
+Node::getAttachedRotoItem() const
 {
     return _imp->paintStroke.lock();
 }

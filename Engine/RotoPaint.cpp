@@ -254,9 +254,8 @@ RotoPaint::render(const RenderActionArgs& args)
         roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         
         const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-        RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
-        assert(firstStroke);
-        boost::shared_ptr<Node> bottomMerge = firstStroke->getMergeNode();
+        assert(firstStrokeItem);
+        boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
         
         bool duringPaintStroke = bottomMerge->isDuringPaintStrokeCreation();
         
