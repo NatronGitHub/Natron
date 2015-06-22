@@ -8,6 +8,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -44,8 +45,11 @@ class Node;
 class DSKnob;
 class DSNode;
 
-typedef std::map<QTreeWidgetItem *, DSNode *> DSNodeRows;
-typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobRows;
+typedef boost::shared_ptr<DSNode> DSNodePtr;
+typedef boost::shared_ptr<DSKnob> DSKnobPtr;
+
+typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSNode> > DSTreeItemNodeMap;
+typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSKnob> > DSTreeItemKnobMap;
 // typedefs
 
 
@@ -81,7 +85,7 @@ public:
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
-    DSNodeRows getNodeRows() const;
+    DSTreeItemNodeMap getNodeRows() const;
 
     std::pair<double, double> getKeyframeRange() const;
 
@@ -90,25 +94,25 @@ public:
 
     SequenceTime getCurrentFrame() const;
 
-    DSNode *findParentDSNode(QTreeWidgetItem *treeItem) const;
-    DSNode *findDSNode(QTreeWidgetItem *nodeTreeItem) const;
-    DSNode *findDSNode(Natron::Node *node) const;
-    DSNode *findDSNode(const boost::shared_ptr<KnobI> knob) const;
+    boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
+    boost::shared_ptr<DSNode> findDSNode(QTreeWidgetItem *nodeTreeItem) const;
+    boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
+    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> knob) const;
 
-    DSNode *getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
+    boost::shared_ptr<DSNode> getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
 
-    DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem) const;
-    DSKnob *findDSKnob(KnobGui *knobGui) const;
+    boost::shared_ptr<DSKnob> findDSKnob(QTreeWidgetItem *knobTreeItem) const;
+    boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
 
     int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
 
     bool isPartOfGroup(DSNode *dsNode) const;
-    DSNode *getGroupDSNode(DSNode *dsNode) const;
+    boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
-    std::vector<DSNode *> getImportantNodes(DSNode *dsNode) const;
+    std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
 
-    DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
+    boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     Natron::Node *getNearestReader(DSNode *timeNode) const;
 
     DopeSheetSelectionModel *getSelectionModel() const;
@@ -117,11 +121,11 @@ public:
     void deleteSelectedKeyframes();
 
     void moveSelectedKeys(double dt);
-    void trimReaderLeft(DSNode *reader, double newFirstFrame);
-    void trimReaderRight(DSNode *reader, double newLastFrame);
-    void slipReader(DSNode *reader, double dt);
-    void moveReader(DSNode *reader, double dt);
-    void moveGroup(DSNode *group, double dt);
+    void trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame);
+    void trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame);
+    void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
+    void moveReader(const boost::shared_ptr<DSNode> &reader, double dt);
+    void moveGroup(const boost::shared_ptr<DSNode> &group, double dt);
     void copySelectedKeys();
     void pasteKeys();
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
@@ -139,7 +143,7 @@ Q_SIGNALS:
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
-    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType itemType);
+    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);
@@ -169,7 +173,7 @@ public:
     boost::shared_ptr<NodeGui> getNodeGui() const;
     boost::shared_ptr<Natron::Node> getInternalNode() const;
 
-    DSKnobRows getChildData() const;
+    DSTreeItemKnobMap getChildData() const;
 
     DopeSheet::ItemType getItemType() const;
 
@@ -218,11 +222,14 @@ private:
  */
 struct DSSelectedKey
 {
-    DSSelectedKey(DSKnob *knob, KeyFrame kf) :
+    DSSelectedKey(const boost::shared_ptr<DSKnob> &knob, KeyFrame kf) :
         context(knob),
         key(kf)
     {
-        assert(context->getDimension() != -1);
+        boost::shared_ptr<DSKnob> knobContext = context.lock();
+        assert(knobContext);
+
+        assert(knobContext->getDimension() != -1);
     }
 
     DSSelectedKey(const DSSelectedKey &other) :
@@ -232,7 +239,13 @@ struct DSSelectedKey
 
     friend bool operator==(const DSSelectedKey &key, const DSSelectedKey &other)
     {
-        if (key.context != other.context) {
+        boost::shared_ptr<DSKnob> knobContext = key.context.lock();
+        boost::shared_ptr<DSKnob> otherKnobContext = other.context.lock();
+        if (!knobContext || !otherKnobContext) {
+            return false;
+        }
+
+        if (knobContext != otherKnobContext) {
             return false;
         }
 
@@ -240,18 +253,18 @@ struct DSSelectedKey
             return false;
         }
 
-        if (key.context->getTreeItem() != other.context->getTreeItem()) {
+        if (knobContext->getTreeItem() != otherKnobContext->getTreeItem()) {
             return false;
         }
 
-        if (key.context->getDimension() != other.context->getDimension()) {
+        if (knobContext->getDimension() != otherKnobContext->getDimension()) {
             return false;
         }
 
         return true;
     }
 
-    DSKnob *context;
+    boost::weak_ptr<DSKnob> context;
     KeyFrame key;
 };
 
@@ -267,7 +280,7 @@ public:
     ~DopeSheetSelectionModel();
 
     void selectAllKeyframes();
-    void selectKeyframes(DSKnob *dsKnob, std::vector<DSSelectedKey> *result);
+    void selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DSSelectedKey> *result);
 
     void clearKeyframeSelection();
     void makeSelection(const std::vector<DSSelectedKey> &keys);
@@ -279,12 +292,12 @@ public:
 
     int getSelectedKeyframesCount() const;
 
-    bool keyframeIsSelected(DSKnob *dsKnob, const KeyFrame &keyframe) const;
+    bool keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const;
     DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
 
     void emit_keyframeSelectionChanged();
 
-    void onNodeAboutToBeRemoved(DSNode *removed);
+    void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
 
 Q_SIGNALS:
     void keyframeSelectionAboutToBeCleared();

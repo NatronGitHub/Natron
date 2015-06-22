@@ -48,7 +48,7 @@ public:
     explicit HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent = 0);
     ~HierarchyView();
 
-    DSKnob *getDSKnobAt(int y) const;
+    boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

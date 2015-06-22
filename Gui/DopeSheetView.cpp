@@ -276,13 +276,13 @@ public:
     QRect getArrowRect(QTreeWidgetItem *item) const;
     QRect getParentArrowRect(QTreeWidgetItem *item, const QRect &branchRect) const;
 
-    DSNode *itemBelowIsNode(QTreeWidgetItem *item) const;
+    boost::shared_ptr<DSNode> itemBelowIsNode(QTreeWidgetItem *item) const;
 
     // item painting
-    void drawPluginIconArea(QPainter *p, DSNode *dsNode, const QRect &rowRect, bool drawPluginIcon) const;
+    void drawPluginIconArea(QPainter *p, boost::shared_ptr<DSNode> dsNode, const QRect &rowRect, bool drawPluginIcon) const;
     void drawColoredIndicators(QPainter *p, QTreeWidgetItem *item, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *item, const QRect &rowRect) const;
-    void drawNodeBottomSeparation(QPainter *p, DSNode *dsNode, DSNode *nodeBelow, const QRect &rowRect) const;
+    void drawNodeBottomSeparation(QPainter *p, boost::shared_ptr<DSNode> dsNode, boost::shared_ptr<DSNode> nodeBelow, const QRect &rowRect) const;
 
     QColor getDullColor(const QColor &color) const;
 
@@ -309,10 +309,10 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
 
 void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
 {
-    DSKnobRows knobRows = dsNode->getChildData();
+    DSTreeItemKnobMap knobRows = dsNode->getChildData();
 
-    for (DSKnobRows::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
-        DSKnob *dsKnob = (*it).second;
+    for (DSTreeItemKnobMap::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobContext = (*it).second;
         QTreeWidgetItem *knobItem = (*it).first;
 
         // Expand if it's a multidim root item
@@ -320,8 +320,8 @@ void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
             knobItem->setExpanded(true);
         }
 
-        if (dsKnob->getDimension() <= 0) {
-            checkKnobVisibleState(dsKnob);
+        if (knobContext->getDimension() <= 0) {
+            checkKnobVisibleState(knobContext.get());
         }
     }
 }
@@ -346,8 +346,8 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     dsNode->getTreeItem()->setHidden(!showNode);
 
     // Hide the parent group item if there's no subnodes displayed
-    if (DSNode *parentGroupDSNode = model->getGroupDSNode(dsNode)) {
-        checkNodeVisibleState(parentGroupDSNode);
+    if (boost::shared_ptr<DSNode> parentGroupDSNode = model->getGroupDSNode(dsNode)) {
+        checkNodeVisibleState(parentGroupDSNode.get());
     }
 }
 
@@ -448,9 +448,9 @@ QRect HierarchyViewPrivate::getParentArrowRect(QTreeWidgetItem *item, const QRec
                  arrowRectWidth, branchRect.height());
 }
 
-DSNode *HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
+boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
 {
-    DSNode *ret = 0;
+    boost::shared_ptr<DSNode> ret;
 
     QTreeWidgetItem *itemBelow = q_ptr->itemBelow(item);
 
@@ -461,7 +461,7 @@ DSNode *HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
     return ret;
 }
 
-void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, DSNode *dsNode, const QRect &rowRect, bool drawPluginIcon) const
+void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, boost::shared_ptr<DSNode> dsNode, const QRect &rowRect, bool drawPluginIcon) const
 {
     std::string iconFilePath = dsNode->getInternalNode()->getPluginIconFilePath();
 
@@ -497,7 +497,7 @@ void HierarchyViewPrivate::drawColoredIndicators(QPainter *p, QTreeWidgetItem *i
     QTreeWidgetItem *itemIt = item;
 
     while (itemIt) {
-        DSNode *parentDSNode = model->findParentDSNode(itemIt);
+        boost::shared_ptr<DSNode> parentDSNode = model->findParentDSNode(itemIt);
         QTreeWidgetItem *parentItem = parentDSNode->getTreeItem();
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
 
@@ -516,7 +516,7 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
     int lineWidth = (NODE_SEPARATION_WIDTH / 2);
     int lineBegin = q_ptr->rect().left();
 
-    if (DSNode *parentNode = model->findDSNode(item->parent())) {
+    if (boost::shared_ptr<DSNode> parentNode = model->findDSNode(item->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -528,8 +528,8 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
                 rowRect.right(), rowRect.top() + lineWidth - 1);
 }
 
-void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
-                                                    DSNode *nodeBelow, const QRect &rowRect) const
+void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, boost::shared_ptr<DSNode> dsNode,
+                                                    boost::shared_ptr<DSNode> nodeBelow, const QRect &rowRect) const
 {
     int lineWidth = (NODE_SEPARATION_WIDTH / 2);
     int lineBegin = q_ptr->rect().left();
@@ -539,7 +539,7 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, DSNode *dsNode,
             lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
         }
     }
-    else if (DSNode *parentNode = model->findDSNode(nodeBelow->getTreeItem()->parent())) {
+    else if (boost::shared_ptr<DSNode> parentNode = model->findDSNode(nodeBelow->getTreeItem()->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -565,10 +565,10 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
     std::vector<DSSelectedKey> keys;
 
     Q_FOREACH (QTreeWidgetItem *item, items) {
-        DSKnob *dsKnob = model->findDSKnob(item);
+        boost::shared_ptr<DSKnob> knobContext = model->findDSKnob(item);
 
-        if (dsKnob) {
-            model->getSelectionModel()->selectKeyframes(dsKnob, &keys);
+        if (knobContext) {
+            model->getSelectionModel()->selectKeyframes(knobContext, &keys);
         }
     }
 
@@ -599,10 +599,10 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
     connect(model, SIGNAL(nodeAdded(DSNode *)),
             this, SLOT(onNodeAdded(DSNode *)));
 
-    connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-            this, SLOT(onNodeAboutToBeRemoved(DSNode*)));
+    connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode *)),
+            this, SLOT(onNodeAboutToBeRemoved(DSNode *)));
 
-    connect(model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
+    connect(model, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
             this, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
 
     connect(this, SIGNAL(itemSelectionChanged()),
@@ -628,7 +628,7 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 HierarchyView::~HierarchyView()
 {}
 
-DSKnob *HierarchyView::getDSKnobAt(int y) const
+boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
 {
     QTreeWidgetItem *itemUnderPoint = itemAt(5, y);
 
@@ -639,8 +639,8 @@ void HierarchyView::onNodeAdded(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
-    DSNode *isInputOfTimeNode = _imp->model->getNearestTimeNodeFromOutputs(dsNode);
-    DSNode *isFromGroup = _imp->model->getGroupDSNode(dsNode);
+    boost::shared_ptr<DSNode> isInputOfTimeNode = _imp->model->getNearestTimeNodeFromOutputs(dsNode);
+    boost::shared_ptr<DSNode> isFromGroup = _imp->model->getGroupDSNode(dsNode);
 
     if (isInputOfTimeNode) {
         isInputOfTimeNode->getTreeItem()->addChild(treeItem);
@@ -654,16 +654,16 @@ void HierarchyView::onNodeAdded(DSNode *dsNode)
         addTopLevelItem(treeItem);
     }
 
-    std::vector<DSNode *> importantNodes = _imp->model->getImportantNodes(dsNode);
-    for (std::vector<DSNode *>::const_iterator it = importantNodes.begin();
+    std::vector<boost::shared_ptr<DSNode> > importantNodes = _imp->model->getImportantNodes(dsNode);
+    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = importantNodes.begin();
          it != importantNodes.end();
          ++it) {
-        DSNode *n = (*it);
+        boost::shared_ptr<DSNode> n = (*it);
 
         _imp->moveItem(n->getTreeItem(), dsNode->getTreeItem());
 
-        _imp->checkKnobsVisibleState(n);
-        _imp->checkNodeVisibleState(n);
+        _imp->checkKnobsVisibleState(n.get());
+        _imp->checkNodeVisibleState(n.get());
 
         n->getTreeItem()->setExpanded(true);
     }
@@ -694,9 +694,9 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     Q_FOREACH (QTreeWidgetItem *nodeItem, toPut) {
         _imp->moveItem(nodeItem, newParent);
 
-        DSNode *dss = _imp->model->findDSNode(nodeItem);
-        _imp->checkKnobsVisibleState(dss);
-        _imp->checkNodeVisibleState(dss);
+        boost::shared_ptr<DSNode> dss = _imp->model->findDSNode(nodeItem);
+        _imp->checkKnobsVisibleState(dss.get());
+        _imp->checkNodeVisibleState(dss.get());
 
         nodeItem->setExpanded(true);
     }
@@ -710,8 +710,8 @@ void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
     _imp->checkKnobVisibleState(dsKnob);
 
     // Check the node item
-    DSNode *parentNode = _imp->model->findParentDSNode(dsKnob->getTreeItem());
-    _imp->checkNodeVisibleState(parentNode);
+    boost::shared_ptr<DSNode> parentNode = _imp->model->findParentDSNode(dsKnob->getTreeItem());
+    _imp->checkNodeVisibleState(parentNode.get());
 }
 
 void HierarchyView::onItemSelectionChanged()
@@ -745,7 +745,7 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 {
     Q_UNUSED(column);
 
-    DSNode *itemDSNode = _imp->model->findParentDSNode(item);
+    boost::shared_ptr<DSNode> itemDSNode = _imp->model->findParentDSNode(item);
 
     boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
 
@@ -782,7 +782,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
     QTreeWidgetItem *item = itemFromIndex(index);
 
     bool drawPluginIconToo = false;
-    DSNode *dsNode = _imp->model->getDSNodeFromItem(item, &drawPluginIconToo);
+    boost::shared_ptr<DSNode> dsNode = _imp->model->getDSNodeFromItem(item, &drawPluginIconToo);
 
     QRect rowRect = option.rect;
     QRect itemRect = visualItemRect(item);
@@ -822,7 +822,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
             _imp->drawNodeTopSeparation(painter, item, rowRect);
         }
 
-        if (DSNode *nodeBelow = _imp->itemBelowIsNode(item)) {
+        if (boost::shared_ptr<DSNode> nodeBelow = _imp->itemBelowIsNode(item)) {
             _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, rowRect);
         }
 
@@ -833,7 +833,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    DSNode *parentDSNode = _imp->model->getDSNodeFromItem(item);
+    boost::shared_ptr<DSNode> parentDSNode = _imp->model->getDSNodeFromItem(item);
 
     {
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
@@ -922,8 +922,8 @@ public:
     bool isNearByClipRectBottom(double y, const QRectF &clipRect) const;
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
 
-    std::vector<DSSelectedKey> isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords) const;
-    std::vector<DSSelectedKey> isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const;
+    std::vector<DSSelectedKey> isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const;
+    std::vector<DSSelectedKey> isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const;
 
     double clampedMouseOffset(double fromTime, double toTime);
 
@@ -938,17 +938,17 @@ public:
 
     void drawRows() const;
 
-    void drawNodeRow(const DSNode *dsNode) const;
-    void drawKnobRow(const DSKnob *dsKnob) const;
+    void drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const;
+    void drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const;
 
-    void drawNodeRowSeparation(const DSNode *dsNode) const;
+    void drawNodeRowSeparation(const boost::shared_ptr<DSNode> dsNode) const;
 
-    void drawRange(DSNode *dsNode) const;
-    void drawKeyframes(DSNode *dsNode) const;
+    void drawRange(const boost::shared_ptr<DSNode> &dsNode) const;
+    void drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) const;
 
     void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const QRectF &rect) const;
 
-    void drawGroupOverlay(DSNode *dsNode, DSNode *group) const;
+    void drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const;
 
     void drawProjectBounds() const;
     void drawCurrentFrameIndicator();
@@ -968,7 +968,7 @@ public:
 
     void computeSelectedKeysBRect();
 
-    void computeRangesBelow(DSNode *dsNode);
+    void computeRangesBelow(DSNode * dsNode);
     void computeNodeRange(DSNode *dsNode);
     void computeReaderRange(DSNode *reader);
     void computeRetimeRange(DSNode *retimer);
@@ -1030,8 +1030,8 @@ public:
     DopeSheetView::EventStateEnum eventState;
 
     // for clip (Reader, Time nodes) user interaction
-    DSNode *currentEditedReader;
-    DSNode *currentEditedGroup;
+    boost::shared_ptr<DSNode> currentEditedReader;
+    boost::shared_ptr<DSNode> currentEditedGroup;
 
     // others
     bool hasOpenGLVAOSupport;
@@ -1059,8 +1059,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     lastPosOnMouseMove(),
     keyDragLastMovement(),
     eventState(DopeSheetView::esNoEditingState),
-    currentEditedReader(0),
-    currentEditedGroup(0),
+    currentEditedReader(),
+    currentEditedGroup(),
     hasOpenGLVAOSupport(true),
     contextMenu(new Natron::Menu(q_ptr))
 {}
@@ -1144,17 +1144,17 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
     }
     // Or does he hovering on a row's element ?
     else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(5, widgetCoords.y())) {
-        DSNodeRows dsNodeItems = model->getNodeRows();
-        DSNodeRows::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+        DSTreeItemNodeMap dsNodeItems = model->getNodeRows();
+        DSTreeItemNodeMap::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
         if (dsNodeIt != dsNodeItems.end()) {
-            DSNode *dsNode = (*dsNodeIt).second;
+            boost::shared_ptr<DSNode> dsNode = (*dsNodeIt).second;
             DopeSheet::ItemType nodeType = dsNode->getItemType();
 
             QRectF treeItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
             if (dsNode->isRangeDrawingEnabled()) {
-                FrameRange range = nodeRanges.at(dsNode);
+                FrameRange range = nodeRanges.at(dsNode.get());
 
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                    QPointF(range.second, treeItemRect.bottom() + 1)));
@@ -1190,7 +1190,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             }
         }
         else {
-            DSKnob *dsKnob =  hierarchyView->getDSKnobAt(widgetCoords.y());
+            boost::shared_ptr<DSKnob> dsKnob =  hierarchyView->getDSKnobAt(widgetCoords.y());
 
             std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords);
 
@@ -1267,7 +1267,7 @@ bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zo
     return (currentFrameIndicatorBottomPoly.containsPoint(zoomCoords, Qt::OddEvenFill));
 }
 
-std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob, const QPointF &widgetCoords) const
+std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const
 {
     assert(dsKnob);
 
@@ -1296,7 +1296,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob
             QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
             if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                DSKnob *context = 0;
+                boost::shared_ptr<DSKnob> context;
                 if (dim == -1) {
                     QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
                     context = model->findDSKnob(childItem);
@@ -1313,14 +1313,14 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSKnob *dsKnob
     return ret;
 }
 
-std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPointF &widgetCoords) const
+std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const
 {
     std::vector<DSSelectedKey> ret;
 
-    DSKnobRows dsKnobs = dsNode->getChildData();
+    DSTreeItemKnobMap dsKnobs = dsNode->getChildData();
 
-    for (DSKnobRows::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
-        DSKnob *dsKnob = (*it).second;
+    for (DSTreeItemKnobMap::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
+        boost::shared_ptr<DSKnob> dsKnob = (*it).second;
         KnobGui *knobGui = dsKnob->getKnobGui();
 
         int dim = dsKnob->getDimension();
@@ -1571,13 +1571,13 @@ void DopeSheetViewPrivate::drawRows() const
 {
     running_in_main_thread_and_context(q_ptr);
 
-    DSNodeRows treeItemsAndDSNodes = model->getNodeRows();
+    DSTreeItemNodeMap treeItemsAndDSNodes = model->getNodeRows();
 
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
+        for (DSTreeItemNodeMap::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
             QTreeWidgetItem *treeItem = (*it).first;
@@ -1595,21 +1595,21 @@ void DopeSheetViewPrivate::drawRows() const
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            DSNode *dsNode = (*it).second;
+            boost::shared_ptr<DSNode> dsNode = (*it).second;
 
             drawNodeRow(dsNode);
 
-            DSKnobRows knobItems = dsNode->getChildData();
-            for (DSKnobRows::const_iterator it2 = knobItems.begin();
+            DSTreeItemKnobMap knobItems = dsNode->getChildData();
+            for (DSTreeItemKnobMap::const_iterator it2 = knobItems.begin();
                  it2 != knobItems.end();
                  ++it2) {
 
-                DSKnob *dsKnob = (*it2).second;
+                boost::shared_ptr<DSKnob> dsKnob = (*it2).second;
 
                 drawKnobRow(dsKnob);
             }
 
-            if (DSNode *group = model->getGroupDSNode(dsNode)) {
+            if (boost::shared_ptr<DSNode> group = model->getGroupDSNode(dsNode.get())) {
                 drawGroupOverlay(dsNode, group);
             }
 
@@ -1625,10 +1625,10 @@ void DopeSheetViewPrivate::drawRows() const
         }
 
         // Draw node rows separations
-        for (DSNodeRows::const_iterator it = treeItemsAndDSNodes.begin();
+        for (DSTreeItemNodeMap::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
-            DSNode *dsNode = (*it).second;
+            boost::shared_ptr<DSNode> dsNode = (*it).second;
             drawNodeRowSeparation(dsNode);
         }
     }
@@ -1639,7 +1639,7 @@ void DopeSheetViewPrivate::drawRows() const
  *
  *
  */
-void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
+void DopeSheetViewPrivate::drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
@@ -1665,7 +1665,7 @@ void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
  *
  *
  */
-void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
+void DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
 {
     if (dsKnob->getTreeItem()->isHidden()) {
         return;
@@ -1696,7 +1696,7 @@ void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
     glEnd();
 }
 
-void DopeSheetViewPrivate::drawNodeRowSeparation(const DSNode *dsNode) const
+void DopeSheetViewPrivate::drawNodeRowSeparation(const boost::shared_ptr<DSNode> dsNode) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
 
@@ -1712,11 +1712,11 @@ void DopeSheetViewPrivate::drawNodeRowSeparation(const DSNode *dsNode) const
     glEnd();
 }
 
-void DopeSheetViewPrivate::drawRange(DSNode *dsNode) const
+void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
 {
     // Draw the clip
     {
-        FrameRange range = nodeRanges.at(dsNode);
+        FrameRange range = nodeRanges.at(dsNode.get());
 
         QRectF treeItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
@@ -1824,7 +1824,7 @@ void DopeSheetViewPrivate::drawRange(DSNode *dsNode) const
  *
  *
  */
-void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
+void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) const
 {
     running_in_main_thread_and_context(q_ptr);
 
@@ -1835,12 +1835,12 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        DSKnobRows knobItems = dsNode->getChildData();
-        for (DSKnobRows::const_iterator it = knobItems.begin();
+        DSTreeItemKnobMap knobItems = dsNode->getChildData();
+        for (DSTreeItemKnobMap::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
 
-            DSKnob *dsKnob = (*it).second;
+            boost::shared_ptr<DSKnob> dsKnob = (*it).second;
             QTreeWidgetItem *knobTreeItem = dsKnob->getTreeItem();
 
             // The knob is no longer animated
@@ -1888,7 +1888,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         : DopeSheetViewPrivate::kfTextureRoot;
 
                 QTreeWidgetItem *knobParentItem = knobTreeItem->parent();
-                DSNode *nodeContext = model->findDSNode(knobParentItem);
+                boost::shared_ptr<DSNode> nodeContext = model->findDSNode(knobParentItem);
 
                 bool drawInMultidimRootRow = itemIsVisibleFromOutside(knobParentItem);
 
@@ -1953,7 +1953,7 @@ void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTe
     glDisable(GL_TEXTURE_2D);
 }
 
-void DopeSheetViewPrivate::drawGroupOverlay(DSNode *dsNode, DSNode *group) const
+void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const
 {
     // Get the overlay color
     double r, g, b;
@@ -1964,7 +1964,7 @@ void DopeSheetViewPrivate::drawGroupOverlay(DSNode *dsNode, DSNode *group) const
     QRectF nameItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
     int top = nameItemRect.top();
 
-    FrameRange groupRange = nodeRanges.at(group);
+    FrameRange groupRange = nodeRanges.at(group.get());
     int left = groupRange.first;
 
     QRectF overlayRect = rectToZoomCoordinates(QRectF(left, top,
@@ -2262,7 +2262,10 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
     for (std::vector<DSSelectedKey>::const_iterator it = selectedKeyframes.begin();
          it != selectedKeyframes.end();
          ++it) {
-        QTreeWidgetItem *keyItem = (*it).context->getTreeItem();
+        boost::shared_ptr<DSKnob> knobContext = (*it).context.lock();
+        assert(knobContext);
+
+        QTreeWidgetItem *keyItem = knobContext->getTreeItem();
 
         double x = (*it).key.getTime();
         keyTimes.insert(x);
@@ -2287,7 +2290,7 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
 
     // Adjust the bottom to the node item top
     QTreeWidgetItem *topMostItem = hierarchyView->itemAt(0, *(ys.begin()));
-    DSNode *parentDSNode = model->findParentDSNode(topMostItem);
+    boost::shared_ptr<DSNode> parentDSNode = model->findParentDSNode(topMostItem);
 
     if (!parentDSNode) {
         return;
@@ -2316,14 +2319,14 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
 
 void DopeSheetViewPrivate::computeRangesBelow(DSNode *dsNode)
 {
-    DSNodeRows nodeRows = model->getNodeRows();
+    DSTreeItemNodeMap nodeRows = model->getNodeRows();
 
-    for (DSNodeRows::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
+    for (DSTreeItemNodeMap::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
         QTreeWidgetItem *item = (*it).first;
-        DSNode *toCompute = (*it).second;
+        boost::shared_ptr<DSNode> toCompute = (*it).second;
 
         if (hierarchyView->visualItemRect(item).y() >= hierarchyView->visualItemRect(dsNode->getTreeItem()).y()) {
-            computeNodeRange(toCompute);
+            computeNodeRange(toCompute.get());
         }
     }
 }
@@ -2373,12 +2376,12 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 
     nodeRanges[reader] = range;
 
-    if (DSNode *isInGroup = model->getGroupDSNode(reader)) {
-        computeGroupRange(isInGroup);
+    if (boost::shared_ptr<DSNode> isInGroup = model->getGroupDSNode(reader)) {
+        computeGroupRange(isInGroup.get());
     }
 
-    if (DSNode *isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader)) {
-        computeNodeRange(isConnectedToTimeNode);
+    if (boost::shared_ptr<DSNode> isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader)) {
+        computeNodeRange(isConnectedToTimeNode.get());
     }
 }
 
@@ -2422,8 +2425,8 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
     FrameRange range(0, 0);
 
     // Retrieve nearest reader useful values
-    if (DSNode *nearestReader = model->findDSNode(model->getNearestReader(timeOffset))) {
-        FrameRange nearestReaderRange = nodeRanges.at(nearestReader);
+    if (boost::shared_ptr<DSNode> nearestReader = model->findDSNode(model->getNearestReader(timeOffset))) {
+        FrameRange nearestReaderRange = nodeRanges.at(nearestReader.get());
 
         // Retrieve the time offset values
         Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName("timeOffset").get());
@@ -2625,15 +2628,15 @@ void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vect
 {
     QRectF zoomCoordsRect = rectToZoomCoordinates(rect);
 
-    DSNodeRows dsNodes = model->getNodeRows();
+    DSTreeItemNodeMap dsNodes = model->getNodeRows();
 
-    for (DSNodeRows::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
-        DSNode *dsNode = (*it).second;
+    for (DSTreeItemNodeMap::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
+        boost::shared_ptr<DSNode> dsNode = (*it).second;
 
-        DSKnobRows dsKnobs = dsNode->getChildData();
+        DSTreeItemKnobMap dsKnobs = dsNode->getChildData();
 
-        for (DSKnobRows::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
-            DSKnob *dsKnob = (*it2).second;
+        for (DSTreeItemKnobMap::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
+            boost::shared_ptr<DSKnob> dsKnob = (*it2).second;
             int dim = dsKnob->getDimension();
 
             if (dim == -1) {
@@ -3225,15 +3228,15 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         _imp->computeNodeRange(dsNode);
     }
 
-    if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
-        _imp->computeGroupRange(parentGroupDSNode);
+    if (boost::shared_ptr<DSNode> parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
+        _imp->computeGroupRange(parentGroupDSNode.get());
     }
 }
 
 void DopeSheetView::onNodeAboutToBeRemoved(DSNode *dsNode)
 {
-    if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
-        _imp->computeGroupRange(parentGroupDSNode);
+    if (boost::shared_ptr<DSNode> parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
+        _imp->computeGroupRange(parentGroupDSNode.get());
     }
 
     std::map<DSNode *, FrameRange>::iterator toRemove = _imp->nodeRanges.find(dsNode);
@@ -3251,7 +3254,7 @@ void DopeSheetView::onKeyframeChanged()
 {
     QObject *signalSender = sender();
 
-    DSNode *dsNode = 0;
+    boost::shared_ptr<DSNode> dsNode;
 
     if (KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender)) {
         dsNode = _imp->model->findDSNode(knobHandler->getKnob());
@@ -3264,8 +3267,8 @@ void DopeSheetView::onKeyframeChanged()
         return;
     }
 
-    if (DSNode *parentGroupDSNode = _imp->model->getGroupDSNode(dsNode)) {
-        _imp->computeGroupRange(parentGroupDSNode);
+    if (boost::shared_ptr<DSNode> parentGroupDSNode = _imp->model->getGroupDSNode(dsNode.get())) {
+        _imp->computeGroupRange(parentGroupDSNode.get());
     }
 }
 
@@ -3273,7 +3276,7 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 {
     QObject *signalSender = sender();
 
-    DSNode *dsNode = 0;
+    boost::shared_ptr<DSNode> dsNode;
 
     if (KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender)) {
         KnobHolder *holder = knobHandler->getKnob()->getHolder();
@@ -3284,7 +3287,7 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 
     assert(dsNode);
 
-    _imp->computeNodeRange(dsNode);
+    _imp->computeNodeRange(dsNode.get());
 
     redraw();
 }
@@ -3292,8 +3295,8 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
 {
     // Compute the range rects of affected items
-    if (DSNode *dsNode = _imp->model->findParentDSNode(item)) {
-        _imp->computeRangesBelow(dsNode);
+    if (boost::shared_ptr<DSNode> dsNode = _imp->model->findParentDSNode(item)) {
+        _imp->computeRangesBelow(dsNode.get());
     }
 
     _imp->computeSelectedKeysBRect();
@@ -3450,18 +3453,18 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
         else if (QTreeWidgetItem *treeItem = _imp->hierarchyView->itemAt(0, e->y())) {
-            DSNodeRows dsNodeItems = _imp->model->getNodeRows();
-            DSNodeRows::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+            DSTreeItemNodeMap dsNodeItems = _imp->model->getNodeRows();
+            DSTreeItemNodeMap::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
-                DSNode *dsNode = (*dsNodeIt).second;
+                boost::shared_ptr<DSNode> dsNode = (*dsNodeIt).second;
                 DopeSheet::ItemType nodeType = dsNode->getItemType();
 
                 QRectF treeItemRect = _imp->hierarchyView->visualItemRect(dsNode->getTreeItem());
 
                 if (dsNode->isRangeDrawingEnabled()) {
-                    FrameRange range = _imp->nodeRanges[dsNode];
+                    FrameRange range = _imp->nodeRanges[dsNode.get()];
                     QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                              QPointF(range.second, treeItemRect.bottom() + 1)));
 
@@ -3503,7 +3506,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             }
             // Or search for a keyframe
             else {
-                DSKnob *dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos().y());
+                boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos().y());
 
                 if (dsKnob) {
                     std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());
@@ -3587,11 +3590,11 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
         _imp->eventState = esNoEditingState;
 
         if (_imp->currentEditedReader) {
-            _imp->currentEditedReader = 0;
+            _imp->currentEditedReader.reset();
         }
 
         if (_imp->currentEditedGroup) {
-            _imp->currentEditedGroup = 0;
+            _imp->currentEditedGroup.reset();
         }
     }
 
@@ -3706,4 +3709,3 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
         pasteKeyframes();
     }
 }
-

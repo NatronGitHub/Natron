@@ -9,6 +9,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Enums.h"
 #include "Global/Macros.h"
@@ -66,7 +67,7 @@ private:
 class DSLeftTrimReaderCommand : public QUndoCommand
 {
 public:
-    DSLeftTrimReaderCommand(Natron::Node *reader,
+    DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                             double oldTime,
                             double newTime,
                             DopeSheet *model,
@@ -82,7 +83,7 @@ private:
     void trimLeft(double firstFrame);
 
 private:
-    Natron::Node *_reader;
+    boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
     DopeSheet *_model;
@@ -97,7 +98,7 @@ private:
 class DSRightTrimReaderCommand : public QUndoCommand
 {
 public:
-    DSRightTrimReaderCommand(Natron::Node *reader,
+    DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                              double oldTime,
                              double newTime,
                              DopeSheet *model,
@@ -113,7 +114,7 @@ private:
     void trimRight(double lastFrame);
 
 private:
-    Natron::Node *_reader;
+    boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
     DopeSheet *_model;
@@ -122,7 +123,7 @@ private:
 class DSSlipReaderCommand : public QUndoCommand
 {
 public:
-    DSSlipReaderCommand(Natron::Node *reader,
+    DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
@@ -137,7 +138,7 @@ private:
     void slipReader(double dt);
 
 private:
-    Natron::Node *_reader;
+    boost::weak_ptr<DSNode> _readerContext;
     double _dt;
     DopeSheet *_model;
 };
@@ -151,7 +152,7 @@ private:
 class DSMoveReaderCommand : public QUndoCommand
 {
 public:
-    DSMoveReaderCommand(Natron::Node *reader,
+    DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
@@ -163,7 +164,7 @@ public:
     bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
 
 private:
-    Natron::Node *_reader;
+    boost::weak_ptr<DSNode> _readerContext;
     double _dt;
     DopeSheet *_model;
 };
@@ -201,7 +202,7 @@ private:
 class DSMoveGroupCommand : public QUndoCommand
 {
 public:
-    DSMoveGroupCommand(Natron::Node *group,
+    DSMoveGroupCommand(const boost::shared_ptr<DSNode> &group,
                        double dt,
                        DopeSheet *model,
                        QUndoCommand *parent = 0);
@@ -216,7 +217,7 @@ private:
     void moveGroup(double dt);
 
 private:
-    Natron::Node *_group;
+    boost::weak_ptr<DSNode> _groupContext;
     double _dt;
     DopeSheet *_model;
 };
