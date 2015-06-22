@@ -4319,12 +4319,13 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  comps,
                                  outputClipPrefDepth,
                                  this);
+        identityProcessed = true;
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(downscaledRectToRender);
                 it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
-            identityProcessed = true;
+            return eRenderingFunctorRetOK;
         } else {
         
             EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
@@ -4337,7 +4338,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.renderMappedImage->fillZero(downscaledRectToRender);
                     it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
-                identityProcessed = true;
+                return eRenderingFunctorRetOK;
             } else {
                 
                 assert(identityPlanes.size() == planes.planes.size());
@@ -5369,14 +5370,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    //bool isDuringStrokeCreation = isDuringPaintStrokeCreationThreadLocal();
     
     bool foundInCache;
-   // if (isDuringStrokeCreation) {
-    //    foundInCache = false;
-    //} else {
-        foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
-   // }
+
+    if (getScriptName_mt_safe() == "Roto1") {
+        assert(true);
+    }
+    foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {

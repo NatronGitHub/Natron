@@ -6053,6 +6053,10 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
      * And now call getClipPreferences on ourselves
      */
     
+    //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
+    //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
+    _imp->liveInstance->clearActionsCache();
+    
     _imp->liveInstance->restoreClipPreferences();
     refreshChannelSelectors(false);
     
