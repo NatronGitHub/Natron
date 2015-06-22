@@ -2528,7 +2528,7 @@ TrackScheduler::run()
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             bool updateViewer = _imp->panel->isUpdateViewerOnTrackingEnabled();
             if (updateViewer) {
-                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonUserSeek);
             }
 
             if (reportProgress) {
