@@ -845,6 +845,14 @@ public:
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
     virtual RectD getBoundingBox(int time) const OVERRIDE;
+    
+    static void
+    bezierSegmentListBboxUpdate(const std::list<boost::shared_ptr<BezierCP> > & points,
+                                bool finished,
+                                int time,
+                                unsigned int mipMapLevel,
+                                const Transform::Matrix3x3& transform,
+                                RectD* bbox);
 
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.

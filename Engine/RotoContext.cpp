@@ -348,8 +348,8 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     bezierPointBboxUpdate(p0, p1, p2, p3, bbox);
 }
 
-static void
-bezierSegmentListBboxUpdate(const BezierCPs & points,
+void
+Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
                             bool finished,
                             int time,
                             unsigned int mipMapLevel,

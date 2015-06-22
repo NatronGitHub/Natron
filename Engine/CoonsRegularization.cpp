@@ -8,9 +8,41 @@
  *
  */
 
+/*****************************************************************************/
+/*                                                                           */
+/*  Routines for Arbitrary Precision Floating-point Arithmetic               */
+/*  and Fast Robust Geometric Predicates                                     */
+/*  (predicates.c)                                                           */
+/*                                                                           */
+/*  May 18, 1996                                                             */
+/*                                                                           */
+/*  Placed in the public domain by                                           */
+/*  Jonathan Richard Shewchuk                                                */
+/*  School of Computer Science                                               */
+/*  Carnegie Mellon University                                               */
+/*  5000 Forbes Avenue                                                       */
+/*  Pittsburgh, Pennsylvania  15213-3891                                     */
+/*  jrs@cs.cmu.edu                                                           */
+/*                                                                           */
+/*  This file contains C implementation of algorithms for exact addition     */
+/*    and multiplication of floating-point numbers, and predicates for       */
+/*    robustly performing the orientation and incircle tests used in         */
+/*    computational geometry.  The algorithms and underlying theory are      */
+/*    described in Jonathan Richard Shewchuk.  "Adaptive Precision Floating- */
+/*    Point Arithmetic and Fast Robust Geometric Predicates."  Technical     */
+/*    Report CMU-CS-96-140, School of Computer Science, Carnegie Mellon      */
+/*    University, Pittsburgh, Pennsylvania, May 1996.  (Submitted to         */
+/*    Discrete & Computational Geometry.)                                    */
+/*                                                                           */
+/*  This file, the paper listed above, and other information are available   */
+/*    from the Web page http://www.cs.cmu.edu/~quake/robust.html .           */
+/*                                                                           */
+/*****************************************************************************/
+
 #include "CoonsRegularization.h"
 
-
+#include <limits>
+#include <cfloat>
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/Interpolation.h"
@@ -755,6 +787,410 @@ Point findPointInside(const BezierCPs& cps, int time)
     return ret;
 }
 
+
+static double estimate(int elen, double *e)
+{
+    double Q;
+    int eindex;
+    
+    Q = e[0];
+    for (eindex = 1; eindex < elen; ++eindex) {
+        Q += e[eindex];
+    }
+    return Q;
+}
+
+#define Fast_Two_Sum_Tail(a, b, x, y) \
+    bvirt = x - a; \
+    y = b - bvirt
+
+#define Fast_Two_Sum(a, b, x, y) \
+    x = (a + b); \
+    Fast_Two_Sum_Tail(a, b, x, y)
+
+#define Two_Sum_Tail(a, b, x, y) \
+    bvirt = (x - a); \
+    avirt = x - bvirt; \
+    bround = b - bvirt; \
+    around = a - avirt; \
+    y = around + bround
+
+#define Two_Sum(a, b, x, y) \
+    x = (a + b); \
+    Two_Sum_Tail(a, b, x, y)
+
+#define Two_Diff_Tail(a, b, x, y) \
+    bvirt = (a - x); \
+    avirt = x + bvirt; \
+    bround = bvirt - b; \
+    around = a - avirt; \
+    y = around + bround
+
+#define Two_Diff(a, b, x, y) \
+    x = (a - b); \
+    Two_Diff_Tail(a, b, x, y)
+
+#define Split_two_product(a, ahi, alo) \
+    c = splitter * a; \
+    abig = (c - a); \
+    ahi = c - abig; \
+    alo = a - ahi
+
+#define Two_Product_Tail(a, b, x, y) \
+    Split_two_product(a, ahi, alo); \
+    Split_two_product(b, bhi, blo); \
+    err1 = x - (ahi * bhi); \
+    err2 = err1 - (alo * bhi); \
+    err3 = err2 - (ahi * blo); \
+    y = (alo * blo) - err3
+
+#define Two_Product(a, b, x, y) \
+    x = a * b; \
+    Two_Product_Tail(a, b, x, y);
+
+#define Two_One_Diff(a1, a0, b, x2, x1, x0) \
+    Two_Diff(a0, b , _i, x0); \
+    Two_Sum( a1, _i, x2, x1)
+
+#define Two_Two_Diff(a1, a0, b1, b0, x3, x2, x1, x0) \
+    Two_One_Diff(a1, a0, b0, _j, _0, x0); \
+    Two_One_Diff(_j, _0, b1, x3, x2, x1)
+
+
+/*****************************************************************************/
+/*                                                                           */
+/*  fast_expansion_sum_zeroelim()   Sum two expansions, eliminating zero     */
+/*                                  components from the output expansion.    */
+/*                                                                           */
+/*  Sets h = e + f.  See the long version of my paper for details.           */
+/*                                                                           */
+/*  If round-to-even is used (as with IEEE 754), maintains the strongly      */
+/*  nonoverlapping property.  (That is, if e is strongly nonoverlapping, h   */
+/*  will be also.)  Does NOT maintain the nonoverlapping or nonadjacent      */
+/*  properties.                                                              */
+/*                                                                           */
+/*****************************************************************************/
+
+static int fast_expansion_sum_zeroelim(int elen, double *e,
+                                       int flen, double *f, double *h)
+/* h cannot be e or f. */
+{
+    double Q;
+    double Qnew;
+    double hh;
+    double bvirt;
+    double avirt, bround, around;
+    int eindex, findex, hindex;
+    double enow, fnow;
+    
+    enow = e[0];
+    fnow = f[0];
+    eindex = findex = 0;
+    if ((fnow > enow) == (fnow > -enow)) {
+        Q = enow;
+        enow = e[++eindex];
+    } else {
+        Q = fnow;
+        fnow = f[++findex];
+    }
+    hindex = 0;
+    if ((eindex < elen) && (findex < flen)) {
+        if ((fnow > enow) == (fnow > -enow)) {
+            Fast_Two_Sum(enow, Q, Qnew, hh);
+            enow = e[++eindex];
+        } else {
+            Fast_Two_Sum(fnow, Q, Qnew, hh);
+            fnow = f[++findex];
+        }
+        Q = Qnew;
+        if (hh != 0.0) {
+            h[hindex++] = hh;
+        }
+        while ((eindex < elen) && (findex < flen)) {
+            if ((fnow > enow) == (fnow > -enow)) {
+                Two_Sum(Q, enow, Qnew, hh);
+                enow = e[++eindex];
+            } else {
+                Two_Sum(Q, fnow, Qnew, hh);
+                fnow = f[++findex];
+            }
+            Q = Qnew;
+            if (hh != 0.0) {
+                h[hindex++] = hh;
+            }
+        }
+    }
+    while (eindex < elen) {
+        Two_Sum(Q, enow, Qnew, hh);
+        enow = e[++eindex];
+        Q = Qnew;
+        if (hh != 0.0) {
+            h[hindex++] = hh;
+        }
+    }
+    while (findex < flen) {
+        Two_Sum(Q, fnow, Qnew, hh);
+        fnow = f[++findex];
+        Q = Qnew;
+        if (hh != 0.0) {
+            h[hindex++] = hh;
+        }
+    }
+    if ((Q != 0.0) || (hindex == 0)) {
+        h[hindex++] = Q;
+    }
+    return hindex;
+}
+
+
+static double orient2dadapt(const Point &pa, const Point &pb, const Point& pc, double detsum)
+{
+    double acx, acy, bcx, bcy;
+    double acxtail, acytail, bcxtail, bcytail;
+    double detleft, detright;
+    double detlefttail, detrighttail;
+    double det, errbound;
+    double B[4], C1[8], C2[12], D[16];
+    double B3;
+    int C1length, C2length, Dlength;
+    double u[4];
+    double u3;
+    double s1, t1;
+    double s0, t0;
+    
+    double bvirt;
+    double avirt, bround, around;
+    double c;
+    double abig;
+    double ahi, alo, bhi, blo;
+    double err1, err2, err3;
+    double _i, _j;
+    double _0;
+    
+    /* 2^ceiling(p/2) + 1.  Used to split floats in half. */
+    double epsilon = std::numeric_limits<double>::epsilon() * 0.5;
+    static const double splitter = std::sqrt((DBL_MANT_DIG % 2 ? 2.0 : 1.0) / epsilon)+1.0;
+    static const double ccwerrboundB = (2.0 + 12.0 * epsilon) * epsilon;
+    static const double ccwerrboundC = (9.0 + 64.0 * epsilon) * epsilon * epsilon;
+    static const double resulterrbound = (3.0 + 8.0 * epsilon) * epsilon;
+    
+    acx = pa.x - pc.x;
+    bcx = pb.x - pc.x;
+    acy = pa.y - pc.y;
+    bcy = pb.y - pc.y;
+    
+    Two_Product(acx, bcy, detleft, detlefttail);
+    Two_Product(acy, bcx, detright, detrighttail);
+    
+    Two_Two_Diff(detleft, detlefttail, detright, detrighttail,
+                 B3, B[2], B[1], B[0]);
+    B[3] = B3;
+    
+    det = estimate(4, B);
+    errbound = ccwerrboundB * detsum;
+    if ((det >= errbound) || (-det >= errbound)) {
+        return det;
+    }
+    
+    Two_Diff_Tail(pa.x, pc.x, acx, acxtail);
+    Two_Diff_Tail(pb.x, pc.x, bcx, bcxtail);
+    Two_Diff_Tail(pa.y, pc.y, acy, acytail);
+    Two_Diff_Tail(pb.y, pc.y, bcy, bcytail);
+    
+    if ((acxtail == 0.0) && (acytail == 0.0)
+        && (bcxtail == 0.0) && (bcytail == 0.0)) {
+        return det;
+    }
+    
+    errbound = ccwerrboundC * detsum + resulterrbound * std::fabs(det);
+    det += (acx * bcytail + bcy * acxtail)
+    - (acy * bcxtail + bcx * acytail);
+    if ((det >= errbound) || (-det >= errbound)) {
+        return det;
+    }
+    
+    Two_Product(acxtail, bcy, s1, s0);
+    Two_Product(acytail, bcx, t1, t0);
+    Two_Two_Diff(s1, s0, t1, t0, u3, u[2], u[1], u[0]);
+    u[3] = u3;
+    C1length = fast_expansion_sum_zeroelim(4, B, 4, u, C1);
+    
+    Two_Product(acx, bcytail, s1, s0);
+    Two_Product(acy, bcxtail, t1, t0);
+    Two_Two_Diff(s1, s0, t1, t0, u3, u[2], u[1], u[0]);
+    u[3] = u3;
+    C2length = fast_expansion_sum_zeroelim(C1length, C1, 4, u, C2);
+    
+    Two_Product(acxtail, bcytail, s1, s0);
+    Two_Product(acytail, bcxtail, t1, t0);
+    Two_Two_Diff(s1, s0, t1, t0, u3, u[2], u[1], u[0]);
+    u[3] = u3;
+    Dlength = fast_expansion_sum_zeroelim(C2length, C2, 4, u, D);
+    
+    return(D[Dlength - 1]);
+}
+
+// Interface to orient2d predicate optimized for pairs.
+static double orient2d(const Point& a, const Point& b, const Point& c)
+{
+    double detsum, errbound;
+    double orient;
+    
+    
+    double detleft = (a.x - c.x) * (b.y - c.y);
+    double detright = (a.y - c.y) * (b.x - c.x);
+    double det = detleft - detright;
+    
+    if (detleft > 0.0) {
+        if (detright <= 0.0) {
+            return det;
+        } else {
+            detsum = detleft + detright;
+        }
+    } else if (detleft < 0.0) {
+        if (detright >= 0.0) {
+            return det;
+        } else {
+            detsum = -detleft - detright;
+        }
+    } else {
+        return det;
+    }
+    
+    double ccwerrboundA = std::numeric_limits<double>::epsilon() * 0.5;
+    ccwerrboundA = (3.0 + 16.0 * ccwerrboundA) * ccwerrboundA;
+    
+    errbound = ccwerrboundA * detsum;
+    if ((det >= errbound) || (-det >= errbound)) {
+        return det;
+    }
+    
+    Point pa,pb,pc;
+    pa = a;
+    pb = b;
+    pc = c;
+    orient = orient2dadapt(pa, pb, pc, detsum);
+    return orient;
+}
+
+// Returns true if the point z lies in or on the bounding box
+// of a,b,c, and d.
+static bool insidebbox(const Point& a, const Point& b, const Point& c, const Point& d,
+                const Point& z)
+{
+    RectD bbox;
+    bbox.x1 = std::numeric_limits<double>::infinity();
+    bbox.x2 = -std::numeric_limits<double>::infinity();
+    bbox.y1 = std::numeric_limits<double>::infinity();
+    bbox.y2 = -std::numeric_limits<double>::infinity();
+    bbox.merge(RectD(a.x,a.y,a.x,a.y));
+    bbox.merge(RectD(b.x,b.y,b.x,b.y));
+    bbox.merge(RectD(c.x,c.y,c.x,c.y));
+    bbox.merge(RectD(d.x,d.y,d.x,d.y));
+    return bbox.contains(z.x, z.y);
+}
+
+
+
+inline static bool inrange(double x0, double x1, double x)
+{
+    return (x0 <= x && x <= x1) || (x1 <= x && x <= x0);
+}
+
+// Return true if point z is on z0--z1; otherwise compute contribution to
+// winding number.
+bool checkstraight(const Point& z0, const Point& z1, const Point& z, int* count)
+{
+    if (z0.y <= z.y && z.y <= z1.y) {
+        double side = orient2d(z0,z1,z);
+        if (side == 0.0 && inrange(z0.x,z1.x,z.x)) {
+            return true;
+        }
+        if (z.y < z1.y && side > 0) {
+            *count = *count + 1;
+        }
+    } else if (z1.y <= z.y && z.y <= z0.y) {
+        double side = orient2d(z0,z1,z);
+        if (side == 0.0 && inrange(z0.x,z1.x,z.x)) {
+            return true;
+        }
+        if (z.y < z0.y && side < 0) {
+            *count = *count - 1;
+        }
+    }
+    return false;
+}
+
+// returns true if point is on curve; otherwise compute contribution to
+// winding number.
+static bool checkCurve(const Point& z0, const Point& c0, const Point& z1, const Point& c1, const Point& z, int* count, unsigned int depth)
+{
+    if (!depth) {
+        return true;
+    }
+    --depth;
+    if (insidebbox(z0,c0,c1,z1,z)) {
+        Point m0,m1,m2,m3,m4,m5;
+        m0.x = 0.5 * (z0.x + c0.x);
+        m0.y = 0.5 * (z0.y + c0.y);
+        
+        m1.x = 0.5 * (c0.x + c1.x);
+        m1.y = 0.5 * (c0.y + c1.y);
+        
+        m2.x = 0.5 * (c1.x + z1.x);
+        m2.y = 0.5 * (c1.y + z1.y);
+        
+        m3.x = 0.5 * (m0.x + m1.x);
+        m3.y = 0.5 * (m0.y + m1.y);
+        
+        m4.x = 0.5 * (m1.x + m2.x);
+        m4.y = 0.5 * (m1.y + m2.y);
+        
+        m5.x = 0.5 * (m3.x + m4.x);
+        m5.y = 0.5 * (m3.y + m4.y);
+        if (checkCurve(z0,m0,m3,m5,z,count,depth) ||
+            checkCurve(m5,m4,m2,z1,z,count,depth)) {
+            return true;
+        }
+    } else if (checkstraight(z0,z1,z,count)) {
+        return true;
+    }
+    return false;
+}
+
+// Return the winding number of the region bounded by the (cyclic) path
+// relative to the point z, or the largest odd integer if the point lies on
+// the path.
+static int computeWindingNumber(const BezierCPs& patch, int time, const Point& z) {
+    
+    assert(patch.size() >= 3);
+    
+    static const int undefined = INT_MAX % 2 ? INT_MAX : INT_MAX - 1;
+    const unsigned maxdepth = DBL_MANT_DIG;
+    
+    int count = 0;
+    
+    BezierCPs::const_iterator it = patch.begin();
+    BezierCPs::const_iterator next = it;
+    ++next;
+    for (; it != patch.end(); ++it, ++next) {
+        if (next == patch.end()) {
+            next = patch.begin();
+        }
+        
+        Point p0,p1,p2,p3;
+        (*it)->getPositionAtTime(time, &p0.x, &p0.y);
+        (*it)->getRightBezierPointAtTime(time, &p1.x, &p1.y);
+        (*next)->getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+        (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+        
+        if (checkCurve(p0, p1, p2, p3, z, &count, maxdepth)) {
+            return undefined;
+        }
+    }
+    return count;
+}
+
 void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 3) {
@@ -762,31 +1198,22 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         return;
     }
     
-    std::list<Point> discretizedPolygon;
-    RectD bbox;
-    Bezier::deCastelJau(patch, time, 0, true, -1, Transform::Matrix3x3(), &discretizedPolygon, &bbox);
     Point pointInside = findPointInside(patch, time);
-#pragma message WARN("Compute winding number correctly without decastelJau")
     int sign;
     {
-        int winding_number = 0;
-        if ( (pointInside.x < bbox.x1) || (pointInside.x >= bbox.x2) || (pointInside.y < bbox.y1) || (pointInside.y >= bbox.y2) ) {
-            winding_number = 0;
+        RectD bbox;
+        bbox.x1 = std::numeric_limits<double>::infinity();
+        bbox.x2 = -std::numeric_limits<double>::infinity();
+        bbox.y1 = std::numeric_limits<double>::infinity();
+        bbox.y2 = -std::numeric_limits<double>::infinity();
+        Bezier::bezierSegmentListBboxUpdate(patch, true, time, 0, Transform::Matrix3x3(), &bbox);
+        if (!bbox.contains(pointInside.x, pointInside.y)) {
+            sign = 0;
         } else {
-            std::list<Point>::const_iterator last_pt = discretizedPolygon.begin();
-            std::list<Point>::const_iterator last_start = last_pt;
-            std::list<Point>::const_iterator cur = last_pt;
-            ++cur;
-            for (; cur != discretizedPolygon.end(); ++cur, ++last_pt) {
-                Bezier::point_line_intersection(*last_pt, *cur, pointInside, &winding_number);
-            }
-            
-            // implicitly close last subpath
-            if (last_pt != last_start) {
-                Bezier::point_line_intersection(*last_pt, *last_start, pointInside, &winding_number);
-            }
+            int winding_number = computeWindingNumber(patch, time, pointInside);
+            sign = (winding_number < 0) ? -1 : ((winding_number > 0) ? 1 : 0);
         }
-        sign = (winding_number < 0) ? -1 : ((winding_number > 0) ? 1 : 0);
+        
     }
     
     std::list<BezierCPs> splits;
