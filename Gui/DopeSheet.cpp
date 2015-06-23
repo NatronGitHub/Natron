@@ -22,6 +22,7 @@
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
@@ -1344,6 +1345,8 @@ public:
     QSplitter *splitter;
     HierarchyView *hierarchyView;
     DopeSheetView *dopeSheetView;
+
+    QPushButton *toggleTripleSyncBtn;
 };
 
 DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
@@ -1354,7 +1357,8 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
     model(0),
     splitter(0),
     hierarchyView(0),
-    dopeSheetView(0)
+    dopeSheetView(0),
+    toggleTripleSyncBtn(0)
 {}
 
 
@@ -1390,14 +1394,19 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->helpersLayout = new QHBoxLayout();
     _imp->helpersLayout->setContentsMargins(0, 0, 0, 0);
 
-    QPushButton *toggleTripleSyncBtn = new QPushButton(tr("Sync"), this);
-    toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
-    toggleTripleSyncBtn->setCheckable(true);
+    _imp->toggleTripleSyncBtn = new QPushButton(this);
 
-    connect(toggleTripleSyncBtn, SIGNAL(toggled(bool)),
+    QPixmap tripleSyncBtnPix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, &tripleSyncBtnPix);
+
+    _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
+    _imp->toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
+    _imp->toggleTripleSyncBtn->setCheckable(true);
+
+    connect(_imp->toggleTripleSyncBtn, SIGNAL(toggled(bool)),
             this, SLOT(toggleTripleSync(bool)));
 
-    _imp->helpersLayout->addWidget(toggleTripleSyncBtn);
+    _imp->helpersLayout->addWidget(_imp->toggleTripleSyncBtn);
     _imp->helpersLayout->addStretch();
 
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
@@ -1458,5 +1467,14 @@ void DopeSheetEditor::centerOn(double xMin, double xMax)
 
 void DopeSheetEditor::toggleTripleSync(bool enabled)
 {
+    Natron::PixmapEnum tripleSyncPixmapValue = (enabled)
+            ? Natron::NATRON_PIXMAP_LOCKED
+            : Natron::NATRON_PIXMAP_UNLOCKED;
+
+    QPixmap tripleSyncBtnPix;
+    appPTR->getIcon(tripleSyncPixmapValue, &tripleSyncBtnPix);
+
+    _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
+
     _imp->gui->setTripleSyncEnabled(enabled);
 }
