@@ -8089,10 +8089,11 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 template <typename PIX,int maxValue, int srcNComps, int dstNComps>
 static void
 convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
-                               std::size_t stride,
-                               Natron::Image* image,
-                               const RectI& roi,
-                               const RectI& dstBounds)
+                                            std::size_t stride,
+                                            Natron::Image* image,
+                                            const RectI& roi,
+                                            const RectI& dstBounds,
+                                            double shapeColor[3])
 {
     unsigned char* dstPix = cairoImg;
     dstPix += ((roi.y1 - dstBounds.y1) * stride + (roi.x1 - dstBounds.x1));
@@ -8114,10 +8115,11 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                 dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
             } else if (dstNComps == 4) {
                 if (srcNComps == 4) {
-                    dstPix[x * dstNComps + 0] = (float)srcPix[x * srcNComps + 2] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 1] = (float)srcPix[x * srcNComps + 1] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 2] = (float)srcPix[x * srcNComps + 0] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 3] = (float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    //We are in the !buildUp case, do exactly the opposite that is done in convertNatronImageToCairoImageForComponents
+                    dstPix[x * dstNComps + 0] = (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
+                    dstPix[x * dstNComps + 1] = (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
+                    dstPix[x * dstNComps + 2] = (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
+                    dstPix[x * dstNComps + 3] = 255;//(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
                 } else {
                     assert(srcNComps == 1);
                     float pix = (float)srcPix[x];
@@ -8140,12 +8142,13 @@ convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
                                                std::size_t stride,
                                                Natron::Image* image,
                                                const RectI& roi,
-                                               const RectI& dstBounds)
+                                               const RectI& dstBounds,
+                                               double shapeColor[3])
 {
     if (dstNComps == 1) {
-        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds);
+        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds,shapeColor);
     } else if (dstNComps == 4) {
-        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds);
+        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds,shapeColor);
     } else {
         assert(false);
     }
@@ -8158,21 +8161,22 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
                                std::size_t stride,
                                Natron::Image* image,
                                const RectI& roi,
-                               const RectI& dstBounds)
+                               const RectI& dstBounds,
+                               double shapeColor[3])
 {
     int numComps = (int)image->getComponentsCount();
     switch (numComps) {
         case 1:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds,shapeColor);
             break;
         case 2:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 2>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 2>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         case 3:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 3>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 3>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         case 4:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 4>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 4>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         default:
             break;
@@ -8190,6 +8194,12 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                 double distToNext,
                                 boost::shared_ptr<Natron::Image> *image)
 {
+    
+    int time = getTimelineCurrentTime();
+
+    double shapeColor[3];
+    stroke->getColor(time, shapeColor);
+    
     boost::shared_ptr<Natron::Image> source = *image;
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
@@ -8261,7 +8271,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
         copyFromImage = true;
     }
-    int time = getTimelineCurrentTime();
 
     bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
 
@@ -8288,7 +8297,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
         memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox);
+        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
         cairoImg = cairo_image_surface_create_for_data(buf.data(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
@@ -8342,8 +8351,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
     }
     
-    double shapeColor[3];
-    stroke->getColor(time, shapeColor);
+    
     double opacity = stroke->getOpacity(time);
     distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), doBuildUp, opacity, time, mipmapLevel);
     
