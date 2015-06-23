@@ -981,7 +981,7 @@ public:
 
     void createSelectionFromRect(const QRectF &rect, std::vector<DopeSheetKey> *result);
 
-    void moveCurrentFrameIndicator(double toTime);
+    void moveCurrentFrameIndicator(double dt);
 
     void createContextMenu();
 
@@ -2554,9 +2554,13 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
         break;
     }
     case DopeSheetView::esMoveCurrentFrameIndicator:
-        moveCurrentFrameIndicator(mouseZoomCoords.x());
+    {
+        if (dt >= 1.0f || dt <= -1.0f) {
+            moveCurrentFrameIndicator(dt);
+        }
 
         break;
+    }
     case DopeSheetView::esSelectionByRect:
     {
         computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
@@ -2663,11 +2667,13 @@ void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vect
     }
 }
 
-void DopeSheetViewPrivate::moveCurrentFrameIndicator(double toTime)
+void DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
 {
     gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
 
-    timeline->seekFrame(SequenceTime(toTime), false, 0, Natron::eTimelineChangeReasonDopeSheetEditorSeek);
+    double toTime = timeline->currentFrame() + dt;
+    timeline->seekFrame(SequenceTime(toTime), false, 0,
+                        Natron::eTimelineChangeReasonDopeSheetEditorSeek);
 }
 
 void DopeSheetViewPrivate::createContextMenu()
