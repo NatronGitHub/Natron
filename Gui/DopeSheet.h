@@ -220,9 +220,9 @@ private:
  *
  *
  */
-struct DSSelectedKey
+struct DopeSheetKey
 {
-    DSSelectedKey(const boost::shared_ptr<DSKnob> &knob, KeyFrame kf) :
+    DopeSheetKey(const boost::shared_ptr<DSKnob> &knob, KeyFrame kf) :
         context(knob),
         key(kf)
     {
@@ -232,12 +232,12 @@ struct DSSelectedKey
         assert(knobContext->getDimension() != -1);
     }
 
-    DSSelectedKey(const DSSelectedKey &other) :
+    DopeSheetKey(const DopeSheetKey &other) :
         context(other.context),
         key(other.key)
     {}
 
-    friend bool operator==(const DSSelectedKey &key, const DSSelectedKey &other)
+    friend bool operator==(const DopeSheetKey &key, const DopeSheetKey &other)
     {
         boost::shared_ptr<DSKnob> knobContext = key.context.lock();
         boost::shared_ptr<DSKnob> otherKnobContext = other.context.lock();
@@ -268,7 +268,7 @@ struct DSSelectedKey
     KeyFrame key;
 };
 
-typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
+typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
 
 class DopeSheetSelectionModel : public QObject
@@ -276,24 +276,30 @@ class DopeSheetSelectionModel : public QObject
     Q_OBJECT
 
 public:
+    enum SelectionType {
+        SelectionTypeOneByOne,
+        SelectionTypeAdd,
+        SelectionTypeToggle
+    };
+
     DopeSheetSelectionModel(DopeSheet *dopeSheet);
     ~DopeSheetSelectionModel();
 
     void selectAllKeyframes();
-    void selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DSSelectedKey> *result);
+    void selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DopeSheetKey> *result);
 
     void clearKeyframeSelection();
-    void makeSelection(const std::vector<DSSelectedKey> &keys);
+    void makeSelection(const std::vector<DopeSheetKey> &keys, SelectionType selectionType);
 
     bool isEmpty() const;
 
     DSKeyPtrList getSelectedKeyframes() const;
-    std::vector<DSSelectedKey> getSelectionCopy() const;
+    std::vector<DopeSheetKey> getSelectionCopy() const;
 
     int getSelectedKeyframesCount() const;
 
     bool keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const;
-    DSKeyPtrList::iterator keyframeIsSelected(const DSSelectedKey &key) const;
+    DSKeyPtrList::iterator keyframeIsSelected(const DopeSheetKey &key) const;
 
     void emit_keyframeSelectionChanged();
 

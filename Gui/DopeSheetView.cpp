@@ -562,7 +562,7 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
 
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
-    std::vector<DSSelectedKey> keys;
+    std::vector<DopeSheetKey> keys;
 
     Q_FOREACH (QTreeWidgetItem *item, items) {
         boost::shared_ptr<DSKnob> knobContext = model->findDSKnob(item);
@@ -572,7 +572,7 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
         }
     }
 
-    model->getSelectionModel()->makeSelection(keys);
+    model->getSelectionModel()->makeSelection(keys, DopeSheetSelectionModel::SelectionTypeOneByOne);
 }
 
 void HierarchyViewPrivate::blockSelectionSignals(bool block)
@@ -922,8 +922,8 @@ public:
     bool isNearByClipRectBottom(double y, const QRectF &clipRect) const;
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
 
-    std::vector<DSSelectedKey> isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const;
-    std::vector<DSSelectedKey> isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const;
+    std::vector<DopeSheetKey> isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const;
+    std::vector<DopeSheetKey> isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const;
 
     double clampedMouseOffset(double fromTime, double toTime);
 
@@ -979,7 +979,7 @@ public:
     // User interaction
     void onMouseDrag(QMouseEvent *e);
 
-    void createSelectionFromRect(const QRectF &rect, std::vector<DSSelectedKey> *result);
+    void createSelectionFromRect(const QRectF &rect, std::vector<DopeSheetKey> *result);
 
     void moveCurrentFrameIndicator(double toTime);
 
@@ -1182,7 +1182,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                 }
             }
             else if (nodeType == DopeSheet::ItemTypeCommon) {
-                std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
+                std::vector<DopeSheetKey> keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
 
                 if (!keysUnderMouse.empty()) {
                     ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
@@ -1192,7 +1192,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
         else {
             boost::shared_ptr<DSKnob> dsKnob =  hierarchyView->getDSKnobAt(widgetCoords.y());
 
-            std::vector<DSSelectedKey> keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords);
+            std::vector<DopeSheetKey> keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords);
 
             if (!keysUnderMouse.empty()) {
                 ret = getCursorForEventState(DopeSheetView::esPickKeyframe);
@@ -1267,11 +1267,11 @@ bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zo
     return (currentFrameIndicatorBottomPoly.containsPoint(zoomCoords, Qt::OddEvenFill));
 }
 
-std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const
+std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const
 {
     assert(dsKnob);
 
-    std::vector<DSSelectedKey> ret;
+    std::vector<DopeSheetKey> ret;
 
     boost::shared_ptr<KnobI> knob = dsKnob->getKnobGui()->getKnob();
 
@@ -1305,7 +1305,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::s
                     context = dsKnob;
                 }
 
-                ret.push_back(DSSelectedKey(context, kf));
+                ret.push_back(DopeSheetKey(context, kf));
             }
         }
     }
@@ -1313,9 +1313,9 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::s
     return ret;
 }
 
-std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const
+std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const
 {
-    std::vector<DSSelectedKey> ret;
+    std::vector<DopeSheetKey> ret;
 
     DSTreeItemKnobMap dsKnobs = dsNode->getChildData();
 
@@ -1339,7 +1339,7 @@ std::vector<DSSelectedKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_
             QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
 
             if (std::abs(widgetCoords.x() - keyframeWidgetPos.x()) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                ret.push_back(DSSelectedKey(dsKnob, kf));
+                ret.push_back(DopeSheetKey(dsKnob, kf));
             }
         }
     }
@@ -2248,7 +2248,7 @@ void DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin, const QPo
 
 void DopeSheetViewPrivate::computeSelectedKeysBRect()
 {
-    std::vector<DSSelectedKey> selectedKeyframes = model->getSelectionModel()->getSelectionCopy();
+    std::vector<DopeSheetKey> selectedKeyframes = model->getSelectionModel()->getSelectionCopy();
 
     if (selectedKeyframes.size() <= 1) {
         selectedKeysBRect = QRectF();
@@ -2259,7 +2259,7 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
     std::set<double> ys;
     std::set<double> keyTimes;
 
-    for (std::vector<DSSelectedKey>::const_iterator it = selectedKeyframes.begin();
+    for (std::vector<DopeSheetKey>::const_iterator it = selectedKeyframes.begin();
          it != selectedKeyframes.end();
          ++it) {
         boost::shared_ptr<DSKnob> knobContext = (*it).context.lock();
@@ -2624,7 +2624,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     }
 }
 
-void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vector<DSSelectedKey> *result)
+void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vector<DopeSheetKey> *result)
 {
     QRectF zoomCoordsRect = rectToZoomCoordinates(rect);
 
@@ -2656,7 +2656,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vect
                 QRectF zoomKfRect = rectToZoomCoordinates(keyframeRect(x, y));
 
                 if (zoomCoordsRect.intersects(zoomKfRect)) {
-                    result->push_back(DSSelectedKey(dsKnob, kf));
+                    result->push_back(DopeSheetKey(dsKnob, kf));
                 }
             }
         }
@@ -3495,10 +3495,14 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     }
                 }
                 else if (nodeType == DopeSheet::ItemTypeCommon) {
-                    std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
+                    std::vector<DopeSheetKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
+                        DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
+                                ? DopeSheetSelectionModel::SelectionTypeAdd
+                                : DopeSheetSelectionModel::SelectionTypeOneByOne;
+
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sType);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -3509,10 +3513,14 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos().y());
 
                 if (dsKnob) {
-                    std::vector<DSSelectedKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());
+                    std::vector<DopeSheetKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse);
+                        DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
+                                ? DopeSheetSelectionModel::SelectionTypeAdd
+                                : DopeSheetSelectionModel::SelectionTypeOneByOne;
+
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sType);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -3573,10 +3581,15 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
     if (_imp->eventState == DopeSheetView::esSelectionByRect) {
         if (_imp->selectionRect.isValid()) {
 
-            std::vector<DSSelectedKey> tempSelection;
-            _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect), &tempSelection);
+            QRectF keysToSelectRect = _imp->rectToZoomCoordinates(_imp->selectionRect);
+            std::vector<DopeSheetKey> tempSelection;
+            _imp->createSelectionFromRect(keysToSelectRect, &tempSelection);
 
-            _imp->model->getSelectionModel()->makeSelection(tempSelection);
+            DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
+                    ? DopeSheetSelectionModel::SelectionTypeToggle
+                    : DopeSheetSelectionModel::SelectionTypeOneByOne;
+
+            _imp->model->getSelectionModel()->makeSelection(tempSelection, sType);
 
             _imp->computeSelectedKeysBRect();
         }

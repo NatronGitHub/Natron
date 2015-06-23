@@ -503,7 +503,7 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSRemoveKeysCommand //////////////////////////
 
-DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
+DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
                                          DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
@@ -525,8 +525,8 @@ void DSRemoveKeysCommand::redo()
 
 void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::vector<DSSelectedKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        DSSelectedKey selected = (*it);
+    for (std::vector<DopeSheetKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        DopeSheetKey selected = (*it);
 
         boost::shared_ptr<DSKnob> knobContext = selected.context.lock();
         if (!knobContext) {
@@ -717,7 +717,7 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
-DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
+DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                                        DopeSheet *model,
                                        QUndoCommand *parent) :
     QUndoCommand(parent),
@@ -739,8 +739,8 @@ void DSPasteKeysCommand::redo()
 
 void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::vector<DSSelectedKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        DSSelectedKey key = (*it);
+    for (std::vector<DopeSheetKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        DopeSheetKey key = (*it);
 
         boost::shared_ptr<DSKnob> knobContext = key.context.lock();
         if (!knobContext) {

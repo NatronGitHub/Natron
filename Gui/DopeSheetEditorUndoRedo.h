@@ -20,14 +20,14 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 class DopeSheet;
-class DSSelectedKey;
+class DopeSheetKey;
 class DSNode;
 
 namespace Natron {
 class Node;
 }
 
-typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
+typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
 
 /**
@@ -178,7 +178,7 @@ private:
 class DSRemoveKeysCommand : public QUndoCommand
 {
 public:
-    DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
+    DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
                         DopeSheet *model,
                         QUndoCommand *parent = 0);
 
@@ -189,7 +189,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::vector<DSSelectedKey> _keys;
+    std::vector<DopeSheetKey> _keys;
     DopeSheet *_model;
 };
 
@@ -277,7 +277,7 @@ private:
 class DSPasteKeysCommand : public QUndoCommand
 {
 public:
-    DSPasteKeysCommand(const std::vector<DSSelectedKey> &keys,
+    DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                        DopeSheet *model,
                        QUndoCommand *parent = 0);
 
@@ -288,7 +288,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::vector<DSSelectedKey> _keys;
+    std::vector<DopeSheetKey> _keys;
     DopeSheet *_model;
 };
 
