@@ -987,7 +987,7 @@ TableView::mouseReleaseEvent(QMouseEvent* e)
     QModelIndex index = indexAt( e->pos() );
     TableItem* item = itemAt( e->pos() );
 
-    if ( triggerButtonisRight(e) && index.isValid() ) {
+    if ( triggerButtonIsRight(e) && index.isValid() ) {
         Q_EMIT itemRightClicked(item);
     } else {
         QTreeView::mouseReleaseEvent(e);

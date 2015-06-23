@@ -13,6 +13,11 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+// Mac keyboard:
+// ctrl = MetaModifier
+// alt = AltModifier
+// cmd = CtrlModifier
+
 // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
 #define modCAS(e) ( (e)->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) )
 
@@ -31,30 +36,31 @@
 #define modifierHasShift(e)           ( (e)->modifiers().testFlag(Qt::ShiftModifier) )
 
 // macros to test if a button is held down (pressed), or a single-button compatibility combination
-//Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
-#define buttonControlAlt(e)          ( (e)->modifiers() & (Qt::MetaModifier | Qt::AltModifier) )
+// Right click emulated with Left + MetaModifier (ctrl key on the keyboard), which is the way its done everywhere else on the mac
+// Middle click emulated with Left + AltModifier (alt key on the keyboard)
+#define buttonMetaAlt(e)          ( (e)->modifiers() & (Qt::MetaModifier | Qt::AltModifier) )
 
 /// THE GOOD VERSION
 // PLEASE DON'T BREAK THIS.
 // THANK YOU VERY VERY VERY MUCH.
-#define buttonDownIsLeft(e)              ( ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier ) )
+#define buttonDownIsLeft(e)              ( ( (e)->buttons() == Qt::LeftButton   && buttonMetaAlt(e) == Qt::NoModifier ) )
 
 //Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
-#define buttonDownIsRight(e)             ( ( (e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier ) || \
-                                           ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::MetaModifier ) )
+#define buttonDownIsRight(e)             ( ( (e)->buttons() == Qt::RightButton  && buttonMetaAlt(e) == Qt::NoModifier ) || \
+                                           ( (e)->buttons() == Qt::LeftButton   && buttonMetaAlt(e) == Qt::MetaModifier ) )
 
-#define triggerButtonisLeft(e) ( (e)->button() == Qt::LeftButton && buttonControlAlt(e) == Qt::NoModifier )
-#define triggerButtonisRight(e) ( (e)->button() == Qt::RightButton || \
-                                  ( (e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier ) )
+#define triggerButtonIsLeft(e) ( (e)->button() == Qt::LeftButton && buttonMetaAlt(e) == Qt::NoModifier )
+#define triggerButtonIsRight(e) ( (e)->button() == Qt::RightButton || \
+                                  ( (e)->button() == Qt::LeftButton   && buttonMetaAlt(e) == Qt::MetaModifier ) )
 
 
-#define buttonDownIsMiddle(e)            ( ( (e)->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::NoModifier ) || \
-                                           ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier ) )
+#define buttonDownIsMiddle(e)            ( ( (e)->buttons() == Qt::MiddleButton && buttonMetaAlt(e) == Qt::NoModifier ) || \
+                                           ( (e)->buttons() == Qt::LeftButton   && buttonMetaAlt(e) == Qt::AltModifier ) )
 
 
 // macros to test the button that triggered the event
-#define triggerButtonisMiddle(e) ( (e)->button() == Qt::MiddleButton || \
-                                   ( (e)->button() == Qt::LeftButton   && buttonControlAlt(e) == Qt::AltModifier ) )
+#define triggerButtonIsMiddle(e) ( (e)->button() == Qt::MiddleButton || \
+                                   ( (e)->button() == Qt::LeftButton   && buttonMetaAlt(e) == Qt::AltModifier ) )
 
 
 // macros to test

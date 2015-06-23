@@ -99,7 +99,7 @@ private:
 
         if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
             Q_EMIT itemClicked( item, index.column() );
-        } else if ( triggerButtonisRight(e) && index.isValid() ) {
+        } else if ( triggerButtonIsRight(e) && index.isValid() ) {
             _panel->showItemMenu( item,e->globalPos() );
         } else {
             QTreeWidget::mouseReleaseEvent(e);

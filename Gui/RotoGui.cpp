@@ -420,9 +420,9 @@ void
 RotoToolButton::mouseReleaseEvent(QMouseEvent* e)
 {
     wasMouseReleased = true;
-    if (triggerButtonisRight(e)) {
+    if (triggerButtonIsRight(e)) {
         showMenu();
-    } else if ( triggerButtonisLeft(e) ) {
+    } else if ( triggerButtonIsLeft(e) ) {
         handleSelection();
     } else {
         QToolButton::mousePressEvent(e);

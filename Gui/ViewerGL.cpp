@@ -2618,16 +2618,18 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     if (!overlaysCaught &&
         (buttonDownIsMiddle(e) ||
-         ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
+         ( (e)->buttons() == Qt::RightButton && buttonMetaAlt(e) == Qt::AltModifier )) &&
         !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
     }
     if (!overlaysCaught &&
-        (e->buttons() & Qt::MiddleButton) &&
-        (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or Left + middle = zoom
+        (((e->buttons() & Qt::MiddleButton) &&
+          (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+         ((e->buttons() & Qt::LeftButton) &&
+          (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier))))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     }
