@@ -30,6 +30,14 @@ NodeSettingsPanel[_selected="false"] {
     border-radius : 2px;
 }
 
+QToolTip {
+   color: %5;
+   background-color: black;
+   border: 2px solid black;
+   border-radius: 5px;
+   opacity: 200;
+}
+
 QToolBar {
     color: %2;
     spacing: 3px; /* spacing between items in the tool bar */
