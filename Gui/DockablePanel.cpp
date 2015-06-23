@@ -210,7 +210,7 @@ private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        if (triggerButtonisRight(e)) {
+        if (triggerButtonIsRight(e)) {
             Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);

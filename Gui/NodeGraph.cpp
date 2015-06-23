@@ -1093,8 +1093,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     _imp->_lastMousePos = e->pos();
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
 
-    if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or left + middle = zoom
+    if (((e->buttons() & Qt::MiddleButton) &&
+         (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+        ((e->buttons() & Qt::LeftButton) &&
+         (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->_evtState = eEventStateZoomingArea;
         return;
     }

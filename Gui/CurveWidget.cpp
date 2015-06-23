@@ -2969,8 +2969,11 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
         // no need to updateGL()
         return;
-    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or left + middle = zoom
+    } else if (((e->buttons() & Qt::MiddleButton) &&
+                (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+               ((e->buttons() & Qt::LeftButton) &&
+                (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->_state = eEventStateZooming;
         _imp->_lastMousePos = e->pos();
         _imp->_dragStartPoint = e->pos();
