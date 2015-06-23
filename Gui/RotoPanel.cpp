@@ -1979,6 +1979,13 @@ RotoPanel::getContext() const
 }
 
 void
+RotoPanel::clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem> & item)
+{
+    
+    _imp->context->clearAndSelectPreviousItem(item,RotoItem::eSelectionReasonOther);
+}
+
+void
 RotoPanel::clearSelection()
 {
     _imp->selectedItems.clear();

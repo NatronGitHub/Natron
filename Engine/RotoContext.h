@@ -330,6 +330,8 @@ public:
     std::string getRotoNodeName() const;
 
     boost::shared_ptr<RotoContext> getContext() const;
+    
+    boost::shared_ptr<RotoItem> getPreviousItemInLayer() const;
 
 protected:
 
@@ -1365,6 +1367,8 @@ public:
     void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
     void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
+    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
+    
     void clearSelection(RotoItem::SelectionReasonEnum reason);
 
     ///only callable on main-thread

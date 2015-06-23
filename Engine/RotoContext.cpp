@@ -1733,6 +1733,62 @@ RotoItem::getRotoNodeName() const
     return getContext()->getRotoNodeName();
 }
 
+static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer, const boost::shared_ptr<const RotoItem>& item)
+{
+    RotoItems layerItems = layer->getItems_mt_safe();
+    if (layerItems.empty()) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    RotoItems::iterator found = layerItems.end();
+    if (item) {
+        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
+            if (*it == item) {
+                found = it;
+                break;
+            }
+        }
+        assert(found != layerItems.end());
+    } else {
+        found = layerItems.end();
+    }
+    
+    if (found != layerItems.end()) {
+        ++found;
+        for (; found != layerItems.end(); ++found) {
+            return *found;
+        }
+    }
+    
+    //Item was still not found, find in great parent layer
+    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    if (!parentLayer) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
+    
+    found = greatParentItems.end();
+    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
+        if (*it == layer) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != greatParentItems.end());
+    boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
+    assert(ret != item);
+    return ret;
+}
+
+boost::shared_ptr<RotoItem>
+RotoItem::getPreviousItemInLayer() const
+{
+    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    if (!layer) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    return getPreviousInLayer(layer, shared_from_this());
+}
+
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
 
 RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
@@ -7054,6 +7110,17 @@ RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
     }
     
     Q_EMIT selectionChanged( (int)reason );
+}
+
+void
+RotoContext::clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason)
+{
+    clearSelection(reason);
+    assert(item);
+    boost::shared_ptr<RotoItem> prev = item->getPreviousItemInLayer();
+    if (prev) {
+        select(prev,reason);
+    }
 }
 
 void

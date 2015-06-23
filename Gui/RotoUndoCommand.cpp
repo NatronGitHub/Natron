@@ -1627,6 +1627,10 @@ RemoveItemsUndoCommand::undo()
 void
 RemoveItemsUndoCommand::redo()
 {
+    if (_items.empty()) {
+        return;
+    }
+    _roto->clearAndSelectPreviousItem(_items.back().item);
     for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
         _roto->getContext()->removeItem(it->item, RotoItem::eSelectionReasonSettingsPanel);
         it->treeItem->setHidden(true);
@@ -1637,7 +1641,6 @@ RemoveItemsUndoCommand::redo()
             it->parentTreeItem->removeChild(it->treeItem);
         }
     }
-    _roto->clearSelection();
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Remove items of %2").arg( _roto->getNodeName().c_str() ) );
 }
