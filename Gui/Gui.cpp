@@ -5212,8 +5212,7 @@ FloatingWidget::removeEmbeddedWidget()
     if (!_embeddedWidget) {
         return;
     }
-    //_scrollArea->setViewport(0);
-    _embeddedWidget->setParent(NULL);
+    _scrollArea->takeWidget();
     _embeddedWidget = 0;
     // _embeddedWidget->setVisible(false);
     hide();

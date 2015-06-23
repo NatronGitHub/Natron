@@ -1561,6 +1561,8 @@ ViewerTab::~ViewerTab()
                         graph = dynamic_cast<NodeGraph*>(graph_i);
                         assert(graph);
                     }
+                } else {
+                    graph = _imp->gui->getNodeGraph();
                 }
             }
             _imp->viewerNode->invalidateUiContext();
