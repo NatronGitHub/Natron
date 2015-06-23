@@ -4067,6 +4067,12 @@ CurveWidget::exportCurveToAscii()
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
         if ( (*it)->isVisible() && isKnobCurve) {
+            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            if (isString) {
+                warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                return;
+            }
             curves.push_back(*it);
         }
     }
@@ -4138,6 +4144,14 @@ CurveWidget::importCurveFromAscii()
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
         if ( (*it)->isVisible() && isKnobCurve ) {
+            
+            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
+            if (isString) {
+                warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                return;
+            }
+            
             curves.push_back(*it);
         }
     }
@@ -4236,16 +4250,19 @@ CurveWidget::importCurveFromAscii()
         }
         ///now restore the curves since we know what we read is valid
         for (std::map<boost::shared_ptr<CurveGui>, std::vector<double> >::const_iterator it = curvesValues.begin(); it != curvesValues.end(); ++it) {
+            
+            std::vector<KeyFrame> keys;
             const std::vector<double> & values = it->second;
-            const boost::shared_ptr<CurveGui>& curve = it->first;
-            curve->getInternalCurve()->clearKeyFrames();
-
             double xIndex = x;
             for (U32 i = 0; i < values.size(); ++i) {
                 KeyFrame k(xIndex,values[i]);
-                curve->getInternalCurve()->addKeyFrame(k);
+                keys.push_back(k);
                 xIndex += incr;
             }
+            
+            pushUndoCommand(new SetKeysCommand(this,it->first,keys));
+
+            
         }
         _imp->_selectedKeyFrames.clear();
         update();

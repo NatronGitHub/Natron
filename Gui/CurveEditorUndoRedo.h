@@ -108,18 +108,50 @@ public:
     virtual ~AddKeysCommand() OVERRIDE
     {
     }
+    
 
-private:
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
+protected:
+    
+    void addOrRemoveKeyframe(bool isSetKeyCommand, bool add);
 
-    void addOrRemoveKeyframe(bool add);
+    
+    virtual void undo() OVERRIDE;
+    virtual void redo() OVERRIDE;
+
 
 private:
     KeysToAddList _keys;
     CurveWidget *_curveWidget;
 };
 
+
+
+class SetKeysCommand
+: public AddKeysCommand
+{
+public:
+    
+    
+    SetKeysCommand(CurveWidget *editor,
+                   const AddKeysCommand::KeysToAddList & keys,
+                   QUndoCommand *parent = 0);
+    
+    SetKeysCommand(CurveWidget *editor,
+                   const boost::shared_ptr<CurveGui>& curve,
+                   const std::vector<KeyFrame> & keys,
+                   QUndoCommand *parent = 0);
+    
+    virtual ~SetKeysCommand() OVERRIDE
+    {
+    }
+    
+private:
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    
+    
+private:
+};
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 
