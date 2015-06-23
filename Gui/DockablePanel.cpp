@@ -1701,34 +1701,58 @@ DockablePanel::showHelp()
 void
 DockablePanel::setClosed(bool c)
 {
+    
+    setVisible(!c);
+    
+    setClosedInternal(c);
+
+} // setClosed
+
+void
+DockablePanel::setClosedInternal(bool c)
+{
+ 
     if (!_imp->_gui) {
         return;
     }
-    if (!c) {
-        _imp->_gui->addVisibleDockablePanel(this);
-    } else {
-        _imp->_gui->removeVisibleDockablePanel(this);
-    }
+    
     if (_imp->_floating) {
         floatPanel();
         return;
     }
-    setVisible(!c);
     {
         QMutexLocker l(&_imp->_isClosedMutex);
         if (c == _imp->_isClosed) {
             return;
-
+            
         }
         _imp->_isClosed = c;
     }
+    
+    if (!c) {
+        _imp->_gui->addVisibleDockablePanel(this);
+    } else {
+        _imp->_gui->removeVisibleDockablePanel(this);
+        _imp->_gui->buildTabFocusOrderPropertiesBin();
+
+    }
+    
+    ///Remove any color picker active
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = getKnobs();
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        Color_KnobGui* ck = dynamic_cast<Color_KnobGui*>(it->second);
+        if (ck) {
+            ck->setPickingEnabled(false);
+        }
+    }
+    
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
         boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         Gui* gui = getGui();
-
+        
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
             
@@ -1759,9 +1783,9 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-			if (next != childrenInstances.end()) {
-				++next;
-			}
+            if (next != childrenInstances.end()) {
+                ++next;
+            }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end();
                  ++it) {
@@ -1770,7 +1794,7 @@ DockablePanel::setClosed(bool c)
                 } else if (!c && it->second) {
                     it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
-
+                
                 // increment for next iteration
                 if (next != childrenInstances.end()) {
                     ++next;
@@ -1785,76 +1809,18 @@ DockablePanel::setClosed(bool c)
             }
         }
     }
+    
     Q_EMIT closeChanged(c);
 
-} // setClosed
+
+}
 
 void
 DockablePanel::closePanel()
 {
-    if (_imp->_floating) {
-        floatPanel();
-        return;
-    }
     
-    _imp->_gui->removeVisibleDockablePanel(this);
-    _imp->_gui->buildTabFocusOrderPropertiesBin();
-
-    {
-        QMutexLocker l(&_imp->_isClosedMutex);
-        if (_imp->_isClosed) {
-            return;
-        }
-        _imp->_isClosed = true;
-    }
     close();
-
-    
-    
-    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (nodePanel) {
-        
-        boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
-        boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
-        _imp->_gui->removeNodeGuiFromCurveEditor(nodeGui);
-        
-        NodeList children;
-        internalNode->getChildrenMultiInstance(&children);
-        for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
-            assert(gui_i);
-            boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            assert(childGui);
-            _imp->_gui->removeNodeGuiFromCurveEditor(childGui);
-        }
-        
-        
-        internalNode->hideKeyframesFromTimeline(true);
-        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        if (panel) {
-            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            if (next != childrenInstances.end()) {
-                ++next;
-            }
-            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end();
-                 ++it) {
-                
-                NodePtr node = it->first.lock();
-                if ( it->second && (node != internalNode) ) {
-                    node->hideKeyframesFromTimeline( next == childrenInstances.end() );
-                }
-
-                // increment for next iteration
-                if (next != childrenInstances.end()) {
-                    ++next;
-                }
-            } // for(it)
-        } else {
-            internalNode->showKeyframesOnTimeline(false);
-        }
-    }
+    setClosedInternal(true);
 
     ///Closing a panel always gives focus to some line-edit in the application which is quite annoying
     QWidget* hasFocus = qApp->focusWidget();
@@ -1866,8 +1832,6 @@ DockablePanel::closePanel()
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->getViewer()->redraw();
     }
-    Q_EMIT closeChanged(true);
-
     
 }
 

@@ -3090,7 +3090,11 @@ ColorPickerLabel::setColor(const QColor & color)
 void
 Color_KnobGui::setPickingEnabled(bool enabled)
 {
+    if (_colorLabel->isPickingEnabled() == enabled) {
+        return;
+    }
     _colorLabel->setPickingEnabled(enabled);
+    onPickingEnabled(enabled);
 }
 
 void
