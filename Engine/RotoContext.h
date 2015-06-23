@@ -381,7 +381,8 @@ public:
 
     RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                      const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent);
+                     const boost::shared_ptr<RotoLayer>& parent,
+                     bool isStroke);
 
     virtual ~RotoDrawableItem();
     

@@ -1434,6 +1434,8 @@ struct RotoContextPrivate
 
     std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
     std::list<boost::weak_ptr<KnobI> > cloneKnobs;
+    std::list<boost::weak_ptr<KnobI> > strokeKnobs;
+    std::list<boost::weak_ptr<KnobI> > shapeKnobs;
 
     ///This keeps track  of the items linked to the context knobs
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
@@ -1567,6 +1569,7 @@ struct RotoContextPrivate
         featherKnob->setIsPersistant(false);
         shapePage->addKnob(featherKnob);
         knobs.push_back(featherKnob);
+        shapeKnobs.push_back(featherKnob);
         feather = featherKnob;
         
         boost::shared_ptr<Double_Knob> featherFallOffKnob = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamLabel, 1, false);
@@ -1581,6 +1584,7 @@ struct RotoContextPrivate
         featherFallOffKnob->setIsPersistant(false);
         shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
+        shapeKnobs.push_back(featherFallOffKnob);
         featherFallOff = featherFallOffKnob;
         
         {
@@ -1787,6 +1791,7 @@ struct RotoContextPrivate
             brushSize->setIsPersistant(false);
             strokePage->addKnob(brushSize);
             knobs.push_back(brushSize);
+            strokeKnobs.push_back(brushSize);
             brushSizeKnob = brushSize;
             
             boost::shared_ptr<Double_Knob> brushSpacing = Natron::createKnob<Double_Knob>(effect, kRotoBrushSpacingParamLabel, 1, false);
@@ -1799,6 +1804,7 @@ struct RotoContextPrivate
             brushSpacing->setIsPersistant(false);
             strokePage->addKnob(brushSpacing);
             knobs.push_back(brushSpacing);
+            strokeKnobs.push_back(brushSpacing);
             brushSpacingKnob = brushSpacing;
             
             boost::shared_ptr<Double_Knob> brushHardness = Natron::createKnob<Double_Knob>(effect, kRotoBrushHardnessParamLabel, 1, false);
@@ -1811,6 +1817,7 @@ struct RotoContextPrivate
             brushHardness->setIsPersistant(false);
             strokePage->addKnob(brushHardness);
             knobs.push_back(brushHardness);
+            strokeKnobs.push_back(brushHardness);
             brushHardnessKnob = brushHardness;
             
             boost::shared_ptr<Double_Knob> effectStrength = Natron::createKnob<Double_Knob>(effect, kRotoBrushEffectParamLabel, 1, false);
@@ -1823,6 +1830,7 @@ struct RotoContextPrivate
             effectStrength->setIsPersistant(false);
             strokePage->addKnob(effectStrength);
             knobs.push_back(effectStrength);
+            strokeKnobs.push_back(effectStrength);
             brushEffectKnob = effectStrength;
             
             boost::shared_ptr<String_Knob> pressureLabel = Natron::createKnob<String_Knob>(effect, kRotoBrushPressureLabelParamLabel);
@@ -1833,6 +1841,7 @@ struct RotoContextPrivate
             pressureLabel->setAllDimensionsEnabled(false);
             strokePage->addKnob(pressureLabel);
             knobs.push_back(pressureLabel);
+            strokeKnobs.push_back(pressureLabel);
             pressureLabelKnob = pressureLabel;
             
             boost::shared_ptr<Bool_Knob> pressureOpacity = Natron::createKnob<Bool_Knob>(effect, kRotoBrushPressureOpacityParamLabel);
@@ -1845,6 +1854,7 @@ struct RotoContextPrivate
             pressureOpacity->setIsPersistant(false);
             strokePage->addKnob(pressureOpacity);
             knobs.push_back(pressureOpacity);
+            strokeKnobs.push_back(pressureOpacity);
             pressureOpacityKnob = pressureOpacity;
             
             boost::shared_ptr<Bool_Knob> pressureSize = Natron::createKnob<Bool_Knob>(effect, kRotoBrushPressureSizeParamLabel);
@@ -1856,6 +1866,7 @@ struct RotoContextPrivate
             pressureSize->setAllDimensionsEnabled(false);
             pressureSize->setIsPersistant(false);
             knobs.push_back(pressureSize);
+            strokeKnobs.push_back(pressureSize);
             strokePage->addKnob(pressureSize);
             pressureSizeKnob = pressureSize;
             
@@ -1868,6 +1879,7 @@ struct RotoContextPrivate
             pressureHardness->setAllDimensionsEnabled(false);
             pressureHardness->setIsPersistant(false);
             knobs.push_back(pressureHardness);
+            strokeKnobs.push_back(pressureHardness);
             strokePage->addKnob(pressureHardness);
             pressureHardnessKnob = pressureHardness;
             
@@ -1880,6 +1892,7 @@ struct RotoContextPrivate
             buildUp->setAllDimensionsEnabled(false);
             buildUp->setIsPersistant(false);
             knobs.push_back(buildUp);
+            strokeKnobs.push_back(buildUp);
             strokePage->addKnob(buildUp);
             buildUpKnob = buildUp;
             
@@ -1900,6 +1913,7 @@ struct RotoContextPrivate
             visiblePortion->setDimensionName(0, "start");
             visiblePortion->setDimensionName(1, "end");
             knobs.push_back(visiblePortion);
+            strokeKnobs.push_back(visiblePortion);
             brushVisiblePortionKnob = visiblePortion;
     }
     

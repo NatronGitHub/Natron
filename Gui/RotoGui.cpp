@@ -349,7 +349,10 @@ struct RotoGui::RotoGuiPrivate
 
     void handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & p, QMouseEvent* e);
 
-    void drawSelectedCp(int time,const boost::shared_ptr<BezierCP> & cp,double x,double y);
+    void drawSelectedCp(int time,
+                        const boost::shared_ptr<BezierCP> & cp,
+                        double x,double y,
+                        const Transform::Matrix3x3& transform);
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
     isNearbyFeatherBar(int time,const std::pair<double,double> & pixelScale,const QPointF & pos) const;
@@ -1274,7 +1277,8 @@ void
 RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
                                         const boost::shared_ptr<BezierCP> & cp,
                                         double x,
-                                        double y)
+                                        double y,
+                                        const Transform::Matrix3x3& transform)
 {
     ///if the tangent is being dragged, color it
     bool colorLeftTangent = false;
@@ -1287,18 +1291,21 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
     }
 
 
-    double leftDerivX,leftDerivY,rightDerivX,rightDerivY;
-    cp->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY);
-    cp->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY);
+    Transform::Point3D leftDeriv,rightDeriv;
+    leftDeriv.z = rightDeriv.z = 1.;
+    cp->getLeftBezierPointAtTime(time, &leftDeriv.x, &leftDeriv.y);
+    cp->getRightBezierPointAtTime(time, &rightDeriv.x, &rightDeriv.y);
+    leftDeriv = Transform::matApply(transform, leftDeriv);
+    rightDeriv = Transform::matApply(transform, rightDeriv);
 
-    bool drawLeftHandle = leftDerivX != x || leftDerivY != y;
-    bool drawRightHandle = rightDerivX != x || rightDerivY != y;
+    bool drawLeftHandle = leftDeriv.x != x || leftDeriv.y != y;
+    bool drawRightHandle = rightDeriv.y != x || rightDeriv.y != y;
     glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
             glColor3f(0.2, 1., 0.);
         }
-        glVertex2d(leftDerivX,leftDerivY);
+        glVertex2d(leftDeriv.x,leftDeriv.y);
         if (colorLeftTangent) {
             glColor3d(0.85, 0.67, 0.);
         }
@@ -1307,7 +1314,7 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
         if (colorRightTangent) {
             glColor3f(0.2, 1., 0.);
         }
-        glVertex2d(rightDerivX,rightDerivY);
+        glVertex2d(rightDeriv.x,rightDeriv.y);
         if (colorRightTangent) {
             glColor3d(0.85, 0.67, 0.);
         }
@@ -1316,11 +1323,11 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
 
     glBegin(GL_LINE_STRIP);
     if (drawLeftHandle) {
-        glVertex2d(leftDerivX,leftDerivY);
+        glVertex2d(leftDeriv.x,leftDeriv.y);
     }
     glVertex2d(x, y);
     if (drawRightHandle) {
-        glVertex2d(rightDerivX,rightDerivY);
+        glVertex2d(rightDeriv.x,rightDeriv.y);
     }
     glEnd();
 } // drawSelectedCp
@@ -1604,17 +1611,17 @@ RotoGui::drawOverlays(double /*scaleX*/,
                              ++cpIt) {
                             ///if the control point is selected, draw its tangent handles
                             if (cpIt->first == *it2) {
-                                _imp->drawSelectedCp(time, cpIt->first, x, y);
+                                _imp->drawSelectedCp(time, cpIt->first, x, y, transform);
                                 if (drawFeather) {
-                                    _imp->drawSelectedCp(time, cpIt->second, xF, yF);
+                                    _imp->drawSelectedCp(time, cpIt->second, xF, yF, transform);
                                 }
                                 glColor3f(0.2, 1., 0.);
                                 colorChanged = true;
                                 break;
                             } else if (cpIt->second == *it2) {
-                                _imp->drawSelectedCp(time, cpIt->second, x, y);
+                                _imp->drawSelectedCp(time, cpIt->second, x, y, transform);
                                 if (drawFeather) {
-                                    _imp->drawSelectedCp(time, cpIt->first, xF, yF);
+                                    _imp->drawSelectedCp(time, cpIt->first, xF, yF, transform);
                                 }
                                 glColor3f(0.2, 1., 0.);
                                 colorChanged = true;
@@ -1747,10 +1754,10 @@ RotoGui::drawOverlays(double /*scaleX*/,
         } // for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         
         if (_imp->context->isRotoPaint() &&
-            (_imp->selectTool == _imp->mergeBrushTool ||
-             _imp->selectTool == _imp->effectBrushTool ||
-             _imp->selectTool == _imp->paintBrushTool ||
-             _imp->selectTool == _imp->cloneBrushTool)) {
+            (_imp->selectedRole == _imp->mergeBrushTool ||
+             _imp->selectedRole == _imp->effectBrushTool ||
+             _imp->selectedRole == _imp->paintBrushTool ||
+             _imp->selectedRole == _imp->cloneBrushTool)) {
             
             QPoint widgetPos = _imp->viewer->mapToGlobal(_imp->viewer->mapFromParent(_imp->viewer->pos()));
             QRect r(widgetPos.x(),widgetPos.y(),_imp->viewer->width(),_imp->viewer->height());

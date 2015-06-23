@@ -2453,9 +2453,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
                 
             } else {
-                for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
-                    (*it)->fillZero(args.roi);
-                }
+                assert(outputPlanes->empty());
             }
             
             return eRenderRoIRetCodeOk;
@@ -5314,8 +5312,12 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     
 
     bool ret = false;
-    
-     if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    if (rotoItem && !rotoItem->isActivated(time)) {
+        ret = true;
+        *inputNb = getNode()->getPreferredInput();
+        *inputTime = time;
+    } else if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;

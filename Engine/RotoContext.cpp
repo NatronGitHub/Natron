@@ -1737,9 +1737,10 @@ RotoItem::getRotoNodeName() const
 
 RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                                    const std::string & name,
-                                   const boost::shared_ptr<RotoLayer>& parent)
+                                   const boost::shared_ptr<RotoLayer>& parent,
+                                   bool isStroke)
     : RotoItem(context,name,parent)
-      , _imp( new RotoDrawableItemPrivate(context->isRotoPaint()) )
+      , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
     QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( invertedStateChanged() ) );
@@ -3388,7 +3389,7 @@ enum SplineChangedReason
 Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const std::string & name,
                const boost::shared_ptr<RotoLayer>& parent)
-    : RotoDrawableItem(ctx,name,parent)
+    : RotoDrawableItem(ctx,name,parent, false)
       , _imp( new BezierPrivate() )
 {
 }
@@ -3396,7 +3397,7 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
-: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
+: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
 , _imp( new BezierPrivate() )
 {
     clone(&other);
@@ -5542,7 +5543,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
                                const std::string & name,
                                const boost::shared_ptr<RotoLayer>& parent)
 
-: RotoDrawableItem(context,name,parent)
+: RotoDrawableItem(context,name,parent, true)
 , _imp(new RotoStrokeItemPrivate(type))
 {
         
@@ -6886,16 +6887,18 @@ const
                 }
             } else if (isStroke) {
                 RectD strokeRod;
-                if (isStroke == _imp->strokeBeingPainted.get()) {
-                    strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
-                } else {
-                    strokeRod = isStroke->getBoundingBox(time);
-                }
-                if (first) {
-                    first = false;
-                    *rod = strokeRod;
-                } else {
-                    rod->merge(strokeRod);
+                if (isStroke->isActivated(time)) {
+                    if (isStroke == _imp->strokeBeingPainted.get()) {
+                        strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
+                    } else {
+                        strokeRod = isStroke->getBoundingBox(time);
+                    }
+                    if (first) {
+                        first = false;
+                        *rod = strokeRod;
+                    } else {
+                        rod->merge(strokeRod);
+                    }
                 }
             }
         }
@@ -7116,6 +7119,8 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     if (isDrawable) {
         if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
             ++nbUnlockedBeziers;
+            ++nbStrokeWithoutCloneFunctions;
+            ++nbStrokeWithoutStrength;
         } else if (isStroke) {
             ++nbUnlockedStrokes;
             if (isStroke->getBrushType() != eRotoStrokeTypeBlur && isStroke->getBrushType() != eRotoStrokeTypeSharpen) {
@@ -7190,6 +7195,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                 }
             } else {
                 
+                bool mustDisable = false;
                 if (nbStrokeWithoutCloneFunctions) {
                     bool isCloneKnob = false;
                     for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2!=_imp->cloneKnobs.end(); ++it2) {
@@ -7197,10 +7203,28 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                             isCloneKnob = true;
                         }
                     }
-                    k->setAllDimensionsEnabled(!isCloneKnob);
-                } else {
-                    k->setAllDimensionsEnabled(true);
+                    mustDisable |= isCloneKnob;
                 }
+                if (nbUnlockedBeziers && !mustDisable) {
+                    bool isStrokeKnob = false;
+                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->strokeKnobs.begin(); it2!=_imp->strokeKnobs.end(); ++it2) {
+                        if (it2->lock() == k) {
+                            isStrokeKnob = true;
+                        }
+                    }
+                    mustDisable |= isStrokeKnob;
+                }
+                if (nbUnlockedStrokes && !mustDisable) {
+                    bool isBezierKnob = false;
+                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->shapeKnobs.begin(); it2!=_imp->shapeKnobs.end(); ++it2) {
+                        if (it2->lock() == k) {
+                            isBezierKnob = true;
+                        }
+                    }
+                    mustDisable |= isBezierKnob;
+                }
+                k->setAllDimensionsEnabled(!mustDisable);
+                
             }
             if (nbUnlockedBeziers >= 2 || nbUnlockedStrokes >= 2) {
                 k->setDirty(true);
