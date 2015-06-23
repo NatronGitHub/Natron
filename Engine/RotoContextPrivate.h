@@ -2050,11 +2050,12 @@ struct RotoContextPrivate
                         double distToNext,
                         const RotoStrokeItem* stroke,
                         bool doBuildup,
+                        double opacity, 
                         int time,
                         unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
-    void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);
+    void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, int time, unsigned int mipmapLevel);
     
     void renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
 

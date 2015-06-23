@@ -3933,7 +3933,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 
     if ( getGui() ) {
         
-        if ( internalNode->isRotoNode() ) {
+        if (internalNode->isRotoPaintingNode()) {
             getGui()->removeRotoInterface(n.get(),true);
         }
         

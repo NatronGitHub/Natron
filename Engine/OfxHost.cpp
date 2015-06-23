@@ -605,6 +605,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
+        bool userCreatable = openfxId != PLUGINID_OFX_ROTO;
+        
         Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
                                                               pluginLabel.c_str(),
@@ -614,7 +616,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                                               foundWriter != contexts.end(),
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                              p->getVersionMajor(), p->getVersionMinor() );
+                                                              p->getVersionMajor(), p->getVersionMinor(),userCreatable );
         
         natronPlugin->setOfxPlugin(p);
         

@@ -99,13 +99,24 @@ MoveControlPointsUndoCommand::~MoveControlPointsUndoCommand()
 void
 MoveControlPointsUndoCommand::undo()
 {
+    
+    
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
+    std::set<Bezier*> beziers;
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it) {
+        beziers.insert(it->first->getBezier().get());
+    }
+    
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         if (it->second) {
             it->second->clone(*cpIt->second);
         }
+    }
+    
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it!=beziers.end(); ++it) {
+        (*it)->incrementNodesAge();
     }
 
     _roto->evaluate(true);
@@ -239,6 +250,16 @@ TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
+    std::set<Bezier*> beziers;
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
+        beziers.insert(it->first->getBezier().get());
+    }
+    
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it!=beziers.end(); ++it) {
+        (*it)->incrementNodesAge();
+    }
+
+    
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         if (it->second) {
@@ -713,7 +734,7 @@ MoveTangentUndoCommand::undo()
         }
         _tangentBeingDragged->clone(*_oldCp);
     }
-
+    _tangentBeingDragged->getBezier()->incrementNodesAge();
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
     }
@@ -739,6 +760,8 @@ MoveTangentUndoCommand::redo()
         }
         _oldCp->clone(*_tangentBeingDragged);
     }
+    
+    _tangentBeingDragged->getBezier()->incrementNodesAge();
 
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
     dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_breakTangents);
@@ -777,7 +800,8 @@ MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) ) {
         return false;
     }
-
+    _dx += mvCmd->_dx;
+    _dy += mvCmd->_dy;
     return true;
 }
 
@@ -815,7 +839,7 @@ MoveFeatherBarUndoCommand::undo()
 {
     _newPoint.first->clone(*_oldPoint.first);
     _newPoint.second->clone(*_oldPoint.second);
-
+    _newPoint.first->getBezier()->incrementNodesAge();
     _roto->evaluate(true);
     _roto->setSelection(_curve, _newPoint);
     setText( QObject::tr("Move feather bar of %1 of %2").arg( _curve->getLabel().c_str() ).arg( _roto->getNodeName() ) );
@@ -824,28 +848,26 @@ MoveFeatherBarUndoCommand::undo()
 void
 MoveFeatherBarUndoCommand::redo()
 {
-    _oldPoint.first->clone(*_newPoint.first);
-    _oldPoint.second->clone(*_newPoint.second);
-
+    
     boost::shared_ptr<BezierCP> p = _newPoint.first->isFeatherPoint() ?
-                                    _newPoint.second : _newPoint.first;
+    _newPoint.second : _newPoint.first;
     boost::shared_ptr<BezierCP> fp = _newPoint.first->isFeatherPoint() ?
-                                     _newPoint.first : _newPoint.second;
+    _newPoint.first : _newPoint.second;
     Point delta;
     Point featherPoint,controlPoint;
     p->getPositionAtTime(_time, &controlPoint.x, &controlPoint.y);
     bool isOnKeyframe = fp->getPositionAtTime(_time, &featherPoint.x, &featherPoint.y);
-
+    
     if ( (controlPoint.x != featherPoint.x) || (controlPoint.y != featherPoint.y) ) {
         Point featherVec;
         featherVec.x = featherPoint.x - controlPoint.x;
         featherVec.y = featherPoint.y - controlPoint.y;
         double norm = sqrt( (featherPoint.x - controlPoint.x) * (featherPoint.x - controlPoint.x)
-                            + (featherPoint.y - controlPoint.y) * (featherPoint.y - controlPoint.y) );
+                           + (featherPoint.y - controlPoint.y) * (featherPoint.y - controlPoint.y) );
         assert(norm != 0);
         delta.x = featherVec.x / norm;
         delta.y = featherVec.y / norm;
-
+        
         double dotProduct = delta.x * _dx + delta.y * _dy;
         delta.x = delta.x * dotProduct;
         delta.y = delta.y * dotProduct;
@@ -853,7 +875,7 @@ MoveFeatherBarUndoCommand::redo()
         ///the feather point equals the control point, use derivatives
         const std::list<boost::shared_ptr<BezierCP> > & cps = p->getBezier()->getFeatherPoints();
         assert(cps.size() > 1);
-
+        
         std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
         assert( cur != cps.end() );
         // compute previous and next element in the cyclic list
@@ -867,12 +889,12 @@ MoveFeatherBarUndoCommand::redo()
         if (next == cps.end()) {
             next = cps.begin();
         }
-
+        
         double leftX,leftY,rightX,rightY,norm;
         Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);
         Bezier::rightDerivativeAtPoint(_time, **cur, **next, &rightX, &rightY);
         norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
-
+        
         ///normalize derivatives by their norm
         if (norm != 0) {
             delta.x = -( (rightY - leftY) / norm );
@@ -888,20 +910,21 @@ MoveFeatherBarUndoCommand::redo()
                 delta.x = delta.y = 0;
             }
         }
-
+        
         double dotProduct = delta.x * _dx + delta.y * _dy;
         delta.x = delta.x * dotProduct;
         delta.y = delta.y * dotProduct;
     }
-
+    
     if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
         int index = fp->getBezier()->getFeatherPointIndex(fp);
         fp->getBezier()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
+    
     if (_firstRedoCalled) {
         _roto->evaluate(true);
     }
-
+    
     _roto->setSelection(_curve, _newPoint);
 
     _firstRedoCalled = true;
@@ -926,6 +949,9 @@ MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
          ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_time != _time) ) {
         return false;
     }
+    
+    _dx += mvCmd->_dx;
+    _dy += mvCmd->_dy;
 
     return true;
 }
@@ -959,6 +985,7 @@ RemoveFeatherUndoCommand::undo()
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->clone(**itOld);
         }
+        it->curve->incrementNodesAge();
     }
     _roto->evaluate(true);
 

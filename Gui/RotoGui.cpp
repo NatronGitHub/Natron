@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/Transform.h"
+#include "Engine/RotoPaint.h"
 
 #include <ofxNatron.h>
 
@@ -506,6 +507,8 @@ RotoGui::RotoGui(NodeGui* node,
     assert(_imp->context);
     
     bool hasShapes = _imp->context->getNCurves();
+    
+    bool effectIsPaint = node->getNode()->getPluginID() == PLUGINID_NATRON_ROTOPAINT;
 
     QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
     QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
@@ -905,7 +908,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->bezierEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->bezierEditionTool->setText("Bezier");
-    _imp->bezierEditionTool->setDown(!hasShapes);
+    _imp->bezierEditionTool->setDown(!hasShapes && !effectIsPaint);
     
     
     QKeySequence editBezierShortcut(Qt::Key_V);
@@ -922,7 +925,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->allTools.push_back(_imp->bezierEditionTool);
     _imp->toolbar->addWidget(_imp->bezierEditionTool);
     
-    if (!hasShapes) {
+    if (!hasShapes && !effectIsPaint) {
         defaultAction = drawBezierAct;
     }
     
@@ -931,7 +934,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->paintBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->paintBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->paintBrushTool->setText("Brush");
-    _imp->paintBrushTool->setDown(false);
+    _imp->paintBrushTool->setDown(!hasShapes && effectIsPaint);
     QKeySequence brushPaintShortcut(Qt::Key_N);
     QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
     _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
@@ -979,7 +982,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->allTools.push_back(_imp->mergeBrushTool);
     _imp->toolbar->addWidget(_imp->mergeBrushTool);
     
-    if (!hasShapes) {
+    if (!hasShapes && effectIsPaint) {
         defaultAction = brushPaintAct;
     }
     
@@ -1743,7 +1746,11 @@ RotoGui::drawOverlays(double /*scaleX*/,
             glCheckError();
         } // for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         
-        if (_imp->context->isRotoPaint() && _imp->selectTool != _imp->selectedRole) {
+        if (_imp->context->isRotoPaint() &&
+            (_imp->selectTool == _imp->mergeBrushTool ||
+             _imp->selectTool == _imp->effectBrushTool ||
+             _imp->selectTool == _imp->paintBrushTool ||
+             _imp->selectTool == _imp->cloneBrushTool)) {
             
             QPoint widgetPos = _imp->viewer->mapToGlobal(_imp->viewer->mapFromParent(_imp->viewer->pos()));
             QRect r(widgetPos.x(),widgetPos.y(),_imp->viewer->width(),_imp->viewer->height());
@@ -2720,7 +2727,11 @@ RotoGui::penMotion(double /*scaleX*/,
     
     double cpTol = kControlPointSelectionTolerance * pixelScale.first;
     
-    if (_imp->context->isRotoPaint() && _imp->selectedRole != _imp->selectTool) {
+    if (_imp->context->isRotoPaint() &&
+        (_imp->selectedRole == _imp->mergeBrushTool ||
+         _imp->selectedRole == _imp->cloneBrushTool ||
+         _imp->selectedRole == _imp->effectBrushTool ||
+         _imp->selectedRole == _imp->paintBrushTool)) {
         if (_imp->state != eEventStateBuildingStroke) {
             _imp->viewer->setCursor(Qt::CrossCursor);
         } else {

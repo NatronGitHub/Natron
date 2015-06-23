@@ -1015,6 +1015,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         _imp->hash.append(_imp->knobsAge);
         
         ///append all inputs hash
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
         {
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
             
@@ -1029,7 +1030,6 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                     }
                 }
             } else {
-                boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
@@ -1047,7 +1047,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
             }
         }
         
-        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
         if (roto) {
             U64 rotoAge = roto->getAge();
             _imp->hash.append(rotoAge);

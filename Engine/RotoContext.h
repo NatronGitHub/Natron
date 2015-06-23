@@ -387,6 +387,8 @@ public:
     
     void createNodes();
     
+    void incrementNodesAge();
+    
     void refreshNodesConnections();
 
     virtual void clone(const RotoItem*  other);

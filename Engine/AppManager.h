@@ -317,16 +317,17 @@ public:
     }
 
     Natron::Plugin* registerPlugin(const QStringList & groups,
-                        const QString & pluginID,
-                        const QString & pluginLabel,
-                        const QString & pluginIconPath,
-                        const QString & groupIconPath,
-                        bool isReader,
-                        bool isWriter,
-                        Natron::LibraryBinary* binary,
-                        bool mustCreateMutex,
-                        int major,
-                        int minor);
+                                   const QString & pluginID,
+                                   const QString & pluginLabel,
+                                   const QString & pluginIconPath,
+                                   const QString & groupIconPath,
+                                   bool isReader,
+                                   bool isWriter,
+                                   Natron::LibraryBinary* binary,
+                                   bool mustCreateMutex,
+                                   int major,
+                                   int minor,
+                                   bool canBeUserCreated);
 
     bool isNCacheFilesOpenedCapped() const;
     size_t getNCacheFilesOpened() const;
@@ -649,10 +650,6 @@ std::list<std::string> getNatronPath();
  **/
 void appendToNatronPath(const std::string& path);
 
-/**
- * @brief Returns true if the plug-in ID can be instantiated by the GUI
- **/
-bool isPluginCreatable(const std::string& pluginID);
 
 /**
  * @brief Ensures that the given Python script as imported the given module

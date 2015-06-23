@@ -2206,7 +2206,7 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
     NodeList rotos;
     NodeList newNodes;
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->isRotoNode()) {
+        if ((*it)->isRotoPaintingNode() || (*it)->isRotoNode()) {
             rotos.push_back(*it);
         } else {
             newNodes.push_back(*it);

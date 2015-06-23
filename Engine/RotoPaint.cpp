@@ -24,11 +24,12 @@ using namespace Natron;
 std::string
 RotoPaint::getDescription() const
 {
-    return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...\n";
+    return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
 }
 
-RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node)
+RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault)
 : EffectInstance(node)
+, _isPaintByDefault(isPaintByDefault)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -37,6 +38,56 @@ RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node)
 RotoPaint::~RotoPaint()
 {
     
+}
+
+std::string
+RotoPaint::getPluginID() const
+{
+    return PLUGINID_NATRON_ROTOPAINT;
+}
+
+std::string
+RotoPaint::getPluginLabel() const
+{
+    return "RotoPaint";
+}
+
+std::string
+RotoNode::getPluginID() const
+{
+    return PLUGINID_NATRON_ROTO;
+}
+
+std::string
+RotoNode::getPluginLabel() const
+{
+    return "Roto";
+}
+
+std::string
+RotoNode::getDescription() const
+{
+    return "Create masks and shapes";
+}
+
+bool
+RotoPaint::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+{
+    *defaultR = true;
+    *defaultG = true;
+    *defaultB = true;
+    *defaultA = true;
+    return true;
+}
+
+bool
+RotoNode::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const
+{
+    *defaultR = false;
+    *defaultG = false;
+    *defaultB = false;
+    *defaultA = true;
+    return true;
 }
 
 std::string

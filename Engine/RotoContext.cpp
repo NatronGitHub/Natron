@@ -2326,6 +2326,13 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob)
 
     
     
+    incrementNodesAge();
+
+}
+
+void
+RotoDrawableItem::incrementNodesAge()
+{
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }
@@ -2338,7 +2345,6 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob)
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->incrementKnobsAge();
     }
-
 }
 
 boost::shared_ptr<Natron::Node>
@@ -3441,6 +3447,7 @@ Bezier::clone(const RotoItem* other)
         }
         _imp->finished = otherBezier->_imp->finished;
     }
+    incrementNodesAge();
     RotoDrawableItem::clone(other);
     Q_EMIT cloned();
 }
@@ -3527,6 +3534,7 @@ Bezier::addControlPoint(double x,
         }
     }
     
+    incrementNodesAge();
     return p;
 }
 
@@ -3697,6 +3705,9 @@ Bezier::addControlPointAfterIndex(int index,
         }
   
     }
+    
+    incrementNodesAge();
+    
     return p;
 } // addControlPointAfterIndex
 
@@ -3840,6 +3851,7 @@ Bezier::setCurveFinished(bool finished)
         
     }
 
+    incrementNodesAge();
     refreshPolygonOrientation();
 }
 
@@ -3880,6 +3892,8 @@ Bezier::removeControlPointByIndex(int index)
             
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation();
     Q_EMIT controlPointRemoved();
 }
@@ -3977,6 +3991,8 @@ Bezier::movePointByIndexInternal(int index,
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -4133,6 +4149,8 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -4249,6 +4267,8 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -4335,6 +4355,7 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
         }
     }
     
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (keySet) {
         Q_EMIT keyframeSet(time);
@@ -4364,6 +4385,8 @@ Bezier::removeFeatherAtIndex(int index)
     assert( cp != _imp->points.end() && fp != _imp->featherPoints.end() );
 
     (*fp)->clone(**cp);
+    
+    incrementNodesAge();
     
 }
 
@@ -4404,6 +4427,8 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pai
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -4506,6 +4531,8 @@ Bezier::removeKeyframe(int time)
             _imp->isClockwiseOriented.erase(found);
         }
     }
+    
+    incrementNodesAge();
     getContext()->evaluateChange();
     Q_EMIT keyframeRemoved(time);
 }
@@ -4534,6 +4561,8 @@ Bezier::removeAnimation()
      
         _imp->isClockwiseOriented.clear();
     }
+    
+    incrementNodesAge();
     Q_EMIT animationRemoved();
 }
 
@@ -4584,6 +4613,7 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         _imp->isClockwiseOriented[newTime] = oldValue;
     }
     
+    incrementNodesAge();
     Q_EMIT keyframeRemoved(oldTime);
     Q_EMIT keyframeSet(newTime);
 }
@@ -6240,14 +6270,11 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* 
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false);
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = items.begin(); it != items.end(); ++it) {
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (!isStroke) {
-            continue;
-        }
-        boost::shared_ptr<Natron::Node> effectNode = isStroke->getEffectNode();
-        boost::shared_ptr<Natron::Node> mergeNode = isStroke->getMergeNode();
-        boost::shared_ptr<Natron::Node> timeOffsetNode = isStroke->getTimeOffsetNode();
-        boost::shared_ptr<Natron::Node> frameHoldNode = isStroke->getFrameHoldNode();
+      
+        boost::shared_ptr<Natron::Node> effectNode = (*it)->getEffectNode();
+        boost::shared_ptr<Natron::Node> mergeNode = (*it)->getMergeNode();
+        boost::shared_ptr<Natron::Node> timeOffsetNode = (*it)->getTimeOffsetNode();
+        boost::shared_ptr<Natron::Node> frameHoldNode = (*it)->getFrameHoldNode();
         if (effectNode) {
             nodes->push_back(effectNode);
         }
@@ -7797,12 +7824,13 @@ adjustToPointToScale(unsigned int mipmapLevel,
     }
 }
 
-template <typename PIX,int maxValue, int dstNComps, int srcNComps>
+template <typename PIX,int maxValue, int dstNComps, int srcNComps, bool useOpacity>
 static void
 convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg,
-                                               Natron::Image* image,
-                                               const RectI & pixelRod,
-                                               double shapeColor[3])
+                                                       Natron::Image* image,
+                                                       const RectI & pixelRod,
+                                                       double shapeColor[3],
+                                                       double opacity)
 {
     
     unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
@@ -7810,6 +7838,10 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
     int stride = cairo_image_surface_get_stride(cairoImg);
     
     Natron::Image::WriteAccess acc = image->getWriteRights();
+    
+    double r = useOpacity ? shapeColor[0] * opacity : shapeColor[0];
+    double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
+    double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
     
     for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
         PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
@@ -7819,27 +7851,27 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
             float cairoPixel = (float)srcPix[x * srcNComps] / 255.f;
             switch (dstNComps) {
                 case 4:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 0]));
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 1]));
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * shapeColor[2] * maxValue);
+                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 2]));
-                    dstPix[x * dstNComps + 3] = PIX(cairoPixel * maxValue);
+                    dstPix[x * dstNComps + 3] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 3]));
                     break;
                 case 1:
-                    dstPix[x] = PIX(cairoPixel * maxValue);
+                    dstPix[x] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
                     assert(!boost::math::isnan(dstPix[x]));
                     break;
                 case 3:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * shapeColor[2] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
+                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
                     break;
                 case 2:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
                     break;
 
                 default:
@@ -7855,6 +7887,23 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
 
 }
 
+template <typename PIX,int maxValue, int dstNComps, int srcNComps>
+static void
+convertCairoImageToNatronImageForOpacity(cairo_surface_t* cairoImg,
+                                         Natron::Image* image,
+                                         const RectI & pixelRod,
+                                         double shapeColor[3],
+                                         double opacity,
+                                         bool useOpacity)
+{
+    if (useOpacity) {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, srcNComps, true>(cairoImg, image,pixelRod, shapeColor, opacity);
+    } else {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, srcNComps, false>(cairoImg, image,pixelRod, shapeColor, opacity);
+    }
+
+}
+
 
 template <typename PIX,int maxValue, int dstNComps>
 static void
@@ -7862,12 +7911,14 @@ convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg
                                                        int srcNComps,
                                                        Natron::Image* image,
                                                        const RectI & pixelRod,
-                                                       double shapeColor[3])
+                                                       double shapeColor[3],
+                                                       double opacity,
+                                                       bool useOpacity)
 {
     if (srcNComps == 1) {
-        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, 1>(cairoImg, image,pixelRod, shapeColor);
+        convertCairoImageToNatronImageForOpacity<PIX,maxValue,dstNComps, 1>(cairoImg, image,pixelRod, shapeColor, opacity, useOpacity);
     } else if (srcNComps == 4) {
-        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, 4>(cairoImg, image,pixelRod, shapeColor);
+        convertCairoImageToNatronImageForOpacity<PIX,maxValue,dstNComps, 4>(cairoImg, image,pixelRod, shapeColor, opacity, useOpacity);
     } else {
         assert(false);
     }
@@ -7879,21 +7930,23 @@ convertCairoImageToNatronImage_noColor(cairo_surface_t* cairoImg,
                                        int srcNComps,
                                        Natron::Image* image,
                                        const RectI & pixelRod,
-                                       double shapeColor[3])
+                                       double shapeColor[3],
+                                       double opacity,
+                                       bool useOpacity)
 {
     int comps = (int)image->getComponentsCount();
     switch (comps) {
         case 1:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,1>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,1>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 2:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,2>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,2>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 3:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,3>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,3>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 4:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,4>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,4>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         default:
             break;
@@ -8267,7 +8320,8 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     double shapeColor[3];
     stroke->getColor(time, shapeColor);
-    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), doBuildUp, time, mipmapLevel);
+    double opacity = stroke->getOpacity(time);
+    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), doBuildUp, opacity, time, mipmapLevel);
     
     stroke->updatePatternCache(dotPatterns);
     
@@ -8279,7 +8333,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     
-    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor);
+    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
 
     
     cairo_destroy(cr);
@@ -8425,23 +8479,8 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         }
         
     } else {
-        if (components.getNumComponents() == 1) {
-            cairoImgFormat = CAIRO_FORMAT_A8;
-            srcNComps = 1;
-        } else if (components.getNumComponents() == 2) {
-            cairoImgFormat = CAIRO_FORMAT_RGB24;
-            srcNComps = 3;
-        } else if (components.getNumComponents() == 3) {
-            cairoImgFormat = CAIRO_FORMAT_RGB24;
-            srcNComps = 3;
-        } else if (components.getNumComponents() == 4) {
-            cairoImgFormat = CAIRO_FORMAT_ARGB32;
-            srcNComps = 4;
-        } else {
-            cairoImgFormat = CAIRO_FORMAT_A8;
-            srcNComps = 1;
-        }
-        
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
     }
     
 
@@ -8466,14 +8505,15 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     
     double shapeColor[3];
     stroke->getColor(time, shapeColor);
-    
+
+    double opacity = stroke->getOpacity(time);
 
     if (isStroke) {
         std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(cr, dotPatterns, points, 0, isStroke, doBuildUp, time, mipmapLevel);
+        _imp->renderStroke(cr, dotPatterns, points, 0, isStroke, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -8482,40 +8522,28 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
             }
         }
         
-        switch (depth) {
-            case Natron::eImageBitDepthFloat:
-                convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor);
-                break;
-            case Natron::eImageBitDepthByte:
-                convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor);
-                break;
-            case Natron::eImageBitDepthShort:
-                convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor);
-                break;
-            case Natron::eImageBitDepthNone:
-                assert(false);
-                break;
-        }
         
     } else {
-        _imp->renderBezier(cr, isBezier, time, mipmapLevel);
-        switch (depth) {
-            case Natron::eImageBitDepthFloat:
-                convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthByte:
-                convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthShort:
-                convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthNone:
-                assert(false);
-                break;
-        }
+        _imp->renderBezier(cr, isBezier, opacity, time, mipmapLevel);
     }
     
+    bool useOpacityToConvert = isBezier != 0;
     
+    switch (depth) {
+        case Natron::eImageBitDepthFloat:
+            convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthByte:
+            convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthShort:
+            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthNone:
+            assert(false);
+            break;
+    }
+
     
     assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     
@@ -8644,6 +8672,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                                  double distToNext,
                                  const RotoStrokeItem* stroke,
                                  bool doBuildup,
+                                 double alpha,
                                  int time,
                                  unsigned int mipmapLevel)
 {
@@ -8656,8 +8685,6 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     }
     
     assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
-    
-    double alpha = stroke->getOpacity(time);
     
     boost::shared_ptr<Double_Knob> brushSizeKnob = stroke->getBrushSizeKnob();
     double brushSize = brushSizeKnob->getValueAtTime(time);
@@ -8767,7 +8794,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     stroke->evaluateStroke(mipmapLevel, time, &points);
     std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS, (cairo_pattern_t*)0);
     bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
-    renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, time, mipmapLevel);
+    
+    double alpha = stroke->getOpacity(time);
+    renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, alpha, time, mipmapLevel);
     for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
         if (dotPatterns[i]) {
             cairo_pattern_destroy(dotPatterns[i]);
@@ -8777,7 +8806,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
 }
 
 void
-RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel)
+RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,double opacity, int time, unsigned int mipmapLevel)
 {
     ///render the bezier only if finished (closed) and activated
     if ( !bezier->isCurveFinished() || !bezier->isActivated(time) || ( bezier->getControlPointsCount() <= 1 ) ) {
@@ -8787,17 +8816,15 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
     
     double fallOff = bezier->getFeatherFallOff(time);
     double featherDist = bezier->getFeatherDistance(time);
-    double opacity = bezier->getOpacity(time);
 #ifdef NATRON_ROTO_INVERTIBLE
     bool inverted = (*it2)->getInverted(time);
 #else
     const bool inverted = false;
 #endif
-    int operatorIndex = bezier->getCompositingOperator();
     double shapeColor[3];
     bezier->getColor(time, shapeColor);
     
-    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     
     BezierCPs cps = bezier->getControlPoints_mt_safe();
     
@@ -8867,8 +8894,11 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
 }
 
 void
-RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh)
+RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double /*opacity*/, double featherDist, double fallOff, cairo_pattern_t* mesh)
 {
+    
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
     
     double fallOffInverse = 1. / fallOff;
     /*
@@ -9034,7 +9064,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - opacity : opacity) );
+                                                 std::sqrt(inverted ? 0. : 1.) );
         ///outter is faded
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  inverted ? 1. : 0.);
@@ -9042,7 +9072,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
                                                  inverted ? 1. : 0.);
         ///inner is full color
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - opacity : opacity));
+                                                 std::sqrt(inverted ? 0. : 1.));
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
         
         cairo_mesh_pattern_end_patch(mesh);
@@ -9075,8 +9105,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
 void
 RotoContextPrivate::renderInternalShape(int time,
                                         unsigned int mipmapLevel,
-                                        double shapeColor[3],
-                                        double opacity,
+                                        double /*shapeColor*/[3],
+                                        double /*opacity*/,
                                         const Transform::Matrix3x3& transform,
                                         cairo_t* cr,
 #ifdef ROTO_USE_MESH_PATTERN_ONLY
@@ -9222,7 +9252,7 @@ RotoContextPrivate::renderInternalShape(int time,
     }
 #else
     
-    cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
+    cairo_set_source_rgba(cr, 1, 1, 1, 1);
     
     BezierCPs::const_iterator point = cps.begin();
     assert(point != cps.end());
