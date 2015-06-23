@@ -60,7 +60,7 @@ class Double_Knob;
 class NodeGuiI;
 class RotoContext;
 class NodeCollection;
-class RotoStrokeItem;
+class RotoDrawableItem;
 class RectD;
 class RectI;
 namespace Natron {
@@ -517,8 +517,8 @@ public:
      * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint. 
      * Do not use that anywhere else.
      **/
-    void attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke);
-    boost::shared_ptr<RotoStrokeItem> getAttachedStrokeItem() const;
+    void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
+    boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
     
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user

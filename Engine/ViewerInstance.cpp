@@ -388,7 +388,7 @@ public:
                     
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         
-                        bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
+                        bool isStrokeNode = (*it)->getAttachedRotoItem() == activeStroke;
                         
                         (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
                         if (isStrokeNode) {

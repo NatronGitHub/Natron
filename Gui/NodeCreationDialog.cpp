@@ -301,7 +301,12 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     int i = 0;
     for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         
-        if (!Natron::isPluginCreatable(it->first)) {
+        if (it->second.empty()) {
+            continue;
+        }
+        
+        Natron::Plugin* p = (*it->second.begin());
+        if (!p->getIsUserCreatable()) {
             continue;
         }
         
@@ -309,7 +314,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             
             std::pair<QString,QString> idNamePair;
             
-            Natron::Plugin* p = (*it->second.begin());
+            
             
             idNamePair.second = p->generateUserFriendlyPluginID();
             

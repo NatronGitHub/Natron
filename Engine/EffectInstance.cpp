@@ -1152,7 +1152,7 @@ EffectInstance::getImage(int inputNb,
     
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
     boost::shared_ptr<RotoContext> roto;
-    boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+    boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
     if (attachedStroke) {
         roto = attachedStroke->getContext();
     } else {
@@ -1323,6 +1323,9 @@ EffectInstance::getImage(int inputNb,
     ///For the roto brush, we do things separatly and render the mask with the RotoContext.
     if (useRotoInput) {
         
+        
+        ///Usage of roto outside of the rotopaint node is no longer handled
+        assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
@@ -1330,9 +1333,6 @@ EffectInstance::getImage(int inputNb,
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
                                                       time, view, depth, mipMapLevel);
             }
-        } else {
-            inputImg = roto->renderMask(pixelRoI, prefComps,
-                                        rod, time, depth, mipMapLevel);
         }
         if (roiPixel) {
             *roiPixel = pixelRoI;
@@ -2453,9 +2453,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
                 
             } else {
-                for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
-                    (*it)->fillZero(args.roi);
-                }
+                assert(outputPlanes->empty());
             }
             
             return eRenderRoIRetCodeOk;
@@ -2915,7 +2913,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         int maxInput = getMaxInputCount();
         bool hasMask = false;
         
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
@@ -3578,7 +3576,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if (getNode()->getAttachedStrokeItem() && inputEffect && inputEffect->isRotoPaintNode()) {
+        if (getNode()->getAttachedRotoItem() && inputEffect && inputEffect->isRotoPaintNode()) {
             continue;
         }
 
@@ -5314,8 +5312,12 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     
 
     bool ret = false;
-    
-     if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    if (rotoItem && !rotoItem->isActivated(time)) {
+        ret = true;
+        *inputNb = getNode()->getPreferredInput();
+        *inputTime = time;
+    } else if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;

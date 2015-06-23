@@ -2595,7 +2595,7 @@ Gui::findExistingToolButton(const QString & label) const
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {
-    if ( !Natron::isPluginCreatable( plugin->getID().toStdString() ) ) {
+    if (!plugin->getIsUserCreatable()) {
         return 0;
     }
 
@@ -2639,7 +2639,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      1,
-                                                     0);
+                                                     0,
+                                                     true);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it

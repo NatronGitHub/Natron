@@ -1031,16 +1031,10 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
         treeItem = found->treeItem;
     }
     
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
-
     ComboBox* cb = new ComboBox;
     QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
     std::vector<std::string> compositingOperators,tooltips;
-    if (isStroke) {
-        getNatronCompositingOperators(&compositingOperators, &tooltips);
-    } else {
-        getCairoCompositingOperators(&compositingOperators, &tooltips);
-    }
+    getNatronCompositingOperators(&compositingOperators, &tooltips);
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
         cb->addItem( compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str() );
     }

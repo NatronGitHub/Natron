@@ -2591,7 +2591,7 @@ NodeSettingsPanel::centerOnItem()
 RotoPanel*
 NodeSettingsPanel::initializeRotoPanel()
 {
-    if ( getNode()->getNode()->isRotoNode() || getNode()->getNode()->isRotoPaintingNode() ) {
+    if (getNode()->getNode()->isRotoPaintingNode()) {
         return new RotoPanel(_nodeGUI.lock(),this);
     } else {
         return NULL;

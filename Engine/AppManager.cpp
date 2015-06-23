@@ -1516,7 +1516,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1532,7 +1532,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1548,7 +1548,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1564,7 +1564,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
+        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1580,7 +1580,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion());
+        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1596,9 +1596,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
     }
-#ifdef ROTO_ENABLE_PAINT
     {
         boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
         std::map<std::string,void*> functions;
@@ -1614,7 +1613,24 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
             qgrouping.push_back( it->c_str() );
         }
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "GroupingIcons/Set3/paint_grouping_3.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+                       NATRON_IMAGES_PATH "GroupingIcons/Set3/paint_grouping_3.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+    }
+    {
+        boost::shared_ptr<EffectInstance> node( RotoNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&RotoNode::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+                       NATRON_IMAGES_PATH "rotoNodeIcon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1631,10 +1647,9 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
             qgrouping.push_back( it->c_str() );
         }
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                        "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+                        "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
 
-#endif
 }
 
 static void findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
@@ -1805,7 +1820,7 @@ AppManager::loadPythonGroups()
         if (getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version)) {
             
             QStringList grouping = QString(pluginGrouping.c_str()).split(QChar('/'));
-            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0);
+            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0, true);
             
             p->setPythonModule(modulePath + moduleName);
             
@@ -1825,7 +1840,8 @@ AppManager::registerPlugin(const QStringList & groups,
                            Natron::LibraryBinary* binary,
                            bool mustCreateMutex,
                            int major,
-                           int minor)
+                           int minor,
+                           bool canBeUserCreated)
 {
     QMutex* pluginMutex = 0;
 
@@ -1833,7 +1849,7 @@ AppManager::registerPlugin(const QStringList & groups,
         pluginMutex = new QMutex(QMutex::Recursive);
     }
     Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor,
-                                                isReader,isWriter);
+                                                isReader,isWriter, canBeUserCreated);
     std::string stdID = pluginID.toStdString();
     PluginsMap::iterator found = _imp->_plugins.find(stdID);
     if (found != _imp->_plugins.end()) {
@@ -2042,6 +2058,7 @@ AppManager::getPluginBinary(const QString & pluginId,
                             int /*minorVersion*/,
                             bool convertToLowerCase) const
 {
+    
     PluginsMap::const_iterator foundID = _imp->_plugins.end();
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         if (convertToLowerCase &&
@@ -3558,14 +3575,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
     }
 
 }
-      
-bool isPluginCreatable(const std::string& pluginID)
-{
-    if (pluginID == PLUGINID_NATRON_ROTOSMEAR) {
-        return false;
-    }
-    return true;
-}
+
     
 void compilePyScript(const std::string& script,PyObject** code)
 {
