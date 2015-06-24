@@ -2291,7 +2291,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setContentsMargins(0, 0, 0, 0);
     colorLayout->setSpacing(0);
     
-    _colorLabel = new ColorPickerLabel(this,colorContainer);
+    _colorLabel = new ColorPickerLabel(knob->isSimplified() ? NULL : this,colorContainer);
     if (!knob->isSimplified()) {
         _colorLabel->setToolTip(Natron::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                                                 "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
