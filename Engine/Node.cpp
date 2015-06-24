@@ -1016,6 +1016,10 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         
         ///append all inputs hash
         boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+        NodePtr attachedStrokeContextNode;
+        if (attachedStroke) {
+            attachedStrokeContextNode = attachedStroke->getContext()->getNode();
+        }
         {
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
             
@@ -1035,7 +1039,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                     if (input) {
                         
                         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-                        if (attachedStroke && input->isRotoPaintingNode()) {
+                        if (attachedStroke && input == attachedStrokeContextNode) {
                             continue;
                         }
                         ///Add the index of the input to its hash.
@@ -1084,6 +1088,17 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     }
     
     _imp->liveInstance->onNodeHashChanged(getHashValue());
+    
+    ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
+    if (_imp->rotoContext) {
+        NodeList allItems;
+        _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
+        for (NodeList::iterator it = allItems.begin(); it!=allItems.end(); ++it) {
+            (*it)->computeHashInternal(marked);
+        }
+        
+    }
+    
     
     ///If the node is a group, call it on all nodes in the group
     ///Also force a change to their hash
