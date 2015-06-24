@@ -1572,6 +1572,9 @@ Gui::restoreLayout(bool wipePrevious,
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
 
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect screen = desktop->screenGeometry();
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -1611,7 +1614,7 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            window->resize( (*it)->w, (*it)->h );
+            window->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
             window->move( QPoint( (*it)->x, (*it)->y ) );
         }
 
@@ -1636,7 +1639,7 @@ Gui::restoreLayout(bool wipePrevious,
                     FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-                    fWindow->resize( (*it)->w, (*it)->h );
+                    fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
                 }
             }
         }
