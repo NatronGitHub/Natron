@@ -1142,6 +1142,32 @@ Image::fillZero(const RectI& roi)
     }
 }
 
+void
+Image::fillBoundsZero()
+{
+    QWriteLocker k(&_entryLock);
+    
+    std::size_t rowSize =  getComponents().getNumComponents();
+    switch ( getBitDepth() ) {
+        case eImageBitDepthByte:
+            rowSize *= sizeof(unsigned char);
+            break;
+        case eImageBitDepthShort:
+            rowSize *= sizeof(unsigned short);
+            break;
+        case eImageBitDepthFloat:
+            rowSize *= sizeof(float);
+            break;
+        case eImageBitDepthNone:
+            return;
+    }
+    
+    std::size_t roiMemSize = rowSize * _bounds.width() * _bounds.height();
+    
+    char* dstPixels = (char*)pixelAt(_bounds.x1, _bounds.y1);
+    memset(dstPixels, 0, roiMemSize);
+}
+
 unsigned char*
 Image::pixelAt(int x,
                int y)

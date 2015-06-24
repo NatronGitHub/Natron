@@ -363,6 +363,12 @@ RotoPaint::render(const RenderActionArgs& args)
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
+            
+            
+            ///We first fill with black and transparant because the bounds of the image produced by the last merge of the rotopaint tree
+            ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
+            ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
+            plane->second->fillZero(args.roi);
             if ((*rotoImagesIt)->getComponents() != plane->second->getComponents()) {
                 
                 (*rotoImagesIt)->convertToFormat(args.roi,
