@@ -41,6 +41,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
+#define kRotoOpenBezierBaseName "Pencil"
 #define kRotoBSplineBaseName "BSpline"
 #define kRotoEllipseBaseName "Ellipse"
 #define kRotoRectangleBaseName "Rectangle"
@@ -617,7 +618,8 @@ public:
 
     Bezier(const boost::shared_ptr<RotoContext>& context,
            const std::string & name,
-           const boost::shared_ptr<RotoLayer>& parent);
+           const boost::shared_ptr<RotoLayer>& parent,
+           bool isOpenBezier);
 
     Bezier(const Bezier & other,
            const boost::shared_ptr<RotoLayer>& parent);
@@ -632,6 +634,8 @@ public:
                 double t,
                 Natron::Point *dest);
 
+    
+    bool isOpenBezier() const;
     
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
@@ -890,6 +894,7 @@ public:
     static void
     bezierSegmentListBboxUpdate(const std::list<boost::shared_ptr<BezierCP> > & points,
                                 bool finished,
+                                bool isOpenBezier,
                                 int time,
                                 unsigned int mipMapLevel,
                                 const Transform::Matrix3x3& transform,
@@ -1248,7 +1253,7 @@ public:
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName,int time);
+    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName,int time, bool isOpenBezier);
     boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     

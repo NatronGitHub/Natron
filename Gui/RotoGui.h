@@ -126,6 +126,7 @@ public:
         eRotoToolDrawRectangle,
         
         eRotoToolSolidBrush,
+        eRotoToolOpenBezier,
         eRotoToolEraserBrush,
         
         eRotoToolClone,

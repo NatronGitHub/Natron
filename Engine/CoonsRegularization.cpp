@@ -1206,7 +1206,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         bbox.x2 = -std::numeric_limits<double>::infinity();
         bbox.y1 = std::numeric_limits<double>::infinity();
         bbox.y2 = -std::numeric_limits<double>::infinity();
-        Bezier::bezierSegmentListBboxUpdate(patch, true, time, 0, Transform::Matrix3x3(), &bbox);
+        Bezier::bezierSegmentListBboxUpdate(patch, true, false, time, 0, Transform::Matrix3x3(), &bbox);
         if (!bbox.contains(pointInside.x, pointInside.y)) {
             sign = 0;
         } else {

@@ -51,7 +51,8 @@
 
 #define BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE 2
 #define BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE 3
-#define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE
+#define BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER 4
+#define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER
 
 template<class Archive>
 void
@@ -381,6 +382,7 @@ private:
             
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
+        ar & boost::serialization::make_nvp("OpenBezier",_isOpenBezier);
     }
 
     template<class Archive>
@@ -410,12 +412,18 @@ private:
             
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
+        if (version >= BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER) {
+            ar & boost::serialization::make_nvp("OpenBezier",_isOpenBezier);
+        } else {
+            _isOpenBezier = false;
+        }
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     std::list< BezierCP > _controlPoints,_featherPoints;
     bool _closed;
+    bool _isOpenBezier;
 };
 
 BOOST_CLASS_VERSION(BezierSerialization,BEZIER_SERIALIZATION_VERSION)

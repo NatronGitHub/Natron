@@ -395,6 +395,7 @@ public:
 
     MakeBezierUndoCommand(RotoGui* roto,
                           const boost::shared_ptr<Bezier> & curve,
+                          bool isOpenBezier,
                           bool createPoint,
                           double dx,
                           double dy,
@@ -423,6 +424,7 @@ private:
     double _dx,_dy;
     int _time;
     int _lastPointAdded;
+    bool _isOpenBezier;
 };
 
 

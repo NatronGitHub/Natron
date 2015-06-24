@@ -499,7 +499,7 @@ Roto::createLayer()
 BezierCurve*
 Roto::createBezier(double x,double y,int time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time);
+    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time,false);
     if (ret) {
         return new BezierCurve(ret);
     }

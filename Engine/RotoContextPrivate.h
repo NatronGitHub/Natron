@@ -340,13 +340,16 @@ struct BezierPrivate
     
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
 
-    BezierPrivate()
+    bool isOpenBezier;
+    
+    BezierPrivate(bool isOpenBezier)
     : points()
     , featherPoints()
     , isClockwiseOriented()
     , isClockwiseOrientedStatic(false)
     , autoRecomputeOrientation(true)
     , finished(false)
+    , isOpenBezier(isOpenBezier)
     {
     }
 
@@ -2062,12 +2065,11 @@ struct RotoContextPrivate
                         std::vector<cairo_pattern_t*>& dotPatterns,
                         const std::list<std::pair<Natron::Point,double> >& points,
                         double distToNext,
-                        const RotoStrokeItem* stroke,
+                        const boost::shared_ptr<RotoDrawableItem>& stroke,
                         bool doBuildup,
                         double opacity, 
                         int time,
                         unsigned int mipmapLevel);
-    void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, int time, unsigned int mipmapLevel);
     

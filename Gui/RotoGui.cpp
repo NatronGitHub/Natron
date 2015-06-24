@@ -940,6 +940,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->paintBrushTool->setDown(!hasShapes && effectIsPaint);
     QKeySequence brushPaintShortcut(Qt::Key_N);
     QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
+    createToolAction(_imp->paintBrushTool, QIcon(), tr("Open Bezier"), tr("Freehand painting based on bezier curves"), brushPaintShortcut, eRotoToolOpenBezier);
     _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
     _imp->paintBrushTool->setDefaultAction(brushPaintAct);
     _imp->allTools.push_back(_imp->paintBrushTool);
@@ -1186,7 +1187,7 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     }
     if (actionRole == eRotoRolePaintBrush || actionRole == eRotoRoleCloneBrush || actionRole == eRotoRoleMergeBrush ||
         actionRole == eRotoRoleEffectBrush) {
-        if ((RotoToolEnum)data.x() == eRotoToolSolidBrush) {
+        if ((RotoToolEnum)data.x() == eRotoToolSolidBrush || (RotoToolEnum)data.x() == eRotoToolOpenBezier) {
             _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeOver);
         } else if ((RotoToolEnum)data.x() == eRotoToolBurn) {
             _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeColorBurn);
@@ -1217,9 +1218,13 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     _imp->rotoData->selectedCpsBbox.setTopRight( QPointF(0,0) );
 
     ///clear all selection if we were building a new bezier
-    if ( (previousRole == eRotoRoleBezierEdition) && (_imp->selectedTool == eRotoToolDrawBezier) && _imp->rotoData->builtBezier &&
+    if ( (previousRole == eRotoRoleBezierEdition) &&
+        (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) &&
+        _imp->rotoData->builtBezier &&
          ( (RotoToolEnum)data.x() != _imp->selectedTool ) ) {
-        _imp->rotoData->builtBezier->setCurveFinished(true);
+        if (_imp->selectedTool != eRotoToolDrawBezier) {
+            _imp->rotoData->builtBezier->setCurveFinished(true);
+        }
         _imp->clearSelection();
     }
 
@@ -1699,7 +1704,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         } else if ( isFeatherVisible() ) {
                             ///if the feather point is identical to the control point
                             ///draw a small hint line that the user can drag to move the feather point
-                            if ( (_imp->selectedTool == eRotoToolSelectAll) || (_imp->selectedTool == eRotoToolSelectFeatherPoints) ) {
+                            if ( !isBezier->isOpenBezier() && (_imp->selectedTool == eRotoToolSelectAll || _imp->selectedTool == eRotoToolSelectFeatherPoints) ) {
                                 int cpCount = (*it2)->getBezier()->getControlPointsCount();
                                 if (cpCount > 1) {
                                     Natron::Point controlPoint;
@@ -1757,7 +1762,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
             (_imp->selectedRole == _imp->mergeBrushTool ||
              _imp->selectedRole == _imp->effectBrushTool ||
              _imp->selectedRole == _imp->paintBrushTool ||
-             _imp->selectedRole == _imp->cloneBrushTool)) {
+             _imp->selectedRole == _imp->cloneBrushTool) &&
+            _imp->selectedTool != eRotoToolOpenBezier) {
             
             QPoint widgetPos = _imp->viewer->mapToGlobal(_imp->viewer->mapFromParent(_imp->viewer->pos()));
             QRect r(widgetPos.x(),widgetPos.y(),_imp->viewer->width(),_imp->viewer->height());
@@ -2568,7 +2574,8 @@ RotoGui::penDown(double /*scaleX*/,
                 didSomething = true;
             }
             break;
-        case eRotoToolDrawBezier: {
+        case eRotoToolDrawBezier:
+        case eRotoToolOpenBezier: {
             if ( _imp->rotoData->builtBezier && _imp->rotoData->builtBezier->isCurveFinished() ) {
                 _imp->rotoData->builtBezier.reset();
                 _imp->clearSelection();
@@ -2603,7 +2610,9 @@ RotoGui::penDown(double /*scaleX*/,
                     }
                 }
             }
-            MakeBezierUndoCommand* cmd = new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,true,pos.x(),pos.y(),time);
+            
+            bool isOpenBezier = _imp->selectedTool == eRotoToolOpenBezier;
+            MakeBezierUndoCommand* cmd = new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,isOpenBezier,true,pos.x(),pos.y(),time);
             pushUndoCommand(cmd);
             _imp->rotoData->builtBezier = cmd->getCurve();
             assert(_imp->rotoData->builtBezier);
@@ -2897,7 +2906,8 @@ RotoGui::penMotion(double /*scaleX*/,
     };  break;
     case eEventStateBuildingBezierControlPointTangent: {
         assert(_imp->rotoData->builtBezier);
-        pushUndoCommand( new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,false,dx,dy,time) );
+        bool isOpenBezier = _imp->selectedTool == eRotoToolOpenBezier;
+        pushUndoCommand( new MakeBezierUndoCommand(this,_imp->rotoData->builtBezier,isOpenBezier, false,dx,dy,time) );
         break;
     }
     case eEventStateBuildingEllipse: {
@@ -3351,9 +3361,12 @@ RotoGui::keyDown(double /*scaleX*/,
             pushUndoCommand( new RemoveCurveUndoCommand(this,_imp->rotoData->selectedItems) );
             didSomething = true;
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
-        if ( (_imp->selectedTool == eRotoToolDrawBezier) && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished() ) {
-            pushUndoCommand( new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier) );
+    } else if ( key == Qt::Key_Escape || isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
+        if ( (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished() ) {
+            
+            if (!_imp->rotoData->builtBezier->isOpenBezier()) {
+                pushUndoCommand( new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier) );
+            }
             _imp->rotoData->builtBezier.reset();
             _imp->rotoData->selectedCps.clear();
             onToolActionTriggered(_imp->selectAllAction);
@@ -4197,7 +4210,6 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
     QPoint pos = QCursor::pos();
     Natron::Menu menu(_imp->viewer);
     
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(curve.get());
 
 
     //menu.setFont( QFont(appFont,appFontSize) );
@@ -4211,34 +4223,36 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
                                                              kShortcutIDActionRotoDelete,
                                                              kShortcutDescActionRotoDelete,&menu);
     menu.addAction(deleteCurve);
-
-    ActionWithShortcut* openCloseCurve = new ActionWithShortcut(kShortcutGroupRoto,
-                                                                kShortcutIDActionRotoCloseBezier,
-                                                                kShortcutDescActionRotoCloseBezier
-                                                                ,&menu);
-    openCloseCurve->setEnabled(!isStroke);
-    menu.addAction(openCloseCurve);
-
+    
+    ActionWithShortcut* openCloseCurve = 0;
+    if (!curve->isOpenBezier()) {
+        openCloseCurve = new ActionWithShortcut(kShortcutGroupRoto,
+                                                                    kShortcutIDActionRotoCloseBezier,
+                                                                    kShortcutDescActionRotoCloseBezier
+                                                                    ,&menu);
+        menu.addAction(openCloseCurve);
+    }
+    
     ActionWithShortcut* smoothAction = new ActionWithShortcut(kShortcutGroupRoto,
                                                               kShortcutIDActionRotoSmooth,
                                                               kShortcutDescActionRotoSmooth
                                                               ,&menu);
-    smoothAction->setEnabled(!isStroke);
     menu.addAction(smoothAction);
 
     ActionWithShortcut* cuspAction = new ActionWithShortcut(kShortcutGroupRoto,
                                                             kShortcutIDActionRotoCuspBezier,
                                                             kShortcutDescActionRotoCuspBezier
                                                             ,&menu);
-    cuspAction->setEnabled(!isStroke);
     menu.addAction(cuspAction);
-
-    ActionWithShortcut* removeFeather = new ActionWithShortcut(kShortcutGroupRoto,
-                                                               kShortcutIDActionRotoRemoveFeather,
-                                                               kShortcutDescActionRotoRemoveFeather
-                                                               ,&menu);
-    removeFeather->setEnabled(!isStroke);
-    menu.addAction(removeFeather);
+    
+    ActionWithShortcut* removeFeather = 0;
+    if (!curve->isOpenBezier()) {
+        removeFeather = new ActionWithShortcut(kShortcutGroupRoto,
+                                                                   kShortcutIDActionRotoRemoveFeather,
+                                                                   kShortcutDescActionRotoRemoveFeather
+                                                                   ,&menu);
+        menu.addAction(removeFeather);
+    }
     
     ActionWithShortcut* lockShape = new ActionWithShortcut(kShortcutGroupRoto,
                                                                kShortcutIDActionRotoLockCurve,
@@ -4251,13 +4265,11 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
                                                         kShortcutIDActionRotoLinkToTrack,
                                                         kShortcutDescActionRotoLinkToTrack
                                                         ,&menu);
-    linkTo->setEnabled(!isStroke);
     menu.addAction(linkTo);
     ActionWithShortcut* unLinkFrom = new ActionWithShortcut(kShortcutGroupRoto,
                                                             kShortcutIDActionRotoUnlinkToTrack,
                                                             kShortcutDescActionRotoUnlinkToTrack
                                                  ,&menu);
-    unLinkFrom->setEnabled(!isStroke);
     menu.addAction(unLinkFrom);
 
 
@@ -4280,14 +4292,14 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
         beziers.push_back(curve);
         pushUndoCommand( new RemoveCurveUndoCommand(this,beziers) );
         _imp->viewer->redraw();
-    } else if (ret == openCloseCurve) {
+    } else if (openCloseCurve && ret == openCloseCurve) {
         pushUndoCommand( new OpenCloseUndoCommand(this,curve) );
         _imp->viewer->redraw();
     } else if (ret == smoothAction) {
         smoothSelectedCurve();
     } else if (ret == cuspAction) {
         cuspSelectedCurve();
-    } else if (ret == removeFeather) {
+    } else if (removeFeather && ret == removeFeather) {
         removeFeatherForSelectedCurve();
     } else if (ret == linkTo) {
         SelectedCPs points;

@@ -350,11 +350,12 @@ bezierSegmentBboxUpdate(const BezierCP & first,
 
 void
 Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
-                            bool finished,
-                            int time,
-                            unsigned int mipMapLevel,
-                            const Transform::Matrix3x3& transform,
-                            RectD* bbox) ///< input/output
+                                    bool finished,
+                                    bool isOpenBezier,
+                                    int time,
+                                    unsigned int mipMapLevel,
+                                    const Transform::Matrix3x3& transform,
+                                    RectD* bbox) ///< input/output
 {
     if ( points.empty() ) {
         return;
@@ -378,7 +379,7 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
     }
     for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
         if ( next == points.end() ) {
-            if (!finished) {
+            if (!finished && !isOpenBezier) {
                 break;
             }
             next = points.begin();
@@ -3285,7 +3286,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
             boost::shared_ptr<RotoStrokeSerialization> s = boost::dynamic_pointer_cast<RotoStrokeSerialization>(*it);
             boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
             if (b && !s) {
-                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, boost::shared_ptr<RotoLayer>()) );
+                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, boost::shared_ptr<RotoLayer>(), false) );
                 bezier->createNodes(false);
                 bezier->load(*b);
                 if (!bezier->getParentLayer()) {
@@ -3450,9 +3451,10 @@ enum SplineChangedReason
 
 Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const std::string & name,
-               const boost::shared_ptr<RotoLayer>& parent)
+               const boost::shared_ptr<RotoLayer>& parent,
+               bool isOpenBezier)
     : RotoDrawableItem(ctx,name,parent, false)
-      , _imp( new BezierPrivate() )
+      , _imp( new BezierPrivate(isOpenBezier) )
 {
 }
 
@@ -3460,10 +3462,16 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
 : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
-, _imp( new BezierPrivate() )
+, _imp( new BezierPrivate(false) )
 {
     clone(&other);
     setParentLayer(parent);
+}
+
+bool
+Bezier::isOpenBezier() const
+{
+    return _imp->isOpenBezier;
 }
 
 void
@@ -3508,7 +3516,9 @@ Bezier::clone(const RotoItem* other)
                 ++itF;
             }
         }
-        _imp->finished = otherBezier->_imp->finished;
+        
+        _imp->isOpenBezier = otherBezier->_imp->isOpenBezier;
+        _imp->finished = otherBezier->_imp->finished && _imp->isOpenBezier;
     }
     incrementNodesAge();
     RotoDrawableItem::clone(other);
@@ -3872,6 +3882,11 @@ Bezier::isPointOnCurve(double x,
 void
 Bezier::setCurveFinished(bool finished)
 {
+    
+    if (_imp->isOpenBezier) {
+        return;
+    }
+    
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     int time = getContext()->getTimelineCurrentTime();
@@ -4808,7 +4823,6 @@ RectD
 Bezier::getBoundingBox(int time) const
 {
     
-    std::list<Point> pts;
     RectD bbox; // a very empty bbox
 
     bbox.x1 = std::numeric_limits<double>::infinity();
@@ -4820,11 +4834,11 @@ Bezier::getBoundingBox(int time) const
     getTransformAtTime(time, &transform);
     
     QMutexLocker l(&itemMutex);
-    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, transform , &bbox);
+    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, _imp->isOpenBezier, time, 0, transform , &bbox);
     
     
-    if (useFeatherPoints()) {
-        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, transform, &bbox);
+    if (useFeatherPoints() && !_imp->isOpenBezier) {
+        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, _imp->isOpenBezier, time, 0, transform, &bbox);
         // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
         // enclosing the real bbox and close enough
         double featherDistance = getFeatherDistance(time);
@@ -4832,6 +4846,13 @@ Bezier::getBoundingBox(int time) const
         bbox.x2 += featherDistance;
         bbox.y1 -= featherDistance;
         bbox.y2 += featherDistance;
+    } else if (_imp->isOpenBezier) {
+        double brushSize = getBrushSizeKnob()->getValueAtTime(time);
+        double halfBrushSize = brushSize / 2. + 1;
+        bbox.x1 -= halfBrushSize;
+        bbox.x2 += halfBrushSize;
+        bbox.y1 -= halfBrushSize;
+        bbox.y2 += halfBrushSize;
     }
     return bbox;
 }
@@ -5193,7 +5214,7 @@ Bezier::save(RotoItemSerialization* obj) const
         QMutexLocker l(&itemMutex);
 
         s->_closed = _imp->finished;
-
+        s->_isOpenBezier = _imp->isOpenBezier;
         assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints());
 
 
@@ -5225,7 +5246,8 @@ Bezier::load(const RotoItemSerialization & obj)
     const BezierSerialization & s = dynamic_cast<const BezierSerialization &>(obj);
     {
         QMutexLocker l(&itemMutex);
-        _imp->finished = s._closed;
+        _imp->isOpenBezier = s._isOpenBezier;
+        _imp->finished = s._closed && _imp->isOpenBezier;
         
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
@@ -6578,7 +6600,8 @@ boost::shared_ptr<Bezier>
 RotoContext::makeBezier(double x,
                         double y,
                         const std::string & baseName,
-                        int time)
+                        int time,
+                        bool isOpenBezier)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -6606,7 +6629,7 @@ RotoContext::makeBezier(double x,
         }
     }
     assert(parentLayer);
-    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>()) );
+    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>(), isOpenBezier) );
     curve->createNodes();
     if (parentLayer) {
         parentLayer->insertItem(curve,0);
@@ -6680,7 +6703,7 @@ boost::shared_ptr<Bezier>
 RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, int time)
 {
     double half = diameter / 2.;
-    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName, time);
+    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName, time, false);
     if (fromCenter) {
         curve->addControlPoint(x + half,y, time);
         curve->addControlPoint(x,y + half, time);
@@ -6721,7 +6744,7 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, int 
 boost::shared_ptr<Bezier>
 RotoContext::makeSquare(double x,double y,double initialSize,int time)
 {
-    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time);
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time, false);
     curve->addControlPoint(x + initialSize,y, time);
     curve->addControlPoint(x + initialSize,y - initialSize, time);
     curve->addControlPoint(x,y - initialSize, time);
@@ -6934,7 +6957,7 @@ const
             Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
             if (isBezier && !isStroke) {
-                if (isBezier->isActivated(time) && isBezier->isCurveFinished() && isBezier->getControlPointsCount() > 1) {
+                if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
                     RectD splineRoD = isBezier->getBoundingBox(time);
                     if ( splineRoD.isNull() ) {
                         continue;
@@ -7169,7 +7192,11 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
-                ++nbUnlockedBeziers;
+                if (isBezier->isOpenBezier()) {
+                    ++nbUnlockedStrokes;
+                } else {
+                    ++nbUnlockedBeziers;
+                }
             } else if (isStroke) {
                 ++nbUnlockedStrokes;
             }
@@ -7191,7 +7218,11 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
     if (isDrawable) {
         if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
-            ++nbUnlockedBeziers;
+            if (isBezier->isOpenBezier()) {
+                ++nbUnlockedStrokes;
+            } else {
+                ++nbUnlockedBeziers;
+            }
             ++nbStrokeWithoutCloneFunctions;
             ++nbStrokeWithoutStrength;
         } else if (isStroke) {
@@ -8426,7 +8457,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     double opacity = stroke->getOpacity(time);
-    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), doBuildUp, opacity, time, mipmapLevel);
+    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
     
     stroke->updatePatternCache(dotPatterns);
     
@@ -8476,11 +8507,20 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     std::list<std::pair<Natron::Point,double> > points;
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
-    
+    Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
     if (isStroke) {
         isStroke->evaluateStroke(mipmapLevel, time, &points, &bbox);
     } else {
-        bbox = stroke->getBoundingBox(time);
+        assert(isBezier);
+        bbox = isBezier->getBoundingBox(time);
+        if (isBezier->isOpenBezier()) {
+            std::list<Point> decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &decastelJauPolygon, 0);
+            for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it!=decastelJauPolygon.end(); ++it) {
+                points.push_back(std::make_pair(*it, 1.));
+            }
+        }
+        
     }
     
     RectI pixelRod;
@@ -8613,12 +8653,12 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
 
     double opacity = stroke->getOpacity(time);
 
-    if (isStroke) {
+    if (isStroke || isBezier->isOpenBezier()) {
         std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(cr, dotPatterns, points, 0, isStroke, doBuildUp, opacity, time, mipmapLevel);
+        _imp->renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -8775,7 +8815,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                                  std::vector<cairo_pattern_t*>& dotPatterns,
                                  const std::list<std::pair<Point,double> >& points,
                                  double distToNext,
-                                 const RotoStrokeItem* stroke,
+                                 const boost::shared_ptr<RotoDrawableItem>&  stroke,
                                  bool doBuildup,
                                  double alpha,
                                  int time,
@@ -8891,24 +8931,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     return distToNext;
 }
 
-void
-RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
-{
-    std::list<std::pair<Point,double> > points;
 
-    stroke->evaluateStroke(mipmapLevel, time, &points);
-    std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS, (cairo_pattern_t*)0);
-    bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
-    
-    double alpha = stroke->getOpacity(time);
-    renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, alpha, time, mipmapLevel);
-    for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
-        if (dotPatterns[i]) {
-            cairo_pattern_destroy(dotPatterns[i]);
-            dotPatterns[i] = 0;
-        }
-    }
-}
 
 void
 RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,double opacity, int time, unsigned int mipmapLevel)

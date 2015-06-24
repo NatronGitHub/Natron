@@ -349,7 +349,7 @@ AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
       , _index(index)
       , _t(t)
 {
-    _oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+    _oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
     _oldCurve->clone(curve.get());
     
 }
@@ -403,7 +403,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
-    desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+    desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
     desc.oldCurve->clone(curve.get());
     _curves.push_back(desc);
 }
@@ -446,7 +446,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
             if (!isStroke) {
-                curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+                curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
             } else {
                 curveDesc.oldCurve.reset( new RotoStrokeItem(isStroke->getBrushType(),curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
             }
@@ -1187,6 +1187,7 @@ SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
 
 MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
                                              const boost::shared_ptr<Bezier> & curve,
+                                             bool isOpenBezier,
                                              bool createPoint,
                                              double dx,
                                              double dy,
@@ -1206,11 +1207,12 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
       , _dy(createPoint ? 0. : dy)
       , _time(time)
       , _lastPointAdded(-1)
+      , _isOpenBezier(isOpenBezier)
 {
     if (!_newCurve) {
         _curveNonExistant = true;
     } else {
-        _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getScriptName(),_newCurve->getParentLayer()) );
+        _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getScriptName(),_newCurve->getParentLayer(), false) );
         _oldCurve->clone(_newCurve.get());
     }
 }
@@ -1253,9 +1255,9 @@ MakeBezierUndoCommand::redo()
     if (!_firstRedoCalled) {
         if (_createdPoint) {
             if (!_newCurve) {
-                _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName,_time);
+                _newCurve = _roto->getContext()->makeBezier(_x, _y, _isOpenBezier ? kRotoOpenBezierBaseName : kRotoBezierBaseName,_time, _isOpenBezier);
                 assert(_newCurve);
-                _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer()) );
+                _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
                 _oldCurve->clone(_newCurve.get());
                 _lastPointAdded = 0;
                 _curveNonExistant = false;
@@ -1378,7 +1380,7 @@ MakeEllipseUndoCommand::redo()
     } else {
         
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time,false);
             assert(_curve);
             _curve->addControlPoint(_x + 1,_y - 1, _time);
             _curve->addControlPoint(_x,_y - 2, _time);
@@ -1519,7 +1521,7 @@ MakeRectangleUndoCommand::redo()
         _roto->evaluate(true);
     } else {
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time,false);
             assert(_curve);
             _curve->addControlPoint(_x + 1,_y,_time);
             _curve->addControlPoint(_x + 1,_y - 1,_time);
@@ -1868,7 +1870,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             if (srcBezier) {
                 std::string name = getItemCopyName(roto, it->rotoItem);
                 boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),name,
-                                                           srcBezier->getParentLayer()) );
+                                                           srcBezier->getParentLayer(), false) );
                 copy->clone(srcBezier.get());
                 copy->createNodes();
                 //clone overwrittes the script name, don't forget to set it back
@@ -1934,7 +1936,7 @@ PasteItemUndoCommand::redo()
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
         if (isBezier) {
-            boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer()) );
+            boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer(), false) );
             oldBezier->createNodes();
             _oldTargetItem = oldBezier;
         } else if (isStroke) {
@@ -1987,7 +1989,7 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
     if (isBezier) {
         std::string name = getItemCopyName(roto, isBezier);
-        boost::shared_ptr<Bezier> bezierCopy( new Bezier(isBezier->getContext(),name,isBezier->getParentLayer()) );
+        boost::shared_ptr<Bezier> bezierCopy( new Bezier(isBezier->getContext(),name,isBezier->getParentLayer(), false) );
         bezierCopy->createNodes();
         _item.duplicatedItem = bezierCopy;
         _item.duplicatedItem->clone(isBezier.get());
