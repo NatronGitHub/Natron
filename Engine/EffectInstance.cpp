@@ -4347,6 +4347,9 @@ EffectInstance::renderHandler(RenderArgs & args,
                     
                     if (renderFullScaleThenDownscale && renderUseScaleOneInputs && (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel()) {
                         
+                        ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                        it->second.fullscaleImage->fillZero(downscaledRectToRender);
+                        
                         ///Convert format first if needed
                         ImagePtr sourceImage;
                         if (it->second.fullscaleImage->getComponents() != (*idIt)->getComponents() || it->second.fullscaleImage->getBitDepth() != (*idIt)->getBitDepth()) {
@@ -4369,6 +4372,10 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.fullscaleImage->pasteFrom(*inputPlane,downscaledRectToRender, false);
                         it->second.fullscaleImage->markForRendered(downscaledRectToRender);
                     } else {
+                        
+                        ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                        it->second.downscaleImage->fillZero(downscaledRectToRender);
+                        
                         ///Convert format if needed or copy
                         if (it->second.downscaleImage->getComponents() != (*idIt)->getComponents() || it->second.downscaleImage->getBitDepth() != (*idIt)->getBitDepth()) {
                             Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth((*idIt)->getBitDepth());

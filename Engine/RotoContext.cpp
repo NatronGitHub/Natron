@@ -2481,7 +2481,6 @@ RotoDrawableItem::refreshNodesConnections()
             _imp->mergeNode->disconnectInput(0);
             if (upstreamNode) {
                 _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                assert(_imp->mergeNode->getInput(0) == upstreamNode);
             }
             connectionChanged = true;
         }
