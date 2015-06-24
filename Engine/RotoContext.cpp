@@ -6607,10 +6607,10 @@ RotoContext::makeBezier(double x,
     }
     assert(parentLayer);
     boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>()) );
+    curve->createNodes();
     if (parentLayer) {
         parentLayer->insertItem(curve,0);
     }
-    curve->createNodes();
     _imp->lastInsertedItem = curve;
 
     Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
