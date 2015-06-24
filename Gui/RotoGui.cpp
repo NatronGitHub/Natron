@@ -3246,7 +3246,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     } else {
         std::string name = context->generateUniqueName(itemName);
         rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
-        rotoData->strokeBeingPaint->createNodes();
+        rotoData->strokeBeingPaint->createNodes(false);
     }
     assert(rotoData->strokeBeingPaint);
     boost::shared_ptr<Color_Knob> colorKnob = rotoData->strokeBeingPaint->getColorKnob();

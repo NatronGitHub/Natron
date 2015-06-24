@@ -1422,6 +1422,10 @@ RotoItem::setGloballyActivated(bool a,
     }
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
     if (c) {
+        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
+        if (isDrawable) {
+            isDrawable->incrementNodesAge();
+        }
         c->evaluateChange();
     }
 }
@@ -1826,7 +1830,7 @@ RotoDrawableItem::addKnob(const boost::shared_ptr<KnobI>& knob)
 }
 
 void
-RotoDrawableItem::createNodes()
+RotoDrawableItem::createNodes(bool connectNodes)
 {
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
@@ -2049,7 +2053,10 @@ RotoDrawableItem::createNodes()
     }
     
     onRotoOutputChannelsChanged();
-    refreshNodesConnections();
+    
+    if (connectNodes) {
+        refreshNodesConnections();
+    }
 
 }
 
@@ -3278,8 +3285,8 @@ RotoLayer::load(const RotoItemSerialization &obj)
             boost::shared_ptr<RotoStrokeSerialization> s = boost::dynamic_pointer_cast<RotoStrokeSerialization>(*it);
             boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
             if (b && !s) {
-                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, this_layer) );
-                bezier->createNodes();
+                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, boost::shared_ptr<RotoLayer>()) );
+                bezier->createNodes(false);
                 bezier->load(*b);
                 if (!bezier->getParentLayer()) {
                     bezier->setParentLayer(this_layer);
@@ -3287,20 +3294,18 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             }
-#ifdef ROTO_ENABLE_PAINT
             else if (s) {
                 boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
-                stroke->createNodes();
+                stroke->createNodes(false);
                 stroke->load(*s);
                 if (!stroke->getParentLayer()) {
                     stroke->setParentLayer(this_layer);
                 }
-                getContext()->incrementAge();
+                
 
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
             }
-#endif
             else if (l) {
                 boost::shared_ptr<RotoLayer> layer( new RotoLayer(getContext(), kRotoLayerBaseName, this_layer) );
                 _imp->items.push_back(layer);
@@ -3311,6 +3316,8 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 }
 
             }
+            //Rotopaint tree nodes use the roto context age for their script-name, make sure they have a different one
+            getContext()->incrementAge();
         }
     }
 }
@@ -9672,11 +9679,11 @@ static void refreshLayerRotoPaintTree(RotoLayer* layer)
     const RotoItems& items = layer->getItems();
     for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
         RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->get());
         if (isLayer) {
             refreshLayerRotoPaintTree(isLayer);
-        } else if (isStroke) {
-            isStroke->refreshNodesConnections();
+        } else if (isDrawable) {
+            isDrawable->refreshNodesConnections();
         }
     }
 }

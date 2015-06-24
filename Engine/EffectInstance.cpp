@@ -807,6 +807,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          const TimeLine* timeline,
                                          bool isAnalysis,
                                          bool isDuringPaintStrokeCreation,
+                                         const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                          Natron::RenderSafetyEnum currentThreadSafety)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
@@ -825,9 +826,23 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isAnalysis = isAnalysis;
     args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
     args.currentThreadSafety = currentThreadSafety;
-    
+    args.rotoPaintNodes = rotoPaintNodes;
     ++args.validArgs;
     
+}
+
+bool
+EffectInstance::getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
+{
+    if (!_imp->frameRenderArgs.hasLocalData()) {
+        return false;
+    }
+    const ParallelRenderArgs& tls = _imp->frameRenderArgs.localData();
+    if (!tls.validArgs) {
+        return false;
+    }
+    *nodes = tls.rotoPaintNodes;
+    return true;
 }
 
 void
@@ -856,6 +871,10 @@ EffectInstance::invalidateParallelRenderArgsTLS()
         --args.validArgs;
         if (args.validArgs < 0) {
             args.validArgs = 0;
+        }
+        
+        for (NodeList::iterator it = args.rotoPaintNodes.begin(); it!=args.rotoPaintNodes.end(); ++it) {
+            (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
@@ -2405,7 +2424,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (identity) {
             ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
-                return eRenderRoIRetCodeFailed;
+                return eRenderRoIRetCodeOk;
             } else if (inputNbIdentity == -2) {
                 // there was at least one crash if you set the first frame to a negative value
                 assert(inputTimeIdentity != args.time);
@@ -4347,8 +4366,10 @@ EffectInstance::renderHandler(RenderArgs & args,
                     
                     if (renderFullScaleThenDownscale && renderUseScaleOneInputs && (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel()) {
                         
-                        ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
-                        it->second.fullscaleImage->fillZero(downscaledRectToRender);
+                        if (!(*idIt)->getBounds().contains(downscaledRectToRender)) {
+                            ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                            it->second.fullscaleImage->fillZero(downscaledRectToRender);
+                        }
                         
                         ///Convert format first if needed
                         ImagePtr sourceImage;
@@ -4373,8 +4394,10 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.fullscaleImage->markForRendered(downscaledRectToRender);
                     } else {
                         
-                        ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
-                        it->second.downscaleImage->fillZero(downscaledRectToRender);
+                        if (!(*idIt)->getBounds().contains(downscaledRectToRender)) {
+                            ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                            it->second.downscaleImage->fillZero(downscaledRectToRender);
+                        }
                         
                         ///Convert format if needed or copy
                         if (it->second.downscaleImage->getComponents() != (*idIt)->getComponents() || it->second.downscaleImage->getBitDepth() != (*idIt)->getBitDepth()) {
@@ -6178,6 +6201,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  dynamic_cast<OutputEffectInstance*>(this),
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),
+                                                 NodePtr(),
                                                  true);
 
         RECURSIVE_ACTION();

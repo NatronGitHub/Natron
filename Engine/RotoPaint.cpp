@@ -230,41 +230,6 @@ RotoPaint::isIdentity(SequenceTime time,
     return false;
 }
 
-class RotoPaintParallelArgsSetter
-{
-    NodeList _nodes;
-public:
-    
-    RotoPaintParallelArgsSetter(const NodeList& nodes,
-                                int time,
-                                int view,
-                                bool isRenderUserInteraction,
-                                bool isSequential,
-                                bool canAbort,
-                                U64 renderAge,
-                                Natron::OutputEffectInstance* renderRequester,
-                                int textureIndex,
-                                const TimeLine* timeline,
-                                bool isAnalysis)
-    : _nodes(nodes)
-    {
-        
-        for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
-            assert(liveInstance);
-            Natron::RenderSafetyEnum safety = liveInstance->renderThreadSafety();
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, false, safety);
-        }
-
-    }
-    
-    ~RotoPaintParallelArgsSetter()
-    {
-        for (NodeList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        }
-    }
-};
 
 Natron::StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
@@ -283,6 +248,9 @@ RotoPaint::render(const RenderActionArgs& args)
          plane != args.outputPlanes.end(); ++plane) {
         neededComps.push_back(plane->first);
     }
+    
+    
+    
     if (items.empty()) {
         
         RectI bgImgRoI;
@@ -302,31 +270,15 @@ RotoPaint::render(const RenderActionArgs& args)
         
         
         NodeList rotoPaintNodes;
-        roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+        {
+            bool ok = getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
+            assert(ok);
+        }
         
         const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
         assert(firstStrokeItem);
         boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-        
-        bool duringPaintStroke = bottomMerge->isDuringPaintStrokeCreation();
-        
-        boost::shared_ptr<RotoPaintParallelArgsSetter> frameArgs;
-        if (!duringPaintStroke) {
-            //In the other case this is handled by the viewer TLS
-            frameArgs.reset(new RotoPaintParallelArgsSetter(rotoPaintNodes,
-                                                            args.time,
-                                                            args.view,
-                                                            args.isRenderResponseToUserInteraction,
-                                                            args.isSequentialRender,
-                                                            false,
-                                                            0, //render Age
-                                                            0, // viewer requester
-                                                            0, //texture index
-                                                            getApp()->getTimeLine().get(),
-                                                            false ));
-        }
-        
-        
+                
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
 
@@ -360,15 +312,35 @@ RotoPaint::render(const RenderActionArgs& args)
         }
         assert(rotoPaintImages.size() == args.outputPlanes.size());
         
+        RectI bgImgRoI;
+        ImagePtr bgImg;
+        
+        bool triedGetImage = false;
+        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+        
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
             
+            if (!(*rotoImagesIt)->getBounds().contains(args.roi)) {
+                if (!bgImg) {
+                    if (!triedGetImage) {
+                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+                        triedGetImage = true;
+                    }
+                }
+                ///We first fill with the bg image because the bounds of the image produced by the last merge of the rotopaint tree
+                ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
+                ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
+                if (bgImg) {
+                    plane->second->pasteFrom(*bgImg, args.roi, false);
+                } else {
+                    plane->second->fillZero(args.roi);
+                }
+            }
+           
             
-            ///We first fill with black and transparant because the bounds of the image produced by the last merge of the rotopaint tree
-            ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
-            ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
-            plane->second->fillZero(args.roi);
+           
             if ((*rotoImagesIt)->getComponents() != plane->second->getComponents()) {
                 
                 (*rotoImagesIt)->convertToFormat(args.roi,

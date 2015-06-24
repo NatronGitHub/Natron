@@ -138,6 +138,9 @@ struct ParallelRenderArgs
     ///If true, the attached paint stroke is being drawn currently
     bool isDuringPaintStrokeCreation;
     
+    ///List of the nodes in the rotopaint tree
+    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+    
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
     Natron::RenderSafetyEnum currentThreadSafety;
@@ -157,6 +160,7 @@ struct ParallelRenderArgs
     , textureIndex(0)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
+    , rotoPaintNodes()
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     {
         
@@ -628,6 +632,7 @@ public:
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
+                                  const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
@@ -739,6 +744,8 @@ public:
     void getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const;
 
     void addThreadLocalInputImageTempPointer(int inputNb,const boost::shared_ptr<Natron::Image> & img);
+
+    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)

@@ -54,8 +54,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
-#define ROTO_ENABLE_PAINT
-
 namespace Natron {
 class Image;
 class ImageComponents;
@@ -388,7 +386,7 @@ public:
 
     virtual ~RotoDrawableItem();
     
-    void createNodes();
+    void createNodes(bool connectNodes = true);
     
     void incrementNodesAge();
     

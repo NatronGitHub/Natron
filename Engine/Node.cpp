@@ -4012,6 +4012,7 @@ Node::makePreviewImage(SequenceTime time,
                                              0, // viewer requester
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
+                                             NodePtr(),
                                              false);
     
     std::list<ImageComponents> requestedComps;
