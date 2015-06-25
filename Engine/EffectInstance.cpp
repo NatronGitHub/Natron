@@ -1189,7 +1189,11 @@ EffectInstance::getImage(int inputNb,
             ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
             return ImagePtr();
         }
-        channelForMask = getMaskChannel(inputNb,&maskComps);
+        NodePtr maskInput;
+        channelForMask = getMaskChannel(inputNb,&maskComps,&maskInput);
+        if (maskInput) {
+            n = maskInput->getLiveInstance();
+        }
         
         //Invalid mask
         if (channelForMask == -1 || maskComps.getNumComponents() == 0) {
@@ -3567,11 +3571,12 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         
         Natron::ImageComponents maskComps;
         int channelForAlphaInput;
+        NodePtr maskInput;
         if (inputIsMask) {
             if (!isMaskEnabled(it->first)) {
                 continue;
             }
-            channelForAlphaInput = getMaskChannel(it->first,&maskComps);
+            channelForAlphaInput = getMaskChannel(it->first,&maskComps,&maskInput);
         } else {
             channelForAlphaInput = -1;
         }
@@ -3592,6 +3597,11 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
             inputEffect = foundReroute->second->getInput(it->first);
         } else {
             inputEffect = getInput(it->first);
+        }
+        
+        //Redirect the mask input
+        if (maskInput) {
+            inputEffect = maskInput->getLiveInstance();
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
@@ -5648,6 +5658,57 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
 }
 
 void
+EffectInstance::getNonMaskInputsAvailableComponents(SequenceTime time,
+                                                    int view,
+                                                    bool preferExistingComponents,
+                                                    ComponentsAvailableMap* comps,
+                                                    std::list<Natron::EffectInstance*>* markedNodes)
+{
+    
+    NodePtr node  = getNode();
+    if (!node) {
+        return;
+    }
+    int preferredInput = node->getPreferredInput();
+    
+    //Call recursively on all inputs which are not masks
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        if (!isInputMask(i) && !isInputRotoBrush(i)) {
+            EffectInstance* input = getInput(i);
+            if (input) {
+                ComponentsAvailableMap inputAvailComps;
+                input->getComponentsAvailableRecursive(time, view, &inputAvailComps, markedNodes);
+                for (ComponentsAvailableMap::iterator it = inputAvailComps.begin(); it!=inputAvailComps.end(); ++it) {
+                    //If the component is already present in the 'comps' map, only add it if we are the preferred input
+                    ComponentsAvailableMap::iterator colorMatch = comps->end();
+                    bool found = false;
+                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                        if (it2->first == it->first) {
+                            if (i == preferredInput && !preferExistingComponents) {
+                                it2->second = node;
+                            }
+                            found = true;
+                            break;
+                        } else if (it2->first.isColorPlane()) {
+                            colorMatch = it2;
+                        }
+                    }
+                    if (!found) {
+                        if (colorMatch != comps->end() && it->first.isColorPlane()) {
+                            //we found another color components type, skip
+                            continue;
+                        } else {
+                            comps->insert(*it);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void
 EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, ComponentsAvailableMap* comps,
                                                 std::list<Natron::EffectInstance*>* markedNodes)
 {
@@ -5692,16 +5753,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         }
         
         if (doHeuristicForPassThrough) {
-            //Call recursively on all inputs which are not masks
-            int maxInputs = getMaxInputCount();
-            for (int i = 0; i < maxInputs; ++i) {
-                if (!isInputMask(i) && !isInputRotoBrush(i)) {
-                    EffectInstance* input = getInput(i);
-                    if (input) {
-                        input->getComponentsAvailableRecursive(time, view, comps, markedNodes);
-                    }
-                }
-            }
+            
+            getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
             
         } else {
             if (ptInput) {
@@ -5727,8 +5780,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     if (foundOutput != neededComps.end()) {
         
         ///Foreach component produced by the node at the given (view,time),  try
-        ///to add it to the components available. Since we are recursing upstream, it is probably
-        ///already in there, in which case we ignore it and keep the one from below.
+        ///to add it to the components available. Since we already handled upstream nodes, it is probably
+        ///already in there, in which case we mark that this node is producing the component instead
         for (std::vector<Natron::ImageComponents>::iterator it = foundOutput->second.begin();
              it != foundOutput->second.end(); ++it) {
             
@@ -5760,10 +5813,11 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
             }
             
-            //If the component already exists from below in the tree, do not add it
+            
             if (alreadyExisting == comps->end()) {
                 comps->insert(std::make_pair(*it, node));
             } else {
+                //If the component already exists from upstream in the tree, mark that we produce it instead
                 alreadyExisting->second = node;
             }
         }
@@ -5827,6 +5881,12 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     
     
     
+}
+
+void
+EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes)
+{
+    getComponentsAvailableRecursive(time, 0, comps, markedNodes);
 }
 
 void
@@ -5983,7 +6043,8 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 } else if (isInputMask(i) && !isInputRotoBrush(i)) {
                     //Use mask channel selector
                     ImageComponents maskComp;
-                    int channelMask = getNode()->getMaskChannel(i, &maskComp);
+                    NodePtr maskInput;
+                    int channelMask = getNode()->getMaskChannel(i, &maskComp,&maskInput);
                     if (channelMask != -1 && maskComp.getNumComponents() > 0) {
                         std::vector<ImageComponents> compVec;
                         compVec.push_back(maskComp);
@@ -6008,9 +6069,9 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
 }
 
 int
-EffectInstance::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
+EffectInstance::getMaskChannel(int inputNb,Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
 {
-    return getNode()->getMaskChannel(inputNb,comps);
+    return getNode()->getMaskChannel(inputNb,comps,maskInput);
 }
 
 bool

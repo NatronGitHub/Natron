@@ -135,7 +135,7 @@ namespace { // protect local classes in anonymous namespace
         
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
-        std::vector<ImageComponents> compsAvailable;
+        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsAvailable;
         
         MaskSelector()
         : enabled()
@@ -4753,26 +4753,28 @@ Node::findClosestSupportedComponents(int inputNb,
 
 
 int
-Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
+Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
         int index =  it->second.channel.lock()->getValue();
         if (index == 0) {
             *comps = ImageComponents::getNoneComponents();
+            maskInput->reset();
             return -1;
         } else {
             index -= 1; // None choice
             QMutexLocker locker(&it->second.compsMutex);
             int k = 0;
             for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
-                if (index >= k && index < (it->second.compsAvailable[i].getNumComponents() + k)) {
+                if (index >= k && index < (it->second.compsAvailable[i].first.getNumComponents() + k)) {
                     int compIndex = index - k;
                     assert(compIndex >= 0 && compIndex <= 3);
-                    *comps = it->second.compsAvailable[i];
+                    *comps = it->second.compsAvailable[i].first;
+                    *maskInput = it->second.compsAvailable[i].second.lock();
                     return compIndex;
                 }
-                k += it->second.compsAvailable[i].getNumComponents();
+                k += it->second.compsAvailable[i].first.getNumComponents();
             }
             
         }
@@ -5389,7 +5391,8 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     assert(!_imp->liveInstance->isMultiPlanar());
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
-    int chanIndex = getMaskChannel(inputNb,layer);
+    NodePtr maskInput;
+    int chanIndex = getMaskChannel(inputNb,layer,&maskInput);
     bool hasChannelSelector = true;
     if (chanIndex != -1) {
         
@@ -6506,6 +6509,8 @@ Node::refreshChannelSelectors(bool setValues)
     }
     _imp->liveInstance->setComponentsAvailableDirty(true);
     
+    int time = getApp()->getTimeLine()->currentFrame();
+    
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
@@ -6538,7 +6543,7 @@ Node::refreshChannelSelectors(bool setValues)
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable);
             {
                 QMutexLocker k(&it->second.compsMutex);
                 it->second.compsAvailable = compsAvailable;
@@ -6660,40 +6665,45 @@ Node::refreshChannelSelectors(bool setValues)
         choices.push_back("None");
         bool gotColor = false;
         int alphaIndex = -1;
+        EffectInstance::ComponentsAvailableMap compsAvailable;
+        std::list<EffectInstance*> markedNodes;
         if (node) {
-            EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
-            
-            std::vector<ImageComponents> compsOrdered;
-            for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
-                if (comp->first.isColorPlane()) {
-                    compsOrdered.insert(compsOrdered.begin(), comp->first);
-                } else {
-                    compsOrdered.push_back(comp->first);
-                }
-            }
-            {
-                
-                QMutexLocker k(&it->second.compsMutex);
-                it->second.compsAvailable = compsOrdered;
-            }
-            for (std::vector<ImageComponents>::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
-                
-                const std::vector<std::string>& channels = it2->getComponentsNames();
-                const std::string& layerName = it2->isColorPlane() ? it2->getComponentsGlobalName() : it2->getLayerName();
-                for (std::size_t i = 0; i < channels.size(); ++i) {
-                    choices.push_back(layerName + "." + channels[i]);
-                }
-                if (it2->isColorPlane()) {
-                    if (channels.size() == 1 || channels.size() == 4) {
-                        alphaIndex = choices.size() - 1;
-                    } else {
-                        alphaIndex = 0;
-                    }
-                    gotColor = true;
-                }
+            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable,&markedNodes);
+        }
+        
+        ///Also inject in masks available components from all non mask inputs
+        _imp->liveInstance->getNonMaskInputsAvailableComponents(time, 0, true, &compsAvailable, &markedNodes);
+        
+        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsOrdered;
+        for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
+            if (comp->first.isColorPlane()) {
+                compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
+            } else {
+                compsOrdered.push_back(*comp);
             }
         }
+        {
+            
+            QMutexLocker k(&it->second.compsMutex);
+            it->second.compsAvailable = compsOrdered;
+        }
+        for (std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
+            
+            const std::vector<std::string>& channels = it2->first.getComponentsNames();
+            const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                choices.push_back(layerName + "." + channels[i]);
+            }
+            if (it2->first.isColorPlane()) {
+                if (channels.size() == 1 || channels.size() == 4) {
+                    alphaIndex = choices.size() - 1;
+                } else {
+                    alphaIndex = 0;
+                }
+                gotColor = true;
+            }
+        }
+        
         
         if (!gotColor) {
             std::vector<std::string>::iterator pos = choices.begin();

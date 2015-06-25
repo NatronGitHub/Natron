@@ -454,7 +454,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, Natron::ImageComponents* comps) const;
+    int getMaskChannel(int inputNb, Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -1357,6 +1357,7 @@ public:
     * @brief Returns the components available on each input for this effect at the given time.
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
+    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes) ;
 
 
     /**
@@ -1386,6 +1387,11 @@ public:
     **/
     virtual bool isHostMixingEnabled() const { return false; }
 
+    void getNonMaskInputsAvailableComponents(SequenceTime time,
+                                             int view,
+                                             bool preferExistingComponents,
+                                             ComponentsAvailableMap* comps,
+                                             std::list<Natron::EffectInstance*>* markedNodes);
 
 private:
 

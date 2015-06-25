@@ -296,7 +296,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb,Natron::ImageComponents* comps) const;
+    int getMaskChannel(int inputNb,Natron::ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
