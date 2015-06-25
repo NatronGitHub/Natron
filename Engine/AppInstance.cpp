@@ -415,7 +415,7 @@ AppInstance::load(const CLArgs& cl)
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
-        
+
         QFileInfo info(cl.getFilename());
         if (!info.exists()) {
             throw std::invalid_argument(tr("Specified file does not exist").toStdString());
@@ -430,7 +430,6 @@ AppInstance::load(const CLArgs& cl)
             }
             
             getWritersWorkForCL(cl, writersWork);
-            startWritersRendering(writersWork);
 
         } else if (info.suffix() == "py") {
             

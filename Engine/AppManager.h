@@ -96,8 +96,12 @@ public:
     CLArgs();
     
     CLArgs(int& argc,char* argv[],bool forceBackground);
+
+    CLArgs(const QStringList& arguments, bool forceBackground);
     
     ~CLArgs();
+
+    bool operator=(const CLArgs& other) const;
     
     bool isEmpty() const;
     

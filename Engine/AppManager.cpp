@@ -393,9 +393,36 @@ CLArgs::CLArgs(int& argc,char* argv[],bool forceBackground)
     _imp->parse();
 }
 
+CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
+    : _imp(new CLArgsPrivate())
+{
+    _imp->isEmpty = false;
+    if (forceBackground) {
+        _imp->isBackground = true;
+    }
+    _imp->args = arguments;
+    _imp->parse();
+}
+
 CLArgs::~CLArgs()
 {
     
+}
+
+bool
+CLArgs::operator=(const CLArgs& other) const
+{
+    _imp->args = other._imp->args;
+    _imp->filename = other._imp->filename;
+    _imp->isPythonScript = other._imp->isPythonScript;
+    _imp->writers = other._imp->writers;
+    _imp->isBackground = other._imp->isBackground;
+    _imp->ipcPipe = other._imp->ipcPipe;
+    _imp->error = other._imp->error;
+    _imp->isInterpreterMode = other._imp->isInterpreterMode;
+    _imp->range = other._imp->range;
+    _imp->rangeSet = other._imp->rangeSet;
+    _imp->isEmpty = other._imp->isEmpty;
 }
 
 bool
@@ -842,15 +869,16 @@ AppManager::load(int &argc,
 #endif
 
     assert(argv);
-    if (!hadArgs) {
-        delete [] argv[0];
-        delete [] argv;
-    }
 
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
-    return loadInternal(cl);
+    bool ret = loadInternal(cl);
+    if (!hadArgs) {
+        delete [] argv[0];
+        delete [] argv;
+    }
+    return ret;
 }
 
 AppManager::~AppManager()
@@ -1107,7 +1135,15 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->_appType = eAppTypeGui;
     }
 
-    AppInstance* mainInstance = newAppInstance(cl);
+    //Now that the locale is set, re-parse the command line arguments because the filenames might have non UTF-8 encodings
+    CLArgs args;
+    if (!cl.getFilename().isEmpty()) {
+        args = CLArgs(qApp->arguments(), cl.isBackgroundMode());
+    } else{
+        args = cl;
+    }
+
+    AppInstance* mainInstance = newAppInstance(args);
     
     hideSplashScreen();
 
