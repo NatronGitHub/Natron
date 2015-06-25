@@ -5658,7 +5658,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
-            *comps = _imp->outputComponentsAvailable;
+            comps->insert(_imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end());
             return;
         }
     }
