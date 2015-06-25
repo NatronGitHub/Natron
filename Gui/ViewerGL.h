@@ -223,7 +223,6 @@ public Q_SLOTS:
 
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
 
-
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
     void toggleOverlays();
@@ -525,8 +524,11 @@ private:
                          const QPointF & zoomPos,
                          double zoomScreenPixelWidth,
                          double zoomScreenPixelHeight);
-
+    
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
+                                     const QPoint & widgetPos);
+
+    void updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                                      const QPoint & widgetPos,
                                      int width,
                                      int height,
@@ -534,10 +536,15 @@ private:
                                      const RectD & dispW, // in canonical coordinates
                                      int texIndex);
     void updateRectangleColorPicker();
+    void updateRectangleColorPickerInternal();
+    
+    
     /**
      * @brief X and Y are in widget coords!
      **/
     bool pickColor(double x,double y);
+    bool pickColorInternal(double x, double y);
+    
 
     static double currentTimeForEvent(QInputEvent* e);
 

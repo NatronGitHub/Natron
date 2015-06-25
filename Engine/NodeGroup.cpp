@@ -872,6 +872,7 @@ NodeCollection::setParallelRenderArgs(int time,
                                       Natron::OutputEffectInstance* renderRequester,
                                       int textureIndex,
                                       const TimeLine* timeline,
+                                      const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                                       bool isAnalysis)
 {
     NodeList nodes = getNodes();
@@ -881,10 +882,21 @@ NodeCollection::setParallelRenderArgs(int time,
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
         U64 rotoAge = (*it)->getRotoAge();
-        bool duringPaintStrokeCreation = (*it)->isDuringPaintStrokeCreation();
+        bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
         Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+        
+        NodeList rotoPaintNodes;
+        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        if (roto) {
+            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+        }
+        
         liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(),
-                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, safety);
+                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety);
+        
+        for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), (*it2)->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety());
+        }
         
         if ((*it)->isMultiInstance()) {
             
@@ -897,7 +909,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
                 Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, childSafety);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety);
                 
             }
         }
@@ -905,7 +917,7 @@ NodeCollection::setParallelRenderArgs(int time,
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, renderRequester, textureIndex, timeline, isAnalysis);
+            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, renderRequester, textureIndex, timeline, activeRotoPaintNode, isAnalysis);
         }
 
     }
@@ -947,6 +959,10 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
 {
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        
+        if (!(*it)->isActivated()) {
+            continue;
+        }
         ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
         if (args.validArgs) {
             argsMap.insert(std::make_pair(*it, args));
@@ -967,11 +983,9 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         }
         
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = (*it)->getAttachedStrokeItem();
-        if (attachedStroke) {
-            NodeList rotoPaintNodes;
-            attachedStroke->getContext()->getRotoPaintTreeNodes(&rotoPaintNodes);
-            for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+        boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
+        if (rotoContext) {
+            for (NodeList::iterator it2 = args.rotoPaintNodes.begin(); it2 != args.rotoPaintNodes.end(); ++it2) {
                 ParallelRenderArgs args = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
                 if (args.validArgs) {
                     argsMap.insert(std::make_pair(*it2, args));
@@ -998,11 +1012,12 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
                                                    Natron::OutputEffectInstance* renderRequester,
                                                    int textureIndex,
                                                    const TimeLine* timeline,
+                                                   const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                                                    bool isAnalysis)
 : collection(n)
 , argsMap()
 {
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge, renderRequester,textureIndex,timeline,isAnalysis);
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge, renderRequester,textureIndex,timeline, activeRotoPaintNode, isAnalysis);
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
@@ -2206,7 +2221,7 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
     NodeList rotos;
     NodeList newNodes;
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->isRotoNode()) {
+        if ((*it)->isRotoPaintingNode() || (*it)->isRotoNode()) {
             rotos.push_back(*it);
         } else {
             newNodes.push_back(*it);

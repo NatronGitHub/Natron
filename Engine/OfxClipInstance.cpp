@@ -400,11 +400,25 @@ OfxClipInstance::getConnected() const
             return _nodeInstance->hasOutputConnected();
         } else {
             int inputNb = getInputNb();
-            if ( isMask() && !_nodeInstance->getNode()->isMaskEnabled(inputNb) ) {
-                return false;
+            
+            Natron::EffectInstance* input = 0;
+            if (isMask()) {
+                
+                if (!_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
+                    return false;
+                }
+                ImageComponents comps;
+                boost::shared_ptr<Natron::Node> maskInput;
+                _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
+                if (maskInput) {
+                    input = maskInput->getLiveInstance();
+                }
+                
+            } else {
+                input = _nodeInstance->getInput(inputNb);
             }
 
-            return _nodeInstance->getInput(inputNb) != NULL;
+            return input != NULL;
         }
     }
 }
@@ -446,13 +460,16 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
                                                OfxRectD* ret) const
 {
     
-    boost::shared_ptr<RotoStrokeItem> attachedStroke;
+    boost::shared_ptr<RotoDrawableItem> attachedStroke;
     if (_nodeInstance) {
         assert(_nodeInstance->getNode());
-        attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
+        attachedStroke = _nodeInstance->getNode()->getAttachedRotoItem();
     }
+    
+    bool inputIsMask = isMask();
+    
     RectD rod;
-    if (attachedStroke && (isMask() || getName() == CLIP_OFX_ROTO)) {
+    if (attachedStroke && (inputIsMask || getName() == CLIP_OFX_ROTO)) {
         _nodeInstance->getNode()->getPaintStrokeRoD(time, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
@@ -1229,7 +1246,18 @@ OfxClipInstance::getAssociatedNode() const
     if (_isOutput) {
         return _nodeInstance;
     } else {
-        return _nodeInstance->getInput( getInputNb() );
+        if (isMask()) {
+            ImageComponents comps;
+            boost::shared_ptr<Natron::Node> maskInput;
+            int inputNb = getInputNb();
+            _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
+            if (maskInput) {
+                return maskInput->getLiveInstance();
+            }
+            return 0;
+        } else {
+            return _nodeInstance->getInput( getInputNb() );
+        }
     }
 }
 

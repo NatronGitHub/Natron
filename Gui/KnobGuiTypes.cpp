@@ -2291,14 +2291,15 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setContentsMargins(0, 0, 0, 0);
     colorLayout->setSpacing(0);
     
-    _colorLabel = new ColorPickerLabel(this,colorContainer);
-    _colorLabel->setToolTip( Natron::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
-                                                       "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
-                                                       "To deselect the picker left click anywhere."
-                                                       "Note that by default %1 converts to linear the color picked\n"
-                                                       "because all the processing pipeline is linear, but you can turn this off in the\n"
-                                                       "preference panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
-
+    _colorLabel = new ColorPickerLabel(knob->isSimplified() ? NULL : this,colorContainer);
+    if (!knob->isSimplified()) {
+        _colorLabel->setToolTip(Natron::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
+                                                                "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
+                                                                "To deselect the picker left click anywhere."
+                                                                "Note that by default %1 converts to linear the color picked\n"
+                                                                "because all the processing pipeline is linear, but you can turn this off in the\n"
+                                                                "preferences panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
+    }
     _colorLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
@@ -3090,7 +3091,11 @@ ColorPickerLabel::setColor(const QColor & color)
 void
 Color_KnobGui::setPickingEnabled(bool enabled)
 {
+    if (_colorLabel->isPickingEnabled() == enabled) {
+        return;
+    }
     _colorLabel->setPickingEnabled(enabled);
+    onPickingEnabled(enabled);
 }
 
 void
@@ -4431,10 +4436,10 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     layout->addWidget(_curveWidget);
 
 
-    std::vector<CurveGui*> visibleCurves;
+    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
         QString curveName = knob->getDimensionName(i).c_str();
-        KnobCurveGui* curve = new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.);
+        boost::shared_ptr<KnobCurveGui> curve(new KnobCurveGui(_curveWidget,knob->getParametricCurve(i),this,i,curveName,QColor(255,255,255),1.));
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r,g,b;
@@ -4523,7 +4528,7 @@ Parametric_KnobGui::onCurveChanged(int dimension)
 void
 Parametric_KnobGui::onItemsSelectionChanged()
 {
-    std::vector<CurveGui*> curves;
+    std::vector<boost::shared_ptr<CurveGui> > curves;
 
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
@@ -4544,7 +4549,7 @@ Parametric_KnobGui::onItemsSelectionChanged()
 }
 
 void
-Parametric_KnobGui::getSelectedCurves(std::vector<CurveGui*>* selection)
+Parametric_KnobGui::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection)
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {

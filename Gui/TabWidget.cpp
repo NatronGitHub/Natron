@@ -401,7 +401,6 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 
     /*identifying the other split*/
     getOtherSplitWidget(container,this,otherSplit);
-    assert(otherSplit);
 
     Splitter* parentSplitter = dynamic_cast<Splitter*>( container->parentWidget() );
     QWidget* parent = container->parentWidget();
@@ -425,15 +424,19 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
         parentSplitter->removeChild_mt_safe(container);
 
         /*moving the other split to the mainContainer*/
-        parentSplitter->insertChild_mt_safe(containerIndexInParentSplitter, otherSplit);
-        otherSplit->setVisible(true);
+        if (otherSplit) {
+            parentSplitter->insertChild_mt_safe(containerIndexInParentSplitter, otherSplit);
+            otherSplit->setVisible(true);
+        }
 
         /*restore the main container sizes*/
         parentSplitter->setSizes_mt_safe(mainContainerSizes);
     } else {
-        assert(parentWindow);
-        parentWindow->removeEmbeddedWidget();
-        parentWindow->setWidget(otherSplit);
+        if (otherSplit) {
+            assert(parentWindow);
+            parentWindow->removeEmbeddedWidget();
+            parentWindow->setWidget(otherSplit);
+        }
     }
 
     /*Remove the container from everywhere*/
@@ -744,18 +747,17 @@ TabWidget::splitInternal(bool autoSave,
     }
     newSplitter->setSizes_mt_safe(sizes);
 
-    if (parentIsFloating) {
-        parentIsFloating->setWidget(newSplitter);
-        parentIsFloating->resize(splitterSize);
-    } else {
-        /*The parent MUST be a splitter otherwise there's a serious bug!*/
-        assert(parentIsSplitter);
-
+    if (parentIsSplitter) {
         /*Inserting back the new splitter at the original index*/
         parentIsSplitter->insertChild_mt_safe(oldIndexInParentSplitter,newSplitter);
-
+        
         /*restore the container original sizes*/
         parentIsSplitter->setSizes_mt_safe(oldSizeInParentSplitter);
+    } else {
+        assert(parentIsFloating);
+        parentIsFloating->setWidget(newSplitter);
+        parentIsFloating->resize(splitterSize);
+
     }
 
 
@@ -895,9 +897,11 @@ TabWidget::removeTab(int index,bool userAction)
             _imp->currentWidget = 0;
             _imp->mainLayout->addStretch();
             if ( !_imp->gui->isDraggingPanel() ) {
-                l.unlock();
-                tryCloseFloatingPane();
-                l.relock();
+                if (dynamic_cast<FloatingWidget*>(parentWidget())) {
+                    l.unlock();
+                    tryCloseFloatingPane();
+                    l.relock();
+                }
             }
         }
         //tab->setParent(_imp->gui);
@@ -1032,9 +1036,11 @@ TabWidget::onCurrentTabDeleted()
                 _imp->currentWidget = 0;
                 _imp->mainLayout->addStretch();
                 if ( !_imp->gui->isDraggingPanel() ) {
-                    l.unlock();
-                    tryCloseFloatingPane();
-                    l.relock();
+                    if (dynamic_cast<FloatingWidget*>(parentWidget())) {
+                        l.unlock();
+                        tryCloseFloatingPane();
+                        l.relock();
+                    }
                 }
             }
             break;

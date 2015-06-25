@@ -99,7 +99,7 @@ private:
 
         if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
             Q_EMIT itemClicked( item, index.column() );
-        } else if ( triggerButtonisRight(e) && index.isValid() ) {
+        } else if ( triggerButtonIsRight(e) && index.isValid() ) {
             _panel->showItemMenu( item,e->globalPos() );
         } else {
             QTreeWidget::mouseReleaseEvent(e);
@@ -1031,16 +1031,10 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
         treeItem = found->treeItem;
     }
     
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
-
     ComboBox* cb = new ComboBox;
     QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
     std::vector<std::string> compositingOperators,tooltips;
-    if (isStroke) {
-        getNatronCompositingOperators(&compositingOperators, &tooltips);
-    } else {
-        getCairoCompositingOperators(&compositingOperators, &tooltips);
-    }
+    getNatronCompositingOperators(&compositingOperators, &tooltips);
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
         cb->addItem( compositingOperators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str() );
     }
@@ -1982,6 +1976,13 @@ boost::shared_ptr<RotoContext>
 RotoPanel::getContext() const
 {
     return _imp->context;
+}
+
+void
+RotoPanel::clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem> & item)
+{
+    
+    _imp->context->clearAndSelectPreviousItem(item,RotoItem::eSelectionReasonOther);
 }
 
 void

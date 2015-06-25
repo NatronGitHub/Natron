@@ -102,7 +102,8 @@ public:
                                                                      const QString& groupIconPath,
                                                                      const QString & iconPath,
                                                                      int major,
-                                                                     int minor);
+                                                                     int minor,
+                                                                     bool isUserCreatable);
     virtual bool isBackground() const OVERRIDE FINAL
     {
         return false;

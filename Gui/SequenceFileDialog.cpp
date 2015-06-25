@@ -566,7 +566,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray() );
+    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(),currentDirectory.empty() );
 
     if ( !currentDirectory.empty() ) {
         setDirectory( currentDirectory.c_str() );
@@ -616,7 +616,7 @@ SequenceFileDialog::saveState() const
 
 
 bool
-SequenceFileDialog::restoreState(const QByteArray & state)
+SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory)
 {
     QByteArray sd = state;
     QDataStream stream(&sd, QIODevice::ReadOnly);
@@ -733,7 +733,9 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     if ( !headerView->restoreState(headerData) ) {
         return false;
     }
-    setDirectory(currentDirectory);
+    if (restoreDirectory) {
+        setDirectory(currentDirectory);
+    }
 
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model.get();

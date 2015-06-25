@@ -53,12 +53,15 @@ class PluginGroupNode
     std::list<boost::shared_ptr<PluginGroupNode> > _children;
     boost::weak_ptr<PluginGroupNode> _parent;
     bool _notHighestMajorVersion;
+    bool _isUserCreatable;
+    
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
                     const QString & iconPath,
                     int major,
-                    int minor)
+                    int minor,
+                    bool isUserCreatable)
     : _id(pluginID)
     , _label(pluginLabel)
     , _iconPath(iconPath)
@@ -67,9 +70,14 @@ public:
     , _children()
     , _parent()
     , _notHighestMajorVersion(false)
+    , _isUserCreatable(isUserCreatable)
     {
     }
 
+    bool getIsUserCreatable() const {
+        return _isUserCreatable;
+    }
+    
     const QString & getID() const
     {
         return _id;
@@ -163,6 +171,7 @@ class Plugin
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
     ContextEnum _ofxContext;
+    bool _isUserCreatable;
     
 public:
 
@@ -184,6 +193,7 @@ public:
     , _ofxPlugin(0)
     , _ofxDescriptor(0)
     , _ofxContext(eContextNone)
+    , _isUserCreatable(true)
     {
     }
 
@@ -197,7 +207,8 @@ public:
            int majorVersion,
            int minorVersion,
            bool isReader,
-           bool isWriter)
+           bool isWriter,
+           bool isUserCreatable)
         : _binary(binary)
           , _id(id)
           , _label(label)
@@ -214,11 +225,14 @@ public:
           , _ofxPlugin(0)
           , _ofxDescriptor(0)
           , _ofxContext(eContextNone)
+          , _isUserCreatable(isUserCreatable)
     {
     }
 
     ~Plugin();
 
+    bool getIsUserCreatable() const { return _isUserCreatable; }
+    
     void setPluginID(const QString & id);
     
 

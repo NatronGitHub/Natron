@@ -348,13 +348,14 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     bezierPointBboxUpdate(p0, p1, p2, p3, bbox);
 }
 
-static void
-bezierSegmentListBboxUpdate(const BezierCPs & points,
-                            bool finished,
-                            int time,
-                            unsigned int mipMapLevel,
-                            const Transform::Matrix3x3& transform,
-                            RectD* bbox) ///< input/output
+void
+Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
+                                    bool finished,
+                                    bool isOpenBezier,
+                                    int time,
+                                    unsigned int mipMapLevel,
+                                    const Transform::Matrix3x3& transform,
+                                    RectD* bbox) ///< input/output
 {
     if ( points.empty() ) {
         return;
@@ -378,7 +379,7 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
     }
     for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
         if ( next == points.end() ) {
-            if (!finished) {
+            if (!finished && !isOpenBezier) {
                 break;
             }
             next = points.begin();
@@ -1422,6 +1423,10 @@ RotoItem::setGloballyActivated(bool a,
     }
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
     if (c) {
+        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
+        if (isDrawable) {
+            isDrawable->incrementNodesAge();
+        }
         c->evaluateChange();
     }
 }
@@ -1733,14 +1738,70 @@ RotoItem::getRotoNodeName() const
     return getContext()->getRotoNodeName();
 }
 
+static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer, const boost::shared_ptr<const RotoItem>& item)
+{
+    RotoItems layerItems = layer->getItems_mt_safe();
+    if (layerItems.empty()) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    RotoItems::iterator found = layerItems.end();
+    if (item) {
+        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
+            if (*it == item) {
+                found = it;
+                break;
+            }
+        }
+        assert(found != layerItems.end());
+    } else {
+        found = layerItems.end();
+    }
+    
+    if (found != layerItems.end()) {
+        ++found;
+        for (; found != layerItems.end(); ++found) {
+            return *found;
+        }
+    }
+    
+    //Item was still not found, find in great parent layer
+    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    if (!parentLayer) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
+    
+    found = greatParentItems.end();
+    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
+        if (*it == layer) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != greatParentItems.end());
+    boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
+    assert(ret != item);
+    return ret;
+}
+
+boost::shared_ptr<RotoItem>
+RotoItem::getPreviousItemInLayer() const
+{
+    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    if (!layer) {
+        return boost::shared_ptr<RotoItem>();
+    }
+    return getPreviousInLayer(layer, shared_from_this());
+}
+
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
 
 RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                                    const std::string & name,
                                    const boost::shared_ptr<RotoLayer>& parent,
-                                   bool useCairoCompositingOperators)
+                                   bool isStroke)
     : RotoItem(context,name,parent)
-      , _imp( new RotoDrawableItemPrivate(context->isRotoPaint()) )
+      , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
     QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( invertedStateChanged() ) );
@@ -1752,17 +1813,11 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;
-    if (useCairoCompositingOperators) {
-        getCairoCompositingOperators(&operators, &tooltips);
-    } else {
-        getNatronCompositingOperators(&operators, &tooltips);
-    }
+    getNatronCompositingOperators(&operators, &tooltips);
+    
     _imp->compOperator->populateChoices(operators,tooltips);
-    if (useCairoCompositingOperators) {
-        _imp->compOperator->setDefaultValue( (int)CAIRO_OPERATOR_OVER );
-    } else {
-        _imp->compOperator->setDefaultValue( (int)eMergeCopy);
-    }
+    _imp->compOperator->setDefaultValue( (int)eMergeCopy);
+    
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -1774,6 +1829,821 @@ RotoDrawableItem::addKnob(const boost::shared_ptr<KnobI>& knob)
 {
     _imp->knobs.push_back(knob);
 }
+
+void
+RotoDrawableItem::createNodes(bool connectNodes)
+{
+    
+    const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), this, SLOT(onRotoKnobChanged(int)));
+    }
+    
+    boost::shared_ptr<RotoContext> context = getContext();
+    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName("Output_channels");
+    assert(outputChansKnob);
+    QObject::connect(outputChansKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoOutputChannelsChanged()));
+    
+    
+    AppInstance* app = context->getNode()->getApp();
+    QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append('_');
+    fixedNamePrefix.append(getScriptName().c_str());
+    fixedNamePrefix.append('_');
+    fixedNamePrefix.append(QString::number(context->getAge()));
+    fixedNamePrefix.append('_');
+    
+    QString pluginId;
+    
+    RotoStrokeType type;
+    boost::shared_ptr<RotoDrawableItem> thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
+    assert(thisShared);
+    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
+
+    if (isStroke) {
+        type = isStroke->getBrushType();
+    } else {
+        type = eRotoStrokeTypeSolid;
+    }
+    switch (type) {
+        case Natron::eRotoStrokeTypeBlur:
+            pluginId = PLUGINID_OFX_BLURCIMG;
+            break;
+        case Natron::eRotoStrokeTypeEraser:
+            pluginId = PLUGINID_OFX_CONSTANT;
+            break;
+        case Natron::eRotoStrokeTypeSolid:
+            pluginId = PLUGINID_OFX_ROTO;
+            break;
+        case Natron::eRotoStrokeTypeClone:
+        case Natron::eRotoStrokeTypeReveal:
+            pluginId = PLUGINID_OFX_TRANSFORM;
+            break;
+        case Natron::eRotoStrokeTypeBurn:
+        case Natron::eRotoStrokeTypeDodge:
+            //uses merge
+            break;
+        case Natron::eRotoStrokeTypeSharpen:
+            //todo
+            break;
+        case Natron::eRotoStrokeTypeSmear:
+            pluginId = PLUGINID_NATRON_ROTOSMEAR;
+            break;
+    }
+    
+    QString baseFixedName = fixedNamePrefix;
+    if (!pluginId.isEmpty()) {
+        fixedNamePrefix.append("Effect");
+        
+        CreateNodeArgs args(pluginId, "",
+                            -1,-1,
+                            false,
+                            INT_MIN,
+                            INT_MIN,
+                            false,
+                            false,
+                            false,
+                            fixedNamePrefix,
+                            CreateNodeArgs::DefaultValuesList(),
+                            boost::shared_ptr<NodeCollection>());
+        args.createGui = false;
+        _imp->effectNode = app->createNode(args);
+        assert(_imp->effectNode);
+        if (isStroke) {
+            _imp->effectNode->setWhileCreatingPaintStroke(true);
+            getContext()->getNode()->setWhileCreatingPaintStroke(true);
+            _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        }
+        
+        if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
+            {
+                fixedNamePrefix = baseFixedName;
+                fixedNamePrefix.append("TimeOffset");
+                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, "",
+                                    -1,-1,
+                                    false,
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false,
+                                    false,
+                                    false,
+                                    fixedNamePrefix,
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    boost::shared_ptr<NodeCollection>());
+                args.createGui = false;
+                _imp->timeOffsetNode = app->createNode(args);
+                assert(_imp->timeOffsetNode);
+                if (isStroke) {
+                    _imp->timeOffsetNode->setWhileCreatingPaintStroke(true);
+                    _imp->timeOffsetNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+                }
+            }
+            {
+                fixedNamePrefix = baseFixedName;
+                fixedNamePrefix.append("FrameHold");
+                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, "",
+                                    -1,-1,
+                                    false,
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false,
+                                    false,
+                                    false,
+                                    fixedNamePrefix,
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    boost::shared_ptr<NodeCollection>());
+                args.createGui = false;
+                _imp->frameHoldNode = app->createNode(args);
+                assert(_imp->frameHoldNode);
+                if (isStroke) {
+                    _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
+                    _imp->frameHoldNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+                }
+            }
+        }
+    }
+    
+    fixedNamePrefix = baseFixedName;
+    fixedNamePrefix.append("Merge");
+    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
+                        -1,-1,
+                        false,
+                        INT_MIN,
+                        INT_MIN,
+                        false,
+                        false,
+                        false,
+                        fixedNamePrefix,
+                        CreateNodeArgs::DefaultValuesList(),
+                        boost::shared_ptr<NodeCollection>());
+    args.createGui = false;
+    
+    bool ok = _imp->mergeNode = app->createNode(args);
+    assert(ok);
+    
+    assert(_imp->mergeNode);
+    if (isStroke) {
+        _imp->mergeNode->setWhileCreatingPaintStroke(true);
+        _imp->mergeNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        
+    }
+    if (type != eRotoStrokeTypeSolid) {
+        int maxInp = _imp->mergeNode->getMaxInputCount();
+        for (int i = 0; i < maxInp; ++i) {
+            if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
+                
+                //Connect this rotopaint node as a mask
+                ok = _imp->mergeNode->connectInput(context->getNode(), i);
+                assert(ok);
+                break;
+            }
+        }
+    }
+    
+    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    assert(mergeOperatorKnob);
+    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+    assert(mergeOp);
+    
+    boost::shared_ptr<Choice_Knob> compOp = getOperatorKnob();
+    if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
+        mergeOp->setValue(type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
+        compOp->setValue(type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
+    } else if (type == eRotoStrokeTypeSolid) {
+        mergeOp->setValue((int)eMergeOver, 0);
+        compOp->setValue((int)eMergeOver, 0);
+    } else {
+        mergeOp->setValue((int)eMergeCopy, 0);
+        compOp->setValue((int)eMergeCopy, 0);
+    }
+    
+    if (isStroke) {
+        if (type == eRotoStrokeTypeBlur) {
+            double strength = isStroke->getBrushEffectKnob()->getValue();
+            boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+            Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+            if (isDbl) {
+                isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+            }
+        } else if (type == eRotoStrokeTypeSharpen) {
+            //todo
+        } else if (type == eRotoStrokeTypeSmear) {
+            boost::shared_ptr<Double_Knob> spacingKnob = isStroke->getBrushSpacingKnob();
+            assert(spacingKnob);
+            spacingKnob->setValue(0.05, 0);
+        }
+    }
+    
+    ///Attach this stroke to the underlying nodes used
+    if (_imp->effectNode) {
+        _imp->effectNode->attachRotoItem(thisShared);
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->attachRotoItem(thisShared);
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->attachRotoItem(thisShared);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->attachRotoItem(thisShared);
+    }
+    
+    
+    if (isStroke) {
+        getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+    }
+    
+    onRotoOutputChannelsChanged();
+    
+    if (connectNodes) {
+        refreshNodesConnections();
+    }
+
+}
+
+
+
+void
+RotoDrawableItem::disconnectNodes()
+{
+    _imp->mergeNode->disconnectInput(0);
+    _imp->mergeNode->disconnectInput(1);
+    if (_imp->effectNode) {
+        _imp->effectNode->disconnectInput(0);
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->disconnectInput(0);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->disconnectInput(0);
+    }
+}
+
+void
+RotoDrawableItem::deactivateNodes()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->deactivate(std::list< Node* >(),true,false,false,false);
+    }
+}
+
+void
+RotoDrawableItem::activateNodes()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->activate(std::list< Node* >(),false,false);
+    }
+    _imp->mergeNode->activate(std::list< Node* >(),false,false);
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->activate(std::list< Node* >(),false,false);
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->activate(std::list< Node* >(),false,false);
+    }
+}
+
+
+void
+RotoDrawableItem::onRotoOutputChannelsChanged()
+{
+    
+    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName("Output_channels");
+    assert(outputChansKnob);
+    Choice_Knob* outputChannels = dynamic_cast<Choice_Knob*>(outputChansKnob.get());
+    assert(outputChannels);
+    
+    int outputchans_i = outputChannels->getValue();
+    std::string rotopaintOutputChannels;
+    std::vector<std::string> rotoPaintchannelEntries = outputChannels->getEntries_mt_safe();
+    if (outputchans_i  < (int)rotoPaintchannelEntries.size()) {
+        rotopaintOutputChannels = rotoPaintchannelEntries[outputchans_i];
+    }
+    if (rotopaintOutputChannels.empty()) {
+        return;
+    }
+    
+    std::list<Node*> nodes;
+    if (_imp->mergeNode) {
+        nodes.push_back(_imp->mergeNode.get());
+    }
+    if (_imp->effectNode) {
+        nodes.push_back(_imp->effectNode.get());
+    }
+    if (_imp->timeOffsetNode) {
+        nodes.push_back(_imp->timeOffsetNode.get());
+    }
+    if (_imp->frameHoldNode) {
+        nodes.push_back(_imp->frameHoldNode.get());
+    }
+    for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        
+        std::list<KnobI*> knobs;
+        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName("Output_channels");
+        if (channelsKnob) {
+            knobs.push_back(channelsKnob.get());
+        }
+        boost::shared_ptr<KnobI> aChans = (*it)->getKnobByName("A_channels");
+        if (aChans) {
+            knobs.push_back(aChans.get());
+        }
+        boost::shared_ptr<KnobI> bChans = (*it)->getKnobByName("B_channels");
+        if (bChans) {
+            knobs.push_back(bChans.get());
+        }
+        for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
+            Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(*it);
+            if (nodeChannels) {
+                std::vector<std::string> entries = nodeChannels->getEntries_mt_safe();
+                for (std::size_t i = 0; i < entries.size(); ++i) {
+                    if (entries[i] == rotopaintOutputChannels) {
+                        nodeChannels->setValue(i, 0);
+                        break;
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
+
+
+static RotoDrawableItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* item)
+{
+    RotoItems layerItems = layer->getItems_mt_safe();
+    if (layerItems.empty()) {
+        return 0;
+    }
+    RotoItems::iterator found = layerItems.end();
+    if (item) {
+        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
+            if (it->get() == item) {
+                found = it;
+                break;
+            }
+        }
+        assert(found != layerItems.end());
+    } else {
+        found = layerItems.end();
+    }
+    
+    if (found != layerItems.end()) {
+        ++found;
+        for (; found != layerItems.end(); ++found) {
+            
+            //We found another stroke below at the same level
+            RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(found->get());
+            if (isDrawable) {
+                assert(isDrawable != item);
+                return isDrawable;
+            }
+            
+            //Cycle through a layer that is at the same level
+            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(found->get());
+            if (isLayer) {
+                RotoDrawableItem* si = findPreviousOfItemInLayer(isLayer, 0);
+                if (si) {
+                    assert(si != item);
+                    return si;
+                }
+            }
+        }
+    }
+    
+    //Item was still not found, find in great parent layer
+    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    if (!parentLayer) {
+        return 0;
+    }
+    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
+    
+    found = greatParentItems.end();
+    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
+        if (it->get() == layer) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != greatParentItems.end());
+    RotoDrawableItem* ret = findPreviousOfItemInLayer(parentLayer.get(), layer);
+    assert(ret != item);
+    return ret;
+}
+
+RotoDrawableItem*
+RotoDrawableItem::findPreviousInHierarchy()
+{
+    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    if (!layer) {
+        return 0;
+    }
+    return findPreviousOfItemInLayer(layer.get(), this);
+}
+
+void
+RotoDrawableItem::onRotoKnobChanged(int /*dimension*/)
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    
+    boost::shared_ptr<KnobI> triggerKnob = handler->getKnob();
+    assert(triggerKnob);
+    rotoKnobChanged(triggerKnob);
+    
+    
+}
+
+void
+RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob)
+{
+    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    RotoStrokeType type;
+    if (isStroke) {
+        type = isStroke->getBrushType();
+    } else {
+        type = eRotoStrokeTypeSolid;
+    }
+
+    if (knob == compKnob) {
+        boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+        Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
+        if (operation) {
+            int op_i = compKnob->getValue();
+            operation->setValue(op_i, 0);
+        }
+    } else if (knob == _imp->sourceColor) {
+        refreshNodesConnections();
+    } else if (knob == _imp->effectStrength) {
+        
+        double strength = _imp->effectStrength->getValue();
+        switch (type) {
+            case Natron::eRotoStrokeTypeBlur: {
+                boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+                Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+                if (isDbl) {
+                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                }
+            }   break;
+            case Natron::eRotoStrokeTypeSharpen: {
+                //todo
+                break;
+            }
+            default:
+                //others don't have a control
+                break;
+        }
+    } else if (knob == _imp->timeOffset && _imp->timeOffsetNode) {
+        
+        int offsetMode_i = _imp->timeOffsetMode->getValue();
+        boost::shared_ptr<KnobI> offsetKnob;
+        
+        if (offsetMode_i == 0) {
+            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+        } else {
+            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+        }
+        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        if (offset) {
+            double value = _imp->timeOffset->getValue();
+            offset->setValue(value,0);
+        }
+    } else if (knob == _imp->timeOffsetMode && _imp->timeOffsetNode) {
+        refreshNodesConnections();
+    }
+    
+    if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
+        if (knob == _imp->cloneTranslate) {
+            boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+            Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+            if (translate) {
+                translate->clone(_imp->cloneTranslate.get());
+            }
+        } else if (knob == _imp->cloneRotate) {
+            boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+            Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+            if (rotate) {
+                rotate->clone(_imp->cloneRotate.get());
+            }
+        } else if (knob == _imp->cloneScale) {
+            boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+            Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+            if (scale) {
+                scale->clone(_imp->cloneScale.get());
+            }
+        } else if (knob == _imp->cloneScaleUniform) {
+            boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+            Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+            if (uniform) {
+                uniform->clone(_imp->cloneScaleUniform.get());
+            }
+        } else if (knob == _imp->cloneSkewX) {
+            boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+            Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+            if (skewX) {
+                skewX->clone(_imp->cloneSkewX.get());
+            }
+        } else if (knob == _imp->cloneSkewY) {
+            boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+            Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+            if (skewY) {
+                skewY->clone(_imp->cloneSkewY.get());
+            }
+        } else if (knob == _imp->cloneSkewOrder) {
+            boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+            Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+            if (skewOrder) {
+                skewOrder->clone(_imp->cloneSkewOrder.get());
+            }
+        } else if (knob == _imp->cloneCenter) {
+            boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+            Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+            if (center) {
+                center->clone(_imp->cloneCenter.get());
+                
+            }
+        } else if (knob == _imp->cloneFilter) {
+            boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+            Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+            if (filter) {
+                filter->clone(_imp->cloneFilter.get());
+            }
+        } else if (knob == _imp->cloneBlackOutside) {
+            boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+            Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+            if (bo) {
+                bo->clone(_imp->cloneBlackOutside.get());
+                
+            }
+        }
+    }
+
+    
+    
+    incrementNodesAge();
+
+}
+
+void
+RotoDrawableItem::incrementNodesAge()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->incrementKnobsAge();
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->incrementKnobsAge();
+    }
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->incrementKnobsAge();
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->incrementKnobsAge();
+    }
+}
+
+boost::shared_ptr<Natron::Node>
+RotoDrawableItem::getEffectNode() const
+{
+    return _imp->effectNode;
+}
+
+
+boost::shared_ptr<Natron::Node>
+RotoDrawableItem::getMergeNode() const
+{
+    return _imp->mergeNode;
+}
+
+boost::shared_ptr<Natron::Node>
+RotoDrawableItem::getTimeOffsetNode() const
+{
+    
+    return _imp->timeOffsetNode;
+}
+
+boost::shared_ptr<Natron::Node>
+RotoDrawableItem::getFrameHoldNode() const
+{
+    return _imp->frameHoldNode;
+}
+
+void
+RotoDrawableItem::refreshNodesConnections()
+{
+    RotoDrawableItem* previous = findPreviousInHierarchy();
+    boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
+    
+    boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
+    
+    bool connectionChanged = false;
+    
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    RotoStrokeType type;
+    if (isStroke) {
+        type = isStroke->getBrushType();
+    } else {
+        type = eRotoStrokeTypeSolid;
+    }
+    
+    if (_imp->effectNode && type != eRotoStrokeTypeEraser) {
+        
+        
+        boost::shared_ptr<Natron::Node> mergeInput;
+        if (!_imp->timeOffsetNode) {
+            mergeInput = _imp->effectNode;
+        } else {
+            int timeOffsetMode_i = _imp->timeOffsetMode->getValue();
+            if (timeOffsetMode_i == 0) {
+                //relative
+                mergeInput = _imp->timeOffsetNode;
+            } else {
+                mergeInput = _imp->frameHoldNode;
+            }
+            if (_imp->effectNode->getInput(0) != mergeInput) {
+                _imp->effectNode->disconnectInput(0);
+                _imp->effectNode->connectInputBase(mergeInput, 0);
+                connectionChanged = true;
+            }
+        }
+        /*
+         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
+         */
+        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
+            _imp->mergeNode->disconnectInput(1);
+            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
+            connectionChanged = true;
+        }
+        
+        if (_imp->mergeNode->getInput(0) != upstreamNode) {
+            _imp->mergeNode->disconnectInput(0);
+            if (upstreamNode) {
+                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+            }
+            connectionChanged = true;
+        }
+        
+        
+        int reveal_i = _imp->sourceColor->getValue();
+        boost::shared_ptr<Node> revealInput;
+        bool shouldUseUpstreamForReveal = true;
+        if ((type == eRotoStrokeTypeReveal ||
+             type == eRotoStrokeTypeClone ||
+             type == eRotoStrokeTypeEraser) && reveal_i > 0) {
+            shouldUseUpstreamForReveal = false;
+            revealInput = getContext()->getNode()->getInput(reveal_i - 1);
+        }
+        if (!revealInput && shouldUseUpstreamForReveal) {
+            if (type != eRotoStrokeTypeSolid) {
+                revealInput = upstreamNode;
+            }
+            
+        }
+        
+        if (revealInput) {
+            if (mergeInput->getInput(0) != revealInput) {
+                mergeInput->disconnectInput(0);
+                mergeInput->connectInputBase(revealInput, 0);
+                connectionChanged = true;
+            }
+        } else {
+            if (mergeInput->getInput(0)) {
+                mergeInput->disconnectInput(0);
+                connectionChanged = true;
+            }
+            
+        }
+    } else {
+        
+        if (type == eRotoStrokeTypeEraser) {
+            
+            boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
+            if (_imp->mergeNode->getInput(1) != eraserInput) {
+                _imp->mergeNode->disconnectInput(1);
+                if (eraserInput) {
+                    _imp->mergeNode->connectInputBase(eraserInput, 1); // A
+                }
+                connectionChanged = true;
+            }
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                }
+                connectionChanged = true;
+            }
+            
+        } else if (type == eRotoStrokeTypeReveal) {
+            
+            int reveal_i = _imp->sourceColor->getValue();
+            
+            boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
+            
+            if (_imp->mergeNode->getInput(1) != revealInput) {
+                _imp->mergeNode->disconnectInput(1);
+                if (revealInput) {
+                    _imp->mergeNode->connectInputBase(revealInput, 1); // A
+                }
+                connectionChanged = true;
+            }
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                }
+                connectionChanged = true;
+            }
+            
+        } else if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
+            
+            if (_imp->mergeNode->getInput(1) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(1);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
+                }
+                connectionChanged = true;
+            }
+            
+            
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                if (upstreamNode) {
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
+                }
+                connectionChanged = true;
+            }
+            
+        } else {
+            //unhandled case
+            assert(false);
+        }
+    }
+    if (connectionChanged && (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal)) {
+        resetCloneTransformCenter();
+    }
+}
+
+void
+RotoDrawableItem::resetNodesThreadSafety()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->revertToPluginThreadSafety();
+    }
+    _imp->mergeNode->revertToPluginThreadSafety();
+    if (_imp->timeOffsetNode) {
+        _imp->timeOffsetNode->revertToPluginThreadSafety();
+    }
+    if (_imp->frameHoldNode) {
+        _imp->frameHoldNode->revertToPluginThreadSafety();
+    }
+    getContext()->getNode()->revertToPluginThreadSafety();
+    
+}
+
+void
+RotoDrawableItem::resetCloneTransformCenter()
+{
+    
+    RotoStrokeType type;
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    if (isStroke) {
+        type = isStroke->getBrushType();
+    } else {
+        type = eRotoStrokeTypeSolid;
+    }
+    if (type != eRotoStrokeTypeReveal && type != eRotoStrokeTypeClone) {
+        return;
+    }
+    boost::shared_ptr<KnobI> resetCenterKnob = _imp->effectNode->getKnobByName(kTransformParamResetCenter);
+    Button_Knob* resetCenter = dynamic_cast<Button_Knob*>(resetCenterKnob.get());
+    if (!resetCenter) {
+        return;
+    }
+    boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+    Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+    if (!center) {
+        return;
+    }
+    resetCenter->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
+    double x = center->getValue(0);
+    double y = center->getValue(1);
+    _imp->cloneCenter->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+}
+
 
 void
 RotoDrawableItem::clone(const RotoItem* other)
@@ -1840,6 +2710,8 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
 void
 RotoDrawableItem::load(const RotoItemSerialization &obj)
 {
+    RotoItem::load(obj);
+
     const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = s._knobs.begin(); it!=s._knobs.end(); ++it) {
         
@@ -1854,7 +2726,100 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
-    RotoItem::load(obj);
+    
+    RotoStrokeType type;
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    if (isStroke) {
+        type = isStroke->getBrushType();
+    } else {
+        type = eRotoStrokeTypeSolid;
+    }
+
+    
+    boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
+    if (operation) {
+        int op_i = getOperatorKnob()->getValue();
+        operation->setValue(op_i, 0);
+    }
+    
+    
+    if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
+        boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+        Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+        if (translate) {
+            translate->clone(_imp->cloneTranslate.get());
+        }
+        boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+        Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+        if (rotate) {
+            rotate->clone(_imp->cloneRotate.get());
+        }
+        boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+        Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+        if (scale) {
+            scale->clone(_imp->cloneScale.get());
+        }
+        boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+        Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+        if (uniform) {
+            uniform->clone(_imp->cloneScaleUniform.get());
+        }
+        boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+        Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+        if (skewX) {
+            skewX->clone(_imp->cloneSkewX.get());
+        }
+        boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+        Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+        if (skewY) {
+            skewY->clone(_imp->cloneSkewY.get());
+        }
+        boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+        Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+        if (skewOrder) {
+            skewOrder->clone(_imp->cloneSkewOrder.get());
+        }
+        boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+        Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+        if (center) {
+            center->clone(_imp->cloneCenter.get());
+            
+        }
+        boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+        Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+        if (filter) {
+            filter->clone(_imp->cloneFilter.get());
+        }
+        boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+        Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+        if (bo) {
+            bo->clone(_imp->cloneBlackOutside.get());
+            
+        }
+        
+        int offsetMode_i = _imp->timeOffsetMode->getValue();
+        boost::shared_ptr<KnobI> offsetKnob;
+        
+        if (offsetMode_i == 0) {
+            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+        } else {
+            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+        }
+        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        if (offset) {
+            offset->clone(_imp->timeOffset.get());
+        }
+        
+        
+    } else if (type == eRotoStrokeTypeBlur) {
+        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+        if (isDbl) {
+            isDbl->clone(_imp->effectStrength.get());
+        }
+    }
+
 }
 
 bool
@@ -2035,6 +3000,84 @@ boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const
 }
 
 boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushSizeKnob() const
+{
+    return _imp->brushSize;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushHardnessKnob() const
+{
+    return _imp->brushHardness;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushSpacingKnob() const
+{
+    return _imp->brushSpacing;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushEffectKnob() const
+{
+    return _imp->effectStrength;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushVisiblePortionKnob() const
+{
+    return _imp->visiblePortion;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoDrawableItem::getPressureOpacityKnob() const
+{
+    return _imp->pressureOpacity;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoDrawableItem::getPressureSizeKnob() const
+{
+    return _imp->pressureSize;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoDrawableItem::getPressureHardnessKnob() const
+{
+    return _imp->pressureHardness;
+}
+
+boost::shared_ptr<Bool_Knob>
+RotoDrawableItem::getBuildupKnob() const
+{
+    return _imp->buildUp;
+}
+
+boost::shared_ptr<Int_Knob>
+RotoDrawableItem::getTimeOffsetKnob() const
+{
+    return _imp->timeOffset;
+}
+
+boost::shared_ptr<Choice_Knob>
+RotoDrawableItem::getTimeOffsetModeKnob() const
+{
+    return _imp->timeOffsetMode;
+}
+
+boost::shared_ptr<Choice_Knob>
+RotoDrawableItem::getBrushSourceTypeKnob() const
+{
+    return _imp->sourceColor;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoDrawableItem::getBrushCloneTranslateKnob() const
+{
+    return _imp->cloneTranslate;
+}
+
+boost::shared_ptr<Double_Knob>
 RotoDrawableItem::getCenterKnob() const
 {
     return _imp->center;
@@ -2170,12 +3213,14 @@ RotoLayer::clone(const RotoItem* other)
         boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
         if (isBezier) {
             boost::shared_ptr<Bezier> copy( new Bezier(*isBezier, this_shared) );
+            copy->createNodes();
             _imp->items.push_back(copy);
         } else if (isStroke) {
             boost::shared_ptr<RotoStrokeItem> copy(new RotoStrokeItem(isStroke->getBrushType(),
                                                                       isStroke->getContext(),
                                                                       isStroke->getScriptName() + "copy",
                                                                       boost::shared_ptr<RotoLayer>()));
+            copy->createNodes();
             _imp->items.push_back(copy);
             copy->setParentLayer(this_shared);
         } else {
@@ -2241,7 +3286,8 @@ RotoLayer::load(const RotoItemSerialization &obj)
             boost::shared_ptr<RotoStrokeSerialization> s = boost::dynamic_pointer_cast<RotoStrokeSerialization>(*it);
             boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
             if (b && !s) {
-                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, this_layer) );
+                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, boost::shared_ptr<RotoLayer>(), false) );
+                bezier->createNodes(false);
                 bezier->load(*b);
                 if (!bezier->getParentLayer()) {
                     bezier->setParentLayer(this_layer);
@@ -2249,20 +3295,18 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             }
-#ifdef ROTO_ENABLE_PAINT
             else if (s) {
                 boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
-                stroke->attachStrokeToNodes();
+                stroke->createNodes(false);
                 stroke->load(*s);
                 if (!stroke->getParentLayer()) {
                     stroke->setParentLayer(this_layer);
                 }
-                getContext()->incrementAge();
+                
 
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(stroke);
             }
-#endif
             else if (l) {
                 boost::shared_ptr<RotoLayer> layer( new RotoLayer(getContext(), kRotoLayerBaseName, this_layer) );
                 _imp->items.push_back(layer);
@@ -2273,6 +3317,8 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 }
 
             }
+            //Rotopaint tree nodes use the roto context age for their script-name, make sure they have a different one
+            getContext()->incrementAge();
         }
     }
 }
@@ -2405,20 +3451,27 @@ enum SplineChangedReason
 
 Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const std::string & name,
-               const boost::shared_ptr<RotoLayer>& parent)
-    : RotoDrawableItem(ctx,name,parent,true)
-      , _imp( new BezierPrivate() )
+               const boost::shared_ptr<RotoLayer>& parent,
+               bool isOpenBezier)
+    : RotoDrawableItem(ctx,name,parent, false)
+      , _imp( new BezierPrivate(isOpenBezier) )
 {
 }
 
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
-: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), true )
-, _imp( new BezierPrivate() )
+: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
+, _imp( new BezierPrivate(false) )
 {
     clone(&other);
     setParentLayer(parent);
+}
+
+bool
+Bezier::isOpenBezier() const
+{
+    return _imp->isOpenBezier;
 }
 
 void
@@ -2463,8 +3516,11 @@ Bezier::clone(const RotoItem* other)
                 ++itF;
             }
         }
-        _imp->finished = otherBezier->_imp->finished;
+        
+        _imp->isOpenBezier = otherBezier->_imp->isOpenBezier;
+        _imp->finished = otherBezier->_imp->finished && _imp->isOpenBezier;
     }
+    incrementNodesAge();
     RotoDrawableItem::clone(other);
     Q_EMIT cloned();
 }
@@ -2551,6 +3607,7 @@ Bezier::addControlPoint(double x,
         }
     }
     
+    incrementNodesAge();
     return p;
 }
 
@@ -2721,6 +3778,9 @@ Bezier::addControlPointAfterIndex(int index,
         }
   
     }
+    
+    incrementNodesAge();
+    
     return p;
 } // addControlPointAfterIndex
 
@@ -2822,6 +3882,11 @@ Bezier::isPointOnCurve(double x,
 void
 Bezier::setCurveFinished(bool finished)
 {
+    
+    if (_imp->isOpenBezier) {
+        return;
+    }
+    
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     int time = getContext()->getTimelineCurrentTime();
@@ -2864,6 +3929,7 @@ Bezier::setCurveFinished(bool finished)
         
     }
 
+    incrementNodesAge();
     refreshPolygonOrientation();
 }
 
@@ -2904,6 +3970,8 @@ Bezier::removeControlPointByIndex(int index)
             
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation();
     Q_EMIT controlPointRemoved();
 }
@@ -3001,6 +4069,8 @@ Bezier::movePointByIndexInternal(int index,
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -3157,6 +4227,8 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -3273,6 +4345,8 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -3359,6 +4433,7 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
         }
     }
     
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (keySet) {
         Q_EMIT keyframeSet(time);
@@ -3388,6 +4463,8 @@ Bezier::removeFeatherAtIndex(int index)
     assert( cp != _imp->points.end() && fp != _imp->featherPoints.end() );
 
     (*fp)->clone(**cp);
+    
+    incrementNodesAge();
     
 }
 
@@ -3428,6 +4505,8 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pai
             }
         }
     }
+    
+    incrementNodesAge();
     refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
@@ -3530,6 +4609,8 @@ Bezier::removeKeyframe(int time)
             _imp->isClockwiseOriented.erase(found);
         }
     }
+    
+    incrementNodesAge();
     getContext()->evaluateChange();
     Q_EMIT keyframeRemoved(time);
 }
@@ -3558,6 +4639,8 @@ Bezier::removeAnimation()
      
         _imp->isClockwiseOriented.clear();
     }
+    
+    incrementNodesAge();
     Q_EMIT animationRemoved();
 }
 
@@ -3608,6 +4691,7 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         _imp->isClockwiseOriented[newTime] = oldValue;
     }
     
+    incrementNodesAge();
     Q_EMIT keyframeRemoved(oldTime);
     Q_EMIT keyframeSet(newTime);
 }
@@ -3739,7 +4823,6 @@ RectD
 Bezier::getBoundingBox(int time) const
 {
     
-    std::list<Point> pts;
     RectD bbox; // a very empty bbox
 
     bbox.x1 = std::numeric_limits<double>::infinity();
@@ -3751,11 +4834,11 @@ Bezier::getBoundingBox(int time) const
     getTransformAtTime(time, &transform);
     
     QMutexLocker l(&itemMutex);
-    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, transform , &bbox);
+    bezierSegmentListBboxUpdate(_imp->points, _imp->finished, _imp->isOpenBezier, time, 0, transform , &bbox);
     
     
-    if (useFeatherPoints()) {
-        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, transform, &bbox);
+    if (useFeatherPoints() && !_imp->isOpenBezier) {
+        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, _imp->isOpenBezier, time, 0, transform, &bbox);
         // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
         // enclosing the real bbox and close enough
         double featherDistance = getFeatherDistance(time);
@@ -3763,6 +4846,13 @@ Bezier::getBoundingBox(int time) const
         bbox.x2 += featherDistance;
         bbox.y1 -= featherDistance;
         bbox.y2 += featherDistance;
+    } else if (_imp->isOpenBezier) {
+        double brushSize = getBrushSizeKnob()->getValueAtTime(time);
+        double halfBrushSize = brushSize / 2. + 1;
+        bbox.x1 -= halfBrushSize;
+        bbox.x2 += halfBrushSize;
+        bbox.y1 -= halfBrushSize;
+        bbox.y2 += halfBrushSize;
     }
     return bbox;
 }
@@ -4124,7 +5214,7 @@ Bezier::save(RotoItemSerialization* obj) const
         QMutexLocker l(&itemMutex);
 
         s->_closed = _imp->finished;
-
+        s->_isOpenBezier = _imp->isOpenBezier;
         assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints());
 
 
@@ -4156,7 +5246,8 @@ Bezier::load(const RotoItemSerialization & obj)
     const BezierSerialization & s = dynamic_cast<const BezierSerialization &>(obj);
     {
         QMutexLocker l(&itemMutex);
-        _imp->finished = s._closed;
+        _imp->isOpenBezier = s._isOpenBezier;
+        _imp->finished = s._closed && _imp->isOpenBezier;
         
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
@@ -4536,215 +5627,10 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
                                const std::string & name,
                                const boost::shared_ptr<RotoLayer>& parent)
 
-: RotoDrawableItem(context,name,parent,false)
+: RotoDrawableItem(context,name,parent, true)
 , _imp(new RotoStrokeItemPrivate(type))
 {
-    addKnob(_imp->brushSpacing);
-    addKnob(_imp->brushSize);
-    addKnob(_imp->brushHardness);
-    addKnob(_imp->effectStrength);
-    addKnob(_imp->visiblePortion);
-    addKnob(_imp->sourceColor);
-    addKnob(_imp->pressureOpacity);
-    addKnob(_imp->pressureSize);
-    addKnob(_imp->pressureHardness);
-    addKnob(_imp->buildUp);
-    addKnob(_imp->cloneTranslate);
-    addKnob(_imp->cloneRotate);
-    addKnob(_imp->cloneScale);
-    addKnob(_imp->cloneScaleUniform);
-    addKnob(_imp->cloneSkewX);
-    addKnob(_imp->cloneSkewY);
-    addKnob(_imp->cloneSkewOrder);
-    addKnob(_imp->cloneCenter);
-    addKnob(_imp->cloneFilter);
-    addKnob(_imp->cloneBlackOutside);
-    addKnob(_imp->timeOffset);
-    addKnob(_imp->timeOffsetMode);
-    
-    const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), this, SLOT(onRotoStrokeKnobChanged(int)));
-    }
-    
-    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName("Output_channels");
-    assert(outputChansKnob);
-    QObject::connect(outputChansKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoPaintOutputChannelsChanged()));
-    
-    
-    AppInstance* app = context->getNode()->getApp();
-    QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append(name.c_str());
-    fixedNamePrefix.append('_');
-    fixedNamePrefix.append(QString::number(context->getAge()));
-    fixedNamePrefix.append('_');
-    
-    QString pluginId;
-    switch (type) {
-        case Natron::eRotoStrokeTypeBlur:
-            pluginId = PLUGINID_OFX_BLURCIMG;
-            break;
-        case Natron::eRotoStrokeTypeEraser:
-            pluginId = PLUGINID_OFX_CONSTANT;
-            break;
-        case Natron::eRotoStrokeTypeSolid:
-            pluginId = PLUGINID_OFX_ROTO;
-            break;
-        case Natron::eRotoStrokeTypeClone:
-        case Natron::eRotoStrokeTypeReveal:
-            pluginId = PLUGINID_OFX_TRANSFORM;
-            break;
-        case Natron::eRotoStrokeTypeBurn:
-        case Natron::eRotoStrokeTypeDodge:
-            //uses merge
-            break;
-        case Natron::eRotoStrokeTypeSharpen:
-            //todo
-            break;
-        case Natron::eRotoStrokeTypeSmear:
-            pluginId = PLUGINID_NATRON_ROTOSMEAR;
-            break;
-    }
-    
-    QString baseFixedName = fixedNamePrefix;
-    if (!pluginId.isEmpty()) {
-        fixedNamePrefix.append("Effect");
         
-        CreateNodeArgs args(pluginId, "",
-                            -1,-1,
-                            false,
-                            INT_MIN,
-                            INT_MIN,
-                            false,
-                            false,
-                            false,
-                            fixedNamePrefix,
-                            CreateNodeArgs::DefaultValuesList(),
-                            boost::shared_ptr<NodeCollection>());
-        args.createGui = false;
-        _imp->effectNode = app->createNode(args);
-        assert(_imp->effectNode);
-        _imp->effectNode->setWhileCreatingPaintStroke(true);
-        getContext()->getNode()->setWhileCreatingPaintStroke(true);
-        _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-        
-        if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
-            {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("TimeOffset");
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, "",
-                                    -1,-1,
-                                    false,
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false,
-                                    false,
-                                    false,
-                                    fixedNamePrefix,
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    boost::shared_ptr<NodeCollection>());
-                args.createGui = false;
-                _imp->timeOffsetNode = app->createNode(args);
-                assert(_imp->timeOffsetNode);
-                _imp->timeOffsetNode->setWhileCreatingPaintStroke(true);
-                _imp->timeOffsetNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-            }
-            {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append("FrameHold");
-                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, "",
-                                    -1,-1,
-                                    false,
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false,
-                                    false,
-                                    false,
-                                    fixedNamePrefix,
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    boost::shared_ptr<NodeCollection>());
-                args.createGui = false;
-                _imp->frameHoldNode = app->createNode(args);
-                assert(_imp->frameHoldNode);
-                _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
-                _imp->frameHoldNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-            }
-        }
-    }
-    
-    fixedNamePrefix = baseFixedName;
-    fixedNamePrefix.append("Merge");
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
-                        -1,-1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        false,
-                        false,
-                        fixedNamePrefix,
-                        CreateNodeArgs::DefaultValuesList(),
-                        boost::shared_ptr<NodeCollection>());
-    args.createGui = false;
-    
-    bool ok = _imp->mergeNode = app->createNode(args);
-    assert(ok);
-    
-    assert(_imp->mergeNode);
-    _imp->mergeNode->setWhileCreatingPaintStroke(true);
-    _imp->mergeNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-    
-    if (_imp->type != eRotoStrokeTypeSolid) {
-        int maxInp = _imp->mergeNode->getMaxInputCount();
-        for (int i = 0; i < maxInp; ++i) {
-            if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
-                
-                //Connect this rotopaint node as a mask
-                ok = _imp->mergeNode->connectInput(context->getNode(), i);
-                assert(ok);
-                break;
-            }
-        }
-    }
-    
-    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    assert(mergeOperatorKnob);
-    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
-    assert(mergeOp);
-
-    boost::shared_ptr<Choice_Knob> compOp = getOperatorKnob();
-    if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
-        mergeOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
-        compOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
-    } else if (_imp->type == eRotoStrokeTypeSolid) {
-        mergeOp->setValue((int)eMergeOver, 0);
-        compOp->setValue((int)eMergeOver, 0);
-    } else {
-        mergeOp->setValue((int)eMergeCopy, 0);
-        compOp->setValue((int)eMergeCopy, 0);
-    }
-    
-    if (type == eRotoStrokeTypeBlur) {
-        double strength = _imp->effectStrength->getValue();
-        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
-        if (isDbl) {
-            isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
-        }
-    } else if (type == eRotoStrokeTypeSharpen) {
-        //todo
-    } else if (type == eRotoStrokeTypeSmear) {
-        boost::shared_ptr<Double_Knob> spacingKnob = getBrushSpacingKnob();
-        assert(spacingKnob);
-        spacingKnob->setValue(0.05, 0);
-    }
-    
-    getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-
-    onRotoPaintOutputChannelsChanged();
-    refreshNodesConnections();
-    
 }
 
 RotoStrokeItem::~RotoStrokeItem()
@@ -4758,507 +5644,7 @@ RotoStrokeItem::~RotoStrokeItem()
     deactivateNodes();
 }
 
-void
-RotoStrokeItem::onRotoPaintOutputChannelsChanged()
-{
-    
-    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName("Output_channels");
-    assert(outputChansKnob);
-    Choice_Knob* outputChannels = dynamic_cast<Choice_Knob*>(outputChansKnob.get());
-    assert(outputChannels);
-    
-    int outputchans_i = outputChannels->getValue();
-    std::string rotopaintOutputChannels;
-    std::vector<std::string> rotoPaintchannelEntries = outputChannels->getEntries_mt_safe();
-    if (outputchans_i  < (int)rotoPaintchannelEntries.size()) {
-        rotopaintOutputChannels = rotoPaintchannelEntries[outputchans_i];
-    }
-    if (rotopaintOutputChannels.empty()) {
-        return;
-    }
-    
-    std::list<Node*> nodes;
-    if (_imp->mergeNode) {
-        nodes.push_back(_imp->mergeNode.get());
-    }
-    if (_imp->effectNode) {
-        nodes.push_back(_imp->effectNode.get());
-    }
-    if (_imp->timeOffsetNode) {
-        nodes.push_back(_imp->timeOffsetNode.get());
-    }
-    if (_imp->frameHoldNode) {
-        nodes.push_back(_imp->frameHoldNode.get());
-    }
-    for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        
-        std::list<KnobI*> knobs;
-        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName("Output_channels");
-        if (channelsKnob) {
-            knobs.push_back(channelsKnob.get());
-        }
-        boost::shared_ptr<KnobI> aChans = (*it)->getKnobByName("A_channels");
-        if (aChans) {
-            knobs.push_back(aChans.get());
-        }
-        boost::shared_ptr<KnobI> bChans = (*it)->getKnobByName("B_channels");
-        if (bChans) {
-            knobs.push_back(bChans.get());
-        }
-        for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
-            Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(*it);
-            if (nodeChannels) {
-                std::vector<std::string> entries = nodeChannels->getEntries_mt_safe();
-                for (std::size_t i = 0; i < entries.size(); ++i) {
-                    if (entries[i] == rotopaintOutputChannels) {
-                        nodeChannels->setValue(i, 0);
-                        break;
-                    }
-                }
-                
-            }
-        }
-    }
-}
 
-void
-RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
-    if (!handler) {
-        return;
-    }
-    
-    boost::shared_ptr<KnobI> triggerKnob = handler->getKnob();
-    assert(triggerKnob);
-    
-    
-    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
-    if (handler == _imp->sourceColor->getSignalSlotHandler().get()) {
-        refreshNodesConnections();
-    } else if (handler == _imp->effectStrength->getSignalSlotHandler().get()) {
-        
-        double strength = _imp->effectStrength->getValue();
-        switch (_imp->type) {
-            case Natron::eRotoStrokeTypeBlur: {
-                boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-                Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
-                if (isDbl) {
-                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
-                }
-            }   break;
-            case Natron::eRotoStrokeTypeSharpen: {
-                //todo
-                break;
-            }
-            default:
-                //others don't have a control
-                break;
-        }
-    } else if (handler == compKnob->getSignalSlotHandler().get()) {
-        boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
-        if (operation) {
-            int op_i = compKnob->getValue();
-            operation->setValue(op_i, 0);
-        }
-    } else if (handler == _imp->timeOffset->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
-        
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        boost::shared_ptr<KnobI> offsetKnob;
-        
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
-        if (offset) {
-            double value = _imp->timeOffset->getValue();
-            offset->setValue(value,0);
-        }
-    } else if (handler == _imp->timeOffsetMode->getSignalSlotHandler().get() && _imp->timeOffsetNode) {
-        refreshNodesConnections();
-    }
-    
-    if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
-        if (handler == _imp->cloneTranslate->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
-            if (translate) {
-                translate->clone(_imp->cloneTranslate.get());
-            }
-        } else if (handler == _imp->cloneRotate->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
-            if (rotate) {
-                rotate->clone(_imp->cloneRotate.get());
-            }
-        } else if (handler == _imp->cloneScale->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
-            if (scale) {
-                scale->clone(_imp->cloneScale.get());
-            }
-        } else if (handler == _imp->cloneScaleUniform->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
-            if (uniform) {
-                uniform->clone(_imp->cloneScaleUniform.get());
-            }
-        } else if (handler == _imp->cloneSkewX->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
-            if (skewX) {
-                skewX->clone(_imp->cloneSkewX.get());
-            }
-        } else if (handler == _imp->cloneSkewY->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
-            if (skewY) {
-                skewY->clone(_imp->cloneSkewY.get());
-            }
-        } else if (handler == _imp->cloneSkewOrder->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
-            if (skewOrder) {
-                skewOrder->clone(_imp->cloneSkewOrder.get());
-            }
-        } else if (handler == _imp->cloneCenter->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
-            if (center) {
-                center->clone(_imp->cloneCenter.get());
-                
-            }
-        } else if (handler == _imp->cloneFilter->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
-            if (filter) {
-                filter->clone(_imp->cloneFilter.get());
-            }
-        } else if (handler == _imp->cloneBlackOutside->getSignalSlotHandler().get()) {
-            boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
-            if (bo) {
-                bo->clone(_imp->cloneBlackOutside.get());
-                
-            }
-        }
-    }
-    
-    if (_imp->effectNode) {
-        _imp->effectNode->incrementKnobsAge();
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->incrementKnobsAge();
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->incrementKnobsAge();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->incrementKnobsAge();
-    }
-    
-}
-
-
-static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* item)
-{
-    RotoItems layerItems = layer->getItems_mt_safe();
-    if (layerItems.empty()) {
-        return 0;
-    }
-    RotoItems::iterator found = layerItems.end();
-    if (item) {
-        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
-            if (it->get() == item) {
-                found = it;
-                break;
-            }
-        }
-        assert(found != layerItems.end());
-    } else {
-        found = layerItems.end();
-    }
-    
-    if (found != layerItems.end()) {
-        ++found;
-        for (; found != layerItems.end(); ++found) {
-            
-            //We found another stroke below at the same level
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(found->get());
-            if (isStroke) {
-                assert(isStroke != item);
-                return isStroke;
-            }
-            
-            //Cycle through a layer that is at the same level
-            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(found->get());
-            if (isLayer) {
-                RotoStrokeItem* si = findPreviousOfItemInLayer(isLayer, 0);
-                if (si) {
-                    assert(si != item);
-                    return si;
-                }
-            }
-        }
-    }
-    
-    //Item was still not found, find in great parent layer
-    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
-    if (!parentLayer) {
-        return 0;
-    }
-    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
-    
-    found = greatParentItems.end();
-    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
-        if (it->get() == layer) {
-            found = it;
-            break;
-        }
-    }
-    assert(found != greatParentItems.end());
-    RotoStrokeItem* ret = findPreviousOfItemInLayer(parentLayer.get(), layer);
-    assert(ret != item);
-    return ret;
-}
-
-RotoStrokeItem*
-RotoStrokeItem::findPreviousStrokeInHierarchy() 
-{
-    boost::shared_ptr<RotoLayer> layer = getParentLayer();
-    if (!layer) {
-        return 0;
-    }
-    return findPreviousOfItemInLayer(layer.get(), this);
-}
-
-boost::shared_ptr<Natron::Node>
-RotoStrokeItem::getEffectNode() const
-{
-    return _imp->effectNode;
-}
-
-
-boost::shared_ptr<Natron::Node>
-RotoStrokeItem::getMergeNode() const
-{
-    return _imp->mergeNode;
-}
-
-boost::shared_ptr<Natron::Node>
-RotoStrokeItem::getTimeOffsetNode() const
-{
-    
-    return _imp->timeOffsetNode;
-}
-
-boost::shared_ptr<Natron::Node>
-RotoStrokeItem::getFrameHoldNode() const
-{
-    return _imp->frameHoldNode;
-}
-
-void
-RotoStrokeItem::disconnectNodes()
-{
-    _imp->mergeNode->disconnectInput(0);
-    _imp->mergeNode->disconnectInput(1);
-    if (_imp->effectNode) {
-        _imp->effectNode->disconnectInput(0);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->disconnectInput(0);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->disconnectInput(0);
-    }
-}
-
-void
-RotoStrokeItem::deactivateNodes()
-{
-    if (_imp->effectNode) {
-        _imp->effectNode->deactivate(std::list< Node* >(),true,false,false,false);
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->deactivate(std::list< Node* >(),true,false,false,false);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->deactivate(std::list< Node* >(),true,false,false,false);
-    }
-}
-
-void
-RotoStrokeItem::activateNodes()
-{
-    if (_imp->effectNode) {
-        _imp->effectNode->activate(std::list< Node* >(),false,false);
-    }
-    _imp->mergeNode->activate(std::list< Node* >(),false,false);
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->activate(std::list< Node* >(),false,false);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->activate(std::list< Node* >(),false,false);
-    }
-}
-
-void
-RotoStrokeItem::refreshNodesConnections()
-{
-    RotoStrokeItem* previous = findPreviousStrokeInHierarchy();
-    boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
-
-    boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
-    
-    bool connectionChanged = false;
-    if (_imp->effectNode && _imp->type != eRotoStrokeTypeEraser) {
-        
-        
-        boost::shared_ptr<Natron::Node> mergeInput;
-        if (!_imp->timeOffsetNode) {
-            mergeInput = _imp->effectNode;
-        } else {
-            int timeOffsetMode_i = _imp->timeOffsetMode->getValue();
-            if (timeOffsetMode_i == 0) {
-                //relative
-                mergeInput = _imp->timeOffsetNode;
-            } else {
-                mergeInput = _imp->frameHoldNode;
-            }
-            if (_imp->effectNode->getInput(0) != mergeInput) {
-                _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(mergeInput, 0);
-                connectionChanged = true;
-            }
-        }
-        /*
-         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
-         */
-        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
-            _imp->mergeNode->disconnectInput(1);
-            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
-            connectionChanged = true;
-        }
-        
-        if (_imp->mergeNode->getInput(0) != upstreamNode) {
-            _imp->mergeNode->disconnectInput(0);
-            if (upstreamNode) {
-                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                assert(_imp->mergeNode->getInput(0) == upstreamNode);
-            }
-            connectionChanged = true;
-        }
-        
-        
-        int reveal_i = _imp->sourceColor->getValue();
-        boost::shared_ptr<Node> revealInput;
-        bool shouldUseUpstreamForReveal = true;
-        if ((_imp->type == eRotoStrokeTypeReveal ||
-            _imp->type == eRotoStrokeTypeClone ||
-            _imp->type == eRotoStrokeTypeEraser) && reveal_i > 0) {
-            shouldUseUpstreamForReveal = false;
-            revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-        }
-        if (!revealInput && shouldUseUpstreamForReveal) {
-            if (_imp->type != eRotoStrokeTypeSolid) {
-                revealInput = upstreamNode;
-            }
-            
-        }
-        
-        if (revealInput) {
-            if (mergeInput->getInput(0) != revealInput) {
-                mergeInput->disconnectInput(0);
-                mergeInput->connectInputBase(revealInput, 0);
-                connectionChanged = true;
-            }
-        } else {
-            if (mergeInput->getInput(0)) {
-                mergeInput->disconnectInput(0);
-                connectionChanged = true;
-            }
-            
-        }
-    } else {
-        
-        if (_imp->type == eRotoStrokeTypeEraser) {
-            
-            boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
-            if (_imp->mergeNode->getInput(1) != eraserInput) {
-                _imp->mergeNode->disconnectInput(1);
-                if (eraserInput) {
-                    _imp->mergeNode->connectInputBase(eraserInput, 1); // A
-                }
-                connectionChanged = true;
-            }
-            
-            
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-                connectionChanged = true;
-            }
-            
-        } else if (_imp->type == eRotoStrokeTypeReveal) {
-            
-            int reveal_i = _imp->sourceColor->getValue();
-            
-            boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-            
-            if (_imp->mergeNode->getInput(1) != revealInput) {
-                _imp->mergeNode->disconnectInput(1);
-                if (revealInput) {
-                    _imp->mergeNode->connectInputBase(revealInput, 1); // A
-                }
-                connectionChanged = true;
-            }
-            
-            
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-                connectionChanged = true;
-            }
-            
-        } else if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
-            
-            if (_imp->mergeNode->getInput(1) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(1);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
-                }
-                connectionChanged = true;
-            }
-            
-            
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-                connectionChanged = true;
-            }
-            
-        } else {
-            //unhandled case
-            assert(false);
-        }
-    }
-    if (connectionChanged && (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal)) {
-        resetCloneTransformCenter();
-    }
-}
 
 Natron::RotoStrokeType
 RotoStrokeItem::getBrushType() const
@@ -5467,19 +5853,24 @@ RotoStrokeItem::setStrokeFinished()
         
     }
     
-    if (_imp->effectNode) {
-        _imp->effectNode->setWhileCreatingPaintStroke(false);
-        _imp->effectNode->incrementKnobsAge();
+    boost::shared_ptr<Node> effectNode = getEffectNode();
+    boost::shared_ptr<Node> mergeNode = getMergeNode();
+    boost::shared_ptr<Node> timeOffsetNode = getTimeOffsetNode();
+    boost::shared_ptr<Node> frameHoldNode = getFrameHoldNode();
+    
+    if (effectNode) {
+        effectNode->setWhileCreatingPaintStroke(false);
+        effectNode->incrementKnobsAge();
     }
-    _imp->mergeNode->setWhileCreatingPaintStroke(false);
-    _imp->mergeNode->incrementKnobsAge();
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->setWhileCreatingPaintStroke(false);
-        _imp->timeOffsetNode->incrementKnobsAge();
+    mergeNode->setWhileCreatingPaintStroke(false);
+    mergeNode->incrementKnobsAge();
+    if (timeOffsetNode) {
+        timeOffsetNode->setWhileCreatingPaintStroke(false);
+        timeOffsetNode->incrementKnobsAge();
     }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->setWhileCreatingPaintStroke(false);
-        _imp->frameHoldNode->incrementKnobsAge();
+    if (frameHoldNode) {
+        frameHoldNode->setWhileCreatingPaintStroke(false);
+        frameHoldNode->incrementKnobsAge();
     }
     
     getContext()->setStrokeBeingPainted(boost::shared_ptr<RotoStrokeItem>());
@@ -5491,42 +5882,8 @@ RotoStrokeItem::setStrokeFinished()
 }
 
 
-void
-RotoStrokeItem::resetNodesThreadSafety()
-{
-    if (_imp->effectNode) {
-        _imp->effectNode->revertToPluginThreadSafety();
-    }
-    _imp->mergeNode->revertToPluginThreadSafety();
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->revertToPluginThreadSafety();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->revertToPluginThreadSafety();
-    }
-    getContext()->getNode()->revertToPluginThreadSafety();
 
-}
 
-void
-RotoStrokeItem::attachStrokeToNodes()
-{
-    boost::shared_ptr<RotoStrokeItem> curve = boost::dynamic_pointer_cast<RotoStrokeItem>(shared_from_this());
-    assert(curve);
-    ///Attach this stroke to the underlying nodes used
-    if (_imp->effectNode) {
-        _imp->effectNode->attachStrokeItem(curve);
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->attachStrokeItem(curve);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->attachStrokeItem(curve);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->attachStrokeItem(curve);
-    }
-}
 
 bool
 RotoStrokeItem::appendPoint(const RotoPoint& p)
@@ -5744,8 +6101,8 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int lastAge,
         return false;
     }
     
-    double halfBrushSize = _imp->brushSize->getValue() / 2.;
-    bool pressureSize = _imp->pressureSize->getValue();
+    double halfBrushSize = getBrushSizeKnob()->getValue() / 2.;
+    bool pressureSize = getPressureSizeKnob()->getValue();
     evaluateStrokeInternal(realX, realY, realP, transform, 0, halfBrushSize, pressureSize, points, pointsBbox);
     return true;
 }
@@ -5799,118 +6156,12 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->xCurve.clone(s->_xCurve);
         _imp->yCurve.clone(s->_yCurve);
         _imp->pressureCurve.clone(s->_pressureCurve);
-        resetNodesThreadSafety();
     }
     
-    boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
-    if (operation) {
-        int op_i = getOperatorKnob()->getValue();
-        operation->setValue(op_i, 0);
-    }
-
-    
-    if (_imp->type == eRotoStrokeTypeClone || _imp->type == eRotoStrokeTypeReveal) {
-        boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-        Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
-        if (translate) {
-            translate->clone(_imp->cloneTranslate.get());
-        }
-        boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-        Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
-        if (rotate) {
-            rotate->clone(_imp->cloneRotate.get());
-        }
-        boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-        Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
-        if (scale) {
-            scale->clone(_imp->cloneScale.get());
-        }
-        boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-        Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
-        if (uniform) {
-            uniform->clone(_imp->cloneScaleUniform.get());
-        }
-        boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-        Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
-        if (skewX) {
-            skewX->clone(_imp->cloneSkewX.get());
-        }
-        boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-        Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
-        if (skewY) {
-            skewY->clone(_imp->cloneSkewY.get());
-        }
-        boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-        Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
-        if (skewOrder) {
-            skewOrder->clone(_imp->cloneSkewOrder.get());
-        }
-        boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-        Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
-        if (center) {
-            center->clone(_imp->cloneCenter.get());
-            
-        }
-        boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-        Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
-        if (filter) {
-            filter->clone(_imp->cloneFilter.get());
-        }
-        boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-        Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
-        if (bo) {
-            bo->clone(_imp->cloneBlackOutside.get());
-            
-        }
-        
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        boost::shared_ptr<KnobI> offsetKnob;
-        
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
-        if (offset) {
-            offset->clone(_imp->timeOffset.get());
-        }
-
-        
-    } else if (_imp->type == eRotoStrokeTypeBlur) {
-        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
-        if (isDbl) {
-            isDbl->clone(_imp->effectStrength.get());
-        }
-    }
     
     setStrokeFinished();
 
     
-}
-
-void
-RotoStrokeItem::resetCloneTransformCenter()
-{
-    if (_imp->type != eRotoStrokeTypeReveal && _imp->type != eRotoStrokeTypeClone) {
-        return;
-    }
-    boost::shared_ptr<KnobI> resetCenterKnob = _imp->effectNode->getKnobByName(kTransformParamResetCenter);
-    Button_Knob* resetCenter = dynamic_cast<Button_Knob*>(resetCenterKnob.get());
-    if (!resetCenter) {
-        return;
-    }
-    boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-    Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
-    if (!center) {
-        return;
-    }
-    resetCenter->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
-    double x = center->getValue(0);
-    double y = center->getValue(1);
-    _imp->cloneCenter->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
 }
 
 
@@ -5921,12 +6172,12 @@ RotoStrokeItem::computeBoundingBox(int time) const
     
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
-    bool pressureAffectsSize = _imp->pressureSize->getValueAtTime(time);
+    bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     
     QMutexLocker k(&itemMutex);
     bool bboxSet = false;
     
-    double halfBrushSize = _imp->brushSize->getValueAtTime(time) / 2. + 1;
+    double halfBrushSize = getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
     
     KeyFrameSet xCurve = _imp->xCurve.getKeyFrames_mt_safe();
     KeyFrameSet yCurve = _imp->yCurve.getKeyFrames_mt_safe();
@@ -6061,90 +6312,14 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, int time, std::list<std
         pSet = _imp->pressureCurve.getKeyFrames_mt_safe();
     }
     assert(xSet.size() == ySet.size() && xSet.size() == pSet.size());
-    double brushSize = _imp->brushSize->getValueAtTime(time) / 2.;
-    bool pressureAffectsSize = _imp->pressureSize->getValueAtTime(time);
+    double brushSize = getBrushSizeKnob()->getValueAtTime(time) / 2.;
+    bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     evaluateStrokeInternal(xSet,ySet,pSet, transform, mipMapLevel,brushSize, pressureAffectsSize, points,bbox);
     
     
 }
 
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushSizeKnob() const
-{
-    return _imp->brushSize;
-}
 
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushHardnessKnob() const
-{
-    return _imp->brushHardness;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushSpacingKnob() const
-{
-    return _imp->brushSpacing;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushEffectKnob() const
-{
-    return _imp->effectStrength;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushVisiblePortionKnob() const
-{
-    return _imp->visiblePortion;
-}
-
-boost::shared_ptr<Bool_Knob>
-RotoStrokeItem::getPressureOpacityKnob() const
-{
-    return _imp->pressureOpacity;
-}
-
-boost::shared_ptr<Bool_Knob>
-RotoStrokeItem::getPressureSizeKnob() const
-{
-    return _imp->pressureSize;
-}
-
-boost::shared_ptr<Bool_Knob>
-RotoStrokeItem::getPressureHardnessKnob() const
-{
-    return _imp->pressureHardness;
-}
-
-boost::shared_ptr<Bool_Knob>
-RotoStrokeItem::getBuildupKnob() const
-{
-    return _imp->buildUp;
-}
-
-boost::shared_ptr<Int_Knob>
-RotoStrokeItem::getTimeOffsetKnob() const
-{
-    return _imp->timeOffset;
-}
-
-boost::shared_ptr<Choice_Knob>
-RotoStrokeItem::getTimeOffsetModeKnob() const
-{
-    return _imp->timeOffsetMode;
-}
-
-boost::shared_ptr<Choice_Knob>
-RotoStrokeItem::getBrushSourceTypeKnob() const
-{
-    return _imp->sourceColor;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushCloneTranslateKnob() const
-{
-    return _imp->cloneTranslate;
-}
 
 ////////////////////////////////////RotoContext////////////////////////////////////
 
@@ -6180,14 +6355,11 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* 
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false);
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = items.begin(); it != items.end(); ++it) {
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (!isStroke) {
-            continue;
-        }
-        boost::shared_ptr<Natron::Node> effectNode = isStroke->getEffectNode();
-        boost::shared_ptr<Natron::Node> mergeNode = isStroke->getMergeNode();
-        boost::shared_ptr<Natron::Node> timeOffsetNode = isStroke->getTimeOffsetNode();
-        boost::shared_ptr<Natron::Node> frameHoldNode = isStroke->getFrameHoldNode();
+      
+        boost::shared_ptr<Natron::Node> effectNode = (*it)->getEffectNode();
+        boost::shared_ptr<Natron::Node> mergeNode = (*it)->getMergeNode();
+        boost::shared_ptr<Natron::Node> timeOffsetNode = (*it)->getTimeOffsetNode();
+        boost::shared_ptr<Natron::Node> frameHoldNode = (*it)->getFrameHoldNode();
         if (effectNode) {
             nodes->push_back(effectNode);
         }
@@ -6428,7 +6600,8 @@ boost::shared_ptr<Bezier>
 RotoContext::makeBezier(double x,
                         double y,
                         const std::string & baseName,
-                        int time)
+                        int time,
+                        bool isOpenBezier)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -6456,7 +6629,8 @@ RotoContext::makeBezier(double x,
         }
     }
     assert(parentLayer);
-    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>()) );
+    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>(), isOpenBezier) );
+    curve->createNodes();
     if (parentLayer) {
         parentLayer->insertItem(curve,0);
     }
@@ -6511,7 +6685,7 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
     if (parentLayer) {
         parentLayer->insertItem(curve,0);
     }
-    curve->attachStrokeToNodes();
+    curve->createNodes();
     _imp->strokeBeingPainted = curve;
     
     _imp->lastInsertedItem = curve;
@@ -6529,7 +6703,7 @@ boost::shared_ptr<Bezier>
 RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, int time)
 {
     double half = diameter / 2.;
-    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName, time);
+    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName, time, false);
     if (fromCenter) {
         curve->addControlPoint(x + half,y, time);
         curve->addControlPoint(x,y + half, time);
@@ -6570,7 +6744,7 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, int 
 boost::shared_ptr<Bezier>
 RotoContext::makeSquare(double x,double y,double initialSize,int time)
 {
-    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time);
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time, false);
     curve->addControlPoint(x + initialSize,y, time);
     curve->addControlPoint(x + initialSize,y - initialSize, time);
     curve->addControlPoint(x,y - initialSize, time);
@@ -6783,7 +6957,7 @@ const
             Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
             if (isBezier && !isStroke) {
-                if (isBezier->isActivated(time) && isBezier->isCurveFinished() && isBezier->getControlPointsCount() > 1) {
+                if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
                     RectD splineRoD = isBezier->getBoundingBox(time);
                     if ( splineRoD.isNull() ) {
                         continue;
@@ -6798,16 +6972,18 @@ const
                 }
             } else if (isStroke) {
                 RectD strokeRod;
-                if (isStroke == _imp->strokeBeingPainted.get()) {
-                    strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
-                } else {
-                    strokeRod = isStroke->getBoundingBox(time);
-                }
-                if (first) {
-                    first = false;
-                    *rod = strokeRod;
-                } else {
-                    rod->merge(strokeRod);
+                if (isStroke->isActivated(time)) {
+                    if (isStroke == _imp->strokeBeingPainted.get()) {
+                        strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
+                    } else {
+                        strokeRod = isStroke->getBoundingBox(time);
+                    }
+                    if (first) {
+                        first = false;
+                        *rod = strokeRod;
+                    } else {
+                        rod->merge(strokeRod);
+                    }
                 }
             }
         }
@@ -6966,6 +7142,17 @@ RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
 }
 
 void
+RotoContext::clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason)
+{
+    clearSelection(reason);
+    assert(item);
+    boost::shared_ptr<RotoItem> prev = item->getPreviousItemInLayer();
+    if (prev) {
+        select(prev,reason);
+    }
+}
+
+void
 RotoContext::clearSelection(RotoItem::SelectionReasonEnum reason)
 {
     bool empty;
@@ -7005,7 +7192,11 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
-                ++nbUnlockedBeziers;
+                if (isBezier->isOpenBezier()) {
+                    ++nbUnlockedStrokes;
+                } else {
+                    ++nbUnlockedBeziers;
+                }
             } else if (isStroke) {
                 ++nbUnlockedStrokes;
             }
@@ -7027,7 +7218,13 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
     if (isDrawable) {
         if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
-            ++nbUnlockedBeziers;
+            if (isBezier->isOpenBezier()) {
+                ++nbUnlockedStrokes;
+            } else {
+                ++nbUnlockedBeziers;
+            }
+            ++nbStrokeWithoutCloneFunctions;
+            ++nbStrokeWithoutStrength;
         } else if (isStroke) {
             ++nbUnlockedStrokes;
             if (isStroke->getBrushType() != eRotoStrokeTypeBlur && isStroke->getBrushType() != eRotoStrokeTypeSharpen) {
@@ -7102,6 +7299,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                 }
             } else {
                 
+                bool mustDisable = false;
                 if (nbStrokeWithoutCloneFunctions) {
                     bool isCloneKnob = false;
                     for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->cloneKnobs.begin(); it2!=_imp->cloneKnobs.end(); ++it2) {
@@ -7109,10 +7307,28 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                             isCloneKnob = true;
                         }
                     }
-                    k->setAllDimensionsEnabled(!isCloneKnob);
-                } else {
-                    k->setAllDimensionsEnabled(true);
+                    mustDisable |= isCloneKnob;
                 }
+                if (nbUnlockedBeziers && !mustDisable) {
+                    bool isStrokeKnob = false;
+                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->strokeKnobs.begin(); it2!=_imp->strokeKnobs.end(); ++it2) {
+                        if (it2->lock() == k) {
+                            isStrokeKnob = true;
+                        }
+                    }
+                    mustDisable |= isStrokeKnob;
+                }
+                if (nbUnlockedStrokes && !mustDisable) {
+                    bool isBezierKnob = false;
+                    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->shapeKnobs.begin(); it2!=_imp->shapeKnobs.end(); ++it2) {
+                        if (it2->lock() == k) {
+                            isBezierKnob = true;
+                        }
+                    }
+                    mustDisable |= isBezierKnob;
+                }
+                k->setAllDimensionsEnabled(!mustDisable);
+                
             }
             if (nbUnlockedBeziers >= 2 || nbUnlockedStrokes >= 2) {
                 k->setDirty(true);
@@ -7736,12 +7952,13 @@ adjustToPointToScale(unsigned int mipmapLevel,
     }
 }
 
-template <typename PIX,int maxValue, int dstNComps, int srcNComps>
+template <typename PIX,int maxValue, int dstNComps, int srcNComps, bool useOpacity>
 static void
 convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg,
-                                               Natron::Image* image,
-                                               const RectI & pixelRod,
-                                               double shapeColor[3])
+                                                       Natron::Image* image,
+                                                       const RectI & pixelRod,
+                                                       double shapeColor[3],
+                                                       double opacity)
 {
     
     unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
@@ -7749,6 +7966,10 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
     int stride = cairo_image_surface_get_stride(cairoImg);
     
     Natron::Image::WriteAccess acc = image->getWriteRights();
+    
+    double r = useOpacity ? shapeColor[0] * opacity : shapeColor[0];
+    double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
+    double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
     
     for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
         PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
@@ -7758,27 +7979,27 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
             float cairoPixel = (float)srcPix[x * srcNComps] / 255.f;
             switch (dstNComps) {
                 case 4:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 0]));
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 1]));
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * shapeColor[2] * maxValue);
+                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 2]));
-                    dstPix[x * dstNComps + 3] = PIX(cairoPixel * maxValue);
+                    dstPix[x * dstNComps + 3] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
                     assert(!boost::math::isnan(dstPix[x * dstNComps + 3]));
                     break;
                 case 1:
-                    dstPix[x] = PIX(cairoPixel * maxValue);
+                    dstPix[x] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
                     assert(!boost::math::isnan(dstPix[x]));
                     break;
                 case 3:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * shapeColor[2] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
+                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
                     break;
                 case 2:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * shapeColor[0] * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * shapeColor[1] * maxValue);
+                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
+                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
                     break;
 
                 default:
@@ -7794,6 +8015,23 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
 
 }
 
+template <typename PIX,int maxValue, int dstNComps, int srcNComps>
+static void
+convertCairoImageToNatronImageForOpacity(cairo_surface_t* cairoImg,
+                                         Natron::Image* image,
+                                         const RectI & pixelRod,
+                                         double shapeColor[3],
+                                         double opacity,
+                                         bool useOpacity)
+{
+    if (useOpacity) {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, srcNComps, true>(cairoImg, image,pixelRod, shapeColor, opacity);
+    } else {
+        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, srcNComps, false>(cairoImg, image,pixelRod, shapeColor, opacity);
+    }
+
+}
+
 
 template <typename PIX,int maxValue, int dstNComps>
 static void
@@ -7801,12 +8039,14 @@ convertCairoImageToNatronImageForSrcComponents_noColor(cairo_surface_t* cairoImg
                                                        int srcNComps,
                                                        Natron::Image* image,
                                                        const RectI & pixelRod,
-                                                       double shapeColor[3])
+                                                       double shapeColor[3],
+                                                       double opacity,
+                                                       bool useOpacity)
 {
     if (srcNComps == 1) {
-        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, 1>(cairoImg, image,pixelRod, shapeColor);
+        convertCairoImageToNatronImageForOpacity<PIX,maxValue,dstNComps, 1>(cairoImg, image,pixelRod, shapeColor, opacity, useOpacity);
     } else if (srcNComps == 4) {
-        convertCairoImageToNatronImageForDstComponents_noColor<PIX,maxValue,dstNComps, 4>(cairoImg, image,pixelRod, shapeColor);
+        convertCairoImageToNatronImageForOpacity<PIX,maxValue,dstNComps, 4>(cairoImg, image,pixelRod, shapeColor, opacity, useOpacity);
     } else {
         assert(false);
     }
@@ -7818,21 +8058,23 @@ convertCairoImageToNatronImage_noColor(cairo_surface_t* cairoImg,
                                        int srcNComps,
                                        Natron::Image* image,
                                        const RectI & pixelRod,
-                                       double shapeColor[3])
+                                       double shapeColor[3],
+                                       double opacity,
+                                       bool useOpacity)
 {
     int comps = (int)image->getComponentsCount();
     switch (comps) {
         case 1:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,1>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,1>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 2:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,2>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,2>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 3:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,3>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,3>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         case 4:
-            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,4>(cairoImg, srcNComps, image,pixelRod, shapeColor);
+            convertCairoImageToNatronImageForSrcComponents_noColor<PIX,maxValue,4>(cairoImg, srcNComps, image,pixelRod, shapeColor, opacity, useOpacity);
             break;
         default:
             break;
@@ -7951,10 +8193,11 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 template <typename PIX,int maxValue, int srcNComps, int dstNComps>
 static void
 convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
-                               std::size_t stride,
-                               Natron::Image* image,
-                               const RectI& roi,
-                               const RectI& dstBounds)
+                                            std::size_t stride,
+                                            Natron::Image* image,
+                                            const RectI& roi,
+                                            const RectI& dstBounds,
+                                            double shapeColor[3])
 {
     unsigned char* dstPix = cairoImg;
     dstPix += ((roi.y1 - dstBounds.y1) * stride + (roi.x1 - dstBounds.x1));
@@ -7976,10 +8219,11 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                 dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
             } else if (dstNComps == 4) {
                 if (srcNComps == 4) {
-                    dstPix[x * dstNComps + 0] = (float)srcPix[x * srcNComps + 2] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 1] = (float)srcPix[x * srcNComps + 1] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 2] = (float)srcPix[x * srcNComps + 0] / maxValue * 255.f;
-                    dstPix[x * dstNComps + 3] = (float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    //We are in the !buildUp case, do exactly the opposite that is done in convertNatronImageToCairoImageForComponents
+                    dstPix[x * dstNComps + 0] = (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
+                    dstPix[x * dstNComps + 1] = (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
+                    dstPix[x * dstNComps + 2] = (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
+                    dstPix[x * dstNComps + 3] = 255;//(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
                 } else {
                     assert(srcNComps == 1);
                     float pix = (float)srcPix[x];
@@ -8002,12 +8246,13 @@ convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
                                                std::size_t stride,
                                                Natron::Image* image,
                                                const RectI& roi,
-                                               const RectI& dstBounds)
+                                               const RectI& dstBounds,
+                                               double shapeColor[3])
 {
     if (dstNComps == 1) {
-        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds);
+        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 1>(cairoImg, stride, image, roi, dstBounds,shapeColor);
     } else if (dstNComps == 4) {
-        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds);
+        convertNatronImageToCairoImageForComponents<PIX,maxValue, srcComps, 4>(cairoImg, stride, image, roi, dstBounds,shapeColor);
     } else {
         assert(false);
     }
@@ -8020,21 +8265,22 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
                                std::size_t stride,
                                Natron::Image* image,
                                const RectI& roi,
-                               const RectI& dstBounds)
+                               const RectI& dstBounds,
+                               double shapeColor[3])
 {
     int numComps = (int)image->getComponentsCount();
     switch (numComps) {
         case 1:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 1>(cairoImg, dstNComps, stride, image, roi, dstBounds,shapeColor);
             break;
         case 2:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 2>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 2>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         case 3:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 3>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 3>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         case 4:
-            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 4>(cairoImg, dstNComps,stride, image, roi, dstBounds);
+            convertNatronImageToCairoImageForSrcComponents<PIX,maxValue, 4>(cairoImg, dstNComps,stride, image, roi, dstBounds,shapeColor);
             break;
         default:
             break;
@@ -8052,6 +8298,12 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                 double distToNext,
                                 boost::shared_ptr<Natron::Image> *image)
 {
+    
+    int time = getTimelineCurrentTime();
+
+    double shapeColor[3];
+    stroke->getColor(time, shapeColor);
+    
     boost::shared_ptr<Natron::Image> source = *image;
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
@@ -8123,7 +8375,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
         copyFromImage = true;
     }
-    int time = getTimelineCurrentTime();
 
     bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
 
@@ -8150,7 +8401,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
         memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox);
+        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
         cairoImg = cairo_image_surface_create_for_data(buf.data(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
@@ -8204,9 +8455,9 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         }
     }
     
-    double shapeColor[3];
-    stroke->getColor(time, shapeColor);
-    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke.get(), doBuildUp, time, mipmapLevel);
+    
+    double opacity = stroke->getOpacity(time);
+    distToNext = _imp->renderStroke(cr, dotPatterns, toScalePoints, distToNext, stroke, doBuildUp, opacity, time, mipmapLevel);
     
     stroke->updatePatternCache(dotPatterns);
     
@@ -8218,7 +8469,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     
-    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor);
+    convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, source.get(), pixelPointsBbox, shapeColor, 1., false);
 
     
     cairo_destroy(cr);
@@ -8229,7 +8480,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 }
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                   const RectI& /*roi*/,
                                   U64 rotoAge,
                                   U64 nodeHash,
@@ -8252,9 +8503,25 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     hash.append(rotoAge);
     hash.computeHash();
     
-    std::list<std::pair<Natron::Point,double> > points;
     RectD bbox;
-    stroke->evaluateStroke(mipmapLevel, time, &points, &bbox);
+    std::list<std::pair<Natron::Point,double> > points;
+    
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
+    Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
+    if (isStroke) {
+        isStroke->evaluateStroke(mipmapLevel, time, &points, &bbox);
+    } else {
+        assert(isBezier);
+        bbox = isBezier->getBoundingBox(time);
+        if (isBezier->isOpenBezier()) {
+            std::list<Point> decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &decastelJauPolygon, 0);
+            for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it!=decastelJauPolygon.end(); ++it) {
+                points.push_back(std::make_pair(*it, 1.));
+            }
+        }
+        
+    }
     
     RectI pixelRod;
     bbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
@@ -8310,7 +8577,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     image->allocateMemory();
     
 
-    image = renderMaskInternal(stroke.get(), std::list<boost::shared_ptr<RotoDrawableItem> >(), pixelRod, components, time, depth, mipmapLevel, points, image);
+    image = renderMaskInternal(stroke, pixelRod, components, time, depth, mipmapLevel, points, image);
     
     {
         QMutexLocker l(&_imp->lastRenderedImageMutex);
@@ -8322,25 +8589,10 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
 }
 
 
-boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(const RectI & roi,
-                        const Natron::ImageComponents& components,
-                        const RectD & nodeRoD, //!< rod in canonical coordinates
-                        SequenceTime time,
-                        Natron::ImageBitDepthEnum depth,
-                        unsigned int mipmapLevel)
-{
-    std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
-    ImagePtr image(new Image(components, nodeRoD, roi, mipmapLevel, 1., depth));
-    return renderMaskInternal(0, splines, roi, components, time, depth, mipmapLevel,
-                              std::list<std::pair<Natron::Point,double> >(),image);
-    
-} // renderMask
 
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
-                                const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                 const RectI & roi,
                                 const Natron::ImageComponents& components,
                                 SequenceTime time,
@@ -8353,13 +8605,15 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
     
     boost::shared_ptr<Node> node = getNode();
     
-  
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
+    Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
     cairo_format_t cairoImgFormat;
     
     int srcNComps;
     bool doBuildUp = true;
-    if (isSingleStroke) {
-        doBuildUp = isSingleStroke->getBuildupKnob()->getValueAtTime(time);
+    
+    if (isStroke) {
+        doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
         //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
         if (!doBuildUp || components.getNumComponents() > 1) {
             cairoImgFormat = CAIRO_FORMAT_ARGB32;
@@ -8368,26 +8622,13 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
             cairoImgFormat = CAIRO_FORMAT_A8;
             srcNComps = 1;
         }
+        
     } else {
-        if (components.getNumComponents() == 1) {
-            cairoImgFormat = CAIRO_FORMAT_A8;
-            srcNComps = 1;
-        } else if (components.getNumComponents() == 2) {
-            cairoImgFormat = CAIRO_FORMAT_RGB24;
-            srcNComps = 3;
-        } else if (components.getNumComponents() == 3) {
-            cairoImgFormat = CAIRO_FORMAT_RGB24;
-            srcNComps = 3;
-        } else if (components.getNumComponents() == 4) {
-            cairoImgFormat = CAIRO_FORMAT_ARGB32;
-            srcNComps = 4;
-        } else {
-            cairoImgFormat = CAIRO_FORMAT_A8;
-            srcNComps = 1;
-        }
-
+        cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
     }
     
+
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
     cairo_surface_set_device_offset(cairoImg, -roi.x1, -roi.y1);
@@ -8408,13 +8649,16 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
 
     
     double shapeColor[3];
-    if (isSingleStroke) {
-        isSingleStroke->getColor(time, shapeColor);
+    stroke->getColor(time, shapeColor);
+
+    double opacity = stroke->getOpacity(time);
+
+    if (isStroke || isBezier->isOpenBezier()) {
         std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        _imp->renderStroke(cr, dotPatterns, points, 0, isSingleStroke, doBuildUp, time, mipmapLevel);
+        _imp->renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, opacity, time, mipmapLevel);
         
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -8423,37 +8667,28 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
             }
         }
         
-        switch (depth) {
-            case Natron::eImageBitDepthFloat:
-                convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor);
-                break;
-            case Natron::eImageBitDepthByte:
-                convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor);
-                break;
-            case Natron::eImageBitDepthShort:
-                convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor);
-                break;
-            case Natron::eImageBitDepthNone:
-                assert(false);
-                break;
-        }
+        
     } else {
-        _imp->renderInternal(cr, splines,mipmapLevel,time);
-        switch (depth) {
-            case Natron::eImageBitDepthFloat:
-                convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthByte:
-                convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthShort:
-                convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), roi,srcNComps);
-                break;
-            case Natron::eImageBitDepthNone:
-                assert(false);
-                break;
-        }
+        _imp->renderBezier(cr, isBezier, opacity, time, mipmapLevel);
     }
+    
+    bool useOpacityToConvert = isBezier != 0;
+    
+    switch (depth) {
+        case Natron::eImageBitDepthFloat:
+            convertCairoImageToNatronImage_noColor<float, 1>(cairoImg, srcNComps, image.get(), roi, shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthByte:
+            convertCairoImageToNatronImage_noColor<unsigned char, 255>(cairoImg, srcNComps,  image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthShort:
+            convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
+            break;
+        case Natron::eImageBitDepthNone:
+            assert(false);
+            break;
+    }
+
     
     assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
     
@@ -8470,30 +8705,6 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
     
     return image;
 }
-
-
-void
-RotoContextPrivate::renderInternal(cairo_t* cr,
-                                   const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
-                                   unsigned int mipmapLevel,
-                                   int time)
-{
-    
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it2 = splines.begin(); it2 != splines.end(); ++it2) {
-        
-        Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
-        if (isBezier && !isStroke) {
-            renderBezier(cr, isBezier, time, mipmapLevel);
-        } else if (isStroke) {
-            renderStroke(cr, isStroke, time, mipmapLevel);
-        }
-        
-        
-    } // foreach(splines)
-    
-} // renderInternal
-
 
 
 static inline
@@ -8604,8 +8815,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
                                  std::vector<cairo_pattern_t*>& dotPatterns,
                                  const std::list<std::pair<Point,double> >& points,
                                  double distToNext,
-                                 const RotoStrokeItem* stroke,
+                                 const boost::shared_ptr<RotoDrawableItem>&  stroke,
                                  bool doBuildup,
+                                 double alpha,
                                  int time,
                                  unsigned int mipmapLevel)
 {
@@ -8618,8 +8830,6 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     }
     
     assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
-    
-    double alpha = stroke->getOpacity(time);
     
     boost::shared_ptr<Double_Knob> brushSizeKnob = stroke->getBrushSizeKnob();
     double brushSize = brushSizeKnob->getValueAtTime(time);
@@ -8721,25 +8931,10 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     return distToNext;
 }
 
-void
-RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
-{
-    std::list<std::pair<Point,double> > points;
 
-    stroke->evaluateStroke(mipmapLevel, time, &points);
-    std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS, (cairo_pattern_t*)0);
-    bool doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
-    renderStroke(cr, dotPatterns, points, 0, stroke, doBuildUp, time, mipmapLevel);
-    for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
-        if (dotPatterns[i]) {
-            cairo_pattern_destroy(dotPatterns[i]);
-            dotPatterns[i] = 0;
-        }
-    }
-}
 
 void
-RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel)
+RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,double opacity, int time, unsigned int mipmapLevel)
 {
     ///render the bezier only if finished (closed) and activated
     if ( !bezier->isCurveFinished() || !bezier->isActivated(time) || ( bezier->getControlPointsCount() <= 1 ) ) {
@@ -8749,17 +8944,15 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
     
     double fallOff = bezier->getFeatherFallOff(time);
     double featherDist = bezier->getFeatherDistance(time);
-    double opacity = bezier->getOpacity(time);
 #ifdef NATRON_ROTO_INVERTIBLE
     bool inverted = (*it2)->getInverted(time);
 #else
     const bool inverted = false;
 #endif
-    int operatorIndex = bezier->getCompositingOperator();
     double shapeColor[3];
     bezier->getColor(time, shapeColor);
     
-    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     
     BezierCPs cps = bezier->getControlPoints_mt_safe();
     
@@ -8829,8 +9022,11 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
 }
 
 void
-RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh)
+RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double /*opacity*/, double featherDist, double fallOff, cairo_pattern_t* mesh)
 {
+    
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
     
     double fallOffInverse = 1. / fallOff;
     /*
@@ -8996,7 +9192,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - opacity : opacity) );
+                                                 std::sqrt(inverted ? 0. : 1.) );
         ///outter is faded
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  inverted ? 1. : 0.);
@@ -9004,7 +9200,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
                                                  inverted ? 1. : 0.);
         ///inner is full color
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - opacity : opacity));
+                                                 std::sqrt(inverted ? 0. : 1.));
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
         
         cairo_mesh_pattern_end_patch(mesh);
@@ -9037,11 +9233,15 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
 void
 RotoContextPrivate::renderInternalShape(int time,
                                         unsigned int mipmapLevel,
-                                        double shapeColor[3],
-                                        double opacity,
+                                        double /*shapeColor*/[3],
+                                        double /*opacity*/,
                                         const Transform::Matrix3x3& transform,
                                         cairo_t* cr,
+#ifdef ROTO_USE_MESH_PATTERN_ONLY
                                         cairo_pattern_t* mesh,
+#else
+                                        cairo_pattern_t* /*mesh*/,
+#endif
                                         const BezierCPs & cps)
 {
     assert(!cps.empty());
@@ -9180,7 +9380,7 @@ RotoContextPrivate::renderInternalShape(int time,
     }
 #else
     
-    cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
+    cairo_set_source_rgba(cr, 1, 1, 1, 1);
     
     BezierCPs::const_iterator point = cps.begin();
     assert(point != cps.end());
@@ -9502,11 +9702,11 @@ static void refreshLayerRotoPaintTree(RotoLayer* layer)
     const RotoItems& items = layer->getItems();
     for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
         RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->get());
         if (isLayer) {
             refreshLayerRotoPaintTree(isLayer);
-        } else if (isStroke) {
-            isStroke->refreshNodesConnections();
+        } else if (isDrawable) {
+            isDrawable->refreshNodesConnections();
         }
     }
 }

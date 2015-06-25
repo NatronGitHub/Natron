@@ -360,18 +360,18 @@ public:
                                    const NodePtr& rotoPaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                    const NodePtr& viewerInput)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
     , viewerNode(renderRequester->getNode())
     , viewerInputNode()
     {
         if (rotoNode) {
-            boost::shared_ptr<RotoContext> roto = rotoNode->getRotoContext();
-            assert(roto);
             if (activeStroke) {
                 
-                roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+                bool ok = rotoNode->getLiveInstance()->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
+                assert(ok);
+                
                 std::list<std::pair<Natron::Point,double> > lastStrokePoints;
                 RectD wholeStrokeRod;
                 RectD lastStrokeBbox;
@@ -387,11 +387,7 @@ public:
                     }
                     
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                        
-                        bool isStrokeNode = (*it)->getAttachedStrokeItem() == activeStroke;
-                        
-                        (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis, isStrokeNode, Natron::eRenderSafetyInstanceSafe);
-                        if (isStrokeNode) {
+                        if ((*it)->getAttachedRotoItem() == activeStroke) {
                             (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
                         }
                     }
@@ -406,7 +402,7 @@ public:
         ///for the File Dialog preview.
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, viewerInput->getCurrentRenderThreadSafety());
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety());
         }
     }
     
@@ -770,6 +766,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                      this,
                                                      textureIndex,
                                                      getTimeline().get(),
+                                                     NodePtr(),
                                                      false));
     }
     
@@ -889,7 +886,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     scale,
                                     inputToRenderName,
                                     outArgs->params->layer,
-                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName));
+                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                                    outArgs->params->depth == eImageBitDepthFloat && supportsGLSL()));
     
     bool isCached = false;
     
@@ -1995,10 +1993,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 g = r;
                 b = r;
             }
-            dst_pixels[x * 4] = r;
-            dst_pixels[x * 4 + 1] = g;
-            dst_pixels[x * 4 + 2] = b;
-            dst_pixels[x * 4 + 3] = a;
+            dst_pixels[x * 4] = Natron::clamp(r, 0., 1.);
+            dst_pixels[x * 4 + 1] = Natron::clamp(g, 0., 1.);
+            dst_pixels[x * 4 + 2] = Natron::clamp(b, 0., 1.);
+            dst_pixels[x * 4 + 3] = Natron::clamp(a, 0., 1.);
 
         }
         if (src_pixels) {
@@ -2367,8 +2365,6 @@ ViewerInstance::disconnectViewer()
 bool
 ViewerInstance::supportsGLSL() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
 
     ///This is a short-cut, this is primarily used when the user switch the
     /// texture mode in the preferences menu. If the hardware doesn't support GLSL

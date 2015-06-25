@@ -1979,6 +1979,7 @@ private:
                                                              _imp->output, // viewer requester
                                                              0, //texture index
                                                              _imp->output->getApp()->getTimeLine().get(),
+                                                             NodePtr(),
                                                              false);
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
@@ -2075,6 +2076,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  _effect, //viewer
                                                  0, //texture index
                                                  _effect->getApp()->getTimeLine().get(),
+                                                 NodePtr(),
                                                  false);
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());

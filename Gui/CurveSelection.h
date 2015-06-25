@@ -12,6 +12,10 @@
 #define CURVESELECTION_H
 
 #include <vector>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
 
 class CurveGui;
 class CurveSelection
@@ -20,7 +24,7 @@ public:
 
     CurveSelection() {}
 
-    virtual void getSelectedCurves(std::vector<CurveGui*>* selection) = 0;
+    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) = 0;
 };
 
 #endif // CURVESELECTION_H

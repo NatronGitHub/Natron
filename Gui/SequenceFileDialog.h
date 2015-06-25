@@ -523,7 +523,7 @@ private:
 
     QByteArray saveState() const;
 
-    bool restoreState(const QByteArray & state);
+    bool restoreState(const QByteArray & state, bool restoreDirectory);
 
     void createViewerPreviewNode();
     

@@ -608,6 +608,8 @@ namespace Natron {
         void fill(const RectI & roi,float r,float g,float b,float a);
         
         void fillZero(const RectI& roi);
+        
+        void fillBoundsZero();
 
         /**
      * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B

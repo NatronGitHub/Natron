@@ -950,6 +950,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              dynamic_cast<OutputEffectInstance*>(this),
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
+                                             NodePtr(),
                                              false);
     
     EffectPointerThreadProperty_RAII propHolder_raii(this);

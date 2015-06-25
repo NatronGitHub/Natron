@@ -807,6 +807,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          const TimeLine* timeline,
                                          bool isAnalysis,
                                          bool isDuringPaintStrokeCreation,
+                                         const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                          Natron::RenderSafetyEnum currentThreadSafety)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
@@ -825,9 +826,23 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isAnalysis = isAnalysis;
     args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
     args.currentThreadSafety = currentThreadSafety;
-    
+    args.rotoPaintNodes = rotoPaintNodes;
     ++args.validArgs;
     
+}
+
+bool
+EffectInstance::getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
+{
+    if (!_imp->frameRenderArgs.hasLocalData()) {
+        return false;
+    }
+    const ParallelRenderArgs& tls = _imp->frameRenderArgs.localData();
+    if (!tls.validArgs) {
+        return false;
+    }
+    *nodes = tls.rotoPaintNodes;
+    return true;
 }
 
 void
@@ -856,6 +871,10 @@ EffectInstance::invalidateParallelRenderArgsTLS()
         --args.validArgs;
         if (args.validArgs < 0) {
             args.validArgs = 0;
+        }
+        
+        for (NodeList::iterator it = args.rotoPaintNodes.begin(); it!=args.rotoPaintNodes.end(); ++it) {
+            (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
@@ -1152,7 +1171,7 @@ EffectInstance::getImage(int inputNb,
     
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
     boost::shared_ptr<RotoContext> roto;
-    boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+    boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
     if (attachedStroke) {
         roto = attachedStroke->getContext();
     } else {
@@ -1170,7 +1189,11 @@ EffectInstance::getImage(int inputNb,
             ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
             return ImagePtr();
         }
-        channelForMask = getMaskChannel(inputNb,&maskComps);
+        NodePtr maskInput;
+        channelForMask = getMaskChannel(inputNb,&maskComps,&maskInput);
+        if (maskInput) {
+            n = maskInput->getLiveInstance();
+        }
         
         //Invalid mask
         if (channelForMask == -1 || maskComps.getNumComponents() == 0) {
@@ -1323,6 +1346,9 @@ EffectInstance::getImage(int inputNb,
     ///For the roto brush, we do things separatly and render the mask with the RotoContext.
     if (useRotoInput) {
         
+        
+        ///Usage of roto outside of the rotopaint node is no longer handled
+        assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
@@ -1330,9 +1356,6 @@ EffectInstance::getImage(int inputNb,
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
                                                       time, view, depth, mipMapLevel);
             }
-        } else {
-            inputImg = roto->renderMask(pixelRoI, prefComps,
-                                        rod, time, depth, mipMapLevel);
         }
         if (roiPixel) {
             *roiPixel = pixelRoI;
@@ -2405,7 +2428,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (identity) {
             ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
-                return eRenderRoIRetCodeFailed;
+                return eRenderRoIRetCodeOk;
             } else if (inputNbIdentity == -2) {
                 // there was at least one crash if you set the first frame to a negative value
                 assert(inputTimeIdentity != args.time);
@@ -2448,13 +2471,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
+                inputArgs.preComputedRoD.clear();
                 
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
                 
             } else {
-                for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
-                    (*it)->fillZero(args.roi);
-                }
+                assert(outputPlanes->empty());
             }
             
             return eRenderRoIRetCodeOk;
@@ -2914,7 +2936,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         int maxInput = getMaxInputCount();
         bool hasMask = false;
         
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
@@ -3549,11 +3571,12 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         
         Natron::ImageComponents maskComps;
         int channelForAlphaInput;
+        NodePtr maskInput;
         if (inputIsMask) {
             if (!isMaskEnabled(it->first)) {
                 continue;
             }
-            channelForAlphaInput = getMaskChannel(it->first,&maskComps);
+            channelForAlphaInput = getMaskChannel(it->first,&maskComps,&maskInput);
         } else {
             channelForAlphaInput = -1;
         }
@@ -3576,8 +3599,13 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
             inputEffect = getInput(it->first);
         }
         
+        //Redirect the mask input
+        if (maskInput) {
+            inputEffect = maskInput->getLiveInstance();
+        }
+        
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if (getNode()->getAttachedStrokeItem() && inputEffect && inputEffect->isRotoPaintNode()) {
+        if (getNode()->getAttachedRotoItem() && inputEffect && inputEffect->isRotoPaintNode()) {
             continue;
         }
 
@@ -4319,12 +4347,13 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  comps,
                                  outputClipPrefDepth,
                                  this);
+        identityProcessed = true;
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(downscaledRectToRender);
                 it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
-            identityProcessed = true;
+            return eRenderingFunctorRetOK;
         } else {
         
             EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
@@ -4337,7 +4366,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.renderMappedImage->fillZero(downscaledRectToRender);
                     it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
-                identityProcessed = true;
+                return eRenderingFunctorRetOK;
             } else {
                 
                 assert(identityPlanes.size() == planes.planes.size());
@@ -4346,6 +4375,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it,++idIt) {
                     
                     if (renderFullScaleThenDownscale && renderUseScaleOneInputs && (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel()) {
+                        
+                        if (!(*idIt)->getBounds().contains(downscaledRectToRender)) {
+                            ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                            it->second.fullscaleImage->fillZero(downscaledRectToRender);
+                        }
                         
                         ///Convert format first if needed
                         ImagePtr sourceImage;
@@ -4369,6 +4403,12 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.fullscaleImage->pasteFrom(*inputPlane,downscaledRectToRender, false);
                         it->second.fullscaleImage->markForRendered(downscaledRectToRender);
                     } else {
+                        
+                        if (!(*idIt)->getBounds().contains(downscaledRectToRender)) {
+                            ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
+                            it->second.downscaleImage->fillZero(downscaledRectToRender);
+                        }
+                        
                         ///Convert format if needed or copy
                         if (it->second.downscaleImage->getComponents() != (*idIt)->getComponents() || it->second.downscaleImage->getBitDepth() != (*idIt)->getBitDepth()) {
                             Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth((*idIt)->getBitDepth());
@@ -5312,8 +5352,12 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     
 
     bool ret = false;
-    
-     if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
+    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    if (rotoItem && !rotoItem->isActivated(time)) {
+        ret = true;
+        *inputNb = getNode()->getPreferredInput();
+        *inputTime = time;
+    } else if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
         ret = true;
         *inputNb = 0;
         *inputTime = time;
@@ -5369,14 +5413,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    //bool isDuringStrokeCreation = isDuringPaintStrokeCreationThreadLocal();
     
     bool foundInCache;
-   // if (isDuringStrokeCreation) {
-    //    foundInCache = false;
-    //} else {
-        foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
-   // }
+
+    if (getScriptName_mt_safe() == "Roto1") {
+        assert(true);
+    }
+    foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
@@ -5615,6 +5658,57 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
 }
 
 void
+EffectInstance::getNonMaskInputsAvailableComponents(SequenceTime time,
+                                                    int view,
+                                                    bool preferExistingComponents,
+                                                    ComponentsAvailableMap* comps,
+                                                    std::list<Natron::EffectInstance*>* markedNodes)
+{
+    
+    NodePtr node  = getNode();
+    if (!node) {
+        return;
+    }
+    int preferredInput = node->getPreferredInput();
+    
+    //Call recursively on all inputs which are not masks
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        if (!isInputMask(i) && !isInputRotoBrush(i)) {
+            EffectInstance* input = getInput(i);
+            if (input) {
+                ComponentsAvailableMap inputAvailComps;
+                input->getComponentsAvailableRecursive(time, view, &inputAvailComps, markedNodes);
+                for (ComponentsAvailableMap::iterator it = inputAvailComps.begin(); it!=inputAvailComps.end(); ++it) {
+                    //If the component is already present in the 'comps' map, only add it if we are the preferred input
+                    ComponentsAvailableMap::iterator colorMatch = comps->end();
+                    bool found = false;
+                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                        if (it2->first == it->first) {
+                            if (i == preferredInput && !preferExistingComponents) {
+                                it2->second = node;
+                            }
+                            found = true;
+                            break;
+                        } else if (it2->first.isColorPlane()) {
+                            colorMatch = it2;
+                        }
+                    }
+                    if (!found) {
+                        if (colorMatch != comps->end() && it->first.isColorPlane()) {
+                            //we found another color components type, skip
+                            continue;
+                        } else {
+                            comps->insert(*it);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void
 EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, ComponentsAvailableMap* comps,
                                                 std::list<Natron::EffectInstance*>* markedNodes)
 {
@@ -5625,7 +5719,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
-            *comps = _imp->outputComponentsAvailable;
+            comps->insert(_imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end());
             return;
         }
     }
@@ -5659,16 +5753,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         }
         
         if (doHeuristicForPassThrough) {
-            //Call recursively on all inputs which are not masks
-            int maxInputs = getMaxInputCount();
-            for (int i = 0; i < maxInputs; ++i) {
-                if (!isInputMask(i) && !isInputRotoBrush(i)) {
-                    EffectInstance* input = getInput(i);
-                    if (input) {
-                        input->getComponentsAvailableRecursive(time, view, comps, markedNodes);
-                    }
-                }
-            }
+            
+            getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
             
         } else {
             if (ptInput) {
@@ -5694,8 +5780,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     if (foundOutput != neededComps.end()) {
         
         ///Foreach component produced by the node at the given (view,time),  try
-        ///to add it to the components available. Since we are recursing upstream, it is probably
-        ///already in there, in which case we ignore it and keep the one from below.
+        ///to add it to the components available. Since we already handled upstream nodes, it is probably
+        ///already in there, in which case we mark that this node is producing the component instead
         for (std::vector<Natron::ImageComponents>::iterator it = foundOutput->second.begin();
              it != foundOutput->second.end(); ++it) {
             
@@ -5727,10 +5813,11 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
             }
             
-            //If the component already exists from below in the tree, do not add it
+            
             if (alreadyExisting == comps->end()) {
                 comps->insert(std::make_pair(*it, node));
             } else {
+                //If the component already exists from upstream in the tree, mark that we produce it instead
                 alreadyExisting->second = node;
             }
         }
@@ -5794,6 +5881,12 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     
     
     
+}
+
+void
+EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes)
+{
+    getComponentsAvailableRecursive(time, 0, comps, markedNodes);
 }
 
 void
@@ -5950,7 +6043,8 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 } else if (isInputMask(i) && !isInputRotoBrush(i)) {
                     //Use mask channel selector
                     ImageComponents maskComp;
-                    int channelMask = getNode()->getMaskChannel(i, &maskComp);
+                    NodePtr maskInput;
+                    int channelMask = getNode()->getMaskChannel(i, &maskComp,&maskInput);
                     if (channelMask != -1 && maskComp.getNumComponents() > 0) {
                         std::vector<ImageComponents> compVec;
                         compVec.push_back(maskComp);
@@ -5975,9 +6069,9 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
 }
 
 int
-EffectInstance::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
+EffectInstance::getMaskChannel(int inputNb,Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
 {
-    return getNode()->getMaskChannel(inputNb,comps);
+    return getNode()->getMaskChannel(inputNb,comps,maskInput);
 }
 
 bool
@@ -6168,6 +6262,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  dynamic_cast<OutputEffectInstance*>(this),
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),
+                                                 NodePtr(),
                                                  true);
 
         RECURSIVE_ACTION();

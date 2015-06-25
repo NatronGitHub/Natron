@@ -99,13 +99,24 @@ MoveControlPointsUndoCommand::~MoveControlPointsUndoCommand()
 void
 MoveControlPointsUndoCommand::undo()
 {
+    
+    
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
+    std::set<Bezier*> beziers;
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it) {
+        beziers.insert(it->first->getBezier().get());
+    }
+    
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         if (it->second) {
             it->second->clone(*cpIt->second);
         }
+    }
+    
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it!=beziers.end(); ++it) {
+        (*it)->incrementNodesAge();
     }
 
     _roto->evaluate(true);
@@ -239,6 +250,16 @@ TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
+    std::set<Bezier*> beziers;
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
+        beziers.insert(it->first->getBezier().get());
+    }
+    
+    for (std::set<Bezier*>::iterator it = beziers.begin(); it!=beziers.end(); ++it) {
+        (*it)->incrementNodesAge();
+    }
+
+    
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         if (it->second) {
@@ -328,7 +349,7 @@ AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
       , _index(index)
       , _t(t)
 {
-    _oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+    _oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
     _oldCurve->clone(curve.get());
     
 }
@@ -382,7 +403,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
-    desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+    desc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
     desc.oldCurve->clone(curve.get());
     _curves.push_back(desc);
 }
@@ -425,7 +446,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
             if (!isStroke) {
-                curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+                curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer(), false) );
             } else {
                 curveDesc.oldCurve.reset( new RotoStrokeItem(isStroke->getBrushType(),curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
             }
@@ -713,7 +734,7 @@ MoveTangentUndoCommand::undo()
         }
         _tangentBeingDragged->clone(*_oldCp);
     }
-
+    _tangentBeingDragged->getBezier()->incrementNodesAge();
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
     }
@@ -739,6 +760,8 @@ MoveTangentUndoCommand::redo()
         }
         _oldCp->clone(*_tangentBeingDragged);
     }
+    
+    _tangentBeingDragged->getBezier()->incrementNodesAge();
 
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
     dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_breakTangents);
@@ -777,7 +800,8 @@ MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) ) {
         return false;
     }
-
+    _dx += mvCmd->_dx;
+    _dy += mvCmd->_dy;
     return true;
 }
 
@@ -815,7 +839,7 @@ MoveFeatherBarUndoCommand::undo()
 {
     _newPoint.first->clone(*_oldPoint.first);
     _newPoint.second->clone(*_oldPoint.second);
-
+    _newPoint.first->getBezier()->incrementNodesAge();
     _roto->evaluate(true);
     _roto->setSelection(_curve, _newPoint);
     setText( QObject::tr("Move feather bar of %1 of %2").arg( _curve->getLabel().c_str() ).arg( _roto->getNodeName() ) );
@@ -824,28 +848,26 @@ MoveFeatherBarUndoCommand::undo()
 void
 MoveFeatherBarUndoCommand::redo()
 {
-    _oldPoint.first->clone(*_newPoint.first);
-    _oldPoint.second->clone(*_newPoint.second);
-
+    
     boost::shared_ptr<BezierCP> p = _newPoint.first->isFeatherPoint() ?
-                                    _newPoint.second : _newPoint.first;
+    _newPoint.second : _newPoint.first;
     boost::shared_ptr<BezierCP> fp = _newPoint.first->isFeatherPoint() ?
-                                     _newPoint.first : _newPoint.second;
+    _newPoint.first : _newPoint.second;
     Point delta;
     Point featherPoint,controlPoint;
     p->getPositionAtTime(_time, &controlPoint.x, &controlPoint.y);
     bool isOnKeyframe = fp->getPositionAtTime(_time, &featherPoint.x, &featherPoint.y);
-
+    
     if ( (controlPoint.x != featherPoint.x) || (controlPoint.y != featherPoint.y) ) {
         Point featherVec;
         featherVec.x = featherPoint.x - controlPoint.x;
         featherVec.y = featherPoint.y - controlPoint.y;
         double norm = sqrt( (featherPoint.x - controlPoint.x) * (featherPoint.x - controlPoint.x)
-                            + (featherPoint.y - controlPoint.y) * (featherPoint.y - controlPoint.y) );
+                           + (featherPoint.y - controlPoint.y) * (featherPoint.y - controlPoint.y) );
         assert(norm != 0);
         delta.x = featherVec.x / norm;
         delta.y = featherVec.y / norm;
-
+        
         double dotProduct = delta.x * _dx + delta.y * _dy;
         delta.x = delta.x * dotProduct;
         delta.y = delta.y * dotProduct;
@@ -853,7 +875,7 @@ MoveFeatherBarUndoCommand::redo()
         ///the feather point equals the control point, use derivatives
         const std::list<boost::shared_ptr<BezierCP> > & cps = p->getBezier()->getFeatherPoints();
         assert(cps.size() > 1);
-
+        
         std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
         assert( cur != cps.end() );
         // compute previous and next element in the cyclic list
@@ -867,12 +889,12 @@ MoveFeatherBarUndoCommand::redo()
         if (next == cps.end()) {
             next = cps.begin();
         }
-
+        
         double leftX,leftY,rightX,rightY,norm;
         Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);
         Bezier::rightDerivativeAtPoint(_time, **cur, **next, &rightX, &rightY);
         norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
-
+        
         ///normalize derivatives by their norm
         if (norm != 0) {
             delta.x = -( (rightY - leftY) / norm );
@@ -888,20 +910,21 @@ MoveFeatherBarUndoCommand::redo()
                 delta.x = delta.y = 0;
             }
         }
-
+        
         double dotProduct = delta.x * _dx + delta.y * _dy;
         delta.x = delta.x * dotProduct;
         delta.y = delta.y * dotProduct;
     }
-
+    
     if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
         int index = fp->getBezier()->getFeatherPointIndex(fp);
         fp->getBezier()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
+    
     if (_firstRedoCalled) {
         _roto->evaluate(true);
     }
-
+    
     _roto->setSelection(_curve, _newPoint);
 
     _firstRedoCalled = true;
@@ -926,6 +949,9 @@ MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
          ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_time != _time) ) {
         return false;
     }
+    
+    _dx += mvCmd->_dx;
+    _dy += mvCmd->_dy;
 
     return true;
 }
@@ -959,6 +985,7 @@ RemoveFeatherUndoCommand::undo()
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->clone(**itOld);
         }
+        it->curve->incrementNodesAge();
     }
     _roto->evaluate(true);
 
@@ -1160,6 +1187,7 @@ SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
 
 MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
                                              const boost::shared_ptr<Bezier> & curve,
+                                             bool isOpenBezier,
                                              bool createPoint,
                                              double dx,
                                              double dy,
@@ -1179,11 +1207,12 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
       , _dy(createPoint ? 0. : dy)
       , _time(time)
       , _lastPointAdded(-1)
+      , _isOpenBezier(isOpenBezier)
 {
     if (!_newCurve) {
         _curveNonExistant = true;
     } else {
-        _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getScriptName(),_newCurve->getParentLayer()) );
+        _oldCurve.reset( new Bezier(_newCurve->getContext(),_newCurve->getScriptName(),_newCurve->getParentLayer(), false) );
         _oldCurve->clone(_newCurve.get());
     }
 }
@@ -1226,9 +1255,9 @@ MakeBezierUndoCommand::redo()
     if (!_firstRedoCalled) {
         if (_createdPoint) {
             if (!_newCurve) {
-                _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName,_time);
+                _newCurve = _roto->getContext()->makeBezier(_x, _y, _isOpenBezier ? kRotoOpenBezierBaseName : kRotoBezierBaseName,_time, _isOpenBezier);
                 assert(_newCurve);
-                _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer()) );
+                _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
                 _oldCurve->clone(_newCurve.get());
                 _lastPointAdded = 0;
                 _curveNonExistant = false;
@@ -1351,7 +1380,7 @@ MakeEllipseUndoCommand::redo()
     } else {
         
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time,false);
             assert(_curve);
             _curve->addControlPoint(_x + 1,_y - 1, _time);
             _curve->addControlPoint(_x,_y - 2, _time);
@@ -1492,7 +1521,7 @@ MakeRectangleUndoCommand::redo()
         _roto->evaluate(true);
     } else {
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time,false);
             assert(_curve);
             _curve->addControlPoint(_x + 1,_y,_time);
             _curve->addControlPoint(_x + 1,_y - 1,_time);
@@ -1600,6 +1629,10 @@ RemoveItemsUndoCommand::undo()
 void
 RemoveItemsUndoCommand::redo()
 {
+    if (_items.empty()) {
+        return;
+    }
+    _roto->clearAndSelectPreviousItem(_items.back().item);
     for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
         _roto->getContext()->removeItem(it->item, RotoItem::eSelectionReasonSettingsPanel);
         it->treeItem->setHidden(true);
@@ -1610,7 +1643,6 @@ RemoveItemsUndoCommand::redo()
             it->parentTreeItem->removeChild(it->treeItem);
         }
     }
-    _roto->clearSelection();
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Remove items of %2").arg( _roto->getNodeName().c_str() ) );
 }
@@ -1838,8 +1870,9 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             if (srcBezier) {
                 std::string name = getItemCopyName(roto, it->rotoItem);
                 boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(),name,
-                                                           srcBezier->getParentLayer()) );
+                                                           srcBezier->getParentLayer(), false) );
                 copy->clone(srcBezier.get());
+                copy->createNodes();
                 //clone overwrittes the script name, don't forget to set it back
                 copy->setScriptName(name);
                 copy->setLabel(name);
@@ -1854,7 +1887,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                     srcStroke->getParentLayer()->insertItem(copy, 0);
                 }
                 copy->clone(srcStroke.get());
-                copy->attachStrokeToNodes();
+                copy->createNodes();
                 //clone overwrittes the script name, don't forget to set it back
                 copy->setScriptName(name);
                 copy->setLabel(name);
@@ -1903,10 +1936,12 @@ PasteItemUndoCommand::redo()
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
         if (isBezier) {
-            _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer()) );
+            boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(),isBezier->getScriptName(),isBezier->getParentLayer(), false) );
+            oldBezier->createNodes();
+            _oldTargetItem = oldBezier;
         } else if (isStroke) {
             boost::shared_ptr<RotoStrokeItem> oldStroke( new RotoStrokeItem(isStroke->getBrushType(),isStroke->getContext(),isStroke->getScriptName(),boost::shared_ptr<RotoLayer>()) );
-            oldStroke->attachStrokeToNodes();
+            oldStroke->createNodes();
             _oldTargetItem = oldStroke;
             if (isStroke->getParentLayer()) {
                 isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
@@ -1954,7 +1989,9 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
     if (isBezier) {
         std::string name = getItemCopyName(roto, isBezier);
-        _item.duplicatedItem.reset( new Bezier(isBezier->getContext(),name,isBezier->getParentLayer()) );
+        boost::shared_ptr<Bezier> bezierCopy( new Bezier(isBezier->getContext(),name,isBezier->getParentLayer(), false) );
+        bezierCopy->createNodes();
+        _item.duplicatedItem = bezierCopy;
         _item.duplicatedItem->clone(isBezier.get());
         //clone has overwritten the name
         _item.duplicatedItem->setScriptName(name);
@@ -1962,7 +1999,7 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     } else if (isStroke) {
         std::string name = getItemCopyName(roto, isStroke);
         boost::shared_ptr<RotoStrokeItem> strokeCopy( new RotoStrokeItem(isStroke->getBrushType(),isStroke->getContext(),name, boost::shared_ptr<RotoLayer>()) );
-        strokeCopy->attachStrokeToNodes();
+        strokeCopy->createNodes();
         _item.duplicatedItem = strokeCopy;
         if (isStroke->getParentLayer()) {
             isStroke->getParentLayer()->insertItem(_item.duplicatedItem, 0);

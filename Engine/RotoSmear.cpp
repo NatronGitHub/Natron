@@ -208,7 +208,8 @@ Natron::StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     boost::shared_ptr<Node> node = getNode();
-    boost::shared_ptr<RotoStrokeItem> stroke = node->getAttachedStrokeItem();
+    boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
+    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     boost::shared_ptr<RotoContext> context = stroke->getContext();
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();

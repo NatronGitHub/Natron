@@ -58,6 +58,7 @@
 #define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
 #define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
+#define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
 
 
@@ -137,6 +138,9 @@ struct ParallelRenderArgs
     ///If true, the attached paint stroke is being drawn currently
     bool isDuringPaintStrokeCreation;
     
+    ///List of the nodes in the rotopaint tree
+    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+    
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
     Natron::RenderSafetyEnum currentThreadSafety;
@@ -156,6 +160,7 @@ struct ParallelRenderArgs
     , textureIndex(0)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
+    , rotoPaintNodes()
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     {
         
@@ -449,7 +454,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, Natron::ImageComponents* comps) const;
+    int getMaskChannel(int inputNb, Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -627,6 +632,7 @@ public:
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
+                                  const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
@@ -738,6 +744,8 @@ public:
     void getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const;
 
     void addThreadLocalInputImageTempPointer(int inputNb,const boost::shared_ptr<Natron::Image> & img);
+
+    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -1349,6 +1357,7 @@ public:
     * @brief Returns the components available on each input for this effect at the given time.
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
+    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes) ;
 
 
     /**
@@ -1378,6 +1387,11 @@ public:
     **/
     virtual bool isHostMixingEnabled() const { return false; }
 
+    void getNonMaskInputsAvailableComponents(SequenceTime time,
+                                             int view,
+                                             bool preferExistingComponents,
+                                             ComponentsAvailableMap* comps,
+                                             std::list<Natron::EffectInstance*>* markedNodes);
 
 private:
 

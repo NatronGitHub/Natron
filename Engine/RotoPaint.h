@@ -19,12 +19,16 @@ public:
     
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
     {
-        return new RotoPaint(n);
+        return new RotoPaint(n, true);
     }
     
-    RotoPaint(boost::shared_ptr<Natron::Node> node);
+    RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault);
     
     virtual ~RotoPaint();
+    
+    bool isDefaultBehaviourPaintContext() const {
+        return _isPaintByDefault;
+    }
     
     virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
     
@@ -45,15 +49,9 @@ public:
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
-    virtual std::string getPluginID() const WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_ROTOPAINT;
-    }
+    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN
-    {
-        return "RotoPaint";
-    }
+    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual std::string getDescription() const WARN_UNUSED_RETURN;
 
@@ -111,6 +109,8 @@ public:
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
 
 
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
+    
 private:
 
     virtual Natron::StatusEnum
@@ -127,7 +127,33 @@ private:
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
+    bool _isPaintByDefault;
 
+};
+
+/**
+ * @brief Same as RotoPaint except that by default RGB checkboxes are unchecked and the default selected tool is not the same
+ **/
+class RotoNode : public RotoPaint
+{
+    
+public:
+    
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    {
+        return new RotoNode(n);
+    }
+
+    
+    RotoNode(boost::shared_ptr<Natron::Node> node) : RotoPaint(node, false) {}
+    
+    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 
 #endif // ROTOPAINT_H

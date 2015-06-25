@@ -228,6 +228,7 @@ public:
                                Natron::OutputEffectInstance* renderRequester,
                                int textureIndex,
                                const TimeLine* timeline,
+                               const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                                bool isAnalysis);
     void invalidateParallelRenderArgs();
     
@@ -292,6 +293,7 @@ public:
                              Natron::OutputEffectInstance* renderRequester,
                              int textureIndex,
                              const TimeLine* timeline,
+                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                              bool isAnalysis);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);

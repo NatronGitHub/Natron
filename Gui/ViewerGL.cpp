@@ -2555,9 +2555,6 @@ ViewerGL::setLut(int lut)
 bool
 ViewerGL::supportsGLSL() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     return _imp->supportsGLSL;
 }
 
@@ -2618,16 +2615,18 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     if (!overlaysCaught &&
         (buttonDownIsMiddle(e) ||
-         ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
+         ( (e)->buttons() == Qt::RightButton && buttonMetaAlt(e) == Qt::AltModifier )) &&
         !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
     }
     if (!overlaysCaught &&
-        (e->buttons() & Qt::MiddleButton) &&
-        (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or Left + middle = zoom
+        (((e->buttons() & Qt::MiddleButton) &&
+          (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+         ((e->buttons() & Qt::LeftButton) &&
+          (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier))))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     }
@@ -2935,12 +2934,14 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    Format dispW = getDisplayWindow();
-    RectD canonicalDispW = dispW.toCanonicalFormat();
-    if (!gui->getApp()->getIsUserPainting().get()) {
-        for (int i = 0; i < 2; ++i) {
-            const RectD& rod = getRoD(i);
-            updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
+    
+    updateInfoWidgetColorPicker(zoomPos, QPoint(x,y));
+    if (_imp->viewerTab->isViewersSynchroEnabled()) {
+        const std::list<ViewerTab*>& allViewers = gui->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            if ((*it)->getViewer() != this) {
+                (*it)->getViewer()->updateInfoWidgetColorPicker(zoomPos, QPoint(x,y));
+            }
         }
     }
     
@@ -4362,10 +4363,8 @@ ViewerGL::getViewerTab() const
     return _imp->viewerTab;
 }
 
-// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool
-ViewerGL::pickColor(double x,
-                    double y)
+ViewerGL::pickColorInternal(double x, double y)
 {
     float r,g,b,a;
     QPointF imgPos;
@@ -4373,7 +4372,7 @@ ViewerGL::pickColor(double x,
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
-
+    
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool ret = false;
@@ -4396,12 +4395,49 @@ ViewerGL::pickColor(double x,
             _imp->infoViewer[i]->setColorValid(false);
         }
     }
-
+    
     return ret;
 }
 
+// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
+bool
+ViewerGL::pickColor(double x,
+                    double y)
+{
+    bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
+    if (isSync) {
+        bool res = false;
+        const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            bool ret = (*it)->getViewer()->pickColorInternal(x, y);
+            if ((*it)->getViewer() == this) {
+                res = ret;
+            }
+        }
+        return res;
+    } else {
+        return pickColorInternal(x, y);
+    }
+}
+
+
 void
 ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
+                                 const QPoint & widgetPos)
+{
+    Format dispW = getDisplayWindow();
+    RectD canonicalDispW = dispW.toCanonicalFormat();
+    if (!_imp->viewerTab->getGui()->getApp()->getIsUserPainting().get()) {
+        for (int i = 0; i < 2; ++i) {
+            const RectD& rod = getRoD(i);
+            updateInfoWidgetColorPickerInternal(imgPos, widgetPos, width(), height(), rod, canonicalDispW, i);
+        }
+    }
+}
+
+
+void
+ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                                       const QPoint & widgetPos,
                                       int width,
                                       int height,
@@ -4457,6 +4493,20 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
 
 void
 ViewerGL::updateRectangleColorPicker()
+{
+    bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
+    if (isSync) {
+        const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            (*it)->getViewer()->updateRectangleColorPickerInternal();
+        }
+    } else {
+        updateRectangleColorPickerInternal();
+    }
+}
+
+void
+ViewerGL::updateRectangleColorPickerInternal()
 {
     float r,g,b,a;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();

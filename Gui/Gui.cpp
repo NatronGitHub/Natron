@@ -1572,6 +1572,9 @@ Gui::restoreLayout(bool wipePrevious,
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
 
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect screen = desktop->screenGeometry();
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -1611,7 +1614,7 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            window->resize( (*it)->w, (*it)->h );
+            window->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
             window->move( QPoint( (*it)->x, (*it)->y ) );
         }
 
@@ -1636,7 +1639,7 @@ Gui::restoreLayout(bool wipePrevious,
                     FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-                    fWindow->resize( (*it)->w, (*it)->h );
+                    fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
                 }
             }
         }
@@ -2592,10 +2595,18 @@ Gui::findExistingToolButton(const QString & label) const
     return NULL;
 }
 
+void
+Gui::sortAllPluginsToolButtons()
+{
+    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
+        _imp->_toolButtons[i]->sortChildren();
+    }
+}
+
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {
-    if ( !Natron::isPluginCreatable( plugin->getID().toStdString() ) ) {
+    if (!plugin->getIsUserCreatable()) {
         return 0;
     }
 
@@ -2639,7 +2650,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      1,
-                                                     0);
+                                                     0,
+                                                     true);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it
@@ -5211,8 +5223,7 @@ FloatingWidget::removeEmbeddedWidget()
     if (!_embeddedWidget) {
         return;
     }
-    //_scrollArea->setViewport(0);
-    _embeddedWidget->setParent(NULL);
+    _scrollArea->takeWidget();
     _embeddedWidget = 0;
     // _embeddedWidget->setVisible(false);
     hide();

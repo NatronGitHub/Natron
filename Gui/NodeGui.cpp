@@ -420,7 +420,7 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
         QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
-        if (getNode()->isRotoNode() || getNode()->isRotoPaintingNode()) {
+        if (getNode()->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
         if (getNode()->isTrackerNode()) {
@@ -1525,7 +1525,7 @@ NodeGui::setUserSelected(bool b)
     if (_settingsPanel) {
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
-        if ( b && isSettingsPanelVisible() && (getNode()->isRotoNode() || getNode()->isRotoPaintingNode())) {
+        if ( b && isSettingsPanelVisible() && (getNode()->isRotoPaintingNode())) {
             _graph->getGui()->setRotoInterface(this);
         }
     }
@@ -1716,7 +1716,7 @@ NodeGui::showGui()
         if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(true);
         }
-        if ( node->isRotoNode() ) {
+        if (node->isRotoPaintingNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getLiveInstance() );
@@ -1808,7 +1808,7 @@ NodeGui::hideGui()
             setVisibleSettingsPanel(false);
         }
 
-        if ( node->isRotoNode() ) {
+        if ( node->isRotoPaintingNode() ) {
             _graph->getGui()->removeRotoInterface(this, false);
         }
         if ( node->isPointTrackerNode() && node->getParentMultiInstanceName().empty() ) {

@@ -56,6 +56,8 @@ public:
 
     void clearSelection();
 
+    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem> & item);
+
     void pushUndoCommand(QUndoCommand* cmd);
 
     void showItemMenu(QTreeWidgetItem* item,const QPoint & globalPos);
