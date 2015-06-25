@@ -2595,6 +2595,14 @@ Gui::findExistingToolButton(const QString & label) const
     return NULL;
 }
 
+void
+Gui::sortAllPluginsToolButtons()
+{
+    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
+        _imp->_toolButtons[i]->sortChildren();
+    }
+}
+
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {

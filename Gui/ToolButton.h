@@ -68,6 +68,8 @@ public:
     void setMenu(QMenu* menu );
 
     void tryAddChild(ToolButton* child);
+    
+    void sortChildren();
 
     const std::vector<ToolButton*> & getChildren() const;
     QAction* getAction() const;
