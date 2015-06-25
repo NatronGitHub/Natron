@@ -4022,7 +4022,7 @@ Node::makePreviewImage(SequenceTime time,
                                              0, //< preview only renders view 0 (left)
                                              true, //<isRenderUserInteraction
                                              false, //isSequential
-                                             false, //can abort
+                                             true, //can abort
                                              0, //render Age
                                              0, // viewer requester
                                              0, //texture index
