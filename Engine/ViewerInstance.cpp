@@ -886,7 +886,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     scale,
                                     inputToRenderName,
                                     outArgs->params->layer,
-                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName));
+                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                                    outArgs->params->depth == eImageBitDepthFloat && supportsGLSL()));
     
     bool isCached = false;
     
@@ -1992,10 +1993,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 g = r;
                 b = r;
             }
-            dst_pixels[x * 4] = r;
-            dst_pixels[x * 4 + 1] = g;
-            dst_pixels[x * 4 + 2] = b;
-            dst_pixels[x * 4 + 3] = a;
+            dst_pixels[x * 4] = Natron::clamp(r, 0., 1.);
+            dst_pixels[x * 4 + 1] = Natron::clamp(g, 0., 1.);
+            dst_pixels[x * 4 + 2] = Natron::clamp(b, 0., 1.);
+            dst_pixels[x * 4 + 3] = Natron::clamp(a, 0., 1.);
 
         }
         if (src_pixels) {
@@ -2364,8 +2365,6 @@ ViewerInstance::disconnectViewer()
 bool
 ViewerInstance::supportsGLSL() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
 
     ///This is a short-cut, this is primarily used when the user switch the
     /// texture mode in the preferences menu. If the hardware doesn't support GLSL

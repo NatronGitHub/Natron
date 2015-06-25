@@ -2555,9 +2555,6 @@ ViewerGL::setLut(int lut)
 bool
 ViewerGL::supportsGLSL() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     return _imp->supportsGLSL;
 }
 

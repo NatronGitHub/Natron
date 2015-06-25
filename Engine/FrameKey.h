@@ -42,7 +42,8 @@ public:
              const RenderScale & scale,
              const std::string & inputName,
              const ImageComponents& layer,
-             const std::string& alphaChannelFullName);
+             const std::string& alphaChannelFullName,
+             bool useShaders);
 
     void fillHash(Hash64* hash) const;
 
@@ -114,6 +115,7 @@ private:
     std::string _inputName;
     ImageComponents _layer;
     std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
+    bool _useShaders;
 };
 }
 

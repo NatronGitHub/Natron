@@ -31,6 +31,7 @@ FrameKey::FrameKey()
 , _scale()
 , _layer()
 , _alphaChannelFullName()
+, _useShaders(false)
 {
     _scale.x = _scale.y = 0.;
 }
@@ -47,7 +48,8 @@ FrameKey::FrameKey(SequenceTime time,
                    const RenderScale & scale,
                    const std::string & inputName,
                    const ImageComponents& layer,
-                   const std::string& alphaChannelFullName)
+                   const std::string& alphaChannelFullName,
+                   bool useShaders)
 : KeyHelper<U64>()
 , _time(time)
 , _treeVersion(treeVersion)
@@ -62,6 +64,7 @@ FrameKey::FrameKey(SequenceTime time,
 , _inputName(inputName)
 , _layer(layer)
 , _alphaChannelFullName(alphaChannelFullName)
+, _useShaders(useShaders)
 {
 }
 
@@ -70,9 +73,11 @@ FrameKey::fillHash(Hash64* hash) const
 {
     hash->append(_time);
     hash->append(_treeVersion);
-    hash->append(_gain);
-    hash->append(_gamma);
-    hash->append(_lut);
+    if (!_useShaders) {
+        hash->append(_gain);
+        hash->append(_gamma);
+        hash->append(_lut);
+    }
     hash->append(_bitDepth);
     hash->append(_channels);
     hash->append(_view);
@@ -103,9 +108,9 @@ FrameKey::operator==(const FrameKey & other) const
 {
     return _time == other._time &&
     _treeVersion == other._treeVersion &&
-    _gain == other._gain &&
+    ((_gain == other._gain &&
     _gamma == other._gamma && 
-    _lut == other._lut &&
+      _lut == other._lut) || (_useShaders && other._useShaders)) &&
     _bitDepth == other._bitDepth &&
     _channels == other._channels &&
     _view == other._view &&

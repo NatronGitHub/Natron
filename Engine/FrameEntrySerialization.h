@@ -27,6 +27,7 @@
 #define FRAME_KEY_INTRODUCES_LAYERS 3
 #define FRAME_KEY_INTRODUCES_GAMMA 4
 #define FRAME_KEY_CHANGES_BITDEPTH_ENUM 5
+#define FRAME_KEY_HANDLE_FP_CORRECTLY 6
 #define FRAME_KEY_VERSION FRAME_KEY_CHANGES_BITDEPTH_ENUM
 
 template<class Archive>
@@ -58,6 +59,11 @@ Natron::FrameKey::serialize(Archive & ar,
     if (version >= FRAME_KEY_INTRODUCES_LAYERS) {
         ar & boost::serialization::make_nvp("Layer", _layer);
         ar & boost::serialization::make_nvp("Alpha", _alphaChannelFullName);
+    }
+    if (version >= FRAME_KEY_HANDLE_FP_CORRECTLY) {
+        ar & boost::serialization::make_nvp("UserShader", _useShaders);
+    } else {
+        _useShaders = false;
     }
 }
 
