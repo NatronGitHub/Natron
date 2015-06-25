@@ -940,7 +940,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->paintBrushTool->setDown(!hasShapes && effectIsPaint);
     QKeySequence brushPaintShortcut(Qt::Key_N);
     QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
-    createToolAction(_imp->paintBrushTool, QIcon(), tr("Open Bezier"), tr("Freehand painting based on bezier curves"), brushPaintShortcut, eRotoToolOpenBezier);
+    createToolAction(_imp->paintBrushTool, QIcon(), tr("Pencil"), tr("Freehand painting based on bezier curves"), brushPaintShortcut, eRotoToolOpenBezier);
     _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
     _imp->paintBrushTool->setDefaultAction(brushPaintAct);
     _imp->allTools.push_back(_imp->paintBrushTool);
