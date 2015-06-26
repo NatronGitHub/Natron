@@ -944,10 +944,10 @@ EffectInstance::aborted() const
             if (args.isRenderResponseToUserInteraction) {
                 
                 if (args.canAbort) {
-                    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
+                   /* ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
                     if (isViewer && !isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
                         return false;
-                    }
+                    }*/
                     
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = (args.nodeHash != getHash() ||
@@ -6548,9 +6548,6 @@ void
 EffectInstance::onNodeHashChanged(U64 hash)
 {
     
-    ///Always running in the MAIN THREAD
-    assert(QThread::currentThread() == qApp->thread());
-    
     ///Invalidate actions cache
     _imp->actionsCache.invalidateAll(hash);
     
@@ -6566,6 +6563,13 @@ bool
 EffectInstance::canSetValue() const
 {
     return !getNode()->isNodeRendering() || appPTR->isBackground();
+}
+
+void
+EffectInstance::abortAnyEvaluation()
+{
+    ///Just change the hash
+    getNode()->incrementKnobsAge();
 }
 
 SequenceTime

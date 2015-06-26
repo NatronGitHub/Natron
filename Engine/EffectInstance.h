@@ -714,6 +714,8 @@ public:
 
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void abortAnyEvaluation() OVERRIDE FINAL;
+
     virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;

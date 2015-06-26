@@ -93,6 +93,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            Natron::ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount,
@@ -101,7 +102,9 @@ public:
                                             int pboIndex,
                                             unsigned int mipMapLevel,
                                             Natron::ImagePremultiplicationEnum premult,
-                                            int textureIndex) = 0;
+                                            int textureIndex,
+                                            const RectI& roi,
+                                            bool updateOnlyRoi) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.

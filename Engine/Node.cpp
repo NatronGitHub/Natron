@@ -3175,8 +3175,8 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         
         ///If the node is currently rendering, queue the action instead of executing it
         {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
                 ConnectInputAction action(input,eInputActionConnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
@@ -3252,8 +3252,8 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         
         ///If the node is currently rendering, queue the action instead of executing it
         {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
                 ConnectInputAction action(input,eInputActionReplace,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
@@ -3340,8 +3340,8 @@ Node::switchInput0And1()
     
     ///If the node is currently rendering, queue the action instead of executing it
     {
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
             QMutexLocker cql(&_imp->connectionQueueMutex);
             ///Replace input A
             {
@@ -3437,8 +3437,8 @@ Node::disconnectInput(int inputNumber)
         
         ///If the node is currently rendering, queue the action instead of executing it
         {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
                 ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
@@ -3482,8 +3482,8 @@ Node::disconnectInput(Node* input)
                 
                 ///If the node is currently rendering, queue the action instead of executing it
                 {
-                    QMutexLocker k(&_imp->nodeIsRenderingMutex);
-                    if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+                    if (isNodeRendering() && !appPTR->isBackground()) {
+                        _imp->liveInstance->abortAnyEvaluation();
                         ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
                         QMutexLocker cql(&_imp->connectionQueueMutex);
                         _imp->connectionQueue.push_back(action);

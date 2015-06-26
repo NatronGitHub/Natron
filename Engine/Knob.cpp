@@ -629,6 +629,8 @@ KnobHelper::deleteValueAtTime(int time,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -691,6 +693,8 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -766,6 +770,8 @@ KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -839,6 +845,8 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     boost::shared_ptr<Curve> thisCurve;
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         thisCurve = _imp->curves[dimension];
     } else {
         thisCurve = _imp->gui->getCurve(dimension);
@@ -884,6 +892,8 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -930,6 +940,8 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -978,6 +990,8 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1033,6 +1047,8 @@ KnobHelper::removeAnimation(int dimension,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -2404,6 +2420,8 @@ KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChang
     bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
     
     if (!useGuiCurve) {
+        assert(holder);
+        holder->abortAnyEvaluation();
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -2589,6 +2607,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
     KnobHolder* holder = getHolder();
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
         if (holder && !holder->canSetValue()) {
+            holder->abortAnyEvaluation();
             QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
             _imp->mustClearExprResults[*it] = true;
         } else {

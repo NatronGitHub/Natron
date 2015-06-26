@@ -110,6 +110,8 @@ public:
     , rod()
     , renderAge(0)
     , isSequential(false)
+    , roi()
+    , updateOnlyRoi(false)
     {
     }
     
@@ -148,6 +150,8 @@ public:
     RectD rod;
     U64 renderAge;
     bool isSequential;
+    RectI roi;
+    bool updateOnlyRoi;
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -365,6 +369,8 @@ public:
         }
 
     }
+    
+    void reportProgress(const boost::shared_ptr<UpdateViewerParams>& originalParams, const std::list<RectI>& rectangles, const boost::shared_ptr<RequestedFrame>& request);
 
 public Q_SLOTS:
 

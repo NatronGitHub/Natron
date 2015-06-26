@@ -5323,7 +5323,7 @@ Gui::renderAllViewers()
 
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(false);
+            (*it)->getInternalNode()->renderCurrentFrame(true);
         }
     }
 }

@@ -99,6 +99,11 @@ public:
         return _inputName;
     }
 
+    const TextureRect& getTexRect() const WARN_UNUSED_RETURN
+    {
+    return _textureRect;
+    }
+
 private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);

@@ -60,9 +60,11 @@ public:
     {
         return _type;
     }
+    
+    bool mustAllocTexture(const TextureRect& rect) const;
 
     /*allocates the texture*/
-    void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type);
+    void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type, const RectI& roi, bool updateOnlyRoi);
 
     const TextureRect & getTextureRect() const
     {

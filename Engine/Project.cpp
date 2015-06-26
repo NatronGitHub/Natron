@@ -214,12 +214,6 @@ Project::loadProject(const QString & path,
         return false;
     }
 
-    ///Process all events before flagging that we're no longer loading the project
-    ///to avoid multiple renders being called because of reshape events of viewers
-    QCoreApplication::processEvents();
-
-
-
     refreshViewersAndPreviews();
     return true;
 } // loadProject
@@ -228,6 +222,7 @@ bool
 Project::loadProjectInternal(const QString & path,
                              const QString & name,bool isAutoSave,bool isUntitledAutosave, bool* mustSave)
 {
+    
     Natron::FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
     
     QString filePath = path + name;
@@ -354,10 +349,14 @@ Project::loadProjectInternal(const QString & path,
         }
     }
     
+    ///Process all events before flagging that we're no longer loading the project
+    ///to avoid multiple renders being called because of reshape events of viewers
+    QCoreApplication::processEvents();
+    
     return ret;
 }
-
-
+    
+    
 QString
 Project::saveProject(const QString & path,
                      const QString & name,

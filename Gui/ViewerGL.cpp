@@ -228,6 +228,8 @@ struct ViewerGL::Implementation
     , pressureOnPress(1.)
     , pressureOnRelease(1.)
     , wheelDeltaSeekFrame(0)
+    , lastTextureRoi()
+    , isUpdatingTexture(false)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -350,6 +352,9 @@ struct ViewerGL::Implementation
     double pressureOnPress, pressureOnRelease;
 
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
+    
+    RectD lastTextureRoi;
+    bool isUpdatingTexture;
 
 public:
     
@@ -1428,6 +1433,13 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 drawPickerPixel();
             }
         }
+        
+        if (_imp->isUpdatingTexture) {
+            glBegin(GL_LINES);
+            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y2);
+            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y1 - 1);
+            glEnd();
+        }
 
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -2403,6 +2415,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const boost::shared_ptr<Natron::Image>& image,
+                                     Natron::ImageBitDepthEnum depth,
                                      int time,
                                      const RectD& rod,
                                      size_t bytesCount,
@@ -2414,20 +2427,65 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int pboIndex,
                                      unsigned int mipMapLevel,
                                      Natron::ImagePremultiplicationEnum premult,
-                                     int textureIndex)
+                                     int textureIndex,
+                                     const RectI& roi,
+                                     bool updateOnlyRoi)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     (void)glGetError();
+    
+    
     GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     GLenum err = glGetError();
     if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
         qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
     }
+    
+    GLuint pboId = getPboID(pboIndex);
+    
+    Natron::ImageBitDepthEnum bd = getBitDepth();
+    assert(textureIndex == 0 || textureIndex == 1);
+    
+    if (updateOnlyRoi) {
+        //Make sure the texture is allocated on the full portion
+        Texture::DataTypeEnum type;
+        if (bd == Natron::eImageBitDepthByte) {
+            type = Texture::eDataTypeByte;
+        } else if (bd == Natron::eImageBitDepthFloat) {
+            type = Texture::eDataTypeFloat;
+            //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+        }
+        if (_imp->displayTextures[textureIndex]->mustAllocTexture(region)) {
+            ///Initialize with black and transparant
+            std::size_t bytesToInit = region.w * region.h * 4;
+            if (depth == eImageBitDepthFloat) {
+                bytesToInit *= sizeof(float);
+            }
+            glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesToInit, NULL, GL_DYNAMIC_DRAW_ARB);
+            GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+            glCheckError();
+            assert(ret);
+            memset(ret, 0, bytesToInit);
+            glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+            glCheckError();
+            _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, type, roi, false);
+            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+            glCheckError();
+        }
+    }
+    
+    _imp->isUpdatingTexture = updateOnlyRoi;
+    if (updateOnlyRoi) {
+        roi.toCanonical_noClipping(mipMapLevel, 1., &_imp->lastTextureRoi);
+    }
+    
+    
 
-    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex) );
+    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
@@ -2438,13 +2496,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    Natron::ImageBitDepthEnum bd = getBitDepth();
-    assert(textureIndex == 0 || textureIndex == 1);
+    
     if (bd == Natron::eImageBitDepthByte) {
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte, roi, updateOnlyRoi);
     } else if (bd == Natron::eImageBitDepthFloat) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat, roi, updateOnlyRoi);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?

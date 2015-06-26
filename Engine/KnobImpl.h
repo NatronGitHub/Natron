@@ -862,6 +862,10 @@ Knob<T>::setValue(const T & v,
     ///If we cannot set value, queue it
     if (holder && !holder->canSetValue()) {
         
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
+        
         KnobHelper::ValueChangedReturnCodeEnum returnValue;
         
         SequenceTime time = getCurrentTime();
@@ -1140,7 +1144,9 @@ Knob<T>::setValueAtTime(int time,
     ///If we cannot set value, queue it
     if (holder && !holder->canSetValue()) {
         
-    
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time,dimension,v,*newKey,reason));
         
         {
@@ -1652,6 +1658,10 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
+        assert(holder);
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1678,6 +1688,10 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
+        assert(holder);
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);

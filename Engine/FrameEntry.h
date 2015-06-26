@@ -71,6 +71,10 @@ public:
         return _data.writable();
     }
 
+    const U8* pixelAt(int x, int y ) const WARN_UNUSED_RETURN;
+
+    void copy(const FrameEntry& other);
+
     void setAborted(bool aborted) {
         QMutexLocker k(&_abortedMutex);
         _aborted = aborted;

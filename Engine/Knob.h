@@ -1877,6 +1877,7 @@ public:
      * They will be dequeued when dequeueValuesSet will be called.
      **/
     virtual bool canSetValue() const { return true; }
+    virtual void abortAnyEvaluation() {}
     
     /**
      * @brief Dequeues all values set in the queues for all knobs

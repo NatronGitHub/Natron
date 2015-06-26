@@ -71,7 +71,7 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
         assert((dim1/num1)*(dim2/num2) >= MINAREA);
         int numRows = landscape ? num2 : num1;
         int numCols = landscape ? num1 : num2;
-        for (int i = 0; i < numRows; ++i) {
+        for (int i = numRows - 1; i >= 0; --i) {
             int y1_ = bottom() + i     * height() / numRows;
             int y2_ = bottom() + (i+1) * height() / numRows;
             for (int j = 0; j < numCols; ++j) {

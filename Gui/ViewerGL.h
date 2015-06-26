@@ -168,12 +168,15 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            Natron::ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double gamma, double offset, int lut, int pboIndex,
                                             unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
-                                            int textureIndex) OVERRIDE FINAL;
+                                            int textureIndex,
+                                            const RectI& roi,
+                                            bool updateOnlyRoi) OVERRIDE FINAL;
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     
