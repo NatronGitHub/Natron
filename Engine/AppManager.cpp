@@ -409,7 +409,7 @@ CLArgs::~CLArgs()
     
 }
 
-bool
+void
 CLArgs::operator=(const CLArgs& other) const
 {
     _imp->args = other._imp->args;
