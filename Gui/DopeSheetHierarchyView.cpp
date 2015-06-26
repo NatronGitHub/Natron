@@ -1,5 +1,6 @@
 #include "DopeSheetHierarchyView.h"
 
+#include <QDebug>
 #include <QHeaderView>
 #include <QPainter>
 #include <QStyleOption>
@@ -70,22 +71,10 @@ void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent)
 
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////
 
-class HierarchyViewSelectionModelPrivate
-{
-public:
-    HierarchyViewSelectionModelPrivate()
-    {}
-
-    /* functions */
-
-    /* attributes */
-};
-
 
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
                                                          QObject *parent) :
-    QItemSelectionModel(model, parent),
-    _imp(new HierarchyViewSelectionModelPrivate)
+    QItemSelectionModel(model, parent)
 {
     connect(model, SIGNAL(destroyed()),
             this, SLOT(deleteLater()));
@@ -104,15 +93,10 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
     QItemSelection childrenSelection;
 
     Q_FOREACH (QModelIndex index, selection.indexes()) {
-        int row = 0;
-        QModelIndex childIndex = index.child(row, 0);
+        recursiveSelect(index, childrenSelection);
 
-        while(childIndex.isValid()) {
-            childrenSelection.select(childIndex, childIndex);
-
-            ++row;
-            childIndex = index.child(row, 0);
-        }
+        QItemSelection nextSelection = childrenSelection;
+        nextSelection.merge(selection, command);
     }
 
     newSelection.merge(childrenSelection, command);
@@ -120,9 +104,26 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
     QItemSelectionModel::select(newSelection, command);
 }
 
+void HierarchyViewSelectionModel::recursiveSelect(const QModelIndex &index, QItemSelection &selection) const
+{
+    int row = 0;
+    QModelIndex childIndex = index.child(row, 0);
+
+    while (childIndex.isValid()) {
+        selection.select(childIndex, childIndex);
+
+        // /!\ recursion
+        {
+            recursiveSelect(childIndex, selection);
+        }
+
+        ++row;
+        childIndex = index.child(row, 0);
+    }
+}
+
 
 ////////////////////////// HierarchyViewDelegate //////////////////////////
-
 
 /**
  * @brief HierarchyViewItemDelegate::HierarchyViewItemDelegate
@@ -144,7 +145,7 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
-    DopeSheet::ItemType nodeType = DopeSheet::ItemType(index.data(QTREEWIDGETITEM_CONTEXT_TYPE_ROLE).toInt());
+    DopeSheet::ItemType nodeType = DopeSheet::ItemType(index.data(QT_ROLE_CONTEXT_TYPE).toInt());
     int heightOffset = 0;
 
     switch (nodeType) {
@@ -289,7 +290,9 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
         for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
             bool curveIsAnimated = knobGui->getCurve(i)->isAnimated();
 
-            dsKnob->findDimTreeItem(i)->setHidden(!curveIsAnimated);
+            QTreeWidgetItem *dimItem = dsKnob->findDimTreeItem(i);
+            dimItem->setHidden(!curveIsAnimated);
+            dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED,curveIsAnimated);
 
             if (curveIsAnimated) {
                 showContext = true;
@@ -302,6 +305,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
     treeItem->setHidden(!showContext);
+    treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showContext);
 }
 
 QRect HierarchyViewPrivate::getBranchRect(QTreeWidgetItem *item) const
@@ -660,7 +664,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     for (int i = 0; i < treeItem->childCount(); ++i) {
         QTreeWidgetItem *child = treeItem->child(i);
 
-        if (child->data(0, QTREEWIDGETITEM_CONTEXT_TYPE_ROLE).toInt() < DopeSheet::ItemTypeKnobRoot) {
+        if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot) {
             toPut << child;
         }
     }

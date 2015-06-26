@@ -52,8 +52,9 @@ typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSNode> > DSTreeItemNodeMa
 typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSKnob> > DSTreeItemKnobMap;
 // typedefs
 
-const int QTREEWIDGETITEM_CONTEXT_TYPE_ROLE = Qt::UserRole + 1;
-const int QTREEWIDGETITEM_DIM_ROLE = Qt::UserRole + 2;
+const int QT_ROLE_CONTEXT_TYPE = Qt::UserRole + 1;
+const int QT_ROLE_CONTEXT_DIM = Qt::UserRole + 2;
+const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 3;
 
 
 bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);

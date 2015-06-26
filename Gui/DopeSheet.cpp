@@ -86,10 +86,10 @@ QTreeWidgetItem *createTreeItem(const QString &text,
         parent->addChild(ret);
     }
 
-    ret->setData(0, QTREEWIDGETITEM_CONTEXT_TYPE_ROLE, itemType);
+    ret->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
 
     if (dimension != NO_DIM) {
-        ret->setData(0, QTREEWIDGETITEM_DIM_ROLE, dimension);
+        ret->setData(0, QT_ROLE_CONTEXT_DIM, dimension);
     }
 
     ret->setText(0, text);
@@ -791,7 +791,7 @@ boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGu
 
     QTreeWidgetItem *nameItem = new QTreeWidgetItem;
     nameItem->setText(0, node->getLabel().c_str());
-    nameItem->setData(0, QTREEWIDGETITEM_CONTEXT_TYPE_ROLE, itemType);
+    nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
 
     boost::shared_ptr<DSNode> dsNode(new DSNode(this, itemType, nodeGui, nameItem));
 
@@ -896,7 +896,7 @@ QTreeWidgetItem *DSKnob::findDimTreeItem(int dimension) const
     for (int i = 0; i < _imp->nameItem->childCount(); ++i) {
         QTreeWidgetItem *child = _imp->nameItem->child(i);
 
-        if (dimension == child->data(0, QTREEWIDGETITEM_DIM_ROLE).toInt()) {
+        if (dimension == child->data(0, QT_ROLE_CONTEXT_DIM).toInt()) {
             ret = child;
 
             break;
@@ -1338,7 +1338,7 @@ bool DSNode::canContainOtherNodeContexts() const
 bool DSNode::containsNodeContext() const
 {
     for (int i = 0; i < _imp->nameItem->childCount(); ++i) {
-        int childType = _imp->nameItem->child(i)->data(0, QTREEWIDGETITEM_CONTEXT_TYPE_ROLE).toInt();
+        int childType = _imp->nameItem->child(i)->data(0, QT_ROLE_CONTEXT_TYPE).toInt();
 
         if (childType != DopeSheet::ItemTypeKnobDim
                 && childType != DopeSheet::ItemTypeKnobRoot) {

@@ -24,7 +24,6 @@ class DSKnob;
 class DSNode;
 class Gui;
 class HierarchyViewPrivate;
-class HierarchyViewSelectionModelPrivate;
 class QModelIndex;
 class QStyleOptionViewItem;
 
@@ -40,8 +39,8 @@ public:
 public Q_SLOTS:
     virtual void select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
 
-private:
-    boost::scoped_ptr<HierarchyViewSelectionModelPrivate> _imp;
+private: /* functions */
+    void recursiveSelect(const QModelIndex &index, QItemSelection &selection) const;
 };
 
 

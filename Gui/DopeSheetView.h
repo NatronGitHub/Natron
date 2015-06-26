@@ -6,7 +6,11 @@
 #include <Python.h>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
+
+#include "Engine/OverlaySupport.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtGui/QTreeWidget>
@@ -18,20 +22,12 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include <set>
-
-#include "Global/GlobalDefines.h"
-
-#include "Engine/OverlaySupport.h"
-
 class DopeSheet;
 class DopeSheetViewPrivate;
 class DSNode;
 class Gui;
 class HierarchyView;
 class TimeLine;
-
-
 
 
 /**
