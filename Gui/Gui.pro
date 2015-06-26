@@ -131,7 +131,8 @@ SOURCES += \
     NatronGui/pyviewer_wrapper.cpp \
     DopeSheet.cpp \
     DopeSheetView.cpp \
-    DopeSheetEditorUndoRedo.cpp
+    DopeSheetEditorUndoRedo.cpp \
+    DopeSheetHierarchyView.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -239,7 +240,8 @@ HEADERS += \
     NatronGui/pyviewer_wrapper.h \
     DopeSheet.h \
     DopeSheetView.h \
-    DopeSheetEditorUndoRedo.h
+    DopeSheetEditorUndoRedo.h \
+    DopeSheetHierarchyView.h
 
 RESOURCES += \
     GuiResources.qrc

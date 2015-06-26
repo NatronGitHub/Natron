@@ -19,6 +19,7 @@
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
+#include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -744,12 +745,7 @@ void DopeSheet::pasteKeys()
     for (std::vector<DopeSheetKey>::const_iterator it = _imp->keyframesClipboard.begin(); it != _imp->keyframesClipboard.end(); ++it) {
         DopeSheetKey key = (*it);
 
-//        // Retrieve the tree item associated with the key dimension
-//        QTreeWidgetItem *dimTreeItem = key.context->getTreeItem();
-
-//        if (dimTreeItem->isSelected()) {
         toPaste.push_back(key);
-//        }
     }
 
     _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, this));

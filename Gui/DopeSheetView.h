@@ -27,54 +27,12 @@ CLANG_DIAG_ON(uninitialized)
 class DopeSheet;
 class DopeSheetViewPrivate;
 class DSNode;
-class DSKnob;
 class Gui;
-class HierarchyViewPrivate;
-class QModelIndex;
-class QStyleOptionViewItem;
+class HierarchyView;
 class TimeLine;
 
 
-class HierarchyViewSelectionModel : public QItemSelectionModel
-{
-    Q_OBJECT
 
-public:
-    explicit HierarchyViewSelectionModel(QAbstractItemModel *model, QObject *parent = 0);
-
-public Q_SLOTS:
-    virtual void select(const QModelIndex &index, QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
-};
-
-/**
- * @brief The HierarchyView class
- *
- *
- */
-class HierarchyView : public QTreeWidget
-{
-    Q_OBJECT
-
-public:
-    explicit HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent = 0);
-    ~HierarchyView();
-
-    boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
-
-protected:
-    virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
-
-private Q_SLOTS:
-    void onNodeAdded(DSNode *dsNode);
-    void onNodeAboutToBeRemoved(DSNode *dsNode);
-    void onKeyframeSetOrRemoved(DSKnob *dsKnob);
-
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
-
-private:
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
-};
 
 /**
  * @brief The DopeSheetView class

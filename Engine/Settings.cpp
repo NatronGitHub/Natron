@@ -2919,6 +2919,11 @@ void Settings::getPluginIconFrameColor(int *r, int *g, int *b) const
     *b = 50;
 }
 
+int Settings::getDopeSheetEditorNodeSeparationWith() const
+{
+    return 4;
+}
+
 bool
 Settings::isAutoProxyEnabled() const
 {

@@ -281,6 +281,7 @@ public:
     void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
 
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
+    int getDopeSheetEditorNodeSeparationWith() const;
     
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;
