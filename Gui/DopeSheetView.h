@@ -18,6 +18,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <set>
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OverlaySupport.h"
@@ -33,6 +35,17 @@ class QStyleOptionViewItem;
 class TimeLine;
 
 
+class HierarchyViewSelectionModel : public QItemSelectionModel
+{
+    Q_OBJECT
+
+public:
+    explicit HierarchyViewSelectionModel(QAbstractItemModel *model, QObject *parent = 0);
+
+public Q_SLOTS:
+    virtual void select(const QModelIndex &index, QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
+};
+
 /**
  * @brief The HierarchyView class
  *
@@ -43,9 +56,7 @@ class HierarchyView : public QTreeWidget
     Q_OBJECT
 
 public:
-    friend class HierarchyViewItemDelegate;
-
-    explicit HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent = 0);
+    explicit HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent = 0);
     ~HierarchyView();
 
     boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
@@ -59,13 +70,11 @@ private Q_SLOTS:
     void onNodeAboutToBeRemoved(DSNode *dsNode);
     void onKeyframeSetOrRemoved(DSKnob *dsKnob);
 
-    void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
-
 
 /**
  * @brief The DopeSheetView class

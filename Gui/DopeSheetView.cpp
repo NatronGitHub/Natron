@@ -164,6 +164,85 @@ QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item)
     return ret;
 }
 
+bool childIsSelected(QTreeWidgetItem *item)
+{
+    for (int i = 0; i < item->childCount(); ++i) {
+        if (item->child(i)->isSelected()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool childrenAreSelected(QTreeWidgetItem *item)
+{
+    bool ret = true;
+
+    for (int i = 0; i < item->childCount(); ++i) {
+        QTreeWidgetItem *child = item->child(i);
+
+        if (child->isHidden()) {
+            continue;
+        }
+
+        if (!child->isSelected()) {
+            ret = false;
+        }
+
+        // /!\ recursion
+        if (item->childCount()) {
+            ret = ret && childrenAreSelected(child);
+        }
+    }
+
+    return ret;
+}
+
+void checkItemSelectedState(QTreeWidgetItem *item)
+{
+    QTreeWidgetItem *it = item;
+
+    while (QTreeWidgetItem *sParent = it->parent()) {
+        bool selectParentToo = childrenAreSelected(sParent);
+
+        if (sParent->isSelected() != selectParentToo) {
+            sParent->setSelected(selectParentToo);
+        }
+
+        it = sParent;
+    }
+}
+
+QTreeWidgetItem *getParentItem(QTreeWidgetItem *item)
+{
+    QTreeWidgetItem *ret = 0;
+
+    QTreeWidgetItem *parentItem = item->parent();
+
+    if (parentItem) {
+        ret = parentItem;
+    }
+    else {
+        QTreeWidget *treeWidget = item->treeWidget();
+        assert(treeWidget);
+
+        ret = treeWidget->invisibleRootItem();
+    }
+
+    return ret;
+}
+
+void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent)
+{
+    assert(newParent);
+
+    QTreeWidgetItem *currentParent = getParentItem(child);
+
+    currentParent->removeChild(child);
+    newParent->addChild(child);
+}
+
 } // anon namespace
 
 
@@ -178,13 +257,10 @@ QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item)
 class HierarchyViewItemDelegate : public QStyledItemDelegate
 {
 public:
-    explicit HierarchyViewItemDelegate(HierarchyView *hierarchyView);
+    explicit HierarchyViewItemDelegate(QObject *parent = 0);
 
     virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-
-private:
-    HierarchyView *m_hierarchyView;
 };
 
 
@@ -193,9 +269,8 @@ private:
  *
  *
  */
-HierarchyViewItemDelegate::HierarchyViewItemDelegate(HierarchyView *hierarchyView) :
-    QStyledItemDelegate(hierarchyView),
-    m_hierarchyView(hierarchyView)
+HierarchyViewItemDelegate::HierarchyViewItemDelegate(QObject *parent) :
+    QStyledItemDelegate(parent)
 {}
 
 /**
@@ -207,12 +282,10 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 {
     Q_UNUSED(option);
 
-    QTreeWidgetItem *item = m_hierarchyView->itemFromIndex(index);
-
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
-    DopeSheet::ItemType nodeType = DopeSheet::ItemType(item->type());
-    int newItemHeight = 0;
+    DopeSheet::ItemType nodeType = DopeSheet::ItemType(index.data(QTREEWIDGETITEM_CONTEXT_TYPE_ROLE).toInt());
+    int heightOffset = 0;
 
     switch (nodeType) {
     case DopeSheet::ItemTypeReader:
@@ -220,27 +293,25 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
     case DopeSheet::ItemTypeTimeOffset:
     case DopeSheet::ItemTypeFrameRange:
     case DopeSheet::ItemTypeGroup:
-        newItemHeight = 10;
+        heightOffset = 10;
         break;
     default:
         break;
     }
 
-    itemSize.rheight() += newItemHeight;
+    itemSize.rheight() += heightOffset;
 
     return itemSize;
 }
 
 void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    QTreeWidgetItem *item = m_hierarchyView->itemFromIndex(index);
-
     painter->save();
 
     boost::shared_ptr<Settings> appSettings = appPTR->getCurrentSettings();
     double r, g, b;
 
-    if (item->isSelected()) {
+    if (option.state & QStyle::State_Selected) {
         appSettings->getTextColor(&r, &g, &b);
     }
     else {
@@ -248,7 +319,7 @@ void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewI
     }
 
     painter->setPen(QColor::fromRgbF(r, g, b));
-    painter->drawText(option.rect, Qt::AlignVCenter, item->text(0));
+    painter->drawText(option.rect, Qt::AlignVCenter, index.data().toString());
 
     painter->restore();
 }
@@ -268,9 +339,8 @@ public:
     void checkKnobVisibleState(DSKnob *dsKnob);
 
     // item related
-    QTreeWidgetItem *getParentItem(QTreeWidgetItem *item) const;
-    void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent);
-    void recursiveSelect(QTreeWidgetItem *item);
+
+    void recursiveSelect_desc(QTreeWidgetItem *item, bool aselect);
 
     QRect getBranchRect(QTreeWidgetItem *item) const;
     QRect getArrowRect(QTreeWidgetItem *item) const;
@@ -289,18 +359,16 @@ public:
     // keyframe selection
     void selectKeyframes(const QList<QTreeWidgetItem *> &items);
 
-    void blockSelectionSignals(bool block);
-
     /* attributes */
     HierarchyView *q_ptr;
-    DopeSheet *model;
+    DopeSheet *dopeSheetModel;
 
     Gui *gui;
 };
 
 HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
     q_ptr(qq),
-    model(0),
+    dopeSheetModel(0),
     gui(0)
 {}
 
@@ -340,13 +408,13 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     else if (nodeType == DopeSheet::ItemTypeGroup) {
         NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
 
-        showNode = showNode && (!model->groupSubNodesAreHidden(group) || !dsNode->getTreeItem()->childCount());
+        showNode = showNode && (!dopeSheetModel->groupSubNodesAreHidden(group) || !dsNode->getTreeItem()->childCount());
     }
 
     dsNode->getTreeItem()->setHidden(!showNode);
 
     // Hide the parent group item if there's no subnodes displayed
-    if (boost::shared_ptr<DSNode> parentGroupDSNode = model->getGroupDSNode(dsNode)) {
+    if (boost::shared_ptr<DSNode> parentGroupDSNode = dopeSheetModel->getGroupDSNode(dsNode)) {
         checkNodeVisibleState(parentGroupDSNode.get());
     }
 }
@@ -379,35 +447,18 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
     treeItem->setHidden(!showContext);
 }
 
-QTreeWidgetItem *HierarchyViewPrivate::getParentItem(QTreeWidgetItem *item) const
-{
-    return (item->parent()) ? item->parent() : q_ptr->invisibleRootItem();
-}
-
-void HierarchyViewPrivate::moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent)
-{
-    assert(newParent);
-
-    QTreeWidgetItem *currentParent = getParentItem(child);
-
-    currentParent->removeChild(child);
-    newParent->addChild(child);
-}
-
-/**
- * @brief recursiveSelect
- *
- * Performs a recursive selection on 'item' 's chilren.
- */
-void HierarchyViewPrivate::recursiveSelect(QTreeWidgetItem *item)
+void HierarchyViewPrivate::recursiveSelect_desc(QTreeWidgetItem *item, bool aselect)
 {
     if (item->childCount() > 0 && !childrenAreHidden(item)) {
         for (int i = 0; i < item->childCount(); ++i) {
             QTreeWidgetItem *childItem = item->child(i);
-            childItem->setSelected(true);
+
+            if (!childItem->isHidden() && childItem->isSelected() != aselect) {
+                childItem->setSelected(aselect);
+            }
 
             // /!\ recursion
-            recursiveSelect(childItem);
+            recursiveSelect_desc(childItem, aselect);
         }
     }
 }
@@ -455,7 +506,7 @@ boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem 
     QTreeWidgetItem *itemBelow = q_ptr->itemBelow(item);
 
     if (itemBelow) {
-        ret = model->findDSNode(itemBelow);
+        ret = dopeSheetModel->findDSNode(itemBelow);
     }
 
     return ret;
@@ -497,7 +548,7 @@ void HierarchyViewPrivate::drawColoredIndicators(QPainter *p, QTreeWidgetItem *i
     QTreeWidgetItem *itemIt = item;
 
     while (itemIt) {
-        boost::shared_ptr<DSNode> parentDSNode = model->findParentDSNode(itemIt);
+        boost::shared_ptr<DSNode> parentDSNode = dopeSheetModel->findParentDSNode(itemIt);
         QTreeWidgetItem *parentItem = parentDSNode->getTreeItem();
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
 
@@ -516,7 +567,7 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
     int lineWidth = (NODE_SEPARATION_WIDTH / 2);
     int lineBegin = q_ptr->rect().left();
 
-    if (boost::shared_ptr<DSNode> parentNode = model->findDSNode(item->parent())) {
+    if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->findDSNode(item->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -539,7 +590,7 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, boost::shared_p
             lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
         }
     }
-    else if (boost::shared_ptr<DSNode> parentNode = model->findDSNode(nodeBelow->getTreeItem()->parent())) {
+    else if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->findDSNode(nodeBelow->getTreeItem()->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -562,29 +613,21 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
 
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
+    if (items.empty()) {
+        dopeSheetModel->getSelectionModel()->clearKeyframeSelection();
+    }
+
     std::vector<DopeSheetKey> keys;
 
     Q_FOREACH (QTreeWidgetItem *item, items) {
-        boost::shared_ptr<DSKnob> knobContext = model->findDSKnob(item);
+        boost::shared_ptr<DSKnob> knobContext = dopeSheetModel->findDSKnob(item);
 
         if (knobContext) {
-            model->getSelectionModel()->selectKeyframes(knobContext, &keys);
+            dopeSheetModel->getSelectionModel()->selectKeyframes(knobContext, &keys);
         }
     }
 
-    model->getSelectionModel()->makeSelection(keys, DopeSheetSelectionModel::SelectionTypeOneByOne);
-}
-
-void HierarchyViewPrivate::blockSelectionSignals(bool block)
-{
-    if (block) {
-        QObject::disconnect(q_ptr, SIGNAL(itemSelectionChanged()),
-                            q_ptr, SLOT(onItemSelectionChanged()));
-    }
-    else {
-        QObject::connect(q_ptr, SIGNAL(itemSelectionChanged()),
-                         q_ptr, SLOT(onItemSelectionChanged()));
-    }
+    dopeSheetModel->getSelectionModel()->makeSelection(keys, DopeSheetSelectionModel::SelectionTypeOneByOne);
 }
 
 /**
@@ -592,29 +635,28 @@ void HierarchyViewPrivate::blockSelectionSignals(bool block)
  *
  *
  */
-HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
+HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent) :
     QTreeWidget(parent),
     _imp(new HierarchyViewPrivate(this))
 {
-    connect(model, SIGNAL(nodeAdded(DSNode *)),
+    _imp->dopeSheetModel = dopeSheetModel;
+    _imp->gui = gui;
+
+    connect(dopeSheetModel, SIGNAL(nodeAdded(DSNode *)),
             this, SLOT(onNodeAdded(DSNode *)));
 
-    connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode *)),
+    connect(dopeSheetModel, SIGNAL(nodeAboutToBeRemoved(DSNode *)),
             this, SLOT(onNodeAboutToBeRemoved(DSNode *)));
 
-    connect(model, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
+    connect(dopeSheetModel, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
             this, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
-
-    connect(this, SIGNAL(itemSelectionChanged()),
-            this, SLOT(onItemSelectionChanged()));
 
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
-    _imp->model = model;
-    _imp->gui = gui;
-
     header()->close();
+
+    QTreeWidget::setSelectionModel(new HierarchyViewSelectionModel(this->model(), this));
 
     setSelectionMode(QAbstractItemView::ExtendedSelection);
     setColumnCount(1);
@@ -632,149 +674,7 @@ boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
 {
     QTreeWidgetItem *itemUnderPoint = itemAt(5, y);
 
-    return _imp->model->findDSKnob(itemUnderPoint);
-}
-
-void HierarchyView::onNodeAdded(DSNode *dsNode)
-{
-    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
-
-    boost::shared_ptr<DSNode> isInputOfTimeNode = _imp->model->getNearestTimeNodeFromOutputs(dsNode);
-    boost::shared_ptr<DSNode> isFromGroup = _imp->model->getGroupDSNode(dsNode);
-
-    if (isInputOfTimeNode) {
-        isInputOfTimeNode->getTreeItem()->addChild(treeItem);
-    }
-
-    if (isFromGroup) {
-        isFromGroup->getTreeItem()->addChild(treeItem);
-    }
-
-    if (!isInputOfTimeNode && !isFromGroup) {
-        addTopLevelItem(treeItem);
-    }
-
-    std::vector<boost::shared_ptr<DSNode> > importantNodes = _imp->model->getImportantNodes(dsNode);
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = importantNodes.begin();
-         it != importantNodes.end();
-         ++it) {
-        boost::shared_ptr<DSNode> n = (*it);
-
-        _imp->moveItem(n->getTreeItem(), dsNode->getTreeItem());
-
-        _imp->checkKnobsVisibleState(n.get());
-        _imp->checkNodeVisibleState(n.get());
-
-        n->getTreeItem()->setExpanded(true);
-    }
-
-    _imp->checkKnobsVisibleState(dsNode);
-    _imp->checkNodeVisibleState(dsNode);
-
-    treeItem->setExpanded(true);
-}
-
-void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
-{
-    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
-
-    // Put the child node items to the upper level
-    QList<QTreeWidgetItem *> toPut;
-
-    for (int i = 0; i < treeItem->childCount(); ++i) {
-        QTreeWidgetItem *child = treeItem->child(i);
-
-        if (child->type() < DopeSheet::ItemTypeKnobRoot) {
-            toPut << child;
-        }
-    }
-
-    QTreeWidgetItem *newParent = _imp->getParentItem(treeItem);
-
-    Q_FOREACH (QTreeWidgetItem *nodeItem, toPut) {
-        _imp->moveItem(nodeItem, newParent);
-
-        boost::shared_ptr<DSNode> dss = _imp->model->findDSNode(nodeItem);
-        _imp->checkKnobsVisibleState(dss.get());
-        _imp->checkNodeVisibleState(dss.get());
-
-        nodeItem->setExpanded(true);
-    }
-
-    // Remove the item from the tree
-    _imp->getParentItem(treeItem)->removeChild(treeItem);
-}
-
-void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
-{
-    _imp->checkKnobVisibleState(dsKnob);
-
-    // Check the node item
-    boost::shared_ptr<DSNode> parentNode = _imp->model->findParentDSNode(dsKnob->getTreeItem());
-    _imp->checkNodeVisibleState(parentNode.get());
-}
-
-void HierarchyView::onItemSelectionChanged()
-{
-    _imp->blockSelectionSignals(true);
-
-    if (selectedItems().empty()) {
-        _imp->model->getSelectionModel()->clearKeyframeSelection();
-    }
-    else {
-        Q_FOREACH (QTreeWidgetItem *item, selectedItems()) {
-            _imp->recursiveSelect(item);
-        }
-
-        _imp->selectKeyframes(selectedItems());
-    }
-
-    _imp->blockSelectionSignals(false);
-}
-
-/**
- * @brief DopeSheetEditor::onItemDoubleClicked
- *
- * Ensures that the node panel associated with 'item' is the top-most displayed
- * in the Properties panel.
- *
- * This slot is automatically called when an item is double clicked in the
- * hierarchy view.
- */
-void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
-{
-    Q_UNUSED(column);
-
-    boost::shared_ptr<DSNode> itemDSNode = _imp->model->findParentDSNode(item);
-
-    boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
-
-    // Move the nodeGui's settings panel on top
-    DockablePanel *panel = 0;
-
-    if (nodeGui) {
-        nodeGui->ensurePanelCreated();
-    }
-
-    if (nodeGui && nodeGui->getParentMultiInstance()) {
-        panel = nodeGui->getParentMultiInstance()->getSettingPanel();
-    }
-    else {
-        panel = nodeGui->getSettingPanel();
-    }
-
-    if (nodeGui && panel && nodeGui->isVisible()) {
-        if ( !nodeGui->isSettingsPanelVisible() ) {
-            nodeGui->setVisibleSettingsPanel(true);
-        }
-
-        if ( !nodeGui->wasBeginEditCalled() ) {
-            nodeGui->beginEditKnobs();
-        }
-
-        _imp->gui->putSettingsPanelFirst(nodeGui->getSettingPanel());
-        _imp->gui->getApp()->redrawAllViewers();
-    }
+    return _imp->dopeSheetModel->findDSKnob(itemUnderPoint);
 }
 
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -782,7 +682,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
     QTreeWidgetItem *item = itemFromIndex(index);
 
     bool drawPluginIconToo = false;
-    boost::shared_ptr<DSNode> dsNode = _imp->model->getDSNodeFromItem(item, &drawPluginIconToo);
+    boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->getDSNodeFromItem(item, &drawPluginIconToo);
 
     QRect rowRect = option.rect;
     QRect itemRect = visualItemRect(item);
@@ -809,6 +709,10 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
         QStyleOptionViewItemV4 newOpt = viewOptions();
         newOpt.rect = itemRect;
 
+        if (selectionModel()->isSelected(index)) {
+            newOpt.state |= QStyle::State_Selected;
+        }
+
         itemDelegate()->paint(painter, newOpt, index);
 
         _imp->drawColoredIndicators(painter, item, itemRect);
@@ -833,7 +737,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    boost::shared_ptr<DSNode> parentDSNode = _imp->model->getDSNodeFromItem(item);
+    boost::shared_ptr<DSNode> parentDSNode = _imp->dopeSheetModel->getDSNodeFromItem(item);
 
     {
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
@@ -863,6 +767,130 @@ void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QMo
         }
 
         style()->drawPrimitive(QStyle::PE_IndicatorBranch, &option, painter, this);
+    }
+}
+
+void HierarchyView::onNodeAdded(DSNode *dsNode)
+{
+    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
+    boost::shared_ptr<DSNode> isInputOfTimeNode = _imp->dopeSheetModel->getNearestTimeNodeFromOutputs(dsNode);
+    boost::shared_ptr<DSNode> isFromGroup = _imp->dopeSheetModel->getGroupDSNode(dsNode);
+
+    if (isInputOfTimeNode) {
+        isInputOfTimeNode->getTreeItem()->addChild(treeItem);
+    }
+
+    if (isFromGroup) {
+        isFromGroup->getTreeItem()->addChild(treeItem);
+    }
+
+    if (!isInputOfTimeNode && !isFromGroup) {
+        addTopLevelItem(treeItem);
+    }
+
+    std::vector<boost::shared_ptr<DSNode> > importantNodes = _imp->dopeSheetModel->getImportantNodes(dsNode);
+    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = importantNodes.begin();
+         it != importantNodes.end();
+         ++it) {
+        boost::shared_ptr<DSNode> n = (*it);
+
+        moveItem(n->getTreeItem(), dsNode->getTreeItem());
+
+        _imp->checkKnobsVisibleState(n.get());
+        _imp->checkNodeVisibleState(n.get());
+
+        n->getTreeItem()->setExpanded(true);
+    }
+
+    _imp->checkKnobsVisibleState(dsNode);
+    _imp->checkNodeVisibleState(dsNode);
+
+    treeItem->setExpanded(true);
+}
+
+void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
+{
+    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
+    // Put the child node items to the upper level
+    QList<QTreeWidgetItem *> toPut;
+
+    for (int i = 0; i < treeItem->childCount(); ++i) {
+        QTreeWidgetItem *child = treeItem->child(i);
+
+        if (child->data(0, QTREEWIDGETITEM_CONTEXT_TYPE_ROLE).toInt() < DopeSheet::ItemTypeKnobRoot) {
+            toPut << child;
+        }
+    }
+
+    QTreeWidgetItem *newParent = getParentItem(treeItem);
+
+    Q_FOREACH (QTreeWidgetItem *nodeItem, toPut) {
+        moveItem(nodeItem, newParent);
+
+        boost::shared_ptr<DSNode> dss = _imp->dopeSheetModel->findDSNode(nodeItem);
+        _imp->checkKnobsVisibleState(dss.get());
+        _imp->checkNodeVisibleState(dss.get());
+
+        nodeItem->setExpanded(true);
+    }
+
+    // Remove the item from the tree
+    getParentItem(treeItem)->removeChild(treeItem);
+}
+
+void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
+{
+    _imp->checkKnobVisibleState(dsKnob);
+
+    // Check the node item
+    boost::shared_ptr<DSNode> parentNode = _imp->dopeSheetModel->findParentDSNode(dsKnob->getTreeItem());
+    _imp->checkNodeVisibleState(parentNode.get());
+}
+
+/**
+ * @brief DopeSheetEditor::onItemDoubleClicked
+ *
+ * Ensures that the node panel associated with 'item' is the top-most displayed
+ * in the Properties panel.
+ *
+ * This slot is automatically called when an item is double clicked in the
+ * hierarchy view.
+ */
+void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
+{
+    Q_UNUSED(column);
+
+    boost::shared_ptr<DSNode> itemDSNode = _imp->dopeSheetModel->findParentDSNode(item);
+
+    boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
+
+    // Move the nodeGui's settings panel on top
+    DockablePanel *panel = 0;
+
+    if (nodeGui) {
+        nodeGui->ensurePanelCreated();
+    }
+
+    if (nodeGui && nodeGui->getParentMultiInstance()) {
+        panel = nodeGui->getParentMultiInstance()->getSettingPanel();
+    }
+    else {
+        panel = nodeGui->getSettingPanel();
+    }
+
+    if (nodeGui && panel && nodeGui->isVisible()) {
+        if ( !nodeGui->isSettingsPanelVisible() ) {
+            nodeGui->setVisibleSettingsPanel(true);
+        }
+
+        if ( !nodeGui->wasBeginEditCalled() ) {
+            nodeGui->beginEditKnobs();
+        }
+
+        _imp->gui->putSettingsPanelFirst(nodeGui->getSettingPanel());
+        _imp->gui->getApp()->redrawAllViewers();
     }
 }
 
@@ -3726,4 +3754,26 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
         pasteKeyframes();
     }
+}
+
+
+////////////////////////// HierarchyViewSelectionModel //////////////////////////
+
+HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
+                                                         QObject *parent) :
+    QItemSelectionModel(model, parent)
+{
+    connect(model, SIGNAL(destroyed()),
+            this, SLOT(deleteLater()));
+}
+
+void HierarchyViewSelectionModel::select(const QModelIndex &index,
+                                         QItemSelectionModel::SelectionFlags command)
+{
+//    QItemSelection selection(index, index);
+//    QItemSelection recursiveSelection;
+
+//    selection.merge(recursiveSelection, command);
+
+    QItemSelectionModel::select(index, command);
 }
