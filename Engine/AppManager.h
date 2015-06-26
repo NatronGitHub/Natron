@@ -101,7 +101,7 @@ public:
     
     ~CLArgs();
 
-    void operator=(const CLArgs& other) const;
+    void operator=(const CLArgs& other);
     
     bool isEmpty() const;
     

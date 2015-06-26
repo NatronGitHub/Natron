@@ -410,7 +410,7 @@ CLArgs::~CLArgs()
 }
 
 void
-CLArgs::operator=(const CLArgs& other) const
+CLArgs::operator=(const CLArgs& other)
 {
     _imp->args = other._imp->args;
     _imp->filename = other._imp->filename;
