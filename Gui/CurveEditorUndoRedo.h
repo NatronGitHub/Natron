@@ -160,7 +160,7 @@ class RemoveKeysCommand
 {
 public:
     RemoveKeysCommand(CurveWidget* editor,
-                      const std::vector< std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > & curveEditorElement
+                      const std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> > & curveEditorElement
                       ,
                       QUndoCommand *parent = 0);
     virtual ~RemoveKeysCommand() OVERRIDE
@@ -174,7 +174,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::vector<std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > _keys;
+    std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> > _keys;
     CurveWidget* _curveWidget;
 };
 

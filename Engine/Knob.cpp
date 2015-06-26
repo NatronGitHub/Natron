@@ -660,11 +660,11 @@ KnobHelper::deleteValueAtTime(int time,
             _signalSlotHandler->s_updateDependencies(dimension);
         }
         checkAnimationLevel(dimension);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, reason);
         evaluateValueChange(dimension,reason);
     }
     
-    if (_signalSlotHandler) {
+    if (_signalSlotHandler && reason != eValueChangedReasonUserEdited) {
         _signalSlotHandler->s_keyFrameRemoved(time,dimension,(int)reason);
     }
     
@@ -747,7 +747,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, Natron::eValueChangedReasonPluginEdited);
     }
     return true;
     
@@ -831,7 +831,7 @@ KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension , eValueChangedReasonPluginEdited);
     }
     return true;
 
@@ -862,7 +862,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     thisCurve->clone(curve);
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, eValueChangedReasonPluginEdited);
     }
     
     int nKeys = thisCurve->getKeyFramesCount();
@@ -910,7 +910,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
@@ -960,7 +960,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
@@ -1013,7 +1013,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
@@ -1078,7 +1078,7 @@ KnobHelper::removeAnimation(int dimension,
     if (!useGuiCurve) {
         //virtual portion
         evaluateValueChange(dimension, reason);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, reason);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
@@ -1105,7 +1105,7 @@ KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonE
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneInternalCurves[i]) {
-            guiCurveCloneInternalCurve(i);
+            guiCurveCloneInternalCurve(i, eValueChangedReasonNatronInternalEdited);
             _imp->mustCloneInternalCurves[i] = false;
             modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonNatronInternalEdited));
         }
@@ -1145,7 +1145,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>&
 }
 
 void
-KnobHelper::guiCurveCloneInternalCurve(int dimension)
+KnobHelper::guiCurveCloneInternalCurve(int dimension,Natron::ValueChangedReasonEnum reason)
 {
     if (!canAnimate()) {
         return;
@@ -1155,7 +1155,7 @@ KnobHelper::guiCurveCloneInternalCurve(int dimension)
         boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(dimension);
         assert(guicurve);
         guicurve->clone(*(_imp->curves[dimension]));
-        if (_signalSlotHandler) {
+        if (_signalSlotHandler && reason != eValueChangedReasonUserEdited) {
             _signalSlotHandler->s_refreshGuiCurve(dimension);
         }
     }
@@ -2441,7 +2441,7 @@ KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChang
             _signalSlotHandler->s_updateDependencies(dimension);
         }
         checkAnimationLevel(dimension);
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, reason);
         evaluateValueChange(dimension,reason);
     }
     

@@ -434,8 +434,14 @@ CurveGui::drawCurve(int curveIndex,
         
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
         for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
-            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
             const KeyFrame & key = (*k);
+            
+            if (key.getTime() < btmLeft.x() || key.getTime() > topRight.x() || key.getValue() < btmLeft.y() || key.getValue() > topRight.y()) {
+                continue;
+            }
+                
+            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+
             //if the key is selected change its color to white
             SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
             for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
@@ -3727,9 +3733,16 @@ CurveWidget::deleteSelectedKeyFrames()
 
     //apply the same strategy than for moveSelectedKeyFrames()
 
-    std::vector< std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > >  toRemove;
+    std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        toRemove.push_back( std::make_pair( (*it)->curve, (*it)->key ) );
+        std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >::iterator found = toRemove.find((*it)->curve);
+        if (found != toRemove.end()) {
+            found->second.push_back((*it)->key);
+        } else {
+            std::vector<KeyFrame> keys;
+            keys.push_back((*it)->key);
+            toRemove.insert(std::make_pair((*it)->curve, keys) );
+        }
     }
 
     pushUndoCommand( new RemoveKeysCommand(this,toRemove) );

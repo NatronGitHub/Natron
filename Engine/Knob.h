@@ -1321,7 +1321,7 @@ protected:
     
     void setInternalCurveHasChanged(int dimension, bool changed);
     
-    void guiCurveCloneInternalCurve(int dimension);
+    void guiCurveCloneInternalCurve(int dimension, Natron::ValueChangedReasonEnum reason);
     
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
     

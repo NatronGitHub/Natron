@@ -1048,7 +1048,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     int dim = action->data().toInt();
     
     boost::shared_ptr<KnobI> knob = getKnob();
-    std::vector<std::pair<boost::shared_ptr<CurveGui> , KeyFrame > > toRemove;
+    std::map<boost::shared_ptr<CurveGui> , std::vector<KeyFrame > > toRemove;
     
     
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1057,9 +1057,12 @@ KnobGui::onRemoveAnimationActionTriggered()
             std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
             for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
                 KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
+                
+                std::vector<KeyFrame > vect;
                 for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                    toRemove.push_back( std::make_pair(*it,*it2) );
+                    vect.push_back(*it2);
                 }
+                toRemove.insert(std::make_pair(*it, vect));
             }
             
         }
@@ -1272,6 +1275,47 @@ KnobGui::removeKeyFrame(double time,
     updateGUI(dimension);
 }
 
+void
+KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    
+    assert( knob->getHolder()->getApp() );
+    
+    std::list<SequenceTime> times;
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+        bool keyAdded = knob->onKeyFrameSet(keys[i].getTime(), keys[i], dimension);
+        if (keyAdded) {
+            times.push_back(keys[i].getTime());
+        }
+    }
+    Q_EMIT keyFrameSet();
+    if ( !knob->getIsSecret() && knob->isDeclaredByPlugin() ) {
+        knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(times, true);
+    }
+}
+
+void
+KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension)
+{
+    boost::shared_ptr<KnobI> knob = getKnob();
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+        knob->onKeyFrameRemoved(keys[i].getTime(), dimension);
+    }
+    
+    assert( knob->getHolder()->getApp() );
+    if ( !knob->getIsSecret() ) {
+        std::list<SequenceTime> times;
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            times.push_back(keys[i].getTime());
+        }
+        knob->getHolder()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(times, true);
+    }
+
+    Q_EMIT keyFrameRemoved();
+    updateGUI(dimension);
+}
+
 QString
 KnobGui::getScriptNameHtml() const
 {
@@ -1345,7 +1389,7 @@ KnobGui::onRemoveKeyActionTriggered()
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    std::vector<std::pair<boost::shared_ptr<CurveGui> ,KeyFrame> > toRemove;
+    std::map<boost::shared_ptr<CurveGui> , std::vector<KeyFrame > > toRemove;
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (dim == -1 || i == dim) {
@@ -1356,7 +1400,9 @@ KnobGui::onRemoveKeyActionTriggered()
                 bool foundKey = knob->getCurve(i)->getKeyFrameWithTime(time, &kf);
                 
                 if (foundKey) {
-                    toRemove.push_back( std::make_pair(*it,kf) );
+                    std::vector<KeyFrame > vect;
+                    vect.push_back(kf);
+                    toRemove.insert( std::make_pair(*it,vect) );
                 }
             }
             

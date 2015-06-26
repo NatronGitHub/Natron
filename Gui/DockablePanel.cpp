@@ -2331,7 +2331,7 @@ DockablePanel::setKeyOnAllParameters()
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
-    std::vector< std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > > keysToRemove;
+    std::map< boost::shared_ptr<CurveGui> ,std::vector<KeyFrame > > keysToRemove;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
@@ -2340,9 +2340,12 @@ DockablePanel::removeAnimationOnAllParameters()
                 
                 for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                        keysToRemove.push_back( std::make_pair(*it2,*it) );
+                    
+                    std::vector<KeyFrame > vect;
+                    for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
+                        vect.push_back(*it3);
                     }
+                    keysToRemove.insert(std::make_pair(*it2,vect));
                 }
             }
         }

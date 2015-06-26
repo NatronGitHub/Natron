@@ -1183,7 +1183,7 @@ Knob<T>::setValueAtTime(int time,
     if (holder) {
         holder->setHasAnimation(true);
     }
-    guiCurveCloneInternalCurve(dimension);
+    guiCurveCloneInternalCurve(dimension, reason);
     
     if (_signalSlotHandler && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
@@ -1673,7 +1673,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     bool ret = curve->addKeyFrame(k);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, Natron::eValueChangedReasonUserEdited);
         evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
@@ -1701,7 +1701,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     bool ret = curve->addKeyFrame(key);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, Natron::eValueChangedReasonUserEdited);
         evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
