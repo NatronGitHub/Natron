@@ -4316,6 +4316,9 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
+    for (int i = 0; i < 4; ++i) {
+        actionArgs.processChannels[i] = processChannels[i];
+    }
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();

@@ -5385,6 +5385,17 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
 }
 
 bool
+Node::getProcessChannel(int channelIndex) const
+{
+    assert(channelIndex >= 0 && channelIndex < 4);
+    boost::shared_ptr<Bool_Knob> k = _imp->enabledChan[channelIndex].lock();
+    if (k) {
+        return k->getValue();
+    }
+    return true;
+}
+
+bool
 Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
 {
     //If the effect is multi-planar, it is expected to handle itself all the planes

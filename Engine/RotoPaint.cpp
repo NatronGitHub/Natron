@@ -152,12 +152,16 @@ Natron::ImagePremultiplicationEnum
 RotoPaint::getOutputPremultiplication() const
 {
   
-//    EffectInstance* input = getInput(0);
-//    if (input) {
-//        return input->getOutputPremultiplication();
-//    } else {
-        return eImagePremultiplicationPremultiplied;
-//    }
+    EffectInstance* input = getInput(0);
+    Natron::ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
+    if (input) {
+        srcPremult = input->getOutputPremultiplication();
+    }
+    bool processA = getNode()->getProcessChannel(3);
+    if (srcPremult == eImagePremultiplicationOpaque && processA) {
+        return eImagePremultiplicationUnPremultiplied;
+    }
+    return eImagePremultiplicationPremultiplied;
 }
 
 double

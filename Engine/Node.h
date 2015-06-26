@@ -959,6 +959,8 @@ public:
   
     void refreshChannelSelectors(bool setValues);
     
+    bool getProcessChannel(int channelIndex) const;
+    
     bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
     
     void addUserComponents(const Natron::ImageComponents& comps);

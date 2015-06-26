@@ -787,6 +787,7 @@ public:
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
         bool byPassCache;
+        bool processChannels[4];
     };
 
 protected:
