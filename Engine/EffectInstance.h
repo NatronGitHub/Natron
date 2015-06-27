@@ -1746,6 +1746,7 @@ private:
                                           bool renderUseScaleOneInputs,
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
+                                          const RectI& renderMappedRectToRender,
                                           const RectI & downscaledRectToRender,
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,

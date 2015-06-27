@@ -1241,7 +1241,7 @@ ViewerInstance::renderViewer_internal(int view,
     
     
     std::vector<RectI> splitRoi;
-    if (inArgs.params->cachedFrame && !isSequentialRender && canAbort) {
+    if (inArgs.params->cachedFrame && !isSequentialRender && canAbort && inArgs.activeInputToRender->supportsTiles()) {
         /*
          Split the RoI in tiles and update viewer if rendering takes too much time.
          */
