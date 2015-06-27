@@ -101,7 +101,7 @@ public:
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
     boost::shared_ptr<DSNode> findDSNode(QTreeWidgetItem *nodeTreeItem) const;
     boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
-    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> knob) const;
+    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
 
     boost::shared_ptr<DSNode> getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
 

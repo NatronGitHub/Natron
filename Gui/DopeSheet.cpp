@@ -457,7 +457,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(Natron::Node *node) const
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> knob) const
+boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> &knob) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
