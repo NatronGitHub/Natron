@@ -73,6 +73,7 @@ private Q_SLOTS:
     void onKeyframeSetOrRemoved(DSKnob *dsKnob);
 
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void onItemSelectionChanged();
 
 private:
     boost::scoped_ptr<HierarchyViewPrivate> _imp;

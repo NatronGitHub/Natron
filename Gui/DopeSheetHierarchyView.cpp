@@ -445,9 +445,7 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
 
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
-    if (items.empty()) {
-        dopeSheetModel->getSelectionModel()->clearKeyframeSelection();
-    }
+    dopeSheetModel->getSelectionModel()->clearKeyframeSelection();
 
     std::vector<DopeSheetKey> keys;
 
@@ -474,6 +472,18 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     _imp->dopeSheetModel = dopeSheetModel;
     _imp->gui = gui;
 
+    header()->close();
+
+    QTreeWidget::setSelectionModel(new HierarchyViewSelectionModel(this->model(), this));
+
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setColumnCount(1);
+    setExpandsOnDoubleClick(false);
+
+    setItemDelegate(new HierarchyViewItemDelegate(this));
+
+    setStyleSheet("HierarchyView { border: 0px; }");
+
     connect(dopeSheetModel, SIGNAL(nodeAdded(DSNode *)),
             this, SLOT(onNodeAdded(DSNode *)));
 
@@ -486,17 +496,8 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
-    header()->close();
-
-    QTreeWidget::setSelectionModel(new HierarchyViewSelectionModel(this->model(), this));
-
-    setSelectionMode(QAbstractItemView::ExtendedSelection);
-    setColumnCount(1);
-    setExpandsOnDoubleClick(false);
-
-    setItemDelegate(new HierarchyViewItemDelegate(this));
-
-    setStyleSheet("HierarchyView { border: 0px; }");
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+            this, SLOT(onItemSelectionChanged()));
 }
 
 HierarchyView::~HierarchyView()
@@ -831,4 +832,9 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
         _imp->gui->putSettingsPanelFirst(nodeGui->getSettingPanel());
         _imp->gui->getApp()->redrawAllViewers();
     }
+}
+
+void HierarchyView::onItemSelectionChanged()
+{
+    _imp->selectKeyframes(selectedItems());
 }
