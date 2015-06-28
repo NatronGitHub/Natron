@@ -94,9 +94,6 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
 
     Q_FOREACH (QModelIndex index, selection.indexes()) {
         recursiveSelect(index, childrenSelection);
-
-        QItemSelection nextSelection = childrenSelection;
-        nextSelection.merge(selection, command);
     }
 
     newSelection.merge(childrenSelection, command);
