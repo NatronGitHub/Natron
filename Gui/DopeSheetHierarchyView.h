@@ -41,6 +41,7 @@ public Q_SLOTS:
 
 private: /* functions */
     void selectChildren(const QModelIndex &index, QItemSelection *selection) const;
+    void selectParents(const QModelIndex &index, QItemSelection *selection) const;
 };
 
 
@@ -57,7 +58,6 @@ public:
     bool itemIsVisibleFromOutside(QTreeWidgetItem *item) const;
     int firstVisibleParentCenterY(QTreeWidgetItem * item) const;
     QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item) const;
-
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

@@ -37,8 +37,9 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
 {
     QItemSelection newSelection = selection;
 
-    // Select childrens
     QItemSelection childrenSelection;
+
+    QItemSelection parentSelection;
 
     Q_FOREACH (QModelIndex index, selection.indexes()) {
         selectChildren(index, &childrenSelection);
@@ -49,9 +50,11 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
         newFlags |= Select;
 
         newSelection.merge(childrenSelection, newFlags);
+        newSelection.merge(parentSelection, newFlags);
     }
     else {
         newSelection.merge(childrenSelection, command);
+        newSelection.merge(parentSelection, command);
     }
 
     QItemSelectionModel::select(newSelection, command);
@@ -72,6 +75,37 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
 
         ++row;
         childIndex = index.child(row, 0);
+    }
+}
+
+void HierarchyViewSelectionModel::selectParents(const QModelIndex &index, QItemSelection *selection) const
+{
+    QModelIndex parentIndex = index.parent();
+
+    bool selectParent;
+
+    while (parentIndex.isValid()) {
+        selectParent = true;
+
+        int row = 0;
+        QModelIndex childIndexIt = parentIndex.child(row, 0);
+
+        while (childIndexIt.isValid()) {
+            if (!isSelected(childIndexIt)) {
+                selectParent = false;
+
+                break;
+            }
+
+            ++row;
+            childIndexIt = parentIndex.child(row, 0);
+        }
+
+        if (selectParent) {
+            selection->select(parentIndex, parentIndex);
+        }
+
+        parentIndex = parentIndex.parent();
     }
 }
 
