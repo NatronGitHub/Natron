@@ -93,25 +93,33 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
     QItemSelection childrenSelection;
 
     Q_FOREACH (QModelIndex index, selection.indexes()) {
-        recursiveSelect(index, childrenSelection);
+        selectChildren(index, &childrenSelection);
     }
 
-    newSelection.merge(childrenSelection, command);
+    if (command.testFlag(Deselect)) {
+        QItemSelectionModel::SelectionFlags newFlags;
+        newFlags |= Select;
+
+        newSelection.merge(childrenSelection, newFlags);
+    }
+    else {
+        newSelection.merge(childrenSelection, command);
+    }
 
     QItemSelectionModel::select(newSelection, command);
 }
 
-void HierarchyViewSelectionModel::recursiveSelect(const QModelIndex &index, QItemSelection &selection) const
+void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
 {
     int row = 0;
     QModelIndex childIndex = index.child(row, 0);
 
     while (childIndex.isValid()) {
-        selection.select(childIndex, childIndex);
+        selection->select(childIndex, childIndex);
 
         // /!\ recursion
         {
-            recursiveSelect(childIndex, selection);
+            selectChildren(childIndex, selection);
         }
 
         ++row;

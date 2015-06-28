@@ -40,7 +40,7 @@ public Q_SLOTS:
     virtual void select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
 
 private: /* functions */
-    void recursiveSelect(const QModelIndex &index, QItemSelection &selection) const;
+    void selectChildren(const QModelIndex &index, QItemSelection *selection) const;
 };
 
 
