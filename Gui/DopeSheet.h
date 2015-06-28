@@ -91,8 +91,6 @@ public:
 
     DSTreeItemNodeMap getNodeRows() const;
 
-    std::pair<double, double> getKeyframeRange() const;
-
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
 

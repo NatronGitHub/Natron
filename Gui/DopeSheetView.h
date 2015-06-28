@@ -62,6 +62,7 @@ public:
     ~DopeSheetView();
 
     void centerOn(double xMin, double xMax);
+    std::pair<double, double> getKeyframeRange() const;
 
     SequenceTime getCurrentFrame() const;
 

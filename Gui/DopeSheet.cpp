@@ -271,56 +271,6 @@ DSTreeItemNodeMap DopeSheet::getNodeRows() const
     return _imp->treeItemNodeMap;
 }
 
-std::pair<double, double> DopeSheet::getKeyframeRange() const
-{
-    std::pair<double, double> ret;
-
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
-
-    DSTreeItemNodeMap dsNodeItems = _imp->treeItemNodeMap;
-
-    for (DSTreeItemNodeMap::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
-        if ((*it).first->isHidden()) {
-            continue;
-        }
-
-        boost::shared_ptr<DSNode> dsNode = (*it).second;
-
-        DSTreeItemKnobMap dsKnobItems = dsNode->getChildData();
-
-        for (DSTreeItemKnobMap::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
-            if ((*itKnob).first->isHidden()) {
-                continue;
-            }
-
-            boost::shared_ptr<DSKnob> dsKnob = (*itKnob).second;
-
-            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
-
-                if (keyframes.empty()) {
-                    continue;
-                }
-
-                dimFirstKeys.push_back(keyframes.begin()->getTime());
-                dimLastKeys.push_back(keyframes.rbegin()->getTime());
-            }
-        }
-    }
-
-    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
-        ret.first = 0;
-        ret.second = 0;
-    }
-    else {
-        ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-        ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
-    }
-
-    return ret;
-}
-
 void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 {
     // Determinate the node type
