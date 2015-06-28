@@ -6713,7 +6713,7 @@ Node::refreshChannelSelectors(bool setValues)
                 if (channels.size() == 1 || channels.size() == 4) {
                     alphaIndex = choices.size() - 1;
                 } else {
-                    alphaIndex = 0;
+                    alphaIndex = 1;
                 }
                 gotColor = true;
             }
