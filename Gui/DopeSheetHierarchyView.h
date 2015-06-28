@@ -54,9 +54,18 @@ public:
 
     boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
 
+    bool itemIsVisibleFromOutside(QTreeWidgetItem *item) const;
+    int firstVisibleParentCenterY(QTreeWidgetItem * item) const;
+    QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item) const;
+
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
+
+    bool childrenAreHidden(QTreeWidgetItem *item) const;
+    QTreeWidgetItem *getParentItem(QTreeWidgetItem *item) const;
+    void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent) const;
 
 private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);

@@ -75,75 +75,6 @@ void running_in_main_thread_and_context(const QGLWidget *glWidget) {
     running_in_main_context(glWidget);
 }
 
-bool itemIsVisibleFromOutside(QTreeWidgetItem *item)
-{
-    bool ret = true;
-
-    QTreeWidgetItem *it = item->parent();
-
-    while (it) {
-        if (!it->isExpanded()) {
-            ret = false;
-
-            break;
-        }
-
-        it = it->parent();
-    }
-
-    return ret;
-
-}
-
-int firstVisibleParentCenterY(QTreeWidgetItem * item)
-{
-    int ret = 0;
-
-    QTreeWidgetItem *it = item->parent();
-
-    while (it) {
-        assert(it->treeWidget());
-
-        QRect itemRect = it->treeWidget()->visualItemRect(it);
-
-        if (itemRect.isNull()) {
-            it = it->parent();
-        }
-        else {
-            ret = itemRect.center().y();
-
-            break;
-        }
-    }
-
-    return ret;
-}
-
-QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item)
-{
-    QTreeWidgetItem *ret = 0;
-
-    if (!item->childCount()) {
-        ret = item;
-    }
-
-    for (int i = item->childCount() - 1; i >= 0; --i) {
-        QTreeWidgetItem *child = item->child(i);
-
-        if (!child->isHidden()) {
-            ret = child;
-
-            break;
-        }
-    }
-
-    if (!ret) {
-        ret = item;
-    }
-
-    return ret;
-}
-
 } // anon namespace
 
 
@@ -651,10 +582,10 @@ int DopeSheetViewPrivate::getHeightForItemAndChildren(QTreeWidgetItem *item) con
     }
 
     // Get the "bottom-most" item
-    QTreeWidgetItem *lastChild = lastVisibleChild(item);
+    QTreeWidgetItem *lastChild = hierarchyView->lastVisibleChild(item);
 
     if (lastChild->childCount() > 0 && lastChild->isExpanded()) {
-        lastChild = lastVisibleChild(lastChild);
+        lastChild = hierarchyView->lastVisibleChild(lastChild);
     }
 
     int top = hierarchyView->visualItemRect(item).top();
@@ -1150,7 +1081,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                         || selectionRect.intersects(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
-                bool drawInDimRow = itemIsVisibleFromOutside(knobTreeItem);
+                bool drawInDimRow = hierarchyView->itemIsVisibleFromOutside(knobTreeItem);
 
                 if (drawInDimRow) {
                     DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType(kf.getInterpolation(),
@@ -1169,7 +1100,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 QTreeWidgetItem *knobParentItem = knobTreeItem->parent();
                 boost::shared_ptr<DSNode> nodeContext = model->findDSNode(knobParentItem);
 
-                bool drawInMultidimRootRow = itemIsVisibleFromOutside(knobParentItem);
+                bool drawInMultidimRootRow = hierarchyView->itemIsVisibleFromOutside(knobParentItem);
 
                 if (drawInMultidimRootRow) {
                     if (!nodeContext) {
@@ -1182,7 +1113,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 
                 nodeContext = model->findParentDSNode(knobParentItem);
 
-                bool drawInNodeRoot = itemIsVisibleFromOutside(nodeContext->getTreeItem());
+                bool drawInNodeRoot = hierarchyView->itemIsVisibleFromOutside(nodeContext->getTreeItem());
 
                 if (drawInNodeRoot) {
                     double newCenterY = hierarchyView->visualItemRect(nodeContext->getTreeItem()).center().y();
@@ -1557,7 +1488,7 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
             y = keyItemRect.center().y();
         }
         else {
-            y = firstVisibleParentCenterY(keyItem);
+            y = hierarchyView->firstVisibleParentCenterY(keyItem);
         }
 
         ys.insert(y);

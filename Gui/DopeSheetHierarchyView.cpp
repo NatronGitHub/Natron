@@ -17,58 +17,6 @@
 #include "Gui/NodeGui.h"
 
 
-////////////////////////// Helpers //////////////////////////
-
-namespace {
-
-/**
- * @brief itemHasNoChildVisible
- *
- * Returns true if all childs of 'item' are hidden, otherwise returns
- * false.
- */
-bool childrenAreHidden(QTreeWidgetItem *item)
-{
-    for (int i = 0; i < item->childCount(); ++i) {
-        if (!item->child(i)->isHidden())
-            return false;
-    }
-
-    return true;
-}
-
-QTreeWidgetItem *getParentItem(QTreeWidgetItem *item)
-{
-    QTreeWidgetItem *ret = 0;
-
-    QTreeWidgetItem *parentItem = item->parent();
-
-    if (parentItem) {
-        ret = parentItem;
-    }
-    else {
-        QTreeWidget *treeWidget = item->treeWidget();
-        assert(treeWidget);
-
-        ret = treeWidget->invisibleRootItem();
-    }
-
-    return ret;
-}
-
-void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent)
-{
-    assert(newParent);
-
-    QTreeWidgetItem *currentParent = getParentItem(child);
-
-    currentParent->removeChild(child);
-    newParent->addChild(child);
-}
-
-} // anon namespace
-
-
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////
 
 
@@ -527,6 +475,74 @@ boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
     return _imp->dopeSheetModel->findDSKnob(itemUnderPoint);
 }
 
+bool HierarchyView::itemIsVisibleFromOutside(QTreeWidgetItem *item) const
+{
+    bool ret = true;
+
+    QTreeWidgetItem *it = item->parent();
+
+    while (it) {
+        if (!it->isExpanded()) {
+            ret = false;
+
+            break;
+        }
+
+        it = it->parent();
+    }
+
+    return ret;
+}
+
+int HierarchyView::firstVisibleParentCenterY(QTreeWidgetItem *item) const
+{
+    int ret = 0;
+
+    QTreeWidgetItem *it = item->parent();
+
+    while (it) {
+        assert(it->treeWidget());
+
+        QRect itemRect = it->treeWidget()->visualItemRect(it);
+
+        if (itemRect.isNull()) {
+            it = it->parent();
+        }
+        else {
+            ret = itemRect.center().y();
+
+            break;
+        }
+    }
+
+    return ret;
+}
+
+QTreeWidgetItem *HierarchyView::lastVisibleChild(QTreeWidgetItem *item) const
+{
+    QTreeWidgetItem *ret = 0;
+
+    if (!item->childCount()) {
+        ret = item;
+    }
+
+    for (int i = item->childCount() - 1; i >= 0; --i) {
+        QTreeWidgetItem *child = item->child(i);
+
+        if (!child->isHidden()) {
+            ret = child;
+
+            break;
+        }
+    }
+
+    if (!ret) {
+        ret = item;
+    }
+
+    return ret;
+}
+
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
@@ -618,6 +634,45 @@ void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QMo
 
         style()->drawPrimitive(QStyle::PE_IndicatorBranch, &option, painter, this);
     }
+}
+
+bool HierarchyView::childrenAreHidden(QTreeWidgetItem *item) const
+{
+    for (int i = 0; i < item->childCount(); ++i) {
+        if (!item->child(i)->isHidden())
+            return false;
+    }
+
+    return true;
+}
+
+QTreeWidgetItem *HierarchyView::getParentItem(QTreeWidgetItem *item) const
+{
+    QTreeWidgetItem *ret = 0;
+
+    QTreeWidgetItem *parentItem = item->parent();
+
+    if (parentItem) {
+        ret = parentItem;
+    }
+    else {
+        QTreeWidget *treeWidget = item->treeWidget();
+        assert(treeWidget);
+
+        ret = treeWidget->invisibleRootItem();
+    }
+
+    return ret;
+}
+
+void HierarchyView::moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent) const
+{
+    assert(newParent);
+
+    QTreeWidgetItem *currentParent = getParentItem(child);
+
+    currentParent->removeChild(child);
+    newParent->addChild(child);
 }
 
 void HierarchyView::onNodeAdded(DSNode *dsNode)
