@@ -3166,25 +3166,29 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
+    
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
-        
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            if (isNodeRendering() && !appPTR->isBackground()) {
-                _imp->liveInstance->abortAnyEvaluation();
-                ConnectInputAction action(input,eInputActionConnect,inputNumber);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return true;
-            }
+    }
+    
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
+            ConnectInputAction action(input,eInputActionConnect,inputNumber);
+            QMutexLocker cql(&_imp->connectionQueueMutex);
+            _imp->connectionQueue.push_back(action);
+            return true;
         }
-        
+    }
+    
+    {
         ///Set the input
+        QMutexLocker l(&_imp->inputsMutex);
         _imp->inputs[inputNumber] = input;
         input->connectOutput(this);
     }
