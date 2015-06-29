@@ -79,7 +79,7 @@ public:
     void removeNode(NodeGui *node);
 
     /**
-     * @brief Center the content of the dope sheet view on the range
+     * @brief Center the content of the dope sheet view on the timeline range
      * ['xMin', 'xMax'].
      */
     void centerOn(double xMin, double xMax);

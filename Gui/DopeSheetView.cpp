@@ -2126,7 +2126,7 @@ DopeSheetView::~DopeSheetView()
 
 }
 
-void DopeSheetView::centerOn(double xMin, double xMax)
+void DopeSheetView::centerOnSelection(double xMin, double xMax)
 {
     _imp->zoomContext.fill(xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top());
 
@@ -2299,7 +2299,7 @@ void DopeSheetView::deleteSelectedKeyframes()
     redraw();
 }
 
-void DopeSheetView::centerOn()
+void DopeSheetView::centerOnSelection()
 {
     running_in_main_thread();
 
@@ -2954,7 +2954,7 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
         deleteSelectedKeyframes();
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
-        centerOn();
+        centerOnSelection();
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
         selectAllKeyframes();
