@@ -266,7 +266,7 @@ DopeSheet::~DopeSheet()
     _imp->treeItemNodeMap.clear();
 }
 
-DSTreeItemNodeMap DopeSheet::getNodeRows() const
+DSTreeItemNodeMap DopeSheet::getItemNodeMap() const
 {
     return _imp->treeItemNodeMap;
 }
@@ -357,11 +357,6 @@ void DopeSheet::removeNode(NodeGui *node)
     _imp->treeItemNodeMap.erase(toRemove);
 }
 
-SequenceTime DopeSheet::getCurrentFrame() const
-{
-    return _imp->timeline->currentFrame();
-}
-
 boost::shared_ptr<DSNode> DopeSheet::mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const
 {
     DSTreeItemNodeMap::const_iterator dsNodeIt = _imp->treeItemNodeMap.find(nodeTreeItem);
@@ -378,7 +373,7 @@ boost::shared_ptr<DSKnob> DopeSheet::mapNameItemToDSKnob(QTreeWidgetItem *knobTr
     boost::shared_ptr<DSKnob> ret;
 
     boost::shared_ptr<DSNode>dsNode = findParentDSNode(knobTreeItem);
-    DSTreeItemKnobMap knobRows = dsNode->getChildData();
+    DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
 
     DSTreeItemKnobMap::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
 
@@ -431,7 +426,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> &
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
 
-        DSTreeItemKnobMap knobRows = dsNode->getChildData();
+        DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*knobIt).second;
@@ -450,7 +445,7 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
 
-        DSTreeItemKnobMap knobRows = dsNode->getChildData();
+        DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*knobIt).second;
@@ -719,6 +714,11 @@ void DopeSheet::emit_modelChanged()
     Q_EMIT modelChanged();
 }
 
+SequenceTime DopeSheet::getCurrentFrame() const
+{
+    return _imp->timeline->currentFrame();
+}
+
 boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::ItemType itemType)
 {
     // Determinate the node type
@@ -909,12 +909,12 @@ void DopeSheetSelectionModel::selectAllKeyframes()
 {
     std::vector<DopeSheetKey> result;
 
-    DSTreeItemNodeMap nodeRows = _imp->dopeSheet->getNodeRows();
+    DSTreeItemNodeMap nodeRows = _imp->dopeSheet->getItemNodeMap();
 
     for (DSTreeItemNodeMap::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
 
-        DSTreeItemKnobMap dsKnobItems = dsNode->getChildData();
+        DSTreeItemKnobMap dsKnobItems = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator itKnob = dsKnobItems.begin();
              itKnob != dsKnobItems.end();
@@ -1243,7 +1243,7 @@ boost::shared_ptr<Natron::Node> DSNode::getInternalNode() const
  *
  *
  */
-DSTreeItemKnobMap DSNode::getChildData() const
+DSTreeItemKnobMap DSNode::getItemKnobMap() const
 {
     return _imp->itemKnobMap;
 }

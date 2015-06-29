@@ -222,7 +222,7 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
 
 void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
 {
-    DSTreeItemKnobMap knobRows = dsNode->getChildData();
+    DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
 
     for (DSTreeItemKnobMap::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
         boost::shared_ptr<DSKnob> knobContext = (*it).second;

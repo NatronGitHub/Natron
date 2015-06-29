@@ -89,12 +89,11 @@ public:
     DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
-    DSTreeItemNodeMap getNodeRows() const;
+    // Model specific
+    DSTreeItemNodeMap getItemNodeMap() const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
-
-    SequenceTime getCurrentFrame() const;
 
     boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
     boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
@@ -134,6 +133,9 @@ public:
 
     void emit_modelChanged();
 
+    // Other
+    SequenceTime getCurrentFrame() const;
+
 Q_SIGNALS:
     void modelChanged();
     void nodeAdded(DSNode *dsNode);
@@ -172,7 +174,7 @@ public:
     boost::shared_ptr<NodeGui> getNodeGui() const;
     boost::shared_ptr<Natron::Node> getInternalNode() const;
 
-    DSTreeItemKnobMap getChildData() const;
+    DSTreeItemKnobMap getItemKnobMap() const;
 
     DopeSheet::ItemType getItemType() const;
 

@@ -355,7 +355,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
     }
     // Or does he hovering on a row's element ?
     else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(5, widgetCoords.y())) {
-        DSTreeItemNodeMap dsNodeItems = model->getNodeRows();
+        DSTreeItemNodeMap dsNodeItems = model->getItemNodeMap();
         DSTreeItemNodeMap::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
         if (dsNodeIt != dsNodeItems.end()) {
@@ -528,7 +528,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_p
 {
     std::vector<DopeSheetKey> ret;
 
-    DSTreeItemKnobMap dsKnobs = dsNode->getChildData();
+    DSTreeItemKnobMap dsKnobs = dsNode->getItemKnobMap();
 
     for (DSTreeItemKnobMap::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
         boost::shared_ptr<DSKnob> dsKnob = (*it).second;
@@ -782,7 +782,7 @@ void DopeSheetViewPrivate::drawRows() const
 {
     running_in_main_thread_and_context(q_ptr);
 
-    DSTreeItemNodeMap treeItemsAndDSNodes = model->getNodeRows();
+    DSTreeItemNodeMap treeItemsAndDSNodes = model->getItemNodeMap();
 
     // Perform drawing
     {
@@ -810,7 +810,7 @@ void DopeSheetViewPrivate::drawRows() const
 
             drawNodeRow(dsNode);
 
-            DSTreeItemKnobMap knobItems = dsNode->getChildData();
+            DSTreeItemKnobMap knobItems = dsNode->getItemKnobMap();
             for (DSTreeItemKnobMap::const_iterator it2 = knobItems.begin();
                  it2 != knobItems.end();
                  ++it2) {
@@ -1046,7 +1046,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        DSTreeItemKnobMap knobItems = dsNode->getChildData();
+        DSTreeItemKnobMap knobItems = dsNode->getItemKnobMap();
         for (DSTreeItemKnobMap::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
@@ -1529,7 +1529,7 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
 
 void DopeSheetViewPrivate::computeRangesBelow(DSNode *dsNode)
 {
-    DSTreeItemNodeMap nodeRows = model->getNodeRows();
+    DSTreeItemNodeMap nodeRows = model->getItemNodeMap();
 
     for (DSTreeItemNodeMap::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
         QTreeWidgetItem *item = (*it).first;
@@ -1842,12 +1842,12 @@ void DopeSheetViewPrivate::createSelectionFromRect(const QRectF &rect, std::vect
 {
     QRectF zoomCoordsRect = rectToZoomCoordinates(rect);
 
-    DSTreeItemNodeMap dsNodes = model->getNodeRows();
+    DSTreeItemNodeMap dsNodes = model->getItemNodeMap();
 
     for (DSTreeItemNodeMap::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
         boost::shared_ptr<DSNode> dsNode = (*it).second;
 
-        DSTreeItemKnobMap dsKnobs = dsNode->getChildData();
+        DSTreeItemKnobMap dsKnobs = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
             boost::shared_ptr<DSKnob> dsKnob = (*it2).second;
@@ -2140,7 +2140,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
     std::vector<double> dimFirstKeys;
     std::vector<double> dimLastKeys;
 
-    DSTreeItemNodeMap dsNodeItems = _imp->model->getNodeRows();
+    DSTreeItemNodeMap dsNodeItems = _imp->model->getItemNodeMap();
 
     for (DSTreeItemNodeMap::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
         if ((*it).first->isHidden()) {
@@ -2149,7 +2149,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
 
         boost::shared_ptr<DSNode> dsNode = (*it).second;
 
-        DSTreeItemKnobMap dsKnobItems = dsNode->getChildData();
+        DSTreeItemKnobMap dsKnobItems = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
             if ((*itKnob).first->isHidden()) {
@@ -2719,7 +2719,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
         else if (QTreeWidgetItem *treeItem = _imp->hierarchyView->itemAt(0, e->y())) {
-            DSTreeItemNodeMap dsNodeItems = _imp->model->getNodeRows();
+            DSTreeItemNodeMap dsNodeItems = _imp->model->getItemNodeMap();
             DSTreeItemNodeMap::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
             // The user clicked on a reader
