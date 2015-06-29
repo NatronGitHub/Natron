@@ -438,11 +438,14 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     menu->clear();
-    bool isOnKeyFrame = false;
+    bool dimensionHasKeyframe = false;
+    bool hasAllKeyframes = true;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        if (knob->getAnimationLevel(i) == Natron::eAnimationLevelOnKeyframe) {
-            isOnKeyFrame = true;
-            break;
+        Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(i);
+        if (lvl != Natron::eAnimationLevelOnKeyframe) {
+            hasAllKeyframes = false;
+        } else if (dimension == i && lvl == Natron::eAnimationLevelOnKeyframe) {
+            dimensionHasKeyframe = true;
         }
     }
 
@@ -476,7 +479,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         if (!hasDimensionSlaved) {
             if (knob->getDimension() > 1) {
                 ///Multi-dim actions
-                if (!isOnKeyFrame) {
+                if (!hasAllKeyframes) {
                     QAction* setKeyAction = new QAction(tr("Set Key (all dimensions)"),menu);
                     setKeyAction->setData(-1);
                     QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
@@ -506,7 +509,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 menu->addSeparator();
                 {
                     ///Single dim action
-                    if (!isOnKeyFrame) {
+                    if (!dimensionHasKeyframe) {
                         QAction* setKeyAction = new QAction(tr("Set Key"),menu);
                         setKeyAction->setData(dimension);
                         QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
