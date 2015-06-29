@@ -70,7 +70,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ComboBox.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
@@ -2501,7 +2501,7 @@ DockablePanel::scanForNewKnobs()
         getGui()->getCurveEditor()->removeNode(node.get());
         getGui()->getCurveEditor()->addNode(node);
 
-        getGui()->getDopeSheetEditor()->removeNode(node.get());
+        getGui()->removeNodeGuiFromDopeSheetEditor(node);
         getGui()->addNodeGuiToDopeSheetEditor(node);
     }
 }

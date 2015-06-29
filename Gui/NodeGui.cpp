@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/GuiApplicationManager.h"

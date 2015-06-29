@@ -82,7 +82,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
 #include "Gui/ProjectGui.h"
@@ -787,12 +787,14 @@ Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
     _imp->_curveEditor->removeNode(node.get());
 }
 
-void Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+void
+Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
 {
     _imp->_dopeSheetEditor->addNode(node);
 }
 
-void Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+void
+Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
 {
     _imp->_dopeSheetEditor->removeNode(node.get());
 }

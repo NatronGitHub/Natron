@@ -132,7 +132,8 @@ SOURCES += \
     DopeSheet.cpp \
     DopeSheetView.cpp \
     DopeSheetEditorUndoRedo.cpp \
-    DopeSheetHierarchyView.cpp
+    DopeSheetHierarchyView.cpp \
+    DopeSheetEditor.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -241,7 +242,8 @@ HEADERS += \
     DopeSheet.h \
     DopeSheetView.h \
     DopeSheetEditorUndoRedo.h \
-    DopeSheetHierarchyView.h
+    DopeSheetHierarchyView.h \
+    DopeSheetEditor.h
 
 RESOURCES += \
     GuiResources.qrc

@@ -51,7 +51,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveEditor.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/CurveEditorUndoRedo.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ZoomContext.h"

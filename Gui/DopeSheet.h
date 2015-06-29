@@ -6,8 +6,8 @@
 #include <Python.h>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -18,12 +18,10 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h"
-#include "Engine/ScriptObject.h"
 
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
-class DopeSheetEditorPrivate;
 class DopeSheetPrivate;
 class DopeSheetSelectionModel;
 class DopeSheetSelectionModelPrivate;
@@ -311,32 +309,6 @@ Q_SIGNALS:
 
 private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
-};
-
-
-/**
- * @brief The DopeSheetEditor class
- *
- *
- */
-class DopeSheetEditor : public QWidget, public ScriptObject
-{
-    Q_OBJECT
-
-public:
-    DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
-    ~DopeSheetEditor();
-
-    void addNode(boost::shared_ptr<NodeGui> nodeGui);
-    void removeNode(NodeGui *node);
-
-    void centerOn(double xMin, double xMax);
-
-public Q_SLOTS:
-    void toggleTripleSync(bool enabled);
-
-private:
-    boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
 
 #endif // DOPESHEET_H

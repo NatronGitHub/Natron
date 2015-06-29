@@ -41,7 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/CurveEditor.h"
 

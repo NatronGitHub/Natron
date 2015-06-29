@@ -42,7 +42,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
