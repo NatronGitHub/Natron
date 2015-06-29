@@ -48,20 +48,6 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
     toggleTripleSyncBtn(0)
 {}
 
-
-/**
- * @class DopeSheetEditor
- *
- * The DopeSheetEditor class provides several widgets to edit keyframe animations in
- * a more user-friendly way than the Curve Editor.
- *
- * It contains two main widgets : at left, the hierarchy view provides a tree
- * representation of the animated parameters (knobs) of each opened node.
- * At right, the dope sheet view is an OpenGL widget displaying horizontally the
- * keyframes of these knobs. The user can select, move and delete the keyframes.
- */
-
-
 /**
  * @brief DopeSheetEditor::DopeSheetEditor
  *
@@ -115,33 +101,14 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->mainLayout->addLayout(_imp->helpersLayout);
 }
 
-/**
- * @brief DopeSheetEditor::~DopeSheetEditor
- *
- * Deletes all the nodes from the DopeSheetEditor.
- */
 DopeSheetEditor::~DopeSheetEditor()
 {}
 
-/**
- * @brief DopeSheetEditor::addNode
- *
- * Adds 'node' to the hierarchy view, except if :
- * - the node haven't an existing setting panel ;
- * - the node haven't knobs ;
- * - any knob of the node can't be animated or have no animation.
- */
 void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }
 
-/**
- * @brief DopeSheetEditor::removeNode
- *
- * Removes 'node' from the dope sheet.
- * Its associated items are removed from the hierarchy view as its keyframe rows.
- */
 void DopeSheetEditor::removeNode(NodeGui *node)
 {
     _imp->model->removeNode(node);
