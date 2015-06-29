@@ -479,31 +479,6 @@ boost::shared_ptr<DSNode> DopeSheet::getGroupDSNode(DSNode *dsNode) const
     return parentGroupDSNode;
 }
 
-bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
-{
-    bool ret = true;
-
-    NodeList subNodes = group->getNodes();
-
-    for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
-        NodePtr node = (*it);
-
-        boost::shared_ptr<DSNode>dsNode = findDSNode(node.get());
-
-        if (!dsNode) {
-            continue;
-        }
-
-        if (!dsNode->getTreeItem()->isHidden()) {
-            ret = false;
-
-            break;
-        }
-    }
-
-    return ret;
-}
-
 std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsNode) const
 {
     std::vector<boost::shared_ptr<DSNode> > ret;

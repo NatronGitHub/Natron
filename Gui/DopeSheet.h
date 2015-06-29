@@ -106,7 +106,6 @@ public:
 
     bool isPartOfGroup(DSNode *dsNode) const;
     boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
-    bool groupSubNodesAreHidden(NodeGroup *group) const;
 
     std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
 

@@ -250,18 +250,8 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     if (nodeType == DopeSheet::ItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
     }
-    else if (nodeType == DopeSheet::ItemTypeGroup) {
-        NodeGroup *group = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
-
-        showNode = showNode && (!dopeSheetModel->groupSubNodesAreHidden(group) || !dsNode->getTreeItem()->childCount());
-    }
 
     dsNode->getTreeItem()->setHidden(!showNode);
-
-    // Hide the parent group item if there's no subnodes displayed
-    if (boost::shared_ptr<DSNode> parentGroupDSNode = dopeSheetModel->getGroupDSNode(dsNode)) {
-        checkNodeVisibleState(parentGroupDSNode.get());
-    }
 }
 
 void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
@@ -754,19 +744,19 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
     // Put the child node items to the upper level
-    QList<QTreeWidgetItem *> toPut;
+    QList<QTreeWidgetItem *> toMove;
 
     for (int i = 0; i < treeItem->childCount(); ++i) {
         QTreeWidgetItem *child = treeItem->child(i);
 
         if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot) {
-            toPut << child;
+            toMove << child;
         }
     }
 
     QTreeWidgetItem *newParent = getParentItem(treeItem);
 
-    Q_FOREACH (QTreeWidgetItem *nodeItem, toPut) {
+    Q_FOREACH (QTreeWidgetItem *nodeItem, toMove) {
         moveItem(nodeItem, newParent);
 
         boost::shared_ptr<DSNode> dss = _imp->dopeSheetModel->mapNameItemToDSNode(nodeItem);
