@@ -104,14 +104,6 @@ public:
     bool itemIsVisibleFromOutside(QTreeWidgetItem *item) const;
 
     /**
-     * @brief Returns the y coordinate of the first visible parent of 'item'.
-     *
-     * This functions is used to compute the bounding rect of the keyframe
-     * selection.
-     */
-    int firstVisibleParentCenterY(QTreeWidgetItem * item) const;
-
-    /**
      * @brief Returns the height occuped in the view by 'item' and its
      * children.
      */

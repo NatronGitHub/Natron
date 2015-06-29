@@ -1463,28 +1463,15 @@ void DopeSheetViewPrivate::computeSelectedKeysBRect()
         if (!keyItemRect.isNull() && !keyItemRect.isEmpty()) {
             y = keyItemRect.center().y();
         }
-        else {
-            y = hierarchyView->firstVisibleParentCenterY(keyItem);
-        }
 
         ys.insert(y);
     }
 
-    // Adjust the top to the associated item bottom
     QTreeWidgetItem *bottomMostItem = hierarchyView->itemAt(0, *(ys.rbegin()));
     double top = hierarchyView->visualItemRect(bottomMostItem).bottom();
 
-    // Adjust the bottom to the node item top
     QTreeWidgetItem *topMostItem = hierarchyView->itemAt(0, *(ys.begin()));
-    boost::shared_ptr<DSNode> parentDSNode = model->findParentDSNode(topMostItem);
-
-    if (!parentDSNode) {
-        return;
-    }
-
-    QTreeWidgetItem *topMostItemNodeItem = parentDSNode->getTreeItem();
-
-    double bottom = hierarchyView->visualItemRect(topMostItemNodeItem).top();
+    double bottom = hierarchyView->visualItemRect(topMostItem).top();
 
     double left = *(keyTimes.begin());
     double right = *(keyTimes.rbegin());

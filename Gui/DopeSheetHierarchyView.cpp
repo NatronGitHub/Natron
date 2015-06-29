@@ -569,30 +569,6 @@ bool HierarchyView::itemIsVisibleFromOutside(QTreeWidgetItem *item) const
     return ret;
 }
 
-int HierarchyView::firstVisibleParentCenterY(QTreeWidgetItem *item) const
-{
-    int ret = 0;
-
-    QTreeWidgetItem *it = item->parent();
-
-    while (it) {
-        assert(it->treeWidget());
-
-        QRect itemRect = it->treeWidget()->visualItemRect(it);
-
-        if (itemRect.isNull()) {
-            it = it->parent();
-        }
-        else {
-            ret = itemRect.center().y();
-
-            break;
-        }
-    }
-
-    return ret;
-}
-
 QTreeWidgetItem *HierarchyView::lastVisibleChild(QTreeWidgetItem *item) const
 {
     QTreeWidgetItem *ret = 0;
