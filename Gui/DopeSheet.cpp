@@ -464,20 +464,6 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
     return boost::shared_ptr<DSKnob>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode) const
-{
-    boost::shared_ptr<DSNode>dsNode = mapNameItemToDSNode(item);
-
-    if (!dsNode) {
-        dsNode = findParentDSNode(item);
-    }
-    else if (itemIsNode) {
-        *itemIsNode = true;
-    }
-
-    return dsNode;
-}
-
 bool DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
     boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getInternalNode()->getGroup());

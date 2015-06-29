@@ -582,8 +582,8 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 {
     QTreeWidgetItem *item = itemFromIndex(index);
 
-    bool drawPluginIconToo = false;
-    boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->getDSNodeFromItem(item, &drawPluginIconToo);
+    bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot);
+    boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->findParentDSNode(item);
 
     QRect rowRect = option.rect;
     QRect itemRect = visualItemRect(item);
@@ -638,7 +638,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 void HierarchyView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    boost::shared_ptr<DSNode> parentDSNode = _imp->dopeSheetModel->getDSNodeFromItem(item);
+    boost::shared_ptr<DSNode> parentDSNode = _imp->dopeSheetModel->findParentDSNode(item);
 
     {
         QColor nodeColor = parentDSNode->getNodeGui()->getCurrentColor();
