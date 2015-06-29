@@ -2548,6 +2548,8 @@ void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item
 
 void DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
 {
+    _imp->computeSelectedKeysBRect();
+
     redraw();
 }
 
