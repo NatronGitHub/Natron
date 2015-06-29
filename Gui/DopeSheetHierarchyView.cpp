@@ -220,6 +220,9 @@ HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
 HierarchyViewPrivate::~HierarchyViewPrivate()
 {}
 
+/**
+ * @see HierarchyView::onKeyframeSetOrRemoved()
+ */
 void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
 {
     DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
@@ -239,6 +242,9 @@ void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
     }
 }
 
+/**
+ * @see HierarchyView::onKeyframeSetOrRemoved()
+ */
 void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
@@ -254,6 +260,9 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     dsNode->getTreeItem()->setHidden(!showNode);
 }
 
+/**
+ * @see HierarchyView::onKeyframeSetOrRemoved()
+ */
 void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
     int dim = dsKnob->getDimension();
@@ -285,6 +294,9 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
     treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showContext);
 }
 
+/**
+ * @brief Returns the branch rect of 'item'.
+ */
 QRect HierarchyViewPrivate::getBranchRect(QTreeWidgetItem *item) const
 {
     QRect itemRect = q_ptr->visualItemRect(item);
@@ -293,6 +305,9 @@ QRect HierarchyViewPrivate::getBranchRect(QTreeWidgetItem *item) const
                  itemRect.left(), itemRect.height());
 }
 
+/**
+ * @brief Returns the rect of the expanded indicator of 'item'.
+ */
 QRect HierarchyViewPrivate::getArrowRect(QTreeWidgetItem *item) const
 {
     QRect branchRect = getBranchRect(item);
@@ -308,6 +323,11 @@ QRect HierarchyViewPrivate::getArrowRect(QTreeWidgetItem *item) const
                  arrowRectWidth, branchRect.height());
 }
 
+/**
+ * @brief Returns the rect of the expanded indicator of the parent of 'item'.
+ *
+ * You must provide the branch rect of 'item'.
+ */
 QRect HierarchyViewPrivate::getParentArrowRect(QTreeWidgetItem *item, const QRect &branchRect) const
 {
     if (!item->parent()) {
@@ -321,6 +341,10 @@ QRect HierarchyViewPrivate::getParentArrowRect(QTreeWidgetItem *item, const QRec
                  arrowRectWidth, branchRect.height());
 }
 
+/**
+ * @brief Returns the DSNode associated with the item below 'item', and a null
+ * pointer if it don't exist.
+ */
 boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem *item) const
 {
     boost::shared_ptr<DSNode> ret;
@@ -425,6 +449,11 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, boost::shared_p
                 rowRect.right(), rowRect.bottom() - lineWidth + 2);
 }
 
+/**
+ * @brief Returns a desaturated shade of 'color'.
+ *
+ * This function is used to paint the hierarchy view without too flashy colors.
+ */
 QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
 {
     QColor ret = color;
@@ -433,6 +462,9 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
     return ret;
 }
 
+/**
+ * @brief Selects the keyframes associated with each item in 'items'.
+ */
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
     dopeSheetModel->getSelectionModel()->clearKeyframeSelection();
@@ -450,11 +482,7 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
     dopeSheetModel->getSelectionModel()->makeSelection(keys, DopeSheetSelectionModel::SelectionTypeOneByOne);
 }
 
-/**
- * @brief HierarchyView::HierarchyView
- *
- *
- */
+
 HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent) :
     QTreeWidget(parent),
     _imp(new HierarchyViewPrivate(this))
@@ -779,15 +807,6 @@ void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
     _imp->checkNodeVisibleState(parentNode.get());
 }
 
-/**
- * @brief DopeSheetEditor::onItemDoubleClicked
- *
- * Ensures that the node panel associated with 'item' is the top-most displayed
- * in the Properties panel.
- *
- * This slot is automatically called when an item is double clicked in the
- * hierarchy view.
- */
 void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 {
     Q_UNUSED(column);
