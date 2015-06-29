@@ -510,7 +510,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
                 boost::shared_ptr<DSKnob> context;
                 if (dim == -1) {
                     QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
-                    context = model->findDSKnob(childItem);
+                    context = model->mapNameItemToDSKnob(childItem);
                 }
                 else {
                     context = dsKnob;
@@ -1098,7 +1098,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                         : DopeSheetViewPrivate::kfTextureRoot;
 
                 QTreeWidgetItem *knobParentItem = knobTreeItem->parent();
-                boost::shared_ptr<DSNode> nodeContext = model->findDSNode(knobParentItem);
+                boost::shared_ptr<DSNode> nodeContext = model->mapNameItemToDSNode(knobParentItem);
 
                 bool drawInMultidimRootRow = hierarchyView->itemIsVisibleFromOutside(knobParentItem);
 

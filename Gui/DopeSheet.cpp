@@ -362,6 +362,36 @@ SequenceTime DopeSheet::getCurrentFrame() const
     return _imp->timeline->currentFrame();
 }
 
+boost::shared_ptr<DSNode> DopeSheet::mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const
+{
+    DSTreeItemNodeMap::const_iterator dsNodeIt = _imp->treeItemNodeMap.find(nodeTreeItem);
+
+    if (dsNodeIt != _imp->treeItemNodeMap.end()) {
+        return (*dsNodeIt).second;
+    }
+
+    return boost::shared_ptr<DSNode>();
+}
+
+boost::shared_ptr<DSKnob> DopeSheet::mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const
+{
+    boost::shared_ptr<DSKnob> ret;
+
+    boost::shared_ptr<DSNode>dsNode = findParentDSNode(knobTreeItem);
+    DSTreeItemKnobMap knobRows = dsNode->getChildData();
+
+    DSTreeItemKnobMap::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
+
+    if (clickedDSKnob == knobRows.end()) {
+        ret.reset();
+    }
+    else {
+        ret = clickedDSKnob->second;
+    }
+
+    return ret;
+}
+
 boost::shared_ptr<DSNode> DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem) const
 {
     QTreeWidgetItem *itemIt = treeItem;
@@ -379,17 +409,6 @@ boost::shared_ptr<DSNode> DopeSheet::findParentDSNode(QTreeWidgetItem *treeItem)
     }
 
     return (*clickedDSNode).second;
-}
-
-boost::shared_ptr<DSNode> DopeSheet::findDSNode(QTreeWidgetItem *nodeTreeItem) const
-{
-    DSTreeItemNodeMap::const_iterator dsNodeIt = _imp->treeItemNodeMap.find(nodeTreeItem);
-
-    if (dsNodeIt != _imp->treeItemNodeMap.end()) {
-        return (*dsNodeIt).second;
-    }
-
-    return boost::shared_ptr<DSNode>();
 }
 
 boost::shared_ptr<DSNode> DopeSheet::findDSNode(Natron::Node *node) const
@@ -426,39 +445,6 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> &
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode) const
-{
-    boost::shared_ptr<DSNode>dsNode = findDSNode(item);
-
-    if (!dsNode) {
-        dsNode = findParentDSNode(item);
-    }
-    else if (itemIsNode) {
-        *itemIsNode = true;
-    }
-
-    return dsNode;
-}
-
-boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem) const
-{
-    boost::shared_ptr<DSKnob> ret;
-
-    boost::shared_ptr<DSNode>dsNode = findParentDSNode(knobTreeItem);
-    DSTreeItemKnobMap knobRows = dsNode->getChildData();
-
-    DSTreeItemKnobMap::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
-
-    if (clickedDSKnob == knobRows.end()) {
-        ret.reset();
-    }
-    else {
-        ret = clickedDSKnob->second;
-    }
-
-    return ret;
-}
-
 boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
@@ -476,6 +462,20 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
     }
 
     return boost::shared_ptr<DSKnob>();
+}
+
+boost::shared_ptr<DSNode> DopeSheet::getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode) const
+{
+    boost::shared_ptr<DSNode>dsNode = mapNameItemToDSNode(item);
+
+    if (!dsNode) {
+        dsNode = findParentDSNode(item);
+    }
+    else if (itemIsNode) {
+        *itemIsNode = true;
+    }
+
+    return dsNode;
 }
 
 bool DopeSheet::isPartOfGroup(DSNode *dsNode) const
@@ -965,7 +965,7 @@ void DopeSheetSelectionModel::selectKeyframes(const boost::shared_ptr<DSKnob> &d
             boost::shared_ptr<DSKnob> context;
             if (dim == -1) {
                 QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
-                context = _imp->dopeSheet->findDSKnob(childItem);
+                context = _imp->dopeSheet->mapNameItemToDSKnob(childItem);
             }
             else {
                 context = dsKnob;

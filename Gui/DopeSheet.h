@@ -96,15 +96,16 @@ public:
 
     SequenceTime getCurrentFrame() const;
 
+    boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
+    boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
+
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
-    boost::shared_ptr<DSNode> findDSNode(QTreeWidgetItem *nodeTreeItem) const;
     boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
     boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
 
-    boost::shared_ptr<DSNode> getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
-
-    boost::shared_ptr<DSKnob> findDSKnob(QTreeWidgetItem *knobTreeItem) const;
     boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
+
+    boost::shared_ptr<DSNode> getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
 
     int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
 

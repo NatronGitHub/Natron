@@ -338,7 +338,7 @@ boost::shared_ptr<DSNode> HierarchyViewPrivate::itemBelowIsNode(QTreeWidgetItem 
     QTreeWidgetItem *itemBelow = q_ptr->itemBelow(item);
 
     if (itemBelow) {
-        ret = dopeSheetModel->findDSNode(itemBelow);
+        ret = dopeSheetModel->mapNameItemToDSNode(itemBelow);
     }
 
     return ret;
@@ -399,7 +399,7 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
     int lineWidth = (appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() / 2);
     int lineBegin = q_ptr->rect().left();
 
-    if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->findDSNode(item->parent())) {
+    if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(item->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -422,7 +422,7 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, boost::shared_p
             lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
         }
     }
-    else if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->findDSNode(nodeBelow->getTreeItem()->parent())) {
+    else if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(nodeBelow->getTreeItem()->parent())) {
         lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
     }
 
@@ -450,7 +450,7 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
     std::vector<DopeSheetKey> keys;
 
     Q_FOREACH (QTreeWidgetItem *item, items) {
-        boost::shared_ptr<DSKnob> knobContext = dopeSheetModel->findDSKnob(item);
+        boost::shared_ptr<DSKnob> knobContext = dopeSheetModel->mapNameItemToDSKnob(item);
 
         if (knobContext) {
             dopeSheetModel->getSelectionModel()->selectKeyframes(knobContext, &keys);
@@ -507,7 +507,7 @@ boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
 {
     QTreeWidgetItem *itemUnderPoint = itemAt(5, y);
 
-    return _imp->dopeSheetModel->findDSKnob(itemUnderPoint);
+    return _imp->dopeSheetModel->mapNameItemToDSKnob(itemUnderPoint);
 }
 
 bool HierarchyView::itemIsVisibleFromOutside(QTreeWidgetItem *item) const
@@ -769,7 +769,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     Q_FOREACH (QTreeWidgetItem *nodeItem, toPut) {
         moveItem(nodeItem, newParent);
 
-        boost::shared_ptr<DSNode> dss = _imp->dopeSheetModel->findDSNode(nodeItem);
+        boost::shared_ptr<DSNode> dss = _imp->dopeSheetModel->mapNameItemToDSNode(nodeItem);
         _imp->checkKnobsVisibleState(dss.get());
         _imp->checkNodeVisibleState(dss.get());
 
