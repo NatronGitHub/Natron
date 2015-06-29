@@ -1231,8 +1231,6 @@ KnobGui::onSetKeyActionTriggered()
             
             std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(this, i);
             for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                boost::shared_ptr<AddKeysCommand::KeysForCurve> kfc(new AddKeysCommand::KeysForCurve());
-
                 KeyFrame kf;
                 kf.setTime(time);
                 Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
@@ -1253,9 +1251,9 @@ KnobGui::onSetKeyActionTriggered()
                     kf.setValue(dv);
                 }
                 
-                kfc->keys.push_back(kf);
-                kfc->curve = *it;
-                toAdd.push_back(kfc);
+                std::vector<KeyFrame> kvec;
+                kvec.push_back(kf);
+                toAdd.insert(std::make_pair(*it,kvec));
             }
         }
     }

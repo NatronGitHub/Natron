@@ -732,7 +732,9 @@ FileSystemModel::generateRegexpFilterFromFileExtensions(const QStringList& exten
     QString ret;
     
     for (int i = 0; i < extensions.size(); ++i) {
-        ret.append("*.");
+        if (extensions[i] != "*") {
+            ret.append("*.");
+        }
         ret.append( extensions[i] );
         if (i < extensions.size() - 1) {
             ret.append(" ");

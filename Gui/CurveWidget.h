@@ -25,6 +25,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
 #include <QMetaType>
 #include <QDialog>
+#include <QByteArray>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -442,10 +443,7 @@ public:
                             Gui* gui,
                             QWidget* parent = 0);
 
-    virtual ~ImportExportCurveDialog()
-    {
-    }
-
+    virtual ~ImportExportCurveDialog();
     QString getFilePath();
 
     double getXStart() const;
@@ -461,6 +459,11 @@ public Q_SLOTS:
     void open_file();
 
 private:
+    
+    QByteArray saveState();
+    
+    void restoreState(const QByteArray& state);
+    
     Gui* _gui;
     bool _isExportDialog;
     QVBoxLayout* _mainLayout;

@@ -37,6 +37,7 @@ namespace Transform
 }
 class CurveGui;
 class KnobGui;
+class Curve;
 class CurveWidget;
 class NodeCurveEditorElement;
 
@@ -88,13 +89,7 @@ class AddKeysCommand
 {
 public:
 
-    struct KeysForCurve
-    {
-        boost::weak_ptr<CurveGui> curve;
-        std::vector<KeyFrame> keys;
-    };
-
-    typedef std::list< boost::shared_ptr<KeysForCurve> > KeysToAddList;
+    typedef std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > KeysToAddList;
 
     AddKeysCommand(CurveWidget *editor,
                    const KeysToAddList & keys,
@@ -149,8 +144,9 @@ private:
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
     
-    
 private:
+    boost::shared_ptr<CurveGui> _guiCurve;
+    boost::shared_ptr<Curve> _oldCurve;
 };
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
