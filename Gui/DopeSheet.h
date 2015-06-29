@@ -107,8 +107,6 @@ public:
 
     boost::shared_ptr<DSNode> getDSNodeFromItem(QTreeWidgetItem *item, bool *itemIsNode = 0) const;
 
-    int getDim(const DSKnob *dsKnob, QTreeWidgetItem *item) const;
-
     bool isPartOfGroup(DSNode *dsNode) const;
     boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
     bool groupSubNodesAreHidden(NodeGroup *group) const;
