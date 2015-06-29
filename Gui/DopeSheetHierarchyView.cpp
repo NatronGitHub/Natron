@@ -1,6 +1,6 @@
 #include "DopeSheetHierarchyView.h"
 
-#include <QDebug>
+#include <QDebug> //REMOVEME
 #include <QHeaderView>
 #include <QPainter>
 #include <QStyleOption>
