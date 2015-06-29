@@ -116,7 +116,7 @@ void DopeSheetEditor::removeNode(NodeGui *node)
 
 void DopeSheetEditor::centerOn(double xMin, double xMax)
 {
-    _imp->dopeSheetView->centerOnSelection(xMin, xMax);
+    _imp->dopeSheetView->centerOn(xMin, xMax);
 }
 
 void DopeSheetEditor::toggleTripleSync(bool enabled)

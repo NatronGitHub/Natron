@@ -87,7 +87,7 @@ public:
     /**
      * @brief Set the current timeline range on ['xMin', 'xMax'].
      */
-    void centerOnSelection(double xMin, double xMax);
+    void centerOn(double xMin, double xMax);
 
     /**
      * @brief Returns a pair composed of the first keyframe (or the starting

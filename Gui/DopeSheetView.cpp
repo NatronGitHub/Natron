@@ -2089,7 +2089,7 @@ DopeSheetView::~DopeSheetView()
 
 }
 
-void DopeSheetView::centerOnSelection(double xMin, double xMax)
+void DopeSheetView::centerOn(double xMin, double xMax)
 {
     _imp->zoomContext.fill(xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top());
 
