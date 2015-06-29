@@ -138,8 +138,6 @@ public:
 
     double clampedMouseOffset(double fromTime, double toTime);
 
-    int getHeightForItemAndChildren(QTreeWidgetItem *item) const;
-
     // Textures
     void generateKeyframeTextures();
     DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
@@ -570,28 +568,6 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
     keyDragLastMovement = totalMovement;
 
     return dt;
-}
-
-int DopeSheetViewPrivate::getHeightForItemAndChildren(QTreeWidgetItem *item) const
-{
-    assert(!item->isHidden());
-
-    // If the node item is collapsed
-    if (!item->isExpanded()) {
-        return hierarchyView->visualItemRect(item).height() + 1;
-    }
-
-    // Get the "bottom-most" item
-    QTreeWidgetItem *lastChild = hierarchyView->lastVisibleChild(item);
-
-    if (lastChild->childCount() > 0 && lastChild->isExpanded()) {
-        lastChild = hierarchyView->lastVisibleChild(lastChild);
-    }
-
-    int top = hierarchyView->visualItemRect(item).top();
-    int bottom = hierarchyView->visualItemRect(lastChild).bottom();
-
-    return (bottom - top) + 1;
 }
 
 void DopeSheetViewPrivate::generateKeyframeTextures()
@@ -1170,7 +1146,7 @@ void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsN
     dsNode->getNodeGui()->getColor(&r, &g, &b);
 
     // Compute the area to fill
-    int height = getHeightForItemAndChildren(dsNode->getTreeItem()) ;
+    int height = hierarchyView->getHeightForItemAndChildren(dsNode->getTreeItem()) ;
     QRectF nameItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
     int top = nameItemRect.top();
 

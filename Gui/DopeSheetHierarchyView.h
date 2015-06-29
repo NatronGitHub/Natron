@@ -112,6 +112,12 @@ public:
     int firstVisibleParentCenterY(QTreeWidgetItem * item) const;
 
     /**
+     * @brief Returns the height occuped in the view by 'item' and its
+     * children.
+     */
+    int getHeightForItemAndChildren(QTreeWidgetItem *item) const;
+
+    /**
      * @brief Returns the last visible (not hidden and not collapsed
      * in its parent) child of 'item".
      */

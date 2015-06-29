@@ -462,6 +462,28 @@ QColor HierarchyViewPrivate::getDullColor(const QColor &color) const
     return ret;
 }
 
+int HierarchyView::getHeightForItemAndChildren(QTreeWidgetItem *item) const
+{
+    assert(!item->isHidden());
+
+    // If the node item is collapsed
+    if (!item->isExpanded()) {
+        return visualItemRect(item).height() + 1;
+    }
+
+    // Get the "bottom-most" item
+    QTreeWidgetItem *lastChild = lastVisibleChild(item);
+
+    if (lastChild->childCount() > 0 && lastChild->isExpanded()) {
+        lastChild = lastVisibleChild(lastChild);
+    }
+
+    int top = visualItemRect(item).top();
+    int bottom = visualItemRect(lastChild).bottom();
+
+    return (bottom - top) + 1;
+}
+
 /**
  * @brief Selects the keyframes associated with each item in 'items'.
  */
