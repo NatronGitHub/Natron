@@ -1445,10 +1445,6 @@ struct RotoContextPrivate
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
-    
-    QMutex lastRenderedImageMutex;
-    U64 lastRenderedHash;
-    boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -1460,9 +1456,6 @@ struct RotoContextPrivate
     , isCurrentlyLoading(false)
     , node(n)
     , age(0)
-    , lastRenderedImageMutex()
-    , lastRenderedHash(0)
-    , lastRenderedImage()
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();

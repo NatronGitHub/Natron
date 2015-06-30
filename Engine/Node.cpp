@@ -1051,11 +1051,15 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
             }
         }
         
-        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
-        if (roto) {
-            U64 rotoAge = roto->getAge();
-            _imp->hash.append(rotoAge);
-        }
+        // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
+        // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
+        // node respecitively have their hash correctly set.
+        
+//        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
+//        if (roto) {
+//            U64 rotoAge = roto->getAge();
+//            _imp->hash.append(rotoAge);
+//        }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );

@@ -2873,7 +2873,7 @@ ViewerCurrentFrameRequestScheduler::run()
             }
             
             {
-                
+                _imp->viewer->setCurrentlyUpdatingOpenGLViewer(true);
                 QMutexLocker processLocker(&_imp->processMutex);
                 _imp->processRunning = true;
                 Q_EMIT s_processProducedFrameOnMainThread(frames);
@@ -2881,6 +2881,7 @@ ViewerCurrentFrameRequestScheduler::run()
                 while (_imp->processRunning && !_imp->checkForAbortion()) {
                     _imp->processCondition.wait(&_imp->processMutex);
                 }
+                _imp->viewer->setCurrentlyUpdatingOpenGLViewer(false);
             }
             
         } // if (firstRequest) {

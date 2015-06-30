@@ -189,6 +189,8 @@ public:
     , renderAgeMutex()
     , renderAge()
     , displayAge()
+    , currentlyUpdatingOpenGLViewerMutex()
+    , currentlyUpdatingOpenGLViewer(false)
     {
 
         for (int i = 0; i < 2; ++i) {
@@ -428,6 +430,9 @@ public:
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRotoPaintTickParamsMutex;
     boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams[2];
+    
+    mutable QMutex currentlyUpdatingOpenGLViewerMutex;
+    bool currentlyUpdatingOpenGLViewer;
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

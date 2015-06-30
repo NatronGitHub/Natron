@@ -8527,27 +8527,6 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     bbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
     
-    ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
-    ///just remove the old image from the cache to recycle memory.
-    boost::shared_ptr<Image> lastRenderedImage;
-    U64 lastRenderHash;
-    {
-        QMutexLocker l(&_imp->lastRenderedImageMutex);
-        lastRenderHash = _imp->lastRenderedHash;
-        lastRenderedImage = _imp->lastRenderedImage;
-    }
-    
-    if ( lastRenderedImage &&
-        ( lastRenderHash != hash.value() ) ) {
-        
-        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-        
-        {
-            QMutexLocker l(&_imp->lastRenderedImageMutex);
-            _imp->lastRenderedImage.reset();
-        }
-    }
-    
     node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, pixelRod, bbox, depth, components, depth, components, EffectInstance::InputImagesMap(), &image);
     
     if (image) {
@@ -8578,12 +8557,6 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
 
     image = renderMaskInternal(stroke, pixelRod, components, time, depth, mipmapLevel, points, image);
-    
-    {
-        QMutexLocker l(&_imp->lastRenderedImageMutex);
-        _imp->lastRenderedHash = hash.value();
-        _imp->lastRenderedImage = image;
-    }
     
     return image;
 }

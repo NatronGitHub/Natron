@@ -1257,13 +1257,16 @@ ViewerInstance::renderViewer_internal(int view,
     /*
      Use a timer to enable progress report if the amount spent rendering exceeds some time
      */
-    bool reportProgress = false;
     double totalRenderTime = 0.;
     TimeLapse timer;
     // List of the tiles that the progress did not report until now
     std::list<RectI> unreportedTiles;
     
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
+        
+        bool reportProgress = false;
+
+        
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
         // by the HostSupport library.
@@ -1306,8 +1309,9 @@ ViewerInstance::renderViewer_internal(int view,
             }
             
             if (!reportProgress && splitRoi.size() > 1) {
-                totalRenderTime += timer.getTimeElapsedReset();
-                reportProgress = totalRenderTime > NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT;
+                double timeSpan = timer.getTimeElapsedReset();
+                totalRenderTime += timeSpan;
+                reportProgress = totalRenderTime > NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT && !isCurrentlyUpdatingOpenGLViewer();
             }
             
             
@@ -1519,6 +1523,20 @@ ViewerInstance::ViewerInstancePrivate::reportProgress(const boost::shared_ptr<Up
         ret.push_back(params);
     }
     instance->getRenderEngine()->notifyFrameProduced(ret, request);
+}
+
+void
+ViewerInstance::setCurrentlyUpdatingOpenGLViewer(bool updating)
+{
+    QMutexLocker k(&_imp->currentlyUpdatingOpenGLViewerMutex);
+    _imp->currentlyUpdatingOpenGLViewer = updating;
+}
+
+bool
+ViewerInstance::isCurrentlyUpdatingOpenGLViewer() const
+{
+    QMutexLocker k(&_imp->currentlyUpdatingOpenGLViewerMutex);
+    return _imp->currentlyUpdatingOpenGLViewer;
 }
 
 void

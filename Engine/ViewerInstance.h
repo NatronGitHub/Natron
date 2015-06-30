@@ -53,7 +53,8 @@ class ViewerInstance
 {
     Q_OBJECT
     
-
+    friend class ViewerCurrentFrameRequestScheduler;
+    
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
 
@@ -326,6 +327,8 @@ private:
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
+    void setCurrentlyUpdatingOpenGLViewer(bool updating);
+    bool isCurrentlyUpdatingOpenGLViewer() const;
 private:
     
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
