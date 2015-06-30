@@ -1774,8 +1774,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     bool useDiskCache,
                                                     const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
-                                                    const RectI& bounds,
-                                                    const RectD& rod,
+                                                    const RectI* boundsParam,
+                                                    const RectD* rodParam,
                                                     Natron::ImageBitDepthEnum bitdepth,
                                                     const Natron::ImageComponents& components,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
@@ -1881,6 +1881,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 
                 RectI imgToConvertBounds = imageToConvert->getBounds();
                 
+                const RectD& rod = rodParam ? *rodParam : oldParams->getRoD();
+                
                 RectD imgToConvertCanonical;
                 imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
                 RectI downscaledBounds;
@@ -1888,7 +1890,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
                 imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
                 
-                downscaledBounds.merge(bounds);
+                if (boundsParam) {
+                    downscaledBounds.merge(*boundsParam);
+                }
                 
                 RectI pixelRoD;
                 rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
@@ -2723,8 +2727,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             assert(components);
             getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, mipMapLevel,
-                                                useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
-                                                rod,
+                                                useImageAsOutput ? &upscaledImageBounds : &downscaledImageBounds,
+                                                &rod,
                                                 args.bitdepth, *it,
                                                 outputDepth,
                                                 *components,
@@ -3092,8 +3096,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
             assert(components);
             getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, mipMapLevel,
-                                                useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
-                                                rod,
+                                                useImageAsOutput ? &upscaledImageBounds : &downscaledImageBounds,
+                                                &rod,
                                                 args.bitdepth, it->first,
                                                 outputDepth,*components,
                                                 args.inputImagesList, &it->second.fullscaleImage);

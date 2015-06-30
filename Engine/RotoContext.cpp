@@ -8503,6 +8503,15 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     hash.append(rotoAge);
     hash.computeHash();
     
+    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
+    
+    node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), &image);
+    
+    if (image) {
+        return image;
+    }
+    
+    
     RectD bbox;
     std::list<std::pair<Natron::Point,double> > points;
     
@@ -8525,13 +8534,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
     RectI pixelRod;
     bbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
-    
-    node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, pixelRod, bbox, depth, components, depth, components, EffectInstance::InputImagesMap(), &image);
-    
-    if (image) {
-        return image;
-    }
+
     
     boost::shared_ptr<Natron::ImageParams> params = Natron::Image::makeParams( 0,
                                                                               bbox,
