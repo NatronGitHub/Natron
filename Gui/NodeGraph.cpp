@@ -1927,7 +1927,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeInternalNode->isInputNode()) {
+                                        !selectedNodeInternalNode->getLiveInstance()->isReader()) {
                                         ret = Natron::Node::eCanConnectInput_ok;
                                     }
                                     
