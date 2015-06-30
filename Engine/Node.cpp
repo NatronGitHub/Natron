@@ -3437,27 +3437,32 @@ Node::disconnectInput(int inputNumber)
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     
+    NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!_imp->inputs[inputNumber]) ) {
             return -1;
         }
-        
+        inputShared = _imp->inputs[inputNumber];
+    }
+    
         ///If the node is currently rendering, queue the action instead of executing it
         {
             if (isNodeRendering() && !appPTR->isBackground()) {
                 _imp->liveInstance->abortAnyEvaluation();
-                ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
+                ConnectInputAction action(inputShared,eInputActionDisconnect,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
                 return inputNumber;
             }
         }
         
-        QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-        _imp->inputs[inputNumber]->disconnectOutput(this);
+        QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+        inputShared->disconnectOutput(this);
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
         _imp->inputs[inputNumber].reset();
-        
     }
     
     if (_imp->isBeingDestroyed) {
