@@ -99,6 +99,8 @@ public:
 
     CLArgs(const QStringList& arguments, bool forceBackground);
     
+    CLArgs(const CLArgs& other);
+    
     ~CLArgs();
 
     void operator=(const CLArgs& other);

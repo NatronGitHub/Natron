@@ -3446,19 +3446,19 @@ Node::disconnectInput(int inputNumber)
         inputShared = _imp->inputs[inputNumber];
     }
     
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            if (isNodeRendering() && !appPTR->isBackground()) {
-                _imp->liveInstance->abortAnyEvaluation();
-                ConnectInputAction action(inputShared,eInputActionDisconnect,inputNumber);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return inputNumber;
-            }
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
+            ConnectInputAction action(inputShared,eInputActionDisconnect,inputNumber);
+            QMutexLocker cql(&_imp->connectionQueueMutex);
+            _imp->connectionQueue.push_back(action);
+            return inputNumber;
         }
-        
-        QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-        inputShared->disconnectOutput(this);
+    }
+    
+    QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+    inputShared->disconnectOutput(this);
     
     {
         QMutexLocker l(&_imp->inputsMutex);

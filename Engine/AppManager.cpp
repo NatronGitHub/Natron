@@ -404,6 +404,12 @@ CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
     _imp->parse();
 }
 
+CLArgs::CLArgs(const CLArgs& other)
+: _imp(new CLArgsPrivate())
+{
+    *this = other;
+}
+
 CLArgs::~CLArgs()
 {
     
