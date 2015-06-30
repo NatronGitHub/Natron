@@ -3483,41 +3483,47 @@ Node::disconnectInput(Node* input)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
+    int found = -1;
+    NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i].get() == input) {
-                
-                ///If the node is currently rendering, queue the action instead of executing it
-                {
-                    if (isNodeRendering() && !appPTR->isBackground()) {
-                        _imp->liveInstance->abortAnyEvaluation();
-                        ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
-                        QMutexLocker cql(&_imp->connectionQueueMutex);
-                        _imp->connectionQueue.push_back(action);
-                        return i;
-                    }
-                }
-                
-                _imp->inputs[i].reset();
-                l.unlock();
-                input->disconnectOutput(this);
-                Q_EMIT inputChanged(i);
-                onInputChanged(i);
-                computeHash();
-                
-                _imp->ifGroupForceHashChangeOfInputs();
-                
-                std::string inputChangedCB = getInputChangedCallback();
-                if (!inputChangedCB.empty()) {
-                    _imp->runInputChangedCallback(i, inputChangedCB);
-                }
-                
-                l.relock();
-                
-                return i;
+                inputShared = _imp->inputs[i];
+                found = (int)i;
+                break;
             }
         }
+    }
+    if (found != -1) {
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
+                ConnectInputAction action(inputShared,eInputActionDisconnect,found);
+                QMutexLocker cql(&_imp->connectionQueueMutex);
+                _imp->connectionQueue.push_back(action);
+                return found;
+            }
+        }
+        
+        {
+            QMutexLocker l(&_imp->inputsMutex);
+            _imp->inputs[found].reset();
+        }
+        input->disconnectOutput(this);
+        Q_EMIT inputChanged(found);
+        onInputChanged(found);
+        computeHash();
+        
+        _imp->ifGroupForceHashChangeOfInputs();
+        
+        std::string inputChangedCB = getInputChangedCallback();
+        if (!inputChangedCB.empty()) {
+            _imp->runInputChangedCallback(found, inputChangedCB);
+        }
+        
+        return found;
     }
     
     return -1;
