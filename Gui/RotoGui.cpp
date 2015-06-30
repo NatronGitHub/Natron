@@ -3068,7 +3068,7 @@ RotoGui::penMotion(double /*scaleX*/,
             if (_imp->rotoData->strokeBeingPaint->appendPoint(p)) {
                 _imp->lastMousePos = pos;
                 _imp->context->evaluateChange_noIncrement();
-                return false;
+                return true;
             }
         }
         break;
