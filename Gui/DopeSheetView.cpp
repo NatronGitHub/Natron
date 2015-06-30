@@ -2056,27 +2056,6 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
         project->getFrameRange(&left, &right);
         onTimeLineBoundariesChanged(left, right);
     }
-
-    connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
-            this, SLOT(onNodeAdded(DSNode *)));
-
-    connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-            this, SLOT(onNodeAboutToBeRemoved(DSNode *)));
-
-    connect(_imp->model, SIGNAL(modelChanged()),
-            this, SLOT(redraw()));
-
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChanged()),
-            this, SLOT(onKeyframeSelectionChanged()));
-
-    connect(_imp->hierarchyView->verticalScrollBar(), SIGNAL(valueChanged(int)),
-            this, SLOT(onHierarchyViewScrollbarMoved(int)));
-
-    connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-            this, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
-
-    connect(_imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-            this, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)));
 }
 
 /**

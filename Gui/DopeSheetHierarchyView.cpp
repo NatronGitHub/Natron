@@ -523,15 +523,6 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
 
     setStyleSheet("HierarchyView { border: 0px; }");
 
-    connect(dopeSheetModel, SIGNAL(nodeAdded(DSNode *)),
-            this, SLOT(onNodeAdded(DSNode *)));
-
-    connect(dopeSheetModel, SIGNAL(nodeAboutToBeRemoved(DSNode *)),
-            this, SLOT(onNodeAboutToBeRemoved(DSNode *)));
-
-    connect(dopeSheetModel, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
-            this, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
-
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
