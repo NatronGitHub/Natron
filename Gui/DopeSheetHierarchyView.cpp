@@ -19,7 +19,6 @@
 
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////
 
-
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
                                                          QObject *parent) :
     QItemSelectionModel(model, parent)
@@ -29,32 +28,15 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *mod
 }
 
 HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
-{
-
-}
+{}
 
 void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command)
 {
     QItemSelection newSelection = selection;
 
-    QItemSelection childrenSelection;
-
-    QItemSelection parentSelection;
-
     Q_FOREACH (QModelIndex index, selection.indexes()) {
-        selectChildren(index, &childrenSelection);
-    }
-
-    if (command.testFlag(Deselect)) {
-        QItemSelectionModel::SelectionFlags newFlags;
-        newFlags |= Select;
-
-        newSelection.merge(childrenSelection, newFlags);
-        newSelection.merge(parentSelection, newFlags);
-    }
-    else {
-        newSelection.merge(childrenSelection, command);
-        newSelection.merge(parentSelection, command);
+        selectChildren(index, &newSelection);
+        selectParents(index, &newSelection, command);
     }
 
     QItemSelectionModel::select(newSelection, command);
@@ -78,30 +60,44 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
     }
 }
 
-void HierarchyViewSelectionModel::selectParents(const QModelIndex &index, QItemSelection *selection) const
+void HierarchyViewSelectionModel::selectParents(const QModelIndex &index, QItemSelection *selection,
+                                                QItemSelectionModel::SelectionFlags flags) const
 {
     QModelIndex parentIndex = index.parent();
 
-    bool selectParent;
-
     while (parentIndex.isValid()) {
-        selectParent = true;
+        bool selectMode = flags & QItemSelectionModel::Select;
+        bool deselectMode = flags & QItemSelectionModel::Deselect;
+
+        bool selectParent = true;
 
         int row = 0;
         QModelIndex childIndexIt = parentIndex.child(row, 0);
 
         while (childIndexIt.isValid()) {
-            if (!isSelected(childIndexIt)) {
-                selectParent = false;
+            if (childIndexIt.data(QT_ROLE_CONTEXT_IS_ANIMATED).toBool()) {
+                if (selectMode) {
+                    if ( !(isSelected(childIndexIt) || selection->contains(childIndexIt)) ) {
+                        selectParent = false;
 
-                break;
+                        break;
+                    }
+                }
+                else if (deselectMode) {
+                    if (selection->contains(childIndexIt) ) {
+                        selectParent = false;
+
+                        break;
+                    }
+                }
             }
 
             ++row;
             childIndexIt = parentIndex.child(row, 0);
         }
 
-        if (selectParent) {
+        if ( (selectMode && selectParent)
+             || (deselectMode && !selectParent) )  {
             selection->select(parentIndex, parentIndex);
         }
 
@@ -252,12 +248,15 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     bool showNode = nodeGui->isSettingsPanelVisible();
 
     DopeSheet::ItemType nodeType = dsNode->getItemType();
+    QTreeWidgetItem *nodeItem = dsNode->getTreeItem();
 
     if (nodeType == DopeSheet::ItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
+
+        nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
     }
 
-    dsNode->getTreeItem()->setHidden(!showNode);
+    nodeItem->setHidden(!showNode);
 }
 
 /**
@@ -278,7 +277,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 
             QTreeWidgetItem *dimItem = dsKnob->findDimTreeItem(i);
             dimItem->setHidden(!curveIsAnimated);
-            dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED,curveIsAnimated);
+            dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
 
             if (curveIsAnimated) {
                 showContext = true;

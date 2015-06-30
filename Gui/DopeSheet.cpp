@@ -70,10 +70,10 @@ bool nodeCanAnimate(const NodePtr &node)
     return false;
 }
 
-QTreeWidgetItem *createTreeItem(const QString &text,
-                                DopeSheet::ItemType itemType,
-                                int dimension,
-                                QTreeWidgetItem *parent)
+QTreeWidgetItem *createKnobNameItem(const QString &text,
+                                    DopeSheet::ItemType itemType,
+                                    int dimension,
+                                    QTreeWidgetItem *parent)
 {
     QTreeWidgetItem *ret = new QTreeWidgetItem;
 
@@ -698,6 +698,7 @@ boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGu
     QTreeWidgetItem *nameItem = new QTreeWidgetItem;
     nameItem->setText(0, node->getLabel().c_str());
     nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
+    nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
 
     boost::shared_ptr<DSNode> dsNode(new DSNode(this, itemType, nodeGui, nameItem));
 
@@ -1129,28 +1130,28 @@ DSNode::DSNode(DopeSheet *model,
         }
 
         if (knob->getDimension() <= 1) {
-            QTreeWidgetItem * nameItem = createTreeItem(knob->getDescription().c_str(),
-                                                        DopeSheet::ItemTypeKnobDim,
-                                                        0,
-                                                        _imp->nameItem);
+            QTreeWidgetItem * nameItem = createKnobNameItem(knob->getDescription().c_str(),
+                                                            DopeSheet::ItemTypeKnobDim,
+                                                            0,
+                                                            _imp->nameItem);
 
             DSKnob *dsKnob = new DSKnob(0, nameItem, knobGui);
             _imp->itemKnobMap.insert(TreeItemAndDSKnob(nameItem, dsKnob));
         }
         else {
-            QTreeWidgetItem *multiDimRootItem = createTreeItem(knob->getDescription().c_str(),
-                                                               DopeSheet::ItemTypeKnobRoot,
-                                                               -1,
-                                                               _imp->nameItem);
+            QTreeWidgetItem *multiDimRootItem = createKnobNameItem(knob->getDescription().c_str(),
+                                                                   DopeSheet::ItemTypeKnobRoot,
+                                                                   -1,
+                                                                   _imp->nameItem);
 
             DSKnob *rootDSKnob = new DSKnob(-1, multiDimRootItem, knobGui);
             _imp->itemKnobMap.insert(TreeItemAndDSKnob(multiDimRootItem, rootDSKnob));
 
             for (int i = 0; i < knob->getDimension(); ++i) {
-                QTreeWidgetItem *dimItem = createTreeItem(knob->getDimensionName(i).c_str(),
-                                                           DopeSheet::ItemTypeKnobDim,
-                                                           i,
-                                                           multiDimRootItem);
+                QTreeWidgetItem *dimItem = createKnobNameItem(knob->getDimensionName(i).c_str(),
+                                                              DopeSheet::ItemTypeKnobDim,
+                                                              i,
+                                                              multiDimRootItem);
 
                 DSKnob *dimDSKnob = new DSKnob(i, dimItem, knobGui);
                 _imp->itemKnobMap.insert(TreeItemAndDSKnob(dimItem, dimDSKnob));
