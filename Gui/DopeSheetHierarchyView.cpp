@@ -36,7 +36,7 @@ void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemS
 
     Q_FOREACH (QModelIndex index, selection.indexes()) {
         selectChildren(index, &newSelection);
-        selectParents(index, &newSelection, command);
+        checkParentsSelectedState(index, &newSelection, command);
     }
 
     QItemSelectionModel::select(newSelection, command);
@@ -60,8 +60,8 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
     }
 }
 
-void HierarchyViewSelectionModel::selectParents(const QModelIndex &index, QItemSelection *selection,
-                                                QItemSelectionModel::SelectionFlags flags) const
+void HierarchyViewSelectionModel::checkParentsSelectedState(const QModelIndex &index, QItemSelection *selection,
+                                                            QItemSelectionModel::SelectionFlags flags) const
 {
     QModelIndex parentIndex = index.parent();
 
