@@ -30,6 +30,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QApplication>
 #include <QToolButton>
 #include <QDesktopWidget>
+#include <QSettings>
 #include <QDebug>
 
 #include "Engine/Knob.h"
@@ -4271,7 +4272,7 @@ CurveWidget::importCurveFromAscii()
             const std::vector<double> & values = it->second;
             double xIndex = x;
             for (U32 i = 0; i < values.size(); ++i) {
-                KeyFrame k(xIndex,values[i]);
+                KeyFrame k(xIndex,values[i], 0., 0., Natron::eKeyframeTypeLinear);
                 keys.push_back(k);
                 xIndex += incr;
             }
@@ -4419,6 +4420,68 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
     _buttonsLayout->addWidget(_cancelButton);
     _mainLayout->addWidget(_buttonsContainer);
+    
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    
+    QByteArray state;
+    if (isExportDialog) {
+        state = settings.value(QLatin1String("CurveWidgetExportDialog") ).toByteArray();
+    } else {
+        state = settings.value(QLatin1String("CurveWidgetImportDialog") ).toByteArray();
+    }
+    if (!state.isEmpty()) {
+        restoreState(state);
+    }
+}
+
+ImportExportCurveDialog::~ImportExportCurveDialog()
+{
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    if (_isExportDialog) {
+        settings.setValue( QLatin1String("CurveWidgetExportDialog"), saveState() );
+    } else {
+        settings.setValue( QLatin1String("CurveWidgetImportDialog"), saveState() );
+    }
+}
+
+
+QByteArray
+ImportExportCurveDialog::saveState()
+{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream << _fileLineEdit->text();
+    stream << _startSpinBox->value();
+    stream << _incrSpinBox->value();
+    if (_isExportDialog) {
+        stream << _endSpinBox->value();
+    }
+    return data;
+}
+
+void
+ImportExportCurveDialog::restoreState(const QByteArray& state)
+{
+    QByteArray sd = state;
+    QDataStream stream(&sd, QIODevice::ReadOnly);
+    
+    if ( stream.atEnd() ) {
+        return;
+    }
+    
+    QString file;
+    double start,incr,end;
+    stream >> file;
+    stream >> start;
+    stream >> incr;
+    _fileLineEdit->setText(file);
+    _startSpinBox->setValue(start);
+    _incrSpinBox->setValue(incr);
+    if (_isExportDialog) {
+        stream >> end;
+        _endSpinBox->setValue(end);
+    }
+
 }
 
 void

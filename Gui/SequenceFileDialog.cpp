@@ -1501,16 +1501,19 @@ SequenceFileDialog::openSelectedFiles()
             } else {
                 ///check if str contains already the selected file extension, otherwise append it
                 {
-                    int lastSepPos = str.lastIndexOf("/");
-                    if (lastSepPos == -1) {
-                        lastSepPos = str.lastIndexOf("//");
-                    }
-                    int lastDotPos = str.lastIndexOf('.');
-                    if (lastDotPos < lastSepPos) {
-                        str.append( "." + _fileExtensionCombo->getCurrentIndexText() );
-                        _selectionLineEdit->blockSignals(true);
-                        _selectionLineEdit->setText(str);
-                        _selectionLineEdit->blockSignals(false);
+                    QString ext = _fileExtensionCombo->getCurrentIndexText();
+                    if (ext != "*") {
+                        int lastSepPos = str.lastIndexOf("/");
+                        if (lastSepPos == -1) {
+                            lastSepPos = str.lastIndexOf("//");
+                        }
+                        int lastDotPos = str.lastIndexOf('.');
+                        if (lastDotPos < lastSepPos) {
+                            str.append( "." +  ext);
+                            _selectionLineEdit->blockSignals(true);
+                            _selectionLineEdit->setText(str);
+                            _selectionLineEdit->blockSignals(false);
+                        }
                     }
                 }
 

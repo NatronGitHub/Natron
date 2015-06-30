@@ -2291,8 +2291,6 @@ DockablePanel::setKeyOnAllParameters()
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
-                    boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
-                    curveKeys->curve = *it2;
                     
                     std::vector<KeyFrame> kVec;
                     KeyFrame kf;
@@ -2316,8 +2314,7 @@ DockablePanel::setKeyOnAllParameters()
                     }
                     
                     kVec.push_back(kf);
-                    curveKeys->keys = kVec;
-                    keys.push_back(curveKeys);
+                    keys.insert(std::make_pair(*it2,kVec));
                 }
                 
                 
