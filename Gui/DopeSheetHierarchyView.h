@@ -61,7 +61,8 @@ private: /* functions */
     /**
      * @brief Selects parents of 'index' and put them in 'selection'.
      */
-    void checkParentsSelectedState(const QModelIndex &index, QItemSelection *selection, SelectionFlags flags) const;
+    void checkParentsSelectedStates(const QModelIndex &index, QItemSelectionModel::SelectionFlags flags,
+                                   const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
 };
 
 

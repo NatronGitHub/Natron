@@ -30,16 +30,31 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *mod
 HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
 {}
 
-void HierarchyViewSelectionModel::select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command)
+void HierarchyViewSelectionModel::select(const QItemSelection &userSelection, QItemSelectionModel::SelectionFlags command)
 {
-    QItemSelection newSelection = selection;
+    QItemSelection finalSelection = userSelection;
 
-    Q_FOREACH (QModelIndex index, selection.indexes()) {
-        selectChildren(index, &newSelection);
-        checkParentsSelectedState(index, &newSelection, command);
+    QModelIndexList userSelectedIndexes = userSelection.indexes();
+
+    for (QModelIndexList::const_iterator it = userSelectedIndexes.begin();
+         it != userSelectedIndexes.end();
+         ++it) {
+        QModelIndex index = (*it);
+
+        selectChildren(index, &finalSelection);
+
+        QItemSelection unitedSelection = selection();
+
+        if (command & QItemSelectionModel::Clear) {
+            unitedSelection.clear();
+        }
+
+        unitedSelection.merge(finalSelection, command);
+
+        checkParentsSelectedStates(index, command, unitedSelection, &finalSelection);
     }
 
-    QItemSelectionModel::select(newSelection, command);
+    QItemSelectionModel::select(finalSelection, command);
 }
 
 void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
@@ -60,48 +75,57 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
     }
 }
 
-void HierarchyViewSelectionModel::checkParentsSelectedState(const QModelIndex &index, QItemSelection *selection,
-                                                            QItemSelectionModel::SelectionFlags flags) const
+void HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index,
+                                                            QItemSelectionModel::SelectionFlags flags,
+                                                            const QItemSelection &unitedSelection,
+                                                            QItemSelection *finalSelection) const
 {
-    QModelIndex parentIndex = index.parent();
+    // Fill the list of parents
+    std::list<QModelIndex> parentIndexes;
+    {
+        QModelIndex pIndex = index.parent();
+        while (pIndex.isValid()) {
+            parentIndexes.push_back(pIndex);
 
-    while (parentIndex.isValid()) {
-        bool selectMode = flags & QItemSelectionModel::Select;
-        bool deselectMode = flags & QItemSelectionModel::Deselect;
+            pIndex = pIndex.parent();
+        }
+    }
+
+    QItemSelection uuSelec = unitedSelection;
+
+    // If all children are selected, select the parent
+    for (std::list<QModelIndex>::const_iterator it = parentIndexes.begin();
+         it != parentIndexes.end();
+         ++it) {
+        QModelIndex index = (*it);
 
         bool selectParent = true;
 
         int row = 0;
-        QModelIndex childIndexIt = parentIndex.child(row, 0);
+        QModelIndex childIndexIt = index.child(row, 0);
 
         while (childIndexIt.isValid()) {
             if (childIndexIt.data(QT_ROLE_CONTEXT_IS_ANIMATED).toBool()) {
-                if (selectMode) {
-                    if ( !(isSelected(childIndexIt) || selection->contains(childIndexIt)) ) {
-                        selectParent = false;
+                if (!uuSelec.contains(childIndexIt)) {
+                    selectParent = false;
 
-                        break;
-                    }
-                }
-                else if (deselectMode) {
-                    if (selection->contains(childIndexIt) ) {
-                        selectParent = false;
-
-                        break;
-                    }
+                    break;
                 }
             }
 
             ++row;
-            childIndexIt = parentIndex.child(row, 0);
+            childIndexIt = index.child(row, 0);
         }
 
-        if ( (selectMode && selectParent)
-             || (deselectMode && !selectParent) )  {
-            selection->select(parentIndex, parentIndex);
+        if ( (flags & QItemSelectionModel::Select && selectParent))  {
+            finalSelection->select(index, index);
+            uuSelec.select(index, index);
         }
-
-        parentIndex = parentIndex.parent();
+        else if (flags & QItemSelectionModel::Deselect && !selectParent) {
+            finalSelection->select(index, index);
+            uuSelec.merge(QItemSelection(index, index),
+                          QItemSelectionModel::Deselect);
+        }
     }
 }
 
