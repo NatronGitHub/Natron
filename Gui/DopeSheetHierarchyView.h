@@ -50,8 +50,7 @@ public:
     ~HierarchyViewSelectionModel();
 
     void selectInternal(const QItemSelection &userSelection,
-                        QItemSelectionModel::SelectionFlags command,
-                        bool calledFromDopeSheetView);
+                        QItemSelectionModel::SelectionFlags command);
 
 public Q_SLOTS:
     virtual void select(const QItemSelection &userSelection,

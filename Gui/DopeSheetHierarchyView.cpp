@@ -34,8 +34,7 @@ HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
 {}
 
 void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelection,
-                                                 QItemSelectionModel::SelectionFlags command,
-                                                 bool calledFromDopeSheetView)
+                                                 QItemSelectionModel::SelectionFlags command)
 {
     QItemSelection finalSelection = userSelection;
 
@@ -65,7 +64,7 @@ void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelec
 void HierarchyViewSelectionModel::select(const QItemSelection &userSelection,
                                          QItemSelectionModel::SelectionFlags command)
 {
-    selectInternal(userSelection, command, false);
+    selectInternal(userSelection, command);
 }
 
 void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
@@ -854,7 +853,7 @@ void HierarchyView::onKeyframeSelectionChanged()
     }
 
     if (toCheck.empty()) {
-        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear, true);
+        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear);
 
         return;
     }
@@ -902,7 +901,7 @@ void HierarchyView::onKeyframeSelectionChanged()
 
     if (!selection.empty()) {
         QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
-        mySelecModel->selectInternal(selection, flags, true);
+        mySelecModel->selectInternal(selection, flags);
     }
 }
 
