@@ -67,7 +67,9 @@ void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelec
 
         unitedSelection.merge(finalSelection, command);
 
-        checkParentsSelectedStates(index, command, unitedSelection, &finalSelection);
+        if (index.parent().isValid()) {
+            checkParentsSelectedStates(index, command, unitedSelection, &finalSelection);
+        }
     }
 
     QItemSelectionModel::select(finalSelection, command);
@@ -89,7 +91,9 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
     QModelIndex childIndex = index.child(row, 0);
 
     while (childIndex.isValid()) {
-        selection->select(childIndex, childIndex);
+        if (!selection->contains(childIndex)) {
+            selection->select(childIndex, childIndex);
+        }
 
         // /!\ recursion
         {
@@ -301,9 +305,12 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 
     if (nodeType == DopeSheet::ItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
-
-        nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
     }
+    else {
+        showNode = true;
+    }
+
+    nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
 
     nodeItem->setHidden(!showNode);
 }
