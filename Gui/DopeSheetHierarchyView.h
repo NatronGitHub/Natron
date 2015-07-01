@@ -45,11 +45,17 @@ class HierarchyViewSelectionModel : public QItemSelectionModel
     Q_OBJECT
 
 public:
-    explicit HierarchyViewSelectionModel(QAbstractItemModel *model, QObject *parent = 0);
+    explicit HierarchyViewSelectionModel(QAbstractItemModel *model,
+                                         QObject *parent = 0);
     ~HierarchyViewSelectionModel();
 
+    void selectInternal(const QItemSelection &userSelection,
+                        QItemSelectionModel::SelectionFlags command,
+                        bool calledFromDopeSheetView);
+
 public Q_SLOTS:
-    virtual void select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
+    virtual void select(const QItemSelection &userSelection,
+                        QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
 
 private: /* functions */
     /**
@@ -167,6 +173,16 @@ private Q_SLOTS:
      * 'dsKnob' is set or removed.
      */
     void onKeyframeSetOrRemoved(DSKnob *dsKnob);
+
+    /**
+     * @brief Check the selected state of the knob context items which have
+     * selected keyframes. If all keyframes of the dimension are selected,
+     * then the item is selected too.
+     *
+     * This slot is automatically called when a keyframe selection is changed
+     * (keyframe added/removed, selection moved) in the dope sheet model.
+     */
+    void onKeyframeSelectionChanged();
 
     /**
      * @brief Puts the settings panel associated with 'item' on top of the

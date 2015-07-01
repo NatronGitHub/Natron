@@ -17,6 +17,9 @@
 #include "Gui/NodeGui.h"
 
 
+typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
+
+
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////
 
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
@@ -30,7 +33,9 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *mod
 HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
 {}
 
-void HierarchyViewSelectionModel::select(const QItemSelection &userSelection, QItemSelectionModel::SelectionFlags command)
+void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelection,
+                                                 QItemSelectionModel::SelectionFlags command,
+                                                 bool calledFromDopeSheetView)
 {
     QItemSelection finalSelection = userSelection;
 
@@ -57,6 +62,12 @@ void HierarchyViewSelectionModel::select(const QItemSelection &userSelection, QI
     QItemSelectionModel::select(finalSelection, command);
 }
 
+void HierarchyViewSelectionModel::select(const QItemSelection &userSelection,
+                                         QItemSelectionModel::SelectionFlags command)
+{
+    selectInternal(userSelection, command, false);
+}
+
 void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
 {
     int row = 0;
@@ -76,9 +87,9 @@ void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItem
 }
 
 void HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index,
-                                                            QItemSelectionModel::SelectionFlags flags,
-                                                            const QItemSelection &unitedSelection,
-                                                            QItemSelection *finalSelection) const
+                                                             QItemSelectionModel::SelectionFlags flags,
+                                                             const QItemSelection &unitedSelection,
+                                                             QItemSelection *finalSelection) const
 {
     // Fill the list of parents
     std::list<QModelIndex> parentIndexes;
@@ -817,6 +828,79 @@ void HierarchyView::onKeyframeSetOrRemoved(DSKnob *dsKnob)
     // Check the node item
     boost::shared_ptr<DSNode> parentNode = _imp->dopeSheetModel->findParentDSNode(dsKnob->getTreeItem());
     _imp->checkNodeVisibleState(parentNode.get());
+}
+
+void HierarchyView::onKeyframeSelectionChanged()
+{
+    HierarchyViewSelectionModel *mySelecModel
+            = dynamic_cast<HierarchyViewSelectionModel *>(selectionModel());
+    assert(mySelecModel);
+
+    // Retrieve the knob contexts with selected keyframes
+    DSKnobPtrList toCheck;
+    {
+        DSKeyPtrList selectedKeys = _imp->dopeSheetModel->getSelectionModel()->getSelectedKeyframes();
+
+        for (DSKeyPtrList::const_iterator it = selectedKeys.begin();
+             it != selectedKeys.end();
+             ++it) {
+            DSKeyPtr keyPtr = (*it);
+
+            toCheck.push_back(keyPtr->getContext());
+        }
+    }
+
+    if (toCheck.empty()) {
+        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear, true);
+
+        return;
+    }
+
+    std::list<QModelIndex> toSelect;
+
+    for (DSKnobPtrList::const_iterator toCheckIt = toCheck.begin();
+         toCheckIt != toCheck.end();
+         ++toCheckIt) {
+        boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
+
+        KnobGui *knobGui = dsKnob->getKnobGui();
+        int dim = dsKnob->getDimension();
+
+        KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+
+        bool selectItem = true;
+
+        for (KeyFrameSet::const_iterator kfIt = keyframes.begin();
+             kfIt != keyframes.end();
+             ++kfIt) {
+            KeyFrame key = (*kfIt);
+
+            if (!_imp->dopeSheetModel->getSelectionModel()->keyframeIsSelected(dsKnob, key)) {
+                selectItem = false;
+
+                break;
+            }
+        }
+
+        if (selectItem) {
+            toSelect.push_back(indexFromItem(dsKnob->getTreeItem()));
+        }
+    }
+
+    QItemSelection selection;
+
+    for (std::list<QModelIndex>::const_iterator indexIt = toSelect.begin();
+         indexIt != toSelect.end();
+         ++indexIt) {
+        QModelIndex index = (*indexIt);
+
+        selection.select(index, index);
+    }
+
+    if (!selection.empty()) {
+        QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
+        mySelecModel->selectInternal(selection, flags, true);
+    }
 }
 
 void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)

@@ -2520,7 +2520,7 @@ void DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
 }
 
 void DopeSheetView::onKeyframeSelectionChanged()
-{
+{    
     _imp->computeSelectedKeysBRect();
 
     redraw();

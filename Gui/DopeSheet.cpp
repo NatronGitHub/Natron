@@ -950,6 +950,8 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
 {
     Q_EMIT keyframeSelectionAboutToBeCleared();
 
+    DSKeyPtrList oldSelection = _imp->selectedKeyframes;
+
     if (selectionType == DopeSheetSelectionModel::SelectionTypeOneByOne) {
         _imp->selectedKeyframes.clear();
     }
@@ -969,7 +971,9 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
         }
     }
 
-    emit_keyframeSelectionChanged();
+    if (_imp->selectedKeyframes != oldSelection) {
+        emit_keyframeSelectionChanged();
+    }
 }
 
 bool DopeSheetSelectionModel::isEmpty() const

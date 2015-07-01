@@ -375,6 +375,14 @@ struct DopeSheetKey
         return true;
     }
 
+    boost::shared_ptr<DSKnob> getContext() const
+    {
+        boost::shared_ptr<DSKnob> ret = context.lock();
+        assert(ret);
+
+        return ret;
+    }
+
     boost::weak_ptr<DSKnob> context;
     KeyFrame key;
 };
