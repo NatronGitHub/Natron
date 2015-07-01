@@ -24,7 +24,8 @@ typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
 
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
                                                          QObject *parent) :
-    QItemSelectionModel(model, parent)
+    QItemSelectionModel(model, parent),
+    _isSelectingFromHierarchyView(0)
 {
     connect(model, SIGNAL(destroyed()),
             this, SLOT(deleteLater()));
@@ -34,8 +35,19 @@ HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
 {}
 
 void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelection,
-                                                 QItemSelectionModel::SelectionFlags command)
+                                                 QItemSelectionModel::SelectionFlags command,
+                                                 bool calledFromDopeSheetView)
 {
+    if (_isSelectingFromHierarchyView >= 1) {
+        _isSelectingFromHierarchyView = 0;
+
+        return;
+    }
+
+    if (!calledFromDopeSheetView) {
+        ++_isSelectingFromHierarchyView;
+    }
+
     QItemSelection finalSelection = userSelection;
 
     QModelIndexList userSelectedIndexes = userSelection.indexes();
@@ -59,12 +71,16 @@ void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelec
     }
 
     QItemSelectionModel::select(finalSelection, command);
+
+    if (!calledFromDopeSheetView) {
+        --_isSelectingFromHierarchyView;
+    }
 }
 
 void HierarchyViewSelectionModel::select(const QItemSelection &userSelection,
                                          QItemSelectionModel::SelectionFlags command)
 {
-    selectInternal(userSelection, command);
+    selectInternal(userSelection, command, false);
 }
 
 void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
@@ -522,8 +538,6 @@ int HierarchyView::getHeightForItemAndChildren(QTreeWidgetItem *item) const
  */
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
-    dopeSheetModel->getSelectionModel()->clearKeyframeSelection();
-
     std::vector<DopeSheetKey> keys;
 
     Q_FOREACH (QTreeWidgetItem *item, items) {
@@ -853,7 +867,7 @@ void HierarchyView::onKeyframeSelectionChanged()
     }
 
     if (toCheck.empty()) {
-        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear);
+        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear, true);
 
         return;
     }
@@ -901,7 +915,7 @@ void HierarchyView::onKeyframeSelectionChanged()
 
     if (!selection.empty()) {
         QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
-        mySelecModel->selectInternal(selection, flags);
+        mySelecModel->selectInternal(selection, flags, true);
     }
 }
 

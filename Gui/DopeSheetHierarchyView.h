@@ -49,8 +49,19 @@ public:
                                          QObject *parent = 0);
     ~HierarchyViewSelectionModel();
 
+    /**
+     * @brief Select the indexes contained in 'userSelection', using
+     * the specified 'command'.
+     *
+     * Pass true for 'calledFromDopeSheetView' if the selection is a
+     * result of an external change.
+     *
+     * /!\ This function must be used instead of select() to avoid
+     * infinite loops between HierarchyView and DopeSheetView.
+     */
     void selectInternal(const QItemSelection &userSelection,
-                        QItemSelectionModel::SelectionFlags command);
+                        QItemSelectionModel::SelectionFlags command,
+                        bool calledFromDopeSheetView);
 
 public Q_SLOTS:
     virtual void select(const QItemSelection &userSelection,
@@ -68,6 +79,9 @@ private: /* functions */
      */
     void checkParentsSelectedStates(const QModelIndex &index, QItemSelectionModel::SelectionFlags flags,
                                    const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
+
+private: /* attributes */
+    int _isSelectingFromHierarchyView;
 };
 
 
