@@ -402,10 +402,13 @@ class DopeSheetSelectionModel : public QObject
 
 public:
     enum SelectionType {
-        SelectionTypeOneByOne,
-        SelectionTypeAdd,
-        SelectionTypeToggle
+        SelectionTypeNoSelection = 0x0,
+        SelectionTypeClear = 0x1,
+        SelectionTypeAdd = 0x2,
+        SelectionTypeToggle = 0x4
     };
+
+    Q_DECLARE_FLAGS(SelectionTypeFlags, SelectionType)
 
     DopeSheetSelectionModel(DopeSheet *dopeSheet);
     ~DopeSheetSelectionModel();
@@ -414,7 +417,7 @@ public:
     void selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DopeSheetKey> *result);
 
     void clearKeyframeSelection();
-    void makeSelection(const std::vector<DopeSheetKey> &keys, SelectionType selectionType);
+    void makeSelection(const std::vector<DopeSheetKey> &keys, DopeSheetSelectionModel::SelectionTypeFlags selectionFlags);
 
     bool isEmpty() const;
 
@@ -437,5 +440,7 @@ Q_SIGNALS:
 private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(DopeSheetSelectionModel::SelectionTypeFlags)
 
 #endif // DOPESHEET_H

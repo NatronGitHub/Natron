@@ -535,7 +535,10 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
         }
     }
 
-    dopeSheetModel->getSelectionModel()->makeSelection(keys, DopeSheetSelectionModel::SelectionTypeOneByOne);
+    DopeSheetSelectionModel::SelectionTypeFlags sFlags = DopeSheetSelectionModel::SelectionTypeAdd
+            | DopeSheetSelectionModel::SelectionTypeClear;
+
+    dopeSheetModel->getSelectionModel()->makeSelection(keys, sFlags);
 }
 
 

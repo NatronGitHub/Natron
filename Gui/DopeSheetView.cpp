@@ -2707,11 +2707,13 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     std::vector<DopeSheetKey> keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
-                                ? DopeSheetSelectionModel::SelectionTypeAdd
-                                : DopeSheetSelectionModel::SelectionTypeOneByOne;
+                        DopeSheetSelectionModel::SelectionTypeFlags sFlags = DopeSheetSelectionModel::SelectionTypeAdd;
 
-                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sType);
+                        if (!modCASIsShift(e)) {
+                            sFlags |= DopeSheetSelectionModel::SelectionTypeClear;
+                        }
+
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sFlags);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -2724,12 +2726,14 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 if (dsKnob) {
                     std::vector<DopeSheetKey> keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos());
 
-                    if (!keysUnderMouse.empty()) {
-                        DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
-                                ? DopeSheetSelectionModel::SelectionTypeAdd
-                                : DopeSheetSelectionModel::SelectionTypeOneByOne;
+                    if (!keysUnderMouse.empty()) {                        
+                        DopeSheetSelectionModel::SelectionTypeFlags sFlags = DopeSheetSelectionModel::SelectionTypeAdd;
 
-                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sType);
+                        if (!modCASIsShift(e)) {
+                            sFlags |= DopeSheetSelectionModel::SelectionTypeClear;
+                        }
+
+                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, sFlags);
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
                     }
@@ -2794,11 +2798,11 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
             std::vector<DopeSheetKey> tempSelection;
             _imp->createSelectionFromRect(keysToSelectRect, &tempSelection);
 
-            DopeSheetSelectionModel::SelectionType sType = (modCASIsShift(e))
+            DopeSheetSelectionModel::SelectionTypeFlags sFlags = (modCASIsShift(e))
                     ? DopeSheetSelectionModel::SelectionTypeToggle
-                    : DopeSheetSelectionModel::SelectionTypeOneByOne;
+                    : DopeSheetSelectionModel::SelectionTypeAdd;
 
-            _imp->model->getSelectionModel()->makeSelection(tempSelection, sType);
+            _imp->model->getSelectionModel()->makeSelection(tempSelection, sFlags);
 
             _imp->computeSelectedKeysBRect();
         }

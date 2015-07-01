@@ -894,7 +894,7 @@ void DopeSheetSelectionModel::selectAllKeyframes()
         }
     }
 
-    makeSelection(result, DopeSheetSelectionModel::SelectionTypeOneByOne);
+    makeSelection(result, (DopeSheetSelectionModel::SelectionTypeAdd | DopeSheetSelectionModel::SelectionTypeClear));
 }
 
 void DopeSheetSelectionModel::selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DopeSheetKey> *result)
@@ -939,20 +939,21 @@ void DopeSheetSelectionModel::clearKeyframeSelection()
         return;
     }
 
-    Q_EMIT keyframeSelectionAboutToBeCleared();
-
-    _imp->selectedKeyframes.clear();
-
-    emit_keyframeSelectionChanged();
+    makeSelection(std::vector<DopeSheetKey>(), DopeSheetSelectionModel::SelectionTypeClear);
 }
 
-void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys, SelectionType selectionType)
+void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys, SelectionTypeFlags selectionFlags)
 {
-    Q_EMIT keyframeSelectionAboutToBeCleared();
+    // Don't allow unsupported combinations
+    assert(! (selectionFlags & DopeSheetSelectionModel::SelectionTypeAdd
+              &&
+              selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle));
 
     DSKeyPtrList oldSelection = _imp->selectedKeyframes;
 
-    if (selectionType == DopeSheetSelectionModel::SelectionTypeOneByOne) {
+    if (selectionFlags & DopeSheetSelectionModel::SelectionTypeClear) {
+        Q_EMIT keyframeSelectionAboutToBeCleared();
+
         _imp->selectedKeyframes.clear();
     }
 
@@ -966,7 +967,7 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
 
             _imp->selectedKeyframes.push_back(dsKey);
         }
-        else if (selectionType == DopeSheetSelectionModel::SelectionTypeToggle) {
+        else if (selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle) {
             _imp->selectedKeyframes.erase(isAlreadySelected);
         }
     }
