@@ -272,7 +272,7 @@ namespace  {
             
             QMutexLocker l(&_cacheMutex);
             for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
-                if (it->_hash == hash) {
+                if (it->_hash == hash && it->_timeDomainSet) {
                     *first = it->_timeDomain.min;
                     *last = it->_timeDomain.max;
                     return true;
