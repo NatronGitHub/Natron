@@ -176,7 +176,8 @@ struct GuiApplicationManagerPrivate
                                                                      const QString & name,
                                                                      const QString & iconPath,
                                                                      int major,
-                                                                     int minor);
+                                                                     int minor,
+                                                                     bool isUserCreatable);
 };
 
 GuiApplicationManager::GuiApplicationManager()
@@ -948,6 +949,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "rotopaint_solid.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_ROTO_NODE_ICON:
+                    img.load(NATRON_IMAGES_PATH "rotoNodeIcon.png");
+                    *pix = QPixmap::fromImage(img);
+                    break;
             case NATRON_PIXMAP_INTERP_LINEAR:
                 img.load(NATRON_IMAGES_PATH "interp_linear.png");
                 *pix = QPixmap::fromImage(img);
@@ -980,7 +985,6 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "interp_curve_z.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-
             default:
                 assert(!"Missing image.");
         } // switch
@@ -1098,7 +1102,8 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
                                                                             groupIconPath,
                                                                             pluginIconPath,
                                                                             plugin->getMajorVersion(),
-                                                                            plugin->getMinorVersion());
+                                                                            plugin->getMinorVersion(),
+                                                                            plugin->getIsUserCreatable());
     for (int i = 0; i < groups.size(); ++i) {
 
         shortcutGrouping.push_back('/');
@@ -1112,7 +1117,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
     if (pluginID == PLUGINID_OFX_TRANSFORM) {
         symbol = Qt::Key_T;
-    } else if (pluginID == PLUGINID_OFX_ROTO) {
+    } else if (pluginID == PLUGINID_NATRON_ROTO) {
         symbol = Qt::Key_O;
     } else if (pluginID == PLUGINID_NATRON_ROTOPAINT) {
         symbol = Qt::Key_P;
@@ -1132,7 +1137,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     }
     plugin->setHasShortcut(hasShortcut);
     
-    if (Natron::isPluginCreatable(plugin->getPluginID().toStdString())) {
+    if (plugin->getIsUserCreatable()) {
         _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
     }
     
@@ -1204,7 +1209,8 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_p
                                                            const QString & name,
                                                            const QString & iconPath,
                                                            int major,
-                                                           int minor)
+                                                           int minor,
+                                                           bool isUserCreatable)
 {
     assert(grouping.size() > 0);
     
@@ -1218,7 +1224,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_p
                 for (int i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
-                return findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major,minor);
+                return findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major,minor, isUserCreatable);
             }
             if (major == (*it)->getMajorVersion()) {
                 return *it;
@@ -1227,7 +1233,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_p
             }
         }
     }
-    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor, isUserCreatable));
     parent->tryAddChild(ret);
     ret->setParent(parent);
     
@@ -1236,7 +1242,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_p
         for (int i = 1; i < grouping.size(); ++i) {
             newGrouping.push_back(grouping[i]);
         }
-        return findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+        return findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor, isUserCreatable);
     }
     return ret;
 }
@@ -1247,7 +1253,8 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
                                                     const QString& groupIconPath,
                                                     const QString & iconPath,
                                                     int major,
-                                                    int minor)
+                                                    int minor,
+                                                    bool isUserCreatable)
 {
     assert(grouping.size() > 0);
     
@@ -1259,7 +1266,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
                 for (int i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
-                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor);
+                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor, isUserCreatable);
             }
             if (major == (*it)->getMajorVersion()) {
                 return *it;
@@ -1269,7 +1276,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
         }
     }
     
-    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor, isUserCreatable));
     _imp->_topLevelToolButtons.push_back(ret);
     if (grouping.size() > 1) {
         ret->setIconPath(groupIconPath);
@@ -1277,7 +1284,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
         for (int i = 1; i < grouping.size(); ++i) {
             newGrouping.push_back(grouping[i]);
         }
-        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor, isUserCreatable);
     }
     return ret;
 }
@@ -1409,8 +1416,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         
-        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
-
+        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), true);
+ 
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
             std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -1434,7 +1441,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         
-        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion());
+        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), true);
         
 
 
@@ -1465,7 +1472,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         
-        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
+        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion(), true);
 
     }
 

@@ -25,7 +25,6 @@
 #include <QStyledItemDelegate>
 #include <QAction>
 #include <QFileSystemWatcher>
-#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
@@ -44,6 +43,8 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/TableModelView.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
+
 using namespace Natron;
 
 
@@ -123,7 +124,7 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
         QPixmap pixRefresh;
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixRefresh);
         _reloadButton->setIcon(QIcon(pixRefresh));
-        _reloadButton->setToolTip(Qt::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
+        _reloadButton->setToolTip(Natron::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
         QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
         containerLayout->addWidget(_reloadButton);
     }
@@ -493,7 +494,7 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip(Qt::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
+    _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
@@ -839,16 +840,16 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
         _addPathButton = new Button( tr("Add"),buttonsContainer );
-        _addPathButton->setToolTip(Qt::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+        _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
-        _removePathButton->setToolTip(Qt::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+        _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
         
         _editPathButton = new Button( tr("Edit"), buttonsContainer);
         QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
-        _editPathButton->setToolTip(Qt::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
+        _editPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
         
         buttonsLayout->addWidget(_addPathButton);
         buttonsLayout->addWidget(_removePathButton);
@@ -868,7 +869,7 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
         _openFileButton->setFixedSize(17, 17);
-        _openFileButton->setToolTip(Qt::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
+        _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
         _openFileButton->setIcon( QIcon(pix) );

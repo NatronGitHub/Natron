@@ -126,7 +126,8 @@ struct RequestedFrame
 struct ProducedFrame
 {
     BufferableObjectList frames;
-    RequestedFrame* request;
+    boost::shared_ptr<RequestedFrame> request;
+    bool processRequest;
 };
 
 struct OutputSchedulerThreadPrivate
@@ -1979,6 +1980,7 @@ private:
                                                              _imp->output, // viewer requester
                                                              0, //texture index
                                                              _imp->output->getApp()->getTimeLine().get(),
+                                                             NodePtr(),
                                                              false);
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
@@ -2075,6 +2077,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  _effect, //viewer
                                                  0, //texture index
                                                  _effect->getApp()->getTimeLine().get(),
+                                                 NodePtr(),
                                                  false);
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
@@ -2389,7 +2392,7 @@ private:
         
         if ((args[0] && status[0] != eStatusFailed) || (args[1] && status[1] != eStatusFailed)) {
             try {
-                stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), true,  args);
+                stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), true,  args, boost::shared_ptr<RequestedFrame>());
             } catch (...) {
                 stat = eStatusFailed;
             }
@@ -2646,6 +2649,12 @@ RenderEngine::getDesiredFPS() const
 }
 
 
+void
+RenderEngine::notifyFrameProduced(const BufferableObjectList& frames, const boost::shared_ptr<RequestedFrame>& request)
+{
+    _imp->currentFrameScheduler->notifyFrameProduced(frames, request);
+}
+
 OutputSchedulerThread*
 ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect) 
 {
@@ -2662,7 +2671,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     ViewerInstance* viewer;
     
     QMutex requestsQueueMutex;
-    std::list<RequestedFrame*> requestsQueue;
+    std::list<boost::shared_ptr<RequestedFrame> > requestsQueue;
     QWaitCondition requestsQueueNotEmpty;
     
     QMutex producedQueueMutex;
@@ -2729,12 +2738,13 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         return false;
     }
     
-    void notifyFrameProduced(const BufferableObjectList& frames,RequestedFrame* request)
+    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request, bool processRequest)
     {
         QMutexLocker k(&producedQueueMutex);
         ProducedFrame p;
         p.frames = frames;
         p.request = request;
+        p.processRequest = processRequest;
         producedQueue.push_back(p);
         producedQueueNotEmpty.wakeOne();
     }
@@ -2755,7 +2765,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     try {
         if (!args.isRotoPaintRequest) {
             stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,
-                                             NodePtr(), true, args.args);
+                                             NodePtr(), true,args.args, args.request);
         } else {
             stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest,
                                                              &args.args[0],&args.args[1]);
@@ -2778,7 +2788,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     }
     
     if (args.request) {
-        args.scheduler->notifyFrameProduced(ret, args.request);
+        args.scheduler->notifyFrameProduced(ret, args.request, true);
     } else {
         
         assert(QThread::currentThread() == qApp->thread());
@@ -2805,6 +2815,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 void
 ViewerCurrentFrameRequestScheduler::run()
 {
+    boost::shared_ptr<RequestedFrame> firstRequest;
     for (;;) {
         
         if (_imp->checkForExit()) {
@@ -2812,10 +2823,9 @@ ViewerCurrentFrameRequestScheduler::run()
         }
         
         
-        RequestedFrame* firstRequest = 0;
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
-            if (!_imp->requestsQueue.empty()) {
+            if (!firstRequest && !_imp->requestsQueue.empty()) {
                 firstRequest = _imp->requestsQueue.front();
                 _imp->requestsQueue.pop_front();
             }
@@ -2851,18 +2861,19 @@ ViewerCurrentFrameRequestScheduler::run()
                 }
                 
                 assert(found != _imp->producedQueue.end());
-                
-                delete found->request;
-                found->request = 0;
+                found->request.reset();
+                if (found->processRequest) {
+                    firstRequest.reset();
+                }
                 frames = found->frames;
                 _imp->producedQueue.erase(found);
-            }
+            } // QMutexLocker k(&_imp->producedQueueMutex);
             if (_imp->checkForExit()) {
                 return;
             }
             
             {
-                
+                _imp->viewer->setCurrentlyUpdatingOpenGLViewer(true);
                 QMutexLocker processLocker(&_imp->processMutex);
                 _imp->processRunning = true;
                 Q_EMIT s_processProducedFrameOnMainThread(frames);
@@ -2870,14 +2881,15 @@ ViewerCurrentFrameRequestScheduler::run()
                 while (_imp->processRunning && !_imp->checkForAbortion()) {
                     _imp->processCondition.wait(&_imp->processMutex);
                 }
+                _imp->viewer->setCurrentlyUpdatingOpenGLViewer(false);
             }
             
-        }
+        } // if (firstRequest) {
         
         
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
-            while (_imp->requestsQueue.empty()) {
+            while (!firstRequest && _imp->requestsQueue.empty()) {
                 _imp->requestsQueueNotEmpty.wait(&_imp->requestsQueueMutex);
             }
         }
@@ -2964,8 +2976,8 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         ///Push a fake request
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
-            _imp->requestsQueue.push_back(NULL);
-            _imp->notifyFrameProduced(BufferableObjectList(), NULL);
+            _imp->requestsQueue.push_back(boost::shared_ptr<RequestedFrame>());
+            _imp->notifyFrameProduced(BufferableObjectList(), boost::shared_ptr<RequestedFrame>(), true);
             _imp->requestsQueueNotEmpty.wakeOne();
         }
         while (_imp->mustQuit) {
@@ -2973,6 +2985,16 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         }
     }
     wait();
+    
+    ///Clear all queues
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.clear();
+    }
+    {
+        QMutexLocker k(&_imp->producedQueueMutex);
+        _imp->producedQueue.clear();
+    }
 }
 
 bool
@@ -2980,6 +3002,12 @@ ViewerCurrentFrameRequestScheduler::hasThreadsWorking() const
 {
     QMutexLocker k(&_imp->requestsQueueMutex);
     return _imp->requestsQueue.size() > 0;
+}
+
+void
+ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request)
+{
+    _imp->notifyFrameProduced(frames, request, false);
 }
 
 void
@@ -3036,14 +3064,13 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     functorArgs.args[1] = args[1];
     functorArgs.viewerHash = viewerHash;
     functorArgs.scheduler = _imp.get();
-    functorArgs.request = 0;
     functorArgs.canAbort = canAbort;
     functorArgs.isRotoPaintRequest = isUserRotopainting;
     
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         renderCurrentFrameFunctor(functorArgs);
     } else {
-        RequestedFrame *request = new RequestedFrame;
+        boost::shared_ptr<RequestedFrame> request(new RequestedFrame);
         request->id = 0;
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
@@ -3200,4 +3227,9 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
         }
     }
     wait();
+    //clear all queues
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.clear();
+    }
 }

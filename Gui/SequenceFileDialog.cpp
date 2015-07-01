@@ -64,7 +64,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtConcurrentRun>
 
 #include <QtCore/QSettings>
-#include <QTextDocument> // for Qt::convertFromPlainText
 
 #include <SequenceParsing.h>
 
@@ -89,6 +88,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TabWidget.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
 #define FILE_DIALOG_DISABLE_ICONS
 
@@ -405,7 +405,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _relativeChoice = new ComboBox(_selectionWidget);
     QObject::connect(_relativeChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onRelativeChoiceChanged(int)));
-    _relativeChoice->setToolTip(Qt::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal));
+    _relativeChoice->setToolTip(Natron::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have ""chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal));
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string,std::string> projectPaths;
@@ -566,7 +566,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray() );
+    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(),currentDirectory.empty() );
 
     if ( !currentDirectory.empty() ) {
         setDirectory( currentDirectory.c_str() );
@@ -616,7 +616,7 @@ SequenceFileDialog::saveState() const
 
 
 bool
-SequenceFileDialog::restoreState(const QByteArray & state)
+SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory)
 {
     QByteArray sd = state;
     QDataStream stream(&sd, QIODevice::ReadOnly);
@@ -733,7 +733,9 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     if ( !headerView->restoreState(headerData) ) {
         return false;
     }
-    setDirectory(currentDirectory);
+    if (restoreDirectory) {
+        setDirectory(currentDirectory);
+    }
 
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model.get();
@@ -1499,16 +1501,19 @@ SequenceFileDialog::openSelectedFiles()
             } else {
                 ///check if str contains already the selected file extension, otherwise append it
                 {
-                    int lastSepPos = str.lastIndexOf("/");
-                    if (lastSepPos == -1) {
-                        lastSepPos = str.lastIndexOf("//");
-                    }
-                    int lastDotPos = str.lastIndexOf('.');
-                    if (lastDotPos < lastSepPos) {
-                        str.append( "." + _fileExtensionCombo->getCurrentIndexText() );
-                        _selectionLineEdit->blockSignals(true);
-                        _selectionLineEdit->setText(str);
-                        _selectionLineEdit->blockSignals(false);
+                    QString ext = _fileExtensionCombo->getCurrentIndexText();
+                    if (ext != "*") {
+                        int lastSepPos = str.lastIndexOf("/");
+                        if (lastSepPos == -1) {
+                            lastSepPos = str.lastIndexOf("//");
+                        }
+                        int lastDotPos = str.lastIndexOf('.');
+                        if (lastDotPos < lastSepPos) {
+                            str.append( "." +  ext);
+                            _selectionLineEdit->blockSignals(true);
+                            _selectionLineEdit->setText(str);
+                            _selectionLineEdit->blockSignals(false);
+                        }
                     }
                 }
 

@@ -73,6 +73,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
+#include "Engine/AppInstance.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -603,6 +605,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
+        bool userCreatable = openfxId != PLUGINID_OFX_ROTO;
+        
         Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
                                                               pluginLabel.c_str(),
@@ -612,7 +616,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                                               foundWriter != contexts.end(),
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                              p->getVersionMajor(), p->getVersionMinor() );
+                                                              p->getVersionMajor(), p->getVersionMinor(),userCreatable );
         
         natronPlugin->setOfxPlugin(p);
         
@@ -776,11 +780,18 @@ static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
+                      const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
     std::list<int>& localData = gThreadIndex.localData();
     localData.push_back((int)threadIndex);
+    
+    boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
+    //Set the TLS if not NULL
+    if (!tlsCopy.empty()) {
+        tlsRaii.reset(new ParallelRenderArgsSetter(tlsCopy));
+    }
 
     OfxStatus ret = kOfxStatOK;
     try {
@@ -807,13 +818,15 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
+              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
               void *customArg,
               OfxStatus *stat)
-        : _func(func)
-          , _threadIndex(threadIndex)
-          , _threadMax(threadMax)
-          , _customArg(customArg)
-          , _stat(stat)
+    : _func(func)
+    , _threadIndex(threadIndex)
+    , _threadMax(threadMax)
+    , _tlsCopy(tlsCopy)
+    , _customArg(customArg)
+    , _stat(stat)
     {
         setObjectName("Multi-thread suite");
     }
@@ -823,6 +836,12 @@ public:
         assert(_threadIndex < _threadMax);
         std::list<int>& localData = gThreadIndex.localData();
         localData.push_back((int)_threadIndex);
+        
+        //Copy the TLS of the caller thread to the newly spawned thread
+        boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
+        if (!_tlsCopy.empty()) {
+            tlsRaii.reset(new ParallelRenderArgsSetter(_tlsCopy));
+        }
         
         assert(*_stat == kOfxStatFailed);
         try {
@@ -841,6 +860,7 @@ private:
     OfxThreadFunctionV1 *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > _tlsCopy;
     void *_customArg;
     OfxStatus *_stat;
 };
@@ -886,6 +906,19 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             return kOfxStatFailed;
         }
     }
+    
+    //Retrieve a handle to the thread calling this action if possible so we can copy the TLS
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > tlsCopy;
+    QVariant imageEffectPointerProperty = QThread::currentThread()->property(kNatronTLSEffectPointerProperty);
+    if (!imageEffectPointerProperty.isNull()) {
+        QObject* pointerqobject = imageEffectPointerProperty.value<QObject*>();
+        if (pointerqobject) {
+            Natron::EffectInstance* instance = dynamic_cast<Natron::EffectInstance*>(pointerqobject);
+            if (instance) {
+                instance->getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+            }
+        }
+    }
 
     bool useThreadPool = appPTR->getUseThreadPool();
     
@@ -898,7 +931,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
         
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, customArg) );
+        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, tlsCopy, customArg) );
         future.waitForFinished();
         ///DON'T reset back to the original value the maximum thread count
         //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
@@ -917,7 +950,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             // at most maxConcurrentThread should be running at the same time
             QVector<OfxThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new OfxThread(func, i, nThreads, customArg, &status[i]);
+                threads[i] = new OfxThread(func, i, nThreads, tlsCopy, customArg, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads

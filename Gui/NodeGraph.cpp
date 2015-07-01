@@ -106,8 +106,9 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_NAVIGATOR_BASE_HEIGHT 0.2
 #define NATRON_NAVIGATOR_BASE_WIDTH 0.2
 
-#define NATRON_SCENE_MIN INT_MIN
-#define NATRON_SCENE_MAX INT_MAX
+#define NATRON_SCENE_MAX 1e6
+#define NATRON_SCENE_MIN 0
+
 
 using namespace Natron;
 using std::cout; using std::endl;
@@ -1092,8 +1093,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     _imp->_lastMousePos = e->pos();
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
 
-    if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or left + middle = zoom
+    if (((e->buttons() & Qt::MiddleButton) &&
+         (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+        ((e->buttons() & Qt::LeftButton) &&
+         (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->_evtState = eEventStateZoomingArea;
         return;
     }
@@ -1182,7 +1186,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 }
             }
 
-            _imp->_lastNodeDragStartPoint = selected->pos();
+            _imp->_lastNodeDragStartPoint = selected->getPos_mt_safe();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {
                 selectNode(selected,true); ///< don't wipe the selection
@@ -1240,7 +1244,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         
         _imp->_evtState = eEventStateDraggingNode;
-        _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
+        _imp->_lastNodeDragStartPoint = dotNodeGui->getPos_mt_safe();
         didSomething = true;
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
@@ -1814,7 +1818,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 ///for nodes already connected don't show hint
                 if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
                     doHints = false;
-                } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
+                } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasAllInputsConnected() && internalNode->hasOutputConnected() ) {
                     doHints = false;
                 }
             }
@@ -1841,7 +1845,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 break;
                             }
                         }
-                        if (selectedNodeIsReader || isAlreadyAnOutput) {
+                        if (isAlreadyAnOutput) {
                             continue;
                         }
                         QRectF nodeBbox = (*it)->boundingRectWithEdges();
@@ -1883,6 +1887,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                             } else {
                                 
+                                
+                                
                                 edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
                                 
                                 ///if the edge input is the selected node don't continue
@@ -1892,7 +1898,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                                 if ( edge && edge->isOutputEdge() ) {
                                     
-                                    
+                                    if (selectedNodeIsReader) {
+                                        continue;
+                                    }
                                     int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
                                     if (prefInput == -1) {
                                         edge = 0;
@@ -1907,9 +1915,19 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                                 if ( edge && !edge->isOutputEdge() ) {
                                     
+                                    if ((*it)->getNode()->getLiveInstance()->isReader()) {
+                                        edge = 0;
+                                        continue;
+                                    }
+                                    
+                                    if ((*it)->getNode()->getLiveInstance()->isInputRotoBrush(edge->getInputNumber())) {
+                                        edge = 0;
+                                        continue;
+                                    }
+                                    
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeInternalNode->isInputNode()) {
+                                        !selectedNodeInternalNode->getLiveInstance()->isReader()) {
                                         ret = Natron::Node::eCanConnectInput_ok;
                                     }
                                     
@@ -3627,7 +3645,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     n->incrementKnobsAge();
     
     gui->copyFrom(guiSerialization);
-    QPointF newPos = gui->pos() + offset;
+    QPointF newPos = gui->getPos_mt_safe() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
     
@@ -3918,7 +3936,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 
     if ( getGui() ) {
         
-        if ( internalNode->isRotoNode() ) {
+        if (internalNode->isRotoPaintingNode()) {
             getGui()->removeRotoInterface(n.get(),true);
         }
         
@@ -3999,14 +4017,15 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
+    //_imp->_root->setPos(0,0);
+
     if (_imp->_selection.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
-
 
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->scenePos();
+                QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax,pos.x() + size.width() );
                 ymin = std::min( ymin,pos.y() );
@@ -4018,7 +4037,7 @@ NodeGraph::centerOnAllNodes()
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */(*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->scenePos();
+                QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax,pos.x() + size.width() );
                 ymin = std::min( ymin,pos.y() );
@@ -4027,8 +4046,8 @@ NodeGraph::centerOnAllNodes()
         }
 
     }
-    QRectF rect( xmin,ymin,(xmax - xmin),(ymax - ymin) );
-    fitInView(rect,Qt::KeepAspectRatio);
+    QRectF bbox( xmin,ymin,(xmax - xmin),(ymax - ymin) );
+    fitInView(bbox,Qt::KeepAspectRatio);
     
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
     assert(currentZoomFactor != 0);
@@ -4689,4 +4708,10 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
     ///Now that all nodes have been duplicated, try to restore nodes connections
     _imp->restoreConnections(clipboard.nodes, newNodes);
 
+}
+
+QPointF
+NodeGraph::getRootPos() const
+{
+    return _imp->_root->pos();
 }

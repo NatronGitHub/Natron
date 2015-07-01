@@ -126,6 +126,7 @@ public:
         eRotoToolDrawRectangle,
         
         eRotoToolSolidBrush,
+        eRotoToolOpenBezier,
         eRotoToolEraserBrush,
         
         eRotoToolClone,
@@ -241,6 +242,8 @@ public:
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
+    void notifyGuiClosing();
+    
 Q_SIGNALS:
 
     /**
@@ -300,7 +303,10 @@ public Q_SLOTS:
     void onPressureHardnessClicked(bool isDown);
     void onBuildupClicked(bool isDown);
     
+    void onResetCloneTransformClicked();
+    
 private:
+    
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
 

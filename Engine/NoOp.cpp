@@ -52,6 +52,12 @@ NoOpBase::isIdentity(SequenceTime time,
     return true;
 }
 
+bool
+NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+{
+    return false;
+}
+
 std::string
 Dot::getDescription() const
 {

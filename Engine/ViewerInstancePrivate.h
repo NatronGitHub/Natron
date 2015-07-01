@@ -110,6 +110,8 @@ public:
     , rod()
     , renderAge(0)
     , isSequential(false)
+    , roi()
+    , updateOnlyRoi(false)
     {
     }
     
@@ -148,6 +150,8 @@ public:
     RectD rod;
     U64 renderAge;
     bool isSequential;
+    RectI roi;
+    bool updateOnlyRoi;
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -173,7 +177,7 @@ public:
     , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
     , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
-    , activeInputsMutex()
+    , activeInputsMutex(QMutex::Recursive)
     , activeInputs()
     , lastRenderedHashMutex()
     , lastRenderedHash(0)
@@ -185,6 +189,8 @@ public:
     , renderAgeMutex()
     , renderAge()
     , displayAge()
+    , currentlyUpdatingOpenGLViewerMutex()
+    , currentlyUpdatingOpenGLViewer(false)
     {
 
         for (int i = 0; i < 2; ++i) {
@@ -365,6 +371,8 @@ public:
         }
 
     }
+    
+    void reportProgress(const boost::shared_ptr<UpdateViewerParams>& originalParams, const std::list<RectI>& rectangles, const boost::shared_ptr<RequestedFrame>& request);
 
 public Q_SLOTS:
 
@@ -421,7 +429,10 @@ public:
     
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRotoPaintTickParamsMutex;
-    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams;
+    boost::shared_ptr<UpdateViewerParams> lastRotoPaintTickParams[2];
+    
+    mutable QMutex currentlyUpdatingOpenGLViewerMutex;
+    bool currentlyUpdatingOpenGLViewer;
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

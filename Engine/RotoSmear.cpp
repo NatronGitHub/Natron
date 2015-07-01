@@ -163,10 +163,7 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
     RectI prevDotBounds;
     prevDotRoD.toPixelEnclosing(mipmapLevel, outputImage->getPixelAspectRatio(), &prevDotBounds);
     
-    //assert(prevDotBounds.width() == nextDotBounds.width() && prevDotBounds.height() == nextDotBounds.height());
     
-    
-    float fgPixels[4];
     
     ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
@@ -191,16 +188,16 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
              ++maskPixels) {
             
             
-            for (int k = 0; k < nComps; ++k) {
-                fgPixels[k] = srcPixels ? srcPixels[k] * *maskPixels : dstPixels[k];
+            if (srcPixels) {
+                for (int k = 0; k < nComps; ++k) {
+                    dstPixels[k] = srcPixels[k] * *maskPixels + dstPixels[k] * (1. - *maskPixels);
+                }
+                
+                if (srcPixels) {
+                    srcPixels += nComps;
+                }
             }
             
-            for (int k = 0; k < nComps; ++k) {
-                dstPixels[k] = fgPixels[k] + dstPixels[k] * (1. - *maskPixels);
-            }
-            if (srcPixels) {
-                srcPixels += nComps;
-            }
         }
     }
     
@@ -211,7 +208,8 @@ Natron::StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     boost::shared_ptr<Node> node = getNode();
-    boost::shared_ptr<RotoStrokeItem> stroke = node->getAttachedStrokeItem();
+    boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
+    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     boost::shared_ptr<RotoContext> context = stroke->getContext();
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
@@ -299,6 +297,9 @@ RotoSmear::render(const RenderActionArgs& args)
         //First copy the source image if this is the first stroke tick
         
         if (isFirstStrokeTick || !duringPainting) {
+            
+            //Make sure all areas are black and transparant 
+            plane->second->fillZero(args.roi);
             plane->second->pasteFrom(*bgImg,args.roi, false);
         }
         
@@ -341,6 +342,9 @@ RotoSmear::render(const RenderActionArgs& args)
         
         while (it!=visiblePortion.end()) {
             
+            if (aborted()) {
+                return eStatusOK;
+            }
             
             //Render for each point a dot. Spacing is a percentage of brushSize:
             //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)

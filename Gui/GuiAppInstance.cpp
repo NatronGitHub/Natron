@@ -204,6 +204,8 @@ GuiAppInstance::load(const CLArgs& cl)
     for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
         _imp->findOrCreateToolButtonRecursive(*it);
     }
+    _imp->_gui->sortAllPluginsToolButtons();
+    
     Q_EMIT pluginsPopulated();
 
     ///show the gui
@@ -399,7 +401,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
     }
 
     ///must be done after the viewer gui has been created
-    if ( node->isRotoNode() || node->isRotoPaintingNode() ) {
+    if (node->isRotoPaintingNode()) {
         _imp->_gui->createNewRotoInterface( nodegui.get() );
     }
 

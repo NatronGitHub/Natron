@@ -163,6 +163,8 @@ public:
     void pasteNodeClipBoards(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
     
+    QPointF getRootPos() const;
+    
 public Q_SLOTS:
 
     void deleteSelection();

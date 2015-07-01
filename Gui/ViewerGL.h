@@ -168,12 +168,15 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const boost::shared_ptr<Natron::Image>& image,
+                                            Natron::ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double gamma, double offset, int lut, int pboIndex,
                                             unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
-                                            int textureIndex) OVERRIDE FINAL;
+                                            int textureIndex,
+                                            const RectI& roi,
+                                            bool updateOnlyRoi) OVERRIDE FINAL;
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     
@@ -222,7 +225,6 @@ public Q_SLOTS:
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex,int x = INT_MAX,int y = INT_MAX) OVERRIDE FINAL;
-
 
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
@@ -321,6 +323,7 @@ public:
     bool getZoomOrPannedSinceLastFit() const;
 
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -524,8 +527,11 @@ private:
                          const QPointF & zoomPos,
                          double zoomScreenPixelWidth,
                          double zoomScreenPixelHeight);
-
+    
     void updateInfoWidgetColorPicker(const QPointF & imgPos,
+                                     const QPoint & widgetPos);
+
+    void updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                                      const QPoint & widgetPos,
                                      int width,
                                      int height,
@@ -533,10 +539,15 @@ private:
                                      const RectD & dispW, // in canonical coordinates
                                      int texIndex);
     void updateRectangleColorPicker();
+    void updateRectangleColorPickerInternal();
+    
+    
     /**
      * @brief X and Y are in widget coords!
      **/
     bool pickColor(double x,double y);
+    bool pickColorInternal(double x, double y);
+    
 
     static double currentTimeForEvent(QInputEvent* e);
 

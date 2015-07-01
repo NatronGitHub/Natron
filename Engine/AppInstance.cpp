@@ -415,7 +415,7 @@ AppInstance::load(const CLArgs& cl)
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
-        
+
         QFileInfo info(cl.getFilename());
         if (!info.exists()) {
             throw std::invalid_argument(tr("Specified file does not exist").toStdString());
@@ -430,7 +430,6 @@ AppInstance::load(const CLArgs& cl)
             }
             
             getWritersWorkForCL(cl, writersWork);
-            startWritersRendering(writersWork);
 
         } else if (info.suffix() == "py") {
             
@@ -627,7 +626,8 @@ static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect:
     
     if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
         return 10;
-    } else if (plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT) {
+    } else if (plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT ||
+               plugin->getPluginID() == PLUGINID_NATRON_ROTO) {
         return 11;
     }
     
@@ -676,8 +676,15 @@ AppInstance::createNodeInternal(const QString & pluginID,
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
 
+    QString findId;
+    //Roto has moved to a built-in plugin
+    if (userEdited && pluginID == PLUGINID_OFX_ROTO) {
+        findId = PLUGINID_NATRON_ROTO;
+    } else {
+        findId = pluginID;
+    }
     try {
-        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
+        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
@@ -696,6 +703,11 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return node;
     }
     
+    if (!plugin->getIsUserCreatable() && userEdited) {
+        //The plug-in should not be instantiable by the user
+        qDebug() << "Attempt to create" << pluginID << "which is not user creatable";
+        return node;
+    }
 
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {

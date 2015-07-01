@@ -298,6 +298,8 @@ enum PixmapEnum
     NATRON_PIXMAP_MERGE_UNDER,
     NATRON_PIXMAP_MERGE_XOR,
     
+    NATRON_PIXMAP_ROTO_NODE_ICON,
+    
     NATRON_PIXMAP_LINK_CURSOR,
     
     NATRON_PIXMAP_APP_ICON,
@@ -460,6 +462,7 @@ enum MergingFunctionEnum
 {
     eMergeATop = 0,
     eMergeAverage,
+    eMergeColor,
     eMergeColorBurn,
     eMergeColorDodge,
     eMergeConjointOver,
@@ -472,13 +475,15 @@ enum MergingFunctionEnum
     eMergeFrom,
     eMergeGeometric,
     eMergeHardLight,
+    eMergeHue,
     eMergeHypot,
     eMergeIn,
-    eMergeInterpolated,
+   // eMergeInterpolated,
+    eMergeLuminosity,
     eMergeMask,
     eMergeMatte,
-    eMergeLighten,
-    eMergeDarken,
+    eMergeMax,
+    eMergeMin,
     eMergeMinus,
     eMergeMultiply,
     eMergeOut,
@@ -487,6 +492,7 @@ enum MergingFunctionEnum
     eMergePinLight,
     eMergePlus,
     eMergeReflect,
+    eMergeSaturation,
     eMergeScreen,
     eMergeSoftLight,
     eMergeStencil,

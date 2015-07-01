@@ -19,16 +19,17 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QDesktopWidget>
 #include <QApplication>
-#include <QTextDocument> // for Qt::convertFromPlainText
 #include <QDialogButtonBox>
 #include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Settings.h"
+
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
+#include "Gui/Utils.h"
 
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
@@ -52,11 +53,11 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _restoreDefaultsB = new Button( tr("Restore defaults") );
-    _restoreDefaultsB->setToolTip( Qt::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
+    _restoreDefaultsB->setToolTip( Natron::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
     _cancelB = new Button( tr("Discard") );
-    _cancelB->setToolTip( Qt::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
+    _cancelB->setToolTip( Natron::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
     _okB = new Button( tr("Save") );
-    _okB->setToolTip( Qt::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
+    _okB->setToolTip( Natron::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
     _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
     _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);

@@ -34,8 +34,10 @@
 #include "Gui/GuiMacros.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ScriptTextEdit.h"
+#include "Gui/Utils.h"
 
 #include "Engine/Settings.h"
+
 struct ScriptEditorPrivate
 {
     
@@ -131,25 +133,25 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect(_imp->redoB, SIGNAL(clicked(bool)), this, SLOT(onRedoClicked()));
     
     _imp->clearHistoB = new Button(QIcon(clearHistoPix),"",_imp->buttonsContainer);
-    _imp->clearHistoB->setToolTip(Qt::convertFromPlainText(tr("Clear history."), Qt::WhiteSpaceNormal));
+    _imp->clearHistoB->setToolTip(Natron::convertFromPlainText(tr("Clear history."), Qt::WhiteSpaceNormal));
     _imp->clearHistoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearHistoB->setFocusPolicy(Qt::NoFocus);
     QObject::connect(_imp->clearHistoB, SIGNAL(clicked(bool)), this, SLOT(onClearHistoryClicked()));
     
     _imp->sourceScriptB = new Button(QIcon(sourceScriptPix),"",_imp->buttonsContainer);
-    _imp->sourceScriptB->setToolTip(Qt::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal));
+    _imp->sourceScriptB->setToolTip(Natron::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal));
     _imp->sourceScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->sourceScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->sourceScriptB, SIGNAL(clicked(bool)), this, SLOT(onSourceScriptClicked()));
     
     _imp->loadScriptB = new Button(QIcon(loadScriptPix),"",_imp->buttonsContainer);
-    _imp->loadScriptB->setToolTip(Qt::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal));
+    _imp->loadScriptB->setToolTip(Natron::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal));
     _imp->loadScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->loadScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->loadScriptB, SIGNAL(clicked(bool)), this, SLOT(onLoadScriptClicked()));
     
     _imp->saveScriptB = new Button(QIcon(saveScriptPix),"",_imp->buttonsContainer);
-    _imp->saveScriptB->setToolTip(Qt::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal));
+    _imp->saveScriptB->setToolTip(Natron::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal));
     _imp->saveScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->saveScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->saveScriptB, SIGNAL(clicked(bool)), this, SLOT(onSaveScriptClicked()));
@@ -167,7 +169,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     icShowHide.addPixmap(outputVisiblePix,QIcon::Normal,QIcon::On);
     icShowHide.addPixmap(outputHiddenPix,QIcon::Normal,QIcon::Off);
     _imp->showHideOutputB = new Button(icShowHide,"",_imp->buttonsContainer);
-    _imp->showHideOutputB->setToolTip(Qt::convertFromPlainText(tr("Show/Hide the output area."), Qt::WhiteSpaceNormal));
+    _imp->showHideOutputB->setToolTip(Natron::convertFromPlainText(tr("Show/Hide the output area."), Qt::WhiteSpaceNormal));
     _imp->showHideOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->showHideOutputB->setCheckable(true);
     _imp->showHideOutputB->setChecked(true);
@@ -400,7 +402,7 @@ ScriptEditor::onExecScriptClicked()
     std::string error,output;
     
     if (!Natron::interpretPythonScript(script.toStdString(), &error, &output)) {
-        _imp->outputEdit->append(Qt::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
+        _imp->outputEdit->append(Natron::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
     } else {
         QString toAppend(script);
         if (!output.empty()) {

@@ -84,6 +84,8 @@ public:
     void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
     
     Param* getProjectParam(const std::string& name) const;
+    
+    void writeToScriptEditor(const std::string& message);
 };
 
 

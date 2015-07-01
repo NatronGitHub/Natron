@@ -299,9 +299,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],thisNode.get()) ) {
-                    std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + oldInputs[j];
-                    appPTR->writeToOfxLog_mt_safe(message.c_str());
-                    mustShowErrorsLog =true;
+                    qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << oldInputs[j].c_str()
+                    << "[This is normal if loading a PyPlug]";
                 }
             }
         } else {
@@ -316,9 +315,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, thisNode.get())) {
-                    std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + it2->second;
-                    appPTR->writeToOfxLog_mt_safe(message.c_str());
-                    mustShowErrorsLog =true;
+                    qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << it2->second.c_str()
+                    << "[This is normal if loading a PyPlug]";
                 }
             }
         }
@@ -336,9 +334,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first.get()) ) {
-                    std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + oldInputs[j];
-                    appPTR->writeToOfxLog_mt_safe(message.c_str());
-                    mustShowErrorsLog =true;
+                    qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << oldInputs[j].c_str()
+                    << "[This is normal if loading a PyPlug]";
                     
                 }
             }
@@ -354,9 +351,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first.get())) {
-                    std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + it2->second;
-                    appPTR->writeToOfxLog_mt_safe(message.c_str());
-                    mustShowErrorsLog =true;
+                    qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << it2->second.c_str()
+                    << "[This is normal if loading a PyPlug]";
                 }
             }
         }

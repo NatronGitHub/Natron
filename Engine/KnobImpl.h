@@ -862,6 +862,10 @@ Knob<T>::setValue(const T & v,
     ///If we cannot set value, queue it
     if (holder && !holder->canSetValue()) {
         
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
+        
         KnobHelper::ValueChangedReturnCodeEnum returnValue;
         
         SequenceTime time = getCurrentTime();
@@ -1140,7 +1144,9 @@ Knob<T>::setValueAtTime(int time,
     ///If we cannot set value, queue it
     if (holder && !holder->canSetValue()) {
         
-    
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time,dimension,v,*newKey,reason));
         
         {
@@ -1177,7 +1183,7 @@ Knob<T>::setValueAtTime(int time,
     if (holder) {
         holder->setHasAnimation(true);
     }
-    guiCurveCloneInternalCurve(dimension);
+    guiCurveCloneInternalCurve(dimension, reason);
     
     if (_signalSlotHandler && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
@@ -1652,6 +1658,10 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
+        assert(holder);
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1663,7 +1673,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     bool ret = curve->addKeyFrame(k);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, Natron::eValueChangedReasonUserEdited);
         evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
@@ -1678,6 +1688,10 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
+        assert(holder);
+        if (getEvaluateOnChange()) {
+            holder->abortAnyEvaluation();
+        }
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1687,7 +1701,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     bool ret = curve->addKeyFrame(key);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(dimension);
+        guiCurveCloneInternalCurve(dimension, Natron::eValueChangedReasonUserEdited);
         evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;

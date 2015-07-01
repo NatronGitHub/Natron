@@ -641,7 +641,6 @@ Settings::initializeKnobs()
     _maxUndoRedoNodeGraph->setAnimationEnabled(false);
     _maxUndoRedoNodeGraph->disableSlider();
     _maxUndoRedoNodeGraph->setMinimum(0);
-    _maxUndoRedoNodeGraph->setMaximum(100);
     _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME " "
                                                                                                                          "remembers. Past this limit, older events will be deleted forever, "
                                                                                                                          "allowing to re-use the RAM for other purposes. \n"

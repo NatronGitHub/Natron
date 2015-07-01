@@ -330,6 +330,7 @@ protected:
 
 private:
 
+    void setClosedInternal(bool c);
 
     void initializeKnobsInternal();
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL

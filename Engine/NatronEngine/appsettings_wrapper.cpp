@@ -90,7 +90,7 @@ static PyObject* Sbk_AppSettingsFunc_getParams(PyObject* self)
             std::list<Param*> params = cppSelf->getParams();
             PyObject* ret = PyList_New((int) params.size());
             int idx = 0;
-            for (std::list<Param*>::iterator it = params.begin(); it != params.end(); ++it, ++idx) {
+            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
             PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
             // Ownership transferences.
             Shiboken::Object::getOwnership(item);

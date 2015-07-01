@@ -190,6 +190,9 @@ public:
 
     ToolButton* findExistingToolButton(const QString & name) const;
     ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
+    
+    void sortAllPluginsToolButtons();
+    
     const std::vector<ToolButton*> & getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);

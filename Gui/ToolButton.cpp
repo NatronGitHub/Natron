@@ -15,6 +15,7 @@
 
 #include "ToolButton.h"
 
+#include <algorithm>
 CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
 CLANG_DIAG_ON(deprecated)
@@ -175,3 +176,26 @@ ToolButton::onTriggered()
     _imp->_app->createNode( args );
 }
 
+struct ToolButtonChildrenSortFunctor
+{
+    bool operator() (const ToolButton* lhs,const ToolButton* rhs) {
+        QAction* lAct = lhs->getAction();
+        QAction* rAct = rhs->getAction();
+        assert(lAct && rAct);
+        return lAct->text() < rAct->text();
+    }
+};
+
+void
+ToolButton::sortChildren()
+{
+    if (_imp->_children.empty()) {
+        return;
+    }
+    assert(_imp->_menu);
+    _imp->_menu->clear();
+    std::sort(_imp->_children.begin(), _imp->_children.end(),ToolButtonChildrenSortFunctor());
+    for (std::size_t i = 0; i < _imp->_children.size(); ++i) {
+        _imp->_menu->addAction(_imp->_children[i]->getAction());
+    }
+}

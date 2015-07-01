@@ -166,7 +166,7 @@ Point4D::operator==(const Point4D & o)  const
 }
 
 Matrix3x3::Matrix3x3()
-    : a(1), b(0), c(0), d(1), e(0), f(0), g(0), h(0), i(0)
+    : a(1), b(0), c(0), d(0), e(1), f(0), g(0), h(0), i(1)
 {
 }
 

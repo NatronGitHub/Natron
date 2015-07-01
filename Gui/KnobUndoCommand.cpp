@@ -513,11 +513,15 @@ RestoreDefaultsCommand::redo()
             }
         }
 
-        (*it)->beginChanges();
+        if ((*it)->getHolder()) {
+            (*it)->getHolder()->beginChanges();
+        }
         for (int d = 0; d < (*it)->getDimension(); ++d) {
             (*it)->resetToDefaultValue(d);
         }
-        (*it)->endChanges();
+        if ((*it)->getHolder()) {
+            (*it)->getHolder()->endChanges(true);
+        }
     }
     if (timeline) {
         timeline->removeMultipleKeyframeIndicator(times,true);

@@ -64,7 +64,11 @@
 #define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
 #define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
+#define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
+
+
+#define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
 class QThread;
 class Hash64;
@@ -140,6 +144,9 @@ struct ParallelRenderArgs
     ///If true, the attached paint stroke is being drawn currently
     bool isDuringPaintStrokeCreation;
     
+    ///List of the nodes in the rotopaint tree
+    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+    
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
     Natron::RenderSafetyEnum currentThreadSafety;
@@ -159,6 +166,7 @@ struct ParallelRenderArgs
     , textureIndex(0)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
+    , rotoPaintNodes()
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     {
         
@@ -452,7 +460,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, Natron::ImageComponents* comps) const;
+    int getMaskChannel(int inputNb, Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -571,8 +579,8 @@ public:
                                              bool useDiskCache,
                                              const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
-                                             const RectI& bounds,
-                                             const RectD& rod,
+                                             const RectI* boundsParam,
+                                             const RectD* rodParam,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              const Natron::ImageComponents& components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
@@ -630,6 +638,7 @@ public:
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
+                                  const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
@@ -711,6 +720,8 @@ public:
 
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void abortAnyEvaluation() OVERRIDE FINAL;
+
     virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
@@ -741,6 +752,8 @@ public:
     void getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const;
 
     void addThreadLocalInputImageTempPointer(int inputNb,const boost::shared_ptr<Natron::Image> & img);
+
+    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -780,6 +793,7 @@ public:
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
         bool byPassCache;
+        bool processChannels[4];
     };
 
 protected:
@@ -976,9 +990,7 @@ public:
 
 protected:
 
-virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
-{
-}
+    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/) {}
 
 public:
 
@@ -1224,7 +1236,10 @@ public:
         std::map<int,Natron::ImagePremultiplicationEnum> inputPremult;
         
         ImagePlanesToRender()
-        : rectsToRender(), planes(), isBeingRenderedElsewhere(false)
+        : rectsToRender()
+        , planes()
+        , isBeingRenderedElsewhere(false)
+        , outputPremult(eImagePremultiplicationPremultiplied)
         {
         
         }
@@ -1351,6 +1366,7 @@ public:
     * @brief Returns the components available on each input for this effect at the given time.
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
+    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes) ;
 
 
     /**
@@ -1380,6 +1396,11 @@ public:
     **/
     virtual bool isHostMixingEnabled() const { return false; }
 
+    void getNonMaskInputsAvailableComponents(SequenceTime time,
+                                             int view,
+                                             bool preferExistingComponents,
+                                             ComponentsAvailableMap* comps,
+                                             std::list<Natron::EffectInstance*>* markedNodes);
 
 private:
 
@@ -1731,6 +1752,7 @@ private:
                                           bool renderUseScaleOneInputs,
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
+                                          const RectI& renderMappedRectToRender,
                                           const RectI & downscaledRectToRender,
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
@@ -1748,6 +1770,14 @@ private:
 };
 
 
+class EffectPointerThreadProperty_RAII
+{
+public:
+    
+    EffectPointerThreadProperty_RAII(Natron::EffectInstance* effect);
+    
+    ~EffectPointerThreadProperty_RAII();
+};
 
 
 

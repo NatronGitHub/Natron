@@ -109,7 +109,7 @@ struct TextureRect
         return true;
     }
     
-    bool contains(const TextureRect& other)
+    bool contains(const TextureRect& other) const
     {
         return other.x1 >= x1 &&
         other.y1 >= y1 &&

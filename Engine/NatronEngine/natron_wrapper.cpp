@@ -1281,6 +1281,45 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_RIPPLE_EDIT_DISABLED", (long) Natron::NATRON_PIXMAP_RIPPLE_EDIT_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_BLUR", (long) Natron::NATRON_PIXMAP_ROTOPAINT_BLUR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED", (long) Natron::NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED", (long) Natron::NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_BURN", (long) Natron::NATRON_PIXMAP_ROTOPAINT_BURN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_CLONE", (long) Natron::NATRON_PIXMAP_ROTOPAINT_CLONE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_DODGE", (long) Natron::NATRON_PIXMAP_ROTOPAINT_DODGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_ERASER", (long) Natron::NATRON_PIXMAP_ROTOPAINT_ERASER))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED", (long) Natron::NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED", (long) Natron::NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_REVEAL", (long) Natron::NATRON_PIXMAP_ROTOPAINT_REVEAL))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_SHARPEN", (long) Natron::NATRON_PIXMAP_ROTOPAINT_SHARPEN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_SMEAR", (long) Natron::NATRON_PIXMAP_ROTOPAINT_SMEAR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTOPAINT_SOLID", (long) Natron::NATRON_PIXMAP_ROTOPAINT_SOLID))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_BOLD_CHECKED", (long) Natron::NATRON_PIXMAP_BOLD_CHECKED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
@@ -1311,6 +1350,9 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_ADD_TRACK", (long) Natron::NATRON_PIXMAP_ADD_TRACK))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ENTER_GROUP", (long) Natron::NATRON_PIXMAP_ENTER_GROUP))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_SETTINGS", (long) Natron::NATRON_PIXMAP_SETTINGS))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
@@ -1333,6 +1375,18 @@ void init_Natron(PyObject* module)
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED", (long) Natron::NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_GAMMA_ENABLED", (long) Natron::NATRON_PIXMAP_VIEWER_GAMMA_ENABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_GAMMA_DISABLED", (long) Natron::NATRON_PIXMAP_VIEWER_GAMMA_DISABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_GAIN_ENABLED", (long) Natron::NATRON_PIXMAP_VIEWER_GAIN_ENABLED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_GAIN_DISABLED", (long) Natron::NATRON_PIXMAP_VIEWER_GAIN_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT", (long) Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT))
@@ -1462,6 +1516,9 @@ void init_Natron(PyObject* module)
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_XOR", (long) Natron::NATRON_PIXMAP_MERGE_XOR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_LINK_CURSOR", (long) Natron::NATRON_PIXMAP_LINK_CURSOR))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_APP_ICON", (long) Natron::NATRON_PIXMAP_APP_ICON))

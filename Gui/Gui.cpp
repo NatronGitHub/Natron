@@ -20,7 +20,6 @@
 #include <QtCore/QTextStream>
 #include <QWaitCondition>
 #include <QMutex>
-#include <QTextDocument> // for Qt::convertFromPlainText
 #include <QCoreApplication>
 #include <QAction>
 #include <QSettings>
@@ -56,10 +55,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include <cairo/cairo.h>
 
 #include <boost/version.hpp>
-CLANG_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
-CLANG_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 
 #include "Engine/ViewerInstance.h"
@@ -108,6 +107,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
 #define kPropertiesBinName "properties"
 
@@ -1214,7 +1214,7 @@ GuiPrivate::createPropertiesBinGui()
     appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix), "", propertiesAreaButtonsContainer);
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _clearAllPanelsButton->setToolTip( Qt::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+    _clearAllPanelsButton->setToolTip( Natron::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL( clicked(bool) ), _gui, SLOT( clearAllVisiblePanels() ) );
@@ -1228,7 +1228,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _minimizeAllPanelsButtons->setToolTip( Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( Natron::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL( clicked(bool) ), _gui, SLOT( minimizeMaximizeAllPanels(bool) ) );
 
@@ -1236,7 +1236,7 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
+    _maxPanelsOpenedSpinBox->setToolTip( Natron::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
                                                                            "that an unlimited number of panels can be opened."),
                                                                   Qt::WhiteSpaceNormal) );
@@ -1604,6 +1604,9 @@ Gui::restoreLayout(bool wipePrevious,
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
 
+        QDesktopWidget* desktop = QApplication::desktop();
+        QRect screen = desktop->screenGeometry();
+        
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
              it != layoutSerialization._windows.end(); ++it) {
@@ -1643,7 +1646,7 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            window->resize( (*it)->w, (*it)->h );
+            window->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
             window->move( QPoint( (*it)->x, (*it)->y ) );
         }
 
@@ -1668,7 +1671,7 @@ Gui::restoreLayout(bool wipePrevious,
                     FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-                    fWindow->resize( (*it)->w, (*it)->h );
+                    fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
                 }
             }
         }
@@ -2032,36 +2035,57 @@ Gui::reloadStylesheet()
 void
 Gui::loadStyleSheet()
 {
-    double selR, selG, selB;
-    double baseR, baseG, baseB;
-    double sunkR, sunkG, sunkB;
-    double raisR, raisG, raisB;
-    double txtR, txtG, txtB;
-    double intR, intG, intB;
-    double kfR, kfG, kfB;
-    double eR, eG, eB;
-    double altR, altG, altB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
-    settings->getSelectionColor(&selR, &selG, &selB);
-    settings->getBaseColor(&baseR, &baseG, &baseB);
-    settings->getSunkenColor(&sunkR, &sunkG, &sunkB);
-    settings->getRaisedColor(&raisR, &raisG, &raisB);
-    settings->getTextColor(&txtR, &txtG, &txtB);
-    settings->getAltTextColor(&altR, &altG, &altB);
-    settings->getInterpolatedColor(&intR, &intG, &intB);
-    settings->getKeyframeColor(&kfR, &kfG, &kfB);
-    settings->getExprColor(&eR, &eG, &eB);
+    QString selStr, sunkStr, baseStr, raisedStr, txtStr, intStr, kfStr, eStr, altStr;
+
     //settings->
-    QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
-    QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
-    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseG) * 256).arg(Natron::clamp(baseB) * 256);
-    QString raisedStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(raisR) * 256).arg(Natron::clamp(raisG) * 256).arg(Natron::clamp(raisB) * 256);
-    QString txtStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(txtR) * 256).arg(Natron::clamp(txtG) * 256).arg(Natron::clamp(txtB) * 256);
-    QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
-    QString kfStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(kfR) * 256).arg(Natron::clamp(kfG) * 256).arg(Natron::clamp(kfB) * 256);
-    QString eStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(eR) * 256).arg(Natron::clamp(eG) * 256).arg(Natron::clamp(eB) * 256);
-    QString altStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(altR) * 256).arg(Natron::clamp(altG) * 256).arg(Natron::clamp(altB) * 256);
+    {
+        double r, g, b;
+        settings->getSelectionColor(&r, &g, &b);
+        selStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getBaseColor(&r, &g, &b);
+        baseStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getRaisedColor(&r, &g, &b);
+        raisedStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getSunkenColor(&r, &g, &b);
+        sunkStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getTextColor(&r, &g, &b);
+        txtStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getInterpolatedColor(&r, &g, &b);
+        intStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getKeyframeColor(&r, &g, &b);
+        kfStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getExprColor(&r, &g, &b);
+        eStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+    {
+        double r, g, b;
+        settings->getAltTextColor(&r, &g, &b);
+        altStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+    }
+
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
     if ( qss.open(QIODevice::ReadOnly
@@ -2145,22 +2169,29 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     std::map<NodeGui*, TrackerGui*> trackerNodes;
     std::list<NodeGui*> trackerNodesList;
     std::pair<NodeGui*, TrackerGui*> currentTracker;
-
-    if ( !_imp->_viewerTabs.empty() ) {
-        ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
-        ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
-    } else {
-        const std::list<boost::shared_ptr<NodeGui> > & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-            if ( (*it)->getNode()->getRotoContext() ) {
-                rotoNodesList.push_back( it->get() );
-                if (!currentRoto.first) {
-                    currentRoto.first = it->get();
-                }
-            } else if ( (*it)->getNode()->isPointTrackerNode() ) {
-                trackerNodesList.push_back( it->get() );
-                if (!currentTracker.first) {
-                    currentTracker.first = it->get();
+    
+    if (!viewer) {
+        return 0;
+    }
+    
+    //Don't create tracker & roto interface for file dialog preview viewer
+    if (viewer->getNode()->getScriptName() != NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) {
+        if ( !_imp->_viewerTabs.empty() ) {
+            ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
+            ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
+        } else {
+            const std::list<boost::shared_ptr<NodeGui> > & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+                if ( (*it)->getNode()->getRotoContext() ) {
+                    rotoNodesList.push_back( it->get() );
+                    if (!currentRoto.first) {
+                        currentRoto.first = it->get();
+                    }
+                } else if ( (*it)->getNode()->isPointTrackerNode() ) {
+                    trackerNodesList.push_back( it->get() );
+                    if (!currentTracker.first) {
+                        currentTracker.first = it->get();
+                    }
                 }
             }
         }
@@ -2596,10 +2627,18 @@ Gui::findExistingToolButton(const QString & label) const
     return NULL;
 }
 
+void
+Gui::sortAllPluginsToolButtons()
+{
+    for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
+        _imp->_toolButtons[i]->sortChildren();
+    }
+}
+
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {
-    if ( !Natron::isPluginCreatable( plugin->getID().toStdString() ) ) {
+    if (!plugin->getIsUserCreatable()) {
         return 0;
     }
 
@@ -2643,7 +2682,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      1,
-                                                     0);
+                                                     0,
+                                                     true);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it
@@ -2856,7 +2896,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Qt::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( Natron::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -3510,6 +3550,56 @@ Gui::informationDialog(const std::string & title,
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
+namespace {
+    // resizable message box,
+    // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
+    // and http://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4
+    class MyMessageBox : public QMessageBox {
+    public:
+        explicit MyMessageBox(QWidget *parent = 0)
+        : QMessageBox(parent)
+        {
+            setSizeGripEnabled(true);
+        }
+
+        MyMessageBox(Icon icon, const QString &title, const QString &text,
+                    StandardButtons buttons = NoButton, QWidget *parent = 0,
+                    Qt::WindowFlags flags = Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint)
+        : QMessageBox(icon, title, text, buttons, parent, flags)
+        {
+            setSizeGripEnabled(true);
+        }
+    private:
+        bool event(QEvent *e) OVERRIDE FINAL
+        {
+            bool result = QMessageBox::event(e);
+            
+            //QMessageBox::event in this case will call setFixedSize on the dialog frame, making it not resizable by the user
+            if (e->type() == QEvent::LayoutRequest || e->type() == QEvent::Resize) {
+                setMinimumHeight(0);
+                setMaximumHeight(QWIDGETSIZE_MAX);
+                setMinimumWidth(0);
+                setMaximumWidth(QWIDGETSIZE_MAX);
+                setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                
+                // make the detailed text expanding
+                QTextEdit *textEdit = findChild<QTextEdit *>();
+                
+                if (textEdit) {
+                    textEdit->setMinimumHeight(0);
+                    textEdit->setMaximumHeight(QWIDGETSIZE_MAX);
+                    textEdit->setMinimumWidth(0);
+                    textEdit->setMaximumWidth(QWIDGETSIZE_MAX);
+                    textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                }
+                
+               
+            }
+            return result;
+        }
+    };
+}
+
 void
 Gui::onDoDialog(int type,
                 const QString & title,
@@ -3518,35 +3608,43 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
 
-    if (type == 0) {
+    if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setWindowFlags(critical.windowFlags() | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         ignore_result( critical.exec() );
-    } else if (type == 1) {
+    } else if (type == 1) { // warning dialog
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
         warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
         ignore_result( warning.exec() );
-    } else if (type == 2) {
-        QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        info.setTextFormat(Qt::RichText);
-        info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
-        if (msg.count() > 1000) {
+    } else if (type == 2) { // information dialog
+        if (msg.count() < 1000) {
+            QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+            info.setTextFormat(Qt::RichText);
+            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
+            ignore_result( info.exec() );
+        } else {
+            // text may be very long: use resizable QMessageBox
+            MyMessageBox info(QMessageBox::Information, title, msg.left(1000), QMessageBox::NoButton, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
+            info.setTextFormat(Qt::RichText);
+            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
             QGridLayout *layout = qobject_cast<QGridLayout *>( info.layout() );
             if (layout) {
                 QTextEdit *edit = new QTextEdit();
                 edit->setReadOnly(true);
                 edit->setAcceptRichText(true);
                 edit->setHtml(msg);
+                layout->setRowStretch(1, 0);
                 layout->addWidget(edit, 0, 1);
             }
+            ignore_result( info.exec() );
         }
-        ignore_result( info.exec() );
-    } else {
+    } else { // question dialog
+        assert(type == 3);
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
@@ -3636,7 +3734,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       Natron::StandardButtons buttons,
                                       int defaultB)
 {
-    QString message = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title, content, (Natron::MessageBox::MessageBoxTypeEnum)type, buttons, (Natron::StandardButtonEnum)defaultB, this);
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do Not Show This Again"), &dialog);
 
@@ -5162,8 +5260,7 @@ FloatingWidget::removeEmbeddedWidget()
     if (!_embeddedWidget) {
         return;
     }
-    //_scrollArea->setViewport(0);
-    _embeddedWidget->setParent(NULL);
+    _scrollArea->takeWidget();
     _embeddedWidget = 0;
     // _embeddedWidget->setVisible(false);
     hide();
@@ -5263,7 +5360,7 @@ Gui::renderAllViewers()
 
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(false);
+            (*it)->getInternalNode()->renderCurrentFrame(true);
         }
     }
 }

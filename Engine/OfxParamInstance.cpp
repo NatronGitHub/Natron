@@ -64,20 +64,30 @@ getParamLabel(OFX::Host::Param::Instance* param)
     return label;
 }
 
+
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
 /// in a generalized manner
 namespace OfxKeyFrame {
 OfxStatus
-getNumKeys(boost::shared_ptr<KnobI> knob,
+getNumKeys(KnobI* knob,
            unsigned int &nKeys)
 {
     int sum = 0;
 
     if (knob->canAnimate()) {
         for (int i = 0; i < knob->getDimension(); ++i) {
-            boost::shared_ptr<Curve> curve = knob->getCurve(i);
-            assert(curve);
-            sum += curve->getKeyFramesCount();
+            std::list<KnobI*> dependencies;
+            if (knob->getExpressionDependencies(i, dependencies)) {
+                for (std::list<KnobI*>::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
+                    unsigned int tmp;
+                    getNumKeys(*it, tmp);
+                    sum += tmp;
+                }
+            } else {
+                boost::shared_ptr<Curve> curve = knob->getCurve(i);
+                assert(curve);
+                sum += curve->getKeyFramesCount();
+            }
         }
     }
     nKeys =  sum;
@@ -349,7 +359,7 @@ boost::shared_ptr<KnobI> OfxIntegerInstance::getKnob() const
 OfxStatus
 OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -588,7 +598,7 @@ OfxDoubleInstance::isAnimated() const
 OfxStatus
 OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -723,7 +733,7 @@ boost::shared_ptr<KnobI> OfxBooleanInstance::getKnob() const
 OfxStatus
 OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -904,7 +914,7 @@ OfxChoiceInstance::getKnob() const
 OfxStatus
 OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -1131,7 +1141,7 @@ OfxRGBAInstance::isAnimated() const
 OfxStatus
 OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -1342,7 +1352,7 @@ OfxRGBInstance::isAnimated() const
 OfxStatus
 OfxRGBInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -1604,7 +1614,7 @@ OfxDouble2DInstance::isAnimated() const
 OfxStatus
 OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -1797,7 +1807,7 @@ OfxInteger2DInstance::getKnob() const
 OfxStatus
 OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -2052,7 +2062,7 @@ OfxDouble3DInstance::isAnimated() const
 OfxStatus
 OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -2259,7 +2269,7 @@ OfxInteger3DInstance::getKnob() const
 OfxStatus
 OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus
@@ -2710,7 +2720,7 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
         return nKeys = 0;
     }
 
-    return OfxKeyFrame::getNumKeys(knob, nKeys);
+    return OfxKeyFrame::getNumKeys(knob.get(), nKeys);
 }
 
 OfxStatus
@@ -2942,7 +2952,7 @@ OfxCustomInstance::setEvaluateOnChange()
 OfxStatus
 OfxCustomInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(_knob.lock().get(), nKeys);
 }
 
 OfxStatus

@@ -228,6 +228,8 @@ struct ViewerGL::Implementation
     , pressureOnPress(1.)
     , pressureOnRelease(1.)
     , wheelDeltaSeekFrame(0)
+    , lastTextureRoi()
+    , isUpdatingTexture(false)
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -350,6 +352,9 @@ struct ViewerGL::Implementation
     double pressureOnPress, pressureOnRelease;
 
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
+    
+    RectD lastTextureRoi;
+    bool isUpdatingTexture;
 
 public:
     
@@ -1428,6 +1433,13 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 drawPickerPixel();
             }
         }
+        
+        if (_imp->isUpdatingTexture) {
+            glBegin(GL_LINES);
+            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y2);
+            glVertex2d(_imp->lastTextureRoi.x2, _imp->lastTextureRoi.y1 - 1);
+            glEnd();
+        }
 
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -2403,6 +2415,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const boost::shared_ptr<Natron::Image>& image,
+                                     Natron::ImageBitDepthEnum depth,
                                      int time,
                                      const RectD& rod,
                                      size_t bytesCount,
@@ -2414,20 +2427,65 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int pboIndex,
                                      unsigned int mipMapLevel,
                                      Natron::ImagePremultiplicationEnum premult,
-                                     int textureIndex)
+                                     int textureIndex,
+                                     const RectI& roi,
+                                     bool updateOnlyRoi)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     (void)glGetError();
+    
+    
     GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     GLenum err = glGetError();
     if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
         qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
     }
+    
+    GLuint pboId = getPboID(pboIndex);
+    
+    Natron::ImageBitDepthEnum bd = getBitDepth();
+    assert(textureIndex == 0 || textureIndex == 1);
+    
+    if (updateOnlyRoi) {
+        //Make sure the texture is allocated on the full portion
+        Texture::DataTypeEnum type;
+        if (bd == Natron::eImageBitDepthByte) {
+            type = Texture::eDataTypeByte;
+        } else if (bd == Natron::eImageBitDepthFloat) {
+            type = Texture::eDataTypeFloat;
+            //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+        }
+        if (_imp->displayTextures[textureIndex]->mustAllocTexture(region)) {
+            ///Initialize with black and transparant
+            std::size_t bytesToInit = region.w * region.h * 4;
+            if (depth == eImageBitDepthFloat) {
+                bytesToInit *= sizeof(float);
+            }
+            glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesToInit, NULL, GL_DYNAMIC_DRAW_ARB);
+            GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+            glCheckError();
+            assert(ret);
+            memset(ret, 0, bytesToInit);
+            glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+            glCheckError();
+            _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, type, roi, false);
+            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+            glCheckError();
+        }
+    }
+    
+    _imp->isUpdatingTexture = updateOnlyRoi;
+    if (updateOnlyRoi) {
+        roi.toCanonical_noClipping(mipMapLevel, 1., &_imp->lastTextureRoi);
+    }
+    
+    
 
-    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, getPboID(pboIndex) );
+    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
@@ -2438,13 +2496,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    Natron::ImageBitDepthEnum bd = getBitDepth();
-    assert(textureIndex == 0 || textureIndex == 1);
+    
     if (bd == Natron::eImageBitDepthByte) {
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte, roi, updateOnlyRoi);
     } else if (bd == Natron::eImageBitDepthFloat) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat);
+        _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat, roi, updateOnlyRoi);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
@@ -2555,9 +2612,6 @@ ViewerGL::setLut(int lut)
 bool
 ViewerGL::supportsGLSL() const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     return _imp->supportsGLSL;
 }
 
@@ -2618,16 +2672,18 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     if (!overlaysCaught &&
         (buttonDownIsMiddle(e) ||
-         ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
+         ( (e)->buttons() == Qt::RightButton && buttonMetaAlt(e) == Qt::AltModifier )) &&
         !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
     }
     if (!overlaysCaught &&
-        (e->buttons() & Qt::MiddleButton) &&
-        (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
-        // Alt + middle = zoom or Left + middle = zoom
+        (((e->buttons() & Qt::MiddleButton) &&
+          (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+         ((e->buttons() & Qt::LeftButton) &&
+          (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier))))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     }
@@ -2652,6 +2708,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateDraggingWipeCenter;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         _imp->overlay &&
@@ -2660,6 +2717,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateDraggingWipeMixHandle;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         _imp->overlay &&
@@ -2668,6 +2726,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
         _imp->ms = eMouseStateRotatingWipeHandle;
         overlaysCaught = true;
+        mustRedraw = true;
     }
 
     // process plugin overlays
@@ -2711,6 +2770,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottom edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2719,6 +2779,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the left edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiLeftEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2726,6 +2787,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the right edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiRightEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2734,6 +2796,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the top edge of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopEdge;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2743,6 +2806,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
+            mustRedraw = true;
         }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2751,6 +2815,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the topleft corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopLeft;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2759,6 +2824,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the topright corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiTopRight;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2767,6 +2833,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottomleft corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomLeft;
         overlaysCaught = true;
+        mustRedraw = true;
     }
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
@@ -2775,6 +2842,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // start dragging the bottomright corner of the user ROI
         _imp->ms = eMouseStateDraggingRoiBottomRight;
         overlaysCaught = true;
+        mustRedraw = true;
     }
 
     if (!overlaysCaught &&
@@ -2923,12 +2991,14 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
         zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
-    Format dispW = getDisplayWindow();
-    RectD canonicalDispW = dispW.toCanonicalFormat();
-    if (!gui->getApp()->getIsUserPainting().get()) {
-        for (int i = 0; i < 2; ++i) {
-            const RectD& rod = getRoD(i);
-            updateInfoWidgetColorPicker(zoomPos, QPoint(x,y), width(), height(), rod, canonicalDispW, i);
+    
+    updateInfoWidgetColorPicker(zoomPos, QPoint(x,y));
+    if (_imp->viewerTab->isViewersSynchroEnabled()) {
+        const std::list<ViewerTab*>& allViewers = gui->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            if ((*it)->getViewer() != this) {
+                (*it)->getViewer()->updateInfoWidgetColorPicker(zoomPos, QPoint(x,y));
+            }
         }
     }
     
@@ -4350,10 +4420,8 @@ ViewerGL::getViewerTab() const
     return _imp->viewerTab;
 }
 
-// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool
-ViewerGL::pickColor(double x,
-                    double y)
+ViewerGL::pickColorInternal(double x, double y)
 {
     float r,g,b,a;
     QPointF imgPos;
@@ -4361,7 +4429,7 @@ ViewerGL::pickColor(double x,
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
-
+    
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool ret = false;
@@ -4384,12 +4452,49 @@ ViewerGL::pickColor(double x,
             _imp->infoViewer[i]->setColorValid(false);
         }
     }
-
+    
     return ret;
 }
 
+// used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
+bool
+ViewerGL::pickColor(double x,
+                    double y)
+{
+    bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
+    if (isSync) {
+        bool res = false;
+        const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            bool ret = (*it)->getViewer()->pickColorInternal(x, y);
+            if ((*it)->getViewer() == this) {
+                res = ret;
+            }
+        }
+        return res;
+    } else {
+        return pickColorInternal(x, y);
+    }
+}
+
+
 void
 ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
+                                 const QPoint & widgetPos)
+{
+    Format dispW = getDisplayWindow();
+    RectD canonicalDispW = dispW.toCanonicalFormat();
+    if (!_imp->viewerTab->getGui()->getApp()->getIsUserPainting().get()) {
+        for (int i = 0; i < 2; ++i) {
+            const RectD& rod = getRoD(i);
+            updateInfoWidgetColorPickerInternal(imgPos, widgetPos, width(), height(), rod, canonicalDispW, i);
+        }
+    }
+}
+
+
+void
+ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                                       const QPoint & widgetPos,
                                       int width,
                                       int height,
@@ -4445,6 +4550,20 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
 
 void
 ViewerGL::updateRectangleColorPicker()
+{
+    bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
+    if (isSync) {
+        const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it!=allViewers.end(); ++it) {
+            (*it)->getViewer()->updateRectangleColorPickerInternal();
+        }
+    } else {
+        updateRectangleColorPickerInternal();
+    }
+}
+
+void
+ViewerGL::updateRectangleColorPickerInternal()
 {
     float r,g,b,a;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
@@ -4623,6 +4742,12 @@ Natron::ViewerCompositingOperatorEnum
 ViewerGL::getCompositingOperator() const
 {
     return _imp->viewerTab->getCompositingOperator();
+}
+
+void
+ViewerGL::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+{
+    _imp->viewerTab->setCompositingOperator(op);
 }
 
 

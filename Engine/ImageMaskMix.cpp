@@ -39,14 +39,14 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                     for (int c = 0; c < dstNComps; ++c) {
                         if (c < srcNComps) {
                             float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = (PIX)clampIfInt(v);
+                            dst_pixels[c] = clampIfInt<PIX>(v);
                         }
                         
                     }
                 } else {
                     for (int c = 0; c < dstNComps; ++c) {
                         float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = (PIX)clampIfInt(v);
+                        dst_pixels[c] = clampIfInt<PIX>(v);
                     }
                 }
                 
@@ -66,14 +66,14 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                     for (int c = 0; c < dstNComps; ++c) {
                         if (c < srcNComps) {
                             float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = (PIX)clampIfInt(v);
+                            dst_pixels[c] = clampIfInt<PIX>(v);
                         }
                         
                     }
                 } else {
                     for (int c = 0; c < dstNComps; ++c) {
                         float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = (PIX)clampIfInt(v);
+                        dst_pixels[c] = clampIfInt<PIX>(v);
                     }
                 }
             }
@@ -155,10 +155,11 @@ Image::applyMaskMixForSrcComponents(const RectI& roi,
                                     float mix)
 {
     int dstNComps = getComponentsCount();
+    assert(0 < dstNComps && dstNComps <= 4);
     switch (dstNComps) {
-        case 0:
-            applyMaskMixForDstComponents<srcNComps,0>(roi, maskImg, originalImg, masked, maskInvert, mix);
-            break;
+        //case 0:
+        //    applyMaskMixForDstComponents<srcNComps,0>(roi, maskImg, originalImg, masked, maskInvert, mix);
+        //    break;
         case 1:
             applyMaskMixForDstComponents<srcNComps,1>(roi, maskImg, originalImg, masked, maskInvert, mix);
             break;
@@ -205,10 +206,11 @@ Image::applyMaskMix(const RectI& roi,
     assert(!masked || !maskImg || maskImg->getComponents() == ImageComponents::getAlphaComponents());
     
     int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
+    //assert(0 < srcNComps && srcNComps <= 4);
     switch (srcNComps) {
-        case 0:
-            applyMaskMixForSrcComponents<0>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-            break;
+        //case 0:
+        //    applyMaskMixForSrcComponents<0>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+        //    break;
         case 1:
             applyMaskMixForSrcComponents<1>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
             break;

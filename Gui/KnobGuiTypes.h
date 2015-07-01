@@ -882,7 +882,7 @@ public:
     virtual ~Parametric_KnobGui() OVERRIDE;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
-    virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
+    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
 
     
 public Q_SLOTS:
@@ -920,7 +920,7 @@ private:
     Button* _resetButton;
     struct CurveDescriptor
     {
-        KnobCurveGui* curve;
+        boost::shared_ptr<KnobCurveGui> curve;
         QTreeWidgetItem* treeItem;
     };
 

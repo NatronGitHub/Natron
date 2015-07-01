@@ -135,7 +135,7 @@ namespace { // protect local classes in anonymous namespace
         
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
-        std::vector<ImageComponents> compsAvailable;
+        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsAvailable;
         
         MaskSelector()
         : enabled()
@@ -272,6 +272,7 @@ struct Node::Implementation
     , distToNextIn(0.)
     , distToNextOut(0.)
     , useAlpha0ToConvertFromRGBToRGBA(false)
+    , isBeingDestroyed(false)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -460,7 +461,7 @@ struct Node::Implementation
     mutable QMutex createdComponentsMutex;
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
     
-    boost::weak_ptr<RotoStrokeItem> paintStroke;
+    boost::weak_ptr<RotoDrawableItem> paintStroke;
     
     mutable QMutex currentThreadSafetyMutex;
     Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
@@ -479,6 +480,8 @@ struct Node::Implementation
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     bool useAlpha0ToConvertFromRGBToRGBA;
+    
+    bool isBeingDestroyed;
 };
 
 /**
@@ -744,8 +747,6 @@ Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Poi
     
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
-        assert(stroke);
         _imp->lastStrokePoints = points;
         _imp->lastStrokeMovementBbox = lastPointsBbox;
         _imp->wholeStrokeBbox = wholeBbox;
@@ -794,7 +795,7 @@ Node::getPaintStrokeRoD(int time,RectD* bbox) const
     if (duringPaintStroke) {
         *bbox = _imp->wholeStrokeBbox;
     } else {
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
         *bbox = stroke->getBoundingBox(time);
     }
@@ -831,7 +832,8 @@ Node::getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double
     if (_imp->duringPaintStrokeCreation) {
         *points = _imp->lastStrokePoints;
     } else {
-        boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+        RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
         stroke->evaluateStroke(0, time, points);
     }
@@ -863,7 +865,8 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     
     std::list<RectI> restToRender;
-    boost::shared_ptr<RotoStrokeItem> stroke = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     assert(stroke);
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
@@ -1012,6 +1015,11 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         _imp->hash.append(_imp->knobsAge);
         
         ///append all inputs hash
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+        NodePtr attachedStrokeContextNode;
+        if (attachedStroke) {
+            attachedStrokeContextNode = attachedStroke->getContext()->getNode();
+        }
         {
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
             
@@ -1026,13 +1034,12 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
                     }
                 }
             } else {
-                boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
                 for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                     NodePtr input = getInput(i);
                     if (input) {
                         
                         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-                        if (attachedStroke && input->isRotoPaintingNode()) {
+                        if (attachedStroke && input == attachedStrokeContextNode) {
                             continue;
                         }
                         ///Add the index of the input to its hash.
@@ -1044,11 +1051,15 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
             }
         }
         
-        boost::shared_ptr<RotoContext> roto = getRotoContext();
-        if (roto) {
-            U64 rotoAge = roto->getAge();
-            _imp->hash.append(rotoAge);
-        }
+        // We do not append the roto age any longer since now every tool in the RotoContext is backed-up by nodes which
+        // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
+        // node respecitively have their hash correctly set.
+        
+//        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
+//        if (roto) {
+//            U64 rotoAge = roto->getAge();
+//            _imp->hash.append(rotoAge);
+//        }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
@@ -1073,7 +1084,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         assert(*it);
         
         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = (*it)->getAttachedStrokeItem();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = (*it)->getAttachedRotoItem();
         if (isRotoPaint && attachedStroke && attachedStroke->getContext()->getNode().get() == this) {
             continue;
         }
@@ -1081,6 +1092,17 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     }
     
     _imp->liveInstance->onNodeHashChanged(getHashValue());
+    
+    ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
+    if (_imp->rotoContext) {
+        NodeList allItems;
+        _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
+        for (NodeList::iterator it = allItems.begin(); it!=allItems.end(); ++it) {
+            (*it)->computeHashInternal(marked);
+        }
+        
+    }
+    
     
     ///If the node is a group, call it on all nodes in the group
     ///Also force a change to their hash
@@ -1714,6 +1736,9 @@ Node::removeReferences(bool ensureThreadsFinished)
     if (!_imp->liveInstance) {
         return;
     }
+    
+    _imp->isBeingDestroyed = true;
+    
     if (ensureThreadsFinished) {
         getApp()->getProject()->ensureAllProcessingThreadsFinished();
     }
@@ -1723,6 +1748,12 @@ Node::removeReferences(bool ensureThreadsFinished)
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     deleteNodeVariableToPython(getFullyQualifiedName());
+    
+    int maxInputs = getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        disconnectInput(i);
+    }
+    
     _imp->liveInstance.reset();
     if (getGroup()) {
         getGroup()->removeNode(shared_from_this());
@@ -2044,7 +2075,7 @@ Node::setNameInternal(const std::string& name)
                     bool foundEffect = false;
                     for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
                         EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
-                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) ) {
+                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) && isEffect->getNode()->isActivated() ) {
                             foundEffect = true;
                             break;
                         }
@@ -3139,25 +3170,29 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
+    
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
-        
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(input,eInputActionConnect,inputNumber);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return true;
-            }
+    }
+    
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
+            ConnectInputAction action(input,eInputActionConnect,inputNumber);
+            QMutexLocker cql(&_imp->connectionQueueMutex);
+            _imp->connectionQueue.push_back(action);
+            return true;
         }
-        
+    }
+    
+    {
         ///Set the input
+        QMutexLocker l(&_imp->inputsMutex);
         _imp->inputs[inputNumber] = input;
         input->connectOutput(this);
     }
@@ -3225,8 +3260,8 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         
         ///If the node is currently rendering, queue the action instead of executing it
         {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
                 ConnectInputAction action(input,eInputActionReplace,inputNumber);
                 QMutexLocker cql(&_imp->connectionQueueMutex);
                 _imp->connectionQueue.push_back(action);
@@ -3313,8 +3348,8 @@ Node::switchInput0And1()
     
     ///If the node is currently rendering, queue the action instead of executing it
     {
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
             QMutexLocker cql(&_imp->connectionQueueMutex);
             ///Replace input A
             {
@@ -3402,28 +3437,38 @@ Node::disconnectInput(int inputNumber)
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     
+    NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!_imp->inputs[inputNumber]) ) {
             return -1;
         }
-        
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            QMutexLocker k(&_imp->nodeIsRenderingMutex);
-            if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                ConnectInputAction action(_imp->inputs[inputNumber],eInputActionDisconnect,inputNumber);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return inputNumber;
-            }
-        }
-        
-        QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-        _imp->inputs[inputNumber]->disconnectOutput(this);
-        _imp->inputs[inputNumber].reset();
-        
+        inputShared = _imp->inputs[inputNumber];
     }
+    
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
+            ConnectInputAction action(inputShared,eInputActionDisconnect,inputNumber);
+            QMutexLocker cql(&_imp->connectionQueueMutex);
+            _imp->connectionQueue.push_back(action);
+            return inputNumber;
+        }
+    }
+    
+    QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+    inputShared->disconnectOutput(this);
+    
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        _imp->inputs[inputNumber].reset();
+    }
+    
+    if (_imp->isBeingDestroyed) {
+        return -1;
+    }
+    
     Q_EMIT inputChanged(inputNumber);
     onInputChanged(inputNumber);
     computeHash();
@@ -3443,41 +3488,47 @@ Node::disconnectInput(Node* input)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
+    int found = -1;
+    NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i].get() == input) {
-                
-                ///If the node is currently rendering, queue the action instead of executing it
-                {
-                    QMutexLocker k(&_imp->nodeIsRenderingMutex);
-                    if (_imp->nodeIsRendering > 0 && !appPTR->isBackground()) {
-                        ConnectInputAction action(_imp->inputs[i],eInputActionDisconnect,i);
-                        QMutexLocker cql(&_imp->connectionQueueMutex);
-                        _imp->connectionQueue.push_back(action);
-                        return i;
-                    }
-                }
-                
-                _imp->inputs[i].reset();
-                l.unlock();
-                input->disconnectOutput(this);
-                Q_EMIT inputChanged(i);
-                onInputChanged(i);
-                computeHash();
-                
-                _imp->ifGroupForceHashChangeOfInputs();
-                
-                std::string inputChangedCB = getInputChangedCallback();
-                if (!inputChangedCB.empty()) {
-                    _imp->runInputChangedCallback(i, inputChangedCB);
-                }
-                
-                l.relock();
-                
-                return i;
+                inputShared = _imp->inputs[i];
+                found = (int)i;
+                break;
             }
         }
+    }
+    if (found != -1) {
+        ///If the node is currently rendering, queue the action instead of executing it
+        {
+            if (isNodeRendering() && !appPTR->isBackground()) {
+                _imp->liveInstance->abortAnyEvaluation();
+                ConnectInputAction action(inputShared,eInputActionDisconnect,found);
+                QMutexLocker cql(&_imp->connectionQueueMutex);
+                _imp->connectionQueue.push_back(action);
+                return found;
+            }
+        }
+        
+        {
+            QMutexLocker l(&_imp->inputsMutex);
+            _imp->inputs[found].reset();
+        }
+        input->disconnectOutput(this);
+        Q_EMIT inputChanged(found);
+        onInputChanged(found);
+        computeHash();
+        
+        _imp->ifGroupForceHashChangeOfInputs();
+        
+        std::string inputChangedCB = getInputChangedCallback();
+        if (!inputChangedCB.empty()) {
+            _imp->runInputChangedCallback(found, inputChangedCB);
+        }
+        
+        return found;
     }
     
     return -1;
@@ -3990,11 +4041,12 @@ Node::makePreviewImage(SequenceTime time,
                                              0, //< preview only renders view 0 (left)
                                              true, //<isRenderUserInteraction
                                              false, //isSequential
-                                             false, //can abort
+                                             true, //can abort
                                              0, //render Age
                                              0, // viewer requester
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
+                                             NodePtr(),
                                              false);
     
     std::list<ImageComponents> requestedComps;
@@ -4105,7 +4157,7 @@ Node::getRotoAge() const
         return _imp->rotoContext->getAge();
     }
     
-    boost::shared_ptr<RotoStrokeItem> item = _imp->paintStroke.lock();
+    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
     if (item) {
         return item->getContext()->getAge();
     }
@@ -4720,26 +4772,28 @@ Node::findClosestSupportedComponents(int inputNb,
 
 
 int
-Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
+Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
         int index =  it->second.channel.lock()->getValue();
         if (index == 0) {
             *comps = ImageComponents::getNoneComponents();
+            maskInput->reset();
             return -1;
         } else {
             index -= 1; // None choice
             QMutexLocker locker(&it->second.compsMutex);
             int k = 0;
             for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
-                if (index >= k && index < (it->second.compsAvailable[i].getNumComponents() + k)) {
+                if (index >= k && index < (it->second.compsAvailable[i].first.getNumComponents() + k)) {
                     int compIndex = index - k;
                     assert(compIndex >= 0 && compIndex <= 3);
-                    *comps = it->second.compsAvailable[i];
+                    *comps = it->second.compsAvailable[i].first;
+                    *maskInput = it->second.compsAvailable[i].second.lock();
                     return compIndex;
                 }
-                k += it->second.compsAvailable[i].getNumComponents();
+                k += it->second.compsAvailable[i].first.getNumComponents();
             }
             
         }
@@ -5350,13 +5404,25 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
 }
 
 bool
+Node::getProcessChannel(int channelIndex) const
+{
+    assert(channelIndex >= 0 && channelIndex < 4);
+    boost::shared_ptr<Bool_Knob> k = _imp->enabledChan[channelIndex].lock();
+    if (k) {
+        return k->getValue();
+    }
+    return true;
+}
+
+bool
 Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
 {
     //If the effect is multi-planar, it is expected to handle itself all the planes
     assert(!_imp->liveInstance->isMultiPlanar());
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
-    int chanIndex = getMaskChannel(inputNb,layer);
+    NodePtr maskInput;
+    int chanIndex = getMaskChannel(inputNb,layer,&maskInput);
     bool hasChannelSelector = true;
     if (chanIndex != -1) {
         
@@ -5873,7 +5939,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         ///The node is referenced multiple times below, cache it
         return true;
     } else {
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
         if (sz == 1) {
           
             Node* output = outputs.front();
@@ -6036,6 +6102,10 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
      * And now call getClipPreferences on ourselves
      */
     
+    //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
+    //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
+    _imp->liveInstance->clearActionsCache();
+    
     _imp->liveInstance->restoreClipPreferences();
     refreshChannelSelectors(false);
     
@@ -6045,7 +6115,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 
 
 void
-Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
+Node::attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke)
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->paintStroke = stroke;
@@ -6053,8 +6123,8 @@ Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
     setProcessChannelsValues(true, true, true, true);
 }
 
-boost::shared_ptr<RotoStrokeItem>
-Node::getAttachedStrokeItem() const
+boost::shared_ptr<RotoDrawableItem>
+Node::getAttachedRotoItem() const
 {
     return _imp->paintStroke.lock();
 }
@@ -6469,6 +6539,8 @@ Node::refreshChannelSelectors(bool setValues)
     }
     _imp->liveInstance->setComponentsAvailableDirty(true);
     
+    int time = getApp()->getTimeLine()->currentFrame();
+    
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
@@ -6501,7 +6573,7 @@ Node::refreshChannelSelectors(bool setValues)
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable);
             {
                 QMutexLocker k(&it->second.compsMutex);
                 it->second.compsAvailable = compsAvailable;
@@ -6623,38 +6695,45 @@ Node::refreshChannelSelectors(bool setValues)
         choices.push_back("None");
         bool gotColor = false;
         int alphaIndex = -1;
+        EffectInstance::ComponentsAvailableMap compsAvailable;
+        std::list<EffectInstance*> markedNodes;
         if (node) {
-            EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
-            
-            std::vector<ImageComponents> compsOrdered;
-            for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
-                if (comp->first.isColorPlane()) {
-                    compsOrdered.insert(compsOrdered.begin(), comp->first);
-                } else {
-                    compsOrdered.push_back(comp->first);
-                }
-            }
-            {
-                
-                QMutexLocker k(&it->second.compsMutex);
-                it->second.compsAvailable = compsOrdered;
-            }
-            for (std::vector<ImageComponents>::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
-                
-                const std::vector<std::string>& channels = it2->getComponentsNames();
-                const std::string& layerName = it2->isColorPlane() ? it2->getComponentsGlobalName() : it2->getLayerName();
-                for (std::size_t i = 0; i < channels.size(); ++i) {
-                    choices.push_back(layerName + "." + channels[i]);
-                }
-                if (it2->isColorPlane()) {
-                    if (channels.size() == 1 || channels.size() == 4) {
-                        alphaIndex = choices.size() - 1;
-                    }
-                    gotColor = true;
-                }
+            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable,&markedNodes);
+        }
+        
+        ///Also inject in masks available components from all non mask inputs
+        _imp->liveInstance->getNonMaskInputsAvailableComponents(time, 0, true, &compsAvailable, &markedNodes);
+        
+        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsOrdered;
+        for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
+            if (comp->first.isColorPlane()) {
+                compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
+            } else {
+                compsOrdered.push_back(*comp);
             }
         }
+        {
+            
+            QMutexLocker k(&it->second.compsMutex);
+            it->second.compsAvailable = compsOrdered;
+        }
+        for (std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
+            
+            const std::vector<std::string>& channels = it2->first.getComponentsNames();
+            const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                choices.push_back(layerName + "." + channels[i]);
+            }
+            if (it2->first.isColorPlane()) {
+                if (channels.size() == 1 || channels.size() == 4) {
+                    alphaIndex = choices.size() - 1;
+                } else {
+                    alphaIndex = 1;
+                }
+                gotColor = true;
+            }
+        }
+        
         
         if (!gotColor) {
             std::vector<std::string>::iterator pos = choices.begin();

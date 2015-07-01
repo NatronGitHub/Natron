@@ -507,6 +507,7 @@ private:
  * Instead of re-using the OutputSchedulerClass and adding extra handling for special cases we separated it in a different class, specialized for this kind
  * of "current frame re-rendering" which needs much less code to run than all the code in OutputSchedulerThread
  **/
+struct RequestedFrame;
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler : public QThread
 {
@@ -528,6 +529,8 @@ public:
     
     bool hasThreadsWorking() const;
     
+    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request);
+    
 public Q_SLOTS:
     
     void doProcessProducedFrameOnMainThread(const BufferableObjectList& frames);
@@ -544,7 +547,6 @@ private:
     
 };
 
-struct RequestedFrame;
 struct ViewerArgs;
 struct CurrentFrameFunctorArgs
 {
@@ -552,7 +554,7 @@ struct CurrentFrameFunctorArgs
     int time;
     ViewerInstance* viewer;
     U64 viewerHash;
-    RequestedFrame* request;
+    boost::shared_ptr<RequestedFrame> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
     boost::shared_ptr<Natron::Node> isRotoPaintRequest;
@@ -654,6 +656,7 @@ public:
      **/
     bool isSequentialRenderBeingAborted() const;
     
+    
 public Q_SLOTS:
 
     
@@ -724,6 +727,10 @@ private:
     void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
     void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
+    
+    friend class ViewerInstance;
+    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request);
+
     
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };

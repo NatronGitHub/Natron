@@ -242,35 +242,32 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
     ///Does the child exist already ?
     QString filename = sequence ? sequence->generateUserFriendlySequencePattern().c_str() : info.fileName();
     
-    bool found = false;
-    for (int j = 0; j < (int)_imp->children.size(); ++j) {
-        if (_imp->children[j]->fileName() == filename) {
-            found = true;
+    for (std::vector<boost::shared_ptr<FileSystemItem> >::iterator it = _imp->children.begin(); it!=_imp->children.end();++it) {
+        if ((*it)->fileName() == filename) {
+            _imp->children.erase(it);
             break;
         }
     }
     
-    if (!found) {
-        
-        bool isDir = sequence ? false : info.isDir();
-        qint64 size;
-        if (sequence) {
-            size = sequence->getEstimatedTotalSize();
-        } else {
-            size = isDir ? 0 : info.size();
-        }
-        
-        
-        ///Create the child
-        boost::shared_ptr<FileSystemItem> child( new FileSystemItem(isDir,
-                                                                    filename,
-                                                                    sequence,
-                                                                    info.lastModified(),
-                                                                    size,
-                                                                    this) );
-        _imp->children.push_back(child);
-        
+    
+    bool isDir = sequence ? false : info.isDir();
+    qint64 size;
+    if (sequence) {
+        size = sequence->getEstimatedTotalSize();
+    } else {
+        size = isDir ? 0 : info.size();
     }
+    
+    
+    ///Create the child
+    boost::shared_ptr<FileSystemItem> child( new FileSystemItem(isDir,
+                                                                filename,
+                                                                sequence,
+                                                                info.lastModified(),
+                                                                size,
+                                                                this) );
+    _imp->children.push_back(child);
+    
 }
 
 void
@@ -735,7 +732,9 @@ FileSystemModel::generateRegexpFilterFromFileExtensions(const QStringList& exten
     QString ret;
     
     for (int i = 0; i < extensions.size(); ++i) {
-        ret.append("*.");
+        if (extensions[i] != "*") {
+            ret.append("*.");
+        }
         ret.append( extensions[i] );
         if (i < extensions.size() - 1) {
             ret.append(" ");

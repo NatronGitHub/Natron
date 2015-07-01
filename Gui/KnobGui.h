@@ -119,6 +119,9 @@ public:
     void setKeyframe(double time,int dimension);
     void setKeyframe(double time,const KeyFrame& key,int dimension);
     void removeKeyFrame(double time,int dimension);
+    
+    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension);
+    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension);
 
     QString getScriptNameHtml() const;
 

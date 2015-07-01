@@ -38,7 +38,6 @@ CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QPaintEvent>
 CLANG_DIAG_ON(unused-private-field)
-#include <QTextDocument> // for Qt::convertFromPlainText
 #include <QPainter>
 #include <QImage>
 #include <QToolButton>
@@ -46,12 +45,12 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <ofxNatron.h>
 
-CLANG_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/utility.hpp>
-CLANG_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -93,6 +92,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Menu.h"
+#include "Gui/Utils.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
@@ -170,7 +170,7 @@ TabGroup::addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name)
         tab = new QWidget(_tabWidget);
         tabLayout = new QGridLayout(tab);
         tabLayout->setColumnStretch(1, 1);
-        tabLayout->setContentsMargins(0, 0, 0, 0);
+        //tabLayout->setContentsMargins(0, 0, 0, 0);
         tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
         _tabWidget->addTab(tab,name);
         _tabs.push_back(group);
@@ -211,7 +211,7 @@ private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
-        if (triggerButtonisRight(e)) {
+        if (triggerButtonIsRight(e)) {
             Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);
@@ -455,7 +455,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER,&pixCenter);
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-            _imp->_centerNodeButton->setToolTip(Qt::convertFromPlainText(tr("Centers the node graph on this item."), Qt::WhiteSpaceNormal));
+            _imp->_centerNodeButton->setToolTip(Natron::convertFromPlainText(tr("Centers the node graph on this item."), Qt::WhiteSpaceNormal));
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
@@ -468,7 +468,7 @@ DockablePanel::DockablePanel(Gui* gui ,
                 QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
                 _imp->_enterInGroupButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
                 _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);
-                _imp->_enterInGroupButton->setToolTip(Qt::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."), Qt::WhiteSpaceNormal));
+                _imp->_enterInGroupButton->setToolTip(Natron::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."), Qt::WhiteSpaceNormal));
             }
             
             QPixmap pixHelp;
@@ -494,7 +494,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
             icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
             _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
-            _imp->_hideUnmodifiedButton->setToolTip(Qt::convertFromPlainText(tr("Show/Hide all parameters without modifications."), Qt::WhiteSpaceNormal));
+            _imp->_hideUnmodifiedButton->setToolTip(Natron::convertFromPlainText(tr("Show/Hide all parameters without modifications."), Qt::WhiteSpaceNormal));
             _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
             _imp->_hideUnmodifiedButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_hideUnmodifiedButton->setCheckable(true);
@@ -532,16 +532,18 @@ DockablePanel::DockablePanel(Gui* gui ,
 
             boost::shared_ptr<NodeGuiI> gui_i = iseffect->getNode()->getNodeGui();
             assert(gui_i);
-            double r,g,b;
+            double r, g, b;
             gui_i->getColor(&r, &g, &b);
-            currentColor.setRgbF(Natron::clamp(r), Natron::clamp(g), Natron::clamp(b));
+            currentColor.setRgbF(Natron::clamp(r, 0., 1.),
+                                 Natron::clamp(g, 0., 1.),
+                                 Natron::clamp(b, 0., 1.));
             QPixmap p(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
             p.fill(currentColor);
 
 
             _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-            _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
+            _imp->_colorButton->setToolTip( Natron::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
                                                                         "preferences of %1.").arg(NATRON_APPLICATION_NAME),
                                                                      Qt::WhiteSpaceNormal) );
@@ -560,7 +562,7 @@ DockablePanel::DockablePanel(Gui* gui ,
                 _imp->_overlayColor.setRgbF(1., 1., 1.);
                 _imp->_overlayButton = new OverlayColorButton(this,QIcon(pixOverlay),_imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-                _imp->_overlayButton->setToolTip(Qt::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
+                _imp->_overlayButton->setToolTip(Natron::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
                                                                              "Some plug-ins understand it and will use it to change the color of "
                                                                              "the overlay."), Qt::WhiteSpaceNormal));
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
@@ -577,7 +579,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
         _imp->_undoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_undoButton->setToolTip( Natron::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRedo;
@@ -589,7 +591,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
         _imp->_redoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_redoButton->setToolTip( Natron::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
 
@@ -599,7 +601,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
         _imp->_restoreDefaultsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_restoreDefaultsButton->setToolTip( Natron::convertFromPlainText(tr("Restore default values for this operator."), Qt::WhiteSpaceNormal) );
         _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
@@ -1594,7 +1596,7 @@ DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
     tabLayout->setObjectName("formLayout");
     layoutContainer->setLayout(tabLayout);
-    tabLayout->setContentsMargins(1, 1, 1, 1);
+    //tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
     
@@ -1662,7 +1664,7 @@ QString
 DockablePanel::helpString() const
 {
     //Base help
-    QString tt = Qt::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+    QString tt = Natron::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
 
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (iseffect) {
@@ -1700,34 +1702,58 @@ DockablePanel::showHelp()
 void
 DockablePanel::setClosed(bool c)
 {
+    
+    setVisible(!c);
+    
+    setClosedInternal(c);
+
+} // setClosed
+
+void
+DockablePanel::setClosedInternal(bool c)
+{
+ 
     if (!_imp->_gui) {
         return;
     }
-    if (!c) {
-        _imp->_gui->addVisibleDockablePanel(this);
-    } else {
-        _imp->_gui->removeVisibleDockablePanel(this);
-    }
+    
     if (_imp->_floating) {
         floatPanel();
         return;
     }
-    setVisible(!c);
     {
         QMutexLocker l(&_imp->_isClosedMutex);
         if (c == _imp->_isClosed) {
             return;
-
+            
         }
         _imp->_isClosed = c;
     }
+    
+    if (!c) {
+        _imp->_gui->addVisibleDockablePanel(this);
+    } else {
+        _imp->_gui->removeVisibleDockablePanel(this);
+        _imp->_gui->buildTabFocusOrderPropertiesBin();
+
+    }
+    
+    ///Remove any color picker active
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = getKnobs();
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it!= knobs.end(); ++it) {
+        Color_KnobGui* ck = dynamic_cast<Color_KnobGui*>(it->second);
+        if (ck) {
+            ck->setPickingEnabled(false);
+        }
+    }
+    
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
         boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         Gui* gui = getGui();
-
+        
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
             gui->addNodeGuiToDopeSheetEditor(nodeGui);
@@ -1762,9 +1788,9 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-			if (next != childrenInstances.end()) {
-				++next;
-			}
+            if (next != childrenInstances.end()) {
+                ++next;
+            }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end();
                  ++it) {
@@ -1773,7 +1799,7 @@ DockablePanel::setClosed(bool c)
                 } else if (!c && it->second) {
                     it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
-
+                
                 // increment for next iteration
                 if (next != childrenInstances.end()) {
                     ++next;
@@ -1788,78 +1814,18 @@ DockablePanel::setClosed(bool c)
             }
         }
     }
+    
     Q_EMIT closeChanged(c);
 
-} // setClosed
+
+}
 
 void
 DockablePanel::closePanel()
 {
-    if (_imp->_floating) {
-        floatPanel();
-        return;
-    }
     
-    _imp->_gui->removeVisibleDockablePanel(this);
-    _imp->_gui->buildTabFocusOrderPropertiesBin();
-
-    {
-        QMutexLocker l(&_imp->_isClosedMutex);
-        if (_imp->_isClosed) {
-            return;
-        }
-        _imp->_isClosed = true;
-    }
     close();
-
-    
-    
-    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (nodePanel) {
-        
-        boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
-        boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
-        _imp->_gui->removeNodeGuiFromCurveEditor(nodeGui);
-        _imp->_gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
-        
-        NodeList children;
-        internalNode->getChildrenMultiInstance(&children);
-        for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
-            assert(gui_i);
-            boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            assert(childGui);
-            _imp->_gui->removeNodeGuiFromCurveEditor(childGui);
-            _imp->_gui->removeNodeGuiFromDopeSheetEditor(childGui);
-        }
-        
-        
-        internalNode->hideKeyframesFromTimeline(true);
-        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        if (panel) {
-            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            if (next != childrenInstances.end()) {
-                ++next;
-            }
-            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end();
-                 ++it) {
-                
-                NodePtr node = it->first.lock();
-                if ( it->second && (node != internalNode) ) {
-                    node->hideKeyframesFromTimeline( next == childrenInstances.end() );
-                }
-
-                // increment for next iteration
-                if (next != childrenInstances.end()) {
-                    ++next;
-                }
-            } // for(it)
-        } else {
-            internalNode->showKeyframesOnTimeline(false);
-        }
-    }
+    setClosedInternal(true);
 
     ///Closing a panel always gives focus to some line-edit in the application which is quite annoying
     QWidget* hasFocus = qApp->focusWidget();
@@ -1871,8 +1837,6 @@ DockablePanel::closePanel()
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->getViewer()->redraw();
     }
-    Q_EMIT closeChanged(true);
-
     
 }
 
@@ -2330,10 +2294,8 @@ DockablePanel::setKeyOnAllParameters()
         boost::shared_ptr<KnobI> knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
-                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
-                    boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
-                    curveKeys->curve = *it2;
+                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     
                     std::vector<KeyFrame> kVec;
                     KeyFrame kf;
@@ -2357,8 +2319,7 @@ DockablePanel::setKeyOnAllParameters()
                     }
                     
                     kVec.push_back(kf);
-                    curveKeys->keys = kVec;
-                    keys.push_back(curveKeys);
+                    keys.insert(std::make_pair(*it2,kVec));
                 }
                 
                 
@@ -2372,18 +2333,21 @@ DockablePanel::setKeyOnAllParameters()
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
-    std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
+    std::map< boost::shared_ptr<CurveGui> ,std::vector<KeyFrame > > keysToRemove;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
+                std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 
-                for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                        keysToRemove.push_back( std::make_pair(*it2,*it) );
+                    
+                    std::vector<KeyFrame > vect;
+                    for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
+                        vect.push_back(*it3);
                     }
+                    keysToRemove.insert(std::make_pair(*it2,vect));
                 }
             }
         }
@@ -2571,7 +2535,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     appPTR->getIcon(NATRON_PIXMAP_SETTINGS,&pixSettings);
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _settingsButton->setToolTip(Qt::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
+    _settingsButton->setToolTip(Natron::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
     insertHeaderWidget(1, _settingsButton);
@@ -2599,7 +2563,7 @@ NodeSettingsPanel::centerOnItem()
 RotoPanel*
 NodeSettingsPanel::initializeRotoPanel()
 {
-    if ( getNode()->getNode()->isRotoNode() || getNode()->getNode()->isRotoPaintingNode() ) {
+    if (getNode()->getNode()->isRotoPaintingNode()) {
         return new RotoPanel(_nodeGUI.lock(),this);
     } else {
         return NULL;
@@ -2873,37 +2837,37 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
     
     _imp->addButton = new Button(tr("Add"),_imp->buttonsContainer);
-    _imp->addButton->setToolTip(Qt::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal));
+    _imp->addButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     
     _imp->pickButton = new Button(tr("Pick"),_imp->buttonsContainer);
-    _imp->pickButton->setToolTip(Qt::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal));
+    _imp->pickButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->pickButton,SIGNAL(clicked(bool)),this,SLOT(onPickClicked()));
     _imp->buttonsLayout->addWidget(_imp->pickButton);
     
     _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
-    _imp->editButton->setToolTip(Qt::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal));
+    _imp->editButton->setToolTip(Natron::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->editButton,SIGNAL(clicked(bool)),this,SLOT(onEditClicked()));
     _imp->buttonsLayout->addWidget(_imp->editButton);
     
     _imp->removeButton = new Button(tr("Delete"),_imp->buttonsContainer);
-    _imp->removeButton->setToolTip(Qt::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal));
+    _imp->removeButton->setToolTip(Natron::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->removeButton,SIGNAL(clicked(bool)),this,SLOT(onDeleteClicked()));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     
     _imp->upButton = new Button(tr("Up"),_imp->buttonsContainer);
-    _imp->upButton->setToolTip(Qt::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal));
+    _imp->upButton->setToolTip(Natron::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->upButton,SIGNAL(clicked(bool)),this,SLOT(onUpClicked()));
     _imp->buttonsLayout->addWidget(_imp->upButton);
     
     _imp->downButton = new Button(tr("Down"),_imp->buttonsContainer);
-    _imp->downButton->setToolTip(Qt::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal));
+    _imp->downButton->setToolTip(Natron::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->downButton,SIGNAL(clicked(bool)),this,SLOT(onDownClicked()));
     _imp->buttonsLayout->addWidget(_imp->downButton);
     
     _imp->closeButton = new Button(tr("Close"),_imp->buttonsContainer);
-    _imp->closeButton->setToolTip(Qt::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal));
+    _imp->closeButton->setToolTip(Natron::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->closeButton,SIGNAL(clicked(bool)),this,SLOT(onCloseClicked()));
     _imp->buttonsLayout->addWidget(_imp->closeButton);
     
@@ -3355,7 +3319,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     _imp->mainLayout = new QGridLayout(this);
     _imp->selectNodeLabel = new Natron::Label(tr("Node:"));
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Qt::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
     
     _imp->knobSelectionCombo = new ComboBox(this);
@@ -3759,7 +3723,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->nameLabel = new Natron::Label(tr("Script name:"),this);
         _imp->nameLineEdit = new LineEdit(firstRowContainer);
-        _imp->nameLineEdit->setToolTip(Qt::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), Qt::WhiteSpaceNormal));
+        _imp->nameLineEdit->setToolTip(Natron::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), Qt::WhiteSpaceNormal));
         
         if (knob) {
             _imp->nameLineEdit->setText(knob->getName().c_str());
@@ -3777,7 +3741,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         secondRowLayout->setContentsMargins(0, 0, 15, 0);
         _imp->labelLabel = new Natron::Label(tr("Label:"),secondRowContainer);
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
-        _imp->labelLineEdit->setToolTip(Qt::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
+        _imp->labelLineEdit->setToolTip(Natron::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->labelLineEdit->setText(knob->getDescription().c_str());
         }
@@ -3785,7 +3749,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->hideLabel = new Natron::Label(tr("Hide:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->hideLabel);
         _imp->hideBox = new QCheckBox(secondRowContainer);
-        _imp->hideBox->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface"), Qt::WhiteSpaceNormal));
+        _imp->hideBox->setToolTip(Natron::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->hideBox->setChecked(knob->getIsSecret());
         }
@@ -3793,7 +3757,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
-        _imp->startNewLineBox->setToolTip(Qt::convertFromPlainText(tr("If unchecked the parameter will be on the same line as the previous parameter"), Qt::WhiteSpaceNormal));
+        _imp->startNewLineBox->setToolTip(Natron::convertFromPlainText(tr("If unchecked the parameter will be on the same line as the previous parameter"), Qt::WhiteSpaceNormal));
         if (knob) {
             
             // get the flag on the previous knob
@@ -3836,7 +3800,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         if (!knob) {
             _imp->typeLabel = new Natron::Label(tr("Type:"),thirdRowContainer);
             _imp->typeChoice = new ComboBox(thirdRowContainer);
-            _imp->typeChoice->setToolTip(Qt::convertFromPlainText(tr("The data type of the parameter."), Qt::WhiteSpaceNormal));
+            _imp->typeChoice->setToolTip(Natron::convertFromPlainText(tr("The data type of the parameter."), Qt::WhiteSpaceNormal));
             _imp->typeChoice->addItem("Integer");
             _imp->typeChoice->addItem("Integer 2D");
             _imp->typeChoice->addItem("Integer 3D");
@@ -3865,15 +3829,15 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             thirdRowLayout->addWidget(_imp->animatesLabel);
         }
         _imp->animatesCheckbox = new QCheckBox(thirdRowContainer);
-        _imp->animatesCheckbox->setToolTip(Qt::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes."), Qt::WhiteSpaceNormal));
+        _imp->animatesCheckbox->setToolTip(Natron::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes."), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->animatesCheckbox->setChecked(knob->isAnimationEnabled());
         }
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
-        _imp->evaluatesLabel = new Natron::Label(Qt::convertFromPlainText(tr("Render on change:")),thirdRowContainer);
+        _imp->evaluatesLabel = new Natron::Label(Natron::convertFromPlainText(tr("Render on change:"), Qt::WhiteSpaceNormal),thirdRowContainer);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
         _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
-        _imp->evaluatesOnChange->setToolTip(Qt::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered."), Qt::WhiteSpaceNormal));
+        _imp->evaluatesOnChange->setToolTip(Natron::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered."), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->evaluatesOnChange->setChecked(knob->getEvaluateOnChange());
         }
@@ -3889,7 +3853,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     {
         _imp->tooltipLabel = new Natron::Label(tr("Tooltip:"),this);
         _imp->tooltipArea = new QTextEdit(this);
-        _imp->tooltipArea->setToolTip(Qt::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal));
+        _imp->tooltipArea->setToolTip(Natron::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal));
         _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
         if (knob) {
             _imp->tooltipArea->setPlainText(knob->getHintToolTip().c_str());
@@ -3898,7 +3862,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     {
         _imp->menuItemsLabel = new Natron::Label(tr("Menu items:"),this);
         _imp->menuItemsEdit = new QTextEdit(this);
-        QString tt = Qt::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
+        QString tt = Natron::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
                                                  "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
                                                  "by separating the entry text from the help with the following characters on the line: "
                                                  "<?> \n\n"
@@ -3930,7 +3894,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->multiLineLabel = new Natron::Label(tr("Multi-line:"),optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
-        _imp->multiLine->setToolTip(Qt::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal));
+        _imp->multiLine->setToolTip(Natron::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
         
@@ -3948,7 +3912,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->richTextLabel = new Natron::Label(tr("Rich text:"),optContainer);
         _imp->richText = new QCheckBox(optContainer);
-        QString tt = Qt::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
+        QString tt = Natron::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
                                                  "This property is only valid for multi-line input text only."), Qt::WhiteSpaceNormal);
 
         _imp->richText->setToolTip(tt);
@@ -3969,7 +3933,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->sequenceDialogLabel = new Natron::Label(tr("Use sequence dialog:"),optContainer);
         _imp->sequenceDialog = new QCheckBox(optContainer);
-        _imp->sequenceDialog->setToolTip(Qt::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), Qt::WhiteSpaceNormal));
+        _imp->sequenceDialog->setToolTip(Natron::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->sequenceDialog);
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
         
@@ -3990,9 +3954,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiPathLabel = new Natron::Label(Qt::convertFromPlainText(tr("Multiple paths:")),optContainer);
+        _imp->multiPathLabel = new Natron::Label(Natron::convertFromPlainText(tr("Multiple paths:"), Qt::WhiteSpaceNormal),optContainer);
         _imp->multiPath = new QCheckBox(optContainer);
-        _imp->multiPath->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path."), Qt::WhiteSpaceNormal));
+        _imp->multiPath->setToolTip(Natron::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->multiPath);
         _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
         
@@ -4010,7 +3974,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->groupAsTabLabel = new Natron::Label(tr("Group as tab:"),optContainer);
         _imp->groupAsTab = new QCheckBox(optContainer);
-        _imp->groupAsTab->setToolTip(Qt::convertFromPlainText(tr("If checked the group will be a tab instead."), Qt::WhiteSpaceNormal));
+        _imp->groupAsTab->setToolTip(Natron::convertFromPlainText(tr("If checked the group will be a tab instead."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->groupAsTab);
         _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
         
@@ -4032,14 +3996,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->minLabel = new Natron::Label(tr("Minimum:"),minMaxContainer);
 
         _imp->minBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
+        _imp->minBox->setToolTip(Natron::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
                                                              "a value higher or lower than the specified min/max range, internally the "
                                                              "real value will be clamped to this interval."), Qt::WhiteSpaceNormal));
         minMaxLayout->addWidget(_imp->minBox);
         
         _imp->maxLabel = new Natron::Label(tr("Maximum:"),minMaxContainer);
         _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
+        _imp->maxBox->setToolTip(Natron::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
                                                              "a value higher or lower than the specified min/max range, internally the "
                                                              "real value will be clamped to this interval."), Qt::WhiteSpaceNormal));
         minMaxLayout->addWidget(_imp->maxLabel);
@@ -4048,13 +4012,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         
         _imp->dminLabel = new Natron::Label(tr("Display Minimum:"),dminMaxContainer);
         _imp->dminBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->dminBox->setToolTip(Qt::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
+        _imp->dminBox->setToolTip(Natron::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
                                                               "used to set the range of the slider."), Qt::WhiteSpaceNormal));
         dminMaxLayout->addWidget(_imp->dminBox);
         
         _imp->dmaxLabel = new Natron::Label(tr("Display Maximum:"),dminMaxContainer);
         _imp->dmaxBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->dmaxBox->setToolTip(Qt::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
+        _imp->dmaxBox->setToolTip(Natron::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
                                                               "used to set the range of the slider."), Qt::WhiteSpaceNormal));
         dminMaxLayout->addWidget(_imp->dmaxLabel);
         dminMaxLayout->addWidget(_imp->dmaxBox);
@@ -4109,32 +4073,32 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
 
         _imp->default0 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default0->setValue(0);
-        _imp->default0->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)."), Qt::WhiteSpaceNormal));
+        _imp->default0->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default0);
         
         _imp->default1 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default1->setValue(0);
-        _imp->default1->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)."), Qt::WhiteSpaceNormal));
+        _imp->default1->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default1);
         
         _imp->default2 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default2->setValue(0);
-        _imp->default2->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)."), Qt::WhiteSpaceNormal));
+        _imp->default2->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default2);
         
         _imp->default3 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default3->setValue(0);
-        _imp->default3->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)."), Qt::WhiteSpaceNormal));
+        _imp->default3->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default3);
 
         
         _imp->defaultStr = new LineEdit(defValContainer);
-        _imp->defaultStr->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
+        _imp->defaultStr->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->defaultStr);
         
         
         _imp->defaultBool = new QCheckBox(defValContainer);
-        _imp->defaultBool->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
+        _imp->defaultBool->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
         _imp->defaultBool->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         defValLayout->addWidget(_imp->defaultBool);
 
@@ -4198,7 +4162,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->parentGroupLabel = new Natron::Label(tr("Group:"),optContainer);
         _imp->parentGroup = new ComboBox(optContainer);
         
-        _imp->parentGroup->setToolTip(Qt::convertFromPlainText(tr("The name of the group under which this parameter will appear."), Qt::WhiteSpaceNormal));
+        _imp->parentGroup->setToolTip(Natron::convertFromPlainText(tr("The name of the group under which this parameter will appear."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->parentGroup);
         
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
@@ -4225,7 +4189,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
             _imp->parentPage->addItem((*it)->getName().c_str());
         }
-        _imp->parentPage->setToolTip(Qt::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
+        _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->parentPage);
         if (knob) {
             ////find in which page the knob should be

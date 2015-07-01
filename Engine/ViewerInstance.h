@@ -24,6 +24,7 @@
 
 class ParallelRenderArgsSetter;
 class RenderingFlagSetter;
+struct RequestedFrame;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -52,7 +53,8 @@ class ViewerInstance
 {
     Q_OBJECT
     
-
+    friend class ViewerCurrentFrameRequestScheduler;
+    
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
 
@@ -117,7 +119,8 @@ public:
                                     bool canAbort,
                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                     bool useTLS,
-                                    boost::shared_ptr<ViewerArgs> args[2]) WARN_UNUSED_RETURN;
+                                    boost::shared_ptr<ViewerArgs> args[2],
+                                    const boost::shared_ptr<RequestedFrame>& request) WARN_UNUSED_RETURN;
     
     Natron::StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
                                                     bool canAbort,
@@ -315,13 +318,17 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
-                                            boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                             boost::shared_ptr<Natron::Node> rotoPaintNode,
                                              bool useTLS,
-                                            ViewerArgs& inArgs) WARN_UNUSED_RETURN;
-
+                                             const boost::shared_ptr<RequestedFrame>& request,
+                                             ViewerArgs& inArgs) WARN_UNUSED_RETURN;
+    
+    
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
+    void setCurrentlyUpdatingOpenGLViewer(bool updating);
+    bool isCurrentlyUpdatingOpenGLViewer() const;
 private:
     
     boost::scoped_ptr<ViewerInstancePrivate> _imp;

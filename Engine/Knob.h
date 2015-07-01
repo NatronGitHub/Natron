@@ -597,6 +597,12 @@ public:
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const = 0;
 
     /**
+     * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
+     * @returns True on sucess, false if no expression is set.
+     **/
+    virtual bool getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const = 0;
+
+    /**
      * @brief Called when the master knob has changed its values or keyframes.
      * @param masterDimension The dimension of the master which has changed
      **/
@@ -1138,6 +1144,7 @@ public:
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
@@ -1314,7 +1321,7 @@ protected:
     
     void setInternalCurveHasChanged(int dimension, bool changed);
     
-    void guiCurveCloneInternalCurve(int dimension);
+    void guiCurveCloneInternalCurve(int dimension, Natron::ValueChangedReasonEnum reason);
     
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
     
@@ -1870,6 +1877,7 @@ public:
      * They will be dequeued when dequeueValuesSet will be called.
      **/
     virtual bool canSetValue() const { return true; }
+    virtual void abortAnyEvaluation() {}
     
     /**
      * @brief Dequeues all values set in the queues for all knobs

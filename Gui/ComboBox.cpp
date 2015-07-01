@@ -23,7 +23,6 @@
 #include <QFontMetrics>
 #include <QDebug>
 #include <QPainter>
-#include <QTextDocument> // for Qt::convertFromPlainText
 CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
@@ -33,11 +32,13 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/Lut.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Utils.h"
 
 #define DROP_DOWN_ICON_SIZE 6
 
@@ -168,6 +169,7 @@ ComboBox::updateLabel()
     _validHints = false;
     updateGeometry(); //< force a call to minmumSizeHint
     update();
+    Q_EMIT minimumSizeChanged(_msh);
 }
 
 void
@@ -251,7 +253,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                     appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
                 }   break;
             }
-            fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            fillColor.setRgb(Color::floatToInt<256>(r),
+                             Color::floatToInt<256>(g),
+                             Color::floatToInt<256>(b));
 
         }
         
@@ -264,7 +268,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             double r,g,b;
             appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
             QColor c;
-            c.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+            c.setRgb(Color::floatToInt<256>(r),
+                     Color::floatToInt<256>(g),
+                     Color::floatToInt<256>(b));
             fw = 2;
         }
         p.setPen(pen);
@@ -294,7 +300,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     } else {
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        textColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+        textColor.setRgb(Color::floatToInt<256>(r),
+                         Color::floatToInt<256>(g),
+                         Color::floatToInt<256>(b));
     }
     {
         Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
@@ -439,7 +447,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -530,7 +538,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -580,7 +588,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;
