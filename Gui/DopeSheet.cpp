@@ -943,7 +943,7 @@ void DopeSheetSelectionModel::clearKeyframeSelection()
 
     _imp->selectedKeyframes.clear();
 
-    Q_EMIT keyframeSelectionChanged();
+    emit_keyframeSelectionChanged();
 }
 
 void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys, SelectionType selectionType)
@@ -969,7 +969,7 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
         }
     }
 
-    Q_EMIT keyframeSelectionChanged();
+    emit_keyframeSelectionChanged();
 }
 
 bool DopeSheetSelectionModel::isEmpty() const
