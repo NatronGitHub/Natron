@@ -202,11 +202,10 @@ void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewI
 {
     painter->save();
 
-    boost::shared_ptr<Settings> appSettings = appPTR->getCurrentSettings();
     double r, g, b;
 
     if (option.state & QStyle::State_Selected) {
-        appSettings->getTextColor(&r, &g, &b);
+        r = g = b = 0.941f;
     }
     else {
         r = g = b = 0.11f;
