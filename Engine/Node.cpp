@@ -3257,18 +3257,19 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) ) {
             return false;
         }
-        
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            if (isNodeRendering() && !appPTR->isBackground()) {
-                _imp->liveInstance->abortAnyEvaluation();
-                ConnectInputAction action(input,eInputActionReplace,inputNumber);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return true;
-            }
+    }
+    ///If the node is currently rendering, queue the action instead of executing it
+    {
+        if (isNodeRendering() && !appPTR->isBackground()) {
+            _imp->liveInstance->abortAnyEvaluation();
+            ConnectInputAction action(input,eInputActionReplace,inputNumber);
+            QMutexLocker cql(&_imp->connectionQueueMutex);
+            _imp->connectionQueue.push_back(action);
+            return true;
         }
-        
+    }
+    {
+        QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
         if (_imp->inputs[inputNumber]) {
             QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
@@ -3283,7 +3284,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
-    
+
     ///Call the instance changed action with a reason clip changed
     onInputChanged(inputNumber);
     
