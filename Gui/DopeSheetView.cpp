@@ -668,9 +668,9 @@ void DopeSheetViewPrivate::drawScale() const
     settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
     QColor scaleColor;
-    scaleColor.setRgbF(Natron::clamp(scaleR),
-                       Natron::clamp(scaleG),
-                       Natron::clamp(scaleB));
+    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
+                       Natron::clamp(scaleG, 0., 1.),
+                       Natron::clamp(scaleB, 0., 1.));
 
     // Perform drawing
     {
