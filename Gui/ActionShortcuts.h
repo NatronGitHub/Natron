@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
 #define kShortcutGroupCurveEditor "CurveEditor"
+#define kShortcutGroupDopeSheetEditor "DopeSheetEditor"
 #define kShortcutGroupViewer "Viewer"
 #define kShortcutGroupRoto "Roto"
 #define kShortcutGroupTracking "Tracking"
@@ -489,6 +490,26 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionCurveEditorPaste "paste"
 #define kShortcutDescActionCurveEditorPaste "Paste Keyframes"
+
+// Dope Sheet Editor shortcuts
+#define kShortcutIDActionDopeSheetEditorDeleteKeys "deleteKeys"
+#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete selected keyframes"
+
+#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
+#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
+
+#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectallkeyframes"
+#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all keyframes"
+
+#define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
+#define kShortcutDescActionDopeSheetEditorRenameNode "Rename node label"
+
+#define kShortcutIDActionDopeSheetEditorCopySelectedKeyframes "copyselectedkeyframes"
+#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy selected keyframes"
+
+#define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
+#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste keyframes"
+
 
 inline
 QKeySequence

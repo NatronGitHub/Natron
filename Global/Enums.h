@@ -36,6 +36,7 @@ enum TimelineChangeReasonEnum
     eTimelineChangeReasonUserSeek = 0,
     eTimelineChangeReasonPlaybackSeek = 1,
     eTimelineChangeReasonCurveEditorSeek = 2,
+    eTimelineChangeReasonDopeSheetEditorSeek = 3,
 };
 
 enum StatusEnum
@@ -301,7 +302,16 @@ enum PixmapEnum
     
     NATRON_PIXMAP_LINK_CURSOR,
     
-    NATRON_PIXMAP_APP_ICON
+    NATRON_PIXMAP_APP_ICON,
+
+    NATRON_PIXMAP_INTERP_LINEAR,
+    NATRON_PIXMAP_INTERP_CURVE,
+    NATRON_PIXMAP_INTERP_CONSTANT,
+    NATRON_PIXMAP_INTERP_BREAK,
+    NATRON_PIXMAP_INTERP_CURVE_C,
+    NATRON_PIXMAP_INTERP_CURVE_H,
+    NATRON_PIXMAP_INTERP_CURVE_R,
+    NATRON_PIXMAP_INTERP_CURVE_Z,
 };
 
 ///This enum is used when dealing with parameters which have their value edited

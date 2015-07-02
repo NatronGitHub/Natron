@@ -94,6 +94,7 @@ typedef OfxRangeD RangeD;
 
 #define kNodeGraphObjectName "nodeGraph"
 #define kCurveEditorObjectName "curveEditor"
+#define kDopeSheetEditorObjectName "dopeSheetEditor"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
@@ -111,13 +112,19 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackDropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
+#define kDopeSheetEditorMoveKeysCommandCompressionID 18
+#define kDopeSheetEditorLeftTrimCommandCompressionID 19
+#define kDopeSheetEditorRightTrimCommandCompressionID 20
+#define kDopeSheetEditorMoveClipCommandCompressionID 21
+#define kDopeSheetEditorMoveGroupCommandCompressionID 22
+#define kDopeSheetEditorSlipReaderCommandCompressionID 23
 
 namespace Natron {
 /*Converts a std::string to wide string*/
 inline std::wstring
 s2ws(const std::string & s)
 {
-    
+
 
 #ifdef __NATRON_WIN32__
     int len;
@@ -130,12 +137,12 @@ s2ws(const std::string & s)
     return r;
 #else
     std::wstring dest;
-    
+
     size_t max = s.size() * 4;
     mbtowc (NULL, NULL, max);  /* reset mbtowc */
-    
+
     const char* cstr = s.c_str();
-    
+
     while (max > 0) {
         wchar_t w;
         size_t length = mbtowc(&w,cstr,max);
@@ -148,7 +155,7 @@ s2ws(const std::string & s)
     }
     return dest;
 #endif
-   
+
 }
 }
 

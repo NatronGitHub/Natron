@@ -41,9 +41,9 @@ using namespace Natron;
 
 Settings::Settings(AppInstance* appInstance)
     : KnobHolder(appInstance)
-      , _restoringSettings(false)
-      , _ocioRestored(false)
-      , _settingsExisted(false)
+    , _restoringSettings(false)
+    , _ocioRestored(false)
+    , _settingsExisted(false)
 {
 }
 
@@ -108,8 +108,8 @@ Settings::initializeKnobs()
     _autoSaveDelay->setMinimum(0);
     _autoSaveDelay->setMaximum(60);
     _autoSaveDelay->setHintToolTip("The number of seconds after an event that " NATRON_APPLICATION_NAME " should wait before "
-                                   " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
-                                   " wait until it is done to actually auto-save.");
+                                                                                                        " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
+                                                                                                                                                                                       " wait until it is done to actually auto-save.");
     _generalTab->addKnob(_autoSaveDelay);
 
 
@@ -126,8 +126,8 @@ Settings::initializeKnobs()
     _numberOfThreads->setAnimationEnabled(false);
 
     QString numberOfThreadsToolTip = QString("Controls how many threads " NATRON_APPLICATION_NAME " should use to render. \n"
-                                             "-1: Disable multithreading totally (useful for debugging) \n"
-                                             "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
+                                                                                                  "-1: Disable multithreading totally (useful for debugging) \n"
+                                                                                                  "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %1.").arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
     _numberOfThreads->setMinimum(-1);
@@ -137,10 +137,10 @@ Settings::initializeKnobs()
     _numberOfParallelRenders = Natron::createKnob<Int_Knob>(this, "Number of parallel renders (0=\"guess\")");
     _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                              "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
-                                             "the best number of parallel renders to launch given your CPU activity. "
-                                             "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                             "in some situations to worse performances. Overall to get the best performances you should have your "
-                                             "CPU at 100% activity without idle times. ");
+                                                                                                   "the best number of parallel renders to launch given your CPU activity. "
+                                                                                                   "Setting a value different than 0 should be done only if you know what you're doing and can lead "
+                                                                                                   "in some situations to worse performances. Overall to get the best performances you should have your "
+                                                                                                   "CPU at 100% activity without idle times. ");
     _numberOfParallelRenders->setName("nParallelRenders");
     _numberOfParallelRenders->setMinimum(0);
     _numberOfParallelRenders->disableSlider();
@@ -177,7 +177,7 @@ Settings::initializeKnobs()
     _renderInSeparateProcess->setName("renderNewProcess");
     _renderInSeparateProcess->setAnimationEnabled(false);
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render frames to disk in "
-                                             "a separate process so that if the main application crashes, the render goes on.");
+                                                                                 "a separate process so that if the main application crashes, the render goes on.");
     _generalTab->addKnob(_renderInSeparateProcess);
 
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
@@ -227,8 +227,8 @@ Settings::initializeKnobs()
     _defaultLayoutFile = Natron::createKnob<File_Knob>(this, "Default layout file");
     _defaultLayoutFile->setName("defaultLayout");
     _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " uses the given layout file "
-                                       "as default layout for new projects. You can export/import a layout to/from a file "
-                                       "from the Layout menu. If empty, the default application layout is used.");
+                                                                            "as default layout for new projects. You can export/import a layout to/from a file "
+                                                                            "from the Layout menu. If empty, the default application layout is used.");
     _defaultLayoutFile->setAnimationEnabled(false);
     _generalTab->addKnob(_defaultLayoutFile);
 
@@ -241,9 +241,9 @@ Settings::initializeKnobs()
     
     _activateRGBSupport = Natron::createKnob<Bool_Knob>(this, "RGB components support");
     _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to process images with only RGB components "
-                                        "(support for images with RGBA and Alpha components is always enabled). "
-                                        "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
-                                        "Changing this option requires a restart of the application.");
+                                                                                "(support for images with RGBA and Alpha components is always enabled). "
+                                                                                "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
+                                                                                                                                                                                                             "Changing this option requires a restart of the application.");
     _activateRGBSupport->setAnimationEnabled(false);
     _activateRGBSupport->setName("rgbSupport");
     _generalTab->addKnob(_activateRGBSupport);
@@ -251,9 +251,9 @@ Settings::initializeKnobs()
 
     _activateTransformConcatenationSupport = Natron::createKnob<Bool_Knob>(this, "Transforms concatenation support");
     _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
-                                                           "when they are chained in the compositing tree. This yields better results and faster "
-                                                           "render times because the image is only filtered once instead of as many times as there are "
-                                                           "transformations.");
+                                                                                                   "when they are chained in the compositing tree. This yields better results and faster "
+                                                                                                   "render times because the image is only filtered once instead of as many times as there are "
+                                                                                                   "transformations.");
     _activateTransformConcatenationSupport->setAnimationEnabled(false);
     _activateTransformConcatenationSupport->setName("transformCatSupport");
     _generalTab->addKnob(_activateTransformConcatenationSupport);
@@ -312,6 +312,9 @@ Settings::initializeKnobs()
     _curveEditorColors->setAsTab();
     _appearanceTab->addKnob(_curveEditorColors);
 
+    _dopeSheetEditorColors = Natron::createKnob<Group_Knob>(this, "Dope Sheet");
+    _dopeSheetEditorColors->setAsTab();
+    _appearanceTab->addKnob(_dopeSheetEditorColors);
     
     _sunkenColor =  Natron::createKnob<Color_Knob>(this, "Sunken",3);
     _sunkenColor->setName("sunken");
@@ -432,9 +435,41 @@ Settings::initializeKnobs()
     _curveEditorScaleColor->setSimplified(true);
     _curveEditorColors->addKnob(_curveEditorScaleColor);
 
+    // Create the dope sheet editor settings page
+    _dopeSheetEditorBackgroundColor = Natron::createKnob<Color_Knob>(this, "Sheet background color", 3);
+    _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
+    _dopeSheetEditorBackgroundColor->setAnimationEnabled(false);
+    _dopeSheetEditorBackgroundColor->setSimplified(true);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorBackgroundColor);
+
+    _dopeSheetEditorRootSectionBackgroundColor = Natron::createKnob<Color_Knob>(this, "Root section background color", 4);
+    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
+    _dopeSheetEditorRootSectionBackgroundColor->setAnimationEnabled(false);
+    _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
+    _dopeSheetEditorRootSectionBackgroundColor->setAddNewLine(false);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
+
+    _dopeSheetEditorKnobSectionBackgroundColor = Natron::createKnob<Color_Knob>(this, "Knob section background color", 4);
+    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
+    _dopeSheetEditorKnobSectionBackgroundColor->setAnimationEnabled(false);
+    _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
+
+    _dopeSheetEditorScaleColor = Natron::createKnob<Color_Knob>(this, "Sheet scale color", 3);
+    _dopeSheetEditorScaleColor->setName("dopesheetScale");
+    _dopeSheetEditorScaleColor->setAnimationEnabled(false);
+    _dopeSheetEditorScaleColor->setSimplified(true);
+    _dopeSheetEditorScaleColor->setAddNewLine(false);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorScaleColor);
+
+    _dopeSheetEditorGridColor = Natron::createKnob<Color_Knob>(this, "Sheet grid color", 3);
+    _dopeSheetEditorGridColor->setName("dopesheetGrid");
+    _dopeSheetEditorGridColor->setAnimationEnabled(false);
+    _dopeSheetEditorGridColor->setSimplified(true);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
+
+
     boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
-
-
     _ocioConfigKnob = Natron::createKnob<Choice_Knob>(this, "OpenColorIO config");
     _ocioConfigKnob->setName("ocioConfig");
     _ocioConfigKnob->setAnimationEnabled(false);
@@ -464,7 +499,7 @@ Settings::initializeKnobs()
                                     "environment variable. Only nodes created after changing this parameter will take "
                                     "it into account, and it is better to restart the application after changing it. "
                                     "When \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" is selected, the "
-                                    "\"Custom OpenColorIO config file\" parameter is used.");
+                                                                             "\"Custom OpenColorIO config file\" parameter is used.");
 
     ocioTab->addKnob(_ocioConfigKnob);
 
@@ -473,11 +508,11 @@ Settings::initializeKnobs()
     _customOcioConfigFile->setAllDimensionsEnabled(false);
     _customOcioConfigFile->setAnimationEnabled(false);
     _customOcioConfigFile->setHintToolTip("OpenColorIO configuration file (*.ocio) to use when \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" "
-                                          "is selected as the OpenColorIO config.");
+                                                                                                                                  "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
     
     _warnOcioConfigKnobChanged = Natron::createKnob<Bool_Knob>(this, "Warn on OpenColorIO config change");
-    _warnOcioConfigKnobChanged->setName("warnOCIOChanged"); 
+    _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
     _warnOcioConfigKnobChanged->setHintToolTip("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.");
     _warnOcioConfigKnobChanged->setAnimationEnabled(false);
     ocioTab->addKnob(_warnOcioConfigKnobChanged);
@@ -607,9 +642,9 @@ Settings::initializeKnobs()
     _maxUndoRedoNodeGraph->disableSlider();
     _maxUndoRedoNodeGraph->setMinimum(0);
     _maxUndoRedoNodeGraph->setHintToolTip("Set the maximum of events related to the node graph " NATRON_APPLICATION_NAME " "
-                                          "remembers. Past this limit, older events will be deleted forever, "
-                                          "allowing to re-use the RAM for other purposes. \n"
-                                          "Changing this value will clear the undo/redo stack.");
+                                                                                                                         "remembers. Past this limit, older events will be deleted forever, "
+                                                                                                                         "allowing to re-use the RAM for other purposes. \n"
+                                                                                                                         "Changing this value will clear the undo/redo stack.");
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
 
@@ -771,11 +806,11 @@ Settings::initializeKnobs()
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setAnimationEnabled(false);
     _aggressiveCaching->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will cache the output of all images "
-                                       "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
-                                       "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
-                                       "If not checked, " NATRON_APPLICATION_NAME " will only cache the  nodes "
-                                       "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
-                                       "output has its settings panel opened.");
+                                                                                "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
+                                                                                "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
+                                                                                "If not checked, " NATRON_APPLICATION_NAME " will only cache the  nodes "
+                                                                                                                           "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
+                                                                                                                           "output has its settings panel opened.");
     _cachingTab->addKnob(_aggressiveCaching);
     
     _maxRAMPercent = Natron::createKnob<Int_Knob>(this, "Maximum amount of RAM memory used for caching (% of total RAM)");
@@ -789,7 +824,7 @@ Settings::initializeKnobs()
     ramHint.append(" of RAM.");
     if ( isApplication32Bits() && getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) {
         ramHint.append("\nThe version of " NATRON_APPLICATION_NAME " you are running is 32 bits, which means the available RAM "
-                       "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.");
+                                                                   "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.");
     }
 
     _maxRAMPercent->setHintToolTip(ramHint);
@@ -868,8 +903,8 @@ Settings::initializeKnobs()
     QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
-                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: \n");
+                                                                                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
+                                                                                            "the default location will be used. The default location is: \n");
     
     _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
     _cachingTab->addKnob(_diskCachePath);
@@ -890,42 +925,42 @@ Settings::initializeKnobs()
     _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "OpenFX plugins search path");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
     _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for OpenFX plugins. "
-                                                   "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
-                                                   "The priority order for system-wide plugins, from high to low, is:\n"
-                                                   "- plugins found in OFX_PLUGIN_PATH\n"
-                                                   "- plugins found in \""
-#if defined(WINDOWS)
+                                                                                                       "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
+                                                                                                       "The priority order for system-wide plugins, from high to low, is:\n"
+                                                                                                       "- plugins found in OFX_PLUGIN_PATH\n"
+                                                                                                       "- plugins found in \""
+                                               #if defined(WINDOWS)
                                                    ) + getStdOFXPluginPath("") +
-                                      std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
-#endif
-#if defined(__linux__) || defined(__FreeBSD__)
-                                                  "/usr/OFX/Plugins"
-#endif
-#if defined(__APPLE__)
-                                                  "/Library/OFX/Plugins"
-#endif
-                                                  "\".\n"
-                                                  "Plugins bundled with the binary distribution of Natron may have either "
-                                                  "higher or lower priority, depending on the \"Prefer bundled plugins over "
-                                                  "system-wide plugins\" setting.\n"
-                                                  "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME ".") );
+                                       std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
+                                               #endif
+                                               #if defined(__linux__) || defined(__FreeBSD__)
+                                                   "/usr/OFX/Plugins"
+                                               #endif
+                                               #if defined(__APPLE__)
+                                                   "/Library/OFX/Plugins"
+                                               #endif
+                                                   "\".\n"
+                                                   "Plugins bundled with the binary distribution of Natron may have either "
+                                                   "higher or lower priority, depending on the \"Prefer bundled plugins over "
+                                                   "system-wide plugins\" setting.\n"
+                                                   "Any change will take effect on the next launch of " NATRON_APPLICATION_NAME ".") );
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
     
     _templatesPluginPaths = Natron::createKnob<Path_Knob>(this, "Group plugins search path");
     _templatesPluginPaths->setName("groupPluginsSearchPath");
     _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python group scripts. "
-                                          "The search paths for groups can also be specified using the "
-                                          "NATRON_PLUGIN_PATH environment variable.");
+                                                                                       "The search paths for groups can also be specified using the "
+                                                                                       "NATRON_PLUGIN_PATH environment variable.");
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
     
     _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
-                                        "with the binary distribution.\n"
-                                        "When unchecked, only system-wide plugins are loaded (more information can be "
-                                        "found in the help for the \"Extra plugins search paths\" setting).");
+                                                                                 "with the binary distribution.\n"
+                                                                                 "When unchecked, only system-wide plugins are loaded (more information can be "
+                                                                                 "found in the help for the \"Extra plugins search paths\" setting).");
     _loadBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_loadBundledPlugins);
     
@@ -933,7 +968,7 @@ Settings::initializeKnobs()
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
                                           NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins "
-                                          "if they have the same internal ID.");
+                                                                  "if they have the same internal ID.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_preferBundledPlugins);
     
@@ -1210,6 +1245,29 @@ Settings::setDefaultValues()
     _curveEditorScaleColor->setDefaultValue(0.48,1);
     _curveEditorScaleColor->setDefaultValue(0.2,2);
 
+    // Initialize Dope sheet editor Settings knobs
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 0);
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 1);
+    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 2);
+
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 0);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 1);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 2);
+    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.2, 3);
+
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 0);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 1);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 2);
+    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, 3);
+
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
+
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 0);
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
+    _dopeSheetEditorGridColor->setDefaultValue(0.714, 2);
+
 
     endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 } // setDefaultValues
@@ -1223,7 +1281,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ((knobs[i] == _fontSize.get() ||
              knobs[i] == _systemFontChoice.get())
-            && !didFontWarn) {
+                && !didFontWarn) {
             
             didOCIOWarn = true;
             Natron::warningDialog(QObject::tr("Font change").toStdString(),
@@ -1271,7 +1329,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                 }
             }
         }
-                   
+
     }
 }
 
@@ -1322,16 +1380,16 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         int newIndex = isChoice->getValue(j);
-                            const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                            if (newIndex < (int)entries.size() ) {
-                                QString oldValue = settings.value(dimensionName).toString();
-                                QString newValue(entries[newIndex].c_str());
-                                if (oldValue != newValue) {
-                                    changedKnobs.push_back(knobs[i]);
-                                }
-                                settings.setValue(dimensionName, QVariant(newValue));
-
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        if (newIndex < (int)entries.size() ) {
+                            QString oldValue = settings.value(dimensionName).toString();
+                            QString newValue(entries[newIndex].c_str());
+                            if (oldValue != newValue) {
+                                changedKnobs.push_back(knobs[i]);
                             }
+                            settings.setValue(dimensionName, QVariant(newValue));
+
+                        }
                     } else {
                         
                         int newValue = isInt->getValue(j);
@@ -1653,9 +1711,14 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _diskCachedFrameColor.get() ||
                 k == _curveEditorBGColor.get() ||
                 k == _gridColor.get() ||
-                k == _curveEditorScaleColor.get())) {
-                   appPTR->reloadStylesheets();
-               }
+                k == _curveEditorScaleColor.get() ||
+                k == _dopeSheetEditorBackgroundColor.get() ||
+                k == _dopeSheetEditorRootSectionBackgroundColor.get() ||
+                k == _dopeSheetEditorKnobSectionBackgroundColor.get() ||
+                k == _dopeSheetEditorScaleColor.get() ||
+                k == _dopeSheetEditorGridColor.get())) {
+                    appPTR->reloadStylesheets();
+                }
 } // onKnobValueChanged
 
 Natron::ImageBitDepthEnum
@@ -1839,55 +1902,55 @@ static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
 #if 0
 #pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
     if (
-        //Tuttle Readers/Writers
-        ofxPluginID == "tuttle.avreader" ||
-        ofxPluginID == "tuttle.avwriter" ||
-        ofxPluginID == "tuttle.dpxwriter" ||
-        ofxPluginID == "tuttle.exrreader" ||
-        ofxPluginID == "tuttle.exrwriter" ||
-        ofxPluginID == "tuttle.imagemagickreader" ||
-        ofxPluginID == "tuttle.jpeg2000reader" ||
-        ofxPluginID == "tuttle.jpeg2000writer" ||
-        ofxPluginID == "tuttle.jpegreader" ||
-        ofxPluginID == "tuttle.jpegwriter" ||
-        ofxPluginID == "tuttle.oiioreader" ||
-        ofxPluginID == "tuttle.oiiowriter" ||
-        ofxPluginID == "tuttle.pngreader" ||
-        ofxPluginID == "tuttle.pngwriter" ||
-        ofxPluginID == "tuttle.rawreader" ||
-        ofxPluginID == "tuttle.turbojpegreader" ||
-        ofxPluginID == "tuttle.turbojpegwriter" ||
-        
-        //Other Tuttle plug-ins
-        ofxPluginID == "tuttle.bitdepth" ||
-        ofxPluginID == "tuttle.colorgradation" ||
-        ofxPluginID == "tuttle.gamma" ||
-        ofxPluginID == "tuttle.invert" ||
-        ofxPluginID == "tuttle.histogramkeyer" ||
-        ofxPluginID == "tuttle.idkeyer" ||
-        ofxPluginID == "tuttle.ocio.colorspace" ||
-        ofxPluginID == "tuttle.ocio.lut" ||
-        ofxPluginID == "tuttle.constant" ||
-        ofxPluginID == "tuttle.inputbuffer" ||
-        ofxPluginID == "tuttle.outputbuffer" ||
-        ofxPluginID == "tuttle.ramp" ||
-        ofxPluginID == "tuttle.lut" ||
-        ofxPluginID == "tuttle.print" ||
-        ofxPluginID == "tuttle.colorgradient" ||
-        ofxPluginID == "tuttle.component" ||
-        ofxPluginID == "tuttle.merge" ||
-        ofxPluginID == "tuttle.crop" ||
-        ofxPluginID == "tuttle.flip" ||
-        ofxPluginID == "tuttle.resize" ||
-        ofxPluginID == "tuttle.pinning" ||
-        ofxPluginID == "tuttle.timeshift" ||
-        ofxPluginID == "tuttle.diff" ||
-        ofxPluginID == "tuttle.dummy" ||
-        ofxPluginID == "tuttle.histogram" ||
-        ofxPluginID == "tuttle.imagestatistics" ||
-        ofxPluginID == "tuttle.debugimageeffectapi" ||
-        ofxPluginID == "tuttle.viewer"
-        ) {
+            //Tuttle Readers/Writers
+            ofxPluginID == "tuttle.avreader" ||
+            ofxPluginID == "tuttle.avwriter" ||
+            ofxPluginID == "tuttle.dpxwriter" ||
+            ofxPluginID == "tuttle.exrreader" ||
+            ofxPluginID == "tuttle.exrwriter" ||
+            ofxPluginID == "tuttle.imagemagickreader" ||
+            ofxPluginID == "tuttle.jpeg2000reader" ||
+            ofxPluginID == "tuttle.jpeg2000writer" ||
+            ofxPluginID == "tuttle.jpegreader" ||
+            ofxPluginID == "tuttle.jpegwriter" ||
+            ofxPluginID == "tuttle.oiioreader" ||
+            ofxPluginID == "tuttle.oiiowriter" ||
+            ofxPluginID == "tuttle.pngreader" ||
+            ofxPluginID == "tuttle.pngwriter" ||
+            ofxPluginID == "tuttle.rawreader" ||
+            ofxPluginID == "tuttle.turbojpegreader" ||
+            ofxPluginID == "tuttle.turbojpegwriter" ||
+
+            //Other Tuttle plug-ins
+            ofxPluginID == "tuttle.bitdepth" ||
+            ofxPluginID == "tuttle.colorgradation" ||
+            ofxPluginID == "tuttle.gamma" ||
+            ofxPluginID == "tuttle.invert" ||
+            ofxPluginID == "tuttle.histogramkeyer" ||
+            ofxPluginID == "tuttle.idkeyer" ||
+            ofxPluginID == "tuttle.ocio.colorspace" ||
+            ofxPluginID == "tuttle.ocio.lut" ||
+            ofxPluginID == "tuttle.constant" ||
+            ofxPluginID == "tuttle.inputbuffer" ||
+            ofxPluginID == "tuttle.outputbuffer" ||
+            ofxPluginID == "tuttle.ramp" ||
+            ofxPluginID == "tuttle.lut" ||
+            ofxPluginID == "tuttle.print" ||
+            ofxPluginID == "tuttle.colorgradient" ||
+            ofxPluginID == "tuttle.component" ||
+            ofxPluginID == "tuttle.merge" ||
+            ofxPluginID == "tuttle.crop" ||
+            ofxPluginID == "tuttle.flip" ||
+            ofxPluginID == "tuttle.resize" ||
+            ofxPluginID == "tuttle.pinning" ||
+            ofxPluginID == "tuttle.timeshift" ||
+            ofxPluginID == "tuttle.diff" ||
+            ofxPluginID == "tuttle.dummy" ||
+            ofxPluginID == "tuttle.histogram" ||
+            ofxPluginID == "tuttle.imagestatistics" ||
+            ofxPluginID == "tuttle.debugimageeffectapi" ||
+            ofxPluginID == "tuttle.viewer"
+            ) {
         //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
         return false;
     }
@@ -1902,11 +1965,11 @@ static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
 static int filterDefaultRenderScaleSupportPlugin(const QString& ofxPluginID)
 {
     if (ofxPluginID == "tuttle.colorbars" ||
-        ofxPluginID == "tuttle.checkerboard" ||
-        ofxPluginID == "tuttle.colorcube" ||
-        ofxPluginID == "tuttle.colorwheel" ||
-        ofxPluginID == "tuttle.ramp" ||
-        ofxPluginID == "tuttle.constant") {
+            ofxPluginID == "tuttle.checkerboard" ||
+            ofxPluginID == "tuttle.colorcube" ||
+            ofxPluginID == "tuttle.colorwheel" ||
+            ofxPluginID == "tuttle.ramp" ||
+            ofxPluginID == "tuttle.constant") {
         return 1;
     }
     return 0;
@@ -1919,14 +1982,14 @@ struct PerPluginKnobs
     
     PerPluginKnobs(const boost::shared_ptr<Bool_Knob>& enabled,
                    const boost::shared_ptr<Choice_Knob>& renderScaleSupport)
-    : enabled(enabled)
-    , renderScaleSupport(renderScaleSupport)
+        : enabled(enabled)
+        , renderScaleSupport(renderScaleSupport)
     {
         
     }
     
     PerPluginKnobs()
-    : enabled() , renderScaleSupport()
+        : enabled() , renderScaleSupport()
     {
         
     }
@@ -1945,7 +2008,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
     std::map< std::string,std::string > groupNames;
     ///First pass to exctract all groups
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-    
+
         if (it->first.empty()) {
             continue;
         }
@@ -2041,7 +2104,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         }
         
         knobsToRestore.push_back(zoomSupport);
- 
+
         
         pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 
@@ -2508,20 +2571,20 @@ Settings::doOCIOStartupCheckIfNeeded()
             warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
         } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
-            " would you like to set it to the default config ?";
+                                                                                                                                      " would you like to set it to the default config ?";
         } else {
             return;
         }
         
         bool stopAsking = false;
         Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
-                                     Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                     Natron::eStandardButtonYes,
-                                    &stopAsking);
-		if (stopAsking != !docheck) {
-			_ocioStartupCheck->setValue(!stopAsking,0);
+                                                                        Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                                        Natron::eStandardButtonYes,
+                                                                        &stopAsking);
+        if (stopAsking != !docheck) {
+            _ocioStartupCheck->setValue(!stopAsking,0);
             saveSetting(_ocioStartupCheck.get());
-		}
+        }
         
         if (reply == Natron::eStandardButtonYes) {
             
@@ -2537,8 +2600,8 @@ Settings::doOCIOStartupCheckIfNeeded()
                 saveSetting(_ocioConfigKnob.get());
             } else {
                 Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
-                                                                 "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                                 "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
+                                                                                                        "This is probably because you're not using the OpenColorIO-Configs folder that should "
+                                                                                                        "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
         }
 
@@ -2806,6 +2869,60 @@ Settings::getCurveEditorScaleColor(double* r,double* g,double* b) const
     *b = _curveEditorScaleColor->getValue(2);
 }
 
+void
+Settings::getDopeSheetEditorBackgroundColor(double *r, double *g, double *b) const
+{
+    *r = _dopeSheetEditorBackgroundColor->getValue(0);
+    *g = _dopeSheetEditorBackgroundColor->getValue(1);
+    *b = _dopeSheetEditorBackgroundColor->getValue(2);
+}
+
+void
+Settings::getDopeSheetEditorRootRowBackgroundColor(double *r, double *g, double *b, double *a) const
+{
+    *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(0);
+    *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(1);
+    *b = _dopeSheetEditorRootSectionBackgroundColor->getValue(2);
+    *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(3);
+}
+
+void
+Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r, double *g, double *b, double *a) const
+{
+    *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(0);
+    *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(1);
+    *b = _dopeSheetEditorKnobSectionBackgroundColor->getValue(2);
+    *a = _dopeSheetEditorKnobSectionBackgroundColor->getValue(3);
+}
+
+void
+Settings::getDopeSheetEditorScaleColor(double *r, double *g, double *b) const
+{
+    *r = _dopeSheetEditorScaleColor->getValue(0);
+    *g = _dopeSheetEditorScaleColor->getValue(1);
+    *b = _dopeSheetEditorScaleColor->getValue(2);
+}
+
+void
+Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const
+{
+    *r = _dopeSheetEditorGridColor->getValue(0);
+    *g = _dopeSheetEditorGridColor->getValue(1);
+    *b = _dopeSheetEditorGridColor->getValue(2);
+}
+
+void Settings::getPluginIconFrameColor(int *r, int *g, int *b) const
+{
+    *r = 50;
+    *g = 50;
+    *b = 50;
+}
+
+int Settings::getDopeSheetEditorNodeSeparationWith() const
+{
+    return 4;
+}
+
 bool
 Settings::isAutoProxyEnabled() const
 {
@@ -2817,4 +2934,3 @@ Settings::getAutoProxyMipMapLevel() const
 {
     return (unsigned int)_autoProxyLevel->getValue() + 1;
 }
-

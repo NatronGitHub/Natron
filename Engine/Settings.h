@@ -274,6 +274,14 @@ public:
     void getCurveEditorBGColor(double* r,double* g,double* b) const;
     void getCurveEditorGridColor(double* r,double* g,double* b) const;
     void getCurveEditorScaleColor(double* r,double* g,double* b) const;
+    void getDopeSheetEditorBackgroundColor(double* r,double* g,double* b) const;
+    void getDopeSheetEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getDopeSheetEditorScaleColor(double* r,double* g, double* b) const;
+    void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
+
+    void getPluginIconFrameColor(int *r, int *g, int *b) const;
+    int getDopeSheetEditorNodeSeparationWith() const;
     
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;
@@ -427,7 +435,13 @@ private:
     boost::shared_ptr<Color_Knob> _curveEditorBGColor;
     boost::shared_ptr<Color_Knob> _gridColor;
     boost::shared_ptr<Color_Knob> _curveEditorScaleColor;
-    
+
+    boost::shared_ptr<Group_Knob> _dopeSheetEditorColors;
+    boost::shared_ptr<Color_Knob> _dopeSheetEditorBackgroundColor;
+    boost::shared_ptr<Color_Knob> _dopeSheetEditorRootSectionBackgroundColor;
+    boost::shared_ptr<Color_Knob> _dopeSheetEditorKnobSectionBackgroundColor;
+    boost::shared_ptr<Color_Knob> _dopeSheetEditorScaleColor;
+    boost::shared_ptr<Color_Knob> _dopeSheetEditorGridColor;
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _restoringSettings;
