@@ -652,6 +652,7 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             }
             increment(delta, shift);
         } else {
+            _imp->valueWhenEnteringFocus = value();
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
         }
