@@ -20,7 +20,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 class DopeSheet;
-class DopeSheetKey;
+struct DopeSheetKey;
 class DSNode;
 
 namespace Natron {
@@ -70,7 +70,6 @@ public:
     DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                             double oldTime,
                             double newTime,
-                            DopeSheet *model,
                             QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -86,7 +85,6 @@ private:
     boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
-    DopeSheet *_model;
 };
 
 
@@ -101,7 +99,6 @@ public:
     DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                              double oldTime,
                              double newTime,
-                             DopeSheet *model,
                              QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -117,7 +114,6 @@ private:
     boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
-    DopeSheet *_model;
 };
 
 class DSSlipReaderCommand : public QUndoCommand
@@ -125,7 +121,6 @@ class DSSlipReaderCommand : public QUndoCommand
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
-                        DopeSheet *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -140,7 +135,6 @@ private:
 private:
     boost::weak_ptr<DSNode> _readerContext;
     double _dt;
-    DopeSheet *_model;
 };
 
 
@@ -154,7 +148,6 @@ class DSMoveReaderCommand : public QUndoCommand
 public:
     DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
-                        DopeSheet *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -166,7 +159,6 @@ public:
 private:
     boost::weak_ptr<DSNode> _readerContext;
     double _dt;
-    DopeSheet *_model;
 };
 
 
@@ -291,7 +283,5 @@ private:
     std::vector<DopeSheetKey> _keys;
     DopeSheet *_model;
 };
-
-
 
 #endif // DOPESHEETEDITORUNDOREDO_H

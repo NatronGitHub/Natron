@@ -196,13 +196,11 @@ bool DSMoveKeysCommand::mergeWith(const QUndoCommand *other)
 DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                                  double oldTime,
                                                  double newTime,
-                                                 DopeSheet *model,
                                                  QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
     _oldTime(oldTime),
-    _newTime(newTime),
-    _model(model)
+    _newTime(newTime)
 {
     setText(QObject::tr("Trim left"));
 }
@@ -274,13 +272,11 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                                    double oldTime, double newTime,
-                                                   DopeSheet *model,
                                                    QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
     _oldTime(oldTime),
-    _newTime(newTime),
-    _model(model)
+    _newTime(newTime)
 {
     setText(QObject::tr("Trim right"));
 }
@@ -352,12 +348,10 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
                                          double dt,
-                                         DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(dsNodeReader),
-    _dt(dt),
-    _model(model)
+    _dt(dt)
 {
     setText(QObject::tr("Slip reader"));
 }
@@ -442,12 +436,10 @@ void DSSlipReaderCommand::slipReader(double dt)
 
 DSMoveReaderCommand::DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                          double dt,
-                                         DopeSheet *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
-    _dt(dt),
-    _model(model)
+    _dt(dt)
 {
     setText(QObject::tr("Move reader"));
 }

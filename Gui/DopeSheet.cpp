@@ -561,7 +561,7 @@ void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double n
     }
 
     if (_imp->canTrimLeft(newFirstFrame, lastFrameKnob->getValue())) {
-        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame, this));
+        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame));
     }
 }
 
@@ -583,7 +583,7 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     }
 
     if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
-        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, this));
+        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame));
     }
 }
 
@@ -606,13 +606,13 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
                      && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
 
     if (canSlip) {
-        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt));
     }
 }
 
 void DopeSheet::moveReader(const boost::shared_ptr<DSNode> &reader, double dt)
 {
-    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt, this));
+    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt));
 }
 
 void DopeSheet::moveGroup(const boost::shared_ptr<DSNode> &group, double dt)
