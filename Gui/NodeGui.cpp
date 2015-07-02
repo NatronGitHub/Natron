@@ -1159,7 +1159,10 @@ void
 NodeGui::forceComputePreview(int time)
 {
     NodePtr node = getNode();
-    if ( isVisible() && node->isPreviewEnabled() ) {
+    if (!node) {
+        return;
+    }
+    if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject()) {
         
         if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
             node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
