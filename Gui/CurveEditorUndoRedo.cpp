@@ -63,12 +63,18 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
         KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
+        boost::shared_ptr<KnobI> knob;
         
-        
+        if (isKnobCurve) {
+            knob = isKnobCurve->getInternalKnob();
+        }
+        boost::shared_ptr<Parametric_Knob> isParametric;
+        if (knob) {
+            isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+        }
+
         if (add && isSetKeyCommand) {
             if (isKnobCurve) {
-                boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-                boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
                 if (isParametric) {
                     (void)isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
                 } else {
@@ -83,7 +89,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
             }
         }
         
-        if (guiKnob) {
+        if (guiKnob && !isParametric) {
             if (add && isKnobCurve) {
                 guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
             } else {
@@ -98,9 +104,6 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                     
                     if (add) {
                         int time = it->second[i].getTime();
-                        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-                        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
-                        
                         if (isParametric) {
                             
                             Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
@@ -231,7 +234,17 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
         KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
         
-        if (guiKnob && isKnobCurve) {
+        boost::shared_ptr<KnobI> knob;
+        
+        if (isKnobCurve) {
+            knob = isKnobCurve->getInternalKnob();
+        }
+        boost::shared_ptr<Parametric_Knob> isParametric;
+        if (knob) {
+            isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+        }
+        
+        if (guiKnob && isKnobCurve && !isParametric) {
             if (add) {
                 guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
             } else {
@@ -249,8 +262,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                     if (add) {
                         
                         int time = it->second[i].getTime();
-                        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-                        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
                         
                         if (isParametric) {
                             
