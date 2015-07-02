@@ -70,7 +70,6 @@ public:
     DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                             double oldTime,
                             double newTime,
-                            DopeSheet *model,
                             QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -86,7 +85,6 @@ private:
     boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
-    DopeSheet *_model;
 };
 
 

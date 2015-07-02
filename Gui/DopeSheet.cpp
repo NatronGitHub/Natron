@@ -561,7 +561,7 @@ void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double n
     }
 
     if (_imp->canTrimLeft(newFirstFrame, lastFrameKnob->getValue())) {
-        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame, this));
+        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame));
     }
 }
 
