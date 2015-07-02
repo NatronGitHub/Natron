@@ -2012,7 +2012,7 @@ void DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutDescActionDopeSheetEditorFrameSelection,
                                                            viewMenu);
     QObject::connect(frameSelectionAction, SIGNAL(triggered()),
-                     q_ptr, SLOT(centerOn()));
+                     q_ptr, SLOT(centerOnSelection()));
     viewMenu->addAction(frameSelectionAction);
 }
 
