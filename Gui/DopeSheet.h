@@ -360,7 +360,7 @@ struct DopeSheetKey
             return false;
         }
 
-        if (key.key != other.key) {
+        if (key.key.getTime() != other.key.getTime()) {
             return false;
         }
 
@@ -435,7 +435,7 @@ public:
 
 Q_SIGNALS:
     void keyframeSelectionAboutToBeCleared();
-    void keyframeSelectionChanged();
+    void keyframeSelectionChangedFromModel();
 
 private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;

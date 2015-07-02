@@ -1007,28 +1007,22 @@ int DopeSheetSelectionModel::getSelectedKeyframesCount() const
 
 bool DopeSheetSelectionModel::keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const
 {
-    DSKeyPtrList::const_iterator isSelected = _imp->selectedKeyframes.end();
 
     for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        DSKeyPtr selectedKey = (*it);
-        boost::shared_ptr<DSKnob> knobContext = selectedKey->context.lock();
+        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
         assert(knobContext);
-
-        if (knobContext == dsKnob && selectedKey->key == keyframe) {
-            isSelected = it;
-            break;
+        if (knobContext == dsKnob && (*it)->key.getTime() == keyframe.getTime()) {
+            return true;
         }
     }
 
-    return (isSelected != _imp->selectedKeyframes.end());
+    return false;
 }
 
 DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DopeSheetKey &key) const
 {
     for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        DSKeyPtr selectedKey = (*it);
-
-        if (*(selectedKey.get()) == key) {
+        if (**it == key) {
             return it;
         }
     }
@@ -1038,7 +1032,7 @@ DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DopeShe
 
 void DopeSheetSelectionModel::emit_keyframeSelectionChanged()
 {
-    Q_EMIT keyframeSelectionChanged();
+    Q_EMIT keyframeSelectionChangedFromModel();
 }
 
 void DopeSheetSelectionModel::onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed)

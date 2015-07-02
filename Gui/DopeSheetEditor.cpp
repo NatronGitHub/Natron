@@ -112,7 +112,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     connect(_imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChanged()),
+    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel()),
             _imp->hierarchyView, SLOT(onKeyframeSelectionChanged()));
 
     // Main model -> DopeSheetView connections
@@ -125,7 +125,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     connect(_imp->model, SIGNAL(modelChanged()),
             _imp->dopeSheetView, SLOT(redraw()));
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChanged()),
+    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel()),
             _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()));
 
     // HierarchyView -> DopeSheetView connections
