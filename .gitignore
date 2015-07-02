@@ -16,6 +16,7 @@ NatronCrashReporter.xcodeproj
 CrashReporter/NatronCrashReporter
 Tests.xcodeproj
 HostSupport.xcodeproj
+LibMV.xcodeproj
 Gui.xcodeproj
 Engine.xcodeproj
 Project.xcodeproj
