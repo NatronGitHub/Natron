@@ -23,12 +23,22 @@ typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
 namespace {
 
+/**
+ * @brief A little helper to sort a DSKeyPtrList.
+ *
+ * This is used in the DSMoveKeysCommand.
+ */
 static bool dsSelectedKeyLessFunctor(const DSKeyPtr &left,
                                      const DSKeyPtr &right)
 {
     return left->key.getTime() < right->key.getTime();
 }
 
+/**
+ * @brief The two functions above are used to ensure that only one render
+ * will be triggered after a massive action (like moving a set of keyframes
+ * or a group).
+ */
 void renderOnce(Natron::EffectInstance *effectInstance)
 {
     assert(effectInstance);
@@ -58,7 +68,11 @@ void renderOnce(const std::set<KnobHolder *>& holders)
 
 }
 
-void moveReader(const NodePtr &reader, double time)
+/**
+ * @brief Move the node 'reader' on project timeline, by offsetting its
+ * starting time by 'dt'.
+ */
+void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName("startingTime").get());
     assert(startingTimeKnob);
@@ -67,11 +81,10 @@ void moveReader(const NodePtr &reader, double time)
     Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
 
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges(); // don't discard changes here otherwise the hash of hte node is not updated
 
     Q_UNUSED(r);
-
 }
 
 } // anon namespace

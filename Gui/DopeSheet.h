@@ -327,7 +327,7 @@ private:
 };
 
 /**
- * @brief The DopeSheetKey class describes a keyframe in a knob context.
+ * @brief The DopeSheetKey struct describes a keyframe in a knob context.
  *
  * It is and should be used only to handle keyframe selections.
  */
