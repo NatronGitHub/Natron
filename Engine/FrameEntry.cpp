@@ -85,7 +85,7 @@ FrameEntry::copy(const FrameEntry& other)
     srcBoundsRect.x1 = srcBounds.x1;
     srcBoundsRect.x2 = srcBounds.x2;
     srcBoundsRect.y1 = srcBounds.y1;
-    srcBoundsRect.y1 = srcBounds.y2;
+    srcBoundsRect.y2 = srcBounds.y2;
     RectI roi;
     if (!dstBounds.intersect(srcBoundsRect, &roi)) {
         return;

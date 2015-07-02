@@ -1760,6 +1760,7 @@ static boost::shared_ptr<RotoItem> getPreviousInLayer(const boost::shared_ptr<Ro
     if (found != layerItems.end()) {
         ++found;
         for (; found != layerItems.end(); ++found) {
+#pragma message WARN("BUG: return in loop body")
             return *found;
         }
     }
@@ -8629,7 +8630,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
 
     double opacity = stroke->getOpacity(time);
 
-    if (isStroke || isBezier->isOpenBezier()) {
+    if (isStroke || (isBezier && isBezier->isOpenBezier())) {
         std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
@@ -8648,7 +8649,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         _imp->renderBezier(cr, isBezier, opacity, time, mipmapLevel);
     }
     
-    bool useOpacityToConvert = isBezier != 0;
+    bool useOpacityToConvert = (isBezier != 0);
     
     switch (depth) {
         case Natron::eImageBitDepthFloat:
