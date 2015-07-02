@@ -219,9 +219,9 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 
     effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 
     Q_UNUSED(r);
 }
@@ -296,9 +296,9 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
 
     effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 
     Q_UNUSED(r);
 }
@@ -415,9 +415,9 @@ void DSSlipReaderCommand::slipReader(double dt)
         Q_UNUSED(r);
 
     }
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 }
 
 
