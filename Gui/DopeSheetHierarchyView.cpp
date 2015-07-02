@@ -39,8 +39,6 @@ void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelec
                                                  bool calledFromDopeSheetView)
 {
     if (_isSelectingFromHierarchyView >= 1) {
-        _isSelectingFromHierarchyView = 0;
-
         return;
     }
 
