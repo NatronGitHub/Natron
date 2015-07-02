@@ -2575,6 +2575,7 @@ ViewerInstance::onInputChanged(int inputNb)
                 if (op != Natron::eViewerCompositingOperatorNone) {
                     _imp->activeInputs[1] = inputNb;
                 } else {
+#pragma message WARN("BUG? Execution cannot reach this statement")
                     _imp->activeInputs[1] = -1;
                 }
             }

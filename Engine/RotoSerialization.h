@@ -352,6 +352,7 @@ public:
     , _controlPoints()
     , _featherPoints()
     , _closed(false)
+    , _isOpenBezier(false)
     {
     }
 
@@ -494,7 +495,9 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
     
     int _brushType;
-    Curve _xCurve,_yCurve,_pressureCurve;
+    Curve _xCurve;
+    Curve _yCurve;
+    Curve _pressureCurve;
 };
 
 class RotoLayerSerialization

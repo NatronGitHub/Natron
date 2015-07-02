@@ -74,13 +74,17 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                 } else {
                     knob->removeAnimation(isKnobCurve->getDimension());
                 }
-            } else {
-                isBezierCurve->getBezier()->removeAnimation();
+            } else if (isBezierCurve) {
+                boost::shared_ptr<Bezier> b = isBezierCurve->getBezier();
+                assert(b);
+                if (b) {
+                    b->removeAnimation();
+                }
             }
         }
         
         if (guiKnob) {
-            if (add) {
+            if (add && isKnobCurve) {
                 guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
             } else {
                 guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension() );
@@ -90,12 +94,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
             
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 if (isKnobCurve) {
-                    
-                    
                     isKnobCurve->getInternalKnob()->beginChanges();
                     
                     if (add) {
-                        
                         int time = it->second[i].getTime();
                         boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
                         boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
@@ -230,7 +231,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
         KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
         
-        if (guiKnob) {
+        if (guiKnob && isKnobCurve) {
             if (add) {
                 guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
             } else {
@@ -285,10 +286,12 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         }
                     }
                 } else if (isBezierCurve) {
+                    boost::shared_ptr<Bezier> b = isBezierCurve->getBezier();
+                    assert(b);
                     if (add) {
-                        isBezierCurve->getBezier()->setKeyframe(it->second[i].getTime());
+                        b->setKeyframe(it->second[i].getTime());
                     } else {
-                        isBezierCurve->getBezier()->removeKeyframe(it->second[i].getTime());
+                        b->removeKeyframe(it->second[i].getTime());
                     }
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
