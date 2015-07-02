@@ -1076,7 +1076,7 @@ public:
 
     DopeSheet::ItemType nodeType;
 
-    boost::shared_ptr<NodeGui> nodeGui;
+    boost::weak_ptr<NodeGui> nodeGui;
 
     QTreeWidgetItem *nameItem;
 
@@ -1099,7 +1099,11 @@ DSNodePrivate::~DSNodePrivate()
 
 void DSNodePrivate::initGroupNode()
 {
-    NodeList subNodes = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance())->getNodes();
+    boost::shared_ptr<NodeGui> node = nodeGui.lock();
+    if (!node) {
+        return;
+    }
+    NodeList subNodes = dynamic_cast<NodeGroup *>(node->getNode()->getLiveInstance())->getNodes();
 
     for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
         NodePtr subNode = (*it);
@@ -1206,12 +1210,13 @@ QTreeWidgetItem *DSNode::getTreeItem() const
  */
 boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
 {
-    return _imp->nodeGui;
+    return _imp->nodeGui.lock();
 }
 
 boost::shared_ptr<Natron::Node> DSNode::getInternalNode() const
 {
-    return _imp->nodeGui->getNode();
+    boost::shared_ptr<NodeGui> node = getNodeGui();
+    return node ? node->getNode() : NodePtr();
 }
 
 /**

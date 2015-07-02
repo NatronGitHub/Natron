@@ -186,11 +186,11 @@ public:
     , gammaLookup()
     , lastRotoPaintTickParamsMutex()
     , lastRotoPaintTickParams()
+    , currentlyUpdatingOpenGLViewerMutex()
+    , currentlyUpdatingOpenGLViewer(false)
     , renderAgeMutex()
     , renderAge()
     , displayAge()
-    , currentlyUpdatingOpenGLViewerMutex()
-    , currentlyUpdatingOpenGLViewer(false)
     {
 
         for (int i = 0; i < 2; ++i) {

@@ -2089,7 +2089,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
             continue;
         }
 
-        boost::shared_ptr<DSNode> dsNode = (*it).second;
+        const boost::shared_ptr<DSNode>& dsNode = (*it).second;
 
         DSTreeItemKnobMap dsKnobItems = dsNode->getItemKnobMap();
 
@@ -2098,7 +2098,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
                 continue;
             }
 
-            boost::shared_ptr<DSKnob> dsKnob = (*itKnob).second;
+            const boost::shared_ptr<DSKnob>& dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
                 KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
@@ -2263,7 +2263,7 @@ void DopeSheetView::centerOnSelection()
         range.second = _imp->selectedKeysBRect.right();
     }
 
-    if (range.first == 0 && range.second == 0) {
+    if (range.first == range.second) {
         return;
     }
 

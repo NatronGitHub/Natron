@@ -20,7 +20,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 class DopeSheet;
-class DopeSheetKey;
+struct DopeSheetKey;
 class DSNode;
 
 namespace Natron {
@@ -115,7 +115,6 @@ private:
     boost::weak_ptr<DSNode> _readerContext;
     double _oldTime;
     double _newTime;
-    DopeSheet *_model;
 };
 
 class DSSlipReaderCommand : public QUndoCommand
@@ -138,7 +137,6 @@ private:
 private:
     boost::weak_ptr<DSNode> _readerContext;
     double _dt;
-    DopeSheet *_model;
 };
 
 
@@ -164,7 +162,6 @@ public:
 private:
     boost::weak_ptr<DSNode> _readerContext;
     double _dt;
-    DopeSheet *_model;
 };
 
 
