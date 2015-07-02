@@ -55,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/GuiApplicationManager.h"
@@ -245,7 +246,7 @@ NodeGui::initialize(NodeGraph* dag,
     _internalNode = internalNode;
     assert(internalNode);
     _graph = dag;
-    
+
     boost::shared_ptr<NodeGui> thisAsShared = shared_from_this();
 
     internalNode->setNodeGuiPointer(thisAsShared);
@@ -273,7 +274,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
 
     setCacheMode(DeviceCoordinateCache);
-    
+
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
     if (isOutput) {
         QObject::connect (isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()));
@@ -285,7 +286,7 @@ NodeGui::initialize(NodeGraph* dag,
     }
 
     createGui();
-    
+
     NodePtr parent = internalNode->getParentMultiInstance();
     if (parent) {
         boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
@@ -307,7 +308,7 @@ NodeGui::initialize(NodeGraph* dag,
             onNodeExtraLabelChanged(strKnob->getValue().c_str());
         }
     }
-    
+
 
     if ( internalNode->makePreviewByDefault() ) {
         ///It calls resize
@@ -399,9 +400,9 @@ NodeGui::initialize(NodeGraph* dag,
         QPointF p = parentNodeGui->pos();
         refreshPosition(p.x(), p.y(),true);
     }
-    
+
     getNode()->initializeDefaultOverlays();
-    
+
 } // initialize
 
 void
@@ -430,6 +431,7 @@ NodeGui::ensurePanelCreated()
     initializeKnobs();
     beginEditKnobs();
     gui->addNodeGuiToCurveEditor(thisShared);
+    gui->addNodeGuiToDopeSheetEditor(thisShared);
     
     //Ensure panel for all children if multi-instance
     
@@ -466,7 +468,7 @@ NodeGui::onSettingsPanelClosed(bool closed)
     QString message;
     int type;
     getNode()->getPersistentMessage(&message, &type);
-    
+
     if (!message.isEmpty()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -481,7 +483,7 @@ NodeGui::createPanel(QVBoxLayout* container,
                      const boost::shared_ptr<NodeGui>& thisAsShared)
 {
     NodeSettingsPanel* panel = 0;
-    
+
     boost::shared_ptr<Natron::Node> node = getNode();
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( node->getLiveInstance() );
 
@@ -502,7 +504,7 @@ NodeGui::createPanel(QVBoxLayout* container,
             _mainInstancePanel->initializeKnobs();
         }
         panel = new NodeSettingsPanel( multiPanel,_graph->getGui(),thisAsShared,container,container->parentWidget() );
-        
+
         if (panel) {
             bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
             
@@ -552,18 +554,18 @@ NodeGui::createGui()
         _nameFrame = new QGraphicsRectItem(this);
         _nameFrame->setZValue(depth + 1);
     }
-    
+
     if (mustAddResizeHandle()) {
         _resizeHandle = new QGraphicsPolygonItem(this);
         _resizeHandle->setZValue(depth + 1);
     }
-    
+
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
-    
+
     BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
-    
+
     if (!isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-        
+
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
             _pluginIcon = new QGraphicsPixmapItem(this);
@@ -575,12 +577,12 @@ NodeGui::createGui()
             _pluginIcon->setPixmap(pix);
         }
     }
-    
+
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         _mergeIcon = new QGraphicsPixmapItem(this);
         _mergeIcon->setZValue(depth + 1);
     }
-    
+
     _nameItem = new QGraphicsTextItem(getNode()->getLabel().c_str(),this);
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
@@ -672,7 +674,7 @@ NodeGui::ensurePreviewCreated()
         QPixmap prev_pixmap = QPixmap::fromImage(prev);
         _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
         _previewPixmap->setZValue(getBaseDepth() + 1);
-        
+
     }
     QSize size = getSize();
     int w,h;
@@ -680,7 +682,7 @@ NodeGui::ensurePreviewCreated()
     if (size.width() < w ||
         size.height() < h) {
 
-        
+
         resize(w,h);
         _previewPixmap->stackBefore(_nameItem);
         _previewPixmap->show();
@@ -758,7 +760,7 @@ NodeGui::isNearbyResizeHandle(const QPointF& pos) const
     if (!mustAddResizeHandle()) {
         return false;
     }
-    
+
     QPolygonF resizePoly = _resizeHandle->polygon();
     return resizePoly.containsPoint(pos,Qt::OddEvenFill);
 }
@@ -789,33 +791,33 @@ NodeGui::resize(int width,
     if (!canResize()) {
         return;
     }
-    
+
     QPointF topLeft = mapFromParent( pos() );
     QRectF labelBbox = _nameItem->boundingRect();
 
     adjustSizeToContent(&width,&height,adjustToTextSize);
-    
+
     bool hasPluginIcon = _pluginIcon != NULL;
-    
+
     {
         QMutexLocker k(&_mtSafeSizeMutex);
         _mtSafeWidth = width;
         _mtSafeHeight = height;
     }
-    
+
     int iconWidth = hasPluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
-    
+
     QRectF bbox(topLeft.x(),topLeft.y(),width,height);
 
     _boundingBox->setRect(bbox);
-    
+
     if (hasPluginIcon) {
         _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
         int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3. : (height - NATRON_PLUGIN_ICON_SIZE) /2.;
         _pluginIcon->setY(topLeft.y() + iconsOffset);
         _pluginIconFrame->setRect(topLeft.x(),topLeft.y(),iconWidth, height);
     }
-    
+
     if (_mergeIcon && _mergeIcon->isVisible()) {
         int iconsOffset =  (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3.;
         _mergeIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
@@ -826,16 +828,16 @@ NodeGui::resize(int width,
     QFontMetrics metrics(f);
     int nameWidth = labelBbox.width();
     _nameItem->setX( topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2) );
-    
+
     double mh = labelBbox.height();
     _nameItem->setY(topLeft.y() + mh * 0.1);
-    
+
     if (mustFrameName()) {
         QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
         _nameFrame->setRect(nameFrameBox);
         height = std::max((double)height, nameFrameBox.height());
     }
-    
+
     if (mustAddResizeHandle()) {
         QPolygonF poly;
         QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
@@ -865,9 +867,9 @@ NodeGui::resize(int width,
 
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
-    
+
     resizeExtraContent(width,height,forceSize);
-    
+
     refreshPosition( pos().x(), pos().y(), true );
 }
 
@@ -1064,9 +1066,9 @@ NodeGui::refreshDashedStateOfEdges()
     if (viewer) {
         int activeInputs[2];
         viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
-        
+
         int nbInputsConnected = 0;
-        
+
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
             if ((int)i == activeInputs[0] || (int)i == activeInputs[1]) {
                 _inputEdges[i]->setDashed(false);
@@ -1092,7 +1094,7 @@ NodeGui::refreshEdges()
     if (_inputEdges.size() != nodeInputs.size()) {
         return;
     }
-    
+
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         assert(i < nodeInputs.size());
         assert(_inputEdges[i]);
@@ -1143,12 +1145,12 @@ NodeGui::updatePreviewImage(int time)
 {
     NodePtr node = getNode();
     if ( isVisible() && node->isPreviewEnabled()  && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
-        
+
         if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
             node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
             return;
         }
-        
+
         ensurePreviewCreated();
 
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
@@ -1163,12 +1165,12 @@ NodeGui::forceComputePreview(int time)
         return;
     }
     if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject()) {
-        
+
         if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
             node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
             return;
         }
-        
+
         ensurePreviewCreated();
 
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
@@ -1182,7 +1184,7 @@ NodeGui::computePreviewImage(int time)
     if ( node->isRenderingPreview() ) {
         return;
     }
-    
+
 
     int w = NATRON_PREVIEW_WIDTH;
     int h = NATRON_PREVIEW_HEIGHT;
@@ -1197,14 +1199,14 @@ NodeGui::computePreviewImage(int time)
         }
 #endif
         bool success = node->makePreviewImage(time, &w, &h, buf);
-        
+
         if (success) {
             QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
             QPixmap prev_pixmap = QPixmap::fromImage(img);
             _previewPixmap->setPixmap(prev_pixmap);
             QPointF topLeft = mapFromParent( pos() );
             QRectF bbox = boundingRect();
-            
+
             int iconWidth = _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
             _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
                                    topLeft.y() + bbox.height() / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
@@ -1234,21 +1236,21 @@ NodeGui::initializeInputsForInspector()
 {
     NodePtr node = getNode();
     assert(node);
-    
+
     ///If the node is a viewer, display 1 input and another one aside and hide all others.
     ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
-    
+
     bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance()) != 0;
-    
+
     int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
-    
+
     double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
 
     double angle =  piDividedbyX;
     bool maskAside = false;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         bool isMask = node->getLiveInstance()->isInputMask(i);
-        
+
         if ((int)i < maxInitiallyOnTopVisibleInputs || (isMask && maskAside)) {
             _inputEdges[i]->setAngle(angle);
             angle += piDividedbyX;
@@ -1258,13 +1260,13 @@ NodeGui::initializeInputsForInspector()
         } else {
             _inputEdges[i]->setAngle(M_PI);
         }
-        
+
         if (!_inputEdges[i]->hasSource()) {
             _inputEdges[i]->initLine();
         }
     }
-    
-    
+
+
     bool inputAsideDisplayed = false;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         if (_inputEdges[i]->hasSource() || node->getLiveInstance()->isInputMask(i)) {
@@ -1282,7 +1284,7 @@ NodeGui::initializeInputsForInspector()
             }
         }
     }
-    
+
 }
 
 void
@@ -1292,22 +1294,22 @@ NodeGui::initializeInputs()
     if (_outputEdge) {
         _outputEdge->initLine();
     }
-    
+
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
     std::vector<NodePtr> inputs = node->getInputs_copy();
-    
+
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         delete *it;
     }
     _inputEdges.clear();
-    
+
 
     ///Make new edge for all non existing inputs
     boost::shared_ptr<NodeGui> thisShared = shared_from_this();
-    
+
     int inputsCount = 0;
     int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
@@ -1335,9 +1337,9 @@ NodeGui::initializeInputs()
     }
 
 
-    
+
     refreshDashedStateOfEdges();
-    
+
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
     if (isInspector) {
         initializeInputsForInspector();
@@ -1345,7 +1347,7 @@ NodeGui::initializeInputs()
         double piDividedbyX = M_PI / (inputsCount + 1);
 
         double angle =  piDividedbyX;
-        
+
         int maskIndex = 0;
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
             if (!node->getLiveInstance()->isInputRotoBrush(i)) {
@@ -1375,7 +1377,7 @@ NodeGui::initializeInputs()
                 }
             }
         }
-        
+
     }
 } // initializeInputs
 
@@ -1422,10 +1424,10 @@ NodeGui::setOptionalInputsVisible(bool visible)
 {
     ///Don't do this for inspectors
     NodePtr node = getNode();
-    
+
     //InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
    
-  
+
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
         
@@ -1509,13 +1511,13 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    
+
     if (_slaveMasterLink) {
         applyBrush(_clonedColor);
     } else {
         applyBrush(_currentColor);
     }
-    
+
 }
 
 void
@@ -1532,7 +1534,7 @@ NodeGui::setUserSelected(bool b)
             _graph->getGui()->setRotoInterface(this);
         }
     }
-    
+
     bool optionalInputsAutoHidden = _graph->areOptionalInputsAutoHidden();
     if (optionalInputsAutoHidden) {
         if (!b) {
@@ -1545,10 +1547,10 @@ NodeGui::setUserSelected(bool b)
             setOptionalInputsVisible(true);
         }
     }
-    
+
     refreshStateIndicator();
-    
-    
+
+
 
 }
 
@@ -1587,17 +1589,17 @@ NodeGui::connectEdge(int edgeNumber)
         boost::shared_ptr<NodeGuiI> ngi = inputs[edgeNumber]->getNodeGui();
         src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
-    
+
     _inputEdges[edgeNumber]->setSource(src);
-    
+
     NodePtr node = getNode();
     assert(node);
     if (dynamic_cast<InspectorNode*>(node.get())) {
         initializeInputsForInspector();
     }
-    
+
     return true;
-    
+
 }
 
 Edge*
@@ -1671,7 +1673,7 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     if (closest) {
         return closest;
     }
-    
+
     if (_outputEdge) {
         if (_outputEdge->isVisible()) {
             QLineF edgeLine = _outputEdge->line();
@@ -1684,7 +1686,7 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
             }
         }
     }
-    
+
     return NULL;
 } // hasEdgeNearbyRect
 
@@ -1817,7 +1819,7 @@ NodeGui::hideGui()
         if ( node->isPointTrackerNode() && node->getParentMultiInstanceName().empty() ) {
             _graph->getGui()->removeTrackerInterface(this, false);
         }
-        
+
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -1836,7 +1838,7 @@ NodeGui::deactivate(bool triggerRender)
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
-    
+
     bool isMultiInstanceChild = node->getParentMultiInstance().get() != NULL;
     if (!isMultiInstanceChild) {
         hideGui();
@@ -1849,9 +1851,10 @@ NodeGui::deactivate(bool triggerRender)
         _graph->moveToTrash(this);
         if ( _graph->getGui() ) {
             _graph->getGui()->getCurveEditor()->removeNode(this);
+            _graph->getGui()->getDopeSheetEditor()->removeNode(this);
         }
     }
-    
+
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
         getNode()->hasViewersConnected(&viewers);
@@ -1906,20 +1909,20 @@ NodeGui::onPersistentMessageChanged()
     if (!_persistentMessage || !_stateIndicator || !_graph || !_graph->getGui()) {
         return;
     }
-    
+
     QString message;
     int type;
     getNode()->getPersistentMessage(&message, &type);
-    
+
     _persistentMessage->setVisible(!message.isEmpty());
-    
+
     if (message.isEmpty()) {
 
 
         setToolTip(QString());
-        
+
     } else {
-    
+
         if (type == 1) {
             _persistentMessage->setPlainText(tr("ERROR"));
             QColor errColor(128,0,0,255);
@@ -1931,9 +1934,9 @@ NodeGui::onPersistentMessageChanged()
         } else {
             return;
         }
-        
+
         setToolTip(message);
-        
+
         refreshSize();
     }
     refreshStateIndicator();
@@ -1982,13 +1985,13 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
     NodePtr node = getNode();
     boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false));
     internalSerialization.push_back(thisSerialization);
-    
+
     ///For multi-instancs, serialize children too
     if (node->isMultiInstance()) {
         assert(_settingsPanel);
         boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
         assert(panel);
-        
+
         const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
         for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
@@ -2003,7 +2006,7 @@ NodeGui::restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization)
 {
     assert(internalSerialization.size() >= 1);
-   
+
     getSettingPanel()->pushUndoCommand(new LoadNodePresetsCommand(thisShared,internalSerialization));
 }
 
@@ -2036,7 +2039,7 @@ NodeGui::onRenderingStarted()
         }
     }
     ++_renderingStartedCount;
-    
+
 }
 
 void
@@ -2060,14 +2063,14 @@ NodeGui::refreshStateIndicator()
         return;
     }
     getNode()->getPersistentMessage(&message, &type);
-    
+
     bool showIndicator = true;
     if (_mergeHintActive) {
-        
+
         _stateIndicator->setBrush(Qt::green);
-        
+
     } else if (getIsSelected()) {
-        
+
         _stateIndicator->setBrush(Qt::white);
 
     } else if (!message.isEmpty() && (type == 1 || type == 2)) {
@@ -2076,11 +2079,11 @@ NodeGui::refreshStateIndicator()
         } else if ( type == 2) {
             _stateIndicator->setBrush(QColor(80,180,0,255)); //< warning
         }
-        
+
     } else {
         showIndicator = false;
     }
-    
+
     if (showIndicator && !_stateIndicator->isVisible()) {
         _stateIndicator->show();
     } else if (!showIndicator && _stateIndicator->isVisible()) {
@@ -2098,7 +2101,7 @@ NodeGui::setMergeHintActive(bool active)
     }
     _mergeHintActive = active;
     refreshStateIndicator();
-    
+
 }
 
 void
@@ -2124,7 +2127,7 @@ NodeGui::onInputNRenderingStarted(int input)
         _inputEdges[input]->turnOnRenderingColor();
         _inputNRenderingStartedCount.insert(std::make_pair(input,1));
     }
-    
+
 }
 
 void
@@ -2132,7 +2135,7 @@ NodeGui::onInputNRenderingFinished(int input)
 {
     std::map<int,int>::iterator itC = _inputNRenderingStartedCount.find(input);
     if (itC != _inputNRenderingStartedCount.end()) {
-        
+
         --itC->second;
         if (!itC->second) {
             _inputEdges[input]->turnOffRenderingColor();
@@ -2211,7 +2214,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         boost::shared_ptr<NodeGui> masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
         _masterNodeGui = masterNodeGui;
         assert(!_slaveMasterLink);
-        
+
         if (masterNode->getGroup() == node->getGroup()) {
             _slaveMasterLink = new LinkArrow( masterNodeGui.get(),this,parentItem() );
             _slaveMasterLink->setColor( QColor(200,100,100) );
@@ -2244,17 +2247,17 @@ static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Nod
     tt.append(masterNode->getLabel().c_str());
     tt.append(".");
     tt.append(master->getName().c_str());
-    
-    
+
+
     tt.append(" (master) ");
-    
+
     tt.append("------->");
-    
+
     tt.append(slaveNode->getLabel().c_str());
     tt.append(".");
     tt.append(slave->getName().c_str());
-    
-    
+
+
     tt.append(" (slave)</br>");
     return tt;
 }
@@ -2263,7 +2266,7 @@ void
 NodeGui::onKnobsLinksChanged()
 {
     NodePtr node = getNode();
-    
+
     typedef std::list<Natron::Node::KnobLink> InternalLinks;
     InternalLinks links;
     node->getKnobsLinks(links);
@@ -2289,10 +2292,10 @@ NodeGui::onKnobsLinksChanged()
     ///2nd pass: create the new links
 
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
-        
+
         KnobGuiLinks::iterator foundGuiLink = _knobsLinks.find(it->masterNode);
         if (foundGuiLink != _knobsLinks.end()) {
-            
+
             //We already have a link to the master node
             bool found = false;
 
@@ -2304,7 +2307,7 @@ NodeGui::onKnobsLinksChanged()
             }
             if (!found) {
                 ///There's no link for this knob, add info to the tooltip of the link arrow
-                
+
                 foundGuiLink->second.knobs.push_back(std::make_pair(it->slave,it->master));
                 QString fullTooltip;
                 for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
@@ -2313,7 +2316,7 @@ NodeGui::onKnobsLinksChanged()
                 }
             }
         } else {
-            
+
             ///There's no link to the master node yet
             if (it->masterNode->getNodeGui().get() != this && it->masterNode->getGroup() == getNode()->getGroup()) {
                 boost::shared_ptr<NodeGuiI> master_i = it->masterNode->getNodeGui();
@@ -2323,7 +2326,7 @@ NodeGui::onKnobsLinksChanged()
                 arrow->setWidth(2);
                 arrow->setColor( QColor(143,201,103) );
                 arrow->setArrowHeadColor( QColor(200,255,200) );
-                
+
                 QString tt = makeLinkString(it->masterNode.get(),it->master,node.get(),it->slave);
                 arrow->setToolTip(tt);
                 if ( !getDagGui()->areKnobLinksVisible() ) {
@@ -2372,7 +2375,7 @@ NodeGui::deleteReferences()
 {
     removeUndoStack();
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        
+
         QGraphicsScene* scene = (*it)->scene();
         if (scene) {
             scene->removeItem((*it));
@@ -2381,7 +2384,7 @@ NodeGui::deleteReferences()
         delete *it;
     }
     _inputEdges.clear();
-    
+
     if (_outputEdge) {
         QGraphicsScene* scene = _outputEdge->scene();
         if (scene) {
@@ -2628,7 +2631,7 @@ NodeGui::setNameItemHtml(const QString & name,
             labelCopy.remove( endCustomData, endCustomTag.size() );
             labelCopy.insert(endCustomData, "<br>");
         }
-        
+
         ///add the node name into the html encoded label
         int startFontTag = labelCopy.indexOf("<font size=");
         hasFontData = startFontTag != -1;
@@ -2641,7 +2644,7 @@ NodeGui::setNameItemHtml(const QString & name,
             labelCopy.prepend(name + "<br>");
         }
         textLabel.append(labelCopy);
-        
+
     } else {
         ///Default to something not too bad
         QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
@@ -2835,7 +2838,7 @@ void
 NodeGui::onGuiFrozenChanged(bool frozen)
 {
     if ( ( _settingsPanel ) ) {
-        
+
         getNode()->getLiveInstance()->onGuiFrozenChange(frozen);
     }
 }
@@ -2908,12 +2911,12 @@ DotGui::createGui()
 {
     double depth = getBaseDepth();
     setZValue(depth);
-    
+
     diskShape = new QGraphicsEllipseItem(this);
     diskShape->setZValue(depth);
     QPointF topLeft = mapFromParent( pos() );
     diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER) );
-    
+
     ellipseIndicator = new QGraphicsEllipseItem(this);
     ellipseIndicator->setRect(QRectF(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,
                                      topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
@@ -2931,7 +2934,7 @@ DotGui::refreshStateIndicator()
     } else {
         showIndicator = false;
     }
-    
+
     if (showIndicator && !ellipseIndicator->isVisible()) {
         ellipseIndicator->show();
     } else if (!showIndicator && ellipseIndicator->isVisible()) {
@@ -2989,9 +2992,9 @@ NodeGui::onInternalNameChanged(const QString & s)
     if (_settingNameFromGui) {
         return;
     }
-    
+
     setNameItemHtml(s,_nodeLabel);
-    
+
     if (_settingsPanel) {
         _settingsPanel->setName(s);
     }
@@ -3004,7 +3007,7 @@ NodeGui::setName(const QString & newName)
     _settingNameFromGui = true;
     getNode()->setLabel(newName.toStdString());
     _settingNameFromGui = false;
-    
+
     onInternalNameChanged(newName);
 }
 
@@ -3021,25 +3024,25 @@ NodeGui::shouldDrawOverlay() const
     if (!internalNode) {
         return false;
     }
-    
+
     NodePtr parentMultiInstance = internalNode->getParentMultiInstance();
-    
-    
+
+
     if (parentMultiInstance) {
         boost::shared_ptr<NodeGuiI> gui_i = parentMultiInstance->getNodeGui();
         assert(gui_i);
         NodeGui *parentGui = dynamic_cast<NodeGui*>(gui_i.get());
         assert(parentGui);
-        
+
         boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
         assert(multiInstance);
-        
+
         const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
         for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             NodePtr instance = it->first.lock();
-            
+
             if (instance == internalNode) {
-                
+
                 if (parentGui->isSettingsPanelVisible() &&
                     !parentGui->isSettingsPanelMinimized() &&
                     instance->isActivated() &&
@@ -3051,15 +3054,15 @@ NodeGui::shouldDrawOverlay() const
                 }
 
             }
-            
+
         }
-        
+
     } else {
         if (!internalNode->isNodeDisabled() &&
             internalNode->isActivated() &&
             isSettingsPanelVisible() &&
             !isSettingsPanelMinimized() ) {
-            
+
             return true;
         }
     }
@@ -3093,28 +3096,28 @@ struct ExportGroupTemplateDialogPrivate
     Gui* gui;
     NodeCollection* group;
     QGridLayout* mainLayout;
-    
+
     Natron::Label* labelLabel;
     LineEdit* labelEdit;
-    
+
     Natron::Label* idLabel;
     LineEdit* idEdit;
-    
+
     Natron::Label* groupingLabel;
     LineEdit* groupingEdit;
-    
+
     Natron::Label* fileLabel;
     LineEdit* fileEdit;
     Button* openButton;
-    
+
     Natron::Label* iconPathLabel;
     LineEdit* iconPath;
-    
+
     Natron::Label* descriptionLabel;
     LineEdit* descriptionEdit;
-    
+
     QDialogButtonBox *buttons;
-    
+
     ExportGroupTemplateDialogPrivate(NodeCollection* group,Gui* gui)
     : gui(gui)
     , group(group)
@@ -3134,7 +3137,7 @@ struct ExportGroupTemplateDialogPrivate
     , descriptionEdit(0)
     , buttons(0)
     {
-        
+
     }
 };
 
@@ -3143,8 +3146,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 , _imp(new ExportGroupTemplateDialogPrivate(group,gui))
 {
     _imp->mainLayout = new QGridLayout(this);
-    
-    
+
+
     _imp->idLabel = new Natron::Label(tr("Unique ID"),this);
     QString idTt = Natron::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
                                                "places in the application. Generally this contains domain and sub-domains names "
@@ -3163,18 +3166,18 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->labelEdit->setPlaceholderText("MyPlugin");
     QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
     _imp->labelEdit->setToolTip(labelTt);
-    
-    
+
+
     _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
     QString groupingTt = Natron::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
                                                      "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
-    
+
     _imp->groupingEdit = new LineEdit(this);
     _imp->groupingEdit->setPlaceholderText("Color/Transform");
     _imp->groupingEdit->setToolTip(groupingTt);
-    
-    
+
+
     _imp->iconPathLabel = new Natron::Label(tr("Icon relative path"),this);
     QString iconTt = Natron::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
                                                  "The path is relative to the Python script."), Qt::WhiteSpaceNormal);
@@ -3182,36 +3185,36 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->iconPath = new LineEdit(this);
     _imp->iconPath->setPlaceholderText("Label.png");
     _imp->iconPath->setToolTip(iconTt);
-    
+
     _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
     QString descTt =  Natron::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
                                                   " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new LineEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
-    
+
     _imp->fileLabel = new Natron::Label(tr("Directory"),this);
     QString fileTt  = Natron::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
-    
-    
+
+
     _imp->fileEdit->setToolTip(fileTt);
-    
-    
+
+
     QPixmap openPix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_FILE,&openPix);
     _imp->openButton = new Button(QIcon(openPix),"",this);
     _imp->openButton->setFocusPolicy(Qt::NoFocus);
     _imp->openButton->setFixedSize(17, 17);
     QObject::connect( _imp->openButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
-    
+
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
     QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
-    
-    
+
+
     _imp->mainLayout->addWidget(_imp->idLabel, 0, 0 , 1 , 1);
     _imp->mainLayout->addWidget(_imp->idEdit, 0, 1,  1 , 2);
     _imp->mainLayout->addWidget(_imp->labelLabel, 1, 0 , 1 , 1);
@@ -3226,22 +3229,22 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->mainLayout->addWidget(_imp->fileEdit, 5, 1, 1 , 1);
     _imp->mainLayout->addWidget(_imp->openButton, 5, 2, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 6, 0, 1, 3);
-    
+
     resize(400,sizeHint().height());
-    
-    
+
+
 }
 
 ExportGroupTemplateDialog::~ExportGroupTemplateDialog()
 {
-    
+
 }
 
 void
 ExportGroupTemplateDialog::onButtonClicked()
 {
     std::vector<std::string> filters;
-    
+
     const QString& path = _imp->gui->getLastPluginDirectory();
     SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,path.toStdString(),_imp->gui,false);
     if (dialog.exec()) {
@@ -3269,7 +3272,7 @@ ExportGroupTemplateDialog::onOkClicked()
         dirPath.remove(dirPath.size() - 1, 1);
     }
     QDir d(dirPath);
-    
+
     if (!d.exists()) {
         Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
         return;
@@ -3279,19 +3282,19 @@ ExportGroupTemplateDialog::onOkClicked()
         Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
     }
-    
+
     QString pluginID = _imp->idEdit->text();
     if (pluginID.isEmpty()) {
         Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
         return;
     }
-    
+
     QString iconPath = _imp->iconPath->text();
     QString grouping = _imp->groupingEdit->text();
     QString description = _imp->descriptionEdit->text();
-    
+
     QString filePath = d.absolutePath() + "/" + pluginLabel + ".py";
-    
+
     QStringList filters;
     filters.push_back(QString(pluginLabel + ".py"));
     if (!d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
@@ -3303,7 +3306,7 @@ ExportGroupTemplateDialog::onOkClicked()
             return;
         }
     }
-    
+
     bool foundInPath = false;
     QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
     for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
@@ -3314,25 +3317,25 @@ ExportGroupTemplateDialog::onOkClicked()
             foundInPath = true;
         }
     }
-    
+
     if (!foundInPath) {
-        
+
         QString message = dirPath + tr(" does not exist in the group plug-in search path, would you like to add it?");
         Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Plug-in path").toStdString(),
                                                                 message.toStdString(), false);
-        
+
         if  (rep == Natron::eStandardButtonYes) {
             appPTR->getCurrentSettings()->appendPythonGroupsPath(dirPath.toStdString());
         }
 
     }
-    
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
         Natron::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
         return;
     }
-    
+
     QTextStream ts(&file);
     QString content;
     _imp->group->exportGroupToPython(pluginID, pluginLabel, description, iconPath, grouping, content);
@@ -3552,26 +3555,31 @@ NodeGui::removeDefaultOverlay(KnobI* knob)
 void
 NodeGui::setPluginIconFilePath(const std::string& filePath)
 {
+    boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
+
     QPixmap p(filePath.c_str());
-    if (p.isNull() || !appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+    if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
     p = p.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-    
+
     if (getSettingPanel()) {
         getSettingPanel()->setPluginIcon(p);
     }
-    
+
     if (!_pluginIcon) {
         _pluginIcon = new QGraphicsPixmapItem(this);
         _pluginIcon->setZValue(getBaseDepth() + 1);
         _pluginIconFrame = new QGraphicsRectItem(this);
         _pluginIconFrame->setZValue(getBaseDepth());
-        _pluginIconFrame->setBrush(QColor(50,50,50));
+
+        int r, g, b;
+        currentSettings->getPluginIconFrameColor(&r, &g, &b);
+        _pluginIconFrame->setBrush(QColor(r, g, b));
     }
-    
+
     if (_pluginIcon) {
-        
+
         _pluginIcon->setPixmap(p);
         if (!_pluginIcon->isVisible()) {
             _pluginIcon->show();
@@ -3581,12 +3589,12 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
         getSize(&w, &h);
         w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
         resize(w,h);
-        
+
         double x,y;
         getPosition(&x, &y);
         x -= (NATRON_PLUGIN_ICON_SIZE) / 2. + PLUGIN_ICON_OFFSET;
         setPosition(x, y);
-        
+
     }
 }
 
@@ -3605,4 +3613,3 @@ NodeGui::setPluginDescription(const std::string& description)
         getSettingPanel()->setPluginDescription(description);
     }
 }
-

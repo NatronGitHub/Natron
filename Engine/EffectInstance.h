@@ -43,10 +43,16 @@
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
-#define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
-#define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"
+#define PLUGINID_OFX_CONSTANT    "net.sf.openfx.ConstantPlugin"
+#define PLUGINID_OFX_TIMEOFFSET "net.sf.openfx.timeOffset"
 #define PLUGINID_OFX_FRAMEHOLD    "net.sf.openfx.FrameHold"
+#define PLUGINID_OFX_RETIME "net.sf.openfx.Retime"
+#define PLUGINID_OFX_FRAMERANGE "net.sf.openfx.FrameRange"
 #define PLUGINID_OFX_RUNSCRIPT    "fr.inria.openfx.RunScript"
+#define PLUGINID_OFX_READFFMPEG     "fr.inria.openfx.ReadFFmpeg"
+#define PLUGINID_OFX_WRITEFFMPEG     "fr.inria.openfx.WriteFFmpeg"
+#define PLUGINID_OFX_READPFM     "fr.inria.openfx.ReadPFM"
+#define PLUGINID_OFX_WRITEPFM     "fr.inria.openfx.WritePFM"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")

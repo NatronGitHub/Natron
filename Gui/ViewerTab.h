@@ -234,6 +234,8 @@ public:
     void getTimelineBounds(int* left,int* right) const;
     
     void setTimelineBounds(int left,int right);
+
+    void centerOn(SequenceTime left, SequenceTime right);
     
     ///Calls setTimelineBounds + set the frame range line edit
     void setFrameRange(int left,int right);
@@ -253,6 +255,8 @@ public:
     
     void synchronizeOtherViewersProjection();
     
+    void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+
 public Q_SLOTS:
 
     void startPause(bool);

@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
@@ -283,6 +284,7 @@ TabWidget::createMenu()
     menu.addAction( tr("New histogram"), this, SLOT( newHistogramHere() ) );
     menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
+    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT( moveDopeSheetEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
     menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
     
@@ -575,6 +577,14 @@ TabWidget::moveCurveEditorHere()
     CurveEditor* editor = _imp->gui->getCurveEditor();
 
     moveTab(editor, editor,this);
+}
+
+void
+TabWidget::moveDopeSheetEditorHere()
+{
+    DopeSheetEditor *editor = _imp->gui->getDopeSheetEditor();
+
+    moveTab(editor, editor, this);
 }
 
 void
