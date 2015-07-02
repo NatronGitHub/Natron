@@ -321,7 +321,6 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 {
     int dim = dsKnob->getDimension();
-    assert(dim <= 0);
 
     KnobGui *knobGui = dsKnob->getKnobGui();
 
