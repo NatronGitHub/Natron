@@ -47,27 +47,15 @@ void renderOnce(Natron::EffectInstance *effectInstance)
     }
 }
 
-void renderOnce(std::set<KnobHolder *> *holders)
+void renderOnce(const std::set<KnobHolder *>& holders)
 {
-    std::set<ViewerInstance *> toRender;
 
-    for (std::set<KnobHolder *>::iterator khIt = holders->begin(); khIt != holders->end(); ++khIt) {
+    for (std::set<KnobHolder *>::const_iterator khIt = holders.begin(); khIt != holders.end(); ++khIt) {
         Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(*khIt);
 
-        effectInstance->endChanges(true);
-
-        std::list<ViewerInstance *> connectedViewers;
-
-        effectInstance->getNode()->hasViewersConnected(&connectedViewers);
-
-        toRender.insert(connectedViewers.begin(), connectedViewers.end());
+        effectInstance->endChanges();
     }
 
-    for (std::set<ViewerInstance *>::const_iterator viIt = toRender.begin(); viIt != toRender.end(); ++viIt) {
-        ViewerInstance *viewer = (*viIt);
-
-        viewer->renderCurrentFrame(true);
-    }
 }
 
 void moveReader(const NodePtr &reader, double time)
@@ -80,11 +68,10 @@ void moveReader(const NodePtr &reader, double time)
 
     effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = startingTimeKnob->setValue(startingTimeKnob->getValue() + time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
+    effectInstance->endChanges(); // don't discard changes here otherwise the hash of hte node is not updated
 
     Q_UNUSED(r);
 
-    renderOnce(effectInstance);
 }
 
 } // anon namespace
@@ -155,7 +142,7 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
                               dt, 0, &selectedKey->key);
     }
 
-    renderOnce(&knobHolders);
+    renderOnce(knobHolders);
 
     _model->getSelectionModel()->emit_keyframeSelectionChanged();
 }
@@ -232,9 +219,9 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 
     effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 
     Q_UNUSED(r);
 }
@@ -272,6 +259,7 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                                    double oldTime, double newTime,
+                                                   DopeSheet * /*model*/,
                                                    QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
@@ -308,9 +296,9 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
 
     effectInstance->beginChanges();
     KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 
     Q_UNUSED(r);
 }
@@ -348,6 +336,7 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
                                          double dt,
+                                         DopeSheet * /*model*/,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(dsNodeReader),
@@ -426,9 +415,9 @@ void DSSlipReaderCommand::slipReader(double dt)
         Q_UNUSED(r);
 
     }
-    effectInstance->endChanges(true);
+    effectInstance->endChanges();
 
-    renderOnce(effectInstance);
+    //renderOnce(effectInstance);
 }
 
 
@@ -436,6 +425,7 @@ void DSSlipReaderCommand::slipReader(double dt)
 
 DSMoveReaderCommand::DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                          double dt,
+                                         DopeSheet * /*model*/,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
@@ -658,7 +648,7 @@ void DSMoveGroupCommand::moveGroup(double dt)
         }
     }
 
-    renderOnce(&knobHolders);
+    renderOnce(knobHolders);
 
     _model->getSelectionModel()->clearKeyframeSelection();
     _model->emit_modelChanged();

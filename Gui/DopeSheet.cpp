@@ -583,7 +583,7 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     }
 
     if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
-        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame));
+        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, this));
     }
 }
 
@@ -606,13 +606,13 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
                      && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
 
     if (canSlip) {
-        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt));
+        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
     }
 }
 
 void DopeSheet::moveReader(const boost::shared_ptr<DSNode> &reader, double dt)
 {
-    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt));
+    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt, this));
 }
 
 void DopeSheet::moveGroup(const boost::shared_ptr<DSNode> &group, double dt)
@@ -1074,7 +1074,7 @@ public:
 
     DopeSheet::ItemType nodeType;
 
-    boost::shared_ptr<NodeGui> nodeGui;
+    boost::weak_ptr<NodeGui> nodeGui;
 
     QTreeWidgetItem *nameItem;
 
@@ -1097,7 +1097,11 @@ DSNodePrivate::~DSNodePrivate()
 
 void DSNodePrivate::initGroupNode()
 {
-    NodeList subNodes = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance())->getNodes();
+    boost::shared_ptr<NodeGui> node = nodeGui.lock();
+    if (!node) {
+        return;
+    }
+    NodeList subNodes = dynamic_cast<NodeGroup *>(node->getNode()->getLiveInstance())->getNodes();
 
     for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
         NodePtr subNode = (*it);
@@ -1204,12 +1208,13 @@ QTreeWidgetItem *DSNode::getTreeItem() const
  */
 boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
 {
-    return _imp->nodeGui;
+    return _imp->nodeGui.lock();
 }
 
 boost::shared_ptr<Natron::Node> DSNode::getInternalNode() const
 {
-    return _imp->nodeGui->getNode();
+    boost::shared_ptr<NodeGui> node = getNodeGui();
+    return node ? node->getNode() : NodePtr();
 }
 
 /**

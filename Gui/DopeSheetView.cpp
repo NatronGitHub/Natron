@@ -41,7 +41,9 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 
-
+namespace {
+//Protect declarations in an anonymous namespace
+    
 // Typedefs
 typedef std::set<double> TimeSet;
 typedef std::pair<double, double> FrameRange;
@@ -59,7 +61,6 @@ const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
 
 ////////////////////////// Helpers //////////////////////////
 
-namespace {
 
 void running_in_main_thread() {
     assert(qApp && qApp->thread() == QThread::currentThread());
@@ -363,8 +364,14 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             QRectF treeItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
             if (dsNode->isRangeDrawingEnabled()) {
-                FrameRange range = nodeRanges.at(dsNode.get());
-
+                
+                std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find(dsNode.get());
+                if (foundRange == nodeRanges.end()) {
+                    return getCursorForEventState(DopeSheetView::esNoEditingState);;
+                }
+                
+                const FrameRange& range = foundRange->second;
+                
                 QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                    QPointF(range.second, treeItemRect.bottom() + 1)));
 
@@ -903,7 +910,12 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
 {
     // Draw the clip
     {
-        FrameRange range = nodeRanges.at(dsNode.get());
+        std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find(dsNode.get());
+        if (foundRange == nodeRanges.end()) {
+            return;
+        }
+        
+        const FrameRange& range = foundRange->second;
 
         QRectF treeItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
@@ -2008,7 +2020,7 @@ void DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutDescActionDopeSheetEditorFrameSelection,
                                                            viewMenu);
     QObject::connect(frameSelectionAction, SIGNAL(triggered()),
-                     q_ptr, SLOT(centerOn()));
+                     q_ptr, SLOT(centerOnSelection()));
     viewMenu->addAction(frameSelectionAction);
 }
 
@@ -2085,7 +2097,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
             continue;
         }
 
-        boost::shared_ptr<DSNode> dsNode = (*it).second;
+        const boost::shared_ptr<DSNode>& dsNode = (*it).second;
 
         DSTreeItemKnobMap dsKnobItems = dsNode->getItemKnobMap();
 
@@ -2094,7 +2106,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
                 continue;
             }
 
-            boost::shared_ptr<DSKnob> dsKnob = (*itKnob).second;
+            const boost::shared_ptr<DSKnob>& dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
                 KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
@@ -2107,6 +2119,23 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
                 dimLastKeys.push_back(keyframes.rbegin()->getTime());
             }
         }
+        
+        // Also append the range of the clip if this is a Reader/Group/Time node
+        std::map<DSNode *, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find(dsNode.get());
+        if (foundRange != _imp->nodeRanges.end()) {
+            const FrameRange& range = foundRange->second;
+            if (!dimFirstKeys.empty()) {
+                dimFirstKeys[0] = range.first;
+            } else {
+                dimFirstKeys.push_back(range.first);
+            }
+            if (!dimLastKeys.empty()) {
+                dimLastKeys[0] = range.second;
+            } else {
+                dimLastKeys.push_back(range.second);
+            }
+        }
+        
     }
 
     if (dimFirstKeys.empty() || dimLastKeys.empty()) {
@@ -2259,7 +2288,7 @@ void DopeSheetView::centerOnSelection()
         range.second = _imp->selectedKeysBRect.right();
     }
 
-    if (range.first == 0 && range.second == 0) {
+    if (range.first == range.second) {
         return;
     }
 

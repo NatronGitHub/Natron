@@ -1988,21 +1988,6 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
-    if (lastOverlay) {
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it == lastOverlay) {
-#pragma message WARN("FIXME: why would a double click translate to a pen motion? please comment and fix")
-                //if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, pressure, timestamp, e)) {
-                //    return true;
-                //} else {
-                    nodes.erase(it);
-                    break;
-                //}
-            }
-        }
-    }
-
 
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         QPointF transformViewportPos;

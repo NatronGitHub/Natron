@@ -99,6 +99,7 @@ public:
     DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                              double oldTime,
                              double newTime,
+                             DopeSheet * /*model*/,
                              QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -121,6 +122,7 @@ class DSSlipReaderCommand : public QUndoCommand
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
+                        DopeSheet * /*model*/,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -148,6 +150,7 @@ class DSMoveReaderCommand : public QUndoCommand
 public:
     DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
+                        DopeSheet * /*model*/,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;

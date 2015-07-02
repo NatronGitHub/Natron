@@ -68,6 +68,11 @@ SOURCES += \
     CustomParamInteract.cpp \
     DefaultOverlays.cpp \
     DockablePanel.cpp \
+    DopeSheet.cpp \
+    DopeSheetView.cpp \
+    DopeSheetEditorUndoRedo.cpp \
+    DopeSheetHierarchyView.cpp \
+    DopeSheetEditor.cpp \
     Edge.cpp \
     FromQtEnums.cpp \
     Gui.cpp \
@@ -129,12 +134,8 @@ SOURCES += \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp \
-    DopeSheet.cpp \
-    DopeSheetView.cpp \
-    DopeSheetEditorUndoRedo.cpp \
-    DopeSheetHierarchyView.cpp \
-    DopeSheetEditor.cpp
+    NatronGui/pyviewer_wrapper.cpp
+
 
 HEADERS += \
     AboutWindow.h \
@@ -152,6 +153,11 @@ HEADERS += \
     CustomParamInteract.h \
     DefaultOverlays.h \
     DockablePanel.h \
+    DopeSheet.h \
+    DopeSheetView.h \
+    DopeSheetEditorUndoRedo.h \
+    DopeSheetHierarchyView.h \
+    DopeSheetEditor.h \
     Edge.h \
     FromQtEnums.h \
     GroupBoxLabel.h \
@@ -240,12 +246,8 @@ HEADERS += \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h \
-    DopeSheet.h \
-    DopeSheetView.h \
-    DopeSheetEditorUndoRedo.h \
-    DopeSheetHierarchyView.h \
-    DopeSheetEditor.h
+    NatronGui/pyviewer_wrapper.h
+
 
 RESOURCES += \
     GuiResources.qrc
