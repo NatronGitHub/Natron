@@ -143,9 +143,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
         } // if (guiKnob) {
-        
-        isKnobCurve->getInternalKnob()->endChanges();
-        
+        if (isKnobCurve) {
+            isKnobCurve->getInternalKnob()->endChanges();
+        }
     }
     
     _curveWidget->update();
@@ -296,9 +296,9 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
         } // if (guiKnob) {
-        
-        isKnobCurve->getInternalKnob()->endChanges();
-
+        if (isKnobCurve) {
+            isKnobCurve->getInternalKnob()->endChanges();
+        }
     }
 
     _curveWidget->update();
