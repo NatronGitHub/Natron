@@ -434,7 +434,6 @@ public:
     void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
 
 Q_SIGNALS:
-    void keyframeSelectionAboutToBeCleared();
     void keyframeSelectionChanged();
 
 private:

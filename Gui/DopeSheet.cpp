@@ -952,8 +952,6 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
     DSKeyPtrList oldSelection = _imp->selectedKeyframes;
 
     if (selectionFlags & DopeSheetSelectionModel::SelectionTypeClear) {
-        Q_EMIT keyframeSelectionAboutToBeCleared();
-
         _imp->selectedKeyframes.clear();
     }
 
