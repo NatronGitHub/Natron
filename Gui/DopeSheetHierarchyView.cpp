@@ -24,8 +24,7 @@ typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
 
 HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *model,
                                                          QObject *parent) :
-    QItemSelectionModel(model, parent),
-    _isSelectingFromHierarchyView(0)
+    QItemSelectionModel(model, parent)
 {
     connect(model, SIGNAL(destroyed()),
             this, SLOT(deleteLater()));
@@ -34,20 +33,9 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(QAbstractItemModel *mod
 HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
 {}
 
-void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelection,
-                                                 QItemSelectionModel::SelectionFlags command,
-                                                 bool calledFromDopeSheetView)
+void HierarchyViewSelectionModel::select(const QItemSelection &userSelection,
+                                         QItemSelectionModel::SelectionFlags command)
 {
-    if (_isSelectingFromHierarchyView >= 1) {
-        _isSelectingFromHierarchyView = 0;
-
-        return;
-    }
-
-    if (!calledFromDopeSheetView) {
-        ++_isSelectingFromHierarchyView;
-    }
-
     QItemSelection finalSelection = userSelection;
 
     QModelIndexList userSelectedIndexes = userSelection.indexes();
@@ -73,16 +61,6 @@ void HierarchyViewSelectionModel::selectInternal(const QItemSelection &userSelec
     }
 
     QItemSelectionModel::select(finalSelection, command);
-
-    if (!calledFromDopeSheetView) {
-        --_isSelectingFromHierarchyView;
-    }
-}
-
-void HierarchyViewSelectionModel::select(const QItemSelection &userSelection,
-                                         QItemSelectionModel::SelectionFlags command)
-{
-    selectInternal(userSelection, command, false);
 }
 
 void HierarchyViewSelectionModel::selectChildren(const QModelIndex &index, QItemSelection *selection) const
@@ -559,7 +537,6 @@ void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items
     dopeSheetModel->getSelectionModel()->makeSelection(keys, sFlags);
 }
 
-
 HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent) :
     QTreeWidget(parent),
     _imp(new HierarchyViewPrivate(this))
@@ -583,7 +560,7 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
     connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-            this, SLOT(onItemSelectionChanged()));
+            this, SLOT(onSelectionChanged()));
 }
 
 HierarchyView::~HierarchyView()
@@ -871,57 +848,63 @@ void HierarchyView::onKeyframeSelectionChanged()
         }
     }
 
+    disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+               this, SLOT(onSelectionChanged()));
+
+    // Compose an tree selection from the selected keyframes
     if (toCheck.empty()) {
-        mySelecModel->selectInternal(QItemSelection(), QItemSelectionModel::Clear, true);
-
-        return;
+        mySelecModel->select(QItemSelection(), QItemSelectionModel::Clear);
     }
+    else {
+        std::set<QModelIndex> toSelect;
 
-    std::list<QModelIndex> toSelect;
+        for (DSKnobPtrList::const_iterator toCheckIt = toCheck.begin();
+             toCheckIt != toCheck.end();
+             ++toCheckIt) {
+            boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
 
-    for (DSKnobPtrList::const_iterator toCheckIt = toCheck.begin();
-         toCheckIt != toCheck.end();
-         ++toCheckIt) {
-        boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
+            KnobGui *knobGui = dsKnob->getKnobGui();
+            int dim = dsKnob->getDimension();
 
-        KnobGui *knobGui = dsKnob->getKnobGui();
-        int dim = dsKnob->getDimension();
+            KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
 
-        KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+            bool selectItem = true;
 
-        bool selectItem = true;
+            for (KeyFrameSet::const_iterator kfIt = keyframes.begin();
+                 kfIt != keyframes.end();
+                 ++kfIt) {
+                KeyFrame key = (*kfIt);
 
-        for (KeyFrameSet::const_iterator kfIt = keyframes.begin();
-             kfIt != keyframes.end();
-             ++kfIt) {
-            KeyFrame key = (*kfIt);
+                if (!_imp->dopeSheetModel->getSelectionModel()->keyframeIsSelected(dsKnob, key)) {
+                    selectItem = false;
 
-            if (!_imp->dopeSheetModel->getSelectionModel()->keyframeIsSelected(dsKnob, key)) {
-                selectItem = false;
+                    break;
+                }
+            }
 
-                break;
+            QTreeWidgetItem *knobItem = dsKnob->getTreeItem();
+
+            if (selectItem) {
+                toSelect.insert(indexFromItem(knobItem));
             }
         }
 
-        if (selectItem) {
-            toSelect.push_back(indexFromItem(dsKnob->getTreeItem()));
+        QItemSelection selection;
+
+        for (std::set<QModelIndex>::const_iterator indexIt = toSelect.begin();
+             indexIt != toSelect.end();
+             ++indexIt) {
+            QModelIndex index = (*indexIt);
+
+            selection.select(index, index);
         }
-    }
 
-    QItemSelection selection;
-
-    for (std::list<QModelIndex>::const_iterator indexIt = toSelect.begin();
-         indexIt != toSelect.end();
-         ++indexIt) {
-        QModelIndex index = (*indexIt);
-
-        selection.select(index, index);
-    }
-
-    if (!selection.empty()) {
         QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
-        mySelecModel->selectInternal(selection, flags, true);
+        mySelecModel->select(selection, flags);
     }
+
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+            this, SLOT(onSelectionChanged()));
 }
 
 void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
@@ -960,7 +943,7 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
     }
 }
 
-void HierarchyView::onItemSelectionChanged()
+void HierarchyView::onSelectionChanged()
 {
     _imp->selectKeyframes(selectedItems());
 }

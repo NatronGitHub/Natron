@@ -327,7 +327,7 @@ private:
 };
 
 /**
- * @brief The DopeSheetKey class describes a keyframe in a knob context.
+ * @brief The DopeSheetKey struct describes a keyframe in a knob context.
  *
  * It is and should be used only to handle keyframe selections.
  */
@@ -434,7 +434,6 @@ public:
     void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
 
 Q_SIGNALS:
-    void keyframeSelectionAboutToBeCleared();
     void keyframeSelectionChangedFromModel();
 
 private:
