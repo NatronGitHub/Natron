@@ -1222,7 +1222,7 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) &&
         _imp->rotoData->builtBezier &&
          ( (RotoToolEnum)data.x() != _imp->selectedTool ) ) {
-        if (_imp->selectedTool != eRotoToolDrawBezier) {
+        if (_imp->selectedTool == eRotoToolDrawBezier) {
             _imp->rotoData->builtBezier->setCurveFinished(true);
         }
         _imp->clearSelection();
@@ -3361,8 +3361,7 @@ RotoGui::keyDown(double /*scaleX*/,
             pushUndoCommand( new RemoveCurveUndoCommand(this,_imp->rotoData->selectedItems) );
             didSomething = true;
         }
-    } else if ( key == Qt::Key_Escape || isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
-#pragma message WARN("BUG? Escape key processed here (see below)")
+    } else if ( (key == Qt::Key_Escape && (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier)) || isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
         if ( (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished() ) {
             
             if (!_imp->rotoData->builtBezier->isOpenBezier()) {
@@ -3451,7 +3450,6 @@ RotoGui::keyDown(double /*scaleX*/,
         removeFeatherForSelectedCurve();
         didSomething = true;
     } else if (key == Qt::Key_Escape) {
-#pragma message WARN("BUG? Execution cannot reach this statement (see above)")
         _imp->clearSelection();
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, modifiers, key) ) {
