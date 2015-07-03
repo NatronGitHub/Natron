@@ -360,7 +360,7 @@ struct DopeSheetKey
             return false;
         }
 
-        if (key.key != other.key) {
+        if (key.key.getTime() != other.key.getTime()) {
             return false;
         }
 
@@ -434,7 +434,7 @@ public:
     void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
 
 Q_SIGNALS:
-    void keyframeSelectionChanged();
+    void keyframeSelectionChangedFromModel();
 
 private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
