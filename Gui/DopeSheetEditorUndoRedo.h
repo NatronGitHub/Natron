@@ -64,6 +64,31 @@ typedef std::list<DSKeyPtr> DSKeyPtrList;
  * the user closes the settings panel of the node that containing some selected
  * keys, it means that the node context doesn't exist anymore in the dope sheet
  * editor. This check prevent a crash in the case of a undo.
+ *
+ *
+ * Storing a pointer to the dope sheet model in your class is necessary to
+ * refresh the dope sheet view after an action. In most cases just emit the
+ * DopeSheet::modelChanged() signal. Sometimes it's not necessary : since
+ * the dope sheet view manages the node ranges it automatically update itself
+ * when an important knob is modified. E.g. the DSLeftTrimReaderCommand doesn't
+ * know anything about the DopeSheet class because when the first frame knob's
+ * value is changed, the range of the reader is recomputed and it triggers a
+ * refresh of the dope sheet view.
+ *
+ *
+ * -- Available actions --
+ *
+ * The following actions are available as undo commands :
+ *
+ * - move the selected keyframes
+ * - trim a reader by left
+ * - trim a reader by right
+ * - slip a reader on its original frame range
+ * - move a reader
+ * - delete the selected keyframes
+ * - move a entire group
+ * - change the interpolation of the selected keys
+ * - paste the keyframes actually present in the clipboard
  */
 
 
