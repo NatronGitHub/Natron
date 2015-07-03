@@ -466,6 +466,15 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
     
     assert(_dst.lock());
     dst->refreshEdges();
+    dst->checkOptionalEdgesVisibility();
+    boost::shared_ptr<NodeGui> newSrcGui = _newSrc.lock();
+    boost::shared_ptr<NodeGui> oldSrcGui = _oldSrc.lock();
+    if (newSrcGui) {
+        newSrcGui->checkOptionalEdgesVisibility();
+    }
+    if (oldSrcGui) {
+        oldSrcGui->checkOptionalEdgesVisibility();
+    }
 
     ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;

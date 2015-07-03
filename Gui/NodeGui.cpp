@@ -1420,6 +1420,35 @@ NodeGui::boundingRect() const
 }
 
 void
+NodeGui::checkOptionalEdgesVisibility()
+{
+    QPointF mousePos = mapFromScene(_graph->mapToScene(_graph->mapFromGlobal(QCursor::pos())));
+    if (contains(mousePos) || getIsSelected()) {
+        _optionalInputsVisible = true;
+    } else {
+        _optionalInputsVisible = false;
+    }
+    
+    NodePtr node = getNode();
+    bool isReader = node->getLiveInstance()->isReader();
+    for (U32 i = 0; i < _inputEdges.size() ; ++i) {
+        if (isReader || (node->getLiveInstance()->isInputOptional(i) &&
+                         node->getLiveInstance()->isInputMask(i) &&
+                         !_inputEdges[i]->isRotoEdge())) {
+            
+            bool nodeVisible = _optionalInputsVisible;
+            if (!_optionalInputsVisible && node->getRealInput(i) ) {
+                nodeVisible = true;
+            }
+            
+            _inputEdges[i]->setVisible(nodeVisible);
+            
+        }
+    }
+}
+
+
+void
 NodeGui::setOptionalInputsVisible(bool visible)
 {
     ///Don't do this for inspectors

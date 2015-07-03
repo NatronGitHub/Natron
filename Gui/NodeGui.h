@@ -346,6 +346,8 @@ public:
     
     int getFrameNameHeight() const;
     
+    void checkOptionalEdgesVisibility();
+    
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
     
     virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) OVERRIDE FINAL;
