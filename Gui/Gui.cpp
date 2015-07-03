@@ -690,6 +690,7 @@ Gui::closeProject()
 void
 Gui::abortProject(bool quitApp)
 {
+    _imp->setUndoRedoActions(0,0);
     if (quitApp) {
         ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
         {
@@ -2912,8 +2913,12 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
     }
     _currentUndoAction = undoAction;
     _currentRedoAction = redoAction;
-    menuEdit->addAction(undoAction);
-    menuEdit->addAction(redoAction);
+    if (undoAction) {
+        menuEdit->addAction(undoAction);
+    }
+    if (redoAction) {
+        menuEdit->addAction(redoAction);
+    }
 }
 
 void
