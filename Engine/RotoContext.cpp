@@ -3519,7 +3519,7 @@ Bezier::clone(const RotoItem* other)
         }
         
         _imp->isOpenBezier = otherBezier->_imp->isOpenBezier;
-        _imp->finished = otherBezier->_imp->finished && _imp->isOpenBezier;
+        _imp->finished = otherBezier->_imp->finished && !_imp->isOpenBezier;
     }
     incrementNodesAge();
     RotoDrawableItem::clone(other);
@@ -5248,7 +5248,7 @@ Bezier::load(const RotoItemSerialization & obj)
     {
         QMutexLocker l(&itemMutex);
         _imp->isOpenBezier = s._isOpenBezier;
-        _imp->finished = s._closed && _imp->isOpenBezier;
+        _imp->finished = s._closed && !_imp->isOpenBezier;
         
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
