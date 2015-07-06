@@ -944,10 +944,7 @@ EffectInstance::aborted() const
             if (args.isRenderResponseToUserInteraction) {
                 
                 if (args.canAbort) {
-                   /* ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
-                    if (isViewer && !isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
-                        return false;
-                    }*/
+                    
                     
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = (args.nodeHash != getHash() ||
@@ -955,8 +952,12 @@ EffectInstance::aborted() const
                                 !getNode()->isActivated());
                     return ret;
                 } else {
-                    bool ret = !getNode()->isActivated();
-                    return ret;
+                    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
+                    if (isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
+                        return true;
+                    }
+                    bool deactivated = !getNode()->isActivated();
+                    return deactivated;
                 }
                 
             } else {
