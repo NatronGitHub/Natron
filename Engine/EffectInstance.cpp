@@ -2727,7 +2727,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 }
             }
             assert(components);
-            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, mipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                                 useImageAsOutput ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod,
                                                 args.bitdepth, *it,
@@ -3096,7 +3096,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
 
             assert(components);
-            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, mipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                                 useImageAsOutput ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod,
                                                 args.bitdepth, it->first,
@@ -3412,7 +3412,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 //assert that bounds are consistent with the RoD if tiles are not supported
                 const RectD & srcRodCanonical = useImageAsOutput ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
                 RectI srcBounds;
-                srcRodCanonical.toPixelEnclosing(useImageAsOutput ? renderMappedMipMapLevel : mipMapLevel, par, &srcBounds);
+                srcRodCanonical.toPixelEnclosing(useImageAsOutput ? it->second.fullscaleImage->getMipMapLevel() : it->second.downscaleImage->getMipMapLevel(), par, &srcBounds);
                 RectI srcRealBounds = useImageAsOutput ? it->second.fullscaleImage->getBounds() : it->second.downscaleImage->getBounds();
                 assert(srcRealBounds.x1 == srcBounds.x1);
                 assert(srcRealBounds.x2 == srcBounds.x2);
