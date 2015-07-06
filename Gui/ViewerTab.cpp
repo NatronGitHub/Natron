@@ -4561,7 +4561,8 @@ ViewerTab::isViewersSynchroEnabled() const
 void
 ViewerTab::synchronizeOtherViewersProjection()
 {
-    
+    assert(_imp->gui);
+    _imp->gui->setMasterSyncViewer(this);
     double left,bottom,factor,par;
     _imp->viewer->getProjection(&left, &bottom, &factor, &par);
     const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();

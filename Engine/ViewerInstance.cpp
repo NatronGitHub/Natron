@@ -1141,7 +1141,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
-        FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h);
+        FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h, ImagePtr());
         bool cached = Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
@@ -1487,6 +1487,11 @@ ViewerInstance::renderViewer_internal(int view,
         } // if (singleThreaded)
         
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
+    
+    if (inArgs.params->cachedFrame) {
+        inArgs.params->cachedFrame->setOriginalImage(inArgs.params->image);
+    }
+    
     return eStatusOK;
 } // renderViewer_internal
 
@@ -2253,16 +2258,24 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         doUpdate = false;
     }
     if (doUpdate) {
+        
+        ImagePtr image;
         Natron::ImageBitDepthEnum depth;
         if (params->cachedFrame) {
             depth = (Natron::ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
+            if (params->image) {
+                image = params->image;
+            } else {
+                image = params->cachedFrame->getOriginalImage();
+            }
         } else {
             assert(params->image);
+            image = params->image;
             depth = params->image->getBitDepth();
         }
         
         uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                              params->image,
+                                              image,
                                               depth,
                                               params->time,
                                               params->rod,

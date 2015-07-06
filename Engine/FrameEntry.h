@@ -60,7 +60,8 @@ public:
     static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
                                                      int bitDepth,
                                                      int texW,
-                                                     int texH) WARN_UNUSED_RETURN;
+                                                     int texH,
+                                                     const boost::shared_ptr<Natron::Image>& image) WARN_UNUSED_RETURN;
     const U8* data() const WARN_UNUSED_RETURN
     {
         return _data.readable();
@@ -84,6 +85,19 @@ public:
         QMutexLocker k(&_abortedMutex);
         return _aborted;
     }
+
+    boost::shared_ptr<Natron::Image> getOriginalImage() const
+    {
+        QReadLocker k(&_entryLock);
+        return _params->getOriginalImage();
+    }
+
+    void setOriginalImage(const boost::shared_ptr<Natron::Image>& image)
+    {
+        QWriteLocker k(&_entryLock);
+        _params->setOriginalImage(image);
+    }
+
 private:
 
     ///The thread rendering the frame entry might have been aborted and the entry removed from the cache

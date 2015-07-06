@@ -365,6 +365,9 @@ public:
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
+    
+    void setMasterSyncViewer(ViewerTab* master);
+    ViewerTab* getMasterSyncViewer() const;
 
     void activateViewerTab(ViewerInstance* viewer);
 

@@ -3345,6 +3345,12 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
     QGLWidget::mouseDoubleClickEvent(e);
 }
 
+QPointF
+ViewerGL::toZoomCoordinates(const QPointF& position) const
+{
+    QMutexLocker l(&_imp->zoomCtxMutex);
+    return _imp->zoomCtx.toZoomCoordinates(position.x(), position.y());
+}
 
 // used to update the information bar at the bottom of the viewer (not for the ctrl-click color picker)
 void
@@ -3375,19 +3381,34 @@ ViewerGL::updateColorPicker(int textureIndex,
         yInitialized = true;
         pos.setY(y);
     }
-    QPoint currentPos = mapFromGlobal( QCursor::pos() );
-    if (!xInitialized) {
-        pos.setX( currentPos.x() );
-    }
-    if (!yInitialized) {
-        pos.setY( currentPos.y() );
-    }
-    float r,g,b,a;
+    
     QPointF imgPosCanonical;
-    {
+    if (!xInitialized || !yInitialized) {
+        QPoint currentPos;
+        if (!_imp->viewerTab->isViewersSynchroEnabled()) {
+            currentPos = mapFromGlobal(QCursor::pos());
+            QMutexLocker l(&_imp->zoomCtxMutex);
+            imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
+        } else {
+            ViewerTab* masterViewer = getViewerTab()->getGui()->getMasterSyncViewer();
+            if (masterViewer) {
+                currentPos = masterViewer->getViewer()->mapFromGlobal(QCursor::pos());
+                imgPosCanonical = masterViewer->getViewer()->toZoomCoordinates(currentPos);
+            } else {
+                currentPos = mapFromGlobal(QCursor::pos());
+                QMutexLocker l(&_imp->zoomCtxMutex);
+                imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
+            }
+        }
+        pos.setX( currentPos.x() );
+        pos.setY( currentPos.y() );
+    } else {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
+        imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
     }
+
+    float r,g,b,a;
+
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     RectD rod = getRoD(textureIndex);
@@ -3395,20 +3416,23 @@ ViewerGL::updateColorPicker(int textureIndex,
     _imp->getProjectFormatCanonical(projectCanonical);
     unsigned int mmLevel;
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
-         ( imgPosCanonical.x() < rod.right() ) &&
-         ( imgPosCanonical.y() >= rod.bottom() ) &&
-         ( imgPosCanonical.y() < rod.top() ) &&
-         ( pos.x() >= 0) && ( pos.x() < width() ) &&
-         ( pos.y() >= 0) && ( pos.y() < height() ) ) {
-        ///if the clip to project format is enabled, make sure it is in the project format too
-        bool clipping = isClippingImageToProjectWindow();
-        if ( !clipping ||
-             ( ( imgPosCanonical.x() >= projectCanonical.left() ) &&
-               ( imgPosCanonical.x() < projectCanonical.right() ) &&
-               ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
-               ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
-            //imgPos must be in canonical coordinates
-            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a,&mmLevel);
+        ( imgPosCanonical.x() < rod.right() ) &&
+        ( imgPosCanonical.y() >= rod.bottom() ) &&
+        ( imgPosCanonical.y() < rod.top() )) {
+        
+        if ((pos.x() >= 0) && ( pos.x() < width()) &&
+            (pos.y() >= 0) && ( pos.y() < height())) {
+            
+            ///if the clip to project format is enabled, make sure it is in the project format too
+            bool clipping = isClippingImageToProjectWindow();
+            if ( !clipping ||
+                ( ( imgPosCanonical.x() >= projectCanonical.left() ) &&
+                 ( imgPosCanonical.x() < projectCanonical.right() ) &&
+                 ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
+                 ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
+                    //imgPos must be in canonical coordinates
+                    picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a,&mmLevel);
+                }
         }
     }
     if (!picked) {

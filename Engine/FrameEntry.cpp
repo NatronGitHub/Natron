@@ -23,9 +23,10 @@ boost::shared_ptr<FrameParams>
 FrameEntry::makeParams(const RectI & rod,
                        int bitDepth,
                        int texW,
-                       int texH)
+                       int texH,
+                       const boost::shared_ptr<Natron::Image>& image)
 {
-    return boost::shared_ptr<FrameParams>( new FrameParams(rod, bitDepth, texW, texH) );
+    return boost::shared_ptr<FrameParams>( new FrameParams(rod, bitDepth, texW, texH, image) );
 }
 
 const U8*

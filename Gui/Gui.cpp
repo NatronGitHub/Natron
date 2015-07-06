@@ -293,6 +293,9 @@ struct GuiPrivate
     ///a list of ptrs to all the viewer tabs.
     mutable QMutex _viewerTabsMutex;
     std::list<ViewerTab*> _viewerTabs;
+    
+    ///Used when all viewers are synchronized to determine which one triggered the sync
+    ViewerTab* _masterSyncViewer;
 
     ///a list of ptrs to all histograms
     mutable QMutex _histogramsMutex;
@@ -450,6 +453,7 @@ struct GuiPrivate
         , _leftRightSplitter(0)
         , _viewerTabsMutex()
         , _viewerTabs()
+        , _masterSyncViewer(0)
         , _histogramsMutex()
         , _histograms()
         , _nextHistogramIndex(1)
@@ -4289,6 +4293,20 @@ Gui::getViewersList_mt_safe() const
 }
 
 void
+Gui::setMasterSyncViewer(ViewerTab* master)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    _imp->_masterSyncViewer = master;
+}
+
+ViewerTab*
+Gui::getMasterSyncViewer() const
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+    return _imp->_masterSyncViewer;
+}
+
+void
 Gui::activateViewerTab(ViewerInstance* viewer)
 {
     OpenGLViewerI* viewport = viewer->getUiContext();
@@ -4319,6 +4337,10 @@ Gui::deactivateViewerTab(ViewerInstance* viewer)
                 v = *it;
                 break;
             }
+        }
+        
+        if (v && v == _imp->_masterSyncViewer) {
+            _imp->_masterSyncViewer = 0;
         }
     }
 
