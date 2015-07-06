@@ -5928,7 +5928,8 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         _imp->lastTimestamp = t;
         qDebug("t[%d]=%g",nk,t);
 
-#if 0
+#if 0   // the following was disabled because it creates oscillations.
+
         // if it's at least the 3rd point in curve, add intermediate point if
         // the time since last keyframe is larger that the time to the previous one...
         // This avoids overshooting when the pen suddenly stops, and restarts much later
@@ -5975,50 +5976,38 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
             }
         }
 #endif
-        bool addKeyFrameOk;
+
+        bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
+        int ki; // index of the new keyframe (normally nk, but just in case)
         {
             KeyFrame k;
             k.setTime(t);
             k.setValue(p.pos.x);
-            //Set the previous keyframe to Free so its tangents don't get overwritten
             addKeyFrameOk = _imp->xCurve.addKeyFrame(k);
-            if (addKeyFrameOk) {
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
-                //_imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
-            } else {
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
-                //_imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
-            }
+            ki = (addKeyFrameOk ? nk : (nk - 1));
         }
         {
             KeyFrame k;
             k.setTime(t);
             k.setValue(p.pos.y);
-            _imp->yCurve.addKeyFrame(k);
-            if (addKeyFrameOk) {
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
-                //_imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
-            } else {
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
-                //_imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
-            }
+            bool aok = _imp->yCurve.addKeyFrame(k);
+            assert(aok == addKeyFrameOk);
         }
         
         {
             KeyFrame k;
             k.setTime(t);
             k.setValue(p.pressure);
-            _imp->pressureCurve.addKeyFrame(k);
-            if (addKeyFrameOk) {
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
-               // _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk);
-            } else {
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk - 1);
-                //_imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeFree, nk - 1);
-            }
+            bool aok = _imp->pressureCurve.addKeyFrame(k);
+            assert(aok == addKeyFrameOk);
         }
-        
-        
+        // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
+        // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
+        _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
+        _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
+        _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
+
+
     } // QMutexLocker k(&itemMutex);
     
     
