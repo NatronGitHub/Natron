@@ -2038,6 +2038,30 @@ KnobHelper::setName(const std::string & name)
 {
     _imp->originalName = name;
     _imp->name = Natron::makeNameScriptFriendly(name);
+    
+    if (!getHolder()) {
+        return;
+    }
+    //Try to find a duplicate
+    int no = 1;
+    
+    bool foundItem;
+    std::string finalName;
+    do {
+        std::stringstream ss;
+        ss << _imp->name;
+        if (no > 1) {
+            ss << no;
+        }
+        finalName = ss.str();
+        if (getHolder()->getOtherKnobByName(finalName, this)) {
+            foundItem = true;
+        } else {
+            foundItem = false;
+        }
+        ++no;
+    } while (foundItem);
+    _imp->name = finalName;
 }
 
 const std::string &
@@ -3534,6 +3558,24 @@ boost::shared_ptr<KnobI> KnobHolder::getKnobByName(const std::string & name) con
     }
     
     return boost::shared_ptr<KnobI>();
+}
+
+// Same as getKnobByName expect that if we find the caller, we skip it
+boost::shared_ptr<KnobI>
+KnobHolder::getOtherKnobByName(const std::string & name,const KnobI* caller) const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i].get() == caller) {
+            continue;
+        }
+        if (_imp->knobs[i]->getName() == name) {
+            return _imp->knobs[i];
+        }
+    }
+    
+    return boost::shared_ptr<KnobI>();
+ 
 }
 
 const std::vector< boost::shared_ptr<KnobI> > &

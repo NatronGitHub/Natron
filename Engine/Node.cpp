@@ -2614,7 +2614,11 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     sel.hasAllChoice = isOutput;
     boost::shared_ptr<Choice_Knob> layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
     layer->setHostCanAddOptions(isOutput);
-    layer->setName(inputName + "_channels");
+    if (!isOutput) {
+        layer->setName(inputName + "_channels");
+    } else {
+        layer->setName("channels");
+    }
     if (isOutput) {
         layer->setHintToolTip("Select here the channels onto which the processing should occur.");
     } else {

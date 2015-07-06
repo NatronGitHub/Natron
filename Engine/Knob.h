@@ -1837,6 +1837,7 @@ public:
     boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
     AppInstance* getApp() const WARN_UNUSED_RETURN;
     boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<KnobI> getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
     const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
     
     std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
