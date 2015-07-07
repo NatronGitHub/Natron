@@ -3384,24 +3384,21 @@ ViewerGL::updateColorPicker(int textureIndex,
     
     QPointF imgPosCanonical;
     if (!xInitialized || !yInitialized) {
-        QPoint currentPos;
         if (!_imp->viewerTab->isViewersSynchroEnabled()) {
-            currentPos = mapFromGlobal(QCursor::pos());
+            pos = mapFromGlobal(QCursor::pos());
             QMutexLocker l(&_imp->zoomCtxMutex);
             imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
         } else {
             ViewerTab* masterViewer = getViewerTab()->getGui()->getMasterSyncViewer();
             if (masterViewer) {
-                currentPos = masterViewer->getViewer()->mapFromGlobal(QCursor::pos());
-                imgPosCanonical = masterViewer->getViewer()->toZoomCoordinates(currentPos);
+                pos = masterViewer->getViewer()->mapFromGlobal(QCursor::pos());
+                imgPosCanonical = masterViewer->getViewer()->toZoomCoordinates(pos);
             } else {
-                currentPos = mapFromGlobal(QCursor::pos());
+                pos = mapFromGlobal(QCursor::pos());
                 QMutexLocker l(&_imp->zoomCtxMutex);
                 imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
             }
         }
-        pos.setX( currentPos.x() );
-        pos.setY( currentPos.y() );
     } else {
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPosCanonical = _imp->zoomCtx.toZoomCoordinates(pos.x(), pos.y());
