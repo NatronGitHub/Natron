@@ -1840,7 +1840,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
-    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName("Output_channels");
+    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName(kOutputChannelsKnobName);
     assert(outputChansKnob);
     QObject::connect(outputChansKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoOutputChannelsChanged()));
     

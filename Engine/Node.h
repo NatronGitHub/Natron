@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #define kEnableMaskKnobName "enableMask"
 #define kMaskChannelKnobName "maskChannel"
 #define kEnablePreviewKnobName "enablePreview"
+#define kOutputChannelsKnobName "channels"
 
 class AppInstance;
 class NodeSettingsPanel;
