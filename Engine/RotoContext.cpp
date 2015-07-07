@@ -2116,7 +2116,7 @@ void
 RotoDrawableItem::onRotoOutputChannelsChanged()
 {
     
-    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName("Output_channels");
+    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName(kOutputChannelsKnobName);
     assert(outputChansKnob);
     Choice_Knob* outputChannels = dynamic_cast<Choice_Knob*>(outputChansKnob.get());
     assert(outputChannels);
@@ -2147,7 +2147,7 @@ RotoDrawableItem::onRotoOutputChannelsChanged()
     for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         
         std::list<KnobI*> knobs;
-        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName("Output_channels");
+        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName(kOutputChannelsKnobName);
         if (channelsKnob) {
             knobs.push_back(channelsKnob.get());
         }
