@@ -982,7 +982,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
                                 } \
-                                if (!isSequentialRender && canAbort) { \
+                                if (!isSequentialRender) { \
                                     _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge); \
                                 } \
                                 return eStatusReplyDefault; \
@@ -1017,8 +1017,8 @@ ViewerInstance::renderViewer_internal(int view,
      * only the viewer uses this when issuing renders due to a zoom or pan of the user. This is used to enable a trimap-caching technique
      * to optimize threads repartitions across tiles processing of the image.
      */
-    if (!isSequentialRender && canAbort) {
-        if (!_imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge)) {
+    if (!isSequentialRender) {
+        if (!_imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge, canAbort)) {
              return eStatusReplyDefault;
         }
     }
@@ -1043,7 +1043,7 @@ ViewerInstance::renderViewer_internal(int view,
 //        if (!isSequentialRender) {
 //            _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
 //        }
-        if (!isSequentialRender && canAbort) {
+        if (!isSequentialRender) {
             _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         }
         return eStatusReplyDefault;
@@ -1152,7 +1152,7 @@ ViewerInstance::renderViewer_internal(int view,
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
-            if (!isSequentialRender && canAbort) {
+            if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             }
             return eStatusFailed;
@@ -1160,7 +1160,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
             ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-            if (!isSequentialRender && canAbort) {
+            if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             }
             inArgs.params.reset();
@@ -1228,7 +1228,7 @@ ViewerInstance::renderViewer_internal(int view,
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
         }
-        if (!isSequentialRender && canAbort) {
+        if (!isSequentialRender) {
             _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         }
         Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
@@ -1294,7 +1294,7 @@ ViewerInstance::renderViewer_internal(int view,
                     inArgs.params->cachedFrame->setAborted(true);
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
-                if (!isSequentialRender && canAbort) {
+                if (!isSequentialRender) {
                     _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
                 }
                 if (retCode != EffectInstance::eRenderRoIRetCodeAborted) {
@@ -1331,7 +1331,7 @@ ViewerInstance::renderViewer_internal(int view,
                 appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 inArgs.params->cachedFrame.reset();
             }
-            if (!isSequentialRender && canAbort) {
+            if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             }
             return eStatusReplyDefault;
@@ -1339,7 +1339,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         abortCheck(inArgs.activeInputToRender);
         
-        if (!isSequentialRender && canAbort) {
+        if (!isSequentialRender) {
             
             bool couldRemove = true;
             if (rectIndex == splitRoi.size() - 1) {

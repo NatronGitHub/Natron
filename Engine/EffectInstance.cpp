@@ -493,7 +493,7 @@ struct EffectInstance::Implementation
         bool ab = _publicInterface->aborted();
         {
             QMutexLocker kk(&ibr->lock);
-            while (!ab && isBeingRenderedElseWhere && !ibr->renderFailed) {
+            while (!ab && isBeingRenderedElseWhere && !ibr->renderFailed && ibr->refCount > 1) {
                 ibr->cond.wait(&ibr->lock);
                 isBeingRenderedElseWhere = false;
                 img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
@@ -502,7 +502,6 @@ struct EffectInstance::Implementation
         }
         
         ///Everything should be rendered now.
-        assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed);
 
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
@@ -510,6 +509,7 @@ struct EffectInstance::Implementation
             assert(found != imagesBeingRendered.end());
             
             QMutexLocker kk(&ibr->lock);
+            assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed || ibr->refCount <= 1);
             --ibr->refCount;
             found->second->cond.wakeAll();
             if (found != imagesBeingRendered.end() && !ibr->refCount) {

@@ -279,7 +279,11 @@ public:
     bool isRenderAbortable(int texIndex,U64 age) const
     {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
+        if (currentRenderAges[texIndex].empty()) {
+            return true;
+        }
+        const OnGoingRenderInfo& info = currentRenderAges[texIndex].front();
+        if (info.age == age) {
             return false;
         }
         return true;
@@ -319,23 +323,26 @@ public:
         return true;
     }
     
-    bool addOngoingRender(int texIndex, U64 age) {
+    bool addOngoingRender(int texIndex, U64 age, bool canAbort) {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back() >= age) {
+        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
             return false;
         }
         if (currentRenderAges[texIndex].size() > 1) {
             currentRenderAges[texIndex].resize(1);
         }
-        currentRenderAges[texIndex].push_back(age);
+        OnGoingRenderInfo info;
+        info.age = age;
+        info.canAbort = canAbort;
+        currentRenderAges[texIndex].push_back(info);
         return true;
     }
     
     bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
         int i = 0;
-        for (std::list<U64>::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it, ++i) {
-            if (*it == age) {
+        for (std::list<OnGoingRenderInfo>::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it, ++i) {
+            if (it->age == age) {
                 currentRenderAges[texIndex].erase(it);
                 return true;
             }
@@ -433,6 +440,13 @@ public:
     
     mutable QMutex currentlyUpdatingOpenGLViewerMutex;
     bool currentlyUpdatingOpenGLViewer;
+    
+    struct OnGoingRenderInfo
+    {
+        U64 age;
+        bool canAbort;
+    };
+    
 private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
@@ -441,7 +455,8 @@ private:
     
     //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
-    std::list<U64> currentRenderAges[2];
+    
+    std::list<OnGoingRenderInfo> currentRenderAges[2];
 };
 
 
