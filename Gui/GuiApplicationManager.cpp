@@ -540,6 +540,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "bezier32.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_PENCIL:
+                img.load(NATRON_IMAGES_PATH "rotoToolPencil.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_ELLIPSE:
                 img.load(NATRON_IMAGES_PATH "ellipse.png");
                 *pix = QPixmap::fromImage(img);
