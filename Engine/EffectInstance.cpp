@@ -2264,7 +2264,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 {
    
     //Do nothing if no components were requested
-    if (args.components.empty()) {
+    if (args.components.empty() || args.roi.isNull()) {
+        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty or RoI is NULL";
         return eRenderRoIRetCodeOk;
     }
     
@@ -3494,7 +3495,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////
+  
     
+    ///// Termination, update last rendered planes
+    assert(!outputPlanes->empty());
     {
         ///flag that this is the last planes we rendered
         QMutexLocker l(&_imp->lastRenderArgsMutex);
@@ -3640,6 +3644,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
             
             RectI inputRoIPixelCoords;
             foundInputRoI->second.toPixelEnclosing(useScaleOneInputImages ? 0 : mipMapLevel, inputPar, &inputRoIPixelCoords);
+    
             
             ///Notify the node that we're going to render something with the input
             assert(it->first != -1); //< see getInputNumber

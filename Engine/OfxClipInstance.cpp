@@ -856,6 +856,13 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
         ActionLocalData & args = _lastActionData.localData();
         if (args.clipComponentsValid) {
             if (!args.hasImage) {
+                EffectInstance* input = getAssociatedNode();
+                QString inputName = input ? input->getNode()->getScriptName_mt_safe().c_str() : QString();
+                qDebug() << "WARNING:" << _nodeInstance->getScriptName_mt_safe().c_str() << "is trying to fetch an image from"
+                << inputName << "at time =" << time << "and view =" << view
+                << "but it did not manage to pre-fetch any image from upstream."
+                << "This may either be a bug in Natron when calling renderInputImagesForRoI or a plug-in that has mis-implemented the"
+                << "getRegionsOfInterest action.";
                 return 0;
             }
             components = args.clipComponents;

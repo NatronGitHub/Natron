@@ -1657,6 +1657,10 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
             inputRoi.y1 = it->second.y1;
             inputRoi.y2 = it->second.y2;
             
+            if (inputRoi.isNull()) {
+                continue;
+            }
+            
             ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
             ///infinite rod.
             ifInfiniteclipRectToProjectDefault(&inputRoi);
