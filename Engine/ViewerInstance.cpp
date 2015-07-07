@@ -408,7 +408,8 @@ public:
         ///for the File Dialog preview.
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety());
+            bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling);
         }
     }
     

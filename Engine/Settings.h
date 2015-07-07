@@ -286,6 +286,8 @@ public:
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;
     
+    bool isNaNHandlingEnabled() const;
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -309,6 +311,7 @@ private:
     boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
     boost::shared_ptr<Bool_Knob> _linearPickers;
+    boost::shared_ptr<Bool_Knob> _convertNaNValues;
     boost::shared_ptr<Int_Knob> _numberOfThreads;
     boost::shared_ptr<Int_Knob> _numberOfParallelRenders;
     boost::shared_ptr<Bool_Knob> _useThreadPool;

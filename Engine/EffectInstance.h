@@ -151,6 +151,9 @@ struct ParallelRenderArgs
     ///whereas afterwards we revert back to the plug-in thread safety
     Natron::RenderSafetyEnum currentThreadSafety;
     
+    ///When true, all NaNs will be converted to 1
+    bool doNansHandling;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -168,6 +171,7 @@ struct ParallelRenderArgs
     , isDuringPaintStrokeCreation(false)
     , rotoPaintNodes()
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , doNansHandling(true)
     {
         
     }
@@ -639,7 +643,8 @@ public:
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
                                   const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
-                                  Natron::RenderSafetyEnum currentThreadSafety);
+                                  Natron::RenderSafetyEnum currentThreadSafety,
+                                  bool doNanHandling);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 

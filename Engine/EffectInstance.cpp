@@ -808,7 +808,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          bool isAnalysis,
                                          bool isDuringPaintStrokeCreation,
                                          const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
-                                         Natron::RenderSafetyEnum currentThreadSafety)
+                                         Natron::RenderSafetyEnum currentThreadSafety,
+                                         bool doNanHandling)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -827,6 +828,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
     args.currentThreadSafety = currentThreadSafety;
     args.rotoPaintNodes = rotoPaintNodes;
+    args.doNansHandling = doNanHandling;
     ++args.validArgs;
     
 }
@@ -4584,8 +4586,20 @@ EffectInstance::renderHandler(RenderArgs & args,
             
             bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
             
-            if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
-                qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
+            if (frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
+                QString warning(getNode()->getScriptName_mt_safe().c_str());
+                warning.append(": ");
+                warning.append(tr("rendered rectangle ("));
+                warning.append(QString::number(actionArgs.roi.x1));
+                warning.append(',');
+                warning.append(QString::number(actionArgs.roi.y1));
+                warning.append(")-(");
+                warning.append(QString::number(actionArgs.roi.x2));
+                warning.append(',');
+                warning.append(QString::number(actionArgs.roi.y2));
+                warning.append(") ");
+                warning.append(tr("contains NaN values. They have been converted to 1."));
+                setPersistentMessage(Natron::eMessageTypeWarning, warning.toStdString());
             }
             if (it->second.isAllocatedOnTheFly) {
                 ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only

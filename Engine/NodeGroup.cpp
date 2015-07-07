@@ -35,6 +35,7 @@
 #include "Engine/NodeGuiI.h"
 #include "Engine/Curve.h"
 #include "Engine/NodeGraphI.h"
+#include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 1
@@ -875,6 +876,9 @@ NodeCollection::setParallelRenderArgs(int time,
                                       const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                                       bool isAnalysis)
 {
+    
+    bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
+    
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
@@ -892,10 +896,10 @@ NodeCollection::setParallelRenderArgs(int time,
         }
         
         liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(),
-                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety);
+                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling);
         
         for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), (*it2)->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety());
+            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), (*it2)->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling);
         }
         
         if ((*it)->isMultiInstance()) {
@@ -909,7 +913,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
                 Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling);
                 
             }
         }

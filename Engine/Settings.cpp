@@ -120,6 +120,15 @@ Settings::initializeKnobs()
                                    "before being fetched. Otherwise they are in the same colorspace "
                                    "as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
+    
+    _convertNaNValues = Natron::createKnob<Bool_Knob>(this, "Convert NaN values");
+    _convertNaNValues->setName("convertNaNs");
+    _convertNaNValues->setAnimationEnabled(false);
+    _convertNaNValues->setHintToolTip("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
+                                      "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
+                                      "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
+                                      "undefined behavior.");
+    _generalTab->addKnob(_convertNaNValues);
 
     _numberOfThreads = Natron::createKnob<Int_Knob>(this, "Number of render threads (0=\"guess\")");
     _numberOfThreads->setName("noRenderThreads");
@@ -1066,6 +1075,7 @@ Settings::setDefaultValues()
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
+    _convertNaNValues->setDefaultValue(true);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
@@ -2933,4 +2943,10 @@ unsigned int
 Settings::getAutoProxyMipMapLevel() const
 {
     return (unsigned int)_autoProxyLevel->getValue() + 1;
+}
+
+bool
+Settings::isNaNHandlingEnabled() const
+{
+    return _convertNaNValues->getValue();
 }
