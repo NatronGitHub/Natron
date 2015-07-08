@@ -932,7 +932,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             lastRenderHash = _imp->lastRenderedHash;
             lastRenderedHashValid = _imp->lastRenderedHashValid;
         }
-        if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
+        if ( lastRenderedHashValid && (lastRenderHash != outArgs->key->getHash()) ) {
             appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
             {
                 QMutexLocker l(&_imp->lastRenderedHashMutex);
@@ -973,7 +973,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
-            _imp->lastRenderedHash = viewerHash;
+            _imp->lastRenderedHash = outArgs->key->getHash();
             _imp->lastRenderedHashValid = true;
         }
         
@@ -1190,7 +1190,7 @@ ViewerInstance::renderViewer_internal(int view,
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
             _imp->lastRenderedHashValid = true;
-            _imp->lastRenderedHash = viewerHash;
+            _imp->lastRenderedHash = inArgs.key->getHash();
         }
     }
     assert(inArgs.params->ramBuffer);

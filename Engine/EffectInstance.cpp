@@ -475,10 +475,10 @@ struct EffectInstance::Implementation
         }
     }
     
-    void waitForImageBeingRenderedElsewhereAndUnmark(const RectI& roi,const boost::shared_ptr<Natron::Image>& img)
+    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI& roi,const boost::shared_ptr<Natron::Image>& img)
     {
         if (!img->usesBitMap()) {
-            return;
+            return true;
         }
         IBRPtr ibr;
         {
@@ -504,14 +504,18 @@ struct EffectInstance::Implementation
         }
         
         ///Everything should be rendered now.
-
+        bool hasFailed;
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
             IBRMap::iterator found = imagesBeingRendered.find(img);
             assert(found != imagesBeingRendered.end());
             
             QMutexLocker kk(&ibr->lock);
-            assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed || ibr->refCount <= 1);
+            hasFailed = ab || ibr->renderFailed || isBeingRenderedElseWhere;
+            
+            // If it crashes here, that is probably because ibr->refCount == 1, but in this case isBeingRenderedElseWhere should be false.
+            // If this assert is triggered, please investigate, this is a serious bug in the trimap system.
+            assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed);
             --ibr->refCount;
             found->second->cond.wakeAll();
             if (found != imagesBeingRendered.end() && !ibr->refCount) {
@@ -519,7 +523,7 @@ struct EffectInstance::Implementation
             }
         }
 
-        
+        return !hasFailed;
         
     
     }
@@ -3398,8 +3402,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                         _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,
                                                          renderRetCode == eRenderRoIStatusRenderFailed);
                     } else {
-                        _imp->waitForImageBeingRenderedElsewhereAndUnmark(roi,
-                                                                          useImageAsOutput ? it->second.fullscaleImage: it->second.downscaleImage);
+                        if (!_imp->waitForImageBeingRenderedElsewhereAndUnmark(roi,
+                                                                               useImageAsOutput ? it->second.fullscaleImage: it->second.downscaleImage)) {
+                            renderAborted = true;
+                        }
                     }
                 } else {
                     _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,true);
@@ -3433,7 +3439,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
 
 #if DEBUG
-    if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
+    if (hasSomethingToRender && renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
         
         for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
@@ -4602,191 +4608,191 @@ EffectInstance::renderHandler(RenderArgs & args,
         }
     }
 
-
+    
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
-
+    
     if (renderAborted) {
         return eRenderingFunctorRetAborted;
-    } else {
+    }
     
-        bool useMaskMix = isHostMaskingEnabled() || isHostMixingEnabled();
-        double mix = useMaskMix ? getNode()->getHostMixingValue(time) : 1.;
-        bool doMask = useMaskMix ? getNode()->isMaskEnabled(getMaxInputCount() - 1) : false;
+    bool useMaskMix = isHostMaskingEnabled() || isHostMixingEnabled();
+    double mix = useMaskMix ? getNode()->getHostMixingValue(time) : 1.;
+    bool doMask = useMaskMix ? getNode()->isMaskEnabled(getMaxInputCount() - 1) : false;
+    
+    //Check for NaNs, copy to output image and mark for rendered
+    for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         
-        //Check for NaNs, copy to output image and mark for rendered
-        for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
-            
-            bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
-            
-            if (frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
-                QString warning(getNode()->getScriptName_mt_safe().c_str());
-                warning.append(": ");
-                warning.append(tr("rendered rectangle ("));
-                warning.append(QString::number(actionArgs.roi.x1));
-                warning.append(',');
-                warning.append(QString::number(actionArgs.roi.y1));
-                warning.append(")-(");
-                warning.append(QString::number(actionArgs.roi.x2));
-                warning.append(',');
-                warning.append(QString::number(actionArgs.roi.y2));
-                warning.append(") ");
-                warning.append(tr("contains NaN values. They have been converted to 1."));
-                setPersistentMessage(Natron::eMessageTypeWarning, warning.toStdString());
-            }
-            if (it->second.isAllocatedOnTheFly) {
-                ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
-                if (it->second.tmpImage != it->second.renderMappedImage) {
-                    assert(it->second.tmpImage->getBounds() == actionArgs.roi);
+        bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
+        
+        if (frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
+            QString warning(getNode()->getScriptName_mt_safe().c_str());
+            warning.append(": ");
+            warning.append(tr("rendered rectangle ("));
+            warning.append(QString::number(actionArgs.roi.x1));
+            warning.append(',');
+            warning.append(QString::number(actionArgs.roi.y1));
+            warning.append(")-(");
+            warning.append(QString::number(actionArgs.roi.x2));
+            warning.append(',');
+            warning.append(QString::number(actionArgs.roi.y2));
+            warning.append(") ");
+            warning.append(tr("contains NaN values. They have been converted to 1."));
+            setPersistentMessage(Natron::eMessageTypeWarning, warning.toStdString());
+        }
+        if (it->second.isAllocatedOnTheFly) {
+            ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
+            if (it->second.tmpImage != it->second.renderMappedImage) {
+                assert(it->second.tmpImage->getBounds() == actionArgs.roi);
+                
+                if (it->second.renderMappedImage->getComponents() != it->second.tmpImage->getComponents() ||
+                    it->second.renderMappedImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
                     
-                    if (it->second.renderMappedImage->getComponents() != it->second.tmpImage->getComponents() ||
-                        it->second.renderMappedImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                    it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.renderMappedImage->getBitDepth()),
+                                                         -1, false, unPremultRequired, it->second.renderMappedImage.get());
+                } else {
+                    it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
+                }
+            }
+            it->second.renderMappedImage->markForRendered(actionArgs.roi);
+            
+        } else {
+            
+            if (renderFullScaleThenDownscale) {
+                ///copy the rectangle rendered in the full scale image to the downscaled output
+                
+                /* If we're using renderUseScaleOneInputs, the full scale image is cached.
+                 We might have been asked to render only a portion.
+                 Hence we're not sure that the whole part of the image will be downscaled.
+                 Instead we do all the downscale at once at the end of renderRoI().
+                 If !renderUseScaleOneInputs the image is not cached.
+                 Hence we know it will be rendered completly so it is safe to do this here and take advantage of the multi-threading.*/
+                if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
+                    
+                    assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
+                    
+                    
+                    if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                        it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                        
+                        /*
+                         * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
+                         */
+                        ImagePtr tmp(new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel,it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
                         
                         it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
-                                                        getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
-                                                        getApp()->getDefaultColorSpaceForBitDepth(it->second.renderMappedImage->getBitDepth()),
-                                                                   -1, false, unPremultRequired, it->second.renderMappedImage.get());
+                                                             getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                             getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                             -1, false, unPremultRequired, tmp.get());
+                        tmp->downscaleMipMap(it->second.tmpImage->getRoD(),
+                                             actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
                     } else {
-                        it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
+                        
+                        /*
+                         *  Downscaling required only
+                         */
+                        it->second.tmpImage->downscaleMipMap(it->second.tmpImage->getRoD(),
+                                                             actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+                        
                     }
-                }
-                it->second.renderMappedImage->markForRendered(actionArgs.roi);
-                
-            } else {
-                
-                if (renderFullScaleThenDownscale) {
-                    ///copy the rectangle rendered in the full scale image to the downscaled output
-
-                    /* If we're using renderUseScaleOneInputs, the full scale image is cached.
-                     We might have been asked to render only a portion.
-                     Hence we're not sure that the whole part of the image will be downscaled.
-                     Instead we do all the downscale at once at the end of renderRoI().
-                     If !renderUseScaleOneInputs the image is not cached.
-                     Hence we know it will be rendered completly so it is safe to do this here and take advantage of the multi-threading.*/
-                    if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                     
-                        assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
-                        
-                        
-                        if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
-                            it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
-                            
-                            /*
-                             * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
-                             */
-                            ImagePtr tmp(new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel,it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
-                            
-                            it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
-                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
-                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, unPremultRequired, tmp.get());
-                            tmp->downscaleMipMap(it->second.tmpImage->getRoD(),
-                                                 actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
-                        } else {
-                            
-                            /*
-                             *  Downscaling required only
-                             */
-                            it->second.tmpImage->downscaleMipMap(it->second.tmpImage->getRoD(),
-                                                                 actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
-
-                        }
-                        
-                        it->second.downscaleImage->copyUnProcessedChannels(downscaledRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
-                        if (useMaskMix) {
-                            it->second.downscaleImage->applyMaskMix(downscaledRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                        }
-                        it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                    } else { // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
-                        
-                        assert(it->second.renderMappedImage == it->second.fullscaleImage);
-                        if (it->second.tmpImage != it->second.renderMappedImage) {
-                            
-                            if (it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
-                                it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
-                            
-                                /*
-                                 * BitDepth/Components conversion required
-                                 */
-                                
-                                it->second.tmpImage->copyUnProcessedChannels(it->second.tmpImage->getBounds(), planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
-                                if (useMaskMix) {
-                                    it->second.tmpImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                                }
-                                it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
-                                                                     getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
-                                                                     getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
-                                                                     -1, false, unPremultRequired, it->second.fullscaleImage.get());
-                                
-                            } else {
-                                
-                                /*
-                                 * No conversion required, copy to output
-                                 */
-                                int prefInput = getNode()->getPreferredInput();
-                                RectI roiPixel;
-                                ImagePtr originalInputImageFullScale;
-                                if (prefInput != -1) {
-                                    originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
-                                }
-                                
-                                
-                                if (originalInputImageFullScale) {
-                                    
-                                    it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImageFullScale);
-                                    if (useMaskMix) {
-                                        ImagePtr originalMaskFullScale = getImage(getMaxInputCount() - 1, time, actionArgs.mappedScale, view, NULL, ImageComponents::getAlphaComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
-                                        if (originalMaskFullScale) {
-                                            it->second.fullscaleImage->applyMaskMix(actionArgs.roi, originalMaskFullScale.get(), originalInputImageFullScale.get(), doMask, false, mix);
-                                        }
-                                    }
-                                }
-                                it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
-                            }
-                            
-                            
-                        }
-                        it->second.fullscaleImage->markForRendered(actionArgs.roi);
+                    it->second.downscaleImage->copyUnProcessedChannels(downscaledRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
+                    if (useMaskMix) {
+                        it->second.downscaleImage->applyMaskMix(downscaledRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
                     }
-                } else { // if (renderFullScaleThenDownscale) {
+                    it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                } else { // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                     
-                    ///Copy the rectangle rendered in the downscaled image
-                    if (it->second.tmpImage != it->second.downscaleImage) {
+                    assert(it->second.renderMappedImage == it->second.fullscaleImage);
+                    if (it->second.tmpImage != it->second.renderMappedImage) {
                         
-
-                        if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
-                            it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                        if (it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                            it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
                             
                             /*
                              * BitDepth/Components conversion required
                              */
                             
-                            
+                            it->second.tmpImage->copyUnProcessedChannels(it->second.tmpImage->getBounds(), planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
+                            if (useMaskMix) {
+                                it->second.tmpImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                            }
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
-                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, unPremultRequired, it->second.downscaleImage.get());
+                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
+                                                                 -1, false, unPremultRequired, it->second.fullscaleImage.get());
+                            
                         } else {
                             
                             /*
                              * No conversion required, copy to output
                              */
+                            int prefInput = getNode()->getPreferredInput();
+                            RectI roiPixel;
+                            ImagePtr originalInputImageFullScale;
+                            if (prefInput != -1) {
+                                originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                            }
                             
-                            it->second.downscaleImage->pasteFrom(*(it->second.tmpImage), it->second.downscaleImage->getBounds(), false);
+                            
+                            if (originalInputImageFullScale) {
+                                
+                                it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImageFullScale);
+                                if (useMaskMix) {
+                                    ImagePtr originalMaskFullScale = getImage(getMaxInputCount() - 1, time, actionArgs.mappedScale, view, NULL, ImageComponents::getAlphaComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                    if (originalMaskFullScale) {
+                                        it->second.fullscaleImage->applyMaskMix(actionArgs.roi, originalMaskFullScale.get(), originalInputImageFullScale.get(), doMask, false, mix);
+                                    }
+                                }
+                            }
+                            it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
                         }
-
+                        
+                        
+                    }
+                    it->second.fullscaleImage->markForRendered(actionArgs.roi);
+                }
+            } else { // if (renderFullScaleThenDownscale) {
+                
+                ///Copy the rectangle rendered in the downscaled image
+                if (it->second.tmpImage != it->second.downscaleImage) {
+                    
+                    
+                    if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                        it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                        
+                        /*
+                         * BitDepth/Components conversion required
+                         */
+                        
+                        
+                        it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                             getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                             getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                             -1, false, unPremultRequired, it->second.downscaleImage.get());
+                    } else {
+                        
+                        /*
+                         * No conversion required, copy to output
+                         */
+                        
+                        it->second.downscaleImage->pasteFrom(*(it->second.tmpImage), it->second.downscaleImage->getBounds(), false);
                     }
                     
-                    it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
-                    if (useMaskMix) {
-                        it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                    }
-                    it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                }
                 
-                } // if (renderFullScaleThenDownscale) {
-            } // if (it->second.isAllocatedOnTheFly) {
-        } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
-        
-    }
+                it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi,planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
+                if (useMaskMix) {
+                    it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                }
+                it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                
+            } // if (renderFullScaleThenDownscale) {
+        } // if (it->second.isAllocatedOnTheFly) {
+    } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    
+    
     return eRenderingFunctorRetOK;
 } // tiledRenderingFunctor
 
@@ -4794,10 +4800,10 @@ ImagePtr
 EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::ImageComponents& plane)
 {
     /*
-     * The idea here is that we may have asked the plug-in to render say motion.forward, but it can only render both fotward 
+     * The idea here is that we may have asked the plug-in to render say motion.forward, but it can only render both fotward
      * and backward at a time.
-     * So it needs to allocate motion.backward and store it in the cache for efficiency. 
-     * Note that when calling this, the plug-in is already in the render action, hence in case of Host frame threading, 
+     * So it needs to allocate motion.backward and store it in the cache for efficiency.
+     * Note that when calling this, the plug-in is already in the render action, hence in case of Host frame threading,
      * this function will be called as many times as there were thread used by the host frame threading.
      * For all other planes, there was a local temporary image, shared among all threads for the calls to render.
      * Since we may be in a thread of the host frame threading, only allocate a temporary image of the size of the rectangle
