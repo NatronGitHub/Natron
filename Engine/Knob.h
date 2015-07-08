@@ -104,6 +104,11 @@ public:
         Q_EMIT keyFrameRemoved(time,dimension,reason);
     }
     
+    void s_multipleKeyFramesSet(const std::list<SequenceTime>& keys, int dimension, int reason)
+    {
+        Q_EMIT multipleKeyFramesSet(keys, dimension, reason);
+    }
+    
     void s_animationAboutToBeRemoved(int dimension)
     {
         Q_EMIT animationAboutToBeRemoved(dimension);
@@ -250,6 +255,8 @@ Q_SIGNALS:
     ///@param added True if this is the first time that the keyframe was set
     void keyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
+    /// Called when a curve is cloned
+    void multipleKeyFramesSet(std::list<SequenceTime>, int dimension, int reason);
     
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
     void keyFrameRemoved(SequenceTime,int dimension,int reason);

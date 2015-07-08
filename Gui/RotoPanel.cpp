@@ -641,17 +641,6 @@ RotoPanel::onSelectionChangedInternal()
     _imp->removeKeyframe->setEnabled(enabled);
     _imp->clearAnimation->setEnabled(enabled);
     
-    if (_imp->context->isRotoPaint()) {
-        _imp->splineLabel->setVisible(false);
-        _imp->currentKeyframe->setVisible(false);
-        _imp->ofLabel->setVisible(false);
-        _imp->totalKeyframes->setVisible(false);
-        _imp->prevKeyframe->setVisible(false);
-        _imp->nextKeyframe->setVisible(false);
-        _imp->addKeyframe->setVisible(false);
-        _imp->removeKeyframe->setVisible(false);
-        _imp->clearAnimation->setVisible(false);
-    }
 
     int time = _imp->context->getTimelineCurrentTime();
 
@@ -820,9 +809,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
 void
 RotoPanelPrivate::updateSplinesInfoGUI(int time)
 {
-    if (context->isRotoPaint()) {
-        return;
-    }
+  
     std::set<int> keyframes;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {

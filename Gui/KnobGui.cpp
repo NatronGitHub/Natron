@@ -157,10 +157,12 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),this,SLOT( onInternalKeySet(SequenceTime,int,int,bool) ) );
         QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int,int) ) );
         QObject::connect( handler,SIGNAL( keyFrameMoved(int,int,int)), this, SLOT( onKeyFrameMoved(int,int,int)));
+        QObject::connect( handler,SIGNAL( multipleKeyFramesSet(std::list<SequenceTime>,int,int)), this,
+                         SLOT(onMultipleKeySet(std::list<SequenceTime> , int, int)));
         QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
         QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
         QObject::connect( handler,SIGNAL( knobSlaved(int,bool) ),this,SLOT( onKnobSlavedChanged(int,bool) ) );
-        QObject::connect( handler,SIGNAL( animationAboutToBeRemoved(int) ),this,SLOT( onInternalAnimationAboutToBeRemoved() ) );
+        QObject::connect( handler,SIGNAL( animationAboutToBeRemoved(int) ),this,SLOT( onInternalAnimationAboutToBeRemoved(int) ) );
         QObject::connect( handler,SIGNAL( animationRemoved(int) ),this,SLOT( onInternalAnimationRemoved() ) );
         QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,int) ),this,SLOT( onSetValueUsingUndoStack(Variant,int) ) );
         QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
@@ -1546,6 +1548,21 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
+KnobGui::onMultipleKeySet(const std::list<SequenceTime>& keys,int /*dimension*/, int reason)
+{
+    
+    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+        boost::shared_ptr<KnobI> knob = getKnob();
+        if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+            knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, true);
+        }
+    }
+    
+    updateCurveEditorKeyframes();
+
+}
+
+void
 KnobGui::onInternalKeySet(SequenceTime time,
                           int /*dimension*/,
                           int reason,
@@ -1570,8 +1587,9 @@ KnobGui::onInternalKeyRemoved(SequenceTime time,
                               int /*reason*/)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-
-    knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+    if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
+        knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+    }
     Q_EMIT keyFrameRemoved();
 }
 
@@ -2161,9 +2179,9 @@ KnobGui::setKnobGuiPointer()
 }
 
 void
-KnobGui::onInternalAnimationAboutToBeRemoved()
+KnobGui::onInternalAnimationAboutToBeRemoved(int dimension)
 {
-    removeAllKeyframeMarkersOnTimeline(-1);
+    removeAllKeyframeMarkersOnTimeline(dimension);
 }
 
 void
@@ -2176,17 +2194,20 @@ void
 KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-
-    if ( knob->getHolder() && knob->getHolder()->getApp() ) {
+    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
         boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
         std::list<SequenceTime> times;
+        std::set<SequenceTime> tmpTimes;
         if (dimension == -1) {
             int dim = knob->getDimension();
             for (int i = 0; i < dim; ++i) {
                 KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    times.push_back( it->getTime() );
+                    tmpTimes.insert( it->getTime() );
                 }
+            }
+            for (std::set<SequenceTime>::iterator it=tmpTimes.begin(); it!=tmpTimes.end(); ++it) {
+                times.push_back(*it);
             }
         } else {
             KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
@@ -2194,7 +2215,9 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 times.push_back( it->getTime() );
             }
         }
-        timeline->removeMultipleKeyframeIndicator(times,true);
+        if (!times.empty()) {
+            timeline->removeMultipleKeyframeIndicator(times,true);
+        }
     }
 }
 

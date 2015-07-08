@@ -229,8 +229,10 @@ public Q_SLOTS:
     void onInternalKeySet(SequenceTime time,int dimension,int reason,bool added);
 
     void onInternalKeyRemoved(SequenceTime time,int dimension,int reason);
+    
+    void onMultipleKeySet(const std::list<SequenceTime>& keys,int dimension, int reason);
 
-    void onInternalAnimationAboutToBeRemoved();
+    void onInternalAnimationAboutToBeRemoved(int dimension);
     
     void onInternalAnimationRemoved();
     

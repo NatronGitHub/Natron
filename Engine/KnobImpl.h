@@ -2342,15 +2342,8 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
             if (_signalSlotHandler) {
-                int nKeys = getKeyFramesCount(i);
-                for (int k = 0; k < nKeys; ++k) {
-                    double time;
-                    bool ok = getKeyFrameTime(k, i, &time);
-                    assert(ok);
-                    if (ok) {
-                        _signalSlotHandler->s_keyFrameRemoved(time, i,(int)Natron::eValueChangedReasonNatronInternalEdited);
-                    }
-                }
+                _signalSlotHandler->s_animationAboutToBeRemoved(i);
+                _signalSlotHandler->s_animationRemoved(i);
             }
             boost::shared_ptr<Curve> curve = getCurve(i,true);
             boost::shared_ptr<Curve> otherCurve = other->getCurve(i,true);
@@ -2363,16 +2356,15 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 guiCurve->clone(*otherGuiCurve);
             }
             if (_signalSlotHandler) {
-                int nKeys = getKeyFramesCount(i);
-                for (int k = 0; k < nKeys; ++k) {
-                    double time;
-                    bool ok = getKeyFrameTime(k, i, &time);
-                    assert(ok);
-                    if (ok) {
-                        _signalSlotHandler->s_keyFrameSet(time, i,(int)Natron::eValueChangedReasonNatronInternalEdited,true);
-                    }
+                std::list<SequenceTime> keysList;
+                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
+                    keysList.push_back(it->getTime());
                 }
-                _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
+                if (!keysList.empty()) {
+                    _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)Natron::eValueChangedReasonNatronInternalEdited);
+                    _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
+                }
             }
             checkAnimationLevel(i);
         }

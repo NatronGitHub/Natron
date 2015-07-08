@@ -871,13 +871,14 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
         guiCurveCloneInternalCurve(dimension, eValueChangedReasonPluginEdited);
     }
     
-    int nKeys = thisCurve->getKeyFramesCount();
-    for (int k = 0; k < nKeys; ++k) {
-        KeyFrame key;
-        bool ok = thisCurve->getKeyFrameWithIndex(k, &key);
-        assert(ok);
-        if (ok) {
-            _signalSlotHandler->s_keyFrameSet(key.getTime(), dimension,(int)Natron::eValueChangedReasonNatronInternalEdited,true);
+    if (_signalSlotHandler) {
+        std::list<SequenceTime> keysList;
+        KeyFrameSet keys = thisCurve->getKeyFrames_mt_safe();
+        for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
+            keysList.push_back(it->getTime());
+        }
+        if (!keysList.empty()) {
+            _signalSlotHandler->s_multipleKeyFramesSet(keysList, dimension, (int)Natron::eValueChangedReasonNatronInternalEdited);
         }
     }
 }
