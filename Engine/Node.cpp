@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <locale>
+#include <algorithm> // min, max
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>

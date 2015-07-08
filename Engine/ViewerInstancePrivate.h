@@ -21,6 +21,8 @@
 #include <vector>
 #include <cmath>
 #include <cassert>
+#include <algorithm> // min, max
+
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>

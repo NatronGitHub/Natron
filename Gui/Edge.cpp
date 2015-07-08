@@ -14,8 +14,9 @@
 
 #include "Edge.h"
 
-#include <algorithm>
+#include <algorithm> // min, max
 #include <cmath>
+
 #include <QPainter>
 #include <QGraphicsScene>
 

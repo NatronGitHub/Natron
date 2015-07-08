@@ -17,6 +17,8 @@
 
 #include <map>
 #include <sstream>
+#include <algorithm> // min, max
+
 #include <QtConcurrentMap>
 #include <QReadWriteLock>
 #include <QCoreApplication>

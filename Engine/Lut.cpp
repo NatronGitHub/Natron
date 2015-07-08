@@ -16,6 +16,7 @@
 #include "Lut.h"
 
 #include <cstring> // for memcpy
+#include <algorithm> // min, max
 
 #include "Engine/Rect.h"
 

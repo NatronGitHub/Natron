@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <algorithm> // min, max
 
 #include <QtCore/QTextStream>
 #include <QWaitCondition>

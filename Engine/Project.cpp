@@ -15,7 +15,7 @@
 #include "Project.h"
 
 #include <fstream>
-#include <algorithm>
+#include <algorithm> // min, max
 #include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno

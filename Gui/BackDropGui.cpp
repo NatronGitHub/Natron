@@ -9,6 +9,8 @@
 
 #include "BackDropGui.h"
 
+#include <algorithm> // min, max
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsTextItem>

@@ -16,6 +16,8 @@
 #include "CurveWidget.h"
 
 #include <cmath>
+#include <algorithm> // min, max
+
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>

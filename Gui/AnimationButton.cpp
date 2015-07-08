@@ -9,6 +9,8 @@
 
 #include "AnimationButton.h"
 
+#include <algorithm> // min, max
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(unused-private-field)

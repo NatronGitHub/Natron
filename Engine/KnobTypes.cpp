@@ -18,6 +18,8 @@
 #include <cfloat>
 #include <locale>
 #include <sstream>
+#include <algorithm> // min, max
+
 #include <boost/math/special_functions/fpclassify.hpp>
 
 #include <QDebug>

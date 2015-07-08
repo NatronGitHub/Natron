@@ -18,6 +18,8 @@
 #include <iostream>
 #include <set>
 #include <list>
+#include <algorithm> // min, max
+
 #include <QMetaType>
 #include <QMutex>
 #include <QWaitCondition>

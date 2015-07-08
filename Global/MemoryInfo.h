@@ -22,6 +22,8 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <algorithm> // min, max
+
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <psapi.h>

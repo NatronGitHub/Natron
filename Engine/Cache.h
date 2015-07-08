@@ -23,6 +23,7 @@
 #include <list>
 #include <cstddef>
 #include <utility>
+#include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"

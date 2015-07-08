@@ -19,8 +19,9 @@
 #include <new> // std::bad_alloc
 #include <stdexcept> // std::exception
 #include <cctype> // tolower
-#include <algorithm> // transform
+#include <algorithm> // transform, min, max
 #include <string>
+
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QDir>
 #include <QtCore/QMutex>

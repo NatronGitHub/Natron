@@ -13,7 +13,9 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
-#include "ViewerInstancePrivate.h"
+#include "ViewerInstance.h"
+
+#include <algorithm> // min, max
 
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
@@ -47,6 +49,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/Timer.h"
+
+#include "ViewerInstancePrivate.h"
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */

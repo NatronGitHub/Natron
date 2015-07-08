@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <algorithm> // min, max
 
 // tick_size_10
 //
