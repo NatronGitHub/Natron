@@ -2393,6 +2393,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection));
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
     } else {
         bool intercepted = false;
         

@@ -154,19 +154,19 @@ CLANG_DIAG_ON(uninitialized)
 
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
-#define kShortcutDescActionLuminance "Luminance"
+#define kShortcutDescActionLuminance "Display Luminance"
 
-#define kShortcutIDActionR "channelR"
-#define kShortcutDescActionR "Red"
+#define kShortcutIDActionRed "channelR"
+#define kShortcutDescActionRed "Display Red Channel"
 
-#define kShortcutIDActionG "channelG"
-#define kShortcutDescActionG "Green"
+#define kShortcutIDActionGreen "channelG"
+#define kShortcutDescActionGreen "Display Green Channel"
 
-#define kShortcutIDActionB "channelB"
-#define kShortcutDescActionB "Blue"
+#define kShortcutIDActionBlue "channelB"
+#define kShortcutDescActionBlue "Display Blue Channel"
 
-#define kShortcutIDActionA "channelA"
-#define kShortcutDescActionA "Alpha"
+#define kShortcutIDActionAlpha "channelA"
+#define kShortcutDescActionAlpha "Display Alpha Channel"
 
 #define kShortcutIDActionFitViewer "fitViewer"
 #define kShortcutDescActionFitViewer "Fit Image to Viewer"
@@ -184,22 +184,28 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionProxyEnabled "Enable Proxy Rendering"
 
 #define kShortcutIDActionProxyLevel2 "proxy2"
-#define kShortcutDescActionProxyLevel2 "2"
+#define kShortcutDescActionProxyLevel2 "Proxy Level 2"
 
 #define kShortcutIDActionProxyLevel4 "proxy4"
-#define kShortcutDescActionProxyLevel4 "4"
+#define kShortcutDescActionProxyLevel4 "Proxy Level 4"
 
 #define kShortcutIDActionProxyLevel8 "proxy8"
-#define kShortcutDescActionProxyLevel8 "8"
+#define kShortcutDescActionProxyLevel8 "Proxy Level 8"
 
 #define kShortcutIDActionProxyLevel16 "proxy16"
-#define kShortcutDescActionProxyLevel16 "16"
+#define kShortcutDescActionProxyLevel16 "Proxy Level 16"
 
 #define kShortcutIDActionProxyLevel32 "proxy32"
-#define kShortcutDescActionProxyLevel32 "32"
+#define kShortcutDescActionProxyLevel32 "Proxy Level 32"
 
-#define kShortcutIDActionZoomLevel100 "100%"
-#define kShortcutDescActionZoomLevel100 "100%"
+#define kShortcutIDActionZoomLevel100 "zoom100"
+#define kShortcutDescActionZoomLevel100 "Set Zoom to 100%"
+
+#define kShortcutIDActionZoomIn "zoomIn"
+#define kShortcutDescActionZoomIn "Zoom In"
+
+#define kShortcutIDActionZoomOut "zoomOut"
+#define kShortcutDescActionZoomOut "Zoom Out"
 
 #define kShortcutIDActionHideOverlays "hideOverlays"
 #define kShortcutDescActionHideOverlays "Show/Hide Overlays"
