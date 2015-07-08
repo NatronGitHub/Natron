@@ -1225,9 +1225,8 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
         (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) &&
         _imp->rotoData->builtBezier &&
          ( (RotoToolEnum)data.x() != _imp->selectedTool ) ) {
-        if (_imp->selectedTool == eRotoToolDrawBezier) {
-            _imp->rotoData->builtBezier->setCurveFinished(true);
-        }
+        _imp->rotoData->builtBezier->setCurveFinished(true);
+        
         _imp->clearSelection();
     }
 
@@ -3367,9 +3366,8 @@ RotoGui::keyDown(double /*scaleX*/,
     } else if ( (key == Qt::Key_Escape && (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier)) || isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
         if ( (_imp->selectedTool == eRotoToolDrawBezier || _imp->selectedTool == eRotoToolOpenBezier) && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished() ) {
             
-            if (!_imp->rotoData->builtBezier->isOpenBezier()) {
-                pushUndoCommand( new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier) );
-            }
+            pushUndoCommand( new OpenCloseUndoCommand(this,_imp->rotoData->builtBezier) );
+            
             _imp->rotoData->builtBezier.reset();
             _imp->rotoData->selectedCps.clear();
             onToolActionTriggered(_imp->selectAllAction);
@@ -3849,7 +3847,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
         
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (isStroke) {
+        if (isStroke || (isBezier && isBezier->isOpenBezier())) {
             continue;
         }
         

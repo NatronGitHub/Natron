@@ -3880,41 +3880,32 @@ Bezier::isPointOnCurve(double x,
 } // isPointOnCurve
 
 void
-Bezier::setCurveFinished(bool finished)
+Bezier::resetCenterKnob()
 {
-    
-    if (_imp->isOpenBezier) {
-        return;
-    }
-    
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     int time = getContext()->getTimelineCurrentTime();
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     Point center;
-    bool centerSet = false;
+    std::size_t nPoints = 0;
+    
     {
         QMutexLocker l(&itemMutex);
-        _imp->finished = finished;
         
         ///Compute the value of the center knob
         center.x = center.y = 0;
         
-        if (finished) {
-            for (BezierCPs::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
-                double x,y;
-                (*it)->getPositionAtTime(time, &x, &y);
-                center.x += x;
-                center.y += y;
-            }
-            centerSet = !_imp->points.empty();
+        for (BezierCPs::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
+            double x,y;
+            (*it)->getPositionAtTime(time, &x, &y);
+            center.x += x;
+            center.y += y;
         }
+        nPoints = _imp->points.size();
+        
     }
-    if (centerSet) {
-        size_t np = _imp->points.size();
-        assert(np > 0);
-        center.x /= np;
-        center.y /= np;
+    if (nPoints) {
+        assert(nPoints > 0);
+        center.x /= nPoints;
+        center.y /= nPoints;
         boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
         if (autoKeying) {
             centerKnob->setValueAtTime(time, center.x, 0);
@@ -3928,6 +3919,21 @@ Bezier::setCurveFinished(bool finished)
         }
         
     }
+}
+
+void
+Bezier::setCurveFinished(bool finished)
+{
+
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    if (!_imp->isOpenBezier) {
+        QMutexLocker l(&itemMutex);
+        _imp->finished = finished;
+    }
+    
+    resetCenterKnob();
 
     incrementNodesAge();
     refreshPolygonOrientation();
