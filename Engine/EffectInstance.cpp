@@ -2922,6 +2922,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 std::list<RectI> tmpRects;
                 isPlaneCached->getRestToRender(roi, tmpRects);
                 
+                //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
+                //The other thread should have removed that image from the cache or marked the image as rendered.
                 assert(!planesToRender.isBeingRenderedElsewhere);
                 assert(rectsLeftToRender.size() == tmpRects.size());
                 
@@ -3430,8 +3432,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                         }
                     }
                 } else {
-                    _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,true);
                     appPTR->removeFromNodeCache(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage);
+                    _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,true);
                     return eRenderRoIRetCodeAborted;
                 }
             }
@@ -4634,6 +4636,20 @@ EffectInstance::renderHandler(RenderArgs & args,
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     
     if (renderAborted) {
+        
+        if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            /*
+             At this point, another thread might have already gotten this image from the cache and could end-up
+             using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
+             */
+            for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+                if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+                    it->second.fullscaleImage->clearBitmap(downscaledRectToRender);
+                } else {
+                    it->second.downscaleImage->clearBitmap(downscaledRectToRender);
+                }
+            }
+        }
         return eRenderingFunctorRetAborted;
     }
     

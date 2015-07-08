@@ -571,8 +571,9 @@ namespace Natron {
                 return;
             }
             QWriteLocker locker(&_entryLock);
-
-            _bitmap.markForRendered(roi);
+            RectI intersection;
+            _bounds.intersect(roi, &intersection);
+            _bitmap.markForRendered(intersection);
         }
         
 #if NATRON_ENABLE_TRIMAP
@@ -583,8 +584,9 @@ namespace Natron {
                 return;
             }
             QWriteLocker locker(&_entryLock);
-            
-            _bitmap.markForRendering(roi);
+            RectI intersection;
+            _bounds.intersect(roi, &intersection);
+            _bitmap.markForRendering(intersection);
         }
 #endif
 
