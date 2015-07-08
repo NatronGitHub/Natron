@@ -2471,8 +2471,9 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        setToolTip( Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
-        _bitDepthWarning->setToolTip(tooltip);
+        QString arrangedTt = Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
+        setToolTip(arrangedTt);
+        _bitDepthWarning->setToolTip(arrangedTt);
     } else {
         setToolTip("");
         _bitDepthWarning->setToolTip("");
@@ -2547,7 +2548,7 @@ NodeGuiIndicator::~NodeGuiIndicator()
 void
 NodeGuiIndicator::setToolTip(const QString & tooltip)
 {
-    _imp->ellipse->setToolTip( Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
+    _imp->ellipse->setToolTip(tooltip);
 }
 
 void
