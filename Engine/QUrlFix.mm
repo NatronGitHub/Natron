@@ -43,6 +43,9 @@ NSURL *toNSURL(const QUrl &url)
 namespace Natron {
 QUrl toLocalFileUrlFixed(const QUrl& url)
 {
+#if QT_VERSION >= 0x050000
+    return url;
+#endif
     QUrl ret = url;
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSURL *nsurl = toNSURL(url);
