@@ -480,6 +480,17 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->zoomCombobox = new ComboBox(_imp->firstSettingsRow);
     _imp->zoomCombobox->setToolTip( "<p><b>" + tr("Zoom:") + "</b></p>"
                                      + tr("The zoom applied to the image on the viewer.") + "</p>");
+
+#pragma message WARN("TODO: add zoom in/zoom out/fit to viewer zoom menu")
+    // Unfortunately, this require a bit of work, because zoomSlot(QString) *parses* the menu entry and thus expects all entries to have the form "xx%".
+    // Keyboard shortcuts should be made visible to the user, not only in the shortcut editor, but also at logical places in the GUI.
+
+    //ActionWithShortcut* zoomInAction = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, this);
+    //_imp->zoomCombobox->addAction(zoomInAction);
+    //ActionWithShortcut* zoomOutAction = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, this);
+    //_imp->zoomCombobox->addAction(zoomOutAction);
+    //ActionWithShortcut* zoomFitAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, this);
+    //_imp->zoomCombobox->addAction(zoomFitAction);
     _imp->zoomCombobox->addItem("10%");
     _imp->zoomCombobox->addItem("25%");
     _imp->zoomCombobox->addItem("50%");
