@@ -2363,8 +2363,8 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 }
                 if (!keysList.empty()) {
                     _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)Natron::eValueChangedReasonNatronInternalEdited);
-                    _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
                 }
+                _signalSlotHandler->s_valueChanged(i,Natron::eValueChangedReasonPluginEdited);
             }
             checkAnimationLevel(i);
         }
