@@ -265,9 +265,9 @@ public:
      * @brief Given the following tree version, removes all images from the node cache with a matching
      * tree version. This is useful to wipe the cache for one particular node.
      **/
-    void  removeAllImagesFromCacheWithMatchingKey(U64 treeVersion);
-    void  removeAllImagesFromDiskCacheWithMatchingKey(U64 treeVersion);
-    void  removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion);
+    void  removeAllImagesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
+    void  removeAllImagesFromDiskCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
+    void  removeAllTexturesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;

@@ -1747,7 +1747,7 @@ Node::removeReferences(bool ensureThreadsFinished)
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
-    appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
+    appPTR->removeAllImagesFromCacheWithMatchingKey(true,  getHashValue() );
     deleteNodeVariableToPython(getFullyQualifiedName());
     
     int maxInputs = getMaxInputCount();

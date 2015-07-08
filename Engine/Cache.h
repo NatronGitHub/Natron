@@ -1162,7 +1162,7 @@ public:
         }
     }
     
-    void removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
+    void removeAllImagesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion)
     {
         std::list<EntryTypePtr> toDelete;
         CacheContainer newMemCache,newDiskCache;
@@ -1176,7 +1176,8 @@ public:
                     
                     const EntryTypePtr& front = entries.front();
                     
-                    if (front->getKey().getTreeVersion() == treeVersion) {
+                    if ((useTreeVersion && front->getKey().getTreeVersion() == treeVersion) ||
+                        (!useTreeVersion && front->getKey().getHash() == treeVersion)) {
                         
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                             //(*it)->scheduleForDestruction();
@@ -1197,7 +1198,8 @@ public:
                     
                     const EntryTypePtr& front = entries.front();
 
-                    if (front->getKey().getTreeVersion() == treeVersion) {
+                    if ((useTreeVersion && front->getKey().getTreeVersion() == treeVersion) ||
+                        (!useTreeVersion && front->getKey().getHash() == treeVersion)) {
                         
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                             //(*it)->scheduleForDestruction();
