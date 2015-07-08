@@ -4231,6 +4231,13 @@ Group_KnobGui::getOrCreateTabWidget()
     return _tabGroup;
 }
 
+void
+Group_KnobGui::removeTabWidget()
+{
+    delete _tabGroup;
+    _tabGroup = 0;
+}
+
 void Group_KnobGui::removeSpecificGui()
 {
     delete _button;

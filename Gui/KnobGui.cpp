@@ -1486,6 +1486,9 @@ KnobGui::show(int /*index*/)
 int
 KnobGui::getActualIndexInLayout() const
 {
+    if (!_imp->containerLayout) {
+        return -1;
+    }
     for (int i = 0; i < _imp->containerLayout->rowCount(); ++i) {
         QLayoutItem* item = _imp->containerLayout->itemAtPosition(i, 1);
         if ( item && (item->widget() == _imp->field) ) {

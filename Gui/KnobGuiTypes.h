@@ -825,6 +825,8 @@ public:
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
     
     TabGroup* getOrCreateTabWidget();
+    
+    void removeTabWidget();
 
 public Q_SLOTS:
     void setChecked(bool b);
