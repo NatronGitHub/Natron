@@ -570,7 +570,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->renderScaleCombo = new ComboBox(_imp->firstSettingsRow);
     _imp->renderScaleCombo->setFocusPolicy(Qt::NoFocus);
-    _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
+    _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor "
                                             "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
     QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, "2", _imp->renderScaleCombo);
@@ -939,7 +939,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playbackMode_Button = new Button(_imp->playerButtonsContainer);
     _imp->playbackMode_Button->setFocusPolicy(Qt::NoFocus);
     _imp->playbackMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->playbackMode_Button->setToolTip(Natron::convertFromPlainText(tr("Behaviour to adopt when the playback\n hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
+    _imp->playbackMode_Button->setToolTip(Natron::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
     _imp->playerLayout->addWidget(_imp->playbackMode_Button);
 
 
