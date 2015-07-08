@@ -6,6 +6,7 @@
 
 #include "Rect.h"
 
+#include <algorithm> // min, max
 
 #define MINAREA64 4096  // = 4096 pixels (=64*64)
 #define MINAREA128 16384

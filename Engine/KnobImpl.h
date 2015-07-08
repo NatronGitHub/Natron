@@ -21,6 +21,7 @@
 #include <cfloat>
 #include <stdexcept>
 #include <string>
+#include <algorithm> // min, max
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/math/special_functions/fpclassify.hpp>

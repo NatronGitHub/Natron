@@ -10,6 +10,8 @@
 #include "TableModelView.h"
 
 #include <set>
+#include <algorithm> // min, max
+
 #include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>

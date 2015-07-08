@@ -1,6 +1,6 @@
 #include "DopeSheetView.h"
 
-#include <algorithm>
+#include <algorithm> // min, max
 
 // Qt includes
 #include <QApplication>

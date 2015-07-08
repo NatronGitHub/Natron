@@ -9,6 +9,8 @@
 
 #include "Histogram.h"
 
+#include <algorithm> // min, max
+
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QCheckBox>

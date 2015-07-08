@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <map>
+#include <algorithm> // min, max
 
 #include <QtCore/QEvent>
 #include <QtCore/QFile>

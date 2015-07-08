@@ -15,7 +15,8 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
-#include <algorithm>
+#include <algorithm> // min, max
+
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_OFF(unused-parameter)
 // boost/optional/optional.hpp:1254:53: warning: unused parameter 'out' [-Wunused-parameter]

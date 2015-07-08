@@ -5,6 +5,8 @@
 
 #include "RotoSmear.h"
 
+#include <algorithm> // min, max
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"

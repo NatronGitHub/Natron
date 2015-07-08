@@ -15,7 +15,8 @@
 #include "Gui/ComboBox.h"
 
 #include <cassert>
-#include <algorithm>
+#include <algorithm> // min, max
+
 #include <QLayout>
 #include <QStyle>
 #include <QFont>

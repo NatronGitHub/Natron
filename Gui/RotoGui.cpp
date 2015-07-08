@@ -15,6 +15,8 @@
 
 #include "RotoGui.h"
 
+#include <algorithm> // min, max
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QString>

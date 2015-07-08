@@ -15,6 +15,7 @@
 #include "NodeGui.h"
 
 #include <cassert>
+#include <algorithm> // min, max
 #include <boost/scoped_array.hpp>
 
 CLANG_DIAG_OFF(deprecated)

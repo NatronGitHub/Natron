@@ -43,6 +43,8 @@
 
 #include <limits>
 #include <cfloat>
+#include <algorithm> // min, max
+
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/Interpolation.h"

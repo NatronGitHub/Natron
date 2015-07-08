@@ -15,7 +15,7 @@
 
 #include "RotoContext.h"
 
-#include <algorithm>
+#include <algorithm> // min, max
 #include <sstream>
 #include <locale>
 #include <limits>

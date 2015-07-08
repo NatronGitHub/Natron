@@ -21,6 +21,7 @@
 #include <vector>
 #include <utility>
 #include <cmath>
+#include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
 

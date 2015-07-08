@@ -21,6 +21,7 @@
 #include <QThreadPool>
 #include <QCoreApplication>
 #include <QTextStream>
+#include <algorithm> // min, max
 
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"

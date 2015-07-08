@@ -16,6 +16,8 @@
 #include "Knob.h"
 #include "KnobImpl.h"
 
+#include <algorithm> // min, max
+
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>

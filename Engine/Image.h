@@ -18,7 +18,7 @@
 
 #include <list>
 #include <map>
-#include <algorithm>
+#include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
 
