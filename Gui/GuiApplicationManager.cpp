@@ -203,796 +203,613 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
     QString iconSetStr = QString::number(iconSet);
-    
+
     if ( !QPixmapCache::find(QString::number(e),pix) ) {
-        QImage img;
+        QString path;
         switch (e) {
             case NATRON_PIXMAP_PLAYER_PREVIOUS:
-                img.load(NATRON_IMAGES_PATH "back1.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "back1.png";
                 break;
             case NATRON_PIXMAP_PLAYER_FIRST_FRAME:
-                img.load(NATRON_IMAGES_PATH "firstFrame.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "firstFrame.png";
                 break;
             case NATRON_PIXMAP_PLAYER_NEXT:
-                img.load(NATRON_IMAGES_PATH "forward1.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "forward1.png";
                 break;
             case NATRON_PIXMAP_PLAYER_LAST_FRAME:
-                img.load(NATRON_IMAGES_PATH "lastFrame.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "lastFrame.png";
                 break;
             case NATRON_PIXMAP_PLAYER_NEXT_INCR:
-                img.load(NATRON_IMAGES_PATH "nextIncr.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "nextIncr.png";
                 break;
             case NATRON_PIXMAP_PLAYER_NEXT_KEY:
-                img.load(NATRON_IMAGES_PATH "nextKF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "nextKF.png";
                 break;
             case NATRON_PIXMAP_PLAYER_PREVIOUS_INCR:
-                img.load(NATRON_IMAGES_PATH "previousIncr.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "previousIncr.png";
                 break;
             case NATRON_PIXMAP_PLAYER_PREVIOUS_KEY:
-                img.load(NATRON_IMAGES_PATH "prevKF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "prevKF.png";
                 break;
             case NATRON_PIXMAP_ADD_KEYFRAME:
-                img.load(NATRON_IMAGES_PATH "addKF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "addKF.png";
                 break;
             case NATRON_PIXMAP_REMOVE_KEYFRAME:
-                img.load(NATRON_IMAGES_PATH "removeKF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "removeKF.png";
                 break;
             case NATRON_PIXMAP_PLAYER_REWIND_ENABLED:
-                img.load(NATRON_IMAGES_PATH "rewind_enabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rewind_enabled.png";
                 break;
             case NATRON_PIXMAP_PLAYER_REWIND_DISABLED:
-                img.load(NATRON_IMAGES_PATH "rewind.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rewind.png";
                 break;
             case NATRON_PIXMAP_PLAYER_PLAY_ENABLED:
-                img.load(NATRON_IMAGES_PATH "play_enabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "play_enabled.png";
                 break;
             case NATRON_PIXMAP_PLAYER_PLAY_DISABLED:
-                img.load(NATRON_IMAGES_PATH "play.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "play.png";
                 break;
             case NATRON_PIXMAP_PLAYER_STOP:
-                img.load(NATRON_IMAGES_PATH "stop.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "stop.png";
                 break;
             case NATRON_PIXMAP_PLAYER_LOOP_MODE:
-                img.load(NATRON_IMAGES_PATH "loopmode.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "loopmode.png";
                 break;
             case NATRON_PIXMAP_PLAYER_BOUNCE:
-                img.load(NATRON_IMAGES_PATH "bounce.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "bounce.png";
                 break;
             case NATRON_PIXMAP_PLAYER_PLAY_ONCE:
-                img.load(NATRON_IMAGES_PATH "playOnce.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "playOnce.png";
                 break;
             case NATRON_PIXMAP_MAXIMIZE_WIDGET:
-                img.load(NATRON_IMAGES_PATH "maximize.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "maximize.png";
                 break;
             case NATRON_PIXMAP_MINIMIZE_WIDGET:
-                img.load(NATRON_IMAGES_PATH "minimize.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "minimize.png";
                 break;
             case NATRON_PIXMAP_CLOSE_WIDGET:
-                img.load(NATRON_IMAGES_PATH "close.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "close.png";
                 break;
             case NATRON_PIXMAP_CLOSE_PANEL:
-                img.load(NATRON_IMAGES_PATH "closePanel.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "closePanel.png";
                 break;
             case NATRON_PIXMAP_HIDE_UNMODIFIED:
-                img.load(NATRON_IMAGES_PATH "hide_unmodified.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "hide_unmodified.png";
                 break;
             case NATRON_PIXMAP_UNHIDE_UNMODIFIED:
-                img.load(NATRON_IMAGES_PATH "unhide_unmodified.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "unhide_unmodified.png";
                 break;
             case NATRON_PIXMAP_HELP_WIDGET:
-                img.load(NATRON_IMAGES_PATH "help.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "help.png";
                 break;
             case NATRON_PIXMAP_GROUPBOX_FOLDED:
-                img.load(NATRON_IMAGES_PATH "groupbox_folded.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "groupbox_folded.png";
                 break;
             case NATRON_PIXMAP_GROUPBOX_UNFOLDED:
-                img.load(NATRON_IMAGES_PATH "groupbox_unfolded.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "groupbox_unfolded.png";
                 break;
             case NATRON_PIXMAP_UNDO:
-                img.load(NATRON_IMAGES_PATH "undo.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "undo.png";
                 break;
             case NATRON_PIXMAP_REDO:
-                img.load(NATRON_IMAGES_PATH "redo.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "redo.png";
                 break;
             case NATRON_PIXMAP_UNDO_GRAYSCALE:
-                img.load(NATRON_IMAGES_PATH "undo_grayscale.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "undo_grayscale.png";
                 break;
             case NATRON_PIXMAP_REDO_GRAYSCALE:
-                img.load(NATRON_IMAGES_PATH "redo_grayscale.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "redo_grayscale.png";
                 break;
             case NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED:
-                img.load(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "restoreDefaultEnabled.png";
                 break;
             case NATRON_PIXMAP_RESTORE_DEFAULTS_DISABLED:
-                img.load(NATRON_IMAGES_PATH "restoreDefaultDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "restoreDefaultDisabled.png";
                 break;
             case NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON:
-                img.load(NATRON_IMAGES_PATH "layout.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "layout.png";
                 break;
             case NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR:
-                img.load(NATRON_IMAGES_PATH "layout_anchor.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "layout_anchor.png";
                 break;
             case NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY:
-                img.load(NATRON_IMAGES_PATH "splitHorizontally.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "splitHorizontally.png";
                 break;
             case NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY:
-                img.load(NATRON_IMAGES_PATH "splitVertically.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "splitVertically.png";
                 break;
             case NATRON_PIXMAP_VIEWER_CENTER:
-                img.load(NATRON_IMAGES_PATH "centerViewer.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "centerViewer.png";
                 break;
             case NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_ENABLED:
-                img.load(NATRON_IMAGES_PATH "cliptoprojectEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "cliptoprojectEnabled.png";
                 break;
             case NATRON_PIXMAP_VIEWER_CLIP_TO_PROJECT_DISABLED:
-                img.load(NATRON_IMAGES_PATH "cliptoprojectDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "cliptoprojectDisabled.png";
                 break;
             case NATRON_PIXMAP_VIEWER_REFRESH:
-                img.load(NATRON_IMAGES_PATH "refresh.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "refresh.png";
                 break;
             case NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE:
-                img.load(NATRON_IMAGES_PATH "refreshActive.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "refreshActive.png";
                 break;
             case NATRON_PIXMAP_VIEWER_ROI_ENABLED:
-                img.load(NATRON_IMAGES_PATH "viewer_roiEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "viewer_roiEnabled.png";
                 break;
             case NATRON_PIXMAP_VIEWER_ROI_DISABLED:
-                img.load(NATRON_IMAGES_PATH "viewer_roiDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "viewer_roiDisabled.png";
                 break;
             case NATRON_PIXMAP_VIEWER_RENDER_SCALE:
-                img.load(NATRON_IMAGES_PATH "renderScale.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "renderScale.png";
                 break;
             case NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED:
-                img.load(NATRON_IMAGES_PATH "renderScale_checked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "renderScale_checked.png";
                 break;
             case NATRON_PIXMAP_OPEN_FILE:
-                img.load(NATRON_IMAGES_PATH "open-file.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "open-file.png";
                 break;
             case NATRON_PIXMAP_COLORWHEEL:
-                img.load(NATRON_IMAGES_PATH "colorwheel.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "colorwheel.png";
                 break;
             case NATRON_PIXMAP_OVERLAY:
-                img.load(NATRON_IMAGES_PATH "colorwheel_overlay.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "colorwheel_overlay.png";
                 break;
             case NATRON_PIXMAP_ROTO_MERGE:
-                img.load(NATRON_IMAGES_PATH "roto_merge.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "roto_merge.png";
                 break;
             case NATRON_PIXMAP_COLOR_PICKER:
-                img.load(NATRON_IMAGES_PATH "color_picker.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "color_picker.png";
                 break;
 
 
             case NATRON_PIXMAP_IO_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/image_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/image_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_3D_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/3D_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/3D_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_CHANNEL_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/channel_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/channel_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_MERGE_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/merge_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/merge_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_COLOR_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/color_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/color_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_TRANSFORM_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/transform_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/transform_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_DEEP_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/deep_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/deep_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_FILTER_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/filter_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/filter_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_MULTIVIEW_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/multiview_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/multiview_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_MISC_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/misc_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/misc_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_OTHER_PLUGINS:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/other_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/other_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_TOOLSETS_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/toolsets_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/toolsets_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_KEYER_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/keyer_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/keyer_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_TIME_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/time_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/time_grouping_" + iconSetStr + ".png";
                 break;
             case NATRON_PIXMAP_PAINT_GROUPING:
-                img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/paint_grouping_" + iconSetStr + ".png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/paint_grouping_" + iconSetStr + ".png";
                 break;
 
 
             case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
-                img.load(NATRON_IMAGES_PATH "openeffects.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "openeffects.png";
                 break;
             case NATRON_PIXMAP_COMBOBOX:
-                img.load(NATRON_IMAGES_PATH "combobox.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "combobox.png";
                 break;
             case NATRON_PIXMAP_COMBOBOX_PRESSED:
-                img.load(NATRON_IMAGES_PATH "pressed_combobox.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "pressed_combobox.png";
                 break;
             case NATRON_PIXMAP_READ_IMAGE:
-                img.load(NATRON_IMAGES_PATH "readImage.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "readImage.png";
                 break;
             case NATRON_PIXMAP_WRITE_IMAGE:
-                img.load(NATRON_IMAGES_PATH "writeImage.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "writeImage.png";
                 break;
 
             case NATRON_PIXMAP_APP_ICON:
-                img.load(NATRON_APPLICATION_ICON_PATH);
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_APPLICATION_ICON_PATH;
                 break;
             case NATRON_PIXMAP_INVERTED:
-                img.load(NATRON_IMAGES_PATH "inverted.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "inverted.png";
                 break;
             case NATRON_PIXMAP_UNINVERTED:
-                img.load(NATRON_IMAGES_PATH "uninverted.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "uninverted.png";
                 break;
             case NATRON_PIXMAP_VISIBLE:
-                img.load(NATRON_IMAGES_PATH "visible.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "visible.png";
                 break;
             case NATRON_PIXMAP_UNVISIBLE:
-                img.load(NATRON_IMAGES_PATH "unvisible.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "unvisible.png";
                 break;
             case NATRON_PIXMAP_LOCKED:
-                img.load(NATRON_IMAGES_PATH "locked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "locked.png";
                 break;
             case NATRON_PIXMAP_UNLOCKED:
-                img.load(NATRON_IMAGES_PATH "unlocked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "unlocked.png";
                 break;
             case NATRON_PIXMAP_LAYER:
-                img.load(NATRON_IMAGES_PATH "layer.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "layer.png";
                 break;
             case NATRON_PIXMAP_BEZIER:
-                img.load(NATRON_IMAGES_PATH "bezier.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "bezier.png";
                 break;
             case NATRON_PIXMAP_CURVE:
-                img.load(NATRON_IMAGES_PATH "curve.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "curve.png";
                 break;
             case NATRON_PIXMAP_BEZIER_32:
-                img.load(NATRON_IMAGES_PATH "bezier32.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "bezier32.png";
                 break;
             case NATRON_PIXMAP_PENCIL:
-                img.load(NATRON_IMAGES_PATH "rotoToolPencil.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotoToolPencil.png";
                 break;
             case NATRON_PIXMAP_ELLIPSE:
-                img.load(NATRON_IMAGES_PATH "ellipse.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "ellipse.png";
                 break;
             case NATRON_PIXMAP_RECTANGLE:
-                img.load(NATRON_IMAGES_PATH "rectangle.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rectangle.png";
                 break;
             case NATRON_PIXMAP_ADD_POINTS:
-                img.load(NATRON_IMAGES_PATH "addPoints.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "addPoints.png";
                 break;
             case NATRON_PIXMAP_REMOVE_POINTS:
-                img.load(NATRON_IMAGES_PATH "removePoints.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "removePoints.png";
                 break;
             case NATRON_PIXMAP_REMOVE_FEATHER:
-                img.load(NATRON_IMAGES_PATH "removeFeather.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "removeFeather.png";
                 break;
             case NATRON_PIXMAP_CUSP_POINTS:
-                img.load(NATRON_IMAGES_PATH "cuspPoints.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "cuspPoints.png";
                 break;
             case NATRON_PIXMAP_SMOOTH_POINTS:
-                img.load(NATRON_IMAGES_PATH "smoothPoints.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "smoothPoints.png";
                 break;
             case NATRON_PIXMAP_OPEN_CLOSE_CURVE:
-                img.load(NATRON_IMAGES_PATH "openCloseCurve.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "openCloseCurve.png";
                 break;
             case NATRON_PIXMAP_SELECT_ALL:
-                img.load(NATRON_IMAGES_PATH "cursor.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "cursor.png";
                 break;
             case NATRON_PIXMAP_SELECT_POINTS:
-                img.load(NATRON_IMAGES_PATH "selectPoints.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "selectPoints.png";
                 break;
             case NATRON_PIXMAP_SELECT_FEATHER:
-                img.load(NATRON_IMAGES_PATH "selectFeather.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "selectFeather.png";
                 break;
             case NATRON_PIXMAP_SELECT_CURVES:
-                img.load(NATRON_IMAGES_PATH "selectCurves.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "selectCurves.png";
                 break;
             case NATRON_PIXMAP_AUTO_KEYING_ENABLED:
-                img.load(NATRON_IMAGES_PATH "autoKeyingEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "autoKeyingEnabled.png";
                 break;
             case NATRON_PIXMAP_AUTO_KEYING_DISABLED:
-                img.load(NATRON_IMAGES_PATH "autoKeyingDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "autoKeyingDisabled.png";
                 break;
             case NATRON_PIXMAP_STICKY_SELECTION_ENABLED:
-                img.load(NATRON_IMAGES_PATH "stickySelectionEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "stickySelectionEnabled.png";
                 break;
             case NATRON_PIXMAP_STICKY_SELECTION_DISABLED:
-                img.load(NATRON_IMAGES_PATH "stickySelectionDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "stickySelectionDisabled.png";
                 break;
             case NATRON_PIXMAP_FEATHER_LINK_ENABLED:
-                img.load(NATRON_IMAGES_PATH "featherLinkEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "featherLinkEnabled.png";
                 break;
             case NATRON_PIXMAP_FEATHER_LINK_DISABLED:
-                img.load(NATRON_IMAGES_PATH "featherLinkDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "featherLinkDisabled.png";
                 break;
             case NATRON_PIXMAP_FEATHER_VISIBLE:
-                img.load(NATRON_IMAGES_PATH "featherEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "featherEnabled.png";
                 break;
             case NATRON_PIXMAP_FEATHER_UNVISIBLE:
-                img.load(NATRON_IMAGES_PATH "featherDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "featherDisabled.png";
                 break;
             case NATRON_PIXMAP_RIPPLE_EDIT_ENABLED:
-                img.load(NATRON_IMAGES_PATH "rippleEditEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rippleEditEnabled.png";
                 break;
             case NATRON_PIXMAP_RIPPLE_EDIT_DISABLED:
-                img.load(NATRON_IMAGES_PATH "rippleEditDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rippleEditDisabled.png";
                 break;
             case NATRON_PIXMAP_BOLD_CHECKED:
-                img.load(NATRON_IMAGES_PATH "bold_checked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "bold_checked.png";
                 break;
             case NATRON_PIXMAP_BOLD_UNCHECKED:
-                img.load(NATRON_IMAGES_PATH "bold_unchecked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "bold_unchecked.png";
                 break;
             case NATRON_PIXMAP_ITALIC_UNCHECKED:
-                img.load(NATRON_IMAGES_PATH "italic_unchecked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "italic_unchecked.png";
                 break;
             case NATRON_PIXMAP_ITALIC_CHECKED:
-                img.load(NATRON_IMAGES_PATH "italic_checked.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "italic_checked.png";
                 break;
             case NATRON_PIXMAP_CLEAR_ALL_ANIMATION:
-                img.load(NATRON_IMAGES_PATH "clearAnimation.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "clearAnimation.png";
                 break;
             case NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION:
-                img.load(NATRON_IMAGES_PATH "clearAnimationBw.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "clearAnimationBw.png";
                 break;
             case NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION:
-                img.load(NATRON_IMAGES_PATH "clearAnimationFw.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "clearAnimationFw.png";
                 break;
             case NATRON_PIXMAP_UPDATE_VIEWER_ENABLED:
-                img.load(NATRON_IMAGES_PATH "updateViewerEnabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "updateViewerEnabled.png";
                 break;
             case NATRON_PIXMAP_UPDATE_VIEWER_DISABLED:
-                img.load(NATRON_IMAGES_PATH "updateViewerDisabled.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "updateViewerDisabled.png";
                 break;
             case NATRON_PIXMAP_SETTINGS:
-                img.load(NATRON_IMAGES_PATH "settings.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "settings.png";
                 break;
             case NATRON_PIXMAP_FREEZE_ENABLED:
-                img.load(NATRON_IMAGES_PATH "turbo_on.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "turbo_on.png";
                 break;
             case NATRON_PIXMAP_FREEZE_DISABLED:
-                img.load(NATRON_IMAGES_PATH "turbo_off.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "turbo_off.png";
                 break;
             case NATRON_PIXMAP_VIEWER_ICON:
-                img.load(NATRON_IMAGES_PATH "viewer_icon.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "viewer_icon.png";
                 break;
             case NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED:
-                img.load(NATRON_IMAGES_PATH "checkerboard_on.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "checkerboard_on.png";
                 break;
             case NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED:
-                img.load(NATRON_IMAGES_PATH "checkerboard_off.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "checkerboard_off.png";
                 break;
             case NATRON_PIXMAP_VIEWER_ZEBRA_ENABLED:
-                img.load(NATRON_IMAGES_PATH "zebra_on.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "zebra_on.png";
                 break;
             case NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED:
-                img.load(NATRON_IMAGES_PATH "zebra_off.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "zebra_off.png";
                 break;
             case NATRON_PIXMAP_VIEWER_GAMMA_ENABLED:
-                img.load(NATRON_IMAGES_PATH "gammaON.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "gammaON.png";
                 break;
             case NATRON_PIXMAP_VIEWER_GAMMA_DISABLED:
-                img.load(NATRON_IMAGES_PATH "gammaOFF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "gammaOFF.png";
                 break;
             case NATRON_PIXMAP_VIEWER_GAIN_ENABLED:
-                img.load(NATRON_IMAGES_PATH "expoON.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "expoON.png";
                 break;
             case NATRON_PIXMAP_VIEWER_GAIN_DISABLED:
-                img.load(NATRON_IMAGES_PATH "expoOFF.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "expoOFF.png";
                 break;
             case NATRON_PIXMAP_ADD_TRACK:
-                img.load(NATRON_IMAGES_PATH "addTrack.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "addTrack.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT:
-                img.load(NATRON_IMAGES_PATH "clearOutput.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "clearOutput.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "execScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "execScript.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "loadAndExecScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "loadAndExecScript.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "loadScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "loadScript.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "nextScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "nextScript.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED:
-                img.load(NATRON_IMAGES_PATH "outputPanelActivated.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "outputPanelActivated.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED:
-                img.load(NATRON_IMAGES_PATH "outputPanelDeactivated.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "outputPanelDeactivated.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "previousScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "previousScript.png";
                 break;
             case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
-                img.load(NATRON_IMAGES_PATH "saveScript.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "saveScript.png";
                 break;
 
             case NATRON_PIXMAP_MERGE_ATOP:
-                img.load(NATRON_IMAGES_PATH "merge_atop.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_atop.png";
                 break;
             case NATRON_PIXMAP_MERGE_AVERAGE:
-                img.load(NATRON_IMAGES_PATH "merge_average.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_average.png";
                 break;
             case NATRON_PIXMAP_MERGE_COLOR_BURN:
-                img.load(NATRON_IMAGES_PATH "merge_color_burn.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_color_burn.png";
                 break;
             case NATRON_PIXMAP_MERGE_COLOR_DODGE:
-                img.load(NATRON_IMAGES_PATH "merge_color_dodge.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_color_dodge.png";
                 break;
             case NATRON_PIXMAP_MERGE_CONJOINT_OVER:
-                img.load(NATRON_IMAGES_PATH "merge_conjoint_over.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_conjoint_over.png";
                 break;
             case NATRON_PIXMAP_MERGE_COPY:
-                img.load(NATRON_IMAGES_PATH "merge_copy.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_copy.png";
                 break;
             case NATRON_PIXMAP_MERGE_DIFFERENCE:
-                img.load(NATRON_IMAGES_PATH "merge_difference.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_difference.png";
                 break;
             case NATRON_PIXMAP_MERGE_DISJOINT_OVER:
-                img.load(NATRON_IMAGES_PATH "merge_disjoint_over.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_disjoint_over.png";
                 break;
             case NATRON_PIXMAP_MERGE_DIVIDE:
-                img.load(NATRON_IMAGES_PATH "merge_divide.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_divide.png";
                 break;
             case NATRON_PIXMAP_MERGE_EXCLUSION:
-                img.load(NATRON_IMAGES_PATH "merge_exclusion.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_exclusion.png";
                 break;
             case NATRON_PIXMAP_MERGE_FREEZE:
-                img.load(NATRON_IMAGES_PATH "merge_freeze.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_freeze.png";
                 break;
             case NATRON_PIXMAP_MERGE_FROM:
-                img.load(NATRON_IMAGES_PATH "merge_from.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_from.png";
                 break;
             case NATRON_PIXMAP_MERGE_GEOMETRIC:
-                img.load(NATRON_IMAGES_PATH "merge_geometric.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_geometric.png";
                 break;
             case NATRON_PIXMAP_MERGE_HARD_LIGHT:
-                img.load(NATRON_IMAGES_PATH "merge_hard_light.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_hard_light.png";
                 break;
             case NATRON_PIXMAP_MERGE_HYPOT:
-                img.load(NATRON_IMAGES_PATH "merge_hypot.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_hypot.png";
                 break;
             case NATRON_PIXMAP_MERGE_IN:
-                img.load(NATRON_IMAGES_PATH "merge_in.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_in.png";
                 break;
             case NATRON_PIXMAP_MERGE_INTERPOLATED:
-                img.load(NATRON_IMAGES_PATH "merge_interpolated.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_interpolated.png";
                 break;
             case NATRON_PIXMAP_MERGE_MASK:
-                img.load(NATRON_IMAGES_PATH "merge_mask.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_mask.png";
                 break;
             case NATRON_PIXMAP_MERGE_MATTE:
-                img.load(NATRON_IMAGES_PATH "merge_matte.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_matte.png";
                 break;
             case NATRON_PIXMAP_MERGE_MAX:
-                img.load(NATRON_IMAGES_PATH "merge_max.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_max.png";
                 break;
             case NATRON_PIXMAP_MERGE_MIN:
-                img.load(NATRON_IMAGES_PATH "merge_min.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_min.png";
                 break;
             case NATRON_PIXMAP_MERGE_MINUS:
-                img.load(NATRON_IMAGES_PATH "merge_minus.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_minus.png";
                 break;
             case NATRON_PIXMAP_MERGE_MULTIPLY:
-                img.load(NATRON_IMAGES_PATH "merge_multiply.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_multiply.png";
                 break;
             case NATRON_PIXMAP_MERGE_OUT:
-                img.load(NATRON_IMAGES_PATH "merge_out.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_out.png";
                 break;
             case NATRON_PIXMAP_MERGE_OVER:
-                img.load(NATRON_IMAGES_PATH "merge_over.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_over.png";
                 break;
             case NATRON_PIXMAP_MERGE_OVERLAY:
-                img.load(NATRON_IMAGES_PATH "merge_overlay.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_overlay.png";
                 break;
             case NATRON_PIXMAP_MERGE_PINLIGHT:
-                img.load(NATRON_IMAGES_PATH "merge_pinlight.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_pinlight.png";
                 break;
             case NATRON_PIXMAP_MERGE_PLUS:
-                img.load(NATRON_IMAGES_PATH "merge_plus.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_plus.png";
                 break;
             case NATRON_PIXMAP_MERGE_REFLECT:
-                img.load(NATRON_IMAGES_PATH "merge_reflect.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_reflect.png";
                 break;
             case NATRON_PIXMAP_MERGE_SCREEN:
-                img.load(NATRON_IMAGES_PATH "merge_screen.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_screen.png";
                 break;
             case NATRON_PIXMAP_MERGE_SOFT_LIGHT:
-                img.load(NATRON_IMAGES_PATH "merge_soft_light.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_soft_light.png";
                 break;
             case NATRON_PIXMAP_MERGE_STENCIL:
-                img.load(NATRON_IMAGES_PATH "merge_stencil.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_stencil.png";
                 break;
             case NATRON_PIXMAP_MERGE_UNDER:
-                img.load(NATRON_IMAGES_PATH "merge_under.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_under.png";
                 break;
             case NATRON_PIXMAP_MERGE_XOR:
-                img.load(NATRON_IMAGES_PATH "merge_xor.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "merge_xor.png";
                 break;
             case NATRON_PIXMAP_LINK_CURSOR:
-                img.load(NATRON_IMAGES_PATH "linkCursor.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "linkCursor.png";
                 break;
             case NATRON_PIXMAP_ENTER_GROUP:
-                img.load(NATRON_IMAGES_PATH "enter_group.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "enter_group.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED:
-                img.load(NATRON_IMAGES_PATH "rotopaint_buildup_on.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_buildup_on.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED:
-                img.load(NATRON_IMAGES_PATH "rotopaint_buildup_off.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_buildup_off.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_BLUR:
-                img.load(NATRON_IMAGES_PATH "rotopaint_blur.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_blur.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_BURN:
-                img.load(NATRON_IMAGES_PATH "rotopaint_burn.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_burn.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_CLONE:
-                img.load(NATRON_IMAGES_PATH "rotopaint_clone.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_clone.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_DODGE:
-                img.load(NATRON_IMAGES_PATH "rotopaint_dodge.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_dodge.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_ERASER:
-                img.load(NATRON_IMAGES_PATH "rotopaint_eraser.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_eraser.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED:
-                img.load(NATRON_IMAGES_PATH "rotopaint_pressure_on.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_pressure_on.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED:
-                img.load(NATRON_IMAGES_PATH "rotopaint_pressure_off.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_pressure_off.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_REVEAL:
-                img.load(NATRON_IMAGES_PATH "rotopaint_reveal.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_reveal.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_SHARPEN:
-                img.load(NATRON_IMAGES_PATH "rotopaint_sharpen.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_sharpen.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_SMEAR:
-                img.load(NATRON_IMAGES_PATH "rotopaint_smear.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_smear.png";
                 break;
             case NATRON_PIXMAP_ROTOPAINT_SOLID:
-                img.load(NATRON_IMAGES_PATH "rotopaint_solid.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "rotopaint_solid.png";
                 break;
             case NATRON_PIXMAP_ROTO_NODE_ICON:
-                    img.load(NATRON_IMAGES_PATH "rotoNodeIcon.png");
-                    *pix = QPixmap::fromImage(img);
-                    break;
+                path = NATRON_IMAGES_PATH "rotoNodeIcon.png";
+                break;
             case NATRON_PIXMAP_INTERP_LINEAR:
-                img.load(NATRON_IMAGES_PATH "interp_linear.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_linear.png";
                 break;
             case NATRON_PIXMAP_INTERP_CURVE:
-                img.load(NATRON_IMAGES_PATH "interp_curve.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_curve.png";
                 break;
             case NATRON_PIXMAP_INTERP_CONSTANT:
-                img.load(NATRON_IMAGES_PATH "interp_constant.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_constant.png";
                 break;
             case NATRON_PIXMAP_INTERP_BREAK:
-                img.load(NATRON_IMAGES_PATH "interp_break.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_break.png";
                 break;
             case NATRON_PIXMAP_INTERP_CURVE_C:
-                img.load(NATRON_IMAGES_PATH "interp_curve_c.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_curve_c.png";
                 break;
             case NATRON_PIXMAP_INTERP_CURVE_H:
-                img.load(NATRON_IMAGES_PATH "interp_curve_h.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_curve_h.png";
                 break;
             case NATRON_PIXMAP_INTERP_CURVE_R:
-                img.load(NATRON_IMAGES_PATH "interp_curve_r.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_curve_r.png";
                 break;
             case NATRON_PIXMAP_INTERP_CURVE_Z:
-                img.load(NATRON_IMAGES_PATH "interp_curve_z.png");
-                *pix = QPixmap::fromImage(img);
+                path = NATRON_IMAGES_PATH "interp_curve_z.png";
                 break;
             default:
                 assert(!"Missing image.");
         } // switch
-        QPixmapCache::insert(QString::number(e),*pix);
+
+        // put a breakpoint in png_chunk_report to catch the error "libpng warning: iCCP: known incorrect sRGB profile"
+
+        // old version:
+        //QImage img;
+        //img.load(path);
+        //*pix = QPixmap::fromImage(img);
+
+        // new version:
+        pix->load(path);
+
+        QPixmapCache::insert(QString::number(e), *pix);
     }
 } // getIcon
 
