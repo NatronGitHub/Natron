@@ -2969,11 +2969,19 @@ OfxEffectInstance::isViewAware() const
     return effectInstance()->isViewAware();
 }
 
-bool
+EffectInstance::ViewInvarianceLevel
 OfxEffectInstance::isViewInvariant() const
 {
-    return effectInstance()->isViewInvariant();
-}
+    int inv = effectInstance()->getViewInvariance();
+    if (inv == 0) {
+        return eViewInvarianceAllViewsVariant;
+    } else if (inv == 1) {
+        return eViewInvarianceOnlyPassThroughPlanesVariant;
+    } else {
+        assert(inv == 2);
+        return eViewInvarianceAllViewsInvariant;
+    }
+ }
 
 Natron::SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const

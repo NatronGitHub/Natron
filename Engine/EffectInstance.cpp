@@ -2324,7 +2324,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
     }
     
-    
+    ViewInvarianceLevel viewInvariance = isViewInvariant();
     
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should probably be shared between
@@ -2417,10 +2417,17 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         
         RectI pixelRod;
         rod.toPixelEnclosing(args.mipMapLevel, par, &pixelRod);
-        try {
-            identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
-        } catch (...) {
-            return eRenderRoIRetCodeFailed;
+        
+        if (args.view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) {
+            identity = true;
+            inputNbIdentity = -2;
+            inputTimeIdentity = args.time;
+        } else {
+            try {
+                identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
+            } catch (...) {
+                return eRenderRoIRetCodeFailed;
+            }
         }
         
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
@@ -2439,11 +2446,19 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 return eRenderRoIRetCodeOk;
             } else if (inputNbIdentity == -2) {
                 // there was at least one crash if you set the first frame to a negative value
-                assert(inputTimeIdentity != args.time);
-                if (inputTimeIdentity != args.time) { // be safe in release mode!
+                assert(inputTimeIdentity != args.time || viewInvariance == eViewInvarianceAllViewsInvariant);
+                
+                // be safe in release mode otherwise we hit an infinite recursion
+                if (inputTimeIdentity != args.time || viewInvariance == eViewInvarianceAllViewsInvariant) {
+                    
                     ///This special value of -2 indicates that the plugin is identity of itself at another time
                     RenderRoIArgs argCpy = args;
                     argCpy.time = inputTimeIdentity;
+                    
+                    if (viewInvariance == eViewInvarianceAllViewsInvariant) {
+                        argCpy.view = 0;
+                    }
+                    
                     argCpy.preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
                     
                     return renderRoI(argCpy,outputPlanes);
@@ -2458,10 +2473,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             ///later on for us already.
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
+            
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 
-                RoIMap inputsRoI;
+                /*RoIMap inputsRoI;
                 inputsRoI.insert( std::make_pair(inputEffectIdentity, canonicalRoI) );
                 Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
                                                             inputsRoI,
@@ -2474,11 +2490,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                             inputNbIdentity,
                                                             std::map<Natron::ImageComponents,PlaneToRender>(),
                                                             firstFrame,
-                                                            lastFrame);
+                                                            lastFrame);*/
                 
-                ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
+                
+                // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
                 
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
@@ -2604,6 +2621,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End pass-through for planes //////////////////////////////////////////////////////////
 
+    // At this point, if only the pass through planes are view variant and the rendered view is different than 0,
+    // just call renderRoI again for the components left to render on the view 0.    
+    if (args.view != 0 && viewInvariance == eViewInvarianceOnlyPassThroughPlanesVariant) {
+        RenderRoIArgs argCpy = args;
+        argCpy.view = 0;
+        argCpy.preComputedRoD.clear();
+        return renderRoI(argCpy,outputPlanes);
+    }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////

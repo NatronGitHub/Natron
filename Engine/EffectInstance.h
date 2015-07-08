@@ -784,7 +784,14 @@ public:
 
     virtual bool isViewAware() const { return false; }
 
-    virtual bool isViewInvariant() const { return false; }
+    enum ViewInvarianceLevel
+    {
+        eViewInvarianceAllViewsVariant,
+        eViewInvarianceOnlyPassThroughPlanesVariant,
+        eViewInvarianceAllViewsInvariant,
+    };
+
+    virtual ViewInvarianceLevel isViewInvariant() const { return eViewInvarianceAllViewsVariant; }
 
     struct RenderActionArgs
     {
