@@ -1072,7 +1072,7 @@ SequenceDialogView::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = urls.at(0).path();
+        path = Natron::toLocalFileUrlFixed(urls.at(0)).path();
     }
     if ( !path.isEmpty() ) {
         _fd->setDirectory(path);
@@ -2547,7 +2547,7 @@ UrlModel::canDrop(QDragEnterEvent* e)
 
     const QList<QUrl> list = e->mimeData()->urls();
     for (int i = 0; i < list.count(); ++i) {
-        QModelIndex idx = fileSystemModel->index( list.at(0).toLocalFile() );
+        QModelIndex idx = fileSystemModel->index( Natron::toLocalFileUrlFixed(list.at(i)).toLocalFile() );
         if ( !fileSystemModel->isDir(idx) ) {
             return false;
         }

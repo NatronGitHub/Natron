@@ -83,7 +83,7 @@ struct CreateNodeArgs
                             double yPosHint, //< yPosition in the nodegraph DEFAULT = INT_MIN
                             bool pushUndoRedoCommand , //< should we push a new undo/redo command on the GUI? DEFAULT = true
                             bool addToProject, //< should we add the node to the project ? DEFAULT = true
-                            bool userEdited, //< was it called from userAction ?
+                            bool userEdited, //< was it called from userAction ? (used to show file dialogs)
                             const QString & fixedName,  //< if non empty, this will be the name of the node DEFAULT = empty
                             const DefaultValuesList& paramValues,  //< parameters to set before creating the plugin
                             const boost::shared_ptr<NodeCollection>& group) //< the group into which to create this node

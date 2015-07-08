@@ -32,6 +32,8 @@ CLANG_DIAG_ON(unused-private-field)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h"
+
 class QPaintEvent;
 
 LineEdit::LineEdit(QWidget* parent)
@@ -70,7 +72,7 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = urls.at(0).path();
+        path = Natron::toLocalFileUrlFixed(urls.at(0)).path();
     }
     if ( !path.isEmpty() ) {
         setText(path);

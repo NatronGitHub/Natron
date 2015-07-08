@@ -44,6 +44,7 @@ removeRecursively(const QString & dirName)
 #endif
 
 #include <QtCore/QString>
+#include <QtCore/QUrl>
 
 namespace Natron {
 /*Removes the . and the extension from the filename and also
@@ -62,6 +63,16 @@ removeFileExtension(QString & filename)
 
     return extension;
 }
-}
+
+// in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files
+// See https://bugreports.qt.io/browse/QTBUG-40449
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+//Implementation is in QUrlFix.mm
+QUrl toLocalFileUrlFixed(const QUrl& url);
+#else // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+QUrl toLocalFileUrlFixed(const QUrl& url) { return url; }
+#endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+
+} // namespace Natron
 
 #endif // NATRON_GLOBAL_QTCOMPAT_H_

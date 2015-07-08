@@ -881,7 +881,7 @@ EffectInstance::invalidateParallelRenderArgsTLS()
             (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     } else {
-        qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+        //qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
     }
 }
 
@@ -891,7 +891,7 @@ EffectInstance::getParallelRenderArgsTLS() const
     if (_imp->frameRenderArgs.hasLocalData()) {
         return _imp->frameRenderArgs.localData();
     } else {
-        qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+        //qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
         return ParallelRenderArgs();
     }
 }
