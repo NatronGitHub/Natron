@@ -1192,6 +1192,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
+    glCheckError();
 
     refreshTimelinePositions();
     
@@ -1224,6 +1225,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( _timeline->currentFrame(),btmRight.y() );
         glVertex2f( _timeline->currentFrame(),topLeft.y() );
         glEnd();
+        glCheckError();
 
         glEnable(GL_POLYGON_SMOOTH);
         glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
@@ -1235,13 +1237,13 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
         glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
         glEnd();
+        glCheckError();
 
         glBegin(GL_POLYGON);
         glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
         glVertex2f( _timelineTopPoly.at(1).x(),_timelineTopPoly.at(1).y() );
         glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
         glEnd();
-        
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
     glCheckError();
 }
@@ -1267,6 +1269,7 @@ CurveWidgetPrivate::drawCurves()
 void
 CurveWidgetPrivate::drawScale()
 {
+    glCheckError();
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
@@ -1331,6 +1334,7 @@ CurveWidgetPrivate::drawScale()
                 const double tickSize = ticks[i - m1] * smallTickSize;
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
+                glCheckError();
                 glColor4f(gridR,gridG,gridB, alpha);
 
                 glBegin(GL_LINES);
@@ -1342,7 +1346,7 @@ CurveWidgetPrivate::drawScale()
                     glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
                 }
                 glEnd();
-                glCheckError();
+                glCheckErrorIgnoreOSXBug();
 
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
@@ -1370,6 +1374,7 @@ CurveWidgetPrivate::drawScale()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     
     
+    glCheckError();
     glColor4f(gridR,gridG,gridB,1.);
     glBegin(GL_LINES);
     glVertex2f(AXIS_MIN, 0);
@@ -1379,7 +1384,7 @@ CurveWidgetPrivate::drawScale()
     glEnd();
 
     
-    glCheckError();
+    glCheckErrorIgnoreOSXBug();
 } // drawScale
 
 void
@@ -2735,6 +2740,7 @@ CurveWidget::paintGL()
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
         glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug();
 
         return;
     }
@@ -2750,6 +2756,7 @@ CurveWidget::paintGL()
 
         glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug();
 
         _imp->drawScale();
 
@@ -2767,6 +2774,7 @@ CurveWidget::paintGL()
             _imp->drawSelectionRectangle();
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+    glCheckError();
 }
 
 void

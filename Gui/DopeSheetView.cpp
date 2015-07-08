@@ -709,6 +709,8 @@ void DopeSheetViewPrivate::drawScale() const
         const double minTickSizeTextPixel = fontM.width( QString("00") );
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
 
+        glCheckError();
+
         for (int i = m1; i <= m2; ++i) {
 
             double value = i * smallTickSize + offset;
@@ -723,7 +725,7 @@ void DopeSheetViewPrivate::drawScale() const
             glVertex2f(value, topRight.y());
             glEnd();
 
-            glCheckError();
+            glCheckErrorIgnoreOSXBug();
 
             // Draw the time indicators
             if (tickSize > minTickSizeText) {
@@ -2658,6 +2660,7 @@ void DopeSheetView::paintGL()
 
         _imp->drawCurrentFrameIndicator();
     }
+    glCheckError();
 }
 
 void DopeSheetView::mousePressEvent(QMouseEvent *e)

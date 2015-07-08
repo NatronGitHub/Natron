@@ -1105,6 +1105,7 @@ ViewerGL::paintGL()
     }
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
         clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
+        glCheckError();
 
         return;
     }
