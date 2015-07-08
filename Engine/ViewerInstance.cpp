@@ -997,7 +997,7 @@ Natron::StatusEnum
 ViewerInstance::renderViewer_internal(int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      U64 viewerHash,
+                                      U64 /*viewerHash*/,
                                       bool canAbort,
                                       boost::shared_ptr<Natron::Node> rotoPaintNode,
                                       bool useTLS,
@@ -2586,15 +2586,11 @@ ViewerInstance::onInputChanged(int inputNb)
                 _imp->activeInputs[0] = inputNb;
             } else {
                 Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
-                if (autoWipeEnabled && op == Natron::eViewerCompositingOperatorNone) {
+                if (op == Natron::eViewerCompositingOperatorNone) {
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
                     op = Natron::eViewerCompositingOperatorWipe;
-                }
-                if (op != Natron::eViewerCompositingOperatorNone) {
-                    _imp->activeInputs[1] = inputNb;
                 } else {
-#pragma message WARN("BUG? Execution cannot reach this statement")
-                    _imp->activeInputs[1] = -1;
+                    _imp->activeInputs[1] = inputNb;
                 }
             }
         }

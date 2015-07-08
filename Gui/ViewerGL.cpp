@@ -3760,10 +3760,6 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject && triggerRender) {
         fitImageToFormat();
-        ViewerInstance* node = _imp->viewerTab->getInternalNode();
-        if (node) {
-            node->renderCurrentFrame(false);
-        }
     }
     
     

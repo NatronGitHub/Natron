@@ -4609,11 +4609,14 @@ EffectInstance::renderHandler(RenderArgs & args,
             assert(!outputPlanes.empty());
         }
         
-        if (st != eStatusOK) {
+        if (st != eStatusOK || renderAborted) {
 #if NATRON_ENABLE_TRIMAP
-            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                assert(!renderAborted);
+            if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
                 
+                /*
+                 At this point, another thread might have already gotten this image from the cache and could end-up
+                 using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
+                 */
                 for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                     if (outputUseImage) {
                         it->second.fullscaleImage->clearBitmap(downscaledRectToRender);
@@ -4624,35 +4627,16 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
             }
 #endif
-            return eRenderingFunctorRetFailed;
             
-        }
-        if (renderAborted) {
-            break;
-        }
-    }
+            return st != eStatusOK ? eRenderingFunctorRetFailed : eRenderingFunctorRetAborted;
+            
+            
+        } // if (st != eStatusOK || renderAborted) {
+    } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
+    assert(!renderAborted);
     
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
-    
-    if (renderAborted) {
-        
-        if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-            /*
-             At this point, another thread might have already gotten this image from the cache and could end-up
-             using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
-             */
-            for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
-                if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
-                    it->second.fullscaleImage->clearBitmap(downscaledRectToRender);
-                } else {
-                    it->second.downscaleImage->clearBitmap(downscaledRectToRender);
-                }
-            }
-        }
-        return eRenderingFunctorRetAborted;
-    }
-    
     bool useMaskMix = isHostMaskingEnabled() || isHostMixingEnabled();
     double mix = useMaskMix ? getNode()->getHostMixingValue(time) : 1.;
     bool doMask = useMaskMix ? getNode()->isMaskEnabled(getMaxInputCount() - 1) : false;
