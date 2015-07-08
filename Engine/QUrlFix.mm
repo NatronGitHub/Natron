@@ -10,6 +10,8 @@
  */
 
 #include "Global/QtCompat.h"
+
+#ifdef Q_OS_MAC
 #include <Foundation/NSString.h>
 #include <Foundation/NSAutoreleasePool.h>
 #include <Foundation/NSURL.h>
@@ -55,3 +57,4 @@ QUrl toLocalFileUrlFixed(const QUrl& url)
     return ret;
 }
 }
+#endif
