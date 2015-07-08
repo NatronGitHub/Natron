@@ -3578,8 +3578,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
             QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
             QCoreApplication::postEvent(parentTab,ev);
         }
-        
-        
+
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
@@ -3604,6 +3603,12 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         copySelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
     } else {
         QGLWidget::keyPressEvent(e);
     }

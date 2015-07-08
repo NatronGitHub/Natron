@@ -198,8 +198,14 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionProxyLevel32 "proxy32"
 #define kShortcutDescActionProxyLevel32 "32"
 
-#define kShortcutIDActionZoomLevel100 "100%"
-#define kShortcutDescActionZoomLevel100 "100%"
+#define kShortcutIDActionZoomLevel100 "zoom100"
+#define kShortcutDescActionZoomLevel100 "Set Zoom to 100%"
+
+#define kShortcutIDActionZoomIn "zoomIn"
+#define kShortcutDescActionZoomIn "Zoom In"
+
+#define kShortcutIDActionZoomOut "zoomOut"
+#define kShortcutDescActionZoomOut "Zoom Out"
 
 #define kShortcutIDActionHideOverlays "hideOverlays"
 #define kShortcutDescActionHideOverlays "Show/Hide Overlays"
