@@ -288,6 +288,7 @@ TimeLineGui::paintGL()
     if ( (left == right) || (top == bottom) ) {
         glClearColor(clearR,clearG,clearB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
+        glCheckErrorIgnoreOSXBug();
 
         return;
     }
@@ -450,7 +451,8 @@ TimeLineGui::paintGL()
 
         //draw an alpha cursor if the mouse is hovering the timeline
         glEnable(GL_POLYGON_SMOOTH);
-        glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
+        glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
+        glCheckError();
         if (_imp->alphaCursor) {
             int currentPosBtmWidgetCoordX = _imp->lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
@@ -485,7 +487,7 @@ TimeLineGui::paintGL()
             glVertex2f( currentPosTopLeft.x(),currentPosTopLeft.y() );
             glVertex2f( currentPosTopRight.x(),currentPosTopRight.y() );
             glEnd();
-            glCheckError();
+            glCheckErrorIgnoreOSXBug();
 
             renderText(mouseNumberPos.x(),mouseNumberPos.y(), mouseNumber, currentColor, _imp->font);
         }
