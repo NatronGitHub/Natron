@@ -933,12 +933,12 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
         if (dsNode->getItemType() == DopeSheet::ItemTypeReader) {
             NodePtr node = dsNode->getInternalNode();
 
-            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
             assert(firstFrameKnob);
 
             double speedValue = 1.0f;
 
-            Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("originalFrameRange").get());
+            Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
             assert(originalFrameRangeKnob);
 
             int lineBegin = clipRectZoomCoords.left() - firstFrameKnob->getValue() + 1;
@@ -1543,11 +1543,11 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get());
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
 
     int startingTimeValue = startingTimeKnob->getValue();
@@ -1573,18 +1573,18 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     NodePtr node = retimer->getInternalNode();
 
     if (Natron::Node *nearestReader = model->getNearestReader(retimer)) {
-        Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("startingTime").get());
+        Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameStartingTime).get());
         assert(startingTimeKnob);
-        Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("firstFrame").get());
+        Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameFirstFrame).get());
         assert(firstFrameKnob);
-        Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName("lastFrame").get());
+        Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameLastFrame).get());
         assert(lastFrameKnob);
 
         int startingTimeValue = startingTimeKnob->getValue();
         int firstFrameValue = firstFrameKnob->getValue();
         int lastFrameValue = lastFrameKnob->getValue();
 
-        Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(node->getKnobByName("speed").get());
+        Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(node->getKnobByName(kRetimeParamNameSpeed).get());
         assert(speedKnob);
 
         double speedValue = speedKnob->getValue();
@@ -1612,7 +1612,7 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
         FrameRange nearestReaderRange = nodeRanges.at(nearestReader.get());
 
         // Retrieve the time offset values
-        Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName("timeOffset").get());
+        Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
         assert(timeOffsetKnob);
 
         int timeOffsetValue = timeOffsetKnob->getValue();
@@ -1665,11 +1665,11 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
         if (pluginID == PLUGINID_OFX_READOIIO ||
                 pluginID == PLUGINID_OFX_READFFMPEG ||
                 pluginID == PLUGINID_OFX_READPFM) {
-            Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("startingTime").get());
+            Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
             assert(startingTimeKnob);
-            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
             assert(firstFrameKnob);
-            Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+            Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
             assert(lastFrameKnob);
 
             int startingTimeValue = startingTimeKnob->getValue();
@@ -1755,7 +1755,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esReaderLeftTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName("timeOffset").get());
+            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
             double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -1768,7 +1768,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     case DopeSheetView::esReaderRightTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName("timeOffset").get());
+            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
             double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2422,9 +2422,9 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
     else if (nodeType == DopeSheet::ItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName(kReaderParamNameLastFrame)->getSignalSlotHandler();
         assert(lastFrameKnob);
-        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName("startingTime")->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
         connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
@@ -2438,21 +2438,21 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         // refreshes of the view.
     }
     else if (nodeType == DopeSheet::ItemTypeRetime) {
-        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName("speed")->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
         connect(speedKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
     }
     else if (nodeType == DopeSheet::ItemTypeTimeOffset) {
-        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName("timeOffset")->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
         connect(timeOffsetKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(onRangeNodeChanged(int, int)));
     }
     else if (nodeType == DopeSheet::ItemTypeFrameRange) {
-        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName("frameRange")->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
         connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),

@@ -22,6 +22,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
+#define kReaderParamNameFirstFrame "firstFrame"
+#define kReaderParamNameLastFrame "lastFrame"
+#define kReaderParamNameOriginalFrameRange "originalFrameRange"
+#define kReaderParamNameStartingTime "startingTime"
+#define kReaderParamNameTimeOffset "timeOffset"
+
+#define kRetimeParamNameSpeed "speed"
+#define kFrameRangeParamNameFrameRange "frameRange"
+
 class DopeSheetPrivate;
 class DopeSheetSelectionModel;
 class DopeSheetSelectionModelPrivate;

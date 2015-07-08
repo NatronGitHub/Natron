@@ -74,7 +74,7 @@ void renderOnce(const std::set<KnobHolder *>& holders)
  */
 void moveReader(const NodePtr &reader, double dt)
 {
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName("startingTime").get());
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
 
     KnobHolder *holder = startingTimeKnob->getHolder();
@@ -224,7 +224,7 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
     assert(firstFrameKnob);
 
     KnobHolder *holder = firstFrameKnob->getHolder();
@@ -301,7 +301,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -405,11 +405,11 @@ void DSSlipReaderCommand::slipReader(double dt)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("firstFrame").get());
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("lastFrame").get());
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("timeOffset").get());
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameTimeOffset).get());
     assert(startingTimeKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
