@@ -1938,10 +1938,10 @@ GuiApplicationManager::populateShortcuts()
 
     ///Viewer
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionR, kShortcutDescActionR, Qt::NoModifier, Qt::Key_R);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionG, kShortcutDescActionG, Qt::NoModifier, Qt::Key_G);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionB, kShortcutDescActionB, Qt::NoModifier, Qt::Key_B);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionA, kShortcutDescActionA, Qt::NoModifier, Qt::Key_A);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionRed, kShortcutDescActionRed, Qt::NoModifier, Qt::Key_R);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, kShortcutDescActionGreen, Qt::NoModifier, Qt::Key_G);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, kShortcutDescActionBlue, Qt::NoModifier, Qt::Key_B);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, kShortcutDescActionAlpha, Qt::NoModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, kShortcutDescActionClipEnabled, Qt::ShiftModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, kShortcutDescActionRefresh, Qt::NoModifier, Qt::Key_U);

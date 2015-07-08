@@ -461,12 +461,12 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                        + tr("The channels to display on the viewer.") + "</p>");
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
     
-    QAction* lumiAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionLuminance,kShortcutDescActionLuminance,_imp->viewerChannels);
-    QAction* rgbAction = new QAction(QIcon(),tr("RGB"),_imp->viewerChannels);
-    QAction* rAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionR,kShortcutDescActionR,_imp->viewerChannels);
-    QAction* gAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionG,kShortcutDescActionG,_imp->viewerChannels);
-    QAction* bAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionB,kShortcutDescActionB,_imp->viewerChannels);
-    QAction* aAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionA,kShortcutDescActionA,_imp->viewerChannels);
+    QAction* lumiAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionLuminance, tr("Luminance"), _imp->viewerChannels);
+    QAction* rgbAction = new QAction(QIcon(), tr("RGB"), _imp->viewerChannels);
+    QAction* rAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionRed, tr("Red"), _imp->viewerChannels);
+    QAction* gAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionGreen, tr("Green"), _imp->viewerChannels);
+    QAction* bAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionBlue, tr("Blue"), _imp->viewerChannels);
+    QAction* aAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionAlpha, tr("Alpha"), _imp->viewerChannels);
 
     _imp->viewerChannels->addAction(lumiAction);
     _imp->viewerChannels->addAction(rgbAction);
@@ -495,7 +495,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->zoomCombobox->addItem("25%");
     _imp->zoomCombobox->addItem("50%");
     _imp->zoomCombobox->addItem("75%");
-    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionZoomLevel100,kShortcutDescActionZoomLevel100,this);
+    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, "100%", this);
     _imp->zoomCombobox->addAction(level100Action);
     _imp->zoomCombobox->addItem("125%");
     _imp->zoomCombobox->addItem("150%");
@@ -573,16 +573,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor \n"
                                             "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
-    QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel2,kShortcutDescActionProxyLevel2,
-                                             _imp->renderScaleCombo);
-    QAction* proxy4 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel4,kShortcutDescActionProxyLevel4,
-                                             _imp->renderScaleCombo);
-    QAction* proxy8 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel8,kShortcutDescActionProxyLevel8,
-                                             _imp->renderScaleCombo);
-    QAction* proxy16 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel16,kShortcutDescActionProxyLevel16,
-                                             _imp->renderScaleCombo);
-    QAction* proxy32 = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionProxyLevel32,kShortcutDescActionProxyLevel32,
-                                             _imp->renderScaleCombo);
+    QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, "2", _imp->renderScaleCombo);
+    QAction* proxy4 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, "4", _imp->renderScaleCombo);
+    QAction* proxy8 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, "8", _imp->renderScaleCombo);
+    QAction* proxy16 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, "16", _imp->renderScaleCombo);
+    QAction* proxy32 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, "32", _imp->renderScaleCombo);
     _imp->renderScaleCombo->addAction(proxy2);
     _imp->renderScaleCombo->addAction(proxy4);
     _imp->renderScaleCombo->addAction(proxy8);
@@ -603,11 +598,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCompositingOperatorIndexChanged(int) ) );
-    _imp->compositingOperator->addItem(" - ",QIcon(),QKeySequence(),"Only the A input is used.");
-    _imp->compositingOperator->addItem("Over",QIcon(),QKeySequence(),"A + B(1 - Aalpha)");
-    _imp->compositingOperator->addItem("Under",QIcon(),QKeySequence(),"A(1 - Balpha) + B");
-    _imp->compositingOperator->addItem("Minus",QIcon(),QKeySequence(),"A - B");
-    _imp->compositingOperator->addItem("Wipe",QIcon(),QKeySequence(),"Wipe betweens A and B");
+    _imp->compositingOperator->addItem(tr(" - "), QIcon(), QKeySequence(), tr("Only the A input is used."));
+    _imp->compositingOperator->addItem(tr("Over"), QIcon(), QKeySequence(), tr("A + B(1 - Aalpha)"));
+    _imp->compositingOperator->addItem(tr("Under"), QIcon(), QKeySequence(), tr("A(1 - Balpha) + B"));
+    _imp->compositingOperator->addItem(tr("Minus"), QIcon(), QKeySequence(), tr("A - B"));
+    _imp->compositingOperator->addItem(tr("Wipe"), QIcon(), QKeySequence(), tr("Wipe between A and B"));
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
     _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
@@ -1611,28 +1606,28 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         } else {
             _imp->viewerChannels->setCurrentIndex(0);
         }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionR, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRed, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 2) {
             _imp->viewerChannels->setCurrentIndex(1);
         } else {
             _imp->viewerChannels->setCurrentIndex(2);
         }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionG, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 3) {
             _imp->viewerChannels->setCurrentIndex(1);
         } else {
             _imp->viewerChannels->setCurrentIndex(3);
         }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionB, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 4) {
             _imp->viewerChannels->setCurrentIndex(1);
         } else {
             _imp->viewerChannels->setCurrentIndex(4);
         }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionA, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 5) {
             _imp->viewerChannels->setCurrentIndex(1);
@@ -1690,6 +1685,8 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
         _imp->zoomCombobox->setCurrentIndex_no_emit(4);
+    } else {
+        QWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 
