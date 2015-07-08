@@ -2908,7 +2908,29 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+#ifndef DEBUG
             isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+#else
+       // in debug mode, check that the result of getRestToRender_trimap and getRestToRender is the same if the image
+       // is not currently rendered concurrently
+            QMutexLocker k(&_imp->imagesBeingRenderedMutex);
+            EffectInstance::Implementation::IBRMap::const_iterator found = _imp->imagesBeingRendered.find(isPlaneCached);
+            if (found == _imp->imagesBeingRendered.end() || !found->second->refCount) {
+                
+                Image::ReadAccess racc(isPlaneCached.get());
+                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+                std::list<RectI> tmpRects;
+                isPlaneCached->getRestToRender(roi, tmpRects);
+                
+                assert(!planesToRender.isBeingRenderedElsewhere);
+                assert(rectsLeftToRender.size() == tmpRects.size());
+                
+                std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
+                for (std::list<RectI>::iterator it = tmpRects.begin(); it!=tmpRects.end(); ++it,++oIt) {
+                    assert(*it == *oIt);
+                }
+            }
+#endif
         } else {
             isPlaneCached->getRestToRender(roi, rectsLeftToRender);
         }
