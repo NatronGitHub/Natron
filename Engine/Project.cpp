@@ -588,7 +588,7 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( appPTR->isBackground() || !appPTR->isLoaded() ) {
+    if ( appPTR->isBackground() || !appPTR->isLoaded() || _imp->projectClosing ) {
         return;
     }
     {
@@ -597,7 +597,7 @@ Project::triggerAutoSave()
             return;
         }
     }
-
+    
     _imp->autoSaveTimer->start( appPTR->getCurrentSettings()->getAutoSaveDelayMS() );
 }
 
@@ -2018,7 +2018,7 @@ Project::createViewer()
                                          -1,-1,
                                          true,
                                          INT_MIN,INT_MIN,
-                                         true,
+                                         false,
                                          true,
                                          false,
                                          QString(),

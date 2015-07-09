@@ -709,10 +709,18 @@ Gui::abortProject(bool quitApp)
         _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
+        {
+            QMutexLocker l(&_imp->aboutToCloseMutex);
+            _imp->_aboutToClose = true;
+        }
         _imp->_appInstance->resetPreviewProvider();
         _imp->_appInstance->getProject()->closeProject(false);
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
+        {
+            QMutexLocker l(&_imp->aboutToCloseMutex);
+            _imp->_aboutToClose = false;
+        }
     }
 
     ///Reset current undo/reso actions
@@ -3375,6 +3383,13 @@ Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->save(archive);
+}
+
+bool
+Gui::isAboutToClose() const
+{
+    QMutexLocker l(&_imp->aboutToCloseMutex);
+    return _imp->_aboutToClose;
 }
 
 void

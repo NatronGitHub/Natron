@@ -531,6 +531,8 @@ public:
 
     void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
 
+    bool isAboutToClose() const;
+    
 Q_SIGNALS:
 
 

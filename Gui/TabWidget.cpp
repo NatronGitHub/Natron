@@ -1499,7 +1499,7 @@ TabWidget::moveTab(QWidget* what,
     assert(where);
     where->appendTab(what,obj);
     //what->setParent(where);
-    if ( !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
+    if ( !where->getGui()->isAboutToClose() &&  !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
     }
 
