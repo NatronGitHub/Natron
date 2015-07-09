@@ -628,7 +628,7 @@ KnobHelper::deleteValueAtTime(int time,
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -693,7 +693,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -771,7 +771,7 @@ KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -848,7 +848,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> thisCurve;
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     if (!useGuiCurve) {
         if (holder) {
             holder->abortAnyEvaluation();
@@ -896,7 +896,7 @@ KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEn
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -945,7 +945,7 @@ KnobHelper::moveDerivativesAtTime(int dimension,int time,double left,double righ
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -996,7 +996,7 @@ KnobHelper::moveDerivativeAtTime(int dimension,int time,double derivative,bool i
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -1054,7 +1054,7 @@ KnobHelper::removeAnimation(int dimension,
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -2448,7 +2448,7 @@ KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChang
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
         if (holder) {
@@ -2638,7 +2638,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
     
     KnobHolder* holder = getHolder();
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
-        if (holder && !holder->canSetValue()) {
+        if (holder && !holder->isSetValueCurrentlyPossible()) {
             holder->abortAnyEvaluation();
             QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
             _imp->mustClearExprResults[*it] = true;
@@ -2928,6 +2928,9 @@ struct KnobHolder::KnobHolderPrivate
     
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
+    
+    //Set in the begin/endChanges block
+    bool canCurrentlySetValue;
     ChangesList knobChanged;
     
     bool changeSignificant;
@@ -2953,6 +2956,7 @@ struct KnobHolder::KnobHolderPrivate
     , paramsEditRecursionLevel(0)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
+    , canCurrentlySetValue(true)
     , knobChanged()
     , changeSignificant(false)
     , knobsFrozenMutex()
@@ -3450,8 +3454,12 @@ KnobHolder::beginChanges()
     /*
      * Start a begin/end block, actually blocking all evaluations (renders) but not value changed callback.
      */
+    bool canSet = canSetValue();
     QMutexLocker l(&_imp->evaluationBlockedMutex);
     ++_imp->evaluationBlocked;
+    if (_imp->evaluationBlocked == 1) {
+        _imp->canCurrentlySetValue = canSet;
+    }
     //std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
 }
 
@@ -3461,6 +3469,18 @@ KnobHolder::isEvaluationBlocked() const
     QMutexLocker l(&_imp->evaluationBlockedMutex);
     
     return _imp->evaluationBlocked > 0;
+}
+
+bool
+KnobHolder::isSetValueCurrentlyPossible() const
+{
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        if (_imp->evaluationBlocked > 0) {
+            return _imp->canCurrentlySetValue;
+        }
+    }
+    return canSetValue();
 }
 
 KnobHolder::MultipleParamsEditEnum

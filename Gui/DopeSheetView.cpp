@@ -1920,6 +1920,8 @@ void DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
     gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
 
     double toTime = timeline->currentFrame() + dt;
+    
+    gui->setUserScrubbingSlider(true);
     timeline->seekFrame(SequenceTime(toTime), false, 0,
                         Natron::eTimelineChangeReasonDopeSheetEditorSeek);
 }
@@ -2947,6 +2949,14 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
         _imp->selectionRect.clear();
 
         mustRedraw = true;
+    } else if (_imp->eventState == DopeSheetView::esMoveCurrentFrameIndicator) {
+        if (_imp->gui->isUserScrubbingSlider()) {
+            _imp->gui->setUserScrubbingSlider(false);
+            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+            if (autoProxyEnabled) {
+                _imp->gui->renderAllViewers();
+            }
+        }
     }
 
     if (_imp->eventState != esNoEditingState) {

@@ -860,8 +860,10 @@ Knob<T>::setValue(const T & v,
         }
     }
     
+    
+    
     ///If we cannot set value, queue it
-    if (holder && !holder->canSetValue()) {
+    if (holder && !holder->isSetValueCurrentlyPossible()) {
         
         if (getEvaluateOnChange()) {
             holder->abortAnyEvaluation();
@@ -1656,7 +1658,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     KeyFrame k;
     boost::shared_ptr<Curve> curve;
     KnobHolder* holder = getHolder();
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
         assert(holder);
@@ -1686,7 +1688,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
 {
     boost::shared_ptr<Curve> curve;
     KnobHolder* holder = getHolder();
-    bool useGuiCurve = (!holder || !holder->canSetValue()) && getKnobGuiPointer();
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && getKnobGuiPointer();
     
     if (!useGuiCurve) {
         assert(holder);

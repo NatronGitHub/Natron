@@ -1879,12 +1879,6 @@ public:
     
     bool areKnobsFrozen() const;
 
-    /**
-     * @brief Can be overriden to prevent values to be set directly.
-     * Instead the setValue/setValueAtTime actions are queued up
-     * They will be dequeued when dequeueValuesSet will be called.
-     **/
-    virtual bool canSetValue() const { return true; }
     virtual void abortAnyEvaluation() {}
     
     /**
@@ -1953,10 +1947,18 @@ public:
 
     void appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason);
     
+    bool isSetValueCurrentlyPossible() const;
+    
 protected:
     
     //////////////////////////////////////////////////////////////////////////////////////////
     
+    /**
+     * @brief Can be overriden to prevent values to be set directly.
+     * Instead the setValue/setValueAtTime actions are queued up
+     * They will be dequeued when dequeueValuesSet will be called.
+     **/
+    virtual bool canSetValue() const { return true; }
     
     
 protected:
