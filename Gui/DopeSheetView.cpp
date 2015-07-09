@@ -42,6 +42,7 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/TabWidget.h"
 
 namespace {
 //Protect declarations in an anonymous namespace
@@ -3041,7 +3042,15 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = Qt::Key(e->key());
 
-    if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
+    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(parentWidget()->parentWidget()->parentWidget());
+        assert(tab);
+        if (tab) {
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
+            QCoreApplication::postEvent(tab,ev);
+        }
+        
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
         deleteSelectedKeyframes();
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
@@ -3076,5 +3085,7 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
         pasteKeyframes();
+    } else {
+        QGLWidget::keyPressEvent(e);
     }
 }

@@ -1481,6 +1481,8 @@ CurveEditor::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_F && modCASIsControl(e)) {
         _imp->filterEdit->setFocus();
+    } else {
+        QWidget::keyPressEvent(e);
     }
 }
 

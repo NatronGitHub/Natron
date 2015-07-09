@@ -2369,7 +2369,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( getLastSelectedViewer() ) {
             getLastSelectedViewer()->previousFrame();
         }
-    }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToNextKeyframe();
