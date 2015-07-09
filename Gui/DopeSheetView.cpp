@@ -2796,16 +2796,31 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     if (nodeType == DopeSheet::ItemTypeReader) {
                         _imp->currentEditedReader = it->second;
                         if (_imp->isNearByClipRectLeft(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderLeftTrim;
                             didSomething = true;
                             break;
                         }
                         else if (_imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderRightTrim;
                             didSomething = true;
                             break;
                         }
                         else if (_imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderSlip;
                             didSomething = true;
                             break;

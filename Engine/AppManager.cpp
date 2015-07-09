@@ -1703,9 +1703,38 @@ static void findAndRunScriptFile(const QString& path,const QStringList& files,co
                 QTextStream ts(&file);
                 QString content = ts.readAll();
                 PyRun_SimpleString(content.toStdString().c_str());
-                if (PyErr_Occurred()) {
-                    PyErr_Print();
+
+                PyObject* mainModule = getMainModule();
+                std::string error;
+                ///Gui session, do stdout, stderr redirection
+                PyObject *errCatcher = 0;
+                
+                if (PyObject_HasAttrString(mainModule, "catchErr")) {
+                    errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
                 }
+                
+                PyErr_Print(); //make python print any errors
+                
+                PyObject *errorObj = 0;
+                if (errCatcher) {
+                    errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                    assert(errorObj);
+                    error = PY3String_asString(errorObj);
+                    PyObject* unicode = PyUnicode_FromString("");
+                    PyObject_SetAttrString(errCatcher, "value", unicode);
+                    Py_DECREF(errorObj);
+                    Py_DECREF(errCatcher);
+                }
+
+                if (!error.empty()) {
+                    QString message("Failed to load ");
+                    message.append(script);
+                    message.append(": ");
+                    message.append(error.c_str());
+                    appPTR->writeToOfxLog_mt_safe(message);
+                    std::cerr << message.toStdString() << std::endl;
+                }
+
             }
             break;
         }
@@ -3191,12 +3220,16 @@ AppManager::initPython(int argc,char* argv[])
     bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     
+    ok = interpretPythonScript(std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
+    assert(ok);
+    
     if (!isBackground()) {
         
         ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_GUI_PYTHON_MODULE_NAME), &err, 0);
         assert(ok);
         
-        ok = interpretPythonScript("natron = " + std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".PyGuiApplication()\n" , &err, 0);
+        ok = interpretPythonScript(std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".natron = " +
+                                   std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".PyGuiApplication()\n" , &err, 0);
         assert(ok);
         
         //redirect stdout/stderr
@@ -3214,15 +3247,7 @@ AppManager::initPython(int argc,char* argv[])
         "sys.stderr = catchErr\n");
         ok = interpretPythonScript(script,&err,0);
         assert(ok);
-    } else {
-        ok = interpretPythonScript("natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
-        assert(ok);
     }
-    
-#ifndef NDEBUG
-    Natron::PythonGILLocker pgl;
-    assert(PyObject_HasAttrString(_imp->mainModule, "natron") == 1);
-#endif
 }
 
 void
@@ -3298,10 +3323,11 @@ void
 AppManagerPrivate::declareSettingsToPython()
 {
     std::stringstream ss;
-    ss << "natron.settings = natron.getSettings()\n";
+    ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
     const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ss << "natron.settings." << (*it)->getName() << " = natron.settings.getParam('" << (*it)->getName() << "')\n";
+        ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
+        (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
 }
 
@@ -3377,6 +3403,23 @@ AppManager::onNewCrashReporterConnectionPending()
     QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
 }
 #endif
+
+std::list<std::string>
+AppManager::getNatronPath()
+{
+    std::list<std::string> ret;
+    QStringList p = appPTR->getAllNonOFXPluginsPaths();
+    for (QStringList::iterator it = p.begin(); it != p.end(); ++it) {
+        ret.push_back(it->toStdString());
+    }
+    return ret;
+}
+
+void
+AppManager::appendToNatronPath(const std::string& path)
+{
+    appPTR->getCurrentSettings()->appendPythonGroupsPath(path);
+}
 
 namespace Natron {
 void
@@ -3633,22 +3676,7 @@ void compilePyScript(const std::string& script,PyObject** code)
     }
 }
     
-std::list<std::string>
-getNatronPath()
-{
-    std::list<std::string> ret;
-    QStringList p = appPTR->getAllNonOFXPluginsPaths();
-    for (QStringList::iterator it = p.begin(); it != p.end(); ++it) {
-        ret.push_back(it->toStdString());
-    }
-    return ret;
-}
-    
-void
-appendToNatronPath(const std::string& path)
-{
-    appPTR->getCurrentSettings()->appendPythonGroupsPath(path);
-}
+
     
 std::string
 makeNameScriptFriendly(const std::string& str)
@@ -3750,7 +3778,9 @@ getGroupInfos(const std::string& modulePath,
     
     std::string err;
     if (!interpretPythonScript(toRun, &err, 0)) {
-        QString logStr("Python group load failure: ");
+        QString logStr("Failure when loading ");
+        logStr.append(pythonModule.c_str());
+        logStr.append(": ");
         logStr.append(err.c_str());
         appPTR->writeToOfxLog_mt_safe(logStr);
         qDebug() << logStr;

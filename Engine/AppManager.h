@@ -472,9 +472,24 @@ public Q_SLOTS:
 
     void onMaxPanelsOpenedChanged(int maxPanels);
 
-
-
     
+    /**
+     * @brief Return the concatenation of all search paths of Natron, i.e:
+     - The bundled plug-ins path: ../Plugin relative to the binary
+     - The system wide data for Natron (architecture dependent), this is the same location as autosaves
+     - The content of the NATRON_PLUGIN_PATH environment variable
+     - The content of the search paths defined in the Preferences-->Plugins--> Group plugins search path
+     *
+     * This does not apply for OpenFX plug-ins which have their own search path.
+     **/
+    std::list<std::string> getNatronPath();
+    
+    /**
+     * @brief Add a new path to the Natron search path
+     **/
+    void appendToNatronPath(const std::string& path);
+
+    virtual void addCommand(const QString& /*grouping*/,const std::string& /*pythonFunction*/, Qt::Key /*key*/,const Qt::KeyboardModifiers& /*modifiers*/) {}
 Q_SIGNALS:
 
 
@@ -617,44 +632,7 @@ getTextureFromCacheOrCreate(const Natron::FrameKey & key,
     return appPTR->getTextureOrCreate(key,params, returnValue);
 }
     
-/**
-* @brief Returns a list of IDs of all the plug-ins currently loaded.
-* Each ID can be passed to the AppInstance::createNode function to instantiate a node
-* with a plug-in.
-**/
-inline std::list<std::string>
-getPluginIDs()
-{
-    return appPTR->getPluginIDs();
-}
-    
-inline AppInstance*
-getInstance(int idx)
-{
-    return appPTR->getAppInstance(idx);
-}
-    
-inline int
-getNumInstances()
-{
-    return appPTR->getNumInstances();
-}
 
-/**
- * @brief Return the concatenation of all search paths of Natron, i.e:
- - The bundled plug-ins path: ../Plugin relative to the binary
- - The system wide data for Natron (architecture dependent), this is the same location as autosaves
- - The content of the NATRON_PLUGIN_PATH environment variable
- - The content of the search paths defined in the Preferences-->Plugins--> Group plugins search path
- *
- * This does not apply for OpenFX plug-ins which have their own search path.
- **/
-std::list<std::string> getNatronPath();
-
-/**
- * @brief Add a new path to the Natron search path
- **/
-void appendToNatronPath(const std::string& path);
 
 
 /**

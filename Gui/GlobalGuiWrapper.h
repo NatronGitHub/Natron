@@ -43,7 +43,7 @@ public:
     
     GuiApp* getGuiInstance(int idx) const
     {
-        AppInstance* app = Natron::getInstance(idx);
+        AppInstance* app = appPTR->getAppInstance(idx);
         if (!app) {
             return 0;
         }

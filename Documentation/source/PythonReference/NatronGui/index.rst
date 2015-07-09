@@ -16,7 +16,7 @@ poll the :func:`NatronEngine.PyCoreApplication.isBackground()` function on the *
 object before calling functions dependent on the module :mod:`NatronGui`.
 E.g::
 
-	if not natron.isBackground():
+	if not NatronEngine.natron.isBackground():
 		# do GUI only stuff here
 
 

@@ -7,6 +7,9 @@
 from PySide.QtGui import *
 from PySide.QtCore import *
 
+#To import the variable "natron"
+from NatronGui import *
+
 #Callback called when a parameter of the player changes
 #The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
 def myPlayerParamChangedCallback(paramName, app, userEdited):
