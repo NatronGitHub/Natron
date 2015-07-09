@@ -3370,9 +3370,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 if ( !isLastPlanesEmpty && lastRenderHash != nodeHash ) {
                     ///once we got it remove it from the cache
                     if (!useDiskCacheNode) {
-                        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+                        appPTR->removeAllImagesFromCacheWithMatchingKey(true, lastRenderHash);
                     } else {
-                        appPTR->removeAllImagesFromDiskCacheWithMatchingKey(lastRenderHash);
+                        appPTR->removeAllImagesFromDiskCacheWithMatchingKey(true, lastRenderHash);
                     }
                     {
                         QMutexLocker l(&_imp->lastRenderArgsMutex);
@@ -3448,7 +3448,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         
         if (isDuringPaintStroke) {
             //We know the image will never be used ever again
-            appPTR->removeAllImagesFromCacheWithMatchingKey(nodeHash);
+            appPTR->removeAllImagesFromCacheWithMatchingKey(true, nodeHash);
         }
         return eRenderRoIRetCodeAborted;
         
@@ -3544,7 +3544,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             it->second.downscaleImage = tmp;
         }
-        
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);
 

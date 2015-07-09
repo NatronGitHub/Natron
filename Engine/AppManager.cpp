@@ -2185,21 +2185,21 @@ AppManager::removeFromViewerCache(U64 hash)
 }
 
 void
-AppManager::removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
+AppManager::removeAllImagesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion)
 {
-    _imp->_nodeCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
+    _imp->_nodeCache->removeAllImagesFromCacheWithMatchingKey(useTreeVersion, treeVersion);
 }
 
 void
-AppManager::removeAllImagesFromDiskCacheWithMatchingKey(U64 treeVersion)
+AppManager::removeAllImagesFromDiskCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion)
 {
-    _imp->_diskCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
+    _imp->_diskCache->removeAllImagesFromCacheWithMatchingKey(useTreeVersion, treeVersion);
 }
 
 void
-AppManager::removeAllTexturesFromCacheWithMatchingKey(U64 treeVersion)
+AppManager::removeAllTexturesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion)
 {
-    _imp->_viewerCache->removeAllImagesFromCacheWithMatchingKey(treeVersion);
+    _imp->_viewerCache->removeAllImagesFromCacheWithMatchingKey(useTreeVersion, treeVersion);
 }
 
 const QString &

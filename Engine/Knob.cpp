@@ -1874,8 +1874,10 @@ void
 KnobHelper::clearExpression(int dimension,bool clearResults)
 {
     Natron::PythonGILLocker pgl;
+    bool hadExpression;
     {
         QMutexLocker k(&_imp->expressionMutex);
+        hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
         //Py_XDECREF(_imp->expressions[dimension].code); //< new ref
@@ -1924,10 +1926,10 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
     if (clearResults) {
         clearExpressionsResults(dimension);
     }
-    if (getHolder()) {
-        getHolder()->updateHasAnimation();
+
+    if (hadExpression) {
+        expressionChanged(dimension);
     }
-    expressionChanged(dimension);
     
 }
 

@@ -66,6 +66,11 @@ public:
     QGridLayout* addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name);
     
     void removeTab(Group_Knob* group);
+    
+    bool isEmpty() const
+    {
+        return _tabs.empty();
+    }
 };
 
 /**

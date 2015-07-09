@@ -1952,22 +1952,33 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parent.get());
             
             assert(isParentPage || isParentGroup);
-            TabGroup* groupAsTab = 0;
             if (isParentPage) {
                 PageMap::iterator page = _imp->_pages.find(isParentPage->getDescription().c_str());
                 assert(page != _imp->_pages.end());
-                assert(page->second.groupAsTab);
-                groupAsTab = page->second.groupAsTab;
+                TabGroup* groupAsTab = page->second.groupAsTab;
+                if (groupAsTab) {
+                    groupAsTab->removeTab(isGrp);
+                    if (groupAsTab->isEmpty()) {
+                        delete page->second.groupAsTab;
+                        page->second.groupAsTab = 0;
+                    }
+                }
                 
             } else {
                 std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
                 assert(found != _imp->_knobs.end());
                 Group_KnobGui* parentGroupGui = dynamic_cast<Group_KnobGui*>(found->second);
                 assert(parentGroupGui);
-                groupAsTab = parentGroupGui->getOrCreateTabWidget();
+                TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
+                if (groupAsTab) {
+                    groupAsTab->removeTab(isGrp);
+                    if (groupAsTab->isEmpty()) {
+                        parentGroupGui->removeTabWidget();
+                    }
+                }
             }
-            assert(groupAsTab);
-            groupAsTab->removeTab(isGrp);
+            
+            
             
             std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {

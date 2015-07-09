@@ -274,19 +274,27 @@ public:
     }
     
     /**
-     * @brief We keep track of ongoing renders internally. This is used for abortable renders 
-     * (scrubbing the timeline, moving a slider...) to keep always at least 1 thread computing
-     * so that not all threads are always aborted.
+     * @brief We keep track of ongoing renders internally. This function is called only by non 
+     * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
     bool isRenderAbortable(int texIndex,U64 age) const
     {
         QMutexLocker k(&renderAgeMutex);
         if (currentRenderAges[texIndex].empty()) {
+            //huh something is wrong
             return true;
         }
-        const OnGoingRenderInfo& info = currentRenderAges[texIndex].front();
-        if (info.age == age) {
-            return false;
+        for (std::list<OnGoingRenderInfo>::const_reverse_iterator it = currentRenderAges[texIndex].rbegin();
+             it != currentRenderAges[texIndex].rend(); ++it) {
+            
+            
+            if (it->age == age) {
+                // We just hit that render and there's no newer render that is non-abortable, then do not abort
+                return false;
+            } else if (it->canAbort) {
+                // Ok a newer render is abortable, this render is then useless
+                return true;
+            }
         }
         return true;
     }

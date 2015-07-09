@@ -932,8 +932,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             lastRenderHash = _imp->lastRenderedHash;
             lastRenderedHashValid = _imp->lastRenderedHashValid;
         }
-        if ( lastRenderedHashValid && (lastRenderHash != outArgs->key->getHash()) ) {
-            appPTR->removeAllTexturesFromCacheWithMatchingKey(lastRenderHash);
+        if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
+            appPTR->removeAllTexturesFromCacheWithMatchingKey(true, lastRenderHash);
             {
                 QMutexLocker l(&_imp->lastRenderedHashMutex);
                 _imp->lastRenderedHashValid = false;
@@ -973,7 +973,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
-            _imp->lastRenderedHash = outArgs->key->getHash();
+            _imp->lastRenderedHash = viewerHash;
             _imp->lastRenderedHashValid = true;
         }
         
@@ -997,7 +997,7 @@ Natron::StatusEnum
 ViewerInstance::renderViewer_internal(int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      U64 /*viewerHash*/,
+                                      U64 viewerHash,
                                       bool canAbort,
                                       boost::shared_ptr<Natron::Node> rotoPaintNode,
                                       bool useTLS,
@@ -1190,7 +1190,7 @@ ViewerInstance::renderViewer_internal(int view,
         {
             QMutexLocker l(&_imp->lastRenderedHashMutex);
             _imp->lastRenderedHashValid = true;
-            _imp->lastRenderedHash = inArgs.key->getHash();
+            _imp->lastRenderedHash = viewerHash;
         }
     }
     assert(inArgs.params->ramBuffer);
@@ -1371,14 +1371,14 @@ ViewerInstance::renderViewer_internal(int view,
         
         //If we are painting, only render the portion needed
         if (!lastPaintBboxPixel.isNull()) {
-            lastPaintBboxPixel.intersect(roi, &roi);
+            lastPaintBboxPixel.intersect(viewerRenderRoI, &viewerRenderRoI);
         }
         
         
         if (singleThreaded) {
             if (autoContrast) {
                 double vmin, vmax;
-                std::pair<double,double> vMinMax = findAutoContrastVminVmax(inArgs.params->image, channels, roi);
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(inArgs.params->image, channels, viewerRenderRoI);
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
                 
@@ -1416,7 +1416,7 @@ ViewerInstance::renderViewer_internal(int view,
                 runInCurrentThread = true;
             }
             if (!runInCurrentThread) {
-                splitRects = roi.splitIntoSmallerRects(appPTR->getHardwareIdealThreadCount());
+                splitRects = viewerRenderRoI.splitIntoSmallerRects(appPTR->getHardwareIdealThreadCount());
             }
             
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
@@ -1444,7 +1444,7 @@ ViewerInstance::renderViewer_internal(int view,
                         }
                     }
                 } else { //!runInCurrentThread
-                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(inArgs.params->image, channels, roi);
+                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(inArgs.params->image, channels, viewerRenderRoI);
                     vmin = vMinMax.first;
                     vmax = vMinMax.second;
                 }
@@ -1696,6 +1696,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
     Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
+    const RectI srcImgBounds = args.inputImage->getBounds();
     
     ///offset the output buffer at the starting point
     U32* dst_pixels = output + (roi.y1 - args.texRect.y1) * args.texRect.w + (roi.x1 - args.texRect.x1);
@@ -1709,7 +1710,6 @@ scaleToTexture8bits_generic(const RectI& roi,
     for (int y = roi.y1; y < roi.y2;
          ++y,
          dst_pixels += args.texRect.w) {
-        
         
         // coverity[dont_call]
         int start = (int)(rand() % (roi.x2 - roi.x1));
