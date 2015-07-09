@@ -115,8 +115,6 @@ typedef OfxRangeD RangeD;
 #define kDopeSheetEditorMoveKeysCommandCompressionID 18
 #define kDopeSheetEditorLeftTrimCommandCompressionID 19
 #define kDopeSheetEditorRightTrimCommandCompressionID 20
-#define kDopeSheetEditorMoveClipCommandCompressionID 21
-#define kDopeSheetEditorMoveGroupCommandCompressionID 22
 #define kDopeSheetEditorSlipReaderCommandCompressionID 23
 
 namespace Natron {

@@ -93,17 +93,18 @@ typedef std::list<DSKeyPtr> DSKeyPtrList;
 
 
 /**
- * @brief The DSMoveKeysCommand class describes an undoable action that move
+ * @brief The DSMoveKeysAndNodesCommand class describes an action that moves
  * the current selected keyframes on the dope sheet timeline.
  */
-class DSMoveKeysCommand : public QUndoCommand
+class DSMoveKeysAndNodesCommand : public QUndoCommand
 {
 public:
-    DSMoveKeysCommand(const DSKeyPtrList &keys,
-                      double dt,
-                      DopeSheet *model,
-                      QUndoCommand *parent = 0);
-
+    DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
+                                const std::vector<boost::shared_ptr<DSNode> >& nodes,
+                                double dt,
+                                DopeSheet *model,
+                                QUndoCommand *parent = 0);
+    
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
@@ -114,10 +115,12 @@ private:
     /**
      * @brief Move the selected keyframes by 'dt' on the dope sheet timeline.
      */
-    void moveSelectedKeyframes(double dt);
+    void moveSelection(double dt);
 
 private:
     DSKeyPtrList _keys;
+    std::vector<boost::shared_ptr<DSNode> > _nodes;
+    std::list<boost::weak_ptr<Natron::Node> >  _allDifferentNodes;
     double _dt;
     DopeSheet *_model;
 };
@@ -215,29 +218,6 @@ private:
 };
 
 
-/**
- * @brief The DSMoveReaderCommand class describes an undoable action that move
- * a reader on the dope sheet timeline.
- */
-class DSMoveReaderCommand : public QUndoCommand
-{
-public:
-    DSMoveReaderCommand(const boost::shared_ptr<DSNode> &reader,
-                        double dt,
-                        DopeSheet * /*model*/,
-                        QUndoCommand *parent = 0);
-
-    void undo() OVERRIDE FINAL;
-    void redo() OVERRIDE FINAL;
-
-    int id() const OVERRIDE FINAL;
-    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
-
-private:
-    boost::weak_ptr<DSNode> _readerContext;
-    double _dt;
-};
-
 
 /**
  * @brief The DSRemoveKeysCommand class describes an undoable action that
@@ -263,38 +243,6 @@ private:
     DopeSheet *_model;
 };
 
-
-/**
- * @brief The DSMoveGroupCommand class describes an undoable action that move
- * the keyframes and the readers contained in a group node on the dope sheet
- * timeline.
- */
-class DSMoveGroupCommand : public QUndoCommand
-{
-public:
-    DSMoveGroupCommand(const boost::shared_ptr<DSNode> &group,
-                       double dt,
-                       DopeSheet *model,
-                       QUndoCommand *parent = 0);
-
-    void undo() OVERRIDE FINAL;
-    void redo() OVERRIDE FINAL;
-
-    int id() const OVERRIDE FINAL;
-    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
-
-private:
-    /**
-     * @brief  Offset the time of all inner keyframes by 'dt'.
-     * Offset the starting time of the readers by the same value.
-     */
-    void moveGroup(double dt);
-
-private:
-    boost::weak_ptr<DSNode> _groupContext;
-    double _dt;
-    DopeSheet *_model;
-};
 
 
 /**

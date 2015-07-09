@@ -368,7 +368,7 @@ boost::shared_ptr<DSKnob> DopeSheet::mapNameItemToDSKnob(QTreeWidgetItem *knobTr
     boost::shared_ptr<DSKnob> ret;
 
     boost::shared_ptr<DSNode>dsNode = findParentDSNode(knobTreeItem);
-    DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
+    const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
     DSTreeItemKnobMap::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
 
@@ -421,7 +421,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> &
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
 
-        DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
+        const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*knobIt).second;
@@ -440,7 +440,7 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(KnobGui *knobGui) const
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
 
-        DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
+        const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
         for (DSTreeItemKnobMap::const_iterator knobIt = knobRows.begin(); knobIt != knobRows.end(); ++knobIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*knobIt).second;
@@ -533,16 +533,19 @@ void DopeSheet::deleteSelectedKeyframes()
         return;
     }
 
-    std::vector<DopeSheetKey> toRemove =_imp->selectionModel->getSelectionCopy();
+    std::vector<DopeSheetKey> toRemove =_imp->selectionModel->getKeyframesSelectionCopy();
 
     _imp->selectionModel->clearKeyframeSelection();
 
     _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
 }
 
-void DopeSheet::moveSelectedKeys(double dt)
+void DopeSheet::moveSelectedKeysAndNodes(double dt)
 {
-    _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectionModel->getSelectedKeyframes(), dt, this));
+    DSKeyPtrList selectedKeyframes;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    _imp->pushUndoCommand(new DSMoveKeysAndNodesCommand(selectedKeyframes, selectedNodes, dt, this));
 }
 
 void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame)
@@ -610,16 +613,6 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
     }
 }
 
-void DopeSheet::moveReader(const boost::shared_ptr<DSNode> &reader, double dt)
-{
-    _imp->pushUndoCommand(new DSMoveReaderCommand(reader, dt, this));
-}
-
-void DopeSheet::moveGroup(const boost::shared_ptr<DSNode> &group, double dt)
-{
-    _imp->pushUndoCommand(new DSMoveGroupCommand(group, dt, this));
-}
-
 void DopeSheet::copySelectedKeys()
 {
     if (_imp->selectionModel->isEmpty()) {
@@ -628,7 +621,9 @@ void DopeSheet::copySelectedKeys()
 
     _imp->keyframesClipboard.clear();
 
-    DSKeyPtrList selectedKeyframes = _imp->selectionModel->getSelectedKeyframes();
+    DSKeyPtrList selectedKeyframes;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
 
     for (DSKeyPtrList::const_iterator it = selectedKeyframes.begin();
          it != selectedKeyframes.end();
@@ -659,7 +654,9 @@ void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
         return;
     }
 
-    DSKeyPtrList selectedKeyframes = _imp->selectionModel->getSelectedKeyframes();
+    DSKeyPtrList selectedKeyframes;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
     std::list<DSKeyInterpolationChange> changes;
 
     for (DSKeyPtrList::iterator it = selectedKeyframes.begin();
@@ -849,20 +846,17 @@ int DSKnob::getDimension() const
 class DopeSheetSelectionModelPrivate
 {
 public:
-    DopeSheetSelectionModelPrivate() :
-        selectedKeyframes()
+    DopeSheetSelectionModelPrivate()
+    : selectedKeyframes()
+    , selectedRangeNodes()
     {
 
-    }
-
-    ~DopeSheetSelectionModelPrivate()
-    {
-        selectedKeyframes.clear();
     }
 
     /* attributes */
     DopeSheet *dopeSheet;
     DSKeyPtrList selectedKeyframes;
+    std::list<boost::weak_ptr<DSNode> > selectedRangeNodes;
 };
 
 DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet) :
@@ -876,28 +870,33 @@ DopeSheetSelectionModel::~DopeSheetSelectionModel()
 
 }
 
-void DopeSheetSelectionModel::selectAllKeyframes()
+void DopeSheetSelectionModel::selectAll()
 {
     std::vector<DopeSheetKey> result;
 
     DSTreeItemNodeMap nodeRows = _imp->dopeSheet->getItemNodeMap();
-
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
     for (DSTreeItemNodeMap::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
-        boost::shared_ptr<DSNode>dsNode = (*it).second;
+        const boost::shared_ptr<DSNode>& dsNode = (*it).second;
 
-        DSTreeItemKnobMap dsKnobItems = dsNode->getItemKnobMap();
-
+        const DSTreeItemKnobMap& dsKnobItems = dsNode->getItemKnobMap();
+        
         for (DSTreeItemKnobMap::const_iterator itKnob = dsKnobItems.begin();
              itKnob != dsKnobItems.end();
              ++itKnob) {
-            selectKeyframes((*itKnob).second, &result);
+            makeDopeSheetKeyframesForKnob((*itKnob).second, &result);
+        }
+
+        if (dsNode->isRangeDrawingEnabled()) {
+            selectedNodes.push_back(dsNode);
         }
     }
 
-    makeSelection(result, (DopeSheetSelectionModel::SelectionTypeAdd | DopeSheetSelectionModel::SelectionTypeClear));
+    makeSelection(result, selectedNodes, (DopeSheetSelectionModel::SelectionTypeAdd | DopeSheetSelectionModel::SelectionTypeClear));
 }
 
-void DopeSheetSelectionModel::selectKeyframes(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DopeSheetKey> *result)
+void DopeSheetSelectionModel::makeDopeSheetKeyframesForKnob(const boost::shared_ptr<DSKnob> &dsKnob,
+                                                            std::vector<DopeSheetKey> *result)
 {
     assert(dsKnob);
 
@@ -913,21 +912,19 @@ void DopeSheetSelectionModel::selectKeyframes(const boost::shared_ptr<DSKnob> &d
 
     for (int i = startDim; i < endDim; ++i) {
         KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+        boost::shared_ptr<DSKnob> context;
+        if (dim == -1) {
+            QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
+            context = _imp->dopeSheet->mapNameItemToDSKnob(childItem);
+        }
+        else {
+            context = dsKnob;
+        }
 
         for (KeyFrameSet::const_iterator kIt = keyframes.begin();
              kIt != keyframes.end();
              ++kIt) {
-            KeyFrame kf = (*kIt);
-
-            boost::shared_ptr<DSKnob> context;
-            if (dim == -1) {
-                QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
-                context = _imp->dopeSheet->mapNameItemToDSKnob(childItem);
-            }
-            else {
-                context = dsKnob;
-            }
-
+            const KeyFrame& kf = (*kIt);
             result->push_back(DopeSheetKey(context, kf));
         }
     }
@@ -935,57 +932,80 @@ void DopeSheetSelectionModel::selectKeyframes(const boost::shared_ptr<DSKnob> &d
 
 void DopeSheetSelectionModel::clearKeyframeSelection()
 {
-    if (_imp->selectedKeyframes.empty()) {
+    if (_imp->selectedKeyframes.empty() && _imp->selectedRangeNodes.empty()) {
         return;
     }
 
-    makeSelection(std::vector<DopeSheetKey>(), DopeSheetSelectionModel::SelectionTypeClear);
+    makeSelection(std::vector<DopeSheetKey>(), std::vector<boost::shared_ptr<DSNode> >(), DopeSheetSelectionModel::SelectionTypeClear);
 }
 
-void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys, SelectionTypeFlags selectionFlags)
+void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys,
+                                            const std::vector<boost::shared_ptr<DSNode> >& rangeNodes,
+                                            SelectionTypeFlags selectionFlags)
 {
     // Don't allow unsupported combinations
     assert(! (selectionFlags & DopeSheetSelectionModel::SelectionTypeAdd
               &&
               selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle));
 
-    DSKeyPtrList oldSelection = _imp->selectedKeyframes;
-
+    bool hasChanged = false;
     if (selectionFlags & DopeSheetSelectionModel::SelectionTypeClear) {
+        hasChanged = true;
         _imp->selectedKeyframes.clear();
+        _imp->selectedRangeNodes.clear();
     }
 
     for (std::vector<DopeSheetKey>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        DopeSheetKey key = (*it);
+        const DopeSheetKey& key = (*it);
 
         DSKeyPtrList::iterator isAlreadySelected = keyframeIsSelected(key);
 
         if (isAlreadySelected == _imp->selectedKeyframes.end()) {
             DSKeyPtr dsKey(new DopeSheetKey(key));
-
+            hasChanged = true;
             _imp->selectedKeyframes.push_back(dsKey);
         }
         else if (selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle) {
             _imp->selectedKeyframes.erase(isAlreadySelected);
+            hasChanged = true;
         }
     }
+    
+    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = rangeNodes.begin(); it!=rangeNodes.end(); ++it) {
+        
+        std::list<boost::weak_ptr<DSNode> >::iterator found = isRangeNodeSelected(*it);
+        if (found == _imp->selectedRangeNodes.end()) {
+            _imp->selectedRangeNodes.push_back(*it);
+            hasChanged = true;
+        } else if (selectionFlags & DopeSheetSelectionModel::SelectionTypeToggle) {
+            _imp->selectedRangeNodes.erase(found);
+            hasChanged = true;
+        }
 
-    if (_imp->selectedKeyframes != oldSelection) {
+    }
+
+    if (hasChanged) {
         emit_keyframeSelectionChanged();
     }
 }
 
 bool DopeSheetSelectionModel::isEmpty() const
 {
-    return _imp->selectedKeyframes.empty();
+    return _imp->selectedKeyframes.empty() && _imp->selectedRangeNodes.empty();
 }
 
-DSKeyPtrList DopeSheetSelectionModel::getSelectedKeyframes() const
+void DopeSheetSelectionModel::getCurrentSelection(DSKeyPtrList* keys, std::vector<boost::shared_ptr<DSNode> >* nodes) const
 {
-    return _imp->selectedKeyframes;
+    *keys =  _imp->selectedKeyframes;
+    for (std::list<boost::weak_ptr<DSNode> >::const_iterator it = _imp->selectedRangeNodes.begin(); it!=_imp->selectedRangeNodes.end(); ++it) {
+        boost::shared_ptr<DSNode> n = it->lock();
+        if (n) {
+            nodes->push_back(n);
+        }
+    }
 }
 
-std::vector<DopeSheetKey> DopeSheetSelectionModel::getSelectionCopy() const
+std::vector<DopeSheetKey> DopeSheetSelectionModel::getKeyframesSelectionCopy() const
 {
     std::vector<DopeSheetKey> ret;
 
@@ -1017,6 +1037,18 @@ bool DopeSheetSelectionModel::keyframeIsSelected(const boost::shared_ptr<DSKnob>
     return false;
 }
 
+std::list<boost::weak_ptr<DSNode> >::iterator
+DopeSheetSelectionModel::isRangeNodeSelected(const boost::shared_ptr<DSNode>& node)
+{
+    for (std::list<boost::weak_ptr<DSNode> >::iterator it = _imp->selectedRangeNodes.begin(); it!=_imp->selectedRangeNodes.end(); ++it) {
+        boost::shared_ptr<DSNode> n = it->lock();
+        if (n && n == node) {
+            return it;
+        }
+    }
+    return _imp->selectedRangeNodes.end();
+}
+
 DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DopeSheetKey &key) const
 {
     for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
@@ -1026,6 +1058,19 @@ DSKeyPtrList::iterator DopeSheetSelectionModel::keyframeIsSelected(const DopeShe
     }
 
     return _imp->selectedKeyframes.end();
+}
+
+bool
+DopeSheetSelectionModel::rangeIsSelected(const boost::shared_ptr<DSNode>& node) const
+{
+    for (std::list<boost::weak_ptr<DSNode> >::iterator it = _imp->selectedRangeNodes.begin(); it!=_imp->selectedRangeNodes.end(); ++it) {
+        boost::shared_ptr<DSNode> n = it->lock();
+        if (n && n == node) {
+            return true;
+        }
+    }
+    return false;
+
 }
 
 void DopeSheetSelectionModel::emit_keyframeSelectionChanged()
@@ -1216,7 +1261,7 @@ boost::shared_ptr<Natron::Node> DSNode::getInternalNode() const
  *
  *
  */
-DSTreeItemKnobMap DSNode::getItemKnobMap() const
+const DSTreeItemKnobMap& DSNode::getItemKnobMap() const
 {
     return _imp->itemKnobMap;
 }

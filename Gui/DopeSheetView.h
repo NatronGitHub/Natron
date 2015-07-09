@@ -67,11 +67,9 @@ public:
     {
         esNoEditingState,
         esPickKeyframe,
-        esReaderRepos,
         esReaderLeftTrim,
         esReaderRightTrim,
         esReaderSlip,
-        esGroupRepos,
         esSelectionByRect,
         esMoveKeyframeSelection,
         esMoveCurrentFrameIndicator,
@@ -220,7 +218,7 @@ private Q_SLOTS:
      * This slot is automatically called when the user triggers the menu action
      * or presses Ctrl + A.
      */
-    void selectAllKeyframes();
+    void onSelectedAllTriggered();
 
     /**
      * @brief Delete the selected keyframes.

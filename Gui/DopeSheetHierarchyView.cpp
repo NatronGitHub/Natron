@@ -252,7 +252,7 @@ HierarchyViewPrivate::~HierarchyViewPrivate()
  */
 void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
 {
-    DSTreeItemKnobMap knobRows = dsNode->getItemKnobMap();
+    const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
     for (DSTreeItemKnobMap::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
         boost::shared_ptr<DSKnob> knobContext = (*it).second;
@@ -522,19 +522,23 @@ int HierarchyView::getHeightForItemAndChildren(QTreeWidgetItem *item) const
 void HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 {
     std::vector<DopeSheetKey> keys;
-
+    std::vector<boost::shared_ptr<DSNode> > nodes;
     Q_FOREACH (QTreeWidgetItem *item, items) {
         boost::shared_ptr<DSKnob> knobContext = dopeSheetModel->mapNameItemToDSKnob(item);
-
         if (knobContext) {
-            dopeSheetModel->getSelectionModel()->selectKeyframes(knobContext, &keys);
+            dopeSheetModel->getSelectionModel()->makeDopeSheetKeyframesForKnob(knobContext, &keys);
+        } else {
+            boost::shared_ptr<DSNode> nodeContext = dopeSheetModel->mapNameItemToDSNode(item);
+            if (nodeContext) {
+                nodes.push_back(nodeContext);
+            }
         }
     }
 
     DopeSheetSelectionModel::SelectionTypeFlags sFlags = DopeSheetSelectionModel::SelectionTypeAdd
             | DopeSheetSelectionModel::SelectionTypeClear;
 
-    dopeSheetModel->getSelectionModel()->makeSelection(keys, sFlags);
+    dopeSheetModel->getSelectionModel()->makeSelection(keys, nodes, sFlags);
 }
 
 HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent) :
@@ -833,26 +837,26 @@ void HierarchyView::onKeyframeSelectionChanged()
     HierarchyViewSelectionModel *mySelecModel
             = dynamic_cast<HierarchyViewSelectionModel *>(selectionModel());
     assert(mySelecModel);
-
+    
     // Retrieve the knob contexts with selected keyframes
     DSKnobPtrList toCheck;
-    {
-        DSKeyPtrList selectedKeys = _imp->dopeSheetModel->getSelectionModel()->getSelectedKeyframes();
-
-        for (DSKeyPtrList::const_iterator it = selectedKeys.begin();
-             it != selectedKeys.end();
-             ++it) {
-            DSKeyPtr keyPtr = (*it);
-
-            toCheck.push_back(keyPtr->getContext());
-        }
+    DSKeyPtrList selectedKeys;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    
+    _imp->dopeSheetModel->getSelectionModel()->getCurrentSelection(&selectedKeys, &selectedNodes);
+    
+    for (DSKeyPtrList::const_iterator it = selectedKeys.begin();
+         it != selectedKeys.end();
+         ++it) {
+        toCheck.push_back((*it)->getContext());
     }
-
+    
+    
     disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
                this, SLOT(onSelectionChanged()));
 
-    // Compose an tree selection from the selected keyframes
-    if (toCheck.empty()) {
+    // Compose tree selection from the selected keyframes
+    if (toCheck.empty() && selectedNodes.empty()) {
         mySelecModel->select(QItemSelection(), QItemSelectionModel::Clear);
     }
     else {
@@ -887,6 +891,10 @@ void HierarchyView::onKeyframeSelectionChanged()
             if (selectItem) {
                 toSelect.insert(indexFromItem(knobItem));
             }
+        }
+        
+        for (std::vector<boost::shared_ptr<DSNode> >::iterator it = selectedNodes.begin(); it!=selectedNodes.end(); ++it) {
+            toSelect.insert(indexFromItem((*it)->getTreeItem()));
         }
 
         QItemSelection selection;

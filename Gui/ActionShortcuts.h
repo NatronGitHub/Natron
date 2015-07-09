@@ -504,8 +504,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
 #define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
 
-#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectallkeyframes"
-#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all keyframes"
+#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectall"
+#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all"
 
 #define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
 #define kShortcutDescActionDopeSheetEditorRenameNode "Rename node label"

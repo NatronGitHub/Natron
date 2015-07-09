@@ -4830,11 +4830,7 @@ Bezier::getBoundingBox(int time) const
 {
     
     RectD bbox; // a very empty bbox
-
-    bbox.x1 = std::numeric_limits<double>::infinity();
-    bbox.x2 = -std::numeric_limits<double>::infinity();
-    bbox.y1 = std::numeric_limits<double>::infinity();
-    bbox.y2 = -std::numeric_limits<double>::infinity();
+    bbox.setupInfinity();
     
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
@@ -5672,10 +5668,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     //Increment the half brush size so that the stroke is enclosed in the RoD
     halfBrushSize += 1.;
     if (bbox) {
-        bbox->x1 = std::numeric_limits<double>::infinity();
-        bbox->x2 = -std::numeric_limits<double>::infinity();
-        bbox->y1 = std::numeric_limits<double>::infinity();
-        bbox->y2 = -std::numeric_limits<double>::infinity();
+        bbox->setupInfinity();
     }
     if (xCurve.empty()) {
         return;
@@ -6215,10 +6208,8 @@ RotoStrokeItem::computeBoundingBox(int time) const
     for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt, ++xNext, ++yNext, ++pNext) {
         
         RectD subBox;
-        subBox.x1 = std::numeric_limits<double>::infinity();
-        subBox.x2 = -std::numeric_limits<double>::infinity();
-        subBox.y1 = std::numeric_limits<double>::infinity();
-        subBox.y2 = -std::numeric_limits<double>::infinity();
+        subBox.setupInfinity();
+
         double dt = xNext->getTime() - xIt->getTime();
 
         double pressure = pressureAffectsSize ? std::max(pIt->getValue(), pNext->getValue()) : 1.;
@@ -9010,10 +9001,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
     ///the control points in order to still be able to apply the feather distance.
     std::list<Point> featherPolygon;
     std::list<Point> bezierPolygon;
-    RectD featherPolyBBox( std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity(),
-                          -std::numeric_limits<double>::infinity(),
-                          -std::numeric_limits<double>::infinity() );
+    RectD featherPolyBBox;
+    featherPolyBBox.setupInfinity();
     
     bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, mipmapLevel, 50, true, &featherPolygon, &featherPolyBBox);
     bezier->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &bezierPolygon, NULL);
@@ -9459,10 +9448,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             
             std::list<Point> polygon;
             RectD bbox;
-            bbox.x1 = std::numeric_limits<double>::infinity();
-            bbox.x2 = -std::numeric_limits<double>::infinity();
-            bbox.y1 = std::numeric_limits<double>::infinity();
-            bbox.y2 = -std::numeric_limits<double>::infinity();
+            bbox.setupInfinity();
             for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
                 (*it)->getPositionAtTime(time, &p.x, &p.y);
