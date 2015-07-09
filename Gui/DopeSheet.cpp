@@ -114,10 +114,7 @@ public:
     void getInputsConnected_recursive(Natron::Node *node, std::vector<boost::shared_ptr<DSNode> > *result) const;
 
     void pushUndoCommand(QUndoCommand *cmd);
-
-    bool canTrimLeft(double newFirstFrame, double currentLastFrame) const;
-    bool canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const;
-
+    
     /* attributes */
     DopeSheet *q_ptr;
     DSTreeItemNodeMap treeItemNodeMap;
@@ -223,32 +220,6 @@ void DopeSheetPrivate::pushUndoCommand(QUndoCommand *cmd)
 {
     undoStack->setActive();
     undoStack->push(cmd);
-}
-
-bool DopeSheetPrivate::canTrimLeft(double newFirstFrame, double currentLastFrame) const
-{
-    if (newFirstFrame < 1) {
-        return false;
-    }
-
-    if (newFirstFrame > currentLastFrame) {
-        return false;
-    }
-
-    return true;
-}
-
-bool DopeSheetPrivate::canTrimRight(double newLastFrame, double currentFirstFrame, double originalLastFrame) const
-{
-    if (newLastFrame > originalLastFrame) {
-        return false;
-    }
-
-    if (newLastFrame < currentFirstFrame) {
-        return false;
-    }
-
-    return true;
 }
 
 DopeSheet::DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline) :
@@ -559,16 +530,22 @@ void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double n
     assert(firstFrameKnob);
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
+    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
+    assert(originalFrameRangeKnob);
 
-    double firstFrame = firstFrameKnob->getValue();
-
+    
+    int firstFrame = firstFrameKnob->getValue();
+    int lastFrame = lastFrameKnob->getValue();
+    int originalFirstFrame = originalFrameRangeKnob->getValue();
+    
+    newFirstFrame = std::max((double)newFirstFrame, (double)originalFirstFrame);
+    newFirstFrame = std::min((double)lastFrame, newFirstFrame);
     if (newFirstFrame == firstFrame) {
         return;
     }
 
-    if (_imp->canTrimLeft(newFirstFrame, lastFrameKnob->getValue())) {
-        _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame));
-    }
+    _imp->pushUndoCommand(new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame));
+
 }
 
 void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame)
@@ -582,15 +559,18 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
     assert(originalFrameRangeKnob);
 
-    double lastFrame = lastFrameKnob->getValue();
-
+    int firstFrame = firstFrameKnob->getValue();
+    int lastFrame = lastFrameKnob->getValue();
+    int originalLastFrame = originalFrameRangeKnob->getValue(1);
+    
+    newLastFrame = std::min((double)newLastFrame, (double)originalLastFrame);
+    newLastFrame = std::max((double)firstFrame, newLastFrame);
     if (newLastFrame == lastFrame) {
         return;
     }
 
-    if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
-        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, _imp->editor));
-    }
+    _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, _imp->editor));
+
 }
 
 void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
@@ -603,15 +583,19 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
     assert(lastFrameKnob);
     Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
     assert(originalFrameRangeKnob);
+    
+    ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
+    ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
 
     int currentFirstFrame = firstFrameKnob->getValue();
     int currentLastFrame = lastFrameKnob->getValue();
+    int originalFirstFrame = originalFrameRangeKnob->getValue(0);
     int originalLastFrame = originalFrameRangeKnob->getValue(1);
-
-    bool canSlip = ( _imp->canTrimLeft(currentFirstFrame + dt, currentLastFrame)
-                     && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
-
-    if (canSlip) {
+    
+    dt = std::min(dt, (double)(currentFirstFrame - originalFirstFrame));
+    dt = std::max(dt, (double)(currentLastFrame - originalLastFrame));
+    
+    if (dt != 0) {
         _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, _imp->editor));
     }
 }

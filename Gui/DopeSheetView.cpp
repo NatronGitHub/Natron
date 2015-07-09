@@ -1028,7 +1028,7 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             QFontMetrics fm(*font);
             int fontHeigt = fm.height();
             
-            QString leftText = QString::number(firstFrame);
+            QString leftText = QString::number(range.first);
             QString rightText = QString::number(range.second - 1);
             
             int leftTextW = fm.width(leftText);

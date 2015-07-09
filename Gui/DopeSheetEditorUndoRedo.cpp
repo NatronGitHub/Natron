@@ -491,8 +491,8 @@ void DSSlipReaderCommand::slipReader(double dt)
     assert(firstFrameKnob);
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameTimeOffset).get());
-    assert(startingTimeKnob);
+    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameTimeOffset).get());
+    assert(timeOffsetKnob);
 
     KnobHolder *holder = lastFrameKnob->getHolder();
     Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
@@ -500,12 +500,10 @@ void DSSlipReaderCommand::slipReader(double dt)
     effectInstance->beginChanges();
     {
         KnobHelper::ValueChangedReturnCodeEnum r;
-        int oldStartingTime = startingTimeKnob->getValue();
 
-        r = firstFrameKnob->setValue(firstFrameKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-        r = lastFrameKnob->setValue(lastFrameKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-
-        r = startingTimeKnob->setValue(oldStartingTime, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
 
         Q_UNUSED(r);
 
