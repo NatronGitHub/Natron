@@ -33,6 +33,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
 class DopeSheetPrivate;
+class DopeSheetEditor;
 class DopeSheetSelectionModel;
 class DopeSheetSelectionModelPrivate;
 class DSKnobPrivate;
@@ -111,7 +112,7 @@ public:
         ItemTypeKnobDim
     };
 
-    DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline);
+    DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline);
     ~DopeSheet();
 
     // Model specific
@@ -413,7 +414,8 @@ public:
         SelectionTypeNoSelection = 0x0,
         SelectionTypeClear = 0x1,
         SelectionTypeAdd = 0x2,
-        SelectionTypeToggle = 0x4
+        SelectionTypeToggle = 0x4,
+        SelectionTypeRecurse = 0x8
     };
 
     Q_DECLARE_FLAGS(SelectionTypeFlags, SelectionType)
@@ -441,14 +443,12 @@ public:
 
     bool rangeIsSelected(const boost::shared_ptr<DSNode>& node) const;
     
-    void emit_keyframeSelectionChanged();
+    void emit_keyframeSelectionChanged(bool recurse);
 
     void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
-
-    
     
 Q_SIGNALS:
-    void keyframeSelectionChangedFromModel();
+    void keyframeSelectionChangedFromModel(bool recurse);
 
 private:
     

@@ -12,7 +12,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
-
+#include "Engine/TimeLine.h"
 
 ////////////////////////// DopeSheetEditor //////////////////////////
 
@@ -87,7 +87,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
     _imp->splitter->setHandleWidth(1);
 
-    _imp->model = new DopeSheet(gui, timeline);
+    _imp->model = new DopeSheet(gui, this, timeline);
 
     _imp->hierarchyView = new HierarchyView(_imp->model, gui, _imp->splitter);
 
@@ -112,8 +112,8 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     connect(_imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel()),
-            _imp->hierarchyView, SLOT(onKeyframeSelectionChanged()));
+    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+            _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)));
 
     // Main model -> DopeSheetView connections
     connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
@@ -125,7 +125,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     connect(_imp->model, SIGNAL(modelChanged()),
             _imp->dopeSheetView, SLOT(redraw()));
 
-    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel()),
+    connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
             _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()));
 
     // HierarchyView -> DopeSheetView connections
@@ -169,4 +169,16 @@ void DopeSheetEditor::toggleTripleSync(bool enabled)
     _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
     _imp->toggleTripleSyncBtn->setDown(enabled);
     _imp->gui->setTripleSyncEnabled(enabled);
+}
+
+void
+DopeSheetEditor::refreshSelectionBboxAndRedrawView()
+{
+    _imp->dopeSheetView->refreshSelectionBboxAndRedraw();
+}
+
+int
+DopeSheetEditor::getTimelineCurrentTime() const
+{
+    return _imp->gui->getApp()->getTimeLine()->currentFrame();
 }

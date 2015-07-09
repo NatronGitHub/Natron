@@ -11,9 +11,10 @@
 #include "Global/GlobalDefines.h"
 
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheet.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DopeSheetEditor.h"
+#include "Gui/DopeSheet.h"
 
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
@@ -59,7 +60,7 @@ void moveFrameRange(const NodePtr& node, double dt)
     (void)frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
 }
     
-void moveGroupNode(DopeSheet* model, const NodePtr& node, double dt)
+void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
 {
     NodeGroup *group = dynamic_cast<NodeGroup *>(node->getLiveInstance());
     assert(group);
@@ -123,7 +124,7 @@ void moveGroupNode(DopeSheet* model, const NodePtr& node, double dt)
 DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
                                                          const std::vector<boost::shared_ptr<DSNode> >& nodes,
                                                          double dt,
-                                                         DopeSheet *model,
+                                                         DopeSheetEditor *model,
                                                          QUndoCommand *parent) :
 QUndoCommand(parent),
 _keys(keys),
@@ -229,7 +230,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
         node->getLiveInstance()->endChanges();
     }
 
-    _model->getSelectionModel()->emit_keyframeSelectionChanged();
+    _model->refreshSelectionBboxAndRedrawView();
 }
 
 int DSMoveKeysAndNodesCommand::id() const
@@ -355,7 +356,7 @@ bool DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                                    double oldTime, double newTime,
-                                                   DopeSheet * /*model*/,
+                                                   DopeSheetEditor * /*model*/,
                                                    QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(reader),
@@ -430,7 +431,7 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
                                          double dt,
-                                         DopeSheet * /*model*/,
+                                         DopeSheetEditor * /*model*/,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(dsNodeReader),
@@ -518,7 +519,7 @@ void DSSlipReaderCommand::slipReader(double dt)
 ////////////////////////// DSRemoveKeysCommand //////////////////////////
 
 DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                         DopeSheet *model,
+                                         DopeSheetEditor *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _keys(keys),
@@ -558,7 +559,7 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         }
     }
 
-    _model->getSelectionModel()->emit_keyframeSelectionChanged();
+    _model->refreshSelectionBboxAndRedrawView();
 }
 
 
@@ -567,7 +568,7 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 ////////////////////////// DSSetSelectedKeysInterpolationCommand //////////////////////////
 
 DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                                                             DopeSheet *model,
+                                                                             DopeSheetEditor *model,
                                                                              QUndoCommand *parent) :
     QUndoCommand(parent),
     _changes(changes),
@@ -602,14 +603,14 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
                                                                      &it->_key->key);
     }
 
-    _model->emit_modelChanged();
+    _model->refreshSelectionBboxAndRedrawView();
 }
 
 
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                       DopeSheet *model,
+                                       DopeSheetEditor *model,
                                        QUndoCommand *parent) :
     QUndoCommand(parent),
     _keys(keys),
@@ -641,7 +642,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         boost::shared_ptr<KnobI> knob = knobContext->getInternalKnob();
         knob->beginChanges();
 
-        SequenceTime currentTime = _model->getCurrentFrame();
+        SequenceTime currentTime = _model->getTimelineCurrentTime();
 
         double keyTime = key.key.getTime();
 
@@ -668,5 +669,5 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         knob->endChanges();
     }
 
-    _model->emit_modelChanged();
+    _model->refreshSelectionBboxAndRedrawView();
 }

@@ -105,7 +105,7 @@ QTreeWidgetItem *createKnobNameItem(const QString &text,
 class DopeSheetPrivate
 {
 public:
-    DopeSheetPrivate(DopeSheet *qq);
+    DopeSheetPrivate(DopeSheetEditor* editor,DopeSheet *qq);
     ~DopeSheetPrivate();
 
     /* functions */
@@ -129,15 +129,18 @@ public:
     std::vector<DopeSheetKey> keyframesClipboard;
 
     boost::shared_ptr<TimeLine> timeline;
+    
+    DopeSheetEditor* editor;
 };
 
-DopeSheetPrivate::DopeSheetPrivate(DopeSheet *qq) :
+DopeSheetPrivate::DopeSheetPrivate(DopeSheetEditor* editor,DopeSheet *qq) :
     q_ptr(qq),
     treeItemNodeMap(),
     selectionModel(new DopeSheetSelectionModel(qq)),
     undoStack(new QUndoStack(qq)),
     keyframesClipboard(),
-    timeline()
+    timeline(),
+    editor(editor)
 {
 
 }
@@ -248,8 +251,8 @@ bool DopeSheetPrivate::canTrimRight(double newLastFrame, double currentFirstFram
     return true;
 }
 
-DopeSheet::DopeSheet(Gui *gui, const boost::shared_ptr<TimeLine> &timeline) :
-    _imp(new DopeSheetPrivate(this))
+DopeSheet::DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline) :
+    _imp(new DopeSheetPrivate(editor, this))
 {
     _imp->timeline = timeline;
 
@@ -537,7 +540,7 @@ void DopeSheet::deleteSelectedKeyframes()
 
     _imp->selectionModel->clearKeyframeSelection();
 
-    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
+    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, _imp->editor));
 }
 
 void DopeSheet::moveSelectedKeysAndNodes(double dt)
@@ -545,7 +548,7 @@ void DopeSheet::moveSelectedKeysAndNodes(double dt)
     DSKeyPtrList selectedKeyframes;
     std::vector<boost::shared_ptr<DSNode> > selectedNodes;
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
-    _imp->pushUndoCommand(new DSMoveKeysAndNodesCommand(selectedKeyframes, selectedNodes, dt, this));
+    _imp->pushUndoCommand(new DSMoveKeysAndNodesCommand(selectedKeyframes, selectedNodes, dt, _imp->editor));
 }
 
 void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame)
@@ -586,7 +589,7 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     }
 
     if (_imp->canTrimRight(newLastFrame, firstFrameKnob->getValue(), originalFrameRangeKnob->getValue(1))) {
-        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, this));
+        _imp->pushUndoCommand(new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, _imp->editor));
     }
 }
 
@@ -609,7 +612,7 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
                      && _imp->canTrimRight(currentLastFrame + dt, currentFirstFrame, originalLastFrame) );
 
     if (canSlip) {
-        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, this));
+        _imp->pushUndoCommand(new DSSlipReaderCommand(reader, dt, _imp->editor));
     }
 }
 
@@ -644,7 +647,7 @@ void DopeSheet::pasteKeys()
         toPaste.push_back(key);
     }
 
-    _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, this));
+    _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, _imp->editor));
 }
 
 void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
@@ -668,7 +671,7 @@ void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
         changes.push_back(change);
     }
 
-    _imp->pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, this));
+    _imp->pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, _imp->editor));
 }
 
 void DopeSheet::setUndoStackActive()
@@ -892,7 +895,9 @@ void DopeSheetSelectionModel::selectAll()
         }
     }
 
-    makeSelection(result, selectedNodes, (DopeSheetSelectionModel::SelectionTypeAdd | DopeSheetSelectionModel::SelectionTypeClear));
+    makeSelection(result, selectedNodes, (DopeSheetSelectionModel::SelectionTypeAdd |
+                                          DopeSheetSelectionModel::SelectionTypeClear |
+                                          DopeSheetSelectionModel::SelectionTypeRecurse));
 }
 
 void DopeSheetSelectionModel::makeDopeSheetKeyframesForKnob(const boost::shared_ptr<DSKnob> &dsKnob,
@@ -985,7 +990,7 @@ void DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &key
     }
 
     if (hasChanged) {
-        emit_keyframeSelectionChanged();
+        emit_keyframeSelectionChanged(selectionFlags & DopeSheetSelectionModel::SelectionTypeRecurse);
     }
 }
 
@@ -1073,9 +1078,9 @@ DopeSheetSelectionModel::rangeIsSelected(const boost::shared_ptr<DSNode>& node) 
 
 }
 
-void DopeSheetSelectionModel::emit_keyframeSelectionChanged()
+void DopeSheetSelectionModel::emit_keyframeSelectionChanged(bool recurse)
 {
-    Q_EMIT keyframeSelectionChangedFromModel();
+    Q_EMIT keyframeSelectionChangedFromModel(recurse);
 }
 
 void DopeSheetSelectionModel::onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed)

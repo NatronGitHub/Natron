@@ -2611,11 +2611,16 @@ void DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
     redraw();
 }
 
+void
+DopeSheetView::refreshSelectionBboxAndRedraw()
+{
+    _imp->computeSelectedKeysBRect();
+    redraw();
+}
+
 void DopeSheetView::onKeyframeSelectionChanged()
 {    
-    _imp->computeSelectedKeysBRect();
-
-    redraw();
+    refreshSelectionBboxAndRedraw();
 }
 
 /**
@@ -2807,6 +2812,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         std::vector<DopeSheetKey> keysUnderMouse;
                         std::vector<boost::shared_ptr<DSNode> > selectedNodes;
                         selectedNodes.push_back(it->second);
+                        
                         _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                         
                         if (nodeType == DopeSheet::ItemTypeGroup ||
@@ -2837,6 +2843,9 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         
                         if (!keysUnderMouse.empty()) {
                             std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            
+                            sFlags |= DopeSheetSelectionModel::SelectionTypeRecurse;
+
                             _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             
                             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
@@ -2852,6 +2861,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         
                         if (!keysUnderMouse.empty()) {
                             
+                            sFlags |= DopeSheetSelectionModel::SelectionTypeRecurse;
+
                             std::vector<boost::shared_ptr<DSNode> > selectedNodes;
                             _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             

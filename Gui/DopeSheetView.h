@@ -110,6 +110,9 @@ public:
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
+    void refreshSelectionBboxAndRedraw();
+
+    
 public Q_SLOTS:
     void redraw() OVERRIDE FINAL;
 
@@ -269,6 +272,7 @@ private Q_SLOTS:
      * or presses Ctrl + V.
      */
     void pasteKeyframes();
+    
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;

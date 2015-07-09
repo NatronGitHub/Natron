@@ -19,7 +19,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class DopeSheet;
+class DopeSheetEditor;
 class DSNode;
 
 struct DopeSheetKey;
@@ -102,7 +102,7 @@ public:
     DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
                                 const std::vector<boost::shared_ptr<DSNode> >& nodes,
                                 double dt,
-                                DopeSheet *model,
+                                DopeSheetEditor *model,
                                 QUndoCommand *parent = 0);
     
     void undo() OVERRIDE FINAL;
@@ -122,7 +122,7 @@ private:
     std::vector<boost::shared_ptr<DSNode> > _nodes;
     std::list<boost::weak_ptr<Natron::Node> >  _allDifferentNodes;
     double _dt;
-    DopeSheet *_model;
+    DopeSheetEditor *_model;
 };
 
 
@@ -167,7 +167,7 @@ public:
     DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                              double oldTime,
                              double newTime,
-                             DopeSheet * /*model*/,
+                             DopeSheetEditor * /*model*/,
                              QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -197,7 +197,7 @@ class DSSlipReaderCommand : public QUndoCommand
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
-                        DopeSheet * /*model*/,
+                        DopeSheetEditor * /*model*/,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -229,7 +229,7 @@ class DSRemoveKeysCommand : public QUndoCommand
 {
 public:
     DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
-                        DopeSheet *model,
+                        DopeSheetEditor *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -240,7 +240,7 @@ private:
 
 private:
     std::vector<DopeSheetKey> _keys;
-    DopeSheet *_model;
+    DopeSheetEditor *_model;
 };
 
 
@@ -274,7 +274,7 @@ class DSSetSelectedKeysInterpolationCommand : public QUndoCommand
 {
 public:
     DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                          DopeSheet *model,
+                                          DopeSheetEditor *model,
                                           QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -285,7 +285,7 @@ private:
 
 private:
     std::list<DSKeyInterpolationChange> _changes;
-    DopeSheet *_model;
+    DopeSheetEditor *_model;
 };
 
 
@@ -299,7 +299,7 @@ class DSPasteKeysCommand : public QUndoCommand
 {
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                       DopeSheet *model,
+                       DopeSheetEditor *model,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -316,7 +316,7 @@ private:
 
 private:
     std::vector<DopeSheetKey> _keys;
-    DopeSheet *_model;
+    DopeSheetEditor *_model;
 };
 
 #endif // DOPESHEETEDITORUNDOREDO_H

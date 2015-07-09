@@ -83,6 +83,10 @@ public:
      * ['xMin', 'xMax'].
      */
     void centerOn(double xMin, double xMax);
+    
+    void refreshSelectionBboxAndRedrawView();
+    
+    int getTimelineCurrentTime() const;
 
 public Q_SLOTS:
     /**

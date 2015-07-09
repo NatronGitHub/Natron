@@ -21,6 +21,7 @@ CLANG_DIAG_ON(uninitialized)
 
 class DopeSheet;
 class DSKnob;
+class HierarchyView;
 class DSNode;
 class Gui;
 class HierarchyViewPrivate;
@@ -45,15 +46,30 @@ class HierarchyViewSelectionModel : public QItemSelectionModel
     Q_OBJECT
 
 public:
-    explicit HierarchyViewSelectionModel(QAbstractItemModel *model,
+    
+    
+    explicit HierarchyViewSelectionModel(DopeSheet* dopesheetModel,
+                                         HierarchyView* view,
+                                         QAbstractItemModel *model,
                                          QObject *parent = 0);
     ~HierarchyViewSelectionModel();
 
+    void selectWithRecursion(const QItemSelection &userSelection,
+                QItemSelectionModel::SelectionFlags command,
+                bool recurse);
+    
 public Q_SLOTS:
+    
     virtual void select(const QItemSelection &userSelection,
                         QItemSelectionModel::SelectionFlags command) OVERRIDE FINAL;
 
 private: /* functions */
+    
+    void selectInternal(const QItemSelection &userSelection,
+                QItemSelectionModel::SelectionFlags command,
+                bool recurse);
+
+    
     /**
      * @brief Selects recursively all children of 'index' and put them in
      * 'selection'.
@@ -65,6 +81,11 @@ private: /* functions */
      */
     void checkParentsSelectedStates(const QModelIndex &index, QItemSelectionModel::SelectionFlags flags,
                                    const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
+    
+private:
+    
+    DopeSheet* _dopesheetModel;
+    HierarchyView* _view;
 };
 
 
@@ -117,6 +138,8 @@ public:
      * in its parent) child of 'item".
      */
     QTreeWidgetItem *lastVisibleChild(QTreeWidgetItem *item) const;
+    
+    QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
@@ -178,7 +201,7 @@ private Q_SLOTS:
      * This slot is automatically called when a keyframe selection is changed
      * (keyframe added/removed, selection moved) in the dope sheet model.
      */
-    void onKeyframeSelectionChanged();
+    void onKeyframeSelectionChanged(bool recurse);
 
     /**
      * @brief Puts the settings panel associated with 'item' on top of the
