@@ -1699,7 +1699,7 @@ TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const 
 
     std::stringstream ss;
     ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
-    ss << "    del " << appID << "." << paneName << "." << oldName;
+    ss << "    del " << appID << "." << paneName << "." << oldName << "\n";
     ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
     
     std::string err;

@@ -1281,9 +1281,6 @@ KnobHelper::evaluateValueChange(int dimension,
     
     bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
 
-   
-
-    
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
     if (reason != Natron::eValueChangedReasonTimeChanged && _imp->holder) {
@@ -1293,10 +1290,7 @@ KnobHelper::evaluateValueChange(int dimension,
                 _imp->holder->appendValueChange(this,reason);
             } else {
                 _imp->holder->beginChanges();
-                
-                //if (!guiFrozen) {
-                    _imp->holder->appendValueChange(this,reason);
-                //}
+                _imp->holder->appendValueChange(this,reason);
                 _imp->holder->endChanges();
             }
             
@@ -3443,7 +3437,6 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
             }
         }
 
-        //Push it front so instanceChanged is called on the latest first (LIFO)
         _imp->knobChanged.push_back(k);
         if (knob) {
             _imp->changeSignificant |= knob->getEvaluateOnChange();
