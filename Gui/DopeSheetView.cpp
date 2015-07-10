@@ -2772,7 +2772,7 @@ void DopeSheetView::resizeGL(int w, int h)
 
     // Find out what are the selected keyframes and center on them
     if (!_imp->zoomOrPannedSinceLastFit) {
-        //TODO see CurveWidget::resizeGL
+        centerOnSelection();
     }
 }
 
