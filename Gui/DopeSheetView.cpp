@@ -417,7 +417,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                     return getCursorForEventState(DopeSheetView::esReaderLeftTrim);
                 } else if (isNearByClipRectRight(clickZoomCoords, nodeClipRect)) {
                     return getCursorForEventState(DopeSheetView::esReaderRightTrim);
-                } else if (isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
+                } else if (model->canSlipReader(it->second) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
                     return getCursorForEventState(DopeSheetView::esReaderSlip);
                 }
             }
@@ -999,6 +999,8 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             return;
         }
         
+       
+        
         const FrameRange& range = foundRange->second;
         QRectF treeItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
@@ -1021,6 +1023,7 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
 
         
         // If necessary, draw the original frame range line
+        float clipRectCenterY;
         if (isSelected && dsNode->getItemType() == DopeSheet::ItemTypeReader) {
             NodePtr node = dsNode->getInternalNode();
 
@@ -1038,7 +1041,7 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             int frameCount = originalFrameRangeKnob->getGuiValue(1) - originalFrameRangeKnob->getGuiValue(0) + 1;
             int lineEnd = lineBegin + (frameCount / speedValue);
 
-            float clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
+            clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
             GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
             glLineWidth(2);
@@ -1061,25 +1064,6 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             glVertex2d(lineEnd, clipRectZoomCoords.y2);
             
             glEnd();
-            
-            QFontMetrics fm(*font);
-            int fontHeigt = fm.height();
-            
-            QString leftText = QString::number(range.first);
-            QString rightText = QString::number(range.second - 1);
-            
-            int leftTextW = fm.width(leftText);
-            int rightTextW = fm.width(rightText);
-            
-            QPointF textLeftPos(zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.first, 0).x() - leftTextW - 3,0).x(),
-                                zoomContext.toZoomCoordinates(0,zoomContext.toWidgetCoordinates(0,clipRectCenterY).y() + fontHeigt + 3).y());
-            
-            renderText(textLeftPos.x(), textLeftPos.y(), leftText, fillColor, *font);
-            
-            QPointF textRightPos(zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.second, 0).x() + rightTextW + 3,0).x(),
-                                zoomContext.toZoomCoordinates(0,zoomContext.toWidgetCoordinates(0,clipRectCenterY).y() + fontHeigt + 3).y());
-            
-            renderText(textRightPos.x(), textRightPos.y(), rightText, fillColor, *font);
 
         }
         
@@ -1106,6 +1090,31 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             glVertex2f(clipRectZoomCoords.right(), clipRectZoomCoords.top());
             glEnd();
         }
+        
+        if (isSelected && dsNode->getItemType() == DopeSheet::ItemTypeReader) {
+            boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+            double selectionColorRGB[3];
+            settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+            QColor selectionColor;
+            selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
+            
+            QFontMetrics fm(*font);
+            int fontHeigt = fm.height();
+            
+            QString leftText = QString::number(range.first);
+            QString rightText = QString::number(range.second - 1);
+            
+            int rightTextW = fm.width(rightText);
+            QPointF textLeftPos(zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.first, 0).x() + 3,0).x(),
+                                zoomContext.toZoomCoordinates(0,zoomContext.toWidgetCoordinates(0,clipRectCenterY).y() + fontHeigt / 2.).y());
+            
+            renderText(textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, *font);
+            
+            QPointF textRightPos(zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.second, 0).x() - rightTextW - 3,0).x(),
+                                 zoomContext.toZoomCoordinates(0,zoomContext.toWidgetCoordinates(0,clipRectCenterY).y() + fontHeigt / 2.).y());
+            
+            renderText(textRightPos.x(), textRightPos.y(), rightText, selectionColor, *font);
+        }
     }
 }
 
@@ -1120,14 +1129,10 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
     running_in_main_thread_and_context(q_ptr);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-    double scaleR, scaleG, scaleB;
-    settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
-    
-    QColor scaleColor;
-    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
-                       Natron::clamp(scaleG, 0., 1.),
-                       Natron::clamp(scaleB, 0., 1.));
-    
+    double selectionColorRGB[3];
+    settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+    QColor selectionColor;
+    selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1186,7 +1191,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                                                                                               kfIsSelectedOrHighlighted);
 
                     if (texType != DopeSheetViewPrivate::kfTextureNone) {
-                        drawTexturedKeyframe(texType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor,zoomKfRect);
+                        drawTexturedKeyframe(texType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, selectionColor,zoomKfRect);
                     }
                 }
 
@@ -1205,7 +1210,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                         double newCenterY = hierarchyView->visualItemRect(knobParentItem).center().y();
                         zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                        drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
+                        drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, selectionColor, zoomKfRect);
                     }
                 }
 
@@ -1217,7 +1222,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                     double newCenterY = hierarchyView->visualItemRect(nodeContext->getTreeItem()).center().y();
                     zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                    drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
+                    drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, selectionColor, zoomKfRect);
                 }
             }
         }
@@ -2929,7 +2934,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                             didSomething = true;
                             break;
                         }
-                        else if (_imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
+                        else if (_imp->model->canSlipReader(it->second) && _imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
                             std::vector<DopeSheetKey> keysUnderMouse;
                             std::vector<boost::shared_ptr<DSNode> > selectedNodes;
                             selectedNodes.push_back(it->second);

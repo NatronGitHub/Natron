@@ -6111,6 +6111,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->finished = true;
     }
     RotoDrawableItem::clone(other);
+    incrementNodesAge();
     resetNodesThreadSafety();
 }
 

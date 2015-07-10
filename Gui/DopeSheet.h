@@ -149,6 +149,9 @@ public:
     void moveSelectedKeysAndNodes(double dt);
     void trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame);
     void trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame);
+    
+    bool canSlipReader(const boost::shared_ptr<DSNode> &reader) const;
+    
     void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
     void copySelectedKeys();
     void pasteKeys();
