@@ -54,12 +54,12 @@ typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
 
 // Constants
-const int KF_TEXTURES_COUNT = 18;
-const int KF_PIXMAP_SIZE = 14;
-const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
-const int DISTANCE_ACCEPTANCE_FROM_KEYFRAME = 5;
-const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
-const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
+static const int KF_TEXTURES_COUNT = 18;
+static const int KF_PIXMAP_SIZE = 14;
+static const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
+static const int DISTANCE_ACCEPTANCE_FROM_KEYFRAME = 5;
+static const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
+static const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -238,8 +238,7 @@ public:
     Natron::TextRenderer textRenderer;
 
     // for textures
-    GLuint *kfTexturesIDs;
-    QImage *kfTexturesImages;
+    GLuint kfTexturesIDs[KF_TEXTURES_COUNT];
 
     // for navigating
     ZoomContext zoomContext;
@@ -282,8 +281,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     nodeRanges(),
     font(new QFont(appFont,appFontSize)),
     textRenderer(),
-    kfTexturesIDs(new GLuint[KF_TEXTURES_COUNT]),
-    kfTexturesImages(new QImage[KF_TEXTURES_COUNT]),
+    kfTexturesIDs(),
     zoomContext(),
     zoomOrPannedSinceLastFit(false),
     selectionRect(),
@@ -295,14 +293,13 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     currentEditedReader(),
     hasOpenGLVAOSupport(true),
     contextMenu(new Natron::Menu(q_ptr))
-{}
+{
+
+}
 
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
 {
     glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
-
-    delete []kfTexturesImages;
-    delete []kfTexturesIDs;
 }
 
 /*
@@ -676,6 +673,7 @@ double DopeSheetViewPrivate::clampedMouseOffset(double fromTime, double toTime)
 
 void DopeSheetViewPrivate::generateKeyframeTextures()
 {
+    QImage kfTexturesImages[KF_TEXTURES_COUNT];
     kfTexturesImages[0].load(NATRON_IMAGES_PATH "interp_constant.png");
     kfTexturesImages[1].load(NATRON_IMAGES_PATH "interp_constant_selected.png");
     kfTexturesImages[2].load(NATRON_IMAGES_PATH "interp_linear.png");
@@ -694,13 +692,28 @@ void DopeSheetViewPrivate::generateKeyframeTextures()
     kfTexturesImages[15].load(NATRON_IMAGES_PATH "interp_curve_z_selected.png");
     kfTexturesImages[16].load(NATRON_IMAGES_PATH "keyframe_node_root.png");
     kfTexturesImages[17].load(NATRON_IMAGES_PATH "keyframe_node_root_selected.png");
-
+    
+    glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
+    
+    glEnable(GL_TEXTURE_2D);
+    
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
         kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
-    }
+        glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits());
 
-    glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
+    }
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
 }
 
 DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const
@@ -1252,14 +1265,6 @@ void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTe
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[textureType].bits());
 
     glBegin(GL_POLYGON);
     glTexCoord2f(0.0f, 1.0f);
