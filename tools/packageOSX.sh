@@ -23,7 +23,7 @@ NATRONBRANCH=workshop
 OFXBRANCH=master
 
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
-PORTS="boost qt4-mac boost glew cairo expat     jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig py34-shiboken py34-pyside"
+PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig py34-shiboken py34-pyside imagemagick"
 
 PORTSOK=yes
 for p in $PORTS; do
@@ -99,9 +99,11 @@ git clone https://github.com/MrKepzie/openfx-io.git
 (cd openfx-io; git checkout "$OFXBRANCH")
 git clone https://github.com/devernay/openfx-misc.git
 (cd openfx-misc; git checkout "$OFXBRANCH")
+git clone https://github.com/olear/openfx-arena.git
+(cd openfx-arena; git checkout "$OFXBRANCH")
 git clone https://github.com/MrKepzie/Natron.git
 (cd Natron; git checkout "$NATRONBRANCH")
-for i in openfx-io openfx-io/IOSupport/SequenceParsing openfx-misc Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update -i -r); done
+for i in openfx-io openfx-io/IOSupport/SequenceParsing openfx-misc openfx-arena Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update -i --recursive); done
 
 #compile Natron
 cd Natron
@@ -215,6 +217,12 @@ cd openfx-misc
 make BITS=$BITS HAVE_CIMG=1 CONFIG=$CONFIG $MAKEJFLAGS || exit
 mv Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "../$PLUGINDIR" || exit
 mv CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "../$PLUGINDIR" || exit
+cd ..
+
+#compile openfx-arena
+cd openfx-arena
+make BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
+mv Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
 #make the dmg
