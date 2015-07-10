@@ -29,6 +29,8 @@
 
 #include <QString>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QThread>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -576,6 +578,15 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
+    if (QThread::currentThread() == qApp->thread()) {
+        if (clamp ) {
+            T ret = getGuiValue(dimension);
+            return clampToMinMax(ret, dimension);
+        } else {
+            return getGuiValue(dimension);
+        }
+    }
+    
     assert(dimension < (int)_values.size() && dimension >= 0);
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
@@ -2484,7 +2495,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 } else {
                     if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
                         _values[(*it)->_imp->dimension] = (*it)->_imp->value;
-                        _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
+                       // _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
                         dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
                     }
                 }
