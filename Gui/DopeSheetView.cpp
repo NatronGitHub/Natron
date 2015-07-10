@@ -1117,6 +1117,11 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 KeyFrame kf = (*kIt);
 
                 double keyTime = kf.getTime();
+
+                if (keyTime < zoomContext.left() || keyTime > zoomContext.right()) {
+                    continue;
+                }
+
                 double rowCenterYWidget = hierarchyView->visualItemRect(dsKnob->getTreeItem()).center().y();
                 
                 RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
