@@ -1855,9 +1855,9 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
         _pastedItems.push_back(item);
     }
 
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(_targetItem);
+    boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(_targetItem);
 
-    if (isBezier) {
+    if (isDrawable) {
         _mode = ePasteModeCopyToItem;
         assert(source.size() == 1 && _pastedItems.size() == 1);
         assert( dynamic_cast<RotoDrawableItem*>( _pastedItems.front().rotoItem.get() ) );
@@ -1883,6 +1883,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                                                                           srcStroke->getContext(),
                                                                           name,
                                                                           boost::shared_ptr<RotoLayer>()));
+                copy->createNodes();
                 if (srcStroke->getParentLayer()) {
                     srcStroke->getParentLayer()->insertItem(copy, 0);
                 }
@@ -1944,7 +1945,7 @@ PasteItemUndoCommand::redo()
             oldStroke->createNodes();
             _oldTargetItem = oldStroke;
             if (isStroke->getParentLayer()) {
-                isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
+                //isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
             }
             
         }
