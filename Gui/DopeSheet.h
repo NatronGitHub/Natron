@@ -438,8 +438,12 @@ public:
     
     std::vector<DopeSheetKey> getKeyframesSelectionCopy() const;
 
+    bool hasSingleKeyFrameTimeSelected(int* time) const;
+    
     int getSelectedKeyframesCount() const;
+    
     bool keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const;
+    
     DSKeyPtrList::iterator keyframeIsSelected(const DopeSheetKey &key) const;
 
     bool rangeIsSelected(const boost::shared_ptr<DSNode>& node) const;

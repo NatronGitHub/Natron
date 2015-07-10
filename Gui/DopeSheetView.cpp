@@ -169,7 +169,11 @@ public:
     void drawRange(const boost::shared_ptr<DSNode> &dsNode) const;
     void drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) const;
 
-    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const RectD &rect) const;
+    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
+                              bool drawTime,
+                              int time,
+                              const QColor& textColor,
+                              const RectD &rect) const;
 
     void drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const;
 
@@ -1083,6 +1087,15 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 {
     running_in_main_thread_and_context(q_ptr);
 
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    double scaleR, scaleG, scaleB;
+    settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
+                       Natron::clamp(scaleG, 0., 1.),
+                       Natron::clamp(scaleB, 0., 1.));
+    
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1091,6 +1104,10 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         const DSTreeItemKnobMap& knobItems = dsNode->getItemKnobMap();
+        
+        int kfTimeSelected;
+        int hasSingleKfTimeSelected = model->getSelectionModel()->hasSingleKeyFrameTimeSelected(&kfTimeSelected);
+        
         for (DSTreeItemKnobMap::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
@@ -1121,8 +1138,8 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 
                 RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
 
-                bool kfIsSelectedOrHighlighted = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf)
-                        || selectionRect.intersects(zoomKfRect);
+                bool kfSelected = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf);
+                bool kfIsSelectedOrHighlighted = kfSelected || selectionRect.intersects(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
                 bool drawInDimRow = hierarchyView->itemIsVisibleFromOutside(knobTreeItem);
@@ -1132,7 +1149,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                                                                                               kfIsSelectedOrHighlighted);
 
                     if (texType != DopeSheetViewPrivate::kfTextureNone) {
-                        drawTexturedKeyframe(texType, zoomKfRect);
+                        drawTexturedKeyframe(texType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor,zoomKfRect);
                     }
                 }
 
@@ -1151,7 +1168,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                         double newCenterY = hierarchyView->visualItemRect(knobParentItem).center().y();
                         zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                        drawTexturedKeyframe(rootKfTexType, zoomKfRect);
+                        drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
                     }
                 }
 
@@ -1163,14 +1180,18 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                     double newCenterY = hierarchyView->visualItemRect(nodeContext->getTreeItem()).center().y();
                     zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                    drawTexturedKeyframe(rootKfTexType, zoomKfRect);
+                    drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
                 }
             }
         }
     }
 }
 
-void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const RectD &rect) const
+void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
+                                                bool drawTime,
+                                                int time,
+                                                const QColor& textColor,
+                                                const RectD &rect) const
 {
     GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
     GLProtectMatrix pr(GL_MODELVIEW);
@@ -1201,6 +1222,14 @@ void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTe
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_TEXTURE_2D);
+    
+    if (drawTime) {
+        QString text = QString::number(time);
+        QPointF p = zoomContext.toWidgetCoordinates(rect.right(), rect.bottom());
+        p.rx() += 3;
+        p = zoomContext.toZoomCoordinates(p.x(), p.y());
+        renderText(p.x(), p.y(), text, textColor, *font);
+    }
 }
 
 void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const

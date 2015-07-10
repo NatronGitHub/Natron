@@ -1009,9 +1009,33 @@ std::vector<DopeSheetKey> DopeSheetSelectionModel::getKeyframesSelectionCopy() c
     return ret;
 }
 
+bool
+DopeSheetSelectionModel::hasSingleKeyFrameTimeSelected(int* time) const
+{
+    bool timeSet = false;
+    KnobGui * knob = 0;
+    if (_imp->selectedKeyframes.empty()) {
+        return false;
+    }
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
+        assert(knobContext);
+        if (!timeSet) {
+            *time = (*it)->key.getTime();
+            knob = knobContext->getKnobGui();
+            timeSet = true;
+        } else {
+            if ((*it)->key.getTime() != *time || knobContext->getKnobGui() != knob) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 int DopeSheetSelectionModel::getSelectedKeyframesCount() const
 {
-    return _imp->selectedKeyframes.size();
+    return (int)_imp->selectedKeyframes.size();
 }
 
 bool DopeSheetSelectionModel::keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const
