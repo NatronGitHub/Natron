@@ -671,7 +671,7 @@ DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyfram
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpBreakSelected : DopeSheetViewPrivate::kfTextureInterpBreak;
         break;
     case Natron::eKeyframeTypeFree:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpLinearSelected : DopeSheetViewPrivate::kfTextureInterpLinear;
+        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveSelected : DopeSheetViewPrivate::kfTextureInterpCurve;
         break;
     case Natron::eKeyframeTypeSmooth:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveZSelected : DopeSheetViewPrivate::kfTextureInterpCurveZ;
