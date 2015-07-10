@@ -946,9 +946,18 @@ Knob<T>::setValue(const T & v,
             QMutexLocker kql(&_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
         }
-        {
-            QMutexLocker k(&_valueMutex);
-            _guiValues[dimension] = v;
+        if (QThread::currentThread() == qApp->thread()) {
+            {
+                QMutexLocker k(&_valueMutex);
+                _guiValues[dimension] = v;
+            }
+            if (!isValueChangesBlocked()) {
+                holder->onKnobValueChanged_public(this, reason, time, true);
+            }
+
+            if (_signalSlotHandler) {
+                _signalSlotHandler->s_valueChanged(dimension,(int)reason);
+            }
         }
         return returnValue;
     } else {
@@ -2495,7 +2504,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 } else {
                     if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
                         _values[(*it)->_imp->dimension] = (*it)->_imp->value;
-                       // _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
+                        _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
                         dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
                     }
                 }
