@@ -285,6 +285,172 @@ bool DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
     return true;
 }
 
+//////////////////////////DSTransformKeysCommand //////////////////////////
+
+DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
+                       const Transform::Matrix3x3& transform,
+                       DopeSheetEditor *model,
+                       QUndoCommand *parent)
+: QUndoCommand(parent)
+, _firstRedoCalled(false)
+, _transform(transform)
+, _model(model)
+{
+    for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
+        if (!knobContext) {
+            continue;
+        }
+        
+        TransformKeyData& data = _keys[knobContext];
+        data.keys.push_back(*it);
+    }
+    
+    setText(QObject::tr("Scale keyframes"));
+}
+
+void
+DSTransformKeysCommand::undo()
+{
+    /*
+     The view is going to get MANY update() calls since every knob change will trigger a computeNodeRange() in DopeSheetView
+     We explicitly disable update on the dopesheet view and re-enable it afterwards.
+     */
+    DopeSheetView* view = _model->getDopesheetView();
+    view->setUpdatesEnabled(false);
+    
+    std::list<KnobHolder*> differentKnobs;
+    for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        
+        KnobHolder* holder = it->first->getInternalKnob()->getHolder();
+        if (holder) {
+            if ( std::find(differentKnobs.begin(), differentKnobs.end(), holder) == differentKnobs.end() ) {
+                differentKnobs.push_back(holder);
+                holder->beginChanges();
+            }
+        }
+    }
+    
+    for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        it->first->getInternalKnob()->cloneCurve(it->first->getDimension(),*it->second.oldCurve);
+    }
+    for (std::list<KnobHolder*>::iterator it= differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
+        (*it)->endChanges();
+    }
+    
+    view->setUpdatesEnabled(true);
+    
+    
+    _model->refreshSelectionBboxAndRedrawView();
+}
+
+void
+DSTransformKeysCommand::redo()
+{
+    
+    /*
+     The view is going to get MANY update() calls since every knob change will trigger a computeNodeRange() in DopeSheetView
+     We explicitly disable update on the dopesheet view and re-enable it afterwards.
+     */
+    DopeSheetView* view = _model->getDopesheetView();
+    view->setUpdatesEnabled(false);
+    
+    std::list<KnobHolder*> differentKnobs;
+    for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        
+        KnobHolder* holder = it->first->getInternalKnob()->getHolder();
+        if (holder) {
+            if ( std::find(differentKnobs.begin(), differentKnobs.end(), holder) == differentKnobs.end() ) {
+                differentKnobs.push_back(holder);
+                holder->beginChanges();
+            }
+        }
+    }
+    
+    if (!_firstRedoCalled) {
+        for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            it->second.oldCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(it->first->getDimension())));
+            
+        }
+        for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            for (DSKeyPtrList::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
+                transformKey(*it2);
+            }
+        }
+
+        for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            it->second.newCurve.reset(new Curve(*it->first->getInternalKnob()->getCurve(it->first->getDimension())));
+        }
+        _firstRedoCalled = true;
+    } else {
+        for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            it->first->getInternalKnob()->cloneCurve(it->first->getDimension(),*it->second.newCurve);
+        }
+
+    }
+    
+    for (std::list<KnobHolder*>::iterator it= differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
+        (*it)->endChanges();
+    }
+    
+    view->setUpdatesEnabled(true);
+    
+    
+    _model->refreshSelectionBboxAndRedrawView();
+
+}
+
+void
+DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
+{
+    boost::shared_ptr<DSKnob> knobContext = key->context.lock();
+    if (!knobContext) {
+        return;
+    }
+    
+    boost::shared_ptr<KnobI> knob = knobContext->getKnobGui()->getKnob();
+    knob->transformValueAtTime(key->key.getTime(), knobContext->getDimension(), _transform, &key->key);
+}
+
+int
+DSTransformKeysCommand::id() const
+{
+    return kDopeSheetEditorTransformKeysCommandCompressionID;
+}
+
+bool
+DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
+{
+    const DSTransformKeysCommand *cmd = dynamic_cast<const DSTransformKeysCommand *>(other);
+    
+    if (cmd->id() != id()) {
+        return false;
+    }
+    
+    if (cmd->_keys.size() != _keys.size()) {
+        return false;
+    }
+    {
+        TransformKeys::const_iterator itOther = cmd->_keys.begin();
+        
+        for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+            if (itOther->second.keys.size() != it->second.keys.size()) {
+                return false;
+            }
+            
+            DSKeyPtrList::const_iterator kItOther = itOther->second.keys.begin();
+            for (DSKeyPtrList::const_iterator it2 = it->second.keys.begin(); it2!=it->second.keys.end(); ++it2, ++kItOther) {
+                if (*it2 != *kItOther) {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    _transform = Transform::matMul(_transform, cmd->_transform);
+    return true;
+}
+
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 

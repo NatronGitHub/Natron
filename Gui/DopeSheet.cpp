@@ -660,6 +660,19 @@ void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
     _imp->pushUndoCommand(new DSSetSelectedKeysInterpolationCommand(changes, _imp->editor));
 }
 
+void
+DopeSheet::transformSelectedKeys(const Transform::Matrix3x3& transform)
+{
+    if (_imp->selectionModel->isEmpty()) {
+        return;
+    }
+    DSKeyPtrList selectedKeyframes;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    
+    _imp->pushUndoCommand(new DSTransformKeysCommand(selectedKeyframes, transform, _imp->editor));
+}
+
 void DopeSheet::setUndoStackActive()
 {
     _imp->undoStack->setActive();
