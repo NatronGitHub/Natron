@@ -16,7 +16,7 @@ signature otherwise the function call will not work.
 	Note that callbacks will be called in background and GUI modes, hence you should 
 	wrap all GUI code by the following condition::
 	
-		if not natron.isBackground():
+		if not NatronEngine.natron.isBackground():
 			#...do gui stuff
 	
 Callback persistence
