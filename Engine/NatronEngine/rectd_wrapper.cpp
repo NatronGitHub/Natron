@@ -954,6 +954,29 @@ static PyObject* Sbk_RectDFunc_set_top(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_RectDFunc_setupInfinity(PyObject* self)
+{
+    ::RectD* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::RectD*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTD_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // setupInfinity()
+            cppSelf->setupInfinity();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_RectDFunc_top(PyObject* self)
 {
     ::RectD* cppSelf = 0;
@@ -1079,6 +1102,7 @@ static PyMethodDef Sbk_RectD_methods[] = {
     {"set_left", (PyCFunction)Sbk_RectDFunc_set_left, METH_O},
     {"set_right", (PyCFunction)Sbk_RectDFunc_set_right, METH_O},
     {"set_top", (PyCFunction)Sbk_RectDFunc_set_top, METH_O},
+    {"setupInfinity", (PyCFunction)Sbk_RectDFunc_setupInfinity, METH_NOARGS},
     {"top", (PyCFunction)Sbk_RectDFunc_top, METH_NOARGS},
     {"translate", (PyCFunction)Sbk_RectDFunc_translate, METH_VARARGS},
     {"width", (PyCFunction)Sbk_RectDFunc_width, METH_NOARGS},

@@ -51,9 +51,39 @@ Generally, throughout your scripts, you can access this object with the variable
 that Natron pre-declared for you, e.g::
 
 	natron.getPluginIDs()
+
+.. warning::
+
+	The variable **natron** belongs to the module **NatronEngine**, hence make sure to make the following import::
+	
+		from NatronEngine import*
+		
+	Otherwise with a regular *import* you can still access **natron** by prepending the module::
+		
+		NatronEngine.natron
+
+.. warning::
+
+	The variable stored in the module **NatronEngine** contains a reference to a :doc:`PyCoreApplication`.
+	If you need to have the GUI functionalities provided by :doc:`PyGuiApplication`, you must then use
+	the variable **natron** belonging to the module **NatronGui**. 
+	Hence make sure to make the following import to have access to **natron**::
+	
+		from NatronGui import*
+		
+	With a regular import you can access it using **NatronGui.natron**. 
+	
+.. warning::
+
+	Make sure to **not** make the 2 following imports, otherwise the **natron** variable will
+	not point to something expected::
+	
+		#This you should not do!
+		from NatronEngine import *
+		from NatronGui import *
 	
 This class is used only for background (command-line) runs of Natron, that is when you
-launch Natron in the following ways:
+launch Natron in the following ways::
 
 	Natron -b ...
 	Natron -t

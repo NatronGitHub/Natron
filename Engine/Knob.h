@@ -1393,6 +1393,13 @@ public:
      * If it is animated, it will return the value at the current time.
      **/
     T getValue(int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
+    
+    /**
+     * @brief Same as getValue() except that this value will return always the value that is displayed on the Gui. 
+     * whereas the actual value returned by getValue() might not have taken into account the recent modifications
+     * due to the node being rendering.
+     **/
+    T getGuiValue(int dimension = 0) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the value of the knob at the given time and for the given dimension.
@@ -1711,8 +1718,8 @@ private:
    
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QMutex _valueMutex; //< protects _values & _defaultValues & ExprResults
-    std::vector<T> _values;
+    mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
+    std::vector<T> _values,_guiValues;
     std::vector<T> _defaultValues;
     mutable ExprResults _exprRes;
     

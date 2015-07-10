@@ -35,7 +35,7 @@ public:
     inline std::list<std::string>
     getPluginIDs() const
     {
-        return Natron::getPluginIDs();
+        return appPTR->getPluginIDs();
     }
     
     inline std::list<std::string>
@@ -47,19 +47,19 @@ public:
     inline int
     getNumInstances() const
     {
-        return Natron::getNumInstances();
+        return appPTR->getNumInstances();
     }
     
     inline std::list<std::string>
     getNatronPath() const
     {
-        return Natron::getNatronPath();
+        return appPTR->getNatronPath();
     }
     
     inline void
     appendToNatronPath(const std::string& path)
     {
-        Natron::appendToNatronPath(path);
+        appPTR->appendToNatronPath(path);
     }
     
     inline bool isLinux() const
@@ -151,7 +151,7 @@ public:
     inline App*
     getInstance(int idx) const
     {
-        AppInstance* app = Natron::getInstance(idx);
+        AppInstance* app = appPTR->getAppInstance(idx);
         if (!app) {
             return 0;
         }

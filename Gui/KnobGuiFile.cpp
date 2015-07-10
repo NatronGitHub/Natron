@@ -168,7 +168,7 @@ File_KnobGui::open_file()
             filters = effect->supportedFileFormats();
         }
     }
-    std::string oldPattern = knob->getValue();
+    std::string oldPattern = knob->getGuiValue();
     std::string currentPattern = oldPattern;
     std::string path = SequenceParsing::removePath(currentPattern);
     QString pathWhereToOpen;
@@ -205,7 +205,7 @@ void
 File_KnobGui::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<File_Knob> knob = _knob.lock();
-    _lineEdit->setText(knob->getValue().c_str());
+    _lineEdit->setText(knob->getGuiValue().c_str());
     
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if (useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
@@ -305,7 +305,7 @@ void File_KnobGui::onTextEdited()
     std::string str = _lineEdit->text().toStdString();
     
     ///don't do antyhing if the pattern is the same
-    std::string oldValue = _knob.lock()->getValue();
+    std::string oldValue = _knob.lock()->getGuiValue();
     
     if ( str == oldValue ) {
         return;
@@ -394,7 +394,7 @@ File_KnobGui::onMakeAbsoluteTriggered()
 {
     boost::shared_ptr<File_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -406,7 +406,7 @@ File_KnobGui::onMakeRelativeTriggered()
 {
     boost::shared_ptr<File_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -419,7 +419,7 @@ File_KnobGui::onSimplifyTriggered()
 {
     boost::shared_ptr<File_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -551,7 +551,7 @@ OutputFile_KnobGui::updateLastOpened(const QString &str)
 void
 OutputFile_KnobGui::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText( _knob.lock()->getValue().c_str() );
+    _lineEdit->setText( _knob.lock()->getGuiValue().c_str() );
 }
 
 void
@@ -566,7 +566,7 @@ OutputFile_KnobGui::onTextEdited()
 //    }
 //
 //    
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob.lock()->getValue(),newPattern ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob.lock()->getGuiValue(),newPattern ) );
 }
 
 void
@@ -640,7 +640,7 @@ OutputFile_KnobGui::onMakeAbsoluteTriggered()
 {
     boost::shared_ptr<OutputFile_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -652,7 +652,7 @@ OutputFile_KnobGui::onMakeRelativeTriggered()
 {
     boost::shared_ptr<OutputFile_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -665,7 +665,7 @@ OutputFile_KnobGui::onSimplifyTriggered()
 {
     boost::shared_ptr<OutputFile_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -896,7 +896,7 @@ Path_KnobGui::onAddButtonClicked()
         updateLastOpened(dirPath.c_str());
         
         
-        std::string oldValue = _knob.lock()->getValue();
+        std::string oldValue = _knob.lock()->getGuiValue();
         
         int rowCount = (int)_items.size();
         
@@ -914,7 +914,7 @@ Path_KnobGui::onAddButtonClicked()
 void
 Path_KnobGui::onEditButtonClicked()
 {
-    std::string oldValue = _knob.lock()->getValue();
+    std::string oldValue = _knob.lock()->getGuiValue();
     QModelIndexList selection = _table->selectionModel()->selectedRows();
     
     if (selection.size() != 1) {
@@ -957,7 +957,7 @@ Path_KnobGui::onOpenFileButtonClicked()
         std::string dirPath = dialog.selectedDirectory();
         updateLastOpened(dirPath.c_str());
         
-        std::string oldValue = _knob.lock()->getValue();
+        std::string oldValue = _knob.lock()->getGuiValue();
         
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
     }
@@ -968,7 +968,7 @@ void
 Path_KnobGui::onRemoveButtonClicked()
 {
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
-    std::string oldValue = knob->getValue();
+    std::string oldValue = knob->getGuiValue();
     QModelIndexList selection = _table->selectionModel()->selectedRows();
 
 	if (selection.isEmpty()) {
@@ -1021,7 +1021,7 @@ Path_KnobGui::onTextEdited()
 //    }
 
     
-    std::string oldValue = _knob.lock()->getValue();
+    std::string oldValue = _knob.lock()->getGuiValue();
     
     pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,dirPath ) );
 }
@@ -1039,7 +1039,7 @@ void
 Path_KnobGui::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
-    QString path(_knob.lock()->getValue().c_str());
+    QString path(_knob.lock()->getGuiValue().c_str());
     
     if (_knob.lock()->isMultiPath()) {
         std::map<std::string,std::string> variables;
@@ -1152,7 +1152,7 @@ Path_KnobGui::onItemDataChanged(TableItem* /*item*/)
     }
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
     std::string newPath = rebuildPath();
-    std::string oldPath = knob->getValue();
+    std::string oldPath = knob->getGuiValue();
     
     if (oldPath != newPath) {
         
@@ -1249,7 +1249,7 @@ Path_KnobGui::onMakeAbsoluteTriggered()
 {
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -1261,7 +1261,7 @@ Path_KnobGui::onMakeRelativeTriggered()
 {
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->makeRelativeToProject(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );
@@ -1274,7 +1274,7 @@ Path_KnobGui::onSimplifyTriggered()
 {
     boost::shared_ptr<Path_Knob> knob = _knob.lock();
     if (knob->getHolder() && knob->getHolder()->getApp()) {
-        std::string oldValue = knob->getValue();
+        std::string oldValue = knob->getGuiValue();
         std::string newValue = oldValue;
         knob->getHolder()->getApp()->getProject()->simplifyPath(newValue);
         pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newValue ) );

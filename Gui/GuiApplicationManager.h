@@ -195,7 +195,7 @@ public:
     
     void clearNodeClipBoard();
     
-    void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
     
     const std::list<PythonUserCommand>& getUserPythonCommands() const;
     

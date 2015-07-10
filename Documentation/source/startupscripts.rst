@@ -24,6 +24,11 @@ of the :ref:`search paths<natronPath>`.
 
 .. warning::
 
+	This is important that the 2 scripts above are named **init.py** and **initGui.py** 
+	otherwise they will not be loaded.
+
+.. warning::
+
 	These scripts are run well before any :ref:`application instance<App>` (i.e: project) is created.
 	You should therefore not run any function directly that might rely on the *app* variable (or *app1*, etc...).
 	However you're free to define classes and functions that may rely on these variable being declared, but that

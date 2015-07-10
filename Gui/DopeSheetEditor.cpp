@@ -182,3 +182,9 @@ DopeSheetEditor::getTimelineCurrentTime() const
 {
     return _imp->gui->getApp()->getTimeLine()->currentFrame();
 }
+
+DopeSheetView*
+DopeSheetEditor::getDopesheetView() const
+{
+    return _imp->dopeSheetView;
+}

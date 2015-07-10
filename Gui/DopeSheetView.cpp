@@ -169,7 +169,11 @@ public:
     void drawRange(const boost::shared_ptr<DSNode> &dsNode) const;
     void drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) const;
 
-    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const RectD &rect) const;
+    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
+                              bool drawTime,
+                              int time,
+                              const QColor& textColor,
+                              const RectD &rect) const;
 
     void drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const;
 
@@ -996,10 +1000,10 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
             assert(originalFrameRangeKnob);
 
-            int firstFrame = firstFrameKnob->getValue();
+            int firstFrame = firstFrameKnob->getGuiValue();
             int lineBegin = clipRectZoomCoords.left() - firstFrame + 1;
 
-            int frameCount = originalFrameRangeKnob->getValue(1) - originalFrameRangeKnob->getValue(0) + 1;
+            int frameCount = originalFrameRangeKnob->getGuiValue(1) - originalFrameRangeKnob->getGuiValue(0) + 1;
             int lineEnd = lineBegin + (frameCount / speedValue);
 
             float clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
@@ -1083,6 +1087,15 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 {
     running_in_main_thread_and_context(q_ptr);
 
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    double scaleR, scaleG, scaleB;
+    settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
+                       Natron::clamp(scaleG, 0., 1.),
+                       Natron::clamp(scaleB, 0., 1.));
+    
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1091,6 +1104,10 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         const DSTreeItemKnobMap& knobItems = dsNode->getItemKnobMap();
+        
+        int kfTimeSelected;
+        int hasSingleKfTimeSelected = model->getSelectionModel()->hasSingleKeyFrameTimeSelected(&kfTimeSelected);
+        
         for (DSTreeItemKnobMap::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
@@ -1126,8 +1143,8 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 
                 RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
 
-                bool kfIsSelectedOrHighlighted = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf)
-                        || selectionRect.intersects(zoomKfRect);
+                bool kfSelected = model->getSelectionModel()->keyframeIsSelected(dsKnob, kf);
+                bool kfIsSelectedOrHighlighted = kfSelected || selectionRect.intersects(zoomKfRect);
 
                 // Draw keyframe in the knob dim row only if it's visible
                 bool drawInDimRow = hierarchyView->itemIsVisibleFromOutside(knobTreeItem);
@@ -1137,7 +1154,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                                                                                               kfIsSelectedOrHighlighted);
 
                     if (texType != DopeSheetViewPrivate::kfTextureNone) {
-                        drawTexturedKeyframe(texType, zoomKfRect);
+                        drawTexturedKeyframe(texType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor,zoomKfRect);
                     }
                 }
 
@@ -1156,7 +1173,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                         double newCenterY = hierarchyView->visualItemRect(knobParentItem).center().y();
                         zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                        drawTexturedKeyframe(rootKfTexType, zoomKfRect);
+                        drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
                     }
                 }
 
@@ -1168,14 +1185,18 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                     double newCenterY = hierarchyView->visualItemRect(nodeContext->getTreeItem()).center().y();
                     zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, newCenterY);
 
-                    drawTexturedKeyframe(rootKfTexType, zoomKfRect);
+                    drawTexturedKeyframe(rootKfTexType, hasSingleKfTimeSelected && kfSelected, kfTimeSelected, scaleColor, zoomKfRect);
                 }
             }
         }
     }
 }
 
-void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType, const RectD &rect) const
+void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
+                                                bool drawTime,
+                                                int time,
+                                                const QColor& textColor,
+                                                const RectD &rect) const
 {
     GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
     GLProtectMatrix pr(GL_MODELVIEW);
@@ -1206,6 +1227,14 @@ void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTe
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_TEXTURE_2D);
+    
+    if (drawTime) {
+        QString text = QString::number(time);
+        QPointF p = zoomContext.toWidgetCoordinates(rect.right(), rect.bottom());
+        p.rx() += 3;
+        p = zoomContext.toZoomCoordinates(p.x(), p.y());
+        renderText(p.x(), p.y(), text, textColor, *font);
+    }
 }
 
 void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode, const boost::shared_ptr<DSNode> &group) const
@@ -1631,9 +1660,9 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
 
-    int startingTimeValue = startingTimeKnob->getValue();
-    int firstFrameValue = firstFrameKnob->getValue();
-    int lastFrameValue = lastFrameKnob->getValue();
+    int startingTimeValue = startingTimeKnob->getGuiValue();
+    int firstFrameValue = firstFrameKnob->getGuiValue();
+    int lastFrameValue = lastFrameKnob->getGuiValue();
 
     FrameRange range(startingTimeValue,
                      startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
@@ -1661,14 +1690,14 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameLastFrame).get());
         assert(lastFrameKnob);
 
-        int startingTimeValue = startingTimeKnob->getValue();
-        int firstFrameValue = firstFrameKnob->getValue();
-        int lastFrameValue = lastFrameKnob->getValue();
+        int startingTimeValue = startingTimeKnob->getGuiValue();
+        int firstFrameValue = firstFrameKnob->getGuiValue();
+        int lastFrameValue = lastFrameKnob->getGuiValue();
 
         Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(node->getKnobByName(kRetimeParamNameSpeed).get());
         assert(speedKnob);
 
-        double speedValue = speedKnob->getValue();
+        double speedValue = speedKnob->getGuiValue();
 
         int frameCount = lastFrameValue - firstFrameValue + 1;
         int rangeEnd = startingTimeValue + (frameCount / speedValue);
@@ -1696,7 +1725,7 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
         Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
         assert(timeOffsetKnob);
 
-        int timeOffsetValue = timeOffsetKnob->getValue();
+        int timeOffsetValue = timeOffsetKnob->getGuiValue();
 
         range.first = nearestReaderRange.first + timeOffsetValue;
         range.second = nearestReaderRange.second + timeOffsetValue;
@@ -1713,8 +1742,8 @@ void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
     assert(frameRangeKnob);
 
     FrameRange range;
-    range.first = frameRangeKnob->getValue(0);
-    range.second = frameRangeKnob->getValue(1);
+    range.first = frameRangeKnob->getGuiValue(0);
+    range.second = frameRangeKnob->getGuiValue(1);
 
     nodeRanges[frameRange] = range;
 }
@@ -1753,9 +1782,9 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
             assert(lastFrameKnob);
 
-            int startingTimeValue = startingTimeKnob->getValue();
-            int firstFrameValue = firstFrameKnob->getValue();
-            int lastFrameValue = lastFrameKnob->getValue();
+            int startingTimeValue = startingTimeKnob->getGuiValue();
+            int firstFrameValue = firstFrameKnob->getGuiValue();
+            int lastFrameValue = lastFrameKnob->getGuiValue();
 
             times.insert(startingTimeValue);
             times.insert(startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
@@ -1839,7 +1868,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
-            double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
+            double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getGuiValue() + 0.5);
 
             model->trimReaderLeft(currentEditedReader, newFirstFrame);
         }
@@ -1852,7 +1881,7 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
-            double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
+            double newLastFrame = std::floor(currentTime - timeOffsetKnob->getGuiValue() + 0.5);
 
             model->trimReaderRight(currentEditedReader, newLastFrame);
         }
@@ -2597,7 +2626,9 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
 
     _imp->computeNodeRange(dsNode.get());
 
-    redraw();
+    //Since this function is called a lot, let a chance to Qt to concatenate events
+    //NB: updateGL() does not concatenate
+    update();
 }
 
 void DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
@@ -2801,16 +2832,31 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     if (nodeType == DopeSheet::ItemTypeReader) {
                         _imp->currentEditedReader = it->second;
                         if (_imp->isNearByClipRectLeft(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderLeftTrim;
                             didSomething = true;
                             break;
                         }
                         else if (_imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderRightTrim;
                             didSomething = true;
                             break;
                         }
                         else if (_imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect)) {
+                            std::vector<DopeSheetKey> keysUnderMouse;
+                            std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+                            selectedNodes.push_back(it->second);
+                            
+                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
                             _imp->eventState = DopeSheetView::esReaderSlip;
                             didSomething = true;
                             break;

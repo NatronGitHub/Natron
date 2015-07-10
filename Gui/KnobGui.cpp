@@ -143,7 +143,7 @@ struct KnobGui::KnobGuiPrivate
 };
 
 /////////////// KnobGui
-KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGui::KnobGui(const boost::shared_ptr<KnobI>& knob,
                  DockablePanel* container)
 : _imp( new KnobGuiPrivate(container) )
 {

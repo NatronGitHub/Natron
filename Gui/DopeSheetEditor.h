@@ -20,6 +20,7 @@ CLANG_DIAG_ON(uninitialized)
 
 class DopeSheetEditorPrivate;
 class Gui;
+class DopeSheetView;
 class NodeGui;
 class TimeLine;
 
@@ -87,6 +88,8 @@ public:
     void refreshSelectionBboxAndRedrawView();
     
     int getTimelineCurrentTime() const;
+    
+    DopeSheetView* getDopesheetView() const;
 
 public Q_SLOTS:
     /**

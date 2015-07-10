@@ -501,6 +501,8 @@ DopeSheetSelectionModel *DopeSheet::getSelectionModel() const
     return _imp->selectionModel;
 }
 
+
+
 void DopeSheet::deleteSelectedKeyframes()
 {
     if (_imp->selectionModel->isEmpty()) {
@@ -534,9 +536,9 @@ void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double n
     assert(originalFrameRangeKnob);
 
     
-    int firstFrame = firstFrameKnob->getValue();
-    int lastFrame = lastFrameKnob->getValue();
-    int originalFirstFrame = originalFrameRangeKnob->getValue();
+    int firstFrame = firstFrameKnob->getGuiValue();
+    int lastFrame = lastFrameKnob->getGuiValue();
+    int originalFirstFrame = originalFrameRangeKnob->getGuiValue();
     
     newFirstFrame = std::max((double)newFirstFrame, (double)originalFirstFrame);
     newFirstFrame = std::min((double)lastFrame, newFirstFrame);
@@ -559,9 +561,9 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
     assert(originalFrameRangeKnob);
 
-    int firstFrame = firstFrameKnob->getValue();
-    int lastFrame = lastFrameKnob->getValue();
-    int originalLastFrame = originalFrameRangeKnob->getValue(1);
+    int firstFrame = firstFrameKnob->getGuiValue();
+    int lastFrame = lastFrameKnob->getGuiValue();
+    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
     
     newLastFrame = std::min((double)newLastFrame, (double)originalLastFrame);
     newLastFrame = std::max((double)firstFrame, newLastFrame);
@@ -587,10 +589,10 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
     ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
 
-    int currentFirstFrame = firstFrameKnob->getValue();
-    int currentLastFrame = lastFrameKnob->getValue();
-    int originalFirstFrame = originalFrameRangeKnob->getValue(0);
-    int originalLastFrame = originalFrameRangeKnob->getValue(1);
+    int currentFirstFrame = firstFrameKnob->getGuiValue();
+    int currentLastFrame = lastFrameKnob->getGuiValue();
+    int originalFirstFrame = originalFrameRangeKnob->getGuiValue(0);
+    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
     
     dt = std::min(dt, (double)(currentFirstFrame - originalFirstFrame));
     dt = std::max(dt, (double)(currentLastFrame - originalLastFrame));
@@ -1007,9 +1009,33 @@ std::vector<DopeSheetKey> DopeSheetSelectionModel::getKeyframesSelectionCopy() c
     return ret;
 }
 
+bool
+DopeSheetSelectionModel::hasSingleKeyFrameTimeSelected(int* time) const
+{
+    bool timeSet = false;
+    KnobGui * knob = 0;
+    if (_imp->selectedKeyframes.empty()) {
+        return false;
+    }
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
+        assert(knobContext);
+        if (!timeSet) {
+            *time = (*it)->key.getTime();
+            knob = knobContext->getKnobGui();
+            timeSet = true;
+        } else {
+            if ((*it)->key.getTime() != *time || knobContext->getKnobGui() != knob) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 int DopeSheetSelectionModel::getSelectedKeyframesCount() const
 {
-    return _imp->selectedKeyframes.size();
+    return (int)_imp->selectedKeyframes.size();
 }
 
 bool DopeSheetSelectionModel::keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const

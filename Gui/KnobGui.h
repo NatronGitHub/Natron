@@ -64,7 +64,7 @@ class KnobGui
 public:
 
 
-    KnobGui(boost::shared_ptr<KnobI> knob,
+    KnobGui(const boost::shared_ptr<KnobI>& knob,
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
