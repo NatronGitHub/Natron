@@ -6,6 +6,7 @@
 #include <Python.h>
 
 #include <vector>
+#include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -13,6 +14,7 @@
 #endif
 #include "Global/Enums.h"
 #include "Global/Macros.h"
+#include "Engine/Transform.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
@@ -21,9 +23,9 @@ CLANG_DIAG_ON(uninitialized)
 
 class DopeSheetEditor;
 class DSNode;
-
+class Curve;
+class DSKnob;
 struct DopeSheetKey;
-
 namespace Natron {
 class Node;
 }
@@ -124,6 +126,46 @@ private:
     double _dt;
     DopeSheetEditor *_model;
 };
+
+
+class DSTransformKeysCommand : public QUndoCommand
+{
+public:
+    DSTransformKeysCommand(const DSKeyPtrList &keys,
+                           const Transform::Matrix3x3& transform,
+                           DopeSheetEditor *model,
+                           QUndoCommand *parent = 0);
+    
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+    
+    int id() const OVERRIDE FINAL;
+    bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    
+private:
+    /**
+     * @brief Move the selected keyframes by 'dt' on the dope sheet timeline.
+     */
+    void transformKey(const DSKeyPtr& key);
+    
+private:
+    
+    
+    struct TransformKeyData
+    {
+        DSKeyPtrList keys;
+        boost::shared_ptr<Curve> oldCurve;
+        boost::shared_ptr<Curve> newCurve;
+    };
+    
+    typedef std::map<boost::shared_ptr<DSKnob>,TransformKeyData> TransformKeys;
+    
+    bool _firstRedoCalled;
+    Transform::Matrix3x3 _transform;
+    TransformKeys _keys;
+    DopeSheetEditor *_model;
+};
+
 
 
 /**

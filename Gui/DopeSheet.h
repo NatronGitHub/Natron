@@ -46,7 +46,9 @@ class NodeGroup;
 class NodeGui;
 class QUndoCommand;
 class TimeLine;
-
+namespace Transform {
+    class Matrix3x3;
+}
 namespace Natron {
 class Node;
 }
@@ -151,6 +153,8 @@ public:
     void copySelectedKeys();
     void pasteKeys();
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+    
+    void transformSelectedKeys(const Transform::Matrix3x3& transform);
 
     // Undo/redo
     void setUndoStackActive();

@@ -146,6 +146,9 @@ public:
     bool isNearByClipRectRight(const QPointF& zoomCoordPos, const RectD &clipRect) const;
     bool isNearByClipRectBottom(const QPointF& zoomCoordPos, const RectD &clipRect) const;
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
+    
+    bool isNearbySelectedKeysBRectRightEdge(const QPointF& widgetPos) const;
+    bool isNearbySelectedKeysBRectLeftEdge(const QPointF& widgetPos) const;
 
     std::vector<DopeSheetKey> isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const;
     std::vector<DopeSheetKey> isNearByKeyframe(boost::shared_ptr<DSNode> dsNode, const QPointF &widgetCoords) const;
@@ -379,12 +382,13 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 {
     QPointF clickZoomCoords = zoomContext.toZoomCoordinates(widgetCoords.x(), widgetCoords.y());
 
-    // is user hovering the keyframe selection bounding rect ?
-    if (selectedKeysBRect.contains(clickZoomCoords.x(),clickZoomCoords.y())) {
+    if (isNearbySelectedKeysBRectRightEdge(widgetCoords)) {
+        return getCursorForEventState(DopeSheetView::esTransformingKeyframesMiddleRight);
+    } else if (isNearbySelectedKeysBRectLeftEdge(widgetCoords)) {
+        return getCursorForEventState(DopeSheetView::esTransformingKeyframesMiddleLeft);
+    } else if (selectedKeysBRect.contains(clickZoomCoords.x(),clickZoomCoords.y())) {
         return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
-    }
-    // is user hovering the current frame indicator ?
-    else if (isNearByCurrentFrameIndicatorBottom(clickZoomCoords)) {
+    } else if (isNearByCurrentFrameIndicatorBottom(clickZoomCoords)) {
         return getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
     }
     
@@ -482,6 +486,10 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorForEventState(DopeSheetView::Even
     case DopeSheetView::esReaderSlip:
         cursorShape = Qt::SizeHorCursor;
         break;
+    case DopeSheetView::esTransformingKeyframesMiddleLeft:
+    case DopeSheetView::esTransformingKeyframesMiddleRight:
+        cursorShape = Qt::SplitHCursor;
+        break;
     case DopeSheetView::esNoEditingState:
     default:
         cursorShape = Qt::ArrowCursor;
@@ -531,6 +539,30 @@ bool DopeSheetViewPrivate::isNearByClipRectBottom(const QPointF& zoomCoordPos, c
 bool DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const
 {
     return (currentFrameIndicatorBottomPoly.containsPoint(zoomCoords, Qt::OddEvenFill));
+}
+
+bool
+DopeSheetViewPrivate::isNearbySelectedKeysBRectRightEdge(const QPointF& widgetPos) const
+{
+    QPointF topLeft = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, selectedKeysBRect.y2);
+    QPointF bottomRight = zoomContext.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1);
+    
+    return (widgetPos.x() >= (bottomRight.x() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.x() <= (bottomRight.x() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.y() <= (bottomRight.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.y() >= (topLeft.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE));
+}
+
+bool
+DopeSheetViewPrivate::isNearbySelectedKeysBRectLeftEdge(const QPointF& widgetPos) const
+{
+    QPointF topLeft = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, selectedKeysBRect.y2);
+    QPointF bottomRight = zoomContext.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1);
+    
+    return (widgetPos.x() >= (topLeft.x() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.x() <= (topLeft.x() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.y() <= (bottomRight.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+            widgetPos.y() >= (topLeft.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE));
 }
 
 std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::shared_ptr<DSKnob> &dsKnob, const QPointF &widgetCoords) const
@@ -1828,10 +1860,15 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
     QPointF mouseZoomCoords = zoomContext.toZoomCoordinates(e->x(), e->y());
     QPointF lastZoomCoordsOnMousePress = zoomContext.toZoomCoordinates(lastPosOnMousePress.x(),
                                                                        lastPosOnMousePress.y());
+    QPointF lastZoomCoordsOnMouseMove = zoomContext.toZoomCoordinates(lastPosOnMouseMove.x(),
+                                                                      lastPosOnMouseMove.y());
+
+    
     double currentTime = mouseZoomCoords.x();
 
     double dt = clampedMouseOffset(lastZoomCoordsOnMousePress.x(), currentTime);
-
+    double dv = mouseZoomCoords.y() - lastZoomCoordsOnMouseMove.y();
+    
     switch (eventState) {
     case DopeSheetView::esMoveKeyframeSelection:
     {
@@ -1841,6 +1878,39 @@ void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
 
         break;
     }
+    case DopeSheetView::esTransformingKeyframesMiddleLeft:
+    case DopeSheetView::esTransformingKeyframesMiddleRight:
+    {
+        bool shiftHeld = modCASIsShift(e);
+        QPointF center;
+        if (!shiftHeld) {
+            if (eventState == DopeSheetView::esTransformingKeyframesMiddleLeft) {
+                center.rx() = selectedKeysBRect.x2;
+            } else {
+                center.rx() = selectedKeysBRect.x1;
+            }
+            center.ry() = (selectedKeysBRect.y1 + selectedKeysBRect.y2)/2.;
+        } else {
+            center = QPointF((selectedKeysBRect.x1 + selectedKeysBRect.x2)/2.,(selectedKeysBRect.y1 + selectedKeysBRect.y2)/2.);
+        }
+        
+        
+        double sx = 1.,sy = 1.;
+        double tx = 0., ty = 0.;
+        
+        double oldX = mouseZoomCoords.x() - dt;
+        double oldY = mouseZoomCoords.y() - dv;
+        // the scale ratio is the ratio of distances to the center
+        double prevDist = ( oldX - center.x() ) * ( oldX - center.x() ) + ( oldY - center.y() ) * ( oldY - center.y() );
+        if (prevDist != 0) {
+            double dist = ( mouseZoomCoords.x() - center.x() ) * ( mouseZoomCoords.x() - center.x() ) + ( mouseZoomCoords.y() - center.y() ) * ( mouseZoomCoords.y() - center.y() );
+            double ratio = std::sqrt(dist / prevDist);
+            sx *= ratio;
+        }
+        
+        Transform::Matrix3x3 transform = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y());
+        model->transformSelectedKeys(transform);
+    }   break;
     case DopeSheetView::esMoveCurrentFrameIndicator:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
@@ -2785,12 +2855,20 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         _imp->eventState = DopeSheetView::esDraggingView;
         didSomething = true;
     }
+    
+    
 
     QPointF clickZoomCoords = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     if (buttonDownIsLeft(e)) {
         if (_imp->isNearByCurrentFrameIndicatorBottom(clickZoomCoords)) {
             _imp->eventState = DopeSheetView::esMoveCurrentFrameIndicator;
+            didSomething = true;
+        } else if (!_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectLeftEdge(e->pos())) {
+            _imp->eventState = DopeSheetView::esTransformingKeyframesMiddleLeft;
+            didSomething = true;
+        } else if (!_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectRightEdge(e->pos())) {
+            _imp->eventState = DopeSheetView::esTransformingKeyframesMiddleRight;
             didSomething = true;
         } else if (_imp->selectedKeysBRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;

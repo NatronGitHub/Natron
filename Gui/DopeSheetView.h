@@ -73,14 +73,17 @@ public:
         esSelectionByRect,
         esMoveKeyframeSelection,
         esMoveCurrentFrameIndicator,
-        esDraggingView
+        esDraggingView,
+        esTransformingKeyframesMiddleRight,
+        esTransformingKeyframesMiddleLeft
     };
 
     explicit DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
                            Gui *gui,
                            const boost::shared_ptr<TimeLine> &timeline,
                            QWidget *parent = 0);
-    ~DopeSheetView();
+    
+    virtual ~DopeSheetView() OVERRIDE;
 
     /**
      * @brief Set the current timeline range on ['xMin', 'xMax'].
