@@ -575,6 +575,32 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
 
 }
 
+bool
+DopeSheet::canSlipReader(const boost::shared_ptr<DSNode> &reader) const
+{
+    NodePtr node = reader->getInternalNode();
+    
+    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
+    assert(firstFrameKnob);
+    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
+    assert(lastFrameKnob);
+    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
+    assert(originalFrameRangeKnob);
+    
+    ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
+    ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
+    
+    int currentFirstFrame = firstFrameKnob->getGuiValue();
+    int currentLastFrame = lastFrameKnob->getGuiValue();
+    int originalFirstFrame = originalFrameRangeKnob->getGuiValue(0);
+    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
+    
+    if ((currentFirstFrame - originalFirstFrame) == 0 && (currentLastFrame - originalLastFrame) == 0) {
+        return false;
+    }
+    return true;
+}
+
 void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
 {
     NodePtr node = reader->getInternalNode();
