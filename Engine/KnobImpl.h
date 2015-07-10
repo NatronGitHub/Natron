@@ -88,6 +88,7 @@ Knob<T>::Knob(KnobHolder*  holder,
     : KnobHelper(holder,description,dimension,declaredByPlugin)
       , _valueMutex(QMutex::Recursive)
       , _values(dimension)
+      , _guiValues(dimension)
       , _defaultValues(dimension)
       , _exprRes(dimension)
       , _minMaxMutex(QReadWriteLock::Recursive)
@@ -605,6 +606,34 @@ Knob<T>::getValue(int dimension,bool clamp) const
 }
 
 template <typename T>
+T Knob<T>::getGuiValue(int dimension) const
+{
+    assert(dimension >= 0 && dimension < (int)_guiValues.size());
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        T ret;
+        SequenceTime time = getCurrentTime();
+        if (getValueFromExpression(time,dimension,true,&ret)) {
+            return ret;
+        }
+    }
+    
+    if ( isAnimated(dimension) ) {
+        return getValueAtTime(getCurrentTime(), dimension, false);
+    }
+    
+    ///if the knob is slaved to another knob, returns the other knob value
+    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    if (master.second) {
+        return getValueFromMaster(master.first, master.second.get(), false);
+    }
+
+    /// Gui values are never clamped to min-max
+    QMutexLocker k(&_valueMutex);
+    return _guiValues[dimension];
+}
+
+template <typename T>
 bool Knob<T>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool clamp, T* ret) const
 {
     boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
@@ -906,6 +935,10 @@ Knob<T>::setValue(const T & v,
             QMutexLocker kql(&_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
         }
+        {
+            QMutexLocker k(&_valueMutex);
+            _guiValues[dimension] = v;
+        }
         return returnValue;
     } else {
         ///There might be stuff in the queue that must be processed first
@@ -922,6 +955,7 @@ Knob<T>::setValue(const T & v,
         QMutexLocker l(&_valueMutex);
         hasChanged = v != _values[dimension];
         _values[dimension] = v;
+        _guiValues[dimension] = v;
     }
 
     ///Add automatically a new keyframe
@@ -1357,6 +1391,7 @@ Knob<std::string>::unSlave(int dimension,
             if (isString) {
                 QMutexLocker l1(&_valueMutex);
                 _values[dimension] =  isString->getValue(master.first);
+                _guiValues[dimension] = _values[dimension];
             }
         }
         boost::shared_ptr<Curve> curve = getCurve(dimension);
@@ -1610,6 +1645,7 @@ Knob<T>::populate()
 {
     for (int i = 0; i < getDimension(); ++i) {
         _values[i] = T();
+        _guiValues[i] = T();
         _defaultValues[i] = T();
     }
     KnobHelper::populate();
@@ -1932,12 +1968,14 @@ Knob<int>::cloneValues(KnobI* other, int dimension)
     QMutexLocker k(&_valueMutex);
     if (isInt) {
         _values = isInt->getValueForEachDimension_mt_safe_vector();
+        _guiValues = _values;
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (unsigned i = 0; i < v.size(); ++i) {
             if ((int)i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     } else if (isDouble) {
@@ -1946,6 +1984,7 @@ Knob<int>::cloneValues(KnobI* other, int dimension)
         for (unsigned i = 0; i < v.size(); ++i) {
             if ((int)i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     }
@@ -1968,16 +2007,19 @@ Knob<bool>::cloneValues(KnobI* other,int dimension)
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     } else if (isBool) {
         _values = isBool->getValueForEachDimension_mt_safe_vector();
+        _guiValues = _values;
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
 
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     }
@@ -2001,6 +2043,7 @@ Knob<double>::cloneValues(KnobI* other, int dimension)
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     } else if (isBool) {
@@ -2010,6 +2053,7 @@ Knob<double>::cloneValues(KnobI* other, int dimension)
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     } else if (isDouble) {
@@ -2018,6 +2062,7 @@ Knob<double>::cloneValues(KnobI* other, int dimension)
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     }
@@ -2039,6 +2084,7 @@ Knob<std::string>::cloneValues(KnobI* other, int dimension)
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
+                _guiValues[i] = v[i];
             }
         }
     }
@@ -2056,11 +2102,13 @@ Knob<int>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
     QMutexLocker k(&_valueMutex);
     if (isInt) {
         _values = isInt->getValueForEachDimension_mt_safe_vector();
+        _guiValues = _values;
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (unsigned i = 0; i < v.size(); ++i) {
             if ((int)i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2072,6 +2120,7 @@ Knob<int>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
         assert( v.size() == _values.size() );
         for (unsigned i = 0; i < v.size(); ++i) {
             if ((int)i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2098,6 +2147,7 @@ Knob<bool>::cloneValuesAndCheckIfChanged(KnobI* other,int dimension)
         
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2106,11 +2156,13 @@ Knob<bool>::cloneValuesAndCheckIfChanged(KnobI* other,int dimension)
         }
     } else if (isBool) {
         _values = isBool->getValueForEachDimension_mt_safe_vector();
+        _guiValues = _values;
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2140,6 +2192,7 @@ Knob<double>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
         
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2152,6 +2205,7 @@ Knob<double>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
         int dimMin = std::min( getDimension(), other->getDimension() );
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2163,6 +2217,7 @@ Knob<double>::cloneValuesAndCheckIfChanged(KnobI* other, int dimension)
         
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2187,6 +2242,7 @@ Knob<std::string>::cloneValuesAndCheckIfChanged(KnobI* other,int dimension)
         std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
+                _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
                     ret = true;
@@ -2428,6 +2484,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 } else {
                     if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
                         _values[(*it)->_imp->dimension] = (*it)->_imp->value;
+                        _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
                         dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
                     }
                 }

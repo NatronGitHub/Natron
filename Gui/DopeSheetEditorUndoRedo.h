@@ -197,7 +197,7 @@ class DSSlipReaderCommand : public QUndoCommand
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
-                        DopeSheetEditor * /*model*/,
+                        DopeSheetEditor *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -215,6 +215,7 @@ private:
 private:
     boost::weak_ptr<DSNode> _readerContext;
     double _dt;
+    DopeSheetEditor *_model;
 };
 
 

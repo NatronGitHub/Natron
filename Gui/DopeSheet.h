@@ -139,6 +139,7 @@ public:
     Natron::Node *getNearestReader(DSNode *timeNode) const;
 
     DopeSheetSelectionModel *getSelectionModel() const;
+    
 
     // User interaction
     void deleteSelectedKeyframes();

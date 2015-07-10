@@ -15,7 +15,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/DopeSheet.h"
-
+#include "Gui/DopeSheetView.h"
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
@@ -43,21 +43,21 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    (void)startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    (void)startingTimeKnob->setValue(startingTimeKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
 }
     
 void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    (void)timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    (void)timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
 }
 
 void moveFrameRange(const NodePtr& node, double dt)
 {
     Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kFrameRangeParamNameFrameRange).get());
     assert(frameRangeKnob);
-    (void)frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
+    (void)frameRangeKnob->setValues(frameRangeKnob->getGuiValue(0) + dt, frameRangeKnob->getGuiValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
 }
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
@@ -182,7 +182,13 @@ void DSMoveKeysAndNodesCommand::redo()
 
 void DSMoveKeysAndNodesCommand::moveSelection(double dt)
 {
-
+    /*
+     The view is going to get MANY update() calls since every knob change will trigger a computeNodeRange() in DopeSheetView
+     We explicitly disable update on the dopesheet view and re-enable it afterwards.
+     */
+    DopeSheetView* view = _model->getDopesheetView();
+    view->setUpdatesEnabled(false);
+    
     for (std::list<boost::weak_ptr<Natron::Node> >::iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
         NodePtr node = khIt->lock();
         if (!node) {
@@ -229,6 +235,9 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
         }
         node->getLiveInstance()->endChanges();
     }
+    
+    view->setUpdatesEnabled(true);
+
 
     _model->refreshSelectionBboxAndRedrawView();
 }
@@ -431,11 +440,12 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
                                          double dt,
-                                         DopeSheetEditor * /*model*/,
+                                         DopeSheetEditor *model,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _readerContext(dsNodeReader),
-    _dt(dt)
+    _dt(dt),
+    _model(model)
 {
     setText(QObject::tr("Slip reader"));
 }
@@ -493,7 +503,23 @@ void DSSlipReaderCommand::slipReader(double dt)
     assert(lastFrameKnob);
     Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameTimeOffset).get());
     assert(timeOffsetKnob);
+    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
+    assert(startingTimeKnob);
 
+
+    /*
+     Since the lastFrameKnob and startingTimeKnob have their signal connected to the computeNodeRange function in DopeSheetview
+     We disconnect them beforehand and reconnect them afterwards, otherwise the dopesheet view is going to get many redraw() calls
+     for nothing.
+     */
+    DopeSheetView* view = _model->getDopesheetView();
+    QObject::disconnect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
+            view, SLOT(onRangeNodeChanged(int, int)));
+    
+    QObject::disconnect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
+            view, SLOT(onRangeNodeChanged(int, int)));
+
+    
     KnobHolder *holder = lastFrameKnob->getHolder();
     Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
 
@@ -501,15 +527,23 @@ void DSSlipReaderCommand::slipReader(double dt)
     {
         KnobHelper::ValueChangedReturnCodeEnum r;
 
-        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = firstFrameKnob->setValue(firstFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = lastFrameKnob->setValue(lastFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
 
         Q_UNUSED(r);
 
     }
     effectInstance->endChanges();
+    
+    
+    QObject::connect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
+                        view, SLOT(onRangeNodeChanged(int, int)));
+    
+    QObject::connect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int, int)),
+                        view, SLOT(onRangeNodeChanged(int, int)));
 
+    view->update();
 }
 
 
