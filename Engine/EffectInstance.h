@@ -203,7 +203,7 @@ public:
 
     struct RenderRoIArgs
     {
-        SequenceTime time; //< the time at which to render
+        double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
@@ -686,7 +686,7 @@ public:
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    Natron::EffectInstance* getNearestNonIdentity(int time);
+    Natron::EffectInstance* getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -727,7 +727,7 @@ public:
 
     virtual void abortAnyEvaluation() OVERRIDE FINAL;
 
-    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
@@ -795,7 +795,7 @@ public:
 
     struct RenderActionArgs
     {
-        SequenceTime time;
+        double time;
         RenderScale originalScale;
         RenderScale  mappedScale;
         RectI roi;
@@ -822,7 +822,7 @@ protected:
         return Natron::eStatusOK;
     }
 
-    virtual Natron::StatusEnum getTransform(SequenceTime /*time*/,
+    virtual Natron::StatusEnum getTransform(double /*time*/,
                                             const RenderScale& /*renderScale*/,
                                             int /*view*/,
                                             Natron::EffectInstance** /*inputToTransform*/,
@@ -839,7 +839,7 @@ public:
 
     Natron::StatusEnum render_public(const RenderActionArgs& args) WARN_UNUSED_RETURN;
 
-    Natron::StatusEnum getTransform_public(SequenceTime time,
+    Natron::StatusEnum getTransform_public(double time,
                                            const RenderScale& renderScale,
                                            int view,
                                            Natron::EffectInstance** inputToTransform,
@@ -857,11 +857,11 @@ protected:
      * @param inputNb[out] the input number of the effect that is identity of.
      * The special value of -2 indicates that the plugin is identity of itself at another time
      **/
-    virtual bool isIdentity(SequenceTime /*time*/,
+    virtual bool isIdentity(double /*time*/,
                             const RenderScale & /*scale*/,
                             const RectI & /*roi*/,
                             int /*view*/,
-                            SequenceTime* /*inputTime*/,
+                            double* /*inputTime*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
     {
         return false;
@@ -871,11 +871,11 @@ public:
 
     bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect) 
                            U64 hash,
-                           SequenceTime time,
+                           double time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
                            int view,
-                           SequenceTime* inputTime,
+                           double* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
     
     /**
@@ -901,7 +901,7 @@ public:
      * converted to pixel coordinates
      */
     boost::shared_ptr<Image> getImage(int inputNb,
-                                      const SequenceTime time,
+                                      const double time,
                                       const RenderScale & scale,
                                       const int view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
@@ -928,8 +928,8 @@ protected:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
-    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod) ;
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual void calcDefaultRegionOfDefinition(U64 hash,double time,int view, const RenderScale & scale, RectD *rod) ;
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
@@ -937,7 +937,7 @@ protected:
      * @returns true if the rod is set to the project format.
      **/
     bool ifInfiniteApplyHeuristic(U64 hash,
-                                  SequenceTime time,
+                                  double time,
                                   const RenderScale & scale,
                                   int view,
                                   RectD* rod); //!< input/output
@@ -949,7 +949,7 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual void getRegionsOfInterest(SequenceTime time,
+    virtual void getRegionsOfInterest(double time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -960,7 +960,7 @@ protected:
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
      * that this effects need in order to render the frame at the given time.
      **/
-    virtual FramesNeededMap getFramesNeeded(SequenceTime time, int view) WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(double time, int view) WARN_UNUSED_RETURN;
 
 
     /**
@@ -973,20 +973,20 @@ protected:
 public:
 
     Natron::StatusEnum getRegionOfDefinition_public(U64 hash,
-                                                SequenceTime time,
+                                                double time,
                                                 const RenderScale & scale,
                                                 int view,
                                                 RectD* rod,
                                                 bool* isProjectFormat) WARN_UNUSED_RETURN;
 
-    void getRegionsOfInterest_public(SequenceTime time,
+    void getRegionsOfInterest_public(double time,
                                        const RenderScale & scale,
                                        const RectD & outputRoD,
                                        const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                        int view,
                                       RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(SequenceTime time,int view) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(double time,int view) WARN_UNUSED_RETURN;
 
     void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last, bool bypasscache = false);
 
@@ -1192,7 +1192,7 @@ public:
      * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
      * This function is here to update the last render args thread storage.
      **/
-    void updateThreadLocalRenderTime(int time);
+    void updateThreadLocalRenderTime(double time);
 
     bool isDuringPaintStrokeCreationThreadLocal() const;
     Natron::RenderSafetyEnum getCurrentThreadSafetyThreadLocal() const;
@@ -1234,7 +1234,7 @@ public:
         Natron::EffectInstance* identityInput;
         RectI rect;
         bool isIdentity;
-        SequenceTime identityTime;
+        double identityTime;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
     };
@@ -1308,9 +1308,9 @@ protected:
     {
     }
 
-    virtual Natron::StatusEnum beginSequenceRender(SequenceTime /*first*/,
-                                               SequenceTime /*last*/,
-                                               SequenceTime /*step*/,
+    virtual Natron::StatusEnum beginSequenceRender(double /*first*/,
+                                               double /*last*/,
+                                               double /*step*/,
                                                bool /*interactive*/,
                                                const RenderScale & /*scale*/,
                                                bool /*isSequentialRender*/,
@@ -1320,9 +1320,9 @@ protected:
         return Natron::eStatusOK;
     }
 
-    virtual Natron::StatusEnum endSequenceRender(SequenceTime /*first*/,
-                                             SequenceTime /*last*/,
-                                             SequenceTime /*step*/,
+    virtual Natron::StatusEnum endSequenceRender(double /*first*/,
+                                             double /*last*/,
+                                             double /*step*/,
                                              bool /*interactive*/,
                                              const RenderScale & /*scale*/,
                                              bool /*isSequentialRender*/,
@@ -1339,12 +1339,12 @@ public:
     virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
-    Natron::StatusEnum beginSequenceRender_public(SequenceTime first, SequenceTime last,
-                                              SequenceTime step, bool interactive, const RenderScale & scale,
+    Natron::StatusEnum beginSequenceRender_public(double first, double last,
+                                              double step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                               int view);
-    Natron::StatusEnum endSequenceRender_public(SequenceTime first, SequenceTime last,
-                                            SequenceTime step, bool interactive, const RenderScale & scale,
+    Natron::StatusEnum endSequenceRender_public(double first, double last,
+                                            double step, bool interactive, const RenderScale & scale,
                                             bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                             int view);
 
@@ -1384,8 +1384,8 @@ public:
     /**
     * @brief Returns the components available on each input for this effect at the given time.
     **/
-    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
-    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes) ;
+    void getComponentsAvailable(double time, ComponentsAvailableMap* comps) ;
+    void getComponentsAvailable(double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes) ;
 
 
     /**
@@ -1415,7 +1415,7 @@ public:
     **/
     virtual bool isHostMixingEnabled() const { return false; }
 
-    void getNonMaskInputsAvailableComponents(SequenceTime time,
+    void getNonMaskInputsAvailableComponents(double time,
                                              int view,
                                              bool preferExistingComponents,
                                              ComponentsAvailableMap* comps,
@@ -1423,12 +1423,12 @@ public:
 
 private:
 
-    void getComponentsAvailableRecursive(SequenceTime time, int view,ComponentsAvailableMap* comps,
+    void getComponentsAvailableRecursive(double time, int view,ComponentsAvailableMap* comps,
                                          std::list<Natron::EffectInstance*>* markedNodes) ;
 
 public:
 
-    void getComponentsNeededAndProduced_public(SequenceTime time, int view,
+    void getComponentsNeededAndProduced_public(double time, int view,
                                                ComponentsNeededMap* comps,
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
@@ -1458,7 +1458,7 @@ protected:
      * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
      * passThroughInput to fetch the components needed.
      **/
-    virtual void getComponentsNeededAndProduced(SequenceTime time, int view,
+    virtual void getComponentsNeededAndProduced(double time, int view,
                                             ComponentsNeededMap* comps,
                                             SequenceTime* passThroughTime,
                                             int* passThroughView,
@@ -1586,7 +1586,7 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
+    RenderRoIStatusEnum renderRoIInternal(double time,
                                           Natron::RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,
@@ -1605,7 +1605,7 @@ private:
 
 
     /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI(SequenceTime time,
+    RenderRoIRetCode renderInputImagesForRoI(double time,
                                              int view,
                                              double par,
                                              const RectD& rod,
@@ -1634,14 +1634,14 @@ private:
      * a thread controlled by Natron).
      **/
     // TODO: shouldn't this be documented a bit more? (parameters?)
-    bool retrieveGetImageDataUponFailure(const int time,
+    bool retrieveGetImageDataUponFailure(const double time,
                                          const int view,
                                          const RenderScale& scale,
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
                                          U64* rotoAge_p,
                                          bool* isIdentity_p,
-                                         int* identityTime,
+                                         double* identityTime,
                                          int* identityInputNb_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
@@ -1704,7 +1704,7 @@ private:
         unsigned int mipMapLevel;
         unsigned int renderMappedMipMapLevel;
         RectD rod;
-        int time;
+        double time;
         int view;
         double par;
         Natron::ImageBitDepthEnum outputClipPrefDepth;
@@ -1730,7 +1730,7 @@ private:
                                                   unsigned int mipMapLevel,
                                                   unsigned int renderMappedMipMapLevel,
                                                   const RectD& rod,
-                                                  int time,
+                                                  double time,
                                                   int view,
                                                   const double par,
                                                   bool byPassCache,
@@ -1765,7 +1765,7 @@ private:
                                           const ParallelRenderArgs& frameArgs,
                                           const InputImagesMap& inputImages,
                                           bool identity,
-                                          SequenceTime identityTime,
+                                          double identityTime,
                                           Natron::EffectInstance* identityInput,
                                           bool renderFullScaleThenDownscale,
                                           bool renderUseScaleOneInputs,

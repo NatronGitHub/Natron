@@ -68,7 +68,7 @@ public:
         return Natron::eRenderSafetyFullySafeFrame;
     }
 
-    virtual Natron::StatusEnum getTransform(SequenceTime time,
+    virtual Natron::StatusEnum getTransform(double time,
                                             const RenderScale& renderScale,
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
@@ -89,11 +89,11 @@ private:
     /**
      * @brief A NoOp is always an identity on its input.
      **/
-    virtual bool isIdentity(SequenceTime time,
+    virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & renderWindow,
                             int view,
-                            SequenceTime* inputTime,
+                            double* inputTime,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 

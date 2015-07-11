@@ -173,18 +173,18 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(U64 hash,SequenceTime time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
-    virtual void getRegionsOfInterest(SequenceTime time,
+    virtual void calcDefaultRegionOfDefinition(U64 hash,double time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
+    virtual void getRegionsOfInterest(double time,
                                   const RenderScale & scale,
                                   const RectD & outputRoD, //!< full RoD in canonical coordinates
                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                   int view,
                                 Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
 
-    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time,int view) WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(double time,int view) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
@@ -205,11 +205,11 @@ public:
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool isIdentity(SequenceTime time,
+    virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & renderWindow, //!< render window in pixel coords
                             int view,
-                            SequenceTime* inputTime,
+                            double* inputTime,
                             int* inputNb) OVERRIDE;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
@@ -237,17 +237,17 @@ public:
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void restoreClipPreferences() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
-    virtual Natron::StatusEnum beginSequenceRender(SequenceTime first,
-                                               SequenceTime last,
-                                               SequenceTime step,
+    virtual Natron::StatusEnum beginSequenceRender(double first,
+                                               double last,
+                                               double step,
                                                bool interactive,
                                                const RenderScale & scale,
                                                bool isSequentialRender,
                                                bool isRenderResponseToUserInteraction,
                                                int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum endSequenceRender(SequenceTime first,
-                                             SequenceTime last,
-                                             SequenceTime step,
+    virtual Natron::StatusEnum endSequenceRender(double first,
+                                             double last,
+                                             double step,
                                              bool interactive,
                                              const RenderScale & scale,
                                              bool isSequentialRender,
@@ -263,7 +263,7 @@ public:
                                      const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
-    virtual void getComponentsNeededAndProduced(SequenceTime time, int view,
+    virtual void getComponentsNeededAndProduced(double time, int view,
                                                 ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
@@ -281,7 +281,7 @@ public:
     virtual double getPreferredFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum getTransform(SequenceTime time,
+    virtual Natron::StatusEnum getTransform(double time,
                                             const RenderScale& renderScale,
                                             int view,
                                             Natron::EffectInstance** inputToTransform,

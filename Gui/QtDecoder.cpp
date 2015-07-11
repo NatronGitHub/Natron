@@ -410,7 +410,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 }
 
 Natron::StatusEnum
-QtReader::getRegionOfDefinition(U64 /*hash*/,SequenceTime time,
+QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
                                 RectD* rod )

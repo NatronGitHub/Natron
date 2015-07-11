@@ -1176,7 +1176,7 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
-SequenceTime
+double
 NodeGroup::getCurrentTime() const
 {
     NodePtr node = getOutputNodeInput();

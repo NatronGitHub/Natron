@@ -1402,7 +1402,7 @@ OfxEffectInstance::supportedFileFormats() const
 
 Natron::StatusEnum
 OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
-                                         SequenceTime time,
+                                         double time,
                                          const RenderScale & scale,
                                          int view,
                                          RectD* rod)
@@ -1528,7 +1528,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 
 void
 OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
-                                                 SequenceTime time,
+                                                 double time,
                                                  int view,
                                                  const RenderScale & scale,
                                                  RectD *rod)
@@ -1589,7 +1589,7 @@ rectToOfxRectD(const RectD & b,
 }
 
 void
-OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
+OfxEffectInstance::getRegionsOfInterest(double time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1641,7 +1641,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        throw std::runtime_error("getFramesNeeded action failed");
+        throw std::runtime_error("getRegionsOfInterest action failed");
     }
     
     //Default behaviour already handled in getRegionOfInterestAction
@@ -1675,7 +1675,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 } // getRegionsOfInterest
 
 Natron::EffectInstance::FramesNeededMap
-OfxEffectInstance::getFramesNeeded(SequenceTime time, int view)
+OfxEffectInstance::getFramesNeeded(double time, int view)
 {
     assert(_context != eContextNone);
     EffectInstance::FramesNeededMap ret;
@@ -1813,11 +1813,11 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
 } // getFrameRange
 
 bool
-OfxEffectInstance::isIdentity(SequenceTime time,
+OfxEffectInstance::isIdentity(double time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
                               int view,
-                              SequenceTime* inputTime,
+                              double* inputTime,
                               int* inputNb)
 {
     if (!_created) {
@@ -1919,9 +1919,9 @@ OfxEffectInstance::isIdentity(SequenceTime time,
 } // isIdentity
 
 Natron::StatusEnum
-OfxEffectInstance::beginSequenceRender(SequenceTime first,
-                                       SequenceTime last,
-                                       SequenceTime step,
+OfxEffectInstance::beginSequenceRender(double first,
+                                       double last,
+                                       double step,
                                        bool interactive,
                                        const RenderScale & scale,
                                        bool isSequentialRender,
@@ -1965,9 +1965,9 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
 }
 
 Natron::StatusEnum
-OfxEffectInstance::endSequenceRender(SequenceTime first,
-                                     SequenceTime last,
-                                     SequenceTime step,
+OfxEffectInstance::endSequenceRender(double first,
+                                     double last,
+                                     double step,
                                      bool interactive,
                                      const RenderScale & scale,
                                      bool isSequentialRender,
@@ -2884,7 +2884,7 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
 }
 
 void
-OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
+OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
                                             ComponentsNeededMap* comps,
                                             SequenceTime* passThroughTime,
                                             int* passThroughView,
@@ -3093,7 +3093,7 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 }
 
 Natron::StatusEnum
-OfxEffectInstance::getTransform(SequenceTime time,
+OfxEffectInstance::getTransform(double time,
                                 const RenderScale& renderScale, //< the plug-in accepted scale
                                 int view,
                                 Natron::EffectInstance** inputToTransform,

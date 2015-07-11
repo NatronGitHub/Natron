@@ -2685,7 +2685,7 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     return std::log(closestPowerOf2) / M_LN2;
 }
 
-SequenceTime
+double
 ViewerInstance::getCurrentTime() const
 {
     return getFrameRenderArgsCurrentTime();

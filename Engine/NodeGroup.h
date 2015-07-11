@@ -369,7 +369,7 @@ public:
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

@@ -19,7 +19,7 @@ ImageKey::ImageKey()
 
 ImageKey::ImageKey(U64 nodeHashKey,
                    bool frameVaryingOrAnimated,
-                   SequenceTime time,
+                   double time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
                    int view,
                    double pixelAspect)

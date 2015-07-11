@@ -71,7 +71,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getDescription() const OVERRIDE;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,SequenceTime time,
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time,
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates

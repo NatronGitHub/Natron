@@ -39,11 +39,11 @@ NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) con
 }
 
 bool
-NoOpBase::isIdentity(SequenceTime time,
+NoOpBase::isIdentity(double time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
                      int /*view*/,
-                     SequenceTime* inputTime,
+                     double* inputTime,
                      int* inputNb)
 {
     *inputTime = time;
@@ -65,7 +65,7 @@ Dot::getDescription() const
 }
 
 Natron::StatusEnum
-NoOpBase::getTransform(SequenceTime /*time*/,
+NoOpBase::getTransform(double /*time*/,
                        const RenderScale& /*renderScale*/,
                        int /*view*/,
                        Natron::EffectInstance** inputToTransform,

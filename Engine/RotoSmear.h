@@ -104,13 +104,13 @@ public:
 private:
 
     virtual Natron::StatusEnum
-    getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual bool isIdentity(SequenceTime time,
+    virtual bool isIdentity(double time,
                         const RenderScale & scale,
                         const RectI & roi,
                         int view,
-                        SequenceTime* inputTime,
+                        double* inputTime,
                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

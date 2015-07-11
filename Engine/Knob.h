@@ -916,7 +916,7 @@ public:
     /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
      **/
-    virtual SequenceTime getCurrentTime() const = 0;
+    virtual double getCurrentTime() const = 0;
     
     /**
      * @brief Returns the current view being rendered
@@ -1201,7 +1201,7 @@ public:
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
-    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
@@ -2104,7 +2104,7 @@ public:
     /**
      * @brief Returns the local current time of the timeline
      **/
-    virtual SequenceTime getCurrentTime() const;
+    virtual double getCurrentTime() const;
 
     /**
      * @brief Returns the local current view being rendered or 0
