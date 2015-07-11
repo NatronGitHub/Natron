@@ -38,7 +38,11 @@
 #include "Timer.h"
 #include <iostream>
 #include <time.h>
+#include <cmath>
 #include <QMutexLocker>
+
+#include "Global/GlobalDefines.h"
+
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
@@ -65,13 +69,62 @@ gettimeofday (struct timeval *tv,
 #endif
 
 
+// prints time value as seconds, minutes hours or days
+QString Timer::printAsTime(double timeInSeconds, bool clampToSecondsToInt)
+{
+    const U64 min = 60;
+    const U64 hour = 60 * min;
+    const U64 day = 24 * hour;
+    
+    if (timeInSeconds >= day) {
+        double daysRemaining = timeInSeconds / day;
+        double floorDays = std::floor(daysRemaining);
+        daysRemaining -= floorDays;
+        QString ret =  QObject::tr("%1 day(s)").arg(QString::number(floorDays));
+        if (daysRemaining > 0) {
+            ret.append(" ");
+            ret.append(printAsTime(daysRemaining * day, clampToSecondsToInt));
+        }
+        return ret;
+    }
+    if (timeInSeconds >= hour) {
+        double hourRemaining = timeInSeconds / hour;
+        double floorHour = std::floor(hourRemaining);
+        hourRemaining -= floorHour;
+        QString ret =  QObject::tr("%1 hour(s)").arg(QString::number(floorHour));
+        if (hourRemaining > 0) {
+            ret.append(" ");
+            ret.append(printAsTime(hourRemaining * hour, clampToSecondsToInt));
+        }
+        return ret;
+    }
+    if (timeInSeconds >= min) {
+        double minRemaining = timeInSeconds / min;
+        double floorMin = std::floor(minRemaining);
+        QString ret =  QObject::tr("%1 min(s)").arg(QString::number(floorMin));
+        minRemaining -= floorMin;
+        if (minRemaining > 0) {
+            ret.append(" ");
+            ret.append(printAsTime(minRemaining  * min, clampToSecondsToInt));
+        }
+        return ret;
+    }
+    if (clampToSecondsToInt) {
+        timeInSeconds = std::floor(timeInSeconds + 0.5);
+        return QObject::tr("%1 sec(s)").arg(QString::number((int)timeInSeconds));
+    } else {
+        return QObject::tr("%1 sec(s)").arg(QString::number(timeInSeconds, 'f', 2));
+    }
+    
+}
+
 Timer::Timer ()
-    : playState (ePlayStateRunning),
-      _spf (1 / 24.0),
-      _timingError (0),
-      _framesSinceLastFpsFrame (0),
-      _actualFrameRate (0),
-      _mutex(new QMutex)
+: playState (ePlayStateRunning),
+_spf (1 / 24.0),
+_timingError (0),
+_framesSinceLastFpsFrame (0),
+_actualFrameRate (0),
+_mutex(new QMutex)
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;

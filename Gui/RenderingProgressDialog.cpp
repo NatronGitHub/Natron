@@ -27,10 +27,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QThread>
 #include <QKeyEvent>
 #include <QString>
+#include <QTextStream>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ProcessHandler.h"
+#include "Engine/Timer.h"
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
@@ -41,11 +43,11 @@ struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
     QVBoxLayout* _mainLayout;
-    Natron::Label* _totalLabel;
-    QProgressBar* _totalProgress;
-    QFrame* _separator;
-    Natron::Label* _perFrameLabel;
-    QProgressBar* _perFrameProgress;
+    Natron::Label* _totalProgressLabel;
+    Natron::Label* _totalProgressInfo;
+    QProgressBar* _totalProgressBar;
+    Natron::Label* _estimatedWaitTimeLabel;
+    Natron::Label* _estimatedWaitTimeInfo;
     Button* _cancelButton;
     QString _sequenceName;
     int _firstFrame;
@@ -59,22 +61,46 @@ struct RenderingProgressDialogPrivate
                                    int firstFrame,
                                    int lastFrame,
                                    const boost::shared_ptr<ProcessHandler> & proc)
-        : _gui(gui)
-          , _mainLayout(0)
-          , _totalLabel(0)
-          , _totalProgress(0)
-          , _separator(0)
-          , _perFrameLabel(0)
-          , _perFrameProgress(0)
-          , _cancelButton(0)
-          , _sequenceName(sequenceName)
-          , _firstFrame(firstFrame)
-          , _lastFrame(lastFrame)
-          , _process(proc)
-          , _nFramesRendered(0)
+    : _gui(gui)
+    , _mainLayout(0)
+    , _totalProgressLabel(0)
+    , _totalProgressInfo(0)
+    , _totalProgressBar(0)
+    , _estimatedWaitTimeLabel(0)
+    , _estimatedWaitTimeInfo(0)
+    , _cancelButton(0)
+    , _sequenceName(sequenceName)
+    , _firstFrame(firstFrame)
+    , _lastFrame(lastFrame)
+    , _process(proc)
+    , _nFramesRendered(0)
     {
     }
 };
+
+
+
+
+void
+RenderingProgressDialog::onFrameRenderedWithTimer(int frame, double /*timeElapsedForFrame*/, double remainingTime)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    ++_imp->_nFramesRendered;
+    
+    double percent = _imp->_nFramesRendered / (double)(_imp->_lastFrame - _imp->_firstFrame + 1);
+    double progress = percent * 100;
+    
+    _imp->_totalProgressBar->setValue(progress);
+    
+    QString infoStr;
+    QTextStream ts(&infoStr);
+    ts << "Frame " << frame << " (" << QString::number(progress,'f',1) << "%)";
+    _imp->_totalProgressInfo->setText(infoStr);
+    
+    QString timeStr = Timer::printAsTime(remainingTime, true);
+    _imp->_estimatedWaitTimeInfo->setText(timeStr);
+}
 
 void
 RenderingProgressDialog::onFrameRendered(int frame)
@@ -86,27 +112,17 @@ RenderingProgressDialog::onFrameRendered(int frame)
     ++_imp->_nFramesRendered;
 
     double percent = _imp->_nFramesRendered / (double)(_imp->_lastFrame - _imp->_firstFrame + 1);
-    int progress = std::floor(percent * 100);
+    double progress = percent * 100;
 
-    _imp->_totalProgress->setValue(progress);
-    _imp->_perFrameLabel->setText(tr("Frame ") + QString::number(frame) + ":");
-    QString title = QString::number(progress) + tr("% of ") + _imp->_sequenceName;
-    setWindowTitle(title);
-    _imp->_perFrameLabel->hide();
-    _imp->_perFrameProgress->hide();
-    _imp->_separator->hide();
+    _imp->_totalProgressBar->setValue(progress);
+    
+    QString infoStr;
+    QTextStream ts(&infoStr);
+    ts << "Frame " << frame << " (" << QString::number(progress,'f',1) << "%)";
+    _imp->_totalProgressInfo->setText(infoStr);
+    _imp->_estimatedWaitTimeInfo->setText("...");
 }
 
-void
-RenderingProgressDialog::onCurrentFrameProgress(int progress)
-{
-    if ( !_imp->_perFrameProgress->isVisible() ) {
-        _imp->_separator->show();
-        _imp->_perFrameProgress->show();
-        _imp->_perFrameLabel->show();
-    }
-    _imp->_perFrameProgress->setValue(progress);
-}
 
 void
 RenderingProgressDialog::onProcessCanceled()
@@ -212,43 +228,42 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
       , _imp( new RenderingProgressDialogPrivate(gui,sequenceName,firstFrame,lastFrame,process) )
 
 {
-    QString title = QString::number(0) + tr("% of ") + _imp->_sequenceName;
-
-    setMinimumWidth(fontMetrics().width(title) + 100);
-    setWindowTitle(QString::number(0) + tr("% of ") + _imp->_sequenceName);
+    setMinimumWidth(fontMetrics().width(_imp->_sequenceName) + 100);
+    setWindowTitle(_imp->_sequenceName);
     //setWindowFlags(Qt::WindowStaysOnTopHint);
     _imp->_mainLayout = new QVBoxLayout(this);
     setLayout(_imp->_mainLayout);
     _imp->_mainLayout->setContentsMargins(5, 5, 0, 0);
     _imp->_mainLayout->setSpacing(5);
 
-    _imp->_totalLabel = new Natron::Label(tr("Total progress:"),this);
-    _imp->_mainLayout->addWidget(_imp->_totalLabel);
-    _imp->_totalProgress = new QProgressBar(this);
-    _imp->_totalProgress->setRange(0, 100);
-    _imp->_totalProgress->setMinimumWidth(150);
+    QWidget* totalProgressContainer = new QWidget(this);
+    QHBoxLayout* totalProgressLayout = new QHBoxLayout(totalProgressContainer);
+    _imp->_mainLayout->addWidget(totalProgressContainer);
 
-    _imp->_mainLayout->addWidget(_imp->_totalProgress);
+    
+    _imp->_totalProgressLabel = new Natron::Label(tr("Total progress:"),totalProgressContainer);
+    totalProgressLayout->addWidget(_imp->_totalProgressLabel);
+    
+    _imp->_totalProgressInfo = new Natron::Label("0%",totalProgressContainer);
+    totalProgressLayout->addWidget(_imp->_totalProgressInfo);
+    
+    QWidget* waitTimeContainer = new QWidget(this);
+    QHBoxLayout* waitTimeLayout = new QHBoxLayout(waitTimeContainer);
+    _imp->_mainLayout->addWidget(waitTimeContainer);
 
-    _imp->_separator = new QFrame(this);
-    _imp->_separator->setFrameShadow(QFrame::Raised);
-    _imp->_separator->setMinimumWidth(100);
-    _imp->_separator->setMaximumHeight(2);
-    _imp->_separator->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+    _imp->_estimatedWaitTimeLabel = new Natron::Label(tr("Time remaining:"),waitTimeContainer);
+    waitTimeLayout->addWidget(_imp->_estimatedWaitTimeLabel);
+    
+    _imp->_estimatedWaitTimeInfo = new Natron::Label("...",waitTimeContainer);
+    waitTimeLayout->addWidget(_imp->_estimatedWaitTimeInfo);
 
-    _imp->_mainLayout->addWidget(_imp->_separator);
-
-    QString txt("Frame ");
-    txt.append( QString::number(firstFrame) );
-    txt.append(":");
-    _imp->_perFrameLabel = new Natron::Label(txt,this);
-    _imp->_mainLayout->addWidget(_imp->_perFrameLabel);
-
-    _imp->_perFrameProgress = new QProgressBar(this);
-    _imp->_perFrameProgress->setMinimumWidth(150);
-    _imp->_perFrameProgress->setRange(0, 100);
-    _imp->_mainLayout->addWidget(_imp->_perFrameProgress);
-
+    _imp->_totalProgressBar = new QProgressBar(this);
+    _imp->_totalProgressBar->setRange(0, 100);
+    _imp->_totalProgressBar->setMinimumWidth(150);
+    
+    _imp->_mainLayout->addWidget(_imp->_totalProgressBar);
+    
+    
     _imp->_cancelButton = new Button(tr("Cancel"),this);
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
@@ -260,7 +275,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
         QObject::connect( this,SIGNAL( canceled() ),process.get(),SLOT( onProcessCanceled() ) );
         QObject::connect( process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
         QObject::connect( process.get(),SIGNAL( frameRendered(int) ),this,SLOT( onFrameRendered(int) ) );
-        QObject::connect( process.get(),SIGNAL( frameProgress(int) ),this,SLOT( onCurrentFrameProgress(int) ) );
+        QObject::connect( process.get(),SIGNAL( frameRenderedWithTimer(int,double,double)),this,SLOT(onFrameRenderedWithTimer(int,double,double)));
         QObject::connect( process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
         QObject::connect( process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
     }
@@ -277,7 +292,8 @@ RenderingProgressDialog::onProcessDeleted()
     QObject::disconnect( this,SIGNAL( canceled() ),_imp->_process.get(),SLOT( onProcessCanceled() ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( frameRendered(int) ),this,SLOT( onFrameRendered(int) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( frameProgress(int) ),this,SLOT( onCurrentFrameProgress(int) ) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL( frameRenderedWithTimer(int,double,double) ),this,
+                        SLOT( onFrameRenderedWithTimer(int,double,double) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
 }

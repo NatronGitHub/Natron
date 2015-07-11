@@ -258,6 +258,20 @@ NodeCollection::quitAnyProcessingForAllNodes()
     setMustQuitProcessingRecursive(false, this);
 }
 
+void
+NodeCollection::resetTotalTimeSpentRenderingForAllNodes()
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        effect->resetTotalTimeSpentRendering();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(effect);
+        if (isGroup) {
+            isGroup->resetTotalTimeSpentRenderingForAllNodes();
+        }
+    }
+}
+
 bool
 NodeCollection::hasNodeRendering() const
 {

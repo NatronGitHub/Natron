@@ -50,6 +50,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Transform.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/Timer.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
@@ -388,6 +389,8 @@ struct EffectInstance::Implementation
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
+    , renderingTimersMutex()
+    , totalTimeSpentRendering(0.)
     {
     }
 
@@ -448,8 +451,10 @@ struct EffectInstance::Implementation
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
-    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
+    mutable QMutex renderingTimersMutex;
+    double totalTimeSpentRendering;
     
+    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
     
     void setDuringInteractAction(bool b)
     {
@@ -697,6 +702,28 @@ struct EffectInstance::Implementation
     }
 };
 
+
+class RenderingTimeRecorder
+{
+    TimeLapse _lapse;
+    EffectInstance* _imp;
+    
+public:
+    
+    RenderingTimeRecorder(EffectInstance* imp)
+    : _lapse()
+    , _imp(imp)
+    {
+        
+    }
+    
+    ~RenderingTimeRecorder()
+    {
+        _imp->incrementTotalTimeSpentRendering(_lapse.getTimeSinceCreation());
+    }
+};
+
+
 class InputImagesHolder_RAII
 {
     ThreadStorage< EffectInstance::InputImagesMap > *storage;
@@ -756,6 +783,29 @@ EffectInstance::~EffectInstance()
     clearPluginMemoryChunks();
 }
 
+double
+EffectInstance::getTotalTimeSpentRenderingSinceLastReset() const
+{
+    QMutexLocker k(&_imp->renderingTimersMutex);
+    return _imp->totalTimeSpentRendering;
+}
+
+void
+EffectInstance::resetTotalTimeSpentRendering()
+{
+    {
+        QMutexLocker k(&_imp->renderingTimersMutex);
+        _imp->totalTimeSpentRendering = 0.;
+    }
+    resetTimeSpentRenderingInfos();
+}
+
+void
+EffectInstance::incrementTotalTimeSpentRendering(double v)
+{
+    QMutexLocker k(&_imp->renderingTimersMutex);
+    _imp->totalTimeSpentRendering += v;
+}
 
 void
 EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
@@ -4372,6 +4422,11 @@ EffectInstance::renderHandler(RenderArgs & args,
 {
     
     
+    //Record the time spent rendering
+    boost::shared_ptr<RenderingTimeRecorder> _timeRecorder_;
+    if (isSequentialRender) {
+        _timeRecorder_.reset(new RenderingTimeRecorder(this));
+    }
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
     
@@ -6757,13 +6812,14 @@ EffectInstance::isPaintingOverItselfEnabled() const
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
-      , _writerCurrentFrame(0)
-      , _writerFirstFrame(0)
-      , _writerLastFrame(0)
-      , _outputEffectDataLock(new QMutex)
-      , _renderController(0)
-      , _engine(0)
+: Natron::EffectInstance(node)
+, _writerCurrentFrame(0)
+, _writerFirstFrame(0)
+, _writerLastFrame(0)
+, _outputEffectDataLock(new QMutex)
+, _renderController(0)
+, _engine(0)
+, _timeSpentPerFrameRendered()
 {
 }
 
@@ -6978,4 +7034,26 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     }
 }
 
+void
+OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent)
+{
+    assert(totalTimeSpent && averageTimePerFrame);
+    
+    *totalTimeSpent = 0;
+    
+    QMutexLocker k(_outputEffectDataLock);
+    _timeSpentPerFrameRendered.push_back(lastTimeSpent);
+    
+    for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it!= _timeSpentPerFrameRendered.end(); ++it) {
+        *totalTimeSpent += *it;
+    }
+    assert(_timeSpentPerFrameRendered.size() != 0);
+    *averageTimePerFrame = *totalTimeSpent / _timeSpentPerFrameRendered.size();
+}
 
+void
+OutputEffectInstance::resetTimeSpentRenderingInfos()
+{
+    QMutexLocker k(_outputEffectDataLock);
+    _timeSpentPerFrameRendered.clear();
+}

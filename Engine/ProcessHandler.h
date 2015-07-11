@@ -162,6 +162,8 @@ Q_SIGNALS:
     void deleted();
 
     void frameRendered(int);
+    
+    void frameRenderedWithTimer(int frame, double timeSpentForFrame, double timeRemaining);
 
     void frameProgress(int);
 

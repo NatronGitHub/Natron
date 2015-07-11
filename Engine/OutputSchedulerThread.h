@@ -27,6 +27,7 @@
 
 ///Natron
 class ViewerInstance;
+class TimeLapse;
 namespace Natron {
     class Node;
     class EffectInstance;
@@ -68,11 +69,14 @@ struct BufferedFrame
 {
     int view;
     double time;
-    
+    boost::shared_ptr<TimeLapse> timeRecorder;
     boost::shared_ptr<BufferableObject> frame;
     
     BufferedFrame()
-    : view(0) , time(0), frame()
+    : view(0)
+    , time(0)
+    , timeRecorder()
+    , frame()
     {
         
     }
@@ -152,12 +156,22 @@ public:
      * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames 
      * use the other version of this function.
      **/
-    void appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& frame);
-    void appendToBuffer(double time,int view,const BufferableObjectList& frames);
+    void appendToBuffer(double time,
+                        int view,
+                        const boost::shared_ptr<TimeLapse>& timeRecorder,
+                        const boost::shared_ptr<BufferableObject>& frame);
+    void appendToBuffer(double time,
+                        int view,
+                        const boost::shared_ptr<TimeLapse>& timeRecorder,
+                        const BufferableObjectList& frames);
     
 private:
     
-    void appendToBuffer_internal(double time,int view,const boost::shared_ptr<BufferableObject>& frame,bool wakeThread);
+    void appendToBuffer_internal(double time,
+                                 int view,
+                                 const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                 const boost::shared_ptr<BufferableObject>& frame,
+                                 bool wakeThread);
     
 public:
     
@@ -191,7 +205,11 @@ public:
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(int frame,int viewIndex,int viewsCount,Natron::SchedulingPolicyEnum policy);
+    void notifyFrameRendered(int frame,
+                             int viewIndex,
+                             int viewsCount,
+                             const boost::shared_ptr<TimeLapse>& timeRecorder,
+                             Natron::SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -404,7 +422,7 @@ private:
      * @brief Starts/stops more threads according to CPU activity and user preferences 
      * @param optimalNThreads[out] Will be set to the new number of threads
      **/
-    void adjustNumberOfThreads(int* newNThreads);
+    void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
     
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
@@ -695,6 +713,11 @@ Q_SIGNALS:
     void frameRendered(int time);
     
     /**
+     * @brief Same as frameRendered(int) but with more infos
+     **/
+    void frameRenderedWithTimer(int frame, double timeElapsed, double timeRemaining);
+    
+    /**
      * @brief Emitted when the stopRender() function is called
      * @param retCode Will be set to 1 if the render was finished because it was aborted, 0 otherwise.
      * This will not be emitted after calling renderCurrentFrame
@@ -724,6 +747,9 @@ private:
      **/
     void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
     void s_frameRendered(int time) { Q_EMIT frameRendered(time); }
+    void s_frameRenderedWithTimer(int time, double timeElapsed, double timeRemaining) {
+        Q_EMIT frameRenderedWithTimer(time, timeElapsed, timeRemaining);
+    }
     void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
     void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }

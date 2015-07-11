@@ -206,6 +206,11 @@ public:
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
      **/
     void quitAnyProcessingForAllNodes();
+    
+    /**
+     * @brief Reset the total time spent rendering accumulated on all nodes.
+     **/
+    void resetTotalTimeSpentRenderingForAllNodes();
 
 public:
     

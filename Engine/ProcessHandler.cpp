@@ -55,8 +55,9 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     _ipcServer->listen(serverName);
 
 
-    _processArgs << projectPath << "-b" << "-w" << writer->getScriptName_mt_safe().c_str();
-    _processArgs << "--IPCpipe" << ( _ipcServer->fullServerName() );
+    _processArgs << "-b" << "-w" << writer->getScriptName_mt_safe().c_str();
+    _processArgs << "--IPCpipe" << QString("\"") + _ipcServer->fullServerName() + QString("\"");
+    _processArgs << QString("\"") + projectPath + QString("\"");
 
     ///connect the useful slots of the process
     QObject::connect( _process,SIGNAL( readyReadStandardOutput() ),this,SLOT( onStandardOutputBytesWritten() ) );
@@ -78,12 +79,18 @@ ProcessHandler::~ProcessHandler()
 {
     Q_EMIT deleted();
 
-    _ipcServer->close();
-    _bgProcessInputSocket->close();
-    _process->close();
-    delete _process;
-    delete _ipcServer;
-    delete _bgProcessInputSocket;
+    if (_ipcServer) {
+        _ipcServer->close();
+        delete _ipcServer;
+    }
+    if (_bgProcessInputSocket) {
+        _bgProcessInputSocket->close();
+        delete _bgProcessInputSocket;
+    }
+    if (_process) {
+        _process->close();
+        delete _process;
+    }
 }
 
 void
@@ -124,7 +131,23 @@ ProcessHandler::onDataWrittenToSocket()
     _processLog.append("Message received: " + str + '\n');
     if ( str.startsWith(kFrameRenderedStringShort) ) {
         str = str.remove(kFrameRenderedStringShort);
-        Q_EMIT frameRendered( str.toInt() );
+        
+        if (!str.isEmpty()) {
+            if (!str.contains(';')) {
+                //The report does not have extended timer infos
+                Q_EMIT frameRendered( str.toInt() );
+            } else {
+                QStringList splits = str.split(';');
+                if (splits.size() == 3) {
+                    Q_EMIT frameRenderedWithTimer(splits[0].toInt(), splits[1].toDouble(), splits[2].toDouble());
+                } else {
+                    if (!splits.isEmpty()) {
+                        Q_EMIT frameRendered(splits[0].toInt());
+                    }
+                }
+            }
+        }
+        
     } else if ( str.startsWith(kRenderingFinishedStringShort) ) {
         ///don't do anything
     } else if ( str.startsWith(kProgressChangedStringShort) ) {
@@ -165,7 +188,9 @@ void
 ProcessHandler::onStandardOutputBytesWritten()
 {
     QString str( _process->readAllStandardOutput().data() );
-
+#ifdef DEBUG
+    qDebug() << "Message(stdout):" << str;
+#endif
     _processLog.append("Message(stdout): " + str) + '\n';
 }
 
@@ -173,7 +198,9 @@ void
 ProcessHandler::onStandardErrorBytesWritten()
 {
     QString str( _process->readAllStandardError().data() );
-
+#ifdef DEBUG
+    qDebug() << "Message(stderr):" << str;
+#endif
     _processLog.append("Error(stderr): " + str) + '\n';
 }
 
@@ -316,6 +343,7 @@ ProcessInputChannel::initialize()
     _backgroundOutputPipe = new QLocalSocket();
     QObject::connect( _backgroundOutputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
     _backgroundOutputPipe->connectToServer(_mainProcessServerName,QLocalSocket::ReadWrite);
+    std::cout << "Attempting connection to " << _mainProcessServerName.toStdString() << std::endl;
 
     _backgroundIPCServer = new QLocalServer();
     QObject::connect( _backgroundIPCServer,SIGNAL( newConnection() ),this,SLOT( onNewConnectionPending() ) );

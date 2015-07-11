@@ -457,7 +457,9 @@ Project::saveProjectInternal(const QString & path,
         }
         filePath.append("/");
         filePath.append(name);
-        filePath.append(".autosave");
+        if (!isRenderSave) {
+            filePath.append(".autosave");
+        }
         if (!isRenderSave) {
             if (appendTimeHash) {
                 Hash64 timeHash;

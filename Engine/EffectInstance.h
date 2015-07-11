@@ -1277,6 +1277,10 @@ public:
      **/
     void onNodeHashChanged(U64 hash);
 
+    double getTotalTimeSpentRenderingSinceLastReset() const;
+    void resetTotalTimeSpentRendering();
+    void incrementTotalTimeSpentRendering(double v);
+
     virtual void initializeData() {}
 
 #ifdef DEBUG
@@ -1284,6 +1288,9 @@ public:
 #endif
 
 protected:
+
+
+    virtual void resetTimeSpentRenderingInfos() {}
 
 #ifdef DEBUG
     virtual bool checkCanSetValue() const { return true; }
@@ -1810,6 +1817,9 @@ class OutputEffectInstance
     BlockingBackgroundRender* _renderController; //< pointer to a blocking renderer
     
     RenderEngine* _engine;
+    
+    std::list<double> _timeSpentPerFrameRendered;
+    
 public:
 
     OutputEffectInstance(boost::shared_ptr<Node> node);
@@ -1866,6 +1876,8 @@ public:
     
     virtual void initializeData() OVERRIDE FINAL;
     
+    void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
+    
 protected:
         
     /**
@@ -1873,7 +1885,7 @@ protected:
      **/
     virtual RenderEngine* createRenderEngine();
     
-    
+    virtual void resetTimeSpentRenderingInfos() OVERRIDE FINAL;
  
 };
 } // Natron
