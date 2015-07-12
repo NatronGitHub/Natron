@@ -3764,52 +3764,55 @@ EffectInstance::renderInputImagesForRoI(double time,
                     
                     int nbFramesPreFetched = 0;
                     for (U32 range = 0; range < it2->second.size(); ++range) {
-                        
-                        for (double f = it2->second[range].min;
-                             f <= it2->second[range].max && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
-                             f += 1.) {
-                            
-                            
-                            RenderScale scaleOne;
-                            scaleOne.x = scaleOne.y = 1.;
-                            
-                            ///Render the input image with the bit depth of its preference
-                            std::list<Natron::ImageComponents> inputPrefComps;
-                            Natron::ImageBitDepthEnum inputPrefDepth;
-                            inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
-                            std::list<ImageComponents> componentsToRender;
-                            for (U32 k = 0; k < foundCompsNeeded->second.size(); ++k) {
-                                if (foundCompsNeeded->second[k].getNumComponents() > 0) {
-                                    componentsToRender.push_back(foundCompsNeeded->second[k]);
+                        // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
+                        if (it2->second[range].min == (int)it2->second[range].min &&
+                            it2->second[range].max == (int)it2->second[range].max) {
+                            for (double f = it2->second[range].min;
+                                 f <= it2->second[range].max && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
+                                 f += 1.) {
+
+
+                                RenderScale scaleOne;
+                                scaleOne.x = scaleOne.y = 1.;
+
+                                ///Render the input image with the bit depth of its preference
+                                std::list<Natron::ImageComponents> inputPrefComps;
+                                Natron::ImageBitDepthEnum inputPrefDepth;
+                                inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
+                                std::list<ImageComponents> componentsToRender;
+                                for (U32 k = 0; k < foundCompsNeeded->second.size(); ++k) {
+                                    if (foundCompsNeeded->second[k].getNumComponents() > 0) {
+                                        componentsToRender.push_back(foundCompsNeeded->second[k]);
+                                    }
                                 }
-                            }
-                            
-                            RenderRoIArgs inArgs(f, //< time
-                                                 useScaleOneInputImages ? scaleOne : scale, //< scale
-                                                 useScaleOneInputImages ? 0 : mipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                 view, //< view
-                                                 byPassCache,
-                                                 inputRoIPixelCoords, //< roi in pixel coordinates
-                                                 RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                 componentsToRender, //< requested comps
-                                                 inputPrefDepth,
-                                                 this);
-                            
-                            
-                           
-                            ImageList inputImgs;
-                            RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
-                            if (ret != eRenderRoIRetCodeOk) {
-                                return ret;
-                            }
-                            
-                            for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
-                                if (*it3) {
-                                    foundInputImages->second.push_back(*it3);
+
+                                RenderRoIArgs inArgs(f, //< time
+                                                     useScaleOneInputImages ? scaleOne : scale, //< scale
+                                                     useScaleOneInputImages ? 0 : mipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                     view, //< view
+                                                     byPassCache,
+                                                     inputRoIPixelCoords, //< roi in pixel coordinates
+                                                     RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                     componentsToRender, //< requested comps
+                                                     inputPrefDepth,
+                                                     this);
+
+
+
+                                ImageList inputImgs;
+                                RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
+                                if (ret != eRenderRoIRetCodeOk) {
+                                    return ret;
                                 }
-                            }
-                            if (!inputImgs.empty()) {
-                                ++nbFramesPreFetched;
+
+                                for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
+                                    if (*it3) {
+                                        foundInputImages->second.push_back(*it3);
+                                    }
+                                }
+                                if (!inputImgs.empty()) {
+                                    ++nbFramesPreFetched;
+                                }
                             }
                         }
                     }
