@@ -74,6 +74,7 @@ public:
         esMoveKeyframeSelection,
         esMoveCurrentFrameIndicator,
         esDraggingView,
+        esZoomingView,
         esTransformingKeyframesMiddleRight,
         esTransformingKeyframesMiddleLeft
     };
