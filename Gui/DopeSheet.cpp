@@ -518,6 +518,7 @@ void DopeSheet::deleteSelectedKeyframes()
     _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, _imp->editor));
 }
 
+namespace {
 struct SortIncreasingFunctor {
     
     bool operator() (const DSKeyPtr& lhs,const DSKeyPtr& rhs) {
@@ -548,6 +549,7 @@ struct SortDecreasingFunctor {
         }
     }
 };
+}
 
 void DopeSheet::moveSelectedKeysAndNodes(double dt)
 {
@@ -570,15 +572,13 @@ void DopeSheet::moveSelectedKeysAndNodes(double dt)
         if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
             if (!_imp->selectionModel->keyframeIsSelected(knobDs, nextKey)) {
                 double diff = nextKey.getTime() - (*it)->key.getTime() - 1;
-                assert(diff >= 0);
-                maxRight = std::min(diff, maxRight);
+                maxRight = std::max(0.,std::min(diff, maxRight));
             }
         }
         if (curve->getPreviousKeyframeTime((*it)->key.getTime(), &prevKey)) {
             if (!_imp->selectionModel->keyframeIsSelected(knobDs, prevKey)) {
                 double diff = prevKey.getTime()  - (*it)->key.getTime() + 1;
-                assert(diff <= 0);
-                maxLeft = std::max(diff, maxLeft);
+                maxLeft = std::min(0.,std::max(diff, maxLeft));
             }
         }
         vect.push_back(*it);
