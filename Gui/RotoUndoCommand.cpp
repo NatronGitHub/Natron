@@ -46,7 +46,7 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
                                                            ,
                                                            double dx,
                                                            double dy,
-                                                           int time)
+                                                           double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
@@ -207,7 +207,7 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
                                            double ty,
                                            double sx,
                                            double sy,
-                                           int time)
+                                           double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
@@ -637,7 +637,7 @@ AddStrokeUndoCommand::redo()
 MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
                                                double dx,
                                                double dy,
-                                               int time,
+                                               double time,
                                                const boost::shared_ptr<BezierCP> & cp,
                                                bool left,
                                                bool breakTangents)
@@ -676,41 +676,47 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 
 namespace {
 static void
-dragTangent(int time,
+dragTangent(double time,
             BezierCP & p,
+            const Transform::Matrix3x3& transform,
             double dx,
             double dy,
             bool left,
             bool autoKeying,
             bool breakTangents)
 {
-    double leftX,leftY,rightX,rightY,x,y;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &leftX, &leftY,true);
-
-    p.getRightBezierPointAtTime(time, &rightX, &rightY,true);
-    p.getPositionAtTime(time, &x, &y,true);
-    double dist = left ?  sqrt( (rightX - x) * (rightX - x) + (rightY - y) * (rightY - y) )
-                  : sqrt( (leftX - x) * (leftX - x) + (leftY - y) * (leftY - y) );
+    Transform::Point3D ltan,rtan,pos;
+    ltan.z = rtan.z = pos.z = 1;
+    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &ltan.x, &ltan.y,true);
+    p.getRightBezierPointAtTime(time, &rtan.x, &rtan.y,true);
+    p.getPositionAtTime(time, &pos.x, &pos.y,true);
+    
+    pos = Transform::matApply(transform, pos);
+    ltan = Transform::matApply(transform, ltan);
+    rtan = Transform::matApply(transform, rtan);
+    
+    double dist = left ?  sqrt( (rtan.x - pos.x) * (rtan.x - pos.x) + (rtan.y - pos.y) * (rtan.y - pos.y) )
+                  : sqrt( (ltan.x - pos.x) * (ltan.x - pos.x) + (ltan.y - pos.y) * (ltan.y - pos.y) );
     if (left) {
-        leftX += dx;
-        leftY += dy;
+        ltan.x += dx;
+        ltan.y += dy;
     } else {
-        rightX += dx;
-        rightY += dy;
+        rtan.x += dx;
+        rtan.y += dy;
     }
-    double alpha = left ? std::atan2(y - leftY,x - leftX) : std::atan2(y - rightY,x - rightX);
+    double alpha = left ? std::atan2(pos.y - ltan.y,pos.x - ltan.x) : std::atan2(pos.y - rtan.y,pos.x - rtan.x);
     std::set<int> times;
     p.getKeyframeTimes(&times);
 
     if (left) {
-        double rightDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - rightX;
-        double rightDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - rightY;
+        double rightDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - rtan.x;
+        double rightDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - rtan.y;
         if (autoKeying || isOnKeyframe) {
             p.getBezier()->movePointLeftAndRightIndex(p, time, dx, dy, rightDiffX, rightDiffY);
         }
     } else {
-        double leftDiffX = breakTangents ? 0 : x + std::cos(alpha) * dist - leftX;
-        double leftDiffY = breakTangents ? 0 : y + std::sin(alpha) * dist - leftY;
+        double leftDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - ltan.x;
+        double leftDiffY = breakTangents ? 0 : pos.y + std::sin(alpha) * dist - ltan.y;
         if (autoKeying || isOnKeyframe) {
             p.getBezier()->movePointLeftAndRightIndex(p, time, leftDiffX, leftDiffY, dx, dy);
         }
@@ -763,10 +769,13 @@ MoveTangentUndoCommand::redo()
     
     _tangentBeingDragged->getBezier()->incrementNodesAge();
 
+    Transform::Matrix3x3 transform;
+    _tangentBeingDragged->getBezier()->getTransformAtTime(_time, &transform);
+    
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
-    dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_breakTangents);
+    dragTangent(_time, *_tangentBeingDragged, transform, _dx, _dy, _left,autoKeying,_breakTangents);
     if (_featherLinkEnabled && counterPart) {
-        dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying,_breakTangents);
+        dragTangent(_time, *counterPart, transform, _dx, _dy, _left,autoKeying,_breakTangents);
     }
 
     if (_firstRedoCalled) {
@@ -812,7 +821,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(RotoGui* roto,
                                                      double dx,
                                                      double dy,
                                                      const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point,
-                                                     int time)
+                                                     double time)
     : QUndoCommand()
       , _roto(roto)
       , _firstRedoCalled(false)
@@ -854,9 +863,17 @@ MoveFeatherBarUndoCommand::redo()
     boost::shared_ptr<BezierCP> fp = _newPoint.first->isFeatherPoint() ?
     _newPoint.first : _newPoint.second;
     Point delta;
-    Point featherPoint,controlPoint;
+    
+    Transform::Matrix3x3 transform;
+    p->getBezier()->getTransformAtTime(_time, &transform);
+    
+    Transform::Point3D featherPoint,controlPoint;
+    featherPoint.z = controlPoint.z = 1.;
     p->getPositionAtTime(_time, &controlPoint.x, &controlPoint.y);
     bool isOnKeyframe = fp->getPositionAtTime(_time, &featherPoint.x, &featherPoint.y);
+    
+    controlPoint = Transform::matApply(transform, controlPoint);
+    featherPoint = Transform::matApply(transform, featherPoint);
     
     if ( (controlPoint.x != featherPoint.x) || (controlPoint.y != featherPoint.y) ) {
         Point featherVec;
@@ -891,8 +908,8 @@ MoveFeatherBarUndoCommand::redo()
         }
         
         double leftX,leftY,rightX,rightY,norm;
-        Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);
-        Bezier::rightDerivativeAtPoint(_time, **cur, **next, &rightX, &rightY);
+        Bezier::leftDerivativeAtPoint(_time, **cur, **prev, transform ,&leftX, &leftY);
+        Bezier::rightDerivativeAtPoint(_time, **cur, **next, transform ,&rightX, &rightY);
         norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
         
         ///normalize derivatives by their norm
@@ -1067,7 +1084,7 @@ OpenCloseUndoCommand::redo()
 
 SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,
                                              const std::list<SmoothCuspCurveData> & data,
-                                             int time,
+                                             double time,
                                              bool cusp,
                                              const std::pair<double, double>& pixelScale)
     : QUndoCommand()
@@ -1191,7 +1208,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
                                              bool createPoint,
                                              double dx,
                                              double dy,
-                                             int time)
+                                             double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
@@ -1339,7 +1356,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
                                                bool fromCenter,
                                                double dx,
                                                double dy,
-                                               int time)
+                                               double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
@@ -1481,7 +1498,7 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
                                                    bool create,
                                                    double dx,
                                                    double dy,
-                                                   int time)
+                                                   double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)

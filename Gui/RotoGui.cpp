@@ -357,7 +357,7 @@ struct RotoGui::RotoGuiPrivate
                         const Transform::Matrix3x3& transform);
 
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-    isNearbyFeatherBar(int time,const std::pair<double,double> & pixelScale,const QPointF & pos) const;
+    isNearbyFeatherBar(double time,const std::pair<double,double> & pixelScale,const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
     
@@ -1717,7 +1717,7 @@ RotoGui::drawOverlays(double time,
                                     featherPoint.y = yF;
                                     
                                     
-                                    Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, clockWise, prevCp, it2, nextCp);
+                                    Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, clockWise, transform, prevCp, it2, nextCp);
                                     
                                     if ( ( (_imp->state == eEventStateDraggingFeatherBar) &&
                                           ( ( *itF == _imp->rotoData->featherBarBeingDragged.first) ||
@@ -3841,7 +3841,7 @@ RotoGui::RotoGuiPrivate::isNearbySelectedCpsBoundingBox(const QPointF & pos,
 }
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
+RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
                                             const std::pair<double,double> & pixelScale,
                                             const QPointF & pos) const
 {
@@ -3865,7 +3865,9 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             hence in this loop we compute the polygon for each bezier.
          */
 
-
+        Transform::Matrix3x3 transform;
+        isBezier->getTransformAtTime(time, &transform);
+        
         const std::list<boost::shared_ptr<BezierCP> > & fps = isBezier->getFeatherPoints();
         const std::list<boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
         assert( cps.size() == fps.size() );
@@ -3903,11 +3905,23 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             }
             assert(itF != fps.end()); // because cps.size() == fps.size()
 
-            Point controlPoint,featherPoint;
+            Transform::Point3D controlPoint,featherPoint;
+            controlPoint.z = featherPoint.z = 1;
             (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
             (*itF)->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
 
-            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, isClockWiseOriented, prevF, itF, nextF);
+            controlPoint = Transform::matApply(transform, controlPoint);
+            featherPoint = Transform::matApply(transform, featherPoint);
+            {
+                Natron::Point cp,fp;
+                cp.x = controlPoint.x;
+                cp.y = controlPoint.y;
+                fp.x = featherPoint.x;
+                fp.y = featherPoint.y;
+                Bezier::expandToFeatherDistance(cp, &fp, distFeatherX, time, isClockWiseOriented, transform, prevF, itF, nextF);
+                featherPoint.x = fp.x;
+                featherPoint.y = fp.y;
+            }
             assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
 
             ///Now test if the user mouse click is on the line using bounding box and cross product.

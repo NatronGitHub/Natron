@@ -1822,8 +1822,6 @@ ViewerTab::drawOverlays(double scaleX,
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        
-        
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
@@ -1839,7 +1837,7 @@ ViewerTab::drawOverlays(double scaleX,
             GLdouble oglMat[16];
             transformToOpenGLMatrix(mat,oglMat);
             glMatrixMode(GL_MODELVIEW);
-            glGetFloatv (GL_MODELVIEW_MATRIX, oldMat);
+            glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
             glMultMatrixd(oglMat);
         }
         

@@ -241,7 +241,7 @@ struct RotoPanelPrivate
         assert(n && context);
     }
     
-    void updateSplinesInfoGUI(int time);
+    void updateSplinesInfoGUI(double time);
     
     void buildTreeFromContext();
     
@@ -267,7 +267,7 @@ struct RotoPanelPrivate
         return items.end();
     }
 
-    void insertItemRecursively(int time, const boost::shared_ptr<RotoItem>& item);
+    void insertItemRecursively(double time, const boost::shared_ptr<RotoItem>& item);
 
     void removeItemRecursively(const boost::shared_ptr<RotoItem>& item);
 
@@ -277,15 +277,15 @@ struct RotoPanelPrivate
 
     void setChildrenLockedRecursively(bool locked, QTreeWidgetItem* item);
 
-    bool itemHasKey(const boost::shared_ptr<RotoItem>& item, int time) const;
+    bool itemHasKey(const boost::shared_ptr<RotoItem>& item, double time) const;
 
-    void setItemKey(const boost::shared_ptr<RotoItem>& item, int time);
+    void setItemKey(const boost::shared_ptr<RotoItem>& item, double time);
 
-    void removeItemKey(const boost::shared_ptr<RotoItem>& item, int time);
+    void removeItemKey(const boost::shared_ptr<RotoItem>& item, double time);
     
     void removeItemAnimation(const boost::shared_ptr<RotoItem>& item);
 
-    void insertItemInternal(int reason, int time, const boost::shared_ptr<RotoItem>& item);
+    void insertItemInternal(int reason, double time, const boost::shared_ptr<RotoItem>& item);
     
     void setVisibleItemKeyframes(const std::set<int>& keys,bool visible, bool emitSignal);
 };
@@ -561,8 +561,8 @@ RotoPanel::onSelectionChangedInternal()
     for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
-            QObject::disconnect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( keyframeSet(double) ), this, SLOT( onSelectedBezierKeyframeSet(double) ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( keyframeRemoved(double) ), this, SLOT( onSelectedBezierKeyframeRemoved(double) ) );
             QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
@@ -599,8 +599,8 @@ RotoPanel::onSelectionChangedInternal()
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>( it->get() );
         if (isBezier) {
-            QObject::connect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
-            QObject::connect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+            QObject::connect( isBezier.get(), SIGNAL( keyframeSet(double) ), this, SLOT( onSelectedBezierKeyframeSet(double) ) );
+            QObject::connect( isBezier.get(), SIGNAL( keyframeRemoved(double) ), this, SLOT( onSelectedBezierKeyframeRemoved(double) ) );
             QObject::connect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
             QObject::connect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::connect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
@@ -642,7 +642,7 @@ RotoPanel::onSelectionChangedInternal()
     _imp->clearAnimation->setEnabled(enabled);
     
 
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
     _imp->updateSplinesInfoGUI(time);
@@ -672,7 +672,7 @@ RotoPanel::onSelectionChanged(int reason)
 }
 
 void
-RotoPanel::onSelectedBezierKeyframeSet(int time)
+RotoPanel::onSelectedBezierKeyframeSet(double time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
     boost::shared_ptr<Bezier> isBezier;
@@ -686,7 +686,7 @@ RotoPanel::onSelectedBezierKeyframeSet(int time)
 }
 
 void
-RotoPanel::onSelectedBezierKeyframeRemoved(int time)
+RotoPanel::onSelectedBezierKeyframeRemoved(double time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
     boost::shared_ptr<Bezier> isBezier ;
@@ -775,7 +775,7 @@ makeSolidIcon(double *color,
 void
 RotoPanel::updateItemGui(QTreeWidgetItem* item)
 {
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
     TreeItems::iterator it = _imp->findItem(item);
 
     assert( it != _imp->items.end() );
@@ -807,7 +807,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
 }
 
 void
-RotoPanelPrivate::updateSplinesInfoGUI(int time)
+RotoPanelPrivate::updateSplinesInfoGUI(double time)
 {
   
     std::set<int> keyframes;
@@ -891,7 +891,7 @@ expandRecursively(QTreeWidgetItem* item)
 }
 
 void
-RotoPanelPrivate::insertItemRecursively(int time,
+RotoPanelPrivate::insertItemRecursively(double time,
                                         const boost::shared_ptr<RotoItem> & item)
 {
     QTreeWidgetItem* treeItem = new QTreeWidgetItem;
@@ -1064,14 +1064,14 @@ void
 RotoPanel::onItemInserted(int reason)
 {
     boost::shared_ptr<RotoItem> lastInsertedItem = _imp->context->getLastInsertedItem();
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
 
     _imp->insertItemInternal(reason,time, lastInsertedItem);
 }
 
 void
 RotoPanelPrivate::insertItemInternal(int reason,
-                                     int time,
+                                     double time,
                                      const boost::shared_ptr<RotoItem> & item)
 {
     boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
@@ -1126,7 +1126,7 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
 void
 RotoPanelPrivate::buildTreeFromContext()
 {
-    int time = context->getTimelineCurrentTime();
+    double time = context->getTimelineCurrentTime();
     const std::list< boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
 
     tree->blockSignals(true);
@@ -1164,7 +1164,7 @@ RotoPanel::onRotoItemInvertedStateChanged()
     RotoDrawableItem* item = qobject_cast<RotoDrawableItem*>( sender() );
 
     if (item) {
-        int time = _imp->context->getTimelineCurrentTime();
+        double time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             it->treeItem->setIcon(COL_INVERTED, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
@@ -1184,7 +1184,7 @@ RotoPanel::onRotoItemShapeColorChanged()
     }
 
     if (item) {
-        int time = _imp->context->getTimelineCurrentTime();
+        double time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             QIcon icon;
@@ -1460,7 +1460,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             }
                 
             case COL_COLOR: {
-                int time = _imp->context->getTimelineCurrentTime();
+                double time = _imp->context->getTimelineCurrentTime();
                 RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
                 bool colorChosen = false;
@@ -1682,7 +1682,7 @@ RotoPanel::onItemSelectionChanged()
     _imp->removeKeyframe->setEnabled(enabled);
     _imp->clearAnimation->setEnabled(enabled);
     
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
     _imp->updateSplinesInfoGUI(time);
@@ -2119,7 +2119,7 @@ RotoPanel::selectAll()
 
 bool
 RotoPanelPrivate::itemHasKey(const boost::shared_ptr<RotoItem>& item,
-                             int time) const
+                             double time) const
 {
     ItemKeys::const_iterator it = keyframes.find(item);
 
@@ -2135,7 +2135,7 @@ RotoPanelPrivate::itemHasKey(const boost::shared_ptr<RotoItem>& item,
 
 void
 RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
-                             int time)
+                             double time)
 {
     ItemKeys::iterator it = keyframes.find(item);
 
@@ -2155,7 +2155,7 @@ RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
 
 void
 RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
-                                int time)
+                                double time)
 {
     ItemKeys::iterator it = keyframes.find(item);
 

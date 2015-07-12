@@ -47,7 +47,7 @@ class NodeGui;
 class QUndoCommand;
 class TimeLine;
 namespace Transform {
-    class Matrix3x3;
+    struct Matrix3x3;
 }
 namespace Natron {
 class Node;

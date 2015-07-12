@@ -52,7 +52,7 @@ public:
                                  ,
                                  double dx,
                                  double dy,
-                                 int time);
+                                 double time);
 
     virtual ~MoveControlPointsUndoCommand();
 
@@ -69,7 +69,7 @@ private:
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
     int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
-    int _time; //< the time at which the change was made
+    double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints,_pointsToDrag;
@@ -100,7 +100,7 @@ public:
                          double ty,
                          double sx,
                          double sy,
-                         int time);
+                         double time);
 
     virtual ~TransformUndoCommand();
 
@@ -118,7 +118,7 @@ private:
     bool _rippleEditEnabled;
     int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
-    int _time; //< the time at which the change was made
+    double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _originalPoints,_selectedPoints;
 };
@@ -245,7 +245,7 @@ public:
     MoveTangentUndoCommand(RotoGui* roto,
                            double dx,
                            double dy,
-                           int time,
+                           double time,
                            const boost::shared_ptr<BezierCP> & cp,
                            bool left,
                            bool breakTangents);
@@ -264,7 +264,7 @@ private:
     double _dx,_dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    int _time; //< the time at which the change was made
+    double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _selectedPoints;
     boost::shared_ptr<BezierCP> _tangentBeingDragged,_oldCp,_oldFp;
@@ -282,7 +282,7 @@ public:
                               double dx,
                               double dy,
                               const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point,
-                              int time);
+                              double time);
 
     virtual ~MoveFeatherBarUndoCommand();
 
@@ -297,7 +297,7 @@ private:
     bool _firstRedoCalled;
     double _dx,_dy;
     bool _rippleEditEnabled;
-    int _time; //< the time at which the change was made
+    double _time; //< the time at which the change was made
     boost::shared_ptr<Bezier> _curve;
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > _oldPoint,_newPoint;
 };
@@ -366,7 +366,7 @@ public:
 
     SmoothCuspUndoCommand(RotoGui* roto,
                           const std::list<SmoothCuspCurveData> & data,
-                          int time,
+                          double time,
                           bool cusp,
                           const std::pair<double, double>& pixelScale);
 
@@ -380,7 +380,7 @@ public:
 private:
     RotoGui* _roto;
     bool _firstRedoCalled;
-    int _time;
+    double _time;
     int _count;
     bool _cusp;
     std::list<SmoothCuspCurveData> curves;
@@ -399,7 +399,7 @@ public:
                           bool createPoint,
                           double dx,
                           double dy,
-                          int time);
+                          double time);
 
     virtual ~MakeBezierUndoCommand();
 
@@ -422,7 +422,7 @@ private:
     bool _createdPoint;
     double _x,_y;
     double _dx,_dy;
-    int _time;
+    double _time;
     int _lastPointAdded;
     bool _isOpenBezier;
 };
@@ -438,7 +438,7 @@ public:
                            bool fromCenter,
                            double dx,
                            double dy,
-                           int time);
+                           double time);
 
     virtual ~MakeEllipseUndoCommand();
 
@@ -457,7 +457,7 @@ private:
     bool _fromCenter;
     double _x,_y;
     double _dx,_dy;
-    int _time;
+    double _time;
 };
 
 
@@ -470,7 +470,7 @@ public:
                              bool create,
                              double dx,
                              double dy,
-                             int time);
+                             double time);
 
     virtual ~MakeRectangleUndoCommand();
 
@@ -488,7 +488,7 @@ private:
     bool _create;
     double _x,_y;
     double _dx,_dy;
-    int _time;
+    double _time;
 };
 
 

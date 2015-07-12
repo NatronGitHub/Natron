@@ -353,7 +353,7 @@ struct BezierPrivate
     {
     }
 
-    bool hasKeyframeAtTime(int time) const
+    bool hasKeyframeAtTime(double time) const
     {
         // PRIVATE - should not lock
 
@@ -407,16 +407,19 @@ struct BezierPrivate
     BezierCPs::const_iterator findControlPointNearby(double x,
                                                      double y,
                                                      double acceptance,
-                                                     int time,
+                                                     double time,
+                                                     const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
         // PRIVATE - should not lock
         int i = 0;
 
         for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++i) {
-            double pX,pY;
-            (*it)->getPositionAtTime(time, &pX, &pY);
-            if ( ( pX >= (x - acceptance) ) && ( pX <= (x + acceptance) ) && ( pY >= (y - acceptance) ) && ( pY <= (y + acceptance) ) ) {
+            Transform::Point3D p;
+            p.z = 1;
+            (*it)->getPositionAtTime(time, &p.x, &p.y);
+            p = Transform::matApply(transform, p);
+            if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
 
                 return it;
@@ -429,16 +432,19 @@ struct BezierPrivate
     BezierCPs::const_iterator findFeatherPointNearby(double x,
                                                      double y,
                                                      double acceptance,
-                                                     int time,
+                                                     double time,
+                                                     const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
         // PRIVATE - should not lock
         int i = 0;
-
+        
         for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
-            double pX,pY;
-            (*it)->getPositionAtTime(time, &pX, &pY);
-            if ( ( pX >= (x - acceptance) ) && ( pX <= (x + acceptance) ) && ( pY >= (y - acceptance) ) && ( pY <= (y + acceptance) ) ) {
+            Transform::Point3D p;
+            p.z = 1;
+            (*it)->getPositionAtTime(time, &p.x, &p.y);
+            p = Transform::matApply(transform, p);
+            if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
 
                 return it;
@@ -2061,16 +2067,16 @@ struct RotoContextPrivate
                         const boost::shared_ptr<RotoDrawableItem>& stroke,
                         bool doBuildup,
                         double opacity, 
-                        int time,
+                        double time,
                         unsigned int mipmapLevel);
     
-    void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, int time, unsigned int mipmapLevel);
+    void renderBezier(cairo_t* cr,const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
     
-    void renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
+    void renderFeather(const Bezier* bezier,double time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
 
-    void renderInternalShape(int time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
+    void renderInternalShape(double time,unsigned int mipmapLevel,double shapeColor[3], double opacity,const Transform::Matrix3x3& transform, cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     
-    static void bezulate(int time,const BezierCPs& cps,std::list<BezierCPs>* patches);
+    static void bezulate(double time,const BezierCPs& cps,std::list<BezierCPs>* patches);
 
     void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
 };
