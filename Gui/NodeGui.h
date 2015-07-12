@@ -354,7 +354,7 @@ public:
     
     boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
     
-    virtual void drawDefaultOverlay(double scaleX, double scaleY)  OVERRIDE FINAL;
+    virtual void drawDefaultOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
     
     virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     

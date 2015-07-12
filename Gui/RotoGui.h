@@ -174,23 +174,23 @@ public:
      **/
     RotoGui::RotoRoleEnum getCurrentRole() const;
 
-    void drawOverlays(double scaleX, double scaleY) const;
+    void drawOverlays(double time, double scaleX, double scaleY) const;
 
-    bool penDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penDown(double time, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool penDoubleClicked(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool penMotion(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool penUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penUp(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool keyDown(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyDown(double time, double scaleX, double scaleY, QKeyEvent* e);
 
-    bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyUp(double time, double scaleX, double scaleY, QKeyEvent* e);
 
-    bool keyRepeat(double scaleX, double scaleY, QKeyEvent* e);
+    bool keyRepeat(double time, double scaleX, double scaleY, QKeyEvent* e);
     
-    void focusOut();
+    void focusOut(double time);
 
     bool isStickySelectionEnabled() const;
 

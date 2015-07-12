@@ -2182,7 +2182,8 @@ OfxEffectInstance::initializeOverlayInteract()
 }
 
 void
-OfxEffectInstance::drawOverlay(double scaleX,
+OfxEffectInstance::drawOverlay(double time,
+                               double scaleX,
                                double scaleY)
 {
     if (!_initialized) {
@@ -2192,33 +2193,9 @@ OfxEffectInstance::drawOverlay(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
 
-       /* if (getRecursionLevel() == 1) {
-            
-            
-            bool skipDiscarding = false;
-            if (getRecursionLevel() > 1) {
-                ///This happens sometimes because of dialogs popping from the request of a plug-in (inside an action)
-                ///and making the mainwindow loose focus, hence forcing a new paint event
-                //qDebug() << "drawAction cannot be called recursively as an action. Please check this.";
-                skipDiscarding = true;
-            }
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                skipDiscarding,
-                                                false, //< setView ?
-                                                0,
-                                                false,
-                                                0);
-             
-            _overlayInteract->drawAction(time, rs);
-        } else {*/
-        
         SET_CAN_SET_VALUE(false);
-
         _overlayInteract->drawAction(time, rs);
-        
-        /*}*/
     }
 }
 
@@ -2231,7 +2208,8 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 }
 
 bool
-OfxEffectInstance::onOverlayPenDown(double scaleX,
+OfxEffectInstance::onOverlayPenDown(double time,
+                                    double scaleX,
                                     double scaleY,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
@@ -2251,15 +2229,6 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
-        /*
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true, //< setView ?
-                                            view,
-                                            false,
-                                            0);
-         */
         SET_CAN_SET_VALUE(true);
 
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, pressure);
@@ -2281,7 +2250,8 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayPenMotion(double scaleX,
+OfxEffectInstance::onOverlayPenMotion(double time,
+                                      double scaleX,
                                       double scaleY,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
@@ -2300,21 +2270,10 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
-        /*
-        if (getRecursionLevel() == 1) {
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                false,
-                                                true, //< setView ?
-                                                view,
-                                                false,
-                                                0);
-            stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, 1.);
-        } else {*/
+
         SET_CAN_SET_VALUE(true);
         stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, pressure);
-        /*}*/
         
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2330,7 +2289,8 @@ OfxEffectInstance::onOverlayPenMotion(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayPenUp(double scaleX,
+OfxEffectInstance::onOverlayPenUp(double time,
+                                  double scaleX,
                                   double scaleY,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
@@ -2349,16 +2309,7 @@ OfxEffectInstance::onOverlayPenUp(double scaleX,
         OfxPointI penPosViewport;
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
-        
-        /*
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true,
-                                            view,
-                                            false,
-                                            0);
-         */
+
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, pressure);
 
@@ -2378,7 +2329,8 @@ OfxEffectInstance::onOverlayPenUp(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyDown(double scaleX,
+OfxEffectInstance::onOverlayKeyDown(double time,
+                                    double scaleX,
                                     double scaleY,
                                     Natron::Key key,
                                     Natron::KeyboardModifiers /*modifiers*/)
@@ -2390,16 +2342,7 @@ OfxEffectInstance::onOverlayKeyDown(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-/*
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true, //< setView ?
-                                            view,
-                                            false,
-                                            0);
- */
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
 
@@ -2417,7 +2360,8 @@ OfxEffectInstance::onOverlayKeyDown(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyUp(double scaleX,
+OfxEffectInstance::onOverlayKeyUp(double time,
+                                  double scaleX,
                                   double scaleY,
                                   Natron::Key key,
                                   Natron::KeyboardModifiers /* modifiers*/)
@@ -2429,17 +2373,7 @@ OfxEffectInstance::onOverlayKeyUp(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-
-        /*
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true, //< setView ?
-                                            view,
-                                            false,
-                                            0);
-         */
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
 
@@ -2459,7 +2393,8 @@ OfxEffectInstance::onOverlayKeyUp(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyRepeat(double scaleX,
+OfxEffectInstance::onOverlayKeyRepeat(double time,
+                                      double scaleX,
                                       double scaleY,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers /*modifiers*/)
@@ -2471,16 +2406,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
-/*
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            false,
-                                            true, //< setView ?
-                                            view,
-                                            false,
-                                            0);
- */
+
         SET_CAN_SET_VALUE(true);
         OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
 
@@ -2498,7 +2425,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusGained(double scaleX,
+OfxEffectInstance::onOverlayFocusGained(double time,
+                                        double scaleX,
                                         double scaleY)
 {
     if (!_initialized) {
@@ -2508,22 +2436,9 @@ OfxEffectInstance::onOverlayFocusGained(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
-/*
-        if (getRecursionLevel() == 1) {
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                false,
-                                                true, //< setView ?
-                                                view,
-                                                false,
-                                                0);
-            stat = _overlayInteract->gainFocusAction(time, rs);
-        } else {*/
         SET_CAN_SET_VALUE(true);
         stat = _overlayInteract->gainFocusAction(time, rs);
-        /*}*/
-        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2533,7 +2448,8 @@ OfxEffectInstance::onOverlayFocusGained(double scaleX,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusLost(double scaleX,
+OfxEffectInstance::onOverlayFocusLost(double time,
+                                      double scaleX,
                                       double scaleY)
 {
     if (!_initialized) {
@@ -2543,25 +2459,9 @@ OfxEffectInstance::onOverlayFocusLost(double scaleX,
         OfxPointD rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
-        
-        /*if (getRecursionLevel() == 1) {
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                false,
-                                                true, //< setView ?
-                                                view,
-                                                false,
-                                                0);
-
-
-            stat = _overlayInteract->loseFocusAction(time, rs);
-        } else {*/
         SET_CAN_SET_VALUE(true);
         stat = _overlayInteract->loseFocusAction(time, rs);
-        /*}*/
-
-        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }

@@ -1349,23 +1349,23 @@ public:
                                             int view);
 
 
-    void drawOverlay_public(double scaleX,double scaleY);
+    void drawOverlay_public(double time ,double scaleX,double scaleY);
 
-    bool onOverlayPenDown_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double time, double scaleX,double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGained_public(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGained_public(double time, double scaleX,double scaleY) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLost_public(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLost_public(double time, double scaleX,double scaleY) WARN_UNUSED_RETURN;
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -1474,12 +1474,14 @@ protected:
     }
 
 
-    virtual void drawOverlay(double /*scaleX*/,
+    virtual void drawOverlay(double /*time*/,
+                             double /*scaleX*/,
                              double /*scaleY*/)
     {
     }
 
-    virtual bool onOverlayPenDown(double /*scaleX*/,
+    virtual bool onOverlayPenDown(double /*time*/,
+                                  double /*scaleX*/,
                                   double /*scaleY*/,
                                   const QPointF & /*viewportPos*/,
                                   const QPointF & /*pos*/,
@@ -1488,7 +1490,8 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayPenMotion(double /*scaleX*/,
+    virtual bool onOverlayPenMotion(double /*time*/,
+                                    double /*scaleX*/,
                                     double /*scaleY*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
@@ -1497,7 +1500,8 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayPenUp(double /*scaleX*/,
+    virtual bool onOverlayPenUp(double /*time*/,
+                                double /*scaleX*/,
                                 double /*scaleY*/,
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
@@ -1506,7 +1510,8 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyDown(double /*scaleX*/,
+    virtual bool onOverlayKeyDown(double /*time*/,
+                                  double /*scaleX*/,
                                   double /*scaleY*/,
                                   Natron::Key /*key*/,
                                   Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
@@ -1514,7 +1519,8 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyUp(double /*scaleX*/,
+    virtual bool onOverlayKeyUp(double /*time*/,
+                                double /*scaleX*/,
                                 double /*scaleY*/,
                                 Natron::Key /*key*/,
                                 Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
@@ -1522,7 +1528,8 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyRepeat(double /*scaleX*/,
+    virtual bool onOverlayKeyRepeat(double /*time*/,
+                                    double /*scaleX*/,
                                     double /*scaleY*/,
                                     Natron::Key /*key*/,
                                     Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
@@ -1530,13 +1537,15 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayFocusGained(double /*scaleX*/,
+    virtual bool onOverlayFocusGained(double /*time*/,
+                                      double /*scaleX*/,
                                       double /*scaleY*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    virtual bool onOverlayFocusLost(double /*scaleX*/,
+    virtual bool onOverlayFocusLost(double /*time*/,
+                                    double /*scaleX*/,
                                     double /*scaleY*/) WARN_UNUSED_RETURN
     {
         return false;

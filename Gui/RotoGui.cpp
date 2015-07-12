@@ -1362,11 +1362,11 @@ drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r,
 }
 
 void
-RotoGui::drawOverlays(double /*scaleX*/,
+RotoGui::drawOverlays(double time,
+                      double /*scaleX*/,
                       double /*scaleY*/) const
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > drawables = _imp->context->getCurvesByRenderOrder();
-    int time = _imp->context->getTimelineCurrentTime();
     std::pair<double,double> pixelScale;
     std::pair<double,double> viewportSize;
     
@@ -2287,7 +2287,8 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 }
 
 bool
-RotoGui::penDown(double /*scaleX*/,
+RotoGui::penDown(double time,
+                 double /*scaleX*/,
                  double /*scaleY*/,
                  Natron::PenType pen,
                  bool isTabletEvent,
@@ -2302,7 +2303,6 @@ RotoGui::penDown(double /*scaleX*/,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     
     bool didSomething = false;
-    int time = _imp->context->getTimelineCurrentTime();
     double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
     
@@ -2683,7 +2683,8 @@ RotoGui::penDown(double /*scaleX*/,
 } // penDown
 
 bool
-RotoGui::penDoubleClicked(double /*scaleX*/,
+RotoGui::penDoubleClicked(double /*time*/,
+                          double /*scaleX*/,
                           double /*scaleY*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & pos,
@@ -2725,7 +2726,8 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
 }
 
 bool
-RotoGui::penMotion(double /*scaleX*/,
+RotoGui::penMotion(double time,
+                   double /*scaleX*/,
                    double /*scaleY*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
@@ -2739,7 +2741,6 @@ RotoGui::penMotion(double /*scaleX*/,
 
     bool didSomething = false;
     HoverStateEnum lastHoverState = _imp->hoverState;
-    int time = _imp->context->getTimelineCurrentTime();
     ///Set the cursor to the appropriate case
     bool cursorSet = false;
     
@@ -3142,7 +3143,8 @@ RotoGui::autoSaveAndRedraw()
 }
 
 bool
-RotoGui::penUp(double /*scaleX*/,
+RotoGui::penUp(double /*time*/,
+               double /*scaleX*/,
                double /*scaleY*/,
                const QPointF & /*viewportPos*/,
                const QPointF & /*pos*/,
@@ -3332,7 +3334,8 @@ RotoGui::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
 }
 
 bool
-RotoGui::keyDown(double /*scaleX*/,
+RotoGui::keyDown(double /*time*/,
+                 double /*scaleX*/,
                  double /*scaleY*/,
                  QKeyEvent* e)
 {
@@ -3461,7 +3464,8 @@ RotoGui::keyDown(double /*scaleX*/,
 } // keyDown
 
 bool
-RotoGui::keyRepeat(double /*scaleX*/,
+RotoGui::keyRepeat(double /*time*/,
+                   double /*scaleX*/,
                    double /*scaleY*/,
                    QKeyEvent* e)
 {
@@ -3485,14 +3489,15 @@ RotoGui::keyRepeat(double /*scaleX*/,
 }
 
 void
-RotoGui::focusOut()
+RotoGui::focusOut(double /*time*/)
 {
     _imp->shiftDown = 0;
     _imp->ctrlDown = 0;
 }
 
 bool
-RotoGui::keyUp(double /*scaleX*/,
+RotoGui::keyUp(double /*time*/,
+               double /*scaleX*/,
                double /*scaleY*/,
                QKeyEvent* e)
 {

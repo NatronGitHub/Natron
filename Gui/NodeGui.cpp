@@ -3447,14 +3447,14 @@ NodeGui::setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort)
 }
 
 void
-NodeGui::drawDefaultOverlay(double scaleX,double scaleY)
+NodeGui::drawDefaultOverlay(double time, double scaleX,double scaleY)
 {
     if (_defaultOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         NatronOverlayInteractSupport::OGLContextSaver s(_defaultOverlay->getLastCallingViewport());
-        _defaultOverlay->draw(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        _defaultOverlay->draw(time , rs);
     }
 }
 

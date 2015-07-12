@@ -4979,11 +4979,11 @@ Node::shouldDrawOverlay() const
 }
 
 void
-Node::drawDefaultOverlay(double scaleX, double scaleY)
+Node::drawDefaultOverlay(double time, double scaleX, double scaleY)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->drawDefaultOverlay(scaleX, scaleY);
+        nodeGui->drawDefaultOverlay(time, scaleX, scaleY);
     }
 }
 

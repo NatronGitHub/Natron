@@ -89,7 +89,7 @@ public :
      **/
     virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) = 0;
     
-    virtual void drawDefaultOverlay(double scaleX, double scaleY)  = 0;
+    virtual void drawDefaultOverlay(double time, double scaleX, double scaleY)  = 0;
     
     virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
