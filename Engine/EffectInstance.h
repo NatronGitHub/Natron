@@ -233,7 +233,7 @@ public:
         {
         }
 
-        RenderRoIArgs(SequenceTime time_,
+        RenderRoIArgs(double time_,
                       const RenderScale & scale_,
                       unsigned int mipMapLevel_,
                       int view_,
