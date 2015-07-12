@@ -1798,30 +1798,31 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
 {
     NodePtr node = retimer->getInternalNode();
+    NodePtr input = node->getInput(0);
+    if (input) {
+        
+        int inputFirst,inputLast;
+        input->getLiveInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
 
-    if (Natron::Node *nearestReader = model->getNearestReader(retimer)) {
-        Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameStartingTime).get());
-        assert(startingTimeKnob);
-        Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameFirstFrame).get());
-        assert(firstFrameKnob);
-        Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(nearestReader->getKnobByName(kReaderParamNameLastFrame).get());
-        assert(lastFrameKnob);
-
-        int startingTimeValue = startingTimeKnob->getGuiValue();
-        int firstFrameValue = firstFrameKnob->getGuiValue();
-        int lastFrameValue = lastFrameKnob->getGuiValue();
-
-        Knob<double> *speedKnob =  dynamic_cast<Knob<double> *>(node->getKnobByName(kRetimeParamNameSpeed).get());
-        assert(speedKnob);
-
-        double speedValue = speedKnob->getGuiValue();
-
-        int frameCount = lastFrameValue - firstFrameValue + 1;
-        int rangeEnd = startingTimeValue + (frameCount / speedValue);
-
+        Natron::EffectInstance::FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(inputFirst, 0);
+        Natron::EffectInstance::FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(inputLast, 0);
+        assert(!framesFirst.empty() && !framesLast.empty());
+        
         FrameRange range;
-        range.first = startingTimeValue;
-        range.second = rangeEnd;
+        {
+            std::map<int, std::vector<OfxRangeD> >& rangeFirst = framesFirst[0];
+            assert(!rangeFirst.empty());
+            std::vector<OfxRangeD>& frames = rangeFirst[0];
+            assert(!frames.empty());
+            range.first = frames.front().min;
+        }
+        {
+            std::map<int, std::vector<OfxRangeD> >& rangeLast = framesLast[0];
+            assert(!rangeLast.empty());
+            std::vector<OfxRangeD>& frames = rangeLast[0];
+            assert(!frames.empty());
+            range.second = frames.front().min;
+        }
 
         nodeRanges[retimer] = range;
     }
