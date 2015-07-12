@@ -3765,9 +3765,9 @@ EffectInstance::renderInputImagesForRoI(double time,
                     int nbFramesPreFetched = 0;
                     for (U32 range = 0; range < it2->second.size(); ++range) {
                         
-                        for (int f = std::floor(it2->second[range].min + 0.5);
-                             f <= std::floor(it2->second[range].max + 0.5) && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
-                             ++f) {
+                        for (double f = it2->second[range].min;
+                             f <= it2->second[range].max && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
+                             f += 1.) {
                             
                             
                             RenderScale scaleOne;
@@ -5562,12 +5562,14 @@ EffectInstance::onInputChanged(int /*inputNo*/)
 }
 
 Natron::StatusEnum
-EffectInstance::getRegionOfDefinition_public(U64 hash,
-                                             double time,
-                                             const RenderScale & scale,
-                                             int view,
-                                             RectD* rod,
-                                             bool* isProjectFormat)
+EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
+                                                        double time,
+                                                        const RenderScale & scale,
+                                                        const RectI& renderWindow,
+                                                        bool useRenderWindow,
+                                                        int view,
+                                                        RectD* rod,
+                                                        bool* isProjectFormat)
 {
     if (!isEffectCreated()) {
         return eStatusFailed;
@@ -5575,12 +5577,25 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     
-    bool foundInCache;
-
-    if (getScriptName_mt_safe() == "Roto1") {
-        assert(true);
+    if (useRenderWindow) {
+        double inputTimeIdentity;
+        int inputNbIdentity;
+        bool isIdentity = isIdentity_public(true, hash, time, scale, renderWindow, view, &inputTimeIdentity, &inputNbIdentity);
+        if (isIdentity) {
+            if (inputNbIdentity >= 0) {
+                Natron::EffectInstance* input = getInput(inputNbIdentity);
+                if (input) {
+                    return input->getRegionOfDefinition_public(input->getRenderHash(), inputTimeIdentity, scale, view, rod, isProjectFormat);
+                }
+            } else if (inputNbIdentity == -2) {
+                return getRegionOfDefinition_public(hash, inputTimeIdentity, scale, view, rod, isProjectFormat);
+            } else {
+                return eStatusFailed;
+            }
+        }
     }
-    foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
+    
+    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
@@ -5612,16 +5627,16 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
-                    _imp->actionsCache.invalidateAll(hash);
-                    _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
-               // }
+                _imp->actionsCache.invalidateAll(hash);
+                _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
+                // }
                 return ret;
             }
             
             if (rod->isNull()) {
                 //if (!isDuringStrokeCreation) {
-                    _imp->actionsCache.invalidateAll(hash);
-                    _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
+                _imp->actionsCache.invalidateAll(hash);
+                _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
                 //}
                 return eStatusFailed;
             }
@@ -5631,12 +5646,36 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         }
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
-
+        
         //if (!isDuringStrokeCreation) {
-            _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
+        _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
         //}
         return ret;
     }
+
+}
+
+Natron::StatusEnum
+EffectInstance::getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
+                                                              double time,
+                                                              const RenderScale & scale,
+                                                              const RectI& renderWindow,
+                                                              int view,
+                                                              RectD* rod,
+                                                              bool* isProjectFormat)
+{
+    return getRegionOfDefinition_publicInternal(hash, time, scale, renderWindow, true, view, rod, isProjectFormat);
+}
+
+Natron::StatusEnum
+EffectInstance::getRegionOfDefinition_public(U64 hash,
+                                             double time,
+                                             const RenderScale & scale,
+                                             int view,
+                                             RectD* rod,
+                                             bool* isProjectFormat)
+{
+    return getRegionOfDefinition_publicInternal(hash, time, scale, RectI(), false, view, rod, isProjectFormat);
 }
 
 void

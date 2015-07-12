@@ -979,6 +979,29 @@ public:
                                                 RectD* rod,
                                                 bool* isProjectFormat) WARN_UNUSED_RETURN;
 
+    Natron::StatusEnum getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
+                                                                     double time,
+                                                                     const RenderScale & scale,
+                                                                     const RectI& renderWindow,
+                                                                     int view,
+                                                                     RectD* rod,
+                                                                    bool* isProjectFormat) WARN_UNUSED_RETURN;
+
+private:
+
+    Natron::StatusEnum getRegionOfDefinition_publicInternal(U64 hash,
+                                                            double time,
+                                                            const RenderScale & scale,
+                                                            const RectI& renderWindow,
+                                                            bool useRenderWindow,
+                                                            int view,
+                                                            RectD* rod,
+                                                            bool* isProjectFormat) WARN_UNUSED_RETURN;
+
+
+public:
+
+
     void getRegionsOfInterest_public(double time,
                                        const RenderScale & scale,
                                        const RectD & outputRoD,
