@@ -207,7 +207,7 @@ public:
     void computeGroupRange(DSNode *group);
 
     // User interaction
-    void onMouseDrag(QMouseEvent *e);
+    void onMouseLeftButtonDrag(QMouseEvent *e);
 
     void createSelectionFromRect(const RectD &rect, std::vector<DopeSheetKey> *result, std::vector<boost::shared_ptr<DSNode> >* selectedNodes);
 
@@ -1923,7 +1923,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     nodeRanges[group] = range;
 }
 
-void DopeSheetViewPrivate::onMouseDrag(QMouseEvent *e)
+void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 {
     QPointF mouseZoomCoords = zoomContext.toZoomCoordinates(e->x(), e->y());
     QPointF lastZoomCoordsOnMousePress = zoomContext.toZoomCoordinates(lastPosOnMousePress.x(),
@@ -2910,6 +2910,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
     running_in_main_thread();
 
     bool didSomething = false;
+
     if ( buttonDownIsRight(e) ) {
         _imp->createContextMenu();
         _imp->contextMenu->exec(mapToGlobal(e->pos()));
@@ -2922,9 +2923,16 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
     if (buttonDownIsMiddle(e)) {
         _imp->eventState = DopeSheetView::esDraggingView;
         didSomething = true;
+    } else if (((e->buttons() & Qt::MiddleButton) &&
+                (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
+               ((e->buttons() & Qt::LeftButton) &&
+                (buttonMetaAlt(e) == (Qt::AltModifier|Qt::MetaModifier)))) {
+        // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
+        _imp->eventState = esZoomingView;
+        _imp->lastPosOnMousePress = e->pos();
+        _imp->lastPosOnMouseMove = e->pos();
+        return;
     }
-    
-    
 
     QPointF clickZoomCoords = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
@@ -3097,8 +3105,38 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     if (e->buttons() == Qt::NoButton) {
         setCursor(_imp->getCursorDuringHover(e->pos()));
     }
+    else if (_imp->eventState == DopeSheetView::esZoomingView) {
+        _imp->zoomOrPannedSinceLastFit = true;
+
+        int deltaX = 2 * (e->x() - _imp->lastPosOnMouseMove.x());
+
+        const double par_min = 0.0001;
+        const double par_max = 10000.;
+        double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
+        QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMousePress.x(),
+                                                                  _imp->lastPosOnMousePress.y());
+
+        // Alt + Wheel: zoom time only, keep point under mouse
+        double par = _imp->zoomContext.aspectRatio() * scaleFactorX;
+        if (par <= par_min) {
+            par = par_min;
+            scaleFactorX = par / _imp->zoomContext.aspectRatio();
+        } else if (par > par_max) {
+            par = par_max;
+            scaleFactorX = par / _imp->zoomContext.factor();
+        }
+        _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+
+        redraw();
+
+        // Synchronize the dope sheet editor and opened viewers
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->updateCurveWidgetFrameRange();
+            _imp->gui->centerOpenedViewersOn(_imp->zoomContext.left(), _imp->zoomContext.right());
+        }
+    }
     else if (buttonDownIsLeft(e)) {
-        _imp->onMouseDrag(e);
+        _imp->onMouseLeftButtonDrag(e);
     }
     else if (buttonDownIsMiddle(e)) {
         double dx = _imp->zoomContext.toZoomCoordinates(_imp->lastPosOnMouseMove.x(),
