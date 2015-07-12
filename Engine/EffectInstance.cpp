@@ -316,7 +316,7 @@ struct EffectInstance::RenderArgs
     RectD _rod; //!< the effect's RoD in CANONICAL coordinates
     RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
     RectI _renderWindowPixel; //< the current renderWindow in PIXEL coordinates
-    SequenceTime _time; //< the time to render
+    double _time; //< the time to render
     int _view; //< the view to render
     bool _validArgs; //< are the args valid ?
     bool _isIdentity;
