@@ -2756,7 +2756,7 @@ KnobHelper::getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const
     }
 }
 
-SequenceTime
+double
 KnobHelper::getCurrentTime() const
 {
     KnobHolder* holder = getHolder();
@@ -3895,7 +3895,7 @@ KnobHolder::dequeueValuesSet()
     }
 }
 
-SequenceTime
+double
 KnobHolder::getCurrentTime() const
 {
     return getApp() ? getApp()->getTimeLine()->currentFrame() : 0;

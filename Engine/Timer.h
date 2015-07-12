@@ -42,6 +42,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include <QString>
 #include <QObject>
 #ifdef _WIN32
     #include <windows.h>
@@ -103,6 +104,8 @@ public:
     //-------------------
 
     PlayStateEnum playState;
+    
+    static QString printAsTime(double timeInSeconds, bool clampToSecondsToInt);
     
 Q_SIGNALS:
     

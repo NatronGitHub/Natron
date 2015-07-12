@@ -838,10 +838,6 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
-#if 0
-    void updateSelectedKeysMaxMovement();
-#endif
-
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
 
     void createMenu();
@@ -1848,6 +1844,46 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
     }
 }
 
+bool
+CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const
+{
+    for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
+        if ((*it)->curve == curve && time >= ((*it)->key.getTime() - 1e-6) && time <= ((*it)->key.getTime() + 1e-6)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+namespace  {
+struct SortIncreasingFunctor {
+    
+    bool operator() (const KeyPtr& lhs,const KeyPtr& rhs) {
+        if (lhs->curve.get() < rhs->curve.get()) {
+            return true;
+        } else if (lhs->curve.get() > rhs->curve.get()) {
+            return false;
+        } else {
+            return lhs->key.getTime() < rhs->key.getTime();
+        }
+    }
+};
+
+struct SortDecreasingFunctor {
+    
+    bool operator() (const KeyPtr& lhs,const KeyPtr& rhs) {
+        if (lhs->curve.get() < rhs->curve.get()) {
+            return true;
+        } else if (lhs->curve.get() > rhs->curve.get()) {
+            return false;
+        } else {
+            return lhs->key.getTime() > rhs->key.getTime();
+        }
+    }
+};
+}
+
+
 void
 CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
                                           const QPointF & newClick_opengl)
@@ -1868,9 +1904,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         totalMovement.rx() = newClick_opengl.x() - dragStartPointOpenGL.x();
         totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
     }
-    // clamp totalMovement to _keyDragMaxMovement
-    //totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
-    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
+   
 
     /// round to the nearest integer the keyframes total motion (in X only)
     ///Only for the curve editor, parametric curves are not affected by the following
@@ -1885,8 +1919,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             }
         }
     }
-
-
+    
     double dt;
 
     
@@ -1900,6 +1933,44 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     } else {
         dt = 0;
     }
+    
+    // clamp dt so keyframes do not overlap
+    double maxLeft = INT_MIN;
+    double maxRight = INT_MAX;
+    
+    double epsilon = clampToIntegers ? 1 : 1e-4;
+    std::vector<KeyPtr> vect;
+    for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        boost::shared_ptr<Curve> curve = (*it)->curve->getInternalCurve();
+        assert(curve);
+        KeyFrame prevKey,nextKey;
+        if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
+            if (!_widget->isSelectedKey((*it)->curve, nextKey.getTime())) {
+                double diff = nextKey.getTime() - (*it)->key.getTime() - epsilon;
+                maxRight = std::max(0.,std::min(diff, maxRight));
+            }
+        }
+        if (curve->getPreviousKeyframeTime((*it)->key.getTime(), &prevKey)) {
+            if (!_widget->isSelectedKey((*it)->curve, prevKey.getTime())) {
+                double diff = prevKey.getTime()  - (*it)->key.getTime() + epsilon;
+                maxLeft = std::min(0.,std::max(diff, maxLeft));
+            }
+        }
+        vect.push_back(*it);
+    }
+    
+    dt = std::min(dt, maxRight);
+    dt = std::max(dt, maxLeft);
+    
+    //Keyframes must be sorted in order according to the user movement otherwise if keyframes are next to each other we might override
+    //another keyframe.
+    //Can only call sort on random iterators
+    if (dt < 0) {
+        std::sort(vect.begin(), vect.end(), SortIncreasingFunctor());
+    } else {
+        std::sort(vect.begin(), vect.end(), SortDecreasingFunctor());
+    }
+    
     double dv;
     ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
     ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
@@ -1914,15 +1985,18 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     }
 
     if ( (dt != 0) || (dv != 0) ) {
-        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        
+        SelectedKeys keysInOrder;
+        for (std::vector<KeyPtr>::const_iterator it = vect.begin(); it != vect.end(); ++it) {
             if ( !(*it)->curve->isYComponentMovable() ) {
                 dv = 0;
             }
+            keysInOrder.push_back(*it);
         }
 
         if ( (dt != 0) || (dv != 0) ) {
             bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            _widget->pushUndoCommand( new MoveKeysCommand(_widget,_selectedKeyFrames,dt,dv,!updateOnPenUpOnly) );
+            _widget->pushUndoCommand( new MoveKeysCommand(_widget,keysInOrder,dt,dv,!updateOnPenUpOnly) );
             _evaluateOnPenUp = true;
         }
     }
@@ -2184,168 +2258,6 @@ CurveWidget::pushUndoCommand(QUndoCommand* cmd)
     _imp->_undoStack->push(cmd);
 }
 
-#if 0
-
-void
-CurveWidgetPrivate::updateSelectedKeysMaxMovement()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( _selectedKeyFrames.empty() ) {
-        return;
-    }
-
-    std::map<CurveGui*,MaxMovement> curvesMaxMovements;
-
-    //for each curve that has keyframes selected,we want to find out the max movement possible on left/right
-    // that means looking at the first selected key and last selected key of each curve and determining of
-    //how much they can move
-    for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-        std::map<CurveGui*,MaxMovement>::iterator foundCurveMovement = curvesMaxMovements.find( (*it)->curve );
-
-        if ( foundCurveMovement != curvesMaxMovements.end() ) {
-            //if we already computed the max movement for this curve, move on
-            continue;
-        } else {
-            assert( (*it)->curve );
-            KeyFrameSet ks = (*it)->curve->getKeyFrames();
-
-            //find out in this set what is the first key selected
-            SelectedKeys::const_iterator leftMostSelected = _selectedKeyFrames.end();
-            SelectedKeys::const_iterator rightMostSelected = _selectedKeyFrames.end();
-            SelectedKeys::const_iterator bottomMostSelected = _selectedKeyFrames.end();
-            SelectedKeys::const_iterator topMostSelected = _selectedKeyFrames.end();
-            for (SelectedKeys::const_iterator it2 = _selectedKeyFrames.begin(); it2 != _selectedKeyFrames.end(); ++it2) {
-                if ( (*it2)->curve == (*it)->curve ) {
-                    if ( ( leftMostSelected != _selectedKeyFrames.end() ) &&
-                         ( rightMostSelected != _selectedKeyFrames.end() ) &&
-                         ( bottomMostSelected != _selectedKeyFrames.end() ) &&
-                         ( topMostSelected != _selectedKeyFrames.end() ) ) {
-                        if ( (*it2)->key.getTime() < (*leftMostSelected)->key.getTime() ) {
-                            leftMostSelected = it2;
-                        }
-                        if ( (*it2)->key.getTime() > (*rightMostSelected)->key.getTime() ) {
-                            rightMostSelected = it2;
-                        }
-                        if ( (*it2)->key.getValue() < (*bottomMostSelected)->key.getValue() ) {
-                            bottomMostSelected = it2;
-                        }
-                        if ( (*it2)->key.getValue() > (*topMostSelected)->key.getValue() ) {
-                            topMostSelected = it2;
-                        }
-                    } else {
-                        assert( leftMostSelected == _selectedKeyFrames.end() &&
-                                rightMostSelected == _selectedKeyFrames.end() &&
-                                bottomMostSelected == _selectedKeyFrames.end() &&
-                                topMostSelected == _selectedKeyFrames.end() );
-                        leftMostSelected = it2;
-                        rightMostSelected = it2;
-                        bottomMostSelected = it2;
-                        topMostSelected = it2;
-                    }
-                }
-            }
-
-            //there must be a left most and right most! but they can be the same key
-            assert( leftMostSelected != _selectedKeyFrames.end() && rightMostSelected != _selectedKeyFrames.end() );
-
-            KeyFrameSet::const_iterator leftMost = ks.find( (*leftMostSelected)->key );
-            KeyFrameSet::const_iterator rightMost = ks.find( (*rightMostSelected)->key );
-            KeyFrameSet::const_iterator bottomMost = ks.find( (*bottomMostSelected)->key );
-            KeyFrameSet::const_iterator topMost = ks.find( (*topMostSelected)->key );
-
-            assert( leftMost != ks.end() && rightMost != ks.end() && bottomMost != ks.end() && topMost != ks.end() );
-
-            MaxMovement curveMaxMovement;
-            double minimumTimeSpanBetween2Keys = 1.;
-            
-            if ( !(*it)->curve->areKeyFramesTimeClampedToIntegers() ) {
-                minimumTimeSpanBetween2Keys = NATRON_CURVE_X_SPACING_EPSILON ;//* std::abs(curveXRange.second - curveXRange.first) * 10; //< be safe
-            }
-
-
-            //now get leftMostSelected's previous key to determine the max left movement for this curve
-            {
-                if ( leftMost == ks.begin() ) {
-                    curveMaxMovement.left = INT_MIN;//curveXRange.first - leftMost->getTime();
-                } else {
-                    KeyFrameSet::const_iterator prev = leftMost;
-                    if (prev != ks.begin()) {
-                        --prev;
-                    }
-                    double leftMaxMovement = std::min( std::min(-NATRON_CURVE_X_SPACING_EPSILON + minimumTimeSpanBetween2Keys,0.),
-                                                       prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime() );
-                    curveMaxMovement.left = leftMaxMovement;
-                    assert(curveMaxMovement.left <= 0);
-                }
-            }
-
-            //now get rightMostSelected's next key to determine the max right movement for this curve
-            {
-                KeyFrameSet::const_iterator next = rightMost;
-                if (next != ks.end()) {
-                    ++next;
-                }
-                if ( next == ks.end() ) {
-                    curveMaxMovement.right = INT_MAX;///curveXRange.second - rightMost->getTime();
-                } else {
-                    double rightMaxMovement = std::max( std::max(NATRON_CURVE_X_SPACING_EPSILON - minimumTimeSpanBetween2Keys,0.),
-                                                        next->getTime() - minimumTimeSpanBetween2Keys - rightMost->getTime() );
-                    curveMaxMovement.right = rightMaxMovement;
-                    assert(curveMaxMovement.right >= 0);
-                }
-            }
-
-            ///Compute the max up/down movements given the min/max of the curve
-            //            std::pair<double,double> maxY = (*it)->curve->getCurveYRange();
-            //            curveMaxMovement.top = maxY.second - topMost->getValue();
-            //            curveMaxMovement.bottom = maxY.first - bottomMost->getValue();
-            curvesMaxMovements.insert( std::make_pair( (*it)->curve, curveMaxMovement ) );
-        }
-    }
-
-    //last step, we need to get the minimum of all curveMaxMovements to determine what is the real
-    //selected keys max movement
-
-    _keyDragMaxMovement.left = INT_MIN;
-    _keyDragMaxMovement.right = INT_MAX;
-    // _keyDragMaxMovement.bottom = INT_MIN;
-    // _keyDragMaxMovement.top = INT_MAX;
-
-    for (std::map<CurveGui*,MaxMovement>::const_iterator it = curvesMaxMovements.begin(); it != curvesMaxMovements.end(); ++it) {
-        const MaxMovement & move = it->second;
-        
-        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
-        //assert(move.left <= 0 && _keyDragMaxMovement.left <= 0);
-        //get the minimum for the left movement (numbers are all negatives here)
-        if (move.left > _keyDragMaxMovement.left) {
-            _keyDragMaxMovement.left = move.left;
-        }
-
-        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
-        //assert(move.right >= 0 && _keyDragMaxMovement.right >= 0);
-        //get the minimum for the right movement (numbers are all positives here)
-        if (move.right < _keyDragMaxMovement.right) {
-            _keyDragMaxMovement.right = move.right;
-        }
-
-        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
-        //assert(move.bottom <= 0 && _keyDragMaxMovement.bottom <= 0);
-        //        if (move.bottom > _keyDragMaxMovement.bottom) {
-        //            _keyDragMaxMovement.bottom = move.bottom;
-        //        }
-
-        //No longer needed sinc the knob clamps internally the value upon getValue() from the plug-in
-        //assert(move.top >= 0 && _keyDragMaxMovement.top >= 0);
-        //        if (move.top < _keyDragMaxMovement.top) {
-        //            _keyDragMaxMovement.top = move.top;
-        //        }
-    }
-    //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
-    //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
-} // updateSelectedKeysMaxMovement
-#endif
 
 void
 CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
@@ -2969,7 +2881,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             //insert it into the _selectedKeyFrames
             _imp->insertSelectedKeyFrameConditionnaly(selected);
             
-            // _imp->updateSelectedKeysMaxMovement();
             _imp->_keyDragLastMovement.rx() = 0.;
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
@@ -3054,7 +2965,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
 
-        // _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();

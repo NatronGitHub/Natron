@@ -83,7 +83,7 @@ RotoSmear::getOutputPremultiplication() const
 }
 
 Natron::StatusEnum
-RotoSmear::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod)
+RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
     (void)EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     
@@ -111,11 +111,11 @@ RotoSmear::getPreferredAspectRatio() const
 }
 
 bool
-RotoSmear::isIdentity(SequenceTime time,
+RotoSmear::isIdentity(double time,
                 const RenderScale & scale,
                 const RectI & roi,
                 int /*view*/,
-                SequenceTime* inputTime,
+                double* inputTime,
                 int* inputNb)
 {
     RectD maskRod;

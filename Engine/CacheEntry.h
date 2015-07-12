@@ -457,7 +457,7 @@ public:
     virtual const KeyType & getKey() const = 0;
     virtual hash_type getHashKey() const = 0;
     virtual size_t size() const = 0;
-    virtual SequenceTime getTime() const = 0;
+    virtual double getTime() const = 0;
 };
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
@@ -756,7 +756,7 @@ public:
         _removeBackingFileBeforeDestruction = true;
     }
 
-    virtual SequenceTime getTime() const OVERRIDE FINAL
+    virtual double getTime() const OVERRIDE FINAL
     {
         return _key.getTime();
     }

@@ -685,7 +685,7 @@ Image::setBitmapDirtyZone(const RectI& zone)
 ImageKey  
 Image::makeKey(U64 nodeHashKey,
                bool frameVaryingOrAnimated,
-               SequenceTime time,
+               double time,
                int view)
 {
     return ImageKey(nodeHashKey,frameVaryingOrAnimated,time,view);

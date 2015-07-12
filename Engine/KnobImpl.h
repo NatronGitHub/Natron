@@ -591,7 +591,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
-        SequenceTime time = getCurrentTime();
+        double time = getCurrentTime();
         if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
@@ -623,7 +623,7 @@ T Knob<T>::getGuiValue(int dimension) const
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
-        SequenceTime time = getCurrentTime();
+        double time = getCurrentTime();
         if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
@@ -911,7 +911,7 @@ Knob<T>::setValue(const T & v,
         
         KnobHelper::ValueChangedReturnCodeEnum returnValue;
         
-        SequenceTime time = getCurrentTime();
+        double time = getCurrentTime();
         KeyFrame k;
         
         boost::shared_ptr<Curve> curve;
@@ -989,7 +989,7 @@ Knob<T>::setValue(const T & v,
            reason == Natron::eValueChangedReasonNatronInternalEdited ) && //< the change was made by the user or plugin
          ( newKey != NULL) ) { //< the keyframe to set is not null
         
-        SequenceTime time = getCurrentTime();
+        double time = getCurrentTime();
         
         bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
         if (addedKeyFrame) {
@@ -1968,7 +1968,7 @@ Knob<double>::resetToDefaultValue(int dimension)
     resetExtraToDefaultValue(dimension);
     
     if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
-        SequenceTime time = getCurrentTime();
+        double time = getCurrentTime();
         isDouble->denormalize(dimension, time, &def);
     }
     ignore_result(setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));

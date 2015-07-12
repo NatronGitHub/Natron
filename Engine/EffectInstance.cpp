@@ -50,6 +50,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Transform.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/Timer.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
@@ -315,11 +316,11 @@ struct EffectInstance::RenderArgs
     RectD _rod; //!< the effect's RoD in CANONICAL coordinates
     RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
     RectI _renderWindowPixel; //< the current renderWindow in PIXEL coordinates
-    SequenceTime _time; //< the time to render
+    double _time; //< the time to render
     int _view; //< the view to render
     bool _validArgs; //< are the args valid ?
     bool _isIdentity;
-    SequenceTime _identityTime;
+    double _identityTime;
     int _identityInputNb;
     std::map<Natron::ImageComponents,PlaneToRender> _outputPlanes;
     
@@ -388,6 +389,8 @@ struct EffectInstance::Implementation
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
+    , renderingTimersMutex()
+    , totalTimeSpentRendering(0.)
     {
     }
 
@@ -448,8 +451,10 @@ struct EffectInstance::Implementation
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
-    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
+    mutable QMutex renderingTimersMutex;
+    double totalTimeSpentRendering;
     
+    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
     
     void setDuringInteractAction(bool b)
     {
@@ -593,10 +598,10 @@ struct EffectInstance::Implementation
                          const RoIMap & roiMap,
                          const RectD & rod,
                          const RectI& renderWindow,
-                         SequenceTime time,
+                         double time,
                          int view,
                          bool isIdentity,
-                         SequenceTime identityTime,
+                         double identityTime,
                          int inputNbIdentity,
                          const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes,
                          int firstFrame,
@@ -655,10 +660,10 @@ struct EffectInstance::Implementation
         ///the thread-storage set up in the first pass to work
         void setArgs_firstPass(const RectD & rod,
                                const RectI& renderWindow,
-                               SequenceTime time,
+                               double time,
                                int view,
                                bool isIdentity,
-                               SequenceTime identityTime,
+                               double identityTime,
                                int inputNbIdentity)
         {
             localData->_rod = rod;
@@ -696,6 +701,28 @@ struct EffectInstance::Implementation
         }
     }
 };
+
+
+class RenderingTimeRecorder
+{
+    TimeLapse _lapse;
+    EffectInstance* _imp;
+    
+public:
+    
+    RenderingTimeRecorder(EffectInstance* imp)
+    : _lapse()
+    , _imp(imp)
+    {
+        
+    }
+    
+    ~RenderingTimeRecorder()
+    {
+        _imp->incrementTotalTimeSpentRendering(_lapse.getTimeSinceCreation());
+    }
+};
+
 
 class InputImagesHolder_RAII
 {
@@ -756,6 +783,29 @@ EffectInstance::~EffectInstance()
     clearPluginMemoryChunks();
 }
 
+double
+EffectInstance::getTotalTimeSpentRenderingSinceLastReset() const
+{
+    QMutexLocker k(&_imp->renderingTimersMutex);
+    return _imp->totalTimeSpentRendering;
+}
+
+void
+EffectInstance::resetTotalTimeSpentRendering()
+{
+    {
+        QMutexLocker k(&_imp->renderingTimersMutex);
+        _imp->totalTimeSpentRendering = 0.;
+    }
+    resetTimeSpentRenderingInfos();
+}
+
+void
+EffectInstance::incrementTotalTimeSpentRendering(double v)
+{
+    QMutexLocker k(&_imp->renderingTimersMutex);
+    _imp->totalTimeSpentRendering += v;
+}
 
 void
 EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
@@ -1056,14 +1106,14 @@ EffectInstance::getInputLabel(int inputNb) const
 }
 
 bool
-EffectInstance::retrieveGetImageDataUponFailure(const int time,
+EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 const int view,
                                                 const RenderScale& scale,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
                                                 U64* rotoAge_p,
                                                 bool* isIdentity_p,
-                                                int* identityTime,
+                                                double* identityTime,
                                                 int* identityInputNb_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
@@ -1158,7 +1208,7 @@ EffectInstance::getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap)
 
 ImagePtr
 EffectInstance::getImage(int inputNb,
-                         const SequenceTime time,
+                         const double time,
                          const RenderScale & scale,
                          const int view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
@@ -1238,7 +1288,7 @@ EffectInstance::getImage(int inputNb,
     RectD rod;
     bool isIdentity;
     int inputNbIdentity;
-    int inputIdentityTime;
+    double inputIdentityTime;
     U64 nodeHash;
     U64 rotoAge;
     bool duringPaintStroke;
@@ -1492,7 +1542,7 @@ EffectInstance::getImage(int inputNb,
 } // getImage
 
 void
-EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,SequenceTime /*time*/,
+EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,double /*time*/,
                                               int /*view*/,
                                               const RenderScale & /*scale*/,
                                               RectD *rod)
@@ -1504,7 +1554,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,SequenceTime /*time*/
 }
 
 Natron::StatusEnum
-EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
+EffectInstance::getRegionOfDefinition(U64 hash,double time,
                                       const RenderScale & scale,
                                       int view,
                                       RectD* rod) //!< rod is in canonical coordinates
@@ -1543,7 +1593,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,SequenceTime time,
 
 bool
 EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
-                                         SequenceTime time,
+                                         double time,
                                          const RenderScale & scale,
                                          int view,
                                          RectD* rod) //!< input/output
@@ -1642,7 +1692,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
 } // ifInfiniteApplyHeuristic
 
 void
-EffectInstance::getRegionsOfInterest(SequenceTime /*time*/,
+EffectInstance::getRegionsOfInterest(double /*time*/,
                                      const RenderScale & /*scale*/,
                                      const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1658,7 +1708,7 @@ EffectInstance::getRegionsOfInterest(SequenceTime /*time*/,
 }
 
 EffectInstance::FramesNeededMap
-EffectInstance::getFramesNeeded(SequenceTime time, int view)
+EffectInstance::getFramesNeeded(double time, int view)
 {
     EffectInstance::FramesNeededMap ret;
     RangeD defaultRange;
@@ -2193,7 +2243,7 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
 static void optimizeRectsToRender(Natron::EffectInstance* self,
                                   const RectI& inputsRoDIntersection,
                                   const std::list<RectI>& rectsToRender,
-                                  const int time,
+                                  const double time,
                                   const int view,
                                   const RenderScale& renderMappedScale,
                                   std::list<EffectInstance::RectToRender>* finalRectsToRender)
@@ -2211,7 +2261,7 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
         
         bool nonIdentityRectSet = false;
         for (std::size_t i = 0; i < splits.size(); ++i) {
-            SequenceTime identityInputTime;
+            double identityInputTime;
             int identityInputNb;
             bool identity;
             
@@ -2415,7 +2465,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
     {
-        SequenceTime inputTimeIdentity = 0.;
+        double inputTimeIdentity = 0.;
         int inputNbIdentity;
         
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
@@ -3566,7 +3616,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(SequenceTime time,
+EffectInstance::renderInputImagesForRoI(double time,
                                         int view,
                                         double par,
                                         const RectD& rod,
@@ -3778,7 +3828,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
 
 
 EffectInstance::RenderRoIStatusEnum
-EffectInstance::renderRoIInternal(SequenceTime time,
+EffectInstance::renderRoIInternal(double time,
                                   Natron::RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
@@ -4063,7 +4113,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       unsigned int mipMapLevel,
                                       unsigned int renderMappedMipMapLevel,
                                       const RectD& rod,
-                                      int time,
+                                      double time,
                                       int view,
                                       const double par,
                                       bool byPassCache,
@@ -4353,7 +4403,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               const ParallelRenderArgs& frameArgs,
                               const InputImagesMap& inputImages,
                               bool identity,
-                              SequenceTime identityTime,
+                              double identityTime,
                               Natron::EffectInstance* identityInput,
                               bool renderFullScaleThenDownscale,
                               bool renderUseScaleOneInputs,
@@ -4372,10 +4422,15 @@ EffectInstance::renderHandler(RenderArgs & args,
 {
     
     
+    //Record the time spent rendering
+    boost::shared_ptr<RenderingTimeRecorder> _timeRecorder_;
+    if (isSequentialRender) {
+        _timeRecorder_.reset(new RenderingTimeRecorder(this));
+    }
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
     
-    const SequenceTime time = args._time;
+    const double time = args._time;
     int mipMapLevel = firstPlane.downscaleImage->getMipMapLevel();
     const int view = args._view;
 
@@ -4975,7 +5030,7 @@ EffectInstance::evaluate(KnobI* knob,
     }
     
     
-    int time = getCurrentTime();
+    double time = getCurrentTime();
     
     
     std::list<ViewerInstance* > viewers;
@@ -5400,7 +5455,7 @@ EffectInstance::render_public(const RenderActionArgs& args)
 }
 
 Natron::StatusEnum
-EffectInstance::getTransform_public(SequenceTime time,
+EffectInstance::getTransform_public(double time,
                                     const RenderScale& renderScale,
                                     int view,
                                     Natron::EffectInstance** inputToTransform,
@@ -5414,11 +5469,11 @@ EffectInstance::getTransform_public(SequenceTime time,
 bool
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                                   U64 hash,
-                                  SequenceTime time,
+                                  double time,
                                   const RenderScale & scale,
                                   const RectI& renderWindow,
                                   int view,
-                                  SequenceTime* inputTime,
+                                  double* inputTime,
                                   int* inputNb)
 {
     
@@ -5499,7 +5554,7 @@ EffectInstance::onInputChanged(int /*inputNo*/)
 
 Natron::StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
-                                             SequenceTime time,
+                                             double time,
                                              const RenderScale & scale,
                                              int view,
                                              RectD* rod,
@@ -5576,7 +5631,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 }
 
 void
-EffectInstance::getRegionsOfInterest_public(SequenceTime time,
+EffectInstance::getRegionsOfInterest_public(double time,
                                             const RenderScale & scale,
                                             const RectD & outputRoD, //!< effect RoD in canonical coordinates
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -5594,7 +5649,7 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
 }
 
 EffectInstance::FramesNeededMap
-EffectInstance::getFramesNeeded_public(SequenceTime time,int view)
+EffectInstance::getFramesNeeded_public(double time,int view)
 {
     NON_RECURSIVE_ACTION();
     
@@ -5635,9 +5690,9 @@ EffectInstance::getFrameRange_public(U64 hash,
 }
 
 Natron::StatusEnum
-EffectInstance::beginSequenceRender_public(SequenceTime first,
-                                           SequenceTime last,
-                                           SequenceTime step,
+EffectInstance::beginSequenceRender_public(double first,
+                                           double last,
+                                           double step,
                                            bool interactive,
                                            const RenderScale & scale,
                                            bool isSequentialRender,
@@ -5658,9 +5713,9 @@ EffectInstance::beginSequenceRender_public(SequenceTime first,
 }
 
 Natron::StatusEnum
-EffectInstance::endSequenceRender_public(SequenceTime first,
-                                         SequenceTime last,
-                                         SequenceTime step,
+EffectInstance::endSequenceRender_public(double first,
+                                         double last,
+                                         double step,
                                          bool interactive,
                                          const RenderScale & scale,
                                          bool isSequentialRender,
@@ -5755,7 +5810,7 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
 }
 
 void
-EffectInstance::getNonMaskInputsAvailableComponents(SequenceTime time,
+EffectInstance::getNonMaskInputsAvailableComponents(double time,
                                                     int view,
                                                     bool preferExistingComponents,
                                                     ComponentsAvailableMap* comps,
@@ -5806,7 +5861,7 @@ EffectInstance::getNonMaskInputsAvailableComponents(SequenceTime time,
 }
 
 void
-EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, ComponentsAvailableMap* comps,
+EffectInstance::getComponentsAvailableRecursive(double time, int view, ComponentsAvailableMap* comps,
                                                 std::list<Natron::EffectInstance*>* markedNodes)
 {
     if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
@@ -5981,13 +6036,13 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
 }
 
 void
-EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes)
+EffectInstance::getComponentsAvailable(double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes)
 {
     getComponentsAvailableRecursive(time, 0, comps, markedNodes);
 }
 
 void
-EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps)
+EffectInstance::getComponentsAvailable(double time, ComponentsAvailableMap* comps)
 {
    
     //int nViews = getApp()->getProject()->getProjectViewsCount();
@@ -6003,7 +6058,7 @@ EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap
 }
 
 void
-EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
+EffectInstance::getComponentsNeededAndProduced(double time, int view,
                                     ComponentsNeededMap* comps,
                                     SequenceTime* passThroughTime,
                                     int* passThroughView,
@@ -6057,7 +6112,7 @@ EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
 }
 
 void
-EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int view,
+EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                                                       ComponentsNeededMap* comps,
                                                       bool* processAllRequested,
                                                       SequenceTime* passThroughTime,
@@ -6224,7 +6279,7 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,Pl
 }
 
 void
-EffectInstance::updateThreadLocalRenderTime(int time)
+EffectInstance::updateThreadLocalRenderTime(double time)
 {
     if (QThread::currentThread() != qApp->thread() && _imp->renderArgs.hasLocalData()) {
          RenderArgs& args = _imp->renderArgs.localData();
@@ -6603,7 +6658,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 }
 
 Natron::EffectInstance*
-EffectInstance::getNearestNonIdentity(int time)
+EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
 
@@ -6617,7 +6672,7 @@ EffectInstance::getNearestNonIdentity(int time)
     ///Ignore the result of getRoD if it failed
     (void)stat;
     
-    SequenceTime inputTimeIdentity;
+    double inputTimeIdentity;
     int inputNbIdentity;
     
     RectI pixelRoi;
@@ -6669,7 +6724,7 @@ EffectInstance::abortAnyEvaluation()
     getNode()->incrementKnobsAge();
 }
 
-SequenceTime
+double
 EffectInstance::getCurrentTime() const
 {
     return getThreadLocalRenderTime();
@@ -6757,13 +6812,14 @@ EffectInstance::isPaintingOverItselfEnabled() const
 }
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
-      , _writerCurrentFrame(0)
-      , _writerFirstFrame(0)
-      , _writerLastFrame(0)
-      , _outputEffectDataLock(new QMutex)
-      , _renderController(0)
-      , _engine(0)
+: Natron::EffectInstance(node)
+, _writerCurrentFrame(0)
+, _writerFirstFrame(0)
+, _writerLastFrame(0)
+, _outputEffectDataLock(new QMutex)
+, _renderController(0)
+, _engine(0)
+, _timeSpentPerFrameRendered()
 {
 }
 
@@ -6978,4 +7034,26 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     }
 }
 
+void
+OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent)
+{
+    assert(totalTimeSpent && averageTimePerFrame);
+    
+    *totalTimeSpent = 0;
+    
+    QMutexLocker k(_outputEffectDataLock);
+    _timeSpentPerFrameRendered.push_back(lastTimeSpent);
+    
+    for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it!= _timeSpentPerFrameRendered.end(); ++it) {
+        *totalTimeSpent += *it;
+    }
+    assert(_timeSpentPerFrameRendered.size() != 0);
+    *averageTimePerFrame = *totalTimeSpent / _timeSpentPerFrameRendered.size();
+}
 
+void
+OutputEffectInstance::resetTimeSpentRenderingInfos()
+{
+    QMutexLocker k(_outputEffectDataLock);
+    _timeSpentPerFrameRendered.clear();
+}

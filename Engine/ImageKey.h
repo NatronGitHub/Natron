@@ -27,7 +27,7 @@ public:
 
     U64 _nodeHashKey;
     bool _frameVaryingOrAnimated;
-    SequenceTime _time;
+    double _time;
     //unsigned int _mipMapLevel;
     int _view;
     double _pixelAspect;
@@ -36,7 +36,7 @@ public:
 
     ImageKey(U64 nodeHashKey,
              bool frameVaryingOrAnimated,
-             SequenceTime time,
+             double time,
              //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
              int view,
              double pixelAspect = 1.);
@@ -50,7 +50,7 @@ public:
 
     bool operator==(const ImageKey & other) const;
 
-    SequenceTime getTime() const
+    double getTime() const
     {
         return _time;
     }

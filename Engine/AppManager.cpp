@@ -387,7 +387,15 @@ CLArgs::CLArgs(int& argc,char* argv[],bool forceBackground)
         _imp->isBackground = true;
     }
     for (int i = 0; i < argc; ++i) {
-        _imp->args.push_back( QString(argv[i]) );
+        QString str = argv[i];
+        if (str.size() >= 2 && str[0] == '"' && str[str.size() - 1] == '"') {
+            str.remove(0, 1);
+            str.remove(str.size() - 1, 1);
+        }
+#ifdef DEBUG
+        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
+#endif
+        _imp->args.push_back(str);
     }
     
     _imp->parse();
@@ -400,7 +408,14 @@ CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
     if (forceBackground) {
         _imp->isBackground = true;
     }
-    _imp->args = arguments;
+    for (int i = 0; i < arguments.size(); ++i) {
+        QString str = arguments[i];
+        if (str.size() >= 2 && str[0] == '"' && str[str.size() - 1] == '"') {
+            str.remove(0, 1);
+            str.remove(str.size() - 1, 1);
+        }
+        _imp->args.push_back(str);
+    }
     _imp->parse();
 }
 
@@ -692,8 +707,15 @@ CLArgsPrivate::parse()
     {
         QStringList::iterator it = hasToken("IPCpipe", "");
         if (it != args.end()) {
-            ipcPipe = *it;
-            args.erase(it);
+            ++it;
+            if (it != args.end()) {
+                ipcPipe = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the IPC pipe filename").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
         }
     }
     

@@ -1001,6 +1001,7 @@ AppInstance::triggerAutoSave()
 void
 AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
 {
+    
     std::list<RenderWork> renderers;
 
     if ( !writers.empty() ) {
@@ -1056,9 +1057,13 @@ void
 AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
 {
     
+    
     if (writers.empty()) {
         return;
     }
+    
+    getProject()->resetTotalTimeSpentRenderingForAllNodes();
+
     
     if ( appPTR->isBackground() ) {
         

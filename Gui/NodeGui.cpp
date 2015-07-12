@@ -2185,7 +2185,9 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGuiI> outputGuiI = (*it)->getNodeGui();
-            assert(outputGuiI);
+            if (!outputGuiI) {
+                continue;
+            }
             NodeGui* gui = dynamic_cast<NodeGui*>(outputGuiI.get());
             assert(gui);
             sceneRect = mapToScene( boundingRect() ).boundingRect();

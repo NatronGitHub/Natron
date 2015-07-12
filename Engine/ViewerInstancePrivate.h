@@ -296,7 +296,9 @@ public:
                 return true;
             }
         }
-        return true;
+        //Hmm the render since to be no longer active...
+        assert(false);
+        return false;
     }
     
     /**
@@ -338,9 +340,7 @@ public:
         if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
             return false;
         }
-        if (currentRenderAges[texIndex].size() > 1) {
-            currentRenderAges[texIndex].resize(1);
-        }
+       
         OnGoingRenderInfo info;
         info.age = age;
         info.canAbort = canAbort;

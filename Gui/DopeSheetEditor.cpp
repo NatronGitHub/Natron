@@ -169,6 +169,11 @@ void DopeSheetEditor::toggleTripleSync(bool enabled)
     _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
     _imp->toggleTripleSyncBtn->setDown(enabled);
     _imp->gui->setTripleSyncEnabled(enabled);
+    if (enabled) {
+        QList<int> sizes = _imp->splitter->sizes();
+        assert(sizes.size() > 0);
+        _imp->gui->setCurveEditorTreeWidth(sizes[0]);
+    }
 }
 
 void
@@ -187,4 +192,14 @@ DopeSheetView*
 DopeSheetEditor::getDopesheetView() const
 {
     return _imp->dopeSheetView;
+}
+
+void
+DopeSheetEditor::setTreeWidgetWidth(int width)
+{
+    _imp->hierarchyView->setCanResizeOtherWidget(false);
+    QList<int> sizes;
+    sizes << width << _imp->dopeSheetView->width();
+    _imp->splitter->setSizes(sizes);
+    _imp->hierarchyView->setCanResizeOtherWidget(true);
 }

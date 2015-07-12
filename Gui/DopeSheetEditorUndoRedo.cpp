@@ -24,16 +24,7 @@ typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
 namespace {
 
-/**
- * @brief A little helper to sort a DSKeyPtrList.
- *
- * This is used in the DSMoveKeysCommand.
- */
-static bool dsSelectedKeyLessFunctor(const DSKeyPtr &left,
-                                     const DSKeyPtr &right)
-{
-    return left->key.getTime() < right->key.getTime();
-}
+
 
 /**
  * @brief Move the node 'reader' on project timeline, by offsetting its
@@ -167,7 +158,6 @@ _model(model)
     for (std::set<boost::shared_ptr<Natron::Node> >::iterator it = nodesSet.begin(); it!=nodesSet.end(); ++it) {
         _allDifferentNodes.push_back(*it);
     }
-    _keys.sort(dsSelectedKeyLessFunctor);
 }
 
 void DSMoveKeysAndNodesCommand::undo()

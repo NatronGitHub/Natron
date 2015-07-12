@@ -206,6 +206,11 @@ public:
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
      **/
     void quitAnyProcessingForAllNodes();
+    
+    /**
+     * @brief Reset the total time spent rendering accumulated on all nodes.
+     **/
+    void resetTotalTimeSpentRenderingForAllNodes();
 
 public:
     
@@ -364,7 +369,7 @@ public:
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

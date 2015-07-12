@@ -328,14 +328,6 @@ RemoveKeysCommand::redo()
     addOrRemoveKeyframe(false);
 }
 
-namespace  {
-static bool
-selectedKeyLessFunctor(const KeyPtr & lhs,
-                       const KeyPtr & rhs)
-{
-    return lhs->key.getTime() < rhs->key.getTime();
-}
-}
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
@@ -352,8 +344,7 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
       , _keys(keys)
       , _widget(widget)
 {
-    ///sort keys by increasing time
-    _keys.sort(selectedKeyLessFunctor);
+
 }
 
 static void
@@ -428,14 +419,8 @@ MoveKeysCommand::move(double dt,
         }
     }
     
-    if (dt <= 0) {
-        for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            moveKey(*it, dt, dv);
-        }
-    } else {
-        for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
-            moveKey(*it, dt, dv);
-        }
+    for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        moveKey(*it, dt, dv);
     }
     
     if (_firstRedoCalled || _updateOnFirstRedo) {

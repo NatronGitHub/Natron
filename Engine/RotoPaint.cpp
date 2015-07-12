@@ -187,7 +187,7 @@ RotoPaint::onInputChanged(int inputNb)
 }
 
 Natron::StatusEnum
-RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod)
+RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
     (void)EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     
@@ -202,11 +202,11 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
 }
 
 bool
-RotoPaint::isIdentity(SequenceTime time,
+RotoPaint::isIdentity(double time,
                       const RenderScale & scale,
                       const RectI & roi,
                       int view,
-                      SequenceTime* inputTime,
+                      double* inputTime,
                       int* inputNb)
 {
     boost::shared_ptr<Node> node = getNode();

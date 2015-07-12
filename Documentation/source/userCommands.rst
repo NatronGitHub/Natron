@@ -22,7 +22,7 @@ to register it::
 		...
 
 	#Add a custom menu entry with a shortcut to create our icon viewer
-	natron.addMenuCommand("Inria/Scripts/IconViewer","createIconViewer",QtCore.Qt.Key.Key_L,QtCore.Qt.KeyboardModifier.ShiftModifier)
+	NatronGui.natron.addMenuCommand("Inria/Scripts/IconViewer","createIconViewer",QtCore.Qt.Key.Key_L,QtCore.Qt.KeyboardModifier.ShiftModifier)
 	
 	
 Note that this function is to be called on the whole **application** via the **natron** variable

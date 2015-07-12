@@ -31,6 +31,7 @@
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QRunnable>
+#include <QTextStream>
 
 #include "Global/MemoryInfo.h"
 
@@ -263,7 +264,10 @@ struct OutputSchedulerThreadPrivate
        
     }
     
-    bool appendBufferedFrame(double time,int view,const boost::shared_ptr<BufferableObject>& image) WARN_UNUSED_RETURN
+    bool appendBufferedFrame(double time,
+                             int view,
+                             const boost::shared_ptr<TimeLapse>& timeRecorder,
+                             const boost::shared_ptr<BufferableObject>& image) WARN_UNUSED_RETURN
     {
         ///Private, shouldn't lock
         assert(!bufMutex.tryLock());
@@ -272,6 +276,7 @@ struct OutputSchedulerThreadPrivate
         k.time = time;
         k.view = view;
         k.frame = image;
+        k.timeRecorder = timeRecorder;
         std::pair<FrameBuffer::iterator,bool> ret = buf.insert(k);
         return ret.second;
     }
@@ -809,7 +814,8 @@ OutputSchedulerThread::startRender()
     
     ///Start with one thread if it doesn't exist
     if (nThreads == 0) {
-        adjustNumberOfThreads(&nThreads);
+        int lastNThreads;
+        adjustNumberOfThreads(&nThreads, &lastNThreads);
     }
     
     QMutexLocker l(&_imp->renderThreadsMutex);
@@ -1045,14 +1051,14 @@ OutputSchedulerThread::run()
                     if (!renderFinished) {
                         ///////////
                         /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
-                        int newNThreads;
-                        adjustNumberOfThreads(&newNThreads);
+                        int newNThreads, lastNThreads;
+                        adjustNumberOfThreads(&newNThreads,&lastNThreads);
                         
                         ///////////
                         /////Append render requests for the render threads
                         pushFramesToRender(newNThreads);
                     }
-                }
+                } // if (!renderFinished) {
                 
                 if (_imp->timer->playState == ePlayStateRunning) {
                     _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
@@ -1109,14 +1115,14 @@ OutputSchedulerThread::run()
                     while (_imp->processRunning) {
                         _imp->processCondition.wait(&_imp->processMutex);
                     }
-                }
+                } // if (_imp->mode == eProcessFrameBySchedulerThread) {
                 
                 
                 ////////////
                 /////At this point the frame has been processed by the output device
                 
-                
-                notifyFrameRendered(expectedTimeToRender,0,1,eSchedulingPolicyOrdered);
+                assert(!framesToRender.empty());
+                notifyFrameRendered(expectedTimeToRender, 0, 1, framesToRender.front().timeRecorder, eSchedulingPolicyOrdered);
                 
                 ///////////
                 /// End of the loop, refresh bufferEmpty
@@ -1155,7 +1161,7 @@ OutputSchedulerThread::run()
 }
 
 void
-OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
+OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads, int *lastNThreads)
 {
     ///////////
     /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
@@ -1169,6 +1175,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     
     ///How many current threads are used by THIS renderer
     int currentParallelRenders = getNRenderThreads();
+    *lastNThreads = currentParallelRenders;
     
     if (userSettingParallelThreads == 0) {
         ///User wants it to be automatically computed, do a simple heuristic: launch as many parallel renders
@@ -1206,12 +1213,19 @@ void
 OutputSchedulerThread::notifyFrameRendered(int frame,
                                            int viewIndex,
                                            int viewsCount,
+                                           const boost::shared_ptr<TimeLapse>& timeRecorder,
                                            Natron::SchedulingPolicyEnum policy)
 {
-    if (viewIndex == viewsCount -1) {
-        _imp->engine->s_frameRendered(frame);
+    
+    double percentage ;
+    double timeSpent;
+    int nbCurParallelRenders;
+    if (timeRecorder) {
+        timeSpent = timeRecorder->getTimeSinceCreation();
     }
-    double percentage;
+    U64 nbFramesLeftToRender;
+    bool isBackground = appPTR->isBackground();
+    
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
@@ -1219,7 +1233,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ++_imp->nFramesRendered;
         }
         U64 totalFrames = _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
+        
         percentage = (double)_imp->nFramesRendered / totalFrames;
+        nbFramesLeftToRender = totalFrames - _imp->nFramesRendered;
+        
         if ( _imp->nFramesRendered == totalFrames) {
 
             _imp->renderFinished = true;
@@ -1228,33 +1245,69 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                ignore_result(_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>()));
+                ignore_result(_imp->appendBufferedFrame(0, 0, boost::shared_ptr<TimeLapse>(), boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
+            nbCurParallelRenders = getNRenderThreads();
         } else {
             l.unlock();
             
             ///////////
             /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
             int newNThreads;
-            adjustNumberOfThreads(&newNThreads);
+            adjustNumberOfThreads(&newNThreads, &nbCurParallelRenders);
         }
     } else {
-        QMutexLocker l(&_imp->runArgsMutex);
-        percentage = (double)frame / _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
+        {
+            QMutexLocker l(&_imp->runArgsMutex);
+            if (_imp->livingRunArgs.timelineDirection == eRenderDirectionForward) {
+                percentage = (double)frame / _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
+                nbFramesLeftToRender = _imp->livingRunArgs.lastFrame - frame;
+            } else {
+                U64 totalFrames = _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
+                percentage = 1. - (double)frame / totalFrames;
+                nbFramesLeftToRender = frame - _imp->livingRunArgs.firstFrame;
+            }
+        }
+        nbCurParallelRenders = getNRenderThreads();
+    } // if (policy == eSchedulingPolicyFFA) {
+    
+    double avgTimeSpent,timeRemaining,totalTimeSpent;
+    if (timeRecorder) {
+        _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
+        assert(nbCurParallelRenders > 0);
+        timeRemaining = (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders;
     }
     
-    
-    if ( appPTR->isBackground() ) {
+    if (isBackground) {
+        QString longMessage;
+        QTextStream ts(&longMessage);
         QString frameStr = QString::number(frame);
-        
-        QString pStr = QString::number(percentage * 100);
-        appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr + " (" + pStr + "%)",kFrameRenderedStringShort + frameStr);
+        ts << kFrameRenderedStringLong << frameStr << " (" << QString::number(percentage * 100,'f',1) << "%)";
+        if (timeRecorder) {
+            QString timeSpentStr = Timer::printAsTime(timeSpent, false);
+            QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
+            ts << "\nTime elapsed for frame: " << timeSpentStr;
+            ts << "\nTime remaining: " << timeRemainingStr;
+            frameStr.append(';');
+            frameStr.append(QString::number(timeSpent));
+            frameStr.append(';');
+            frameStr.append(QString::number(timeRemaining));
+        }
+        appPTR->writeToOutputPipe(longMessage,kFrameRenderedStringShort + frameStr);
+    }
+    
+    if (viewIndex == viewsCount -1) {
+        if (!timeRecorder) {
+            _imp->engine->s_frameRendered(frame);
+        } else {
+            _imp->engine->s_frameRenderedWithTimer(frame, timeSpent, timeRemaining);
+        }
     }
     
     if (_imp->outputEffect->isWriter()) {
         std::string cb = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
-        if (!cb.empty()) {
+        if (!cb.empty()) {  
             std::vector<std::string> args;
             std::string error;
             Natron::getFunctionArguments(cb, &error, &args);
@@ -1286,7 +1339,11 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 }
 
 void
-OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost::shared_ptr<BufferableObject>& frame,bool wakeThread)
+OutputSchedulerThread::appendToBuffer_internal(double time,
+                                               int view,
+                                               const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                               const boost::shared_ptr<BufferableObject>& frame,
+                                               bool wakeThread)
 {
     if (QThread::currentThread() == qApp->thread()) {
         ///Single-threaded , call directly the function
@@ -1304,7 +1361,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost:
         ///Called by the scheduler thread when an image is rendered
         
         QMutexLocker l(&_imp->bufMutex);
-        ignore_result(_imp->appendBufferedFrame(time, view, frame));
+        ignore_result(_imp->appendBufferedFrame(time, view, timeRecorder, frame));
         if (wakeThread) {
             ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
             _imp->bufCondition.wakeOne();
@@ -1314,13 +1371,19 @@ OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost:
 }
 
 void
-OutputSchedulerThread::appendToBuffer(double time,int view,const boost::shared_ptr<BufferableObject>& image)
+OutputSchedulerThread::appendToBuffer(double time,
+                                      int view,
+                                      const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                      const boost::shared_ptr<BufferableObject>& image)
 {
-    appendToBuffer_internal(time, view, image, true);
+    appendToBuffer_internal(time, view, timeRecorder, image, true);
 }
 
 void
-OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjectList& frames)
+OutputSchedulerThread::appendToBuffer(double time,
+                                      int view,
+                                      const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                      const BufferableObjectList& frames)
 {
     if (frames.empty()) {
         return;
@@ -1331,10 +1394,10 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjec
     }
     for (BufferableObjectList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         if (next != frames.end()) {
-            appendToBuffer_internal(time, view, *it, false);
+            appendToBuffer_internal(time, view, timeRecorder, *it, false);
             ++next;
         } else {
-            appendToBuffer_internal(time, view, *it, true);
+            appendToBuffer_internal(time, view, timeRecorder, *it, true);
         }
     }
 }
@@ -1876,6 +1939,8 @@ private:
     virtual void
     renderFrame(int time) {
         
+        boost::shared_ptr<TimeLapse> timeRecorder(new TimeLapse);
+        
         std::string cb = _imp->output->getNode()->getBeforeFrameRenderCallback();
         if (!cb.empty()) {
             std::vector<std::string> args;
@@ -2007,10 +2072,10 @@ private:
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
                         for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
-                            _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(*it));
+                            _imp->scheduler->appendToBuffer(time, i, timeRecorder, boost::dynamic_pointer_cast<BufferableObject>(*it));
                         }
                     } else {
-                        _imp->scheduler->notifyFrameRendered(time,i,viewsCount,eSchedulingPolicyFFA);
+                        _imp->scheduler->notifyFrameRendered(time, i, viewsCount, timeRecorder, eSchedulingPolicyFFA);
                     }
                     
                 } else {
@@ -2388,7 +2453,7 @@ private:
                     args[i].reset();
                 }
             }
-            _imp->scheduler->appendToBuffer(time, view, toAppend);
+            _imp->scheduler->appendToBuffer(time, view, boost::shared_ptr<TimeLapse>(), toAppend);
         }
         
         
@@ -2411,7 +2476,7 @@ private:
                     toAppend.push_back(args[i]->params);
                 }
             }
-            _imp->scheduler->appendToBuffer(time, view, toAppend);
+            _imp->scheduler->appendToBuffer(time, view, boost::shared_ptr<TimeLapse>(), toAppend);
         }
 
     }

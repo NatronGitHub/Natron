@@ -1343,23 +1343,7 @@ ViewerInstance::renderViewer_internal(int view,
         }
         
         abortCheck(inArgs.activeInputToRender);
-        
-        if (!isSequentialRender) {
-            
-            bool couldRemove = true;
-            if (rectIndex == splitRoi.size() - 1) {
-                couldRemove = _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            if (!couldRemove) {
-                if (inArgs.params->cachedFrame) {
-                    inArgs.params->cachedFrame->setAborted(true);
-                    appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-                    inArgs.params->cachedFrame.reset();
-                }
-                return eStatusReplyDefault;
-            }
-        }
-        
+ 
         
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( inArgs.params->image->getBitDepth() );
         
@@ -1492,6 +1476,20 @@ ViewerInstance::renderViewer_internal(int view,
         } // if (singleThreaded)
         
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
+    
+    if (!isSequentialRender) {
+        
+        bool couldRemove = _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+
+        if (!couldRemove) {
+            if (inArgs.params->cachedFrame) {
+                inArgs.params->cachedFrame->setAborted(true);
+                appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
+                inArgs.params->cachedFrame.reset();
+            }
+            return eStatusReplyDefault;
+        }
+    }
     
     if (inArgs.params->cachedFrame) {
         inArgs.params->cachedFrame->setOriginalImage(inArgs.params->image);
@@ -2687,7 +2685,7 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     return std::log(closestPowerOf2) / M_LN2;
 }
 
-SequenceTime
+double
 ViewerInstance::getCurrentTime() const
 {
     return getFrameRenderArgsCurrentTime();

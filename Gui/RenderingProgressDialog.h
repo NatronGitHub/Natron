@@ -54,8 +54,8 @@ public Q_SLOTS:
     void onProcessDeleted();
 
     void onFrameRendered(int);
-
-    void onCurrentFrameProgress(int);
+    
+    void onFrameRenderedWithTimer(int frame, double timeElapsedForFrame, double remainingTime);
 
     void onProcessCanceled();
 

@@ -202,7 +202,7 @@ public:
     
     int getLastRenderedTime() const;
     
-    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     
     virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 

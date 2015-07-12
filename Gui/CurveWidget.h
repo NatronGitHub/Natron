@@ -299,6 +299,8 @@ public:
     void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
+    
+    bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
 
     void refreshSelectedKeys();
 

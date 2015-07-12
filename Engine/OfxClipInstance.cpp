@@ -232,7 +232,7 @@ OfxClipInstance::getComponentsPresent() const
     if (isOutput()) {
         //If called on the output clip and by a multi-planar effect while in the getClipComponents action
         //this might lead to infinite recursion, so make sure we do not issue a call to getClipComponents again
-        SequenceTime time = _nodeInstance->getCurrentTime();
+        double time = _nodeInstance->getCurrentTime();
         int maxInputs = _nodeInstance->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             if (!_nodeInstance->isInputMask(i) && !_nodeInstance->isInputRotoBrush(i)) {
@@ -288,7 +288,7 @@ OfxClipInstance::getComponentsPresent() const
         if (!effect) {
             return ret;
         }
-        int time = effect->getCurrentTime();
+        double time = effect->getCurrentTime();
         
         effect->getComponentsAvailable(time, &compsAvailable);
     }
