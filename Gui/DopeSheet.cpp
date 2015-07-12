@@ -1,5 +1,7 @@
 #include "DopeSheet.h"
 
+#include <algorithm>
+
 // Qt includes
 #include <QDebug> //REMOVEME
 #include <QtEvents>
@@ -516,11 +518,90 @@ void DopeSheet::deleteSelectedKeyframes()
     _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, _imp->editor));
 }
 
+struct SortIncreasingFunctor {
+    
+    bool operator() (const DSKeyPtr& lhs,const DSKeyPtr& rhs) {
+        boost::shared_ptr<DSKnob> leftKnobDs = lhs->getContext();
+        boost::shared_ptr<DSKnob> rightKnobDs = rhs->getContext();
+        if (leftKnobDs.get() < rightKnobDs.get()) {
+            return true;
+        } else if (leftKnobDs.get() > rightKnobDs.get()) {
+            return false;
+        } else {
+            return lhs->key.getTime() < rhs->key.getTime();
+        }
+    }
+};
+
+struct SortDecreasingFunctor {
+    
+    bool operator() (const DSKeyPtr& lhs,const DSKeyPtr& rhs) {
+        boost::shared_ptr<DSKnob> leftKnobDs = lhs->getContext();
+        boost::shared_ptr<DSKnob> rightKnobDs = rhs->getContext();
+        assert(leftKnobDs && rightKnobDs);
+        if (leftKnobDs.get() < rightKnobDs.get()) {
+            return true;
+        } else if (leftKnobDs.get() > rightKnobDs.get()) {
+            return false;
+        } else {
+            return lhs->key.getTime() > rhs->key.getTime();
+        }
+    }
+};
+
 void DopeSheet::moveSelectedKeysAndNodes(double dt)
 {
     DSKeyPtrList selectedKeyframes;
     std::vector<boost::shared_ptr<DSNode> > selectedNodes;
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    
+    ///Constraint dt according to keyframe positions
+    double maxLeft = INT_MIN;
+    double maxRight = INT_MAX;
+    std::vector<DSKeyPtr> vect;
+    for (DSKeyPtrList::iterator it = selectedKeyframes.begin(); it!=selectedKeyframes.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobDs = (*it)->getContext();
+        if (!knobDs) {
+            continue;
+        }
+        boost::shared_ptr<Curve> curve = knobDs->getKnobGui()->getCurve(knobDs->getDimension());
+        assert(curve);
+        KeyFrame prevKey,nextKey;
+        if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
+            if (!_imp->selectionModel->keyframeIsSelected(knobDs, nextKey)) {
+                double diff = nextKey.getTime() - (*it)->key.getTime() - 1;
+                assert(diff >= 0);
+                maxRight = std::min(diff, maxRight);
+            }
+        }
+        if (curve->getPreviousKeyframeTime((*it)->key.getTime(), &prevKey)) {
+            if (!_imp->selectionModel->keyframeIsSelected(knobDs, prevKey)) {
+                double diff = prevKey.getTime()  - (*it)->key.getTime() + 1;
+                assert(diff <= 0);
+                maxLeft = std::max(diff, maxLeft);
+            }
+        }
+        vect.push_back(*it);
+    }
+    dt = std::min(dt, maxRight);
+    dt = std::max(dt, maxLeft);
+    if (dt == 0) {
+        return;
+    }
+    
+    //Keyframes must be sorted in order according to the user movement otherwise if keyframes are next to each other we might override
+    //another keyframe.
+    //Can only call sort on random iterators
+    if (dt < 0) {
+        std::sort(vect.begin(), vect.end(), SortIncreasingFunctor());
+    } else {
+        std::sort(vect.begin(), vect.end(), SortDecreasingFunctor());
+    }
+    selectedKeyframes.clear();
+    for (std::vector<DSKeyPtr>::iterator it = vect.begin(); it!=vect.end(); ++it) {
+        selectedKeyframes.push_back(*it);
+    }
+    
     _imp->pushUndoCommand(new DSMoveKeysAndNodesCommand(selectedKeyframes, selectedNodes, dt, _imp->editor));
 }
 
