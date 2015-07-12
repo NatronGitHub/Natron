@@ -90,6 +90,8 @@ public:
     int getTimelineCurrentTime() const;
     
     DopeSheetView* getDopesheetView() const;
+    
+    void setTreeWidgetWidth(int width);
 
 public Q_SLOTS:
     /**

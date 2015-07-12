@@ -5601,6 +5601,18 @@ Gui::addMenuEntry(const QString & menuGrouping,
     }
 }
 
+void
+Gui::setDopeSheetTreeWidth(int width)
+{
+    _imp->_dopeSheetEditor->setTreeWidgetWidth(width);
+}
+
+void
+Gui::setCurveEditorTreeWidth(int width)
+{
+    _imp->_curveEditor->setTreeWidgetWidth(width);
+}
+
 void Gui::setTripleSyncEnabled(bool enabled)
 {
     if (_imp->_isTripleSyncEnabled != enabled) {

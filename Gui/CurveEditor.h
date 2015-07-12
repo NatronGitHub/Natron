@@ -348,6 +348,8 @@ public:
     void addNode(boost::shared_ptr<NodeGui> node);
 
     void removeNode(NodeGui* node);
+    
+    void setTreeWidgetWidth(int width);
 
     void centerOn(const std::vector<boost::shared_ptr<Curve> > & curves);
 

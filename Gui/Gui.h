@@ -528,6 +528,10 @@ public:
 
     void setTripleSyncEnabled(bool enabled);
     bool isTripleSyncEnabled() const;
+    
+    void setDopeSheetTreeWidth(int width);
+    void setCurveEditorTreeWidth(int width);
+    
 
     void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
 

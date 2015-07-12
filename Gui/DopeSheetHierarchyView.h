@@ -141,6 +141,8 @@ public:
     
     QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
+    void setCanResizeOtherWidget(bool canResize);
+    
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
@@ -221,6 +223,9 @@ private Q_SLOTS:
     void onSelectionChanged();
 
 private:
+    
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 

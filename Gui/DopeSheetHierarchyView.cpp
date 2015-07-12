@@ -3,6 +3,7 @@
 #include <QDebug> //REMOVEME
 #include <QHeaderView>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QStyleOption>
 
 #include "Engine/Node.h"
@@ -278,17 +279,19 @@ public:
     // keyframe selection
     void selectKeyframes(const QList<QTreeWidgetItem *> &items);
 
+    
     /* attributes */
     HierarchyView *q_ptr;
     DopeSheet *dopeSheetModel;
-
     Gui *gui;
+    bool _canResizeOtherWidget;
 };
 
 HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
     q_ptr(qq),
     dopeSheetModel(0),
-    gui(0)
+    gui(0),
+    _canResizeOtherWidget(true)
 {}
 
 HierarchyViewPrivate::~HierarchyViewPrivate()
@@ -616,6 +619,21 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
 
 HierarchyView::~HierarchyView()
 {}
+
+void
+HierarchyView::setCanResizeOtherWidget(bool canResize)
+{
+    _imp->_canResizeOtherWidget = canResize;
+}
+
+void
+HierarchyView::resizeEvent(QResizeEvent* e)
+{
+    QTreeWidget::resizeEvent(e);
+    if (_imp->_canResizeOtherWidget && _imp->gui->isTripleSyncEnabled()) {
+        _imp->gui->setCurveEditorTreeWidth(e->size().width());
+    }
+}
 
 boost::shared_ptr<DSKnob> HierarchyView::getDSKnobAt(int y) const
 {
