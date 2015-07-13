@@ -269,6 +269,7 @@ struct GuiPrivate
     ActionWithShortcut* actionExportLayout;
     ActionWithShortcut* actionRestoreDefaultLayout;
     ActionWithShortcut* actionNextTab;
+    ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
 
     ///the main "central" widget
@@ -442,6 +443,7 @@ struct GuiPrivate
         , actionExportLayout(0)
         , actionRestoreDefaultLayout(0)
         , actionNextTab(0)
+        , actionPrevTab(0)
         , actionCloseTab(0)
         , _centralWidget(0)
         , _mainLayout(0)
@@ -1028,6 +1030,8 @@ Gui::createMenuActions()
     _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionDefaultLayout, kShortcutDescActionDefaultLayout, this);
     QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL( triggered() ), this, SLOT( restoreDefaultLayout() ) );
 
+    _imp->actionPrevTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionPrevTab, kShortcutDescActionPrevTab, this);
+    QObject::connect( _imp->actionPrevTab, SIGNAL( triggered() ), this, SLOT( onPrevTabTriggered() ) );
     _imp->actionNextTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, this);
     QObject::connect( _imp->actionNextTab, SIGNAL( triggered() ), this, SLOT( onNextTabTriggered() ) );
     _imp->actionCloseTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionCloseTab, kShortcutDescActionCloseTab, this);
@@ -1063,6 +1067,7 @@ Gui::createMenuActions()
     _imp->menuLayout->addAction(_imp->actionImportLayout);
     _imp->menuLayout->addAction(_imp->actionExportLayout);
     _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
+    _imp->menuLayout->addAction(_imp->actionPrevTab);
     _imp->menuLayout->addAction(_imp->actionNextTab);
     _imp->menuLayout->addAction(_imp->actionCloseTab);
 
@@ -5435,6 +5440,17 @@ TabWidget*
 Gui::getLastEnteredTabWidget() const
 {
     return _imp->_lastEnteredTabWidget;
+}
+
+void
+Gui::onPrevTabTriggered()
+{
+    TabWidget* t = getLastEnteredTabWidget();
+    
+    if (t) {
+        t->moveToPreviousTab();
+    }
+
 }
 
 void

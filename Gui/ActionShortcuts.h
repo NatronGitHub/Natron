@@ -149,6 +149,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionNextTab "nextTab"
 #define kShortcutDescActionNextTab "Next Tab"
 
+#define kShortcutIDActionPrevTab "prevTab"
+#define kShortcutDescActionPrevTab "Previous Tab"
+
 #define kShortcutIDActionCloseTab "closeTab"
 #define kShortcutDescActionCloseTab "Close Tab"
 

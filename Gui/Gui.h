@@ -654,6 +654,8 @@ public Q_SLOTS:
 
     void onNextTabTriggered();
 
+    void onPrevTabTriggered();
+    
     void onCloseTabTriggered();
 
     void onUserCommandTriggered();

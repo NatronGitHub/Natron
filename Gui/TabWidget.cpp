@@ -361,6 +361,29 @@ TabWidget::moveToNextTab()
 }
 
 void
+TabWidget::moveToPreviousTab()
+{
+    int prevTab = -1;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        
+        for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+            if (_imp->tabs[i].first == _imp->currentWidget) {
+                if (i == 0) {
+                    prevTab = _imp->tabs.size() - 1;
+                } else {
+                    prevTab = i - 1;
+                }
+            }
+        }
+    }
+    if (prevTab != -1) {
+        makeCurrentTab(prevTab);
+    }
+
+}
+
+void
 TabWidget::tryCloseFloatingPane()
 {
     QWidget* parent = parentWidget();
@@ -901,7 +924,7 @@ TabWidget::removeTab(int index,bool userAction)
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() > 0) {
             l.unlock();
-            makeCurrentTab(0);
+            makeCurrentTab((index - 1 >= 0) ? index - 1 : 0);
             l.relock();
         } else {
             _imp->currentWidget = 0;
@@ -1461,7 +1484,9 @@ TabWidget::keyPressEvent (QKeyEvent* e)
         e->accept();
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, e->modifiers(), e->key())) {
         moveToNextTab();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, e->modifiers(), e->key())) {
+        moveToPreviousTab();
+    }else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
         closeCurrentWidget();
     } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
         _imp->gui->toggleFullScreen();
