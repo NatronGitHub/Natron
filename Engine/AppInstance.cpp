@@ -406,6 +406,8 @@ AppInstance::load(const CLArgs& cl)
     
     declareCurrentAppVariable_Python();
 
+    const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
+    
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
@@ -418,7 +420,7 @@ AppInstance::load(const CLArgs& cl)
 
         QFileInfo info(cl.getFilename());
         if (!info.exists()) {
-            throw std::invalid_argument(tr("Specified file does not exist").toStdString());
+            throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
         }
         
         std::list<AppInstance::RenderRequest> writersWork;
@@ -440,6 +442,13 @@ AppInstance::load(const CLArgs& cl)
             throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
         }
         
+        if (!extraOnProjectCreatedScript.isEmpty()) {
+            QFileInfo cbInfo(extraOnProjectCreatedScript);
+            if (cbInfo.exists()) {
+                loadPythonScript(cbInfo);
+            }
+        }
+        
         startWritersRendering(writersWork);
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
@@ -448,10 +457,25 @@ AppInstance::load(const CLArgs& cl)
             loadPythonScript(info);
         }
         
+        if (!extraOnProjectCreatedScript.isEmpty()) {
+            QFileInfo cbInfo(extraOnProjectCreatedScript);
+            if (cbInfo.exists()) {
+                loadPythonScript(cbInfo);
+            }
+        }
+
         
         appPTR->launchPythonInterpreter();
     } else {
         execOnProjectCreatedCallback();
+        
+        if (!extraOnProjectCreatedScript.isEmpty()) {
+            QFileInfo cbInfo(extraOnProjectCreatedScript);
+            if (cbInfo.exists()) {
+                loadPythonScript(cbInfo);
+            }
+        }
+
     }
 }
 
@@ -514,6 +538,46 @@ AppInstance::loadPythonScript(const QFileInfo& file)
                     appendToScriptEditor(output);
                 }
             }
+        }
+    } else {
+        QFile f(file.absoluteFilePath());
+        if (f.open(QIODevice::ReadOnly)) {
+            QTextStream ts(&f);
+            QString content = ts.readAll();
+            PyRun_SimpleString(content.toStdString().c_str());
+            
+            PyObject* mainModule = getMainModule();
+            std::string error;
+            ///Gui session, do stdout, stderr redirection
+            PyObject *errCatcher = 0;
+            
+            if (PyObject_HasAttrString(mainModule, "catchErr")) {
+                errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+            }
+            
+            PyErr_Print(); //make python print any errors
+            
+            PyObject *errorObj = 0;
+            if (errCatcher) {
+                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                assert(errorObj);
+                error = PY3String_asString(errorObj);
+                PyObject* unicode = PyUnicode_FromString("");
+                PyObject_SetAttrString(errCatcher, "value", unicode);
+                Py_DECREF(errorObj);
+                Py_DECREF(errCatcher);
+            }
+            
+            if (!error.empty()) {
+                QString message("Failed to load ");
+                message.append(filename);
+                message.append(": ");
+                message.append(error.c_str());
+                appendToScriptEditor(message.toStdString());
+            }
+
+        } else {
+            return false;
         }
     }
     

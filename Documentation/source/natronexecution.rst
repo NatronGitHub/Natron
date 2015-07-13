@@ -45,6 +45,13 @@ Note that several *-w* options can be set to specify multiple Write nodes to ren
 
 	Note that if specified, then the frame range will be the same for all Write nodes that will render.
 	
+
+**[--onload]** or **[-l]** *<python script file path>* specifies a Python script to be executed
+after a project is created or loaded.
+Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python function
+set to the callback onProjectLoaded or onProjectCreated.
+The same rules apply to this script as the rules below on the execution of Python scripts.
+
 Some examples of usage of the tool::
 
 	Natron /Users/Me/MyNatronProjects/MyProject.ntp
@@ -56,7 +63,17 @@ Some examples of usage of the tool::
 	NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp
 	
 	NatronRenderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp
+	
+	NatronRenderer -w MyWriter 1-10 -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp
+	
+	
+Example of a script passed to --onload::
 
+	import NatronEngine
+	
+	#Create a writer when loading/creating a project
+	writer = app.createNode("fr.inria.openfx.WriteOIIO")
+	
 
 Options for the execution of Python scripts:
 ---------------------------------------------
@@ -75,7 +92,7 @@ When executing a script, Natron first looks for a function with the following si
 	def createInstance(app,group):
 	
 If this function is found, it will be executed, otherwise the whole content of the script will be interpreted as though it were given to Python natively.
-
+Either cases, the \"app\" variable will always be defined and pointing to the correct application instance.
 Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
 When in command-line mode (*-b* option or NatronRenderer) you must specify the nodes to render either with the *-w* option as described above or with the following option:
 

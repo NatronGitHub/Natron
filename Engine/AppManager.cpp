@@ -331,6 +331,8 @@ struct CLArgsPrivate
     
     bool isPythonScript;
     
+    QString defaultOnProjectLoadedScript;
+    
     std::list<CLArgs::WriterArg> writers;
     
     bool isBackground;
@@ -350,6 +352,7 @@ struct CLArgsPrivate
     : args()
     , filename()
     , isPythonScript(false)
+    , defaultOnProjectLoadedScript()
     , writers()
     , isBackground(false)
     , ipcPipe()
@@ -369,7 +372,7 @@ struct CLArgsPrivate
     
     QStringList::iterator hasOutputToken(QString& indexStr);
     
-    QStringList::iterator hasFileNameWithExtension(const QString& extension);
+    QStringList::iterator findFileNameWithExtension(const QString& extension);
     
 };
 
@@ -436,6 +439,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->args = other._imp->args;
     _imp->filename = other._imp->filename;
     _imp->isPythonScript = other._imp->isPythonScript;
+    _imp->defaultOnProjectLoadedScript = other._imp->defaultOnProjectLoadedScript;
     _imp->writers = other._imp->writers;
     _imp->isBackground = other._imp->isBackground;
     _imp->ipcPipe = other._imp->ipcPipe;
@@ -496,12 +500,18 @@ CLArgs::printUsage(const std::string& programName)
               " firstFrame-lastFrame (e.g: 10-40). \n"
               "Note that several -w options can be set to specify multiple Write nodes to render.\n"
               "Note that if specified, then the frame range will be the same for all Write nodes that will render.");
+    W_LINE("\n");
+    W_TR_LINE("[--onload] or [-l] <python script file path> specifies a Python script to be executed after a project is created or loaded.");
+    W_TR_LINE("Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python "
+              "function set to the callback onProjectLoaded or onProjectCreated.");
+    W_TR_LINE("The same rules apply to this script as the rules below on the execution of Python scripts.");
     W_TR_LINE("Some examples of usage of the tool:\n");
     W_LINE("./Natron /Users/Me/MyNatronProjects/MyProject.ntp");
     W_LINE("./Natron -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
     W_LINE("./NatronRenderer -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
     W_LINE("./NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp");
     W_LINE("./NatronRenderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("./NatronRenderer -w MyWriter 1-10 -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp");
     W_LINE("\n");
     W_TR_LINE("- Options for the execution of Python scripts:\n");
     W_LINE(programName + " <Python script path>");
@@ -512,6 +522,7 @@ CLArgs::printUsage(const std::string& programName)
               "def createInstance(app,group):\n"
               "If this function is found, it will be executed, otherwise the whole content "
               "of the script will be interpreted as though it were given to Python natively.\n"
+              "Either cases, the \"app\" variable will always be defined and pointing to the correct application instance."
               "Note that if you are using " NATRON_APPLICATION_NAME " it will source the script before creating the graphical user interface "
               "and will not start rendering. "
               "If in background mode you must specify the nodes to render either with the [-w] option as described above "
@@ -589,6 +600,12 @@ CLArgs::getFilename() const
 }
 
 const QString&
+CLArgs::getDefaultOnProjectLoadedScript() const
+{
+    return _imp->defaultOnProjectLoadedScript;
+}
+
+const QString&
 CLArgs::getIPCPipeName() const
 {
     return _imp->ipcPipe;
@@ -601,13 +618,24 @@ CLArgs::isPythonScript() const
 }
 
 QStringList::iterator
-CLArgsPrivate::hasFileNameWithExtension(const QString& extension)
+CLArgsPrivate::findFileNameWithExtension(const QString& extension)
 {
+    bool isPython = extension == "py";
     for (QStringList::iterator it = args.begin(); it != args.end() ; ++it) {
+        if (isPython) {
+            //Check that we do not take the python script specified for the --onload argument as the file to execute
+            if (it == args.begin()) {
+                continue;
+            }
+            QStringList::iterator prev = it;
+            --prev;
+            if (*prev == "--onload" || *prev == "-l") {
+                continue;
+            }
+        }
         if (it->endsWith("." + extension)) {
             return it;
         }
-        
     }
     return args.end();
 }
@@ -652,6 +680,10 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
         } else {
             indexOf = it->indexOf(outputShort);
             if (indexOf != -1) {
+                if (it->size() > 2 && !it->at(2).isDigit()) {
+                    //This is probably the --onload option
+                    return args.end();
+                }
                 indexOf += outputShort.size();
                 if (indexOf < it->size()) {
                     indexStr = it->mid(indexOf);
@@ -720,9 +752,35 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasFileNameWithExtension(NATRON_PROJECT_FILE_EXT);
+        QStringList::iterator it = hasToken("onload", "l");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                defaultOnProjectLoadedScript = *it;
+#ifdef __NATRON_UNIX__
+                defaultOnProjectLoadedScript = AppManager::qt_tildeExpansion(defaultOnProjectLoadedScript);
+#endif
+                args.erase(it);
+                if (!defaultOnProjectLoadedScript.endsWith(".py")) {
+                    std::cout << QObject::tr("The optional on project load script must be a Python script (.py).").toStdString() << std::endl;
+                    error = 1;
+                    return;
+                }
+                if (!QFile::exists(defaultOnProjectLoadedScript)) {
+                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
+                }
+            } else {
+                std::cout << QObject::tr("--onload or -l specified, you must enter a script filename afterwards.").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = findFileNameWithExtension(NATRON_PROJECT_FILE_EXT);
         if (it == args.end()) {
-            it = hasFileNameWithExtension("py");
+            it = findFileNameWithExtension("py");
             if (it == args.end() && !isInterpreterMode && isBackground) {
                 std::cout << QObject::tr("You must specify the filename of a script or " NATRON_APPLICATION_NAME " project. (." NATRON_PROJECT_FILE_EXT
                                          ")").toStdString() << std::endl;

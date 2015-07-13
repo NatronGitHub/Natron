@@ -125,6 +125,8 @@ public:
     
     const QString& getFilename() const;
     
+    const QString& getDefaultOnProjectLoadedScript() const;
+    
     const QString& getIPCPipeName() const;
     
     bool isPythonScript() const;

@@ -296,6 +296,16 @@ GuiAppInstance::load(const CLArgs& cl)
             execOnProjectCreatedCallback();
         }
     }
+    
+    const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
+    if (!extraOnProjectCreatedScript.isEmpty()) {
+        QFileInfo cbInfo(extraOnProjectCreatedScript);
+        if (cbInfo.exists()) {
+            loadPythonScript(cbInfo);
+        }
+    }
+
+    
 } // load
 
 
