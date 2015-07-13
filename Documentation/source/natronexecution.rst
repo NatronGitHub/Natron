@@ -91,7 +91,19 @@ When executing a script, Natron first looks for a function with the following si
 
 	def createInstance(app,group):
 	
-If this function is found, it will be executed, otherwise the whole content of the script will be interpreted as though it were given to Python natively.
+If this function is found, the script will be imported as a module and it will be executed.
+
+.. warning::
+
+	Note that when imported, the script will not have access to any external variable declared by Natron
+	except the variable passed to the createInstance function.
+	
+If this function is not found the whole content of the script will be interpreted as though it were given to Python natively.
+
+.. note:: 
+
+	In this case the script **can** have access to the external variables declared by Natron.
+
 Either cases, the \"app\" variable will always be defined and pointing to the correct application instance.
 Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
 When in command-line mode (*-b* option or NatronRenderer) you must specify the nodes to render either with the *-w* option as described above or with the following option:

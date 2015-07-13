@@ -44,7 +44,9 @@ BlockingBackgroundRender::blockingRender(int first,int last)
 void
 BlockingBackgroundRender::notifyFinished()
 {
-    qDebug() << "Blocking render finished.";
+#ifdef DEBUG
+    std::cout << "Blocking render finished." << std::endl;
+#endif
     appPTR->writeToOutputPipe(kRenderingFinishedStringLong,kRenderingFinishedStringShort);
     QMutexLocker locker(&_runningMutex);
     _running = false;

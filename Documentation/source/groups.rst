@@ -110,7 +110,7 @@ Exporting a group
 ------------------
 
 Once your group is setup correctly, you can *export* it as a Python script that Natron will
-generate automatically. 
+generate automatically. We call them *PyPlugs*.
 
 To do so, click the **Export as Python plug-in** button in the "Node" page of the settings panel
 of the Group node.
@@ -278,11 +278,21 @@ To work as a plug-in, your script should implemented the following functions::
 The Python group plug-ins generated automatically by Natron are a good start to figure out
 how to write scripts yourself.
 
-.. note:: 
+.. warning:: 
 
 	Python group plug-ins should avoid using any functionality provided by the :ref:`NatronGui<NatronGui>` module
 	because it would then break their compatibility when working in command-line background mode.
+	The reason behind this is that the Python module NatronGui is not imported in command-line mode because
+	internally it relies on the QtGui library, which may not be present on some render-farms.
+	Attempts to load PyPlugs relaying on the NatronGui module would then fail and the rendering
+	would abort.
 
+
+.. warning::
+
+	Note that PyPlugs are **imported** by Natron which means that the script will not have access
+	to any external variable declared by Natron except the variables passed to the createInstance function
+	or the attributes of the modules imported.
 
 Starting Natron with a script in command line
 ----------------------------------------------

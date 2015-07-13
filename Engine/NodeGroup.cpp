@@ -1245,9 +1245,9 @@ NodeGroup::initializeKnobs()
     assert(nodePage);
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(nodePage.get());
     assert(isPage);
-    _imp->exportAsTemplate = Natron::createKnob<Button_Knob>(this, "Export as Python plug-in");
-    _imp->exportAsTemplate->setName("exportAsGroup");
-    _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script that can be shared and/or later "
+    _imp->exportAsTemplate = Natron::createKnob<Button_Knob>(this, "Export as PyPlug");
+    _imp->exportAsTemplate->setName("exportAsPyPlug");
+    _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");
     isPage->addKnob(_imp->exportAsTemplate);
 }

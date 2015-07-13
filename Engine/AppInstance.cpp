@@ -449,7 +449,14 @@ AppInstance::load(const CLArgs& cl)
             }
         }
         
-        startWritersRendering(writersWork);
+        try {
+            startWritersRendering(writersWork);
+        } catch (const std::exception& e) {
+            getProject()->removeLockFile();
+            throw e;
+        }
+        
+        
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info(cl.getFilename());
@@ -494,41 +501,48 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
     
-    QString filename = file.fileName();
-    int lastDotPos = filename.lastIndexOf(QChar('.'));
-    if (lastDotPos != -1) {
-        filename = filename.left(lastDotPos);
-    }
-    
-    QString hasCreateInstanceScript = QString("import sys\n"
-                                              "import %1\n"
-                                              "ret = True\n"
-                                              "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
-                                              "    ret = False\n").arg(filename);
-    
-    
-    ok = Natron::interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
-    
-    if (!ok) {
-        Natron::errorDialog(tr("Python").toStdString(), err);
+    QFile f(file.absoluteFilePath());
+    if (!f.open(QIODevice::ReadOnly)) {
         return false;
     }
-    
-    
-    PyObject* mainModule = getMainModule();
-    PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
-    assert(retObj);
-    bool hasCreateInstance = PyObject_IsTrue(retObj) == 1;
-    Py_XDECREF(retObj);
-    
-    ok = interpretPythonScript("del ret\n", &err, 0);
-    assert(ok);
-    
+    QTextStream ts(&f);
+    QString content = ts.readAll();
+    bool hasCreateInstance = content.contains("def createInstance");
+    /*
+     The old way of doing it was
+     
+        QString hasCreateInstanceScript = QString("import sys\n"
+        "import %1\n"
+        "ret = True\n"
+        "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
+        "    ret = False\n").arg(filename);
+     
+     
+        ok = Natron::interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
+
+     
+     which is wrong because it will try to import the script first.
+     But we in the case of regular scripts, we allow the user to access externally declared variables such as "app", "app1" etc...
+     and this would not be possible if the script was imported. Importing the module would then fail because it could not
+     find the variables and the script could not be executed.
+     */
+   
     if (hasCreateInstance) {
+        
+        
+        QString moduleName = file.fileName();
+        int lastDotPos = moduleName.lastIndexOf(QChar('.'));
+        if (lastDotPos != -1) {
+            moduleName = moduleName.left(lastDotPos);
+        }
+    
+        
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        if (!Natron::interpretPythonScript(filename.toStdString() + ".createInstance(app,app)", &err, &output)) {
-            Natron::errorDialog(tr("Python").toStdString(), err);
+        if (!Natron::interpretPythonScript(moduleName.toStdString() + ".createInstance(app,app)", &err, &output)) {
+            if (!err.empty()) {
+                Natron::errorDialog(tr("Python").toStdString(), err);
+            }
             return false;
         } else {
             if (!output.empty()) {
@@ -541,44 +555,38 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         }
     } else {
         QFile f(file.absoluteFilePath());
-        if (f.open(QIODevice::ReadOnly)) {
-            QTextStream ts(&f);
-            QString content = ts.readAll();
-            PyRun_SimpleString(content.toStdString().c_str());
-            
-            PyObject* mainModule = getMainModule();
-            std::string error;
-            ///Gui session, do stdout, stderr redirection
-            PyObject *errCatcher = 0;
-            
-            if (PyObject_HasAttrString(mainModule, "catchErr")) {
-                errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
-            }
-            
-            PyErr_Print(); //make python print any errors
-            
-            PyObject *errorObj = 0;
-            if (errCatcher) {
-                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
-                assert(errorObj);
-                error = PY3String_asString(errorObj);
-                PyObject* unicode = PyUnicode_FromString("");
-                PyObject_SetAttrString(errCatcher, "value", unicode);
-                Py_DECREF(errorObj);
-                Py_DECREF(errCatcher);
-            }
-            
-            if (!error.empty()) {
-                QString message("Failed to load ");
-                message.append(filename);
-                message.append(": ");
-                message.append(error.c_str());
-                appendToScriptEditor(message.toStdString());
-            }
-
-        } else {
-            return false;
+        PyRun_SimpleString(content.toStdString().c_str());
+        
+        PyObject* mainModule = getMainModule();
+        std::string error;
+        ///Gui session, do stdout, stderr redirection
+        PyObject *errCatcher = 0;
+        
+        if (PyObject_HasAttrString(mainModule, "catchErr")) {
+            errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
         }
+        
+        PyErr_Print(); //make python print any errors
+        
+        PyObject *errorObj = 0;
+        if (errCatcher) {
+            errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+            assert(errorObj);
+            error = PY3String_asString(errorObj);
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(errCatcher, "value", unicode);
+            Py_DECREF(errorObj);
+            Py_DECREF(errCatcher);
+        }
+        
+        if (!error.empty()) {
+            QString message("Failed to load ");
+            message.append(file.absoluteFilePath());
+            message.append(": ");
+            message.append(error.c_str());
+            appendToScriptEditor(message.toStdString());
+        }
+        
     }
     
     return true;

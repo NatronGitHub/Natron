@@ -3512,7 +3512,7 @@ errorDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message,useHtml);
     } else {
-        std::cout << "ERROR: " << title << ": " <<  message << std::endl;
+        std::cerr << "ERROR: " << title << ": " <<  message << std::endl;
     }
 }
 
@@ -3527,7 +3527,7 @@ errorDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message,stopAsking,useHtml);
     } else {
-        std::cout << "ERROR: " << title << ": " <<  message << std::endl;
+        std::cerr << "ERROR: " << title << ": " <<  message << std::endl;
     }
 }
 
@@ -3541,7 +3541,7 @@ warningDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title,message,useHtml);
     } else {
-        std::cout << "WARNING: " << title << ": " << message << std::endl;
+        std::cerr << "WARNING: " << title << ": " << message << std::endl;
     }
 }
 void
@@ -3555,7 +3555,7 @@ warningDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title,message, stopAsking,useHtml);
     } else {
-        std::cout << "WARNING: " << title << " :" << message << std::endl;
+        std::cerr << "WARNING: " << title << " :" << message << std::endl;
     }
 }
 
