@@ -928,6 +928,10 @@ FileSystemModel::setRootPath(const QString& path)
         QObject::connect(_imp->watcher, SIGNAL(fileChanged(QString)), this, SLOT(onWatchedFileChanged(QString)));
         _imp->watcher->removePath(_imp->currentRootPath);
         _imp->watcher->addPath(item->absoluteFilePath());
+
+        ///Since we are about to kill some FileSystemItem's we must force a reset of the QAbstractItemModel to clear the persistent
+        ///QModelIndex left in the model that may hold raw pointers to bad FileSystemItem's
+        reset();
         
         _imp->populateItem(item);
     } else {
