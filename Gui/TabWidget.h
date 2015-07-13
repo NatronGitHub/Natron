@@ -139,6 +139,14 @@ class TabWidget
 
 public:
 
+    enum DropRectType {
+        eDropRectNone,
+        eDropRectAll,
+        eDropRectLeftSplit,
+        eDropRectRightSplit,
+        eDropRectTopSplit,
+        eDropRectBottomSplit,
+    };
 
     explicit TabWidget(Gui* gui,
                        QWidget* parent = 0);
@@ -213,7 +221,7 @@ public:
 
     bool stopDragTab(const QPoint & globalPos);
 
-    void setDrawDropRect(bool draw);
+    void setDrawDropRect(DropRectType type, bool draw);
 
     bool isWithinWidget(const QPoint & globalPos) const;
 
