@@ -682,11 +682,11 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
 
 
     ///validate the frame range to render
-    int firstFrame,lastFrame;
+    double firstFrame,lastFrame;
     if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
         w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame, true);
         //if firstframe and lastframe are infinite clamp them to the timeline bounds
-        int projectFirst,projectLast;
+        double projectFirst,projectLast;
         getFrameRange(&projectFirst, &projectLast);
         if (firstFrame == INT_MIN) {
             firstFrame = projectFirst;

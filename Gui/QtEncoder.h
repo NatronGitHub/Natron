@@ -69,7 +69,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getDescription() const OVERRIDE;
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
         return 1;

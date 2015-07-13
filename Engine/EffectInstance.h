@@ -968,7 +968,7 @@ protected:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return eStatusFailed.
      **/
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
+    virtual void getFrameRange(double *first,double *last);
 
 public:
 
@@ -1009,9 +1009,9 @@ public:
                                        int view,
                                       RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(double time,int view) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(U64 hash, double time,int view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
 
-    void getFrameRange_public(U64 hash,SequenceTime *first,SequenceTime *last, bool bypasscache = false);
+    void getFrameRange_public(U64 hash,double *first,double *last, bool bypasscache = false);
 
     /**
      * @brief Override to initialize the overlay interact. It is called only on the

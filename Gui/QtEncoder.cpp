@@ -97,8 +97,8 @@ QtWriter::supportedFileFormats() const
 }
 
 void
-QtWriter::getFrameRange(SequenceTime *first,
-                        SequenceTime *last)
+QtWriter::getFrameRange(double *first,
+                        double *last)
 {
     int index = _frameRangeChoosal->getValue();
 
@@ -166,7 +166,7 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            int first,last;
+            double first,last;
             getApp()->getFrameRange(&first, &last);
             _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);

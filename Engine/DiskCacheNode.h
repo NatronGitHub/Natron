@@ -109,7 +109,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE FINAL;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE FINAL;
 
     virtual void getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
 

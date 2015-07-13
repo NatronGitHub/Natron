@@ -782,7 +782,7 @@ void
 OfxImageEffectInstance::timeLineGetBounds(double &t1,
                                           double &t2)
 {
-    int first,last;
+    double first,last;
     _ofxEffectInstance->getApp()->getFrameRange(&first, &last);
     t1 = first;
     t2 = last;

@@ -185,7 +185,7 @@ public:
                                 Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
 
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(double time,int view) WARN_UNUSED_RETURN;
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
     virtual void drawOverlay(double time, double scaleX, double scaleY) OVERRIDE FINAL;

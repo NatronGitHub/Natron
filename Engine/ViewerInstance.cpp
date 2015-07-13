@@ -262,11 +262,11 @@ ViewerInstance::getMaxInputCount() const
 }
 
 void
-ViewerInstance::getFrameRange(SequenceTime *first,
-                              SequenceTime *last)
+ViewerInstance::getFrameRange(double *first,
+                              double *last)
 {
 
-    SequenceTime inpFirst = 1,inpLast = 1;
+    double inpFirst = 1,inpLast = 1;
     int activeInputs[2];
     getActiveInputs(activeInputs[0], activeInputs[1]);
     EffectInstance* n1 = getInput(activeInputs[0]);

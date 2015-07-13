@@ -1395,7 +1395,7 @@ void DopeSheetViewPrivate::drawProjectBounds() const
     double bottom = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1).y();
     double top = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0).y();
 
-    int projectStart, projectEnd;
+    double projectStart, projectEnd;
     gui->getApp()->getFrameRange(&projectStart, &projectEnd);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -1801,11 +1801,12 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     NodePtr input = node->getInput(0);
     if (input) {
         
-        int inputFirst,inputLast;
+        U64 nodeHash = node->getHashValue();
+        double inputFirst,inputLast;
         input->getLiveInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
 
-        Natron::EffectInstance::FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(inputFirst, 0);
-        Natron::EffectInstance::FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(inputLast, 0);
+        Natron::EffectInstance::FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
+        Natron::EffectInstance::FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
         assert(!framesFirst.empty() && !framesLast.empty());
         
         FrameRange range;
@@ -1814,14 +1815,14 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
             assert(!rangeFirst.empty());
             std::vector<OfxRangeD>& frames = rangeFirst[0];
             assert(!frames.empty());
-            range.first = frames.front().min;
+            range.first = (frames.front().min);
         }
         {
             std::map<int, std::vector<OfxRangeD> >& rangeLast = framesLast[0];
             assert(!rangeLast.empty());
             std::vector<OfxRangeD>& frames = rangeLast[0];
             assert(!frames.empty());
-            range.second = frames.front().min;
+            range.second = (frames.front().min);
         }
 
         nodeRanges[retimer] = range;
@@ -2320,7 +2321,7 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
 
         onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
 
-        int left,right;
+        double left,right;
         project->getFrameRange(&left, &right);
         onTimeLineBoundariesChanged(left, right);
     }

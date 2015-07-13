@@ -1210,7 +1210,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
         glColor4f(boundsR,boundsG,boundsB,1.);
 
-        int leftBound,rightBound;
+        double leftBound,rightBound;
         _gui->getApp()->getFrameRange(&leftBound, &rightBound);
         glBegin(GL_LINES);
         glVertex2f( leftBound,btmRight.y() );
@@ -2298,7 +2298,7 @@ CurveWidget::CurveWidget(Gui* gui,
         QObject::connect( project.get(),SIGNAL( frameRangeChanged(int,int) ),this,SLOT( onTimeLineBoundariesChanged(int,int) ) );
         onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
         
-        int left,right;
+        double left,right;
         project->getFrameRange(&left, &right);
         onTimeLineBoundariesChanged(left, right);
     }

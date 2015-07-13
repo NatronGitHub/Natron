@@ -1975,7 +1975,7 @@ Project::isFrameRangeLocked() const
 }
     
 void
-Project::getFrameRange(int* first,int* last) const
+Project::getFrameRange(double* first,double* last) const
 {
     *first = _imp->frameRange->getValue(0);
     *last = _imp->frameRange->getValue(1);

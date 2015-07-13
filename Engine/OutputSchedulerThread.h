@@ -267,12 +267,6 @@ public:
      **/
     double getDesiredFPS() const;
     
-    /**
-     * @brief Returns the frame range of the output node, as given by the getFrameRange action
-     **/
-    void getPluginFrameRange(int& first,int &last) const;
-    
-    
     void runCallbackWithVariables(const QString& callback);
     
     /**

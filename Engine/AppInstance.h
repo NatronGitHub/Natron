@@ -346,7 +346,7 @@ public:
     
     virtual void printAutoDeclaredVariable(const std::string& str);
     
-    void getFrameRange(int* first,int* last) const;
+    void getFrameRange(double* first,double* last) const;
     
     virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& /*node*/) {}
     

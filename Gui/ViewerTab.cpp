@@ -1135,7 +1135,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect(gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)));
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->mainLayout->addWidget(_imp->timeLineGui);
-    int leftBound,rightBound;
+    double leftBound,rightBound;
     gui->getApp()->getFrameRange(&leftBound, &rightBound);
     _imp->timeLineGui->setBoundaries(leftBound, rightBound);
     onTimelineBoundariesChanged(leftBound,rightBound);
@@ -4343,21 +4343,25 @@ ViewerTabPrivate::getOverlayTransform(double time,
     
 }
 
-static double transformTimeForNode(const Natron::EffectInstance* currentNode, double inTime)
+static double transformTimeForNode(Natron::EffectInstance* currentNode, double inTime)
 {
-    std::string pluginID = currentNode->getPluginID();
-    if (pluginID == PLUGINID_OFX_RETIME) {
-        Knob<double>* speed = dynamic_cast<Knob<double>*>(currentNode->getKnobByName(kRetimeParamNameSpeed).get());
-        assert(speed);
-        double value = speed->getValueAtTime(inTime);
-        inTime *= value;
-    } else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
-        Knob<int>* timeOffset = dynamic_cast<Knob<int>*>(currentNode->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
-        assert(timeOffset);
-        inTime += timeOffset->getValueAtTime(inTime);
+    U64 nodeHash = currentNode->getHash();
+    EffectInstance::FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
+    EffectInstance::FramesNeededMap::iterator foundInput0 = framesNeeded.find(0);
+    if (foundInput0 == framesNeeded.end()) {
+        return inTime;
     }
     
-    return inTime;
+    std::map<int,std::vector<OfxRangeD> >::iterator foundView0 = foundInput0->second.find(0);
+    if (foundView0 == foundInput0->second.end()) {
+        return inTime;
+    }
+    
+    if (foundView0->second.empty()) {
+        return inTime;
+    } else {
+        return (foundView0->second.front().min);
+    }
 }
 
 bool

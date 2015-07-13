@@ -312,7 +312,7 @@ TimeLineGui::paintGL()
 
 
         /// change the backgroud color of the portion of the timeline where images are lying
-        int firstFrame,lastFrame;
+        double firstFrame,lastFrame;
         _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame,0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame,0);

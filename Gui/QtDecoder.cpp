@@ -259,11 +259,14 @@ QtReader::timeDomainFromSequenceTimeDomain(SequenceTime & first,
 }
 
 void
-QtReader::getFrameRange(SequenceTime *first,
-                        SequenceTime *last)
+QtReader::getFrameRange(double *first,
+                        double *last)
 {
-    getSequenceTimeDomain(*first, *last);
-    timeDomainFromSequenceTimeDomain(*first, *last, false);
+    int f,l;
+    getSequenceTimeDomain(f, l);
+    timeDomainFromSequenceTimeDomain(f, l, false);
+    *first = f;
+    *last = l;
 }
 
 void

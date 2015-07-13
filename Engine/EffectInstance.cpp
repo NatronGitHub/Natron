@@ -104,6 +104,7 @@ namespace  {
     
     typedef std::map<ActionKey,IdentityResults,CompareActionsCacheKeys> IdentityCacheMap;
     typedef std::map<ActionKey,RectD,CompareActionsCacheKeys> RoDCacheMap;
+    typedef std::map<ActionKey,EffectInstance::FramesNeededMap,CompareActionsCacheKeys> FramesNeededCacheMap;
     
     /**
      * @brief This class stores all results of the following actions:
@@ -126,6 +127,7 @@ namespace  {
             
             IdentityCacheMap _identityCache;
             RoDCacheMap _rodCache;
+            FramesNeededCacheMap _framesNeededCache;
             
             ActionsCacheInstance()
             : _hash(0)
@@ -133,6 +135,7 @@ namespace  {
             , _timeDomainSet(false)
             , _identityCache()
             , _rodCache()
+            , _framesNeededCache()
             {
                 
             }
@@ -271,6 +274,56 @@ namespace  {
 
         }
         
+        bool getFramesNeededResult(U64 hash,double time, int view,unsigned int mipMapLevel,EffectInstance::FramesNeededMap* framesNeeded) {
+            
+            QMutexLocker l(&_cacheMutex);
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    
+                    FramesNeededCacheMap::const_iterator found = it->_framesNeededCache.find(key);
+                    if ( found != it->_framesNeededCache.end() ) {
+                        *framesNeeded = found->second;
+                        return true;
+                    }
+                    
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        
+        void setFramesNeededResult(U64 hash,double time, int view, unsigned int mipMapLevel,const EffectInstance::FramesNeededMap& framesNeeded)
+        {
+            
+            QMutexLocker l(&_cacheMutex);
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    
+                    FramesNeededCacheMap::iterator found = it->_framesNeededCache.find(key);
+                    if ( found != it->_framesNeededCache.end() ) {
+                        ///Already set, this is a bug
+                        return;
+                    } else {
+                        it->_framesNeededCache.insert(std::make_pair(key, framesNeeded));
+                    }
+                    return;
+                }
+            }
+            
+            //the cache for this hash did not exist
+            
+        }
+        
         bool getTimeDomainResult(U64 hash,double *first,double* last) {
             
             QMutexLocker l(&_cacheMutex);
@@ -327,7 +380,7 @@ struct EffectInstance::RenderArgs
     //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
     Natron::ImageComponents _outputPlaneBeingRendered;
 
-    int _firstFrame,_lastFrame;
+    double _firstFrame,_lastFrame;
     
     RenderArgs()
     : _rod()
@@ -604,8 +657,8 @@ struct EffectInstance::Implementation
                          double identityTime,
                          int inputNbIdentity,
                          const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes,
-                         int firstFrame,
-                         int lastFrame)
+                         double firstFrame,
+                         double lastFrame)
             : localData(&dst->localData())
             , _dst(dst)
         {
@@ -1733,8 +1786,8 @@ EffectInstance::getFramesNeeded(double time, int view)
 }
 
 void
-EffectInstance::getFrameRange(SequenceTime *first,
-                              SequenceTime *last)
+EffectInstance::getFrameRange(double *first,
+                              double *last)
 {
     // default is infinite if there are no non optional input clips
     *first = INT_MIN;
@@ -1742,7 +1795,7 @@ EffectInstance::getFrameRange(SequenceTime *first,
     for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = getInput(i);
         if (input) {
-            SequenceTime inpFirst,inpLast;
+            double inpFirst,inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
             if (i == 0) {
                 *first = inpFirst;
@@ -2521,7 +2574,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 }
             }
             
-            int firstFrame,lastFrame;
+            double firstFrame,lastFrame;
             getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
             
             RectD canonicalRoI;
@@ -2893,7 +2946,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
     
     if (framesNeeded.empty()) {
-        framesNeeded = getFramesNeeded_public(args.time, args.view);
+        framesNeeded = getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipMapLevel);
     }
   
     
@@ -3932,7 +3985,7 @@ EffectInstance::renderRoIInternal(double time,
         getApp()->getProject()->getParallelRenderArgs(tlsCopy);
     }
     
-    int firstFrame, lastFrame;
+    double firstFrame, lastFrame;
     getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
 
     
@@ -5700,17 +5753,25 @@ EffectInstance::getRegionsOfInterest_public(double time,
 }
 
 EffectInstance::FramesNeededMap
-EffectInstance::getFramesNeeded_public(double time,int view)
+EffectInstance::getFramesNeeded_public(U64 hash, double time,int view, unsigned int mipMapLevel)
 {
     NON_RECURSIVE_ACTION();
+    EffectInstance::FramesNeededMap framesNeeded;
+    bool foundInCache = _imp->actionsCache.getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
+    if (foundInCache) {
+        return framesNeeded;
+    }
     
-    return getFramesNeeded(time, view);
+    framesNeeded = getFramesNeeded(time, view);
+    _imp->actionsCache.setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
+    
+    return framesNeeded;
 }
 
 void
 EffectInstance::getFrameRange_public(U64 hash,
-                                     SequenceTime *first,
-                                     SequenceTime *last,
+                                     double *first,
+                                     double *last,
                                      bool bypasscache)
 {
     

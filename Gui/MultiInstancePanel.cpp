@@ -2034,7 +2034,7 @@ TrackerPanel::trackBackward()
         return false;
     }
     
-    int leftBound,rightBound;
+    double leftBound,rightBound;
     getApp()->getFrameRange(&leftBound, &rightBound);
     int end = leftBound - 1;
     int start = getApp()->getTimeLine()->currentFrame();
@@ -2055,7 +2055,7 @@ TrackerPanel::trackForward()
         return false;
     }
    
-    int leftBound,rightBound;
+    double leftBound,rightBound;
     getApp()->getFrameRange(&leftBound, &rightBound);
     boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
     int end = rightBound + 1;

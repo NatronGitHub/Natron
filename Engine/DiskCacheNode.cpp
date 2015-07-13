@@ -142,7 +142,7 @@ DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, 
 }
 
 void
-DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
+DiskCacheNode::getFrameRange(double *first,double *last)
 {
     int idx = _imp->frameRange.lock()->getValue();
     switch (idx) {

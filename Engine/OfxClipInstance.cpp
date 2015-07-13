@@ -358,17 +358,14 @@ OfxClipInstance::getFrameRange(double &startFrame,
     assert(_nodeInstance);
     EffectInstance* n = getAssociatedNode();
     if (n) {
-        SequenceTime first,last;
         U64 hash = n->getRenderHash();
-        n->getFrameRange_public(hash,&first, &last);
-        startFrame = first;
-        endFrame = last;
+        n->getFrameRange_public(hash,&startFrame, &endFrame);
         
     } else {
         assert(_nodeInstance);
         assert( _nodeInstance->getApp() );
         assert( _nodeInstance->getApp()->getTimeLine() );
-        int first,last;
+        double first,last;
         _nodeInstance->getApp()->getFrameRange(&first, &last);
         startFrame = first;
         endFrame = last;
@@ -855,7 +852,10 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     if (_lastActionData.hasLocalData()) {
         ActionLocalData & args = _lastActionData.localData();
         if (args.clipComponentsValid) {
-            if (!args.hasImage) {
+            
+            //Commented-out: Since pre-fetching is disabled for floating point dates, an effect such as retime may
+            //end-up in this situation
+            /*if (!args.hasImage) {
                 EffectInstance* input = getAssociatedNode();
                 QString inputName = input ? input->getNode()->getScriptName_mt_safe().c_str() : QString();
                 qDebug() << "WARNING:" << _nodeInstance->getScriptName_mt_safe().c_str() << "is trying to fetch an image from"
@@ -864,7 +864,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                 << "This may either be a bug in Natron when calling renderInputImagesForRoI or a plug-in that has mis-implemented the"
                 << "getRegionsOfInterest action.";
                 return 0;
-            }
+            }*/
             components = args.clipComponents;
         }
     }

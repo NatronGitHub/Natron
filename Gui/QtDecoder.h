@@ -75,7 +75,7 @@ public:
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
         return 0;

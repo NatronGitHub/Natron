@@ -340,7 +340,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // This is not always possible (e.g. if a param has a wrong value).
         if (supportsRenderScaleMaybe() == eSupportsMaybe) {
             // does the effect support renderscale?
-            SequenceTime first = INT_MIN,last = INT_MAX;
+            double first = INT_MIN,last = INT_MAX;
             getFrameRange(&first, &last);
             if (first == INT_MIN || last == INT_MAX) {
                 first = last = getApp()->getTimeLine()->currentFrame();
@@ -1744,8 +1744,8 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
 }
 
 void
-OfxEffectInstance::getFrameRange(SequenceTime *first,
-                                 SequenceTime *last)
+OfxEffectInstance::getFrameRange(double *first,
+                                 double *last)
 {
     assert(_context != eContextNone);
     if (!_initialized) {
@@ -1767,8 +1767,8 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
         st = _effect->getTimeDomainAction(range);
     }
     if (st == kOfxStatOK) {
-        *first = (SequenceTime)range.min;
-        *last = (SequenceTime)range.max;
+        *first = range.min;
+        *last = range.max;
     } else if (st == kOfxStatReplyDefault) {
         //The default is...
         int nthClip = _effect->getNClips();
@@ -1791,7 +1791,7 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
                 //if (!isInputOptional(i)) {
                 EffectInstance* inputEffect = getInput(i);
                 if (inputEffect) {
-                    SequenceTime f,l;
+                    double f,l;
                     inputEffect->getFrameRange_public(inputEffect->getRenderHash(),&f, &l);
                     if (!firstValidInput) {
                         if ( (f < *first) && (f != INT_MIN) ) {

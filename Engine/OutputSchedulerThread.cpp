@@ -1676,15 +1676,6 @@ OutputSchedulerThread::getFrameRangeRequestedToRender(int &first,int& last) cons
     last = _imp->livingRunArgs.lastFrame;
 }
 
-void
-OutputSchedulerThread::getPluginFrameRange(int& first,int &last) const
-{
-    _imp->outputEffect->getFrameRange_public(_imp->outputEffect->getHash(), &first, &last);
-    if (first == INT_MIN || last == INT_MAX) {
-        getFrameRangeToRender(first, last);
-    }
-}
-
 OutputSchedulerThread::RenderDirectionEnum
 OutputSchedulerThread::getDirectionRequestedToRender() const
 {

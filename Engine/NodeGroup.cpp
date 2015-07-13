@@ -845,13 +845,13 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
         if ((*it)->isActivated()) {
             
             if ((*it)->getLiveInstance()->isReader()) {
-                int thisFirst,thislast;
+                double thisFirst,thislast;
                 (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
                 if (thisFirst != INT_MIN) {
-                    *firstFrame = std::min(*firstFrame, thisFirst);
+                    *firstFrame = std::min(*firstFrame, (int)thisFirst);
                 }
                 if (thislast != INT_MAX) {
-                    *lastFrame = std::max(*lastFrame, thislast);
+                    *lastFrame = std::max(*lastFrame, (int)thislast);
                 }
             } else {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());

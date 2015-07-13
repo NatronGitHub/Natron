@@ -105,7 +105,7 @@ App::timelineGetTime() const
 int
 App::timelineGetLeftBound() const
 {
-    int left,right;
+    double left,right;
     _instance->getFrameRange(&left, &right);
     return left;
 }
@@ -113,7 +113,7 @@ App::timelineGetLeftBound() const
 int
 App::timelineGetRightBound() const
 {
-    int left,right;
+    double left,right;
     _instance->getFrameRange(&left, &right);
     return right;
 }

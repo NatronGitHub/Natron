@@ -5227,7 +5227,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
-            int leftBound = INT_MIN,rightBound = INT_MAX;
+            double leftBound = INT_MIN,rightBound = INT_MAX;
             _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
     
             if (leftBound != INT_MIN && rightBound != INT_MAX) {

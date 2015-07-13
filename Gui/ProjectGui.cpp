@@ -267,7 +267,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
 
     const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
 
-    int leftBound,rightBound;
+    double leftBound,rightBound;
     _project.lock()->getFrameRange(&leftBound, &rightBound);
 
     

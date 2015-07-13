@@ -1044,7 +1044,10 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
             w.writer = *it2;
             assert(w.writer);
             if (w.writer) {
-                w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
+                double f,l;
+                w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
+                w.firstFrame = std::floor(f);
+                w.lastFrame = std::ceil(l);
             }
             renderers.push_back(w);
         }
@@ -1086,7 +1089,7 @@ void
 AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writerWork.writer);
-    int first,last;
+    double first,last;
     if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
         writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
         if (first == INT_MIN || last == INT_MAX) {
@@ -1101,7 +1104,7 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
 }
 
 void
-AppInstance::getFrameRange(int* first,int* last) const
+AppInstance::getFrameRange(double* first,double* last) const
 {
     return _imp->_currentProject->getFrameRange(first, last);
 }
