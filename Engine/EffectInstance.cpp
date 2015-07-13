@@ -2806,7 +2806,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     } else {
         roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
     }
-    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     
@@ -3034,6 +3033,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 for (std::list<RectI>::iterator it = tmpRects.begin(); it!=tmpRects.end(); ++it,++oIt) {
                     assert(*it == *oIt);
                 }
+            } else {
+                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
             }
 #endif
         } else {
@@ -3449,7 +3450,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
 #endif
 
-
         if (hasSomethingToRender) {
             
             {
@@ -3486,17 +3486,18 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             
 # ifdef DEBUG
 
-            {
-                /*const std::list<RectToRender>& rectsToRender = planesToRender.rectsToRender;
+            /*{
+                const std::list<RectToRender>& rectsToRender = planesToRender.rectsToRender;
                 qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->rect.x1 << " , y1= " << it->rect.y1 << " , x2= " << it->rect.x2 << " , y2= " << it->rect.y2 << "(identity:" << it->isIdentity << ")";
                 }
                 for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
-                    qDebug() << "plane: " << it->first.getLayerName().c_str();
-                }*/
+                    qDebug() << "plane: " <<  it->second.downscaleImage.get() << it->first.getLayerName().c_str();
+                }
+                qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender.isBeingRenderedElsewhere;
                 
-            }
+            }*/
 # endif
             renderRetCode = renderRoIInternal(args.time,
                                               safety,
@@ -3582,7 +3583,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 assert(srcRealBounds.y1 == srcBounds.y1);
                 assert(srcRealBounds.y2 == srcBounds.y2);
             }
-
             
             std::list<RectI> restToRender;
             if (useImageAsOutput) {
@@ -3966,12 +3966,6 @@ EffectInstance::renderRoIInternal(double time,
             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
             isRotoPaintNode()) {
             safety = eRenderSafetyFullySafe;
-        } else {
-//            if ( !getApp()->getProject()->tryLock() ) {
-//                safety = eRenderSafetyFullySafe;
-//            } else {
-//                getApp()->getProject()->unlock();
-//            }
         }
     }
    
@@ -4476,7 +4470,6 @@ EffectInstance::renderHandler(RenderArgs & args,
                               Natron::ImagePremultiplicationEnum originalImagePremultiplication,
                               ImagePlanesToRender& planes)
 {
-    
     
     //Record the time spent rendering
     boost::shared_ptr<RenderingTimeRecorder> _timeRecorder_;
