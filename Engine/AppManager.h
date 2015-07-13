@@ -492,6 +492,10 @@ public Q_SLOTS:
     void appendToNatronPath(const std::string& path);
 
     virtual void addCommand(const QString& /*grouping*/,const std::string& /*pythonFunction*/, Qt::Key /*key*/,const Qt::KeyboardModifiers& /*modifiers*/) {}
+    
+    void setOnProjectLoadedCallback(const std::string& pythonFunc);
+    void setOnProjectCreatedCallback(const std::string& pythonFunc);
+    
 Q_SIGNALS:
 
 

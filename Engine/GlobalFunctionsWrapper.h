@@ -163,6 +163,18 @@ public:
     {
         return new AppSettings(appPTR->getCurrentSettings());
     }
+    
+    inline void setOnProjectCreatedCallback(const std::string& pythonFunctionName)
+    {
+        appPTR->setOnProjectCreatedCallback(pythonFunctionName);
+    }
+    
+    inline void setOnProjectLoadedCallback(const std::string& pythonFunctionName)
+    {
+        appPTR->setOnProjectLoadedCallback(pythonFunctionName);
+    }
+    
+    
 
 };
 

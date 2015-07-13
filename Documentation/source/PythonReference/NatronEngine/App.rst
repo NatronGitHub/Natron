@@ -17,6 +17,7 @@ See :ref:`detailed<app.details>` description...
 Functions
 ^^^^^^^^^
 
+*	 def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
@@ -109,6 +110,20 @@ You can get a specific :doc:`parameter<Param>` of the project settings with the
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronEngine.App.addFormat(formatSpec)
+
+	:param formatSpec: :class:`str<NatronEngine.std::string>`
+	
+Attempts to add a new format to the project's formats list. The *formatSpec* parameter
+must follow this spec: First the name of the format, without any spaces and without any
+non Python compliant characters; followed by a space and then the size of the format, in
+the form *width*x*height*; followed by a space and then the pixel aspect ratio of the
+format. For instance::
+
+	HD 1920x1080 1 
+	
+Wrongly formatted format will be omitted and a warning will be printed in the *ScriptEditor*.
 
 .. method:: NatronEngine.App.createNode(pluginID[, majorVersion=-1[, group=None]])
 

@@ -59,6 +59,30 @@ generateStringFromFormat(const Format & f)
 
     return formatStr;
 }
+    
+    
+inline bool
+generateFormatFromString(const QString& spec, Format* f)
+{
+    QStringList splits = spec.split(' ');
+    if (splits.size() != 3) {
+        return false;
+    }
+    
+    QStringList sizes = splits[1].split('x');
+    if (sizes.size() != 2) {
+        return false;
+    }
+    
+    f->setName(splits[0].toStdString());
+    f->x1 = 0;
+    f->y1 = 0;
+    f->x2 = sizes[0].toInt();
+    f->y2 = sizes[1].toInt();
+    
+    f->setPixelAspectRatio(splits[2].toDouble());
+    return true;
+}
 
 struct ProjectPrivate
 {

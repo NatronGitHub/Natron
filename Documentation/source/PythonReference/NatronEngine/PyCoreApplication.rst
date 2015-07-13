@@ -37,7 +37,8 @@ Functions
 *    def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
 *    def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
 *    def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
-
+*	 def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
+*	 def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
 
 .. _coreApp.details:
 
@@ -81,6 +82,14 @@ that Natron pre-declared for you, e.g::
 		#This you should not do!
 		from NatronEngine import *
 		from NatronGui import *
+		
+		#This is OK
+		import NatronEngine
+		import NatronGui
+		
+		#This can also be done for convenience
+		from NatronEngine import NatronEngine.natron as NE
+		from NatronGui import NatronGui.natron as NG
 	
 This class is used only for background (command-line) runs of Natron, that is when you
 launch Natron in the following ways::
@@ -346,4 +355,29 @@ Returns True if Natron is executed on Windows.
 
 
 
+.. method:: NatronEngine.PyCoreApplication.setOnProjectCreatedCallback(pythonFunctionName)
+
+	:param: :class:`str<NatronEngine.std::string>`
+	
+Convenience function to set the After Project Created callback. Note that this will override
+any callback set in the Preferences-->Python-->After Project created.
+This is exactly the same as calling::
+
+	NatronEngine.settings.afterProjectCreated.set(pythonFunctionName)
+	
+.. note:: 
+
+	Clever use of this function can be made in the **init.py** script to do generic stuff
+	for all projects (whether they are new projects or loaded projects). For instance
+	one might want to add a list of Formats to the project. See the example :ref:`here<startupScripts>`
+	
+.. method:: NatronEngine.PyCoreApplication.setOnProjectLoadedCallback(pythonFunctionName)
+
+	:param: :class:`str<NatronEngine.std::string>`
+	
+Convenience function to set the Default After Project Loaded callback. Note that this will override
+any callback set in the Preferences-->Python-->Default After Project Loaded.
+This is exactly the same as calling::
+
+	NatronEngine.settings.defOnProjectLoaded.set(pythonFunctionName)
 

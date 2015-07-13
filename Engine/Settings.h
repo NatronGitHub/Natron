@@ -251,6 +251,9 @@ public:
     std::string getDefaultOnNodeCreatedCB();
     std::string getDefaultOnNodeDeleteCB();
     
+    void setOnProjectCreatedCB(const std::string& func);
+    void setOnProjectLoadedCB(const std::string& func);
+    
     bool isLoadFromPyPlugsEnabled() const;
     
     bool isAutoDeclaredVariablePrintActivated() const;

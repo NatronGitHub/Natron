@@ -675,6 +675,90 @@ static PyObject* Sbk_PyCoreApplicationFunc_isWindows(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject* self, PyObject* pyArg)
+{
+    ::PyCoreApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setOnProjectCreatedCallback(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setOnProjectCreatedCallback(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setOnProjectCreatedCallback(std::string)
+            cppSelf->setOnProjectCreatedCallback(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectCreatedCallback", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject* self, PyObject* pyArg)
+{
+    ::PyCoreApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setOnProjectLoadedCallback(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setOnProjectLoadedCallback(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setOnProjectLoadedCallback(std::string)
+            cppSelf->setOnProjectLoadedCallback(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectLoadedCallback", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_PyCoreApplication_methods[] = {
     {"appendToNatronPath", (PyCFunction)Sbk_PyCoreApplicationFunc_appendToNatronPath, METH_O},
     {"getBuildNumber", (PyCFunction)Sbk_PyCoreApplicationFunc_getBuildNumber, METH_NOARGS},
@@ -696,6 +780,8 @@ static PyMethodDef Sbk_PyCoreApplication_methods[] = {
     {"isMacOSX", (PyCFunction)Sbk_PyCoreApplicationFunc_isMacOSX, METH_NOARGS},
     {"isUnix", (PyCFunction)Sbk_PyCoreApplicationFunc_isUnix, METH_NOARGS},
     {"isWindows", (PyCFunction)Sbk_PyCoreApplicationFunc_isWindows, METH_NOARGS},
+    {"setOnProjectCreatedCallback", (PyCFunction)Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback, METH_O},
+    {"setOnProjectLoadedCallback", (PyCFunction)Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback, METH_O},
 
     {0} // Sentinel
 };

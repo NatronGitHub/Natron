@@ -283,6 +283,8 @@ public:
         reset(aboutToQuit);
     }
     
+    bool addFormat(const std::string& formatSpec);
+    
 public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();

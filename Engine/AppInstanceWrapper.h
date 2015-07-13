@@ -79,6 +79,7 @@ public:
     
     int timelineGetRightBound() const;
     
+    void addFormat(const std::string& formatSpec);
     
     void render(Effect* writeNode,int firstFrame, int lastFrame);
     void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);

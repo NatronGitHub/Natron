@@ -1902,7 +1902,7 @@ AppManager::loadPythonGroups()
     std::string err;
     
     QStringList allPlugins;
-
+    
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         
@@ -1946,6 +1946,31 @@ AppManager::loadPythonGroups()
                     allPlugins.push_back(d.absolutePath() + "/" + *it);
                 }
             }
+        }
+    }
+    
+    // Now that init.py and InitGui.py have run, we need to set the search path again for the PyPlug
+    // as the user might have called appendToNatronPath
+    
+    QStringList newTemplatesSearchPath = getAllNonOFXPluginsPaths();
+    {
+        QStringList diffSearch;
+        for (int i = 0; i < newTemplatesSearchPath.size(); ++i) {
+            if (!templatesSearchPath.contains(newTemplatesSearchPath[i])) {
+                diffSearch.push_back(newTemplatesSearchPath[i]);
+            }
+        }
+        
+        //Add only paths that did not exist so far
+        for (int i = 0; i < diffSearch.size(); ++i) {
+            
+            std::string addToPythonPath("sys.path.append(\"");
+            addToPythonPath += diffSearch[i].toStdString();
+            addToPythonPath += "\")\n";
+            
+            bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+            assert(ok);
+            (void)ok;
         }
     }
     
@@ -3483,6 +3508,18 @@ AppManager::onNewCrashReporterConnectionPending()
     QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
 }
 #endif
+
+void
+AppManager::setOnProjectLoadedCallback(const std::string& pythonFunc)
+{
+    _imp->_settings->setOnProjectLoadedCB(pythonFunc);
+}
+
+void
+AppManager::setOnProjectCreatedCallback(const std::string& pythonFunc)
+{
+    _imp->_settings->setOnProjectCreatedCB(pythonFunc);
+}
 
 std::list<std::string>
 AppManager::getNatronPath()

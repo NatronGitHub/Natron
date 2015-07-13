@@ -237,3 +237,11 @@ App::writeToScriptEditor(const std::string& message)
 {
     _instance->appendToScriptEditor(message);
 }
+
+void
+App::addFormat(const std::string& formatSpec)
+{
+    if (!_instance->getProject()->addFormat(formatSpec)) {
+        _instance->appendToScriptEditor(formatSpec);
+    }
+}

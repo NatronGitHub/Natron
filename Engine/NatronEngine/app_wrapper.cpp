@@ -36,6 +36,48 @@ AppWrapper::~AppWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_AppFunc_addFormat(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: addFormat(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // addFormat(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_addFormat_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // addFormat(std::string)
+            cppSelf->addFormat(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_addFormat_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.addFormat", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::App* cppSelf = 0;
@@ -451,6 +493,7 @@ static PyObject* Sbk_AppFunc_writeToScriptEditor(PyObject* self, PyObject* pyArg
 }
 
 static PyMethodDef Sbk_App_methods[] = {
+    {"addFormat", (PyCFunction)Sbk_AppFunc_addFormat, METH_O},
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},

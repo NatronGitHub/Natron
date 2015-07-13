@@ -2128,7 +2128,17 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
     
 }
   
-
+bool Project::addFormat(const std::string& formatSpec)
+{
+    Format f;
+    if (generateFormatFromString(formatSpec.c_str(), &f)) {
+        QMutexLocker k(&_imp->formatMutex);
+        tryAddProjectFormat(f);
+        return true;
+    } else {
+        return false;
+    }
+}
     
 } //namespace Natron
 

@@ -382,6 +382,7 @@ public:
     virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/) {}
     virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const { return boost::shared_ptr<Natron::Node>(); }
     
+    
 public Q_SLOTS:
     
     void quit();
