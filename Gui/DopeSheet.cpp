@@ -249,7 +249,14 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
     DopeSheet::ItemType nodeType = DopeSheet::ItemTypeCommon;
 
     NodePtr node = nodeGui->getNode();
+    
+    //Don't add to the dopesheet nodes that are used by Natron internally (such as rotopaint nodes or file dialog preview nodes)
+    if (!node || !node->getGroup()) {
+        return;
+    }
+    
     Natron::EffectInstance *effectInstance = node->getLiveInstance();
+
 
     std::string pluginID = node->getPluginID();
 

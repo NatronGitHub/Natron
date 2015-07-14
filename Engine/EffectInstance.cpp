@@ -6423,6 +6423,11 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited
 {
     std::vector<std::string> args;
     std::string error;
+    
+    if (!k || k->getName() == "onParamChanged") {
+        return;
+    }
+    
     Natron::getFunctionArguments(callback, &error, &args);
     if (!error.empty()) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
@@ -6477,7 +6482,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited
     std::string err;
     std::string output;
     if (!Natron::interpretPythonScript(script, &err,&output)) {
-        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute onParamChanged callback: ").toStdString() + err);
     } else {
         if (!output.empty()) {
             _publicInterface->getApp()->appendToScriptEditor(output);

@@ -3041,6 +3041,10 @@ KnobHolder::refreshKnobs()
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->settingsPanel) {
         _imp->settingsPanel->scanForNewKnobs();
+        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+        if (isEffect) {
+            isEffect->getNode()->declarePythonFields();
+        }
     }
 }
 
@@ -3161,6 +3165,10 @@ KnobHolder::getOrCreateUserPageKnob()
     boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3175,6 +3183,10 @@ KnobHolder::createIntKnob(const std::string& name, const std::string& label,int 
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3189,6 +3201,10 @@ KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,i
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3203,6 +3219,10 @@ KnobHolder::createColorKnob(const std::string& name, const std::string& label,in
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3217,6 +3237,10 @@ KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3231,6 +3255,10 @@ KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3245,6 +3273,10 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3260,6 +3292,10 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
@@ -3275,6 +3311,10 @@ KnobHolder::createFileKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 }
 
@@ -3289,6 +3329,10 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
@@ -3304,6 +3348,10 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
@@ -3319,6 +3367,10 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
@@ -3334,6 +3386,10 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
@@ -3349,6 +3405,10 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
     ret->setName(name);
     ret->setAsUserKnob();
     (void)getOrCreateUserPageKnob();
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
     return ret;
 
 }
