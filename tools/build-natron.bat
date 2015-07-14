@@ -136,8 +136,11 @@ call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.
 setlocal EnableDelayedExpansion
 
 if "%BITS%" == "64" (
+	::Force x64 because by default visual 2010 produces 32bit binaries
 	sed -e "/\/ResourceCompile>/a <Lib>\n    <TargetMachine>MachineX64</TargetMachine>\n</Lib>" -i Engine\Engine.vcxproj Gui\Gui.vcxproj HostSupport\HostSupport.vcxproj
 
+	sed -e "/<SubSystem>/ s/Windows/Console/g" -i App\Natron.vcxproj
+	
 	:: Qmake in the path is the Qmake 32 bit hence the visual studio solution is setup to build against
 	:: 32bit libraries of Qt. The following is to use our compiled version of Qt 64bit 
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
@@ -195,6 +198,17 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtGui4.dll %DEPLOY_DIR%\bin
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtNetwork4.dll %DEPLOY_DIR%\bin
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtOpenGL4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtWebKit4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtXml4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtXmlPatterns4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtSvg4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtSql4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtScriptTools4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtScript4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtMultimedia4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtHelp4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtCLucene4.dll %DEPLOY_DIR%\bin
+	copy /Y %QT_LIBRARIES_DIR%\bin\QtDeclarative4.dll %DEPLOY_DIR%\bin
 	
 	copy /Y %DEP_PATH%\cairo_1.12\lib\%BUILD_SUB_DIR%\cairo.dll %DEPLOY_DIR%\bin
 	copy /Y C:\glew\bin\Release\%BUILD_SUB_DIR%\glew32.dll %DEPLOY_DIR%\bin
