@@ -1988,7 +1988,7 @@ Node::getFullyQualifiedName() const
         prependGroupNameRecursive(parent, ret);
     } else {
         boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
-        boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(hasParentGroup.get());
         if (isGrp) {
             prependGroupNameRecursive(isGrp->getNode(), ret);
         }
@@ -6360,7 +6360,7 @@ void
 Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
-    if (cb.empty()) {
+    if (cb.empty() || !_publicInterface->getGroup()) {
         return;
     }
     

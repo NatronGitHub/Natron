@@ -337,18 +337,8 @@ Project::loadProjectInternal(const QString & path,
         }
     }
     
-    std::string onProjectLoad = getOnProjectLoadCB();
-    if (!onProjectLoad.empty()) {
-        std::string err,output;
-        std::string appID = getApp()->getAppIDString();
-        onProjectLoad.insert(0, "app = " + appID + "\n");
-        if (!Natron::interpretPythonScript(onProjectLoad + "()\n", &err, &output)) {
-            getApp()->appendToScriptEditor("Failed to run onProjectLoad callback: " + err);
-        } else {
-            getApp()->appendToScriptEditor(output);
-        }
-    }
-    
+    _imp->runOnProjectLoadCallback();
+
     ///Process all events before flagging that we're no longer loading the project
     ///to avoid multiple renders being called because of reshape events of viewers
     QCoreApplication::processEvents();
