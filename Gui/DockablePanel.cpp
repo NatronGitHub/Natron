@@ -2465,9 +2465,9 @@ DockablePanel::scanForNewKnobs()
     
     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (isNodePanel) {
+    /*if (isNodePanel) {
         isNodePanel->getNode()->getNode()->declarePythonFields();
-    }
+    }*/
     
     
     ///Refresh the curve editor with potential new animated knobs
