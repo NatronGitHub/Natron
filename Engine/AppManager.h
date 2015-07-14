@@ -23,6 +23,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
+#include <QtCore/QString>
+#include <QtCore/QChar>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
 #include <boost/scoped_ptr.hpp>
@@ -438,6 +440,10 @@ public:
     
     void releaseNatronGIL();
     
+#ifdef __NATRON_WIN32__
+	void registerUNCPath(const QString& path, const QChar& driveLetter);
+	QString mapUNCPathToPathWithDriveLetter(const QString& uncPath) const;
+#endif
     
 #ifdef Q_OS_UNIX
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);

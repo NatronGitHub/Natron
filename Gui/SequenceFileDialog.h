@@ -94,7 +94,7 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
 
-    explicit UrlModel(QObject *parent = 0);
+    explicit UrlModel(const std::map<std::string,std::string>& envVars, QObject *parent = 0);
 
     QStringList mimeTypes() const;
     virtual QMimeData * mimeData(const QModelIndexList &indexes) const;
@@ -130,10 +130,12 @@ private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
     
-    
+    QString mapUrlToDisplayName(const QString& originalName);
+
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
+	std::map<std::string,std::string> envVars;
 };
 
 class FavoriteItemDelegate
@@ -141,13 +143,14 @@ class FavoriteItemDelegate
 {
     
     QFileSystemModel *_model;
-    std::map<std::string,std::string> envVars;
 
 public:
-    FavoriteItemDelegate(Gui* gui,QFileSystemModel *model);
+    FavoriteItemDelegate(QFileSystemModel *model);
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+
+	
 };
 
 /**

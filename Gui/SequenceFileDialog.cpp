@@ -187,6 +187,10 @@ static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& p
 			//Replace \\ with / 
 			QString qDeviceName(szDeviceName);
 			qDeviceName.replace('\\','/');
+
+			//Make sure we remember the mapping
+			appPTR->registerUNCPath(qDeviceName, path[0]);
+
 			ret.prepend(qDeviceName);
 			return ret;
 		} 
@@ -957,6 +961,8 @@ SequenceFileDialog::setDirectory(const QString &directory)
     }
    
     QString newDirectory = directory;
+
+
     _view->selectionModel()->clear();
     _view->verticalScrollBar()->setValue(0);
     //we remove .. and . from the given path if exist
@@ -967,6 +973,11 @@ SequenceFileDialog::setDirectory(const QString &directory)
     if ( !directory.isEmpty() && newDirectory.isEmpty() ) {
         return;
     }
+
+	#ifdef __NATRON_WIN32__
+	newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
+#endif
+	
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
     _createDirButton->setEnabled(_dialogMode != eFileDialogModeOpen);
@@ -1462,11 +1473,14 @@ void
 SequenceFileDialog::addFavorite(const QString & name,
                                 const QString & path)
 {
+
     QDir d(path);
 
     if ( !d.exists() ) {
         return;
     }
+
+
     if ( !name.isEmpty() && !path.isEmpty() ) {
         std::vector<QUrl> list;
         list.push_back( QUrl::fromLocalFile(path) );
@@ -1970,9 +1984,10 @@ SequenceFileDialog::applyFilter(QString filter)
     setDirectory(currentDir);
 }
 
-UrlModel::UrlModel(QObject *parent)
+UrlModel::UrlModel(const std::map<std::string,std::string>& vars, QObject *parent)
     : QStandardItemModel(parent)
       , fileSystemModel(0)
+	  , envVars(vars)
 {
 }
 
@@ -2008,8 +2023,9 @@ UrlModel::setUrl(const QModelIndex &index,
     } else {
         QString newName;
         newName = QDir::toNativeSeparators( dirIndex.data(QFileSystemModel::FilePathRole).toString() ); //dirIndex.data().toString();
-        QIcon newIcon = qvariant_cast<QIcon>( dirIndex.data(Qt::DecorationRole) );
+        QIcon newIcon;
         if ( !dirIndex.isValid() ) {
+
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
             newName = QFileInfo( url.toLocalFile() ).fileName();
             bool invalidUrlFound = false;
@@ -2025,6 +2041,7 @@ UrlModel::setUrl(const QModelIndex &index,
             //The bookmark is invalid then we set to false the EnabledRole
             setData(index, false, EnabledRole);
         } else {
+			newIcon = qvariant_cast<QIcon>( dirIndex.data(Qt::DecorationRole) );
             //The bookmark is valid then we set to true the EnabledRole
             setData(index, true, EnabledRole);
         }
@@ -2035,6 +2052,7 @@ UrlModel::setUrl(const QModelIndex &index,
             QPixmap smallPixmap = newIcon.pixmap( QSize(32, 32) );
             newIcon.addPixmap( smallPixmap.scaledToWidth(32, Qt::SmoothTransformation) );
         }
+		newName = mapUrlToDisplayName(newName);
 
         if (index.data().toString() != newName) {
             setData(index, newName);
@@ -2105,7 +2123,16 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
             }
         }
         if (!found) {
-            realList.push_back(std::make_pair(QUrl::fromLocalFile(cleanUrl),cleanUrl));
+			// If not found, make sure it is not already in the realList 
+			for (std::size_t k = 0; k < realList.size(); ++k) {
+				if (realList[k].second == cleanUrl) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				realList.push_back(std::make_pair(QUrl::fromLocalFile(cleanUrl),cleanUrl));
+			}
         }
     }
     if (realList.empty()) {
@@ -2234,11 +2261,55 @@ UrlModel::removeRowIndex(const QModelIndex& index)
 }
 
 
-FavoriteItemDelegate::FavoriteItemDelegate(Gui* gui,QFileSystemModel *model)
+FavoriteItemDelegate::FavoriteItemDelegate(QFileSystemModel *model)
 : QStyledItemDelegate(),_model(model)
 {
-    gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+    
 
+}
+
+QString
+UrlModel::mapUrlToDisplayName(const QString& originalName)
+{
+	QString str = originalName;
+
+#ifdef __NATRON_WIN32__
+	//On Windows strings are stored with backslashes
+	str.replace(QChar('\\'),QChar('/'));
+#endif
+
+	///if str ends with '/' remove it
+	if (str.size() > 1 && (str.endsWith('/') || str.endsWith('\\'))) {
+		str = str.remove(str.size() - 1, 1);
+	}
+
+	std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
+	for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
+		///if it->second ends with '/' remove it
+		std::string stdVar = it->second;
+		Natron::Project::expandVariable(envVars, stdVar);
+		QString var(stdVar.c_str());
+		if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
+			var = var.remove(var.size() - 1, 1);
+		}
+		if (var == str) {
+			isEnvVar = it;
+			break;
+		}
+	} 
+	if (isEnvVar == envVars.end()) {
+		QModelIndex modelIndex = fileSystemModel->index(str);
+		if ( !modelIndex.isValid() ) {
+			return originalName;
+		}
+		str = modelIndex.data().toString();
+	} else {
+		str.clear();
+		str.append('[');
+		str.append(isEnvVar->first.c_str());
+		str.append(']');
+	}
+	return str;
 }
 
 void
@@ -2246,64 +2317,42 @@ FavoriteItemDelegate::paint(QPainter * painter,
                             const QStyleOptionViewItem & option,
                             const QModelIndex & index) const
 {
-    if (index.column() == 0) {
+	assert(index.isValid());
+	return QStyledItemDelegate::paint(painter,option,index);
+	
+	/*
+	The code below is deactivated because it crashes on Windows when trying to call drawPixmap and drawText
+	if the QModelIndex is internally pointing to a UNC path. The only viable solution found was to use the 
+	default implementation.
+	
+	if (index.column() == 0) {
         QString str = index.data().toString();
-        
-#ifdef __NATRON_WIN32__
-		//On Windows strings are stored with backslashes
-		str.replace(QChar('\\'),QChar('/'));
-#endif
 
-        ///if str ends with '/' remove it
-        if (str.size() > 1 && (str.endsWith('/') || str.endsWith('\\'))) {
-            str = str.remove(str.size() - 1, 1);
-        }
-        
-        std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
-        for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
-            ///if it->second ends with '/' remove it
-            std::string stdVar = it->second;
-            Natron::Project::expandVariable(envVars, stdVar);
-            QString var(stdVar.c_str());
-            if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
-                var = var.remove(var.size() - 1, 1);
-            }
-            if (var == str) {
-                isEnvVar = it;
-                break;
-            }
-        }
-        
-        QFileInfo fileInfo(str);
-        if (isEnvVar == envVars.end()) {
-            QModelIndex modelIndex = _model->index(str);
-            if ( !modelIndex.isValid() ) {
-                return;
-            }
-            str = modelIndex.data().toString();
-        } else {
-            str.clear();
-            str.append('[');
-            str.append(isEnvVar->first.c_str());
-            str.append(']');
-        }
-        QIcon icon = _model->iconProvider()->icon(fileInfo);
-        int totalSize = option.rect.width();
-        int iconSize = option.decorationSize.width();
-        int textSize = totalSize - iconSize;
-        QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
-        QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
-        QRect r;
-        if (option.state & QStyle::State_Selected) {
-            painter->fillRect( option.rect, option.palette.highlight() );
-        }
-        painter->drawPixmap(iconRect,
-                            icon.pixmap( icon.actualSize( QSize( iconRect.width(),iconRect.height() ) ) ),
-                            r);
-        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
+		QFileInfo fileInfo(str);
+		QIcon icon = _model->iconProvider()->icon(fileInfo);
+		int totalSize = option.rect.width();
+		int iconSize = 0;
+		QRect r;
+		if (!icon.isNull()) {
+			
+		    iconSize = option.decorationSize.width();
+			QRect iconRect( option.rect.x(),option.rect.y(),iconSize,option.rect.height() );
+			
+			if (option.state & QStyle::State_Selected) {
+				painter->fillRect( option.rect, option.palette.highlight() );
+			}
+
+			QPixmap pix = icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height())));
+			if (!pix.isNull()) {
+				painter->drawPixmap(iconRect,pix);
+			}
+		}
+		int textSize = totalSize - iconSize;
+		QRect textRect( option.rect.x() + iconSize,option.rect.y(),textSize,option.rect.height() );
+		painter->drawText(textRect,Qt::TextSingleLine,str,&r);
     } else {
         QStyledItemDelegate::paint(painter,option,index);
-    }
+    }*/
 }
 
 
@@ -2323,10 +2372,14 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
     setIconSize( QSize(24,24) );
     setUniformItemSizes(true);
     assert(!urlModel);
-    urlModel = new UrlModel(this);
+
+	std::map<std::string,std::string> envVars;
+	_gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+
+    urlModel = new UrlModel(envVars,this);
     urlModel->setFileSystemModel(model);
     assert(!_itemDelegate);
-    _itemDelegate = new FavoriteItemDelegate(_gui,model);
+    _itemDelegate = new FavoriteItemDelegate(model);
     setItemDelegate(_itemDelegate);
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -2575,6 +2628,8 @@ UrlModel::dropMimeData(const QMimeData *data,
     return true;
 }
 
+
+
 void
 FavoriteView::dragEnterEvent(QDragEnterEvent* e)
 {
@@ -2585,7 +2640,7 @@ FavoriteView::dragEnterEvent(QDragEnterEvent* e)
 
 FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,QWidget *parent)
 : QComboBox(parent)
-, urlModel(new UrlModel(this))
+, urlModel(new UrlModel(std::map<std::string,std::string>(),this))
 , dialog(p)
 , doResize(false)
 {

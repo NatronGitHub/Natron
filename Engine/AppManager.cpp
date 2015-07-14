@@ -158,6 +158,12 @@ struct AppManagerPrivate
 #endif
     
     QMutex natronPythonGIL;
+
+#ifdef Q_OS_WIN32
+	//On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map
+	//from UNC path to path with drive letter.
+	std::map<QChar,QString> uncPathMapping;
+#endif
     
     AppManagerPrivate();
     
@@ -3537,6 +3543,42 @@ AppManager::appendToNatronPath(const std::string& path)
 {
     appPTR->getCurrentSettings()->appendPythonGroupsPath(path);
 }
+
+
+#ifdef __NATRON_WIN32__
+void
+AppManager::registerUNCPath(const QString& path, const QChar& driveLetter)
+{
+	assert(QThread::currentThread() == qApp->thread());
+	_imp->uncPathMapping[driveLetter] = path;
+}
+
+QString
+AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
+{
+	assert(QThread::currentThread() == qApp->thread());
+	if (uncPath.isEmpty()) {
+		return uncPath;
+	}
+	for (std::map<QChar,QString>::const_iterator it = _imp->uncPathMapping.begin(); it!= _imp->uncPathMapping.end(); ++it) {
+		int index = uncPath.indexOf(it->second);
+		if (index == 0) {
+			//We found the UNC mapping at the start of the path, replace it with a drive letter
+			QString ret = uncPath;
+			ret.remove(0,it->second.size());
+			QString drive;
+			drive.append(it->first);
+			drive.append(':');
+			if (!ret.isEmpty() && !ret.startsWith('/')) {
+				drive.append('/');
+			}
+			ret.prepend(drive);
+			return ret;
+		}
+	}
+	return uncPath;
+}
+#endif
 
 namespace Natron {
 void
