@@ -323,7 +323,8 @@ CurveEditor::addNode(boost::shared_ptr<NodeGui> node)
 {
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
-    if ( knobs.empty() || !node->getSettingPanel() ) {
+    //Don't add to the curveeditor nodes that are used by Natron internally (such as rotopaint nodes or file dialog preview nodes)
+    if ( knobs.empty() || !node->getSettingPanel() || !node->getNode()->getGroup() ) {
         return;
     }
     bool hasKnobsAnimating = false;
