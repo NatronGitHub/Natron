@@ -917,25 +917,27 @@ Knob<T>::setValue(const T & v,
         boost::shared_ptr<Curve> curve;
         if (newKey) {
             curve = getCurve(dimension);
-            assert(curve);
-
-            makeKeyFrame(curve.get(),time,v,&k);
-            bool hasAnimation = curve->isAnimated();
-            bool hasKeyAtTime;
-            {
-                KeyFrame existingKey;
-                hasKeyAtTime = curve->getKeyFrameWithTime(time, &existingKey);
-            }
-            if (hasAnimation && hasKeyAtTime) {
-                returnValue =  eValueChangedReturnCodeKeyframeModified;
-                setInternalCurveHasChanged(dimension, true);
-            } else if (hasAnimation) {
-                returnValue =  eValueChangedReturnCodeKeyframeAdded;
-                setInternalCurveHasChanged(dimension, true);
+            if (curve) {
+                
+                makeKeyFrame(curve.get(),time,v,&k);
+                bool hasAnimation = curve->isAnimated();
+                bool hasKeyAtTime;
+                {
+                    KeyFrame existingKey;
+                    hasKeyAtTime = curve->getKeyFrameWithTime(time, &existingKey);
+                }
+                if (hasAnimation && hasKeyAtTime) {
+                    returnValue =  eValueChangedReturnCodeKeyframeModified;
+                    setInternalCurveHasChanged(dimension, true);
+                } else if (hasAnimation) {
+                    returnValue =  eValueChangedReturnCodeKeyframeAdded;
+                    setInternalCurveHasChanged(dimension, true);
+                } else {
+                    returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
+                }
             } else {
                 returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
             }
-
         } else {
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
