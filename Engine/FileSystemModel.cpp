@@ -1309,6 +1309,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             break;
     }
     sort |= QDir::IgnoreCase;
+    sort |= QDir::DirsFirst;
     
     ///All entries in the directory
     QFileInfoList all = dir.entryInfoList(_imp->model->filter(), sort);
