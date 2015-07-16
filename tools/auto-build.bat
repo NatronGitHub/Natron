@@ -125,7 +125,8 @@ for /l %%i in (1, 1, 2) do (
 	rmdir /S /Q Natron-%GITV_NATRON%
 	echo R | xcopy /Y /E %TMP%\Logs!BIT! %TMP%\repo\Windows!BIT!\BuildLogs
 	cd ..
-	rsync -avz -e ssh --progress --delete Windows!BIT! kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
+	#rsync -avz -e ssh --progress --delete Windows!BIT! kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
+	rsync -avz -e "ssh -i /cygdrive/c/Users/lex/.ssh/id_rsa_build_win" --progress Windows!BIT!/ mrkepzie@vps163799.ovh.net:../www/downloads.natron.fr/Windows/snapshots/!BIT!bit
 )
 
 ) else (
