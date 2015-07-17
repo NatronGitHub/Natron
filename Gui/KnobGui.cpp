@@ -2302,6 +2302,10 @@ void
 KnobGui::onFrozenChanged(bool frozen)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
+    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob.get());
+    if (isBtn) {
+        return;
+    }
     int dims = knob->getDimension();
 
     for (int i = 0; i < dims; ++i) {
