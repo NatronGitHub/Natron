@@ -30,7 +30,7 @@ running with Qt 5.
 ### Boost
 
 You can download boost from 
-(boost download)[http://www.boost.org/users/download/]
+[boost download](http://www.boost.org/users/download/)
 Alternatively you can install boost from apt-get. (The package depends on your distribution).
 For now just boost serialization is required.
 
