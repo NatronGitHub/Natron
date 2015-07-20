@@ -221,7 +221,7 @@ cd ..
 
 #compile openfx-arena
 cd openfx-arena
-make BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
+make USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
 mv Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
