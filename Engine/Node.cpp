@@ -1805,8 +1805,6 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
             inputNames.insert(std::make_pair(_imp->inputLabels[i], _imp->inputs[i]->getScriptName_mt_safe()) );
-        } else {
-            inputNames.insert(std::make_pair(_imp->inputLabels[i],""));
         }
     }
 }

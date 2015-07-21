@@ -34,7 +34,9 @@ ProjectSerialization::initialize(const Natron::Project* project)
         Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
         Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
         Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
-        if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
+        if (knobs[i]->getIsPersistant() &&
+            !isGroup && !isPage && !isButton &&
+            knobs[i]->hasModifications()) {
             boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
             _projectKnobs.push_back(newKnobSer);
         }
