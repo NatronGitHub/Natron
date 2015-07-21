@@ -143,5 +143,4 @@ You must copy them to a directory named `../share/OpenColorIO-Configs` relative 
 ## ArchLinux
 
     pacman -S qt4 cairo glew python expat boost pixman ffmpeg opencolorio openimageio wget git cmake gcc make libxslt pkg-config
-    wget https://raw.githubusercontent.com/olear/natron-linux/master/installer/misc/build-natron-on-archlinux.sh
-    sudo sh build-natron-on-archlinux.sh
+    wget https://raw.githubusercontent.com/olear/natron-linux/master/include/misc/build-natron-on-archlinux.sh
