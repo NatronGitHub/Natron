@@ -1523,8 +1523,9 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
         
         QStringList paths = appPTR->getAllNonOFXPluginsPaths();
         for (int i = 0; i < paths.size(); ++i) {
-            filePath = paths[i] + QChar('/') + filePath;
-            if (QFile::exists(filePath)) {
+            QString tmp = paths[i] + QChar('/') + filePath;
+            if (QFile::exists(tmp)) {
+                filePath = tmp;
                 break;
             }
         }
