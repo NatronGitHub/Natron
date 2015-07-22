@@ -239,6 +239,8 @@ public Q_SLOTS:
     
 private:
     
+    void scrollViewIfNeeded(const QPointF& scenePos);
+    
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 
     void setVisibleNodeDetails(bool visible);

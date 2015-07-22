@@ -1673,6 +1673,40 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 } // mouseReleaseEvent
 
 void
+NodeGraph::scrollViewIfNeeded(const QPointF& scenePos)
+{
+
+    //Doesn't work for now
+    return;
+#if 0
+    QRectF visibleRect = visibleSceneRect();
+    
+   
+    
+    static const int delta = 50;
+    
+    int deltaX = 0;
+    int deltaY = 0;
+    if (scenePos.x() < visibleRect.left()) {
+        deltaX = -delta;
+    } else if (scenePos.x() > visibleRect.right()) {
+        deltaX = delta;
+    }
+    if (scenePos.y() < visibleRect.top()) {
+        deltaY = -delta;
+    } else if (scenePos.y() > visibleRect.bottom()) {
+        deltaY = delta;
+    }
+    if (deltaX != 0 || deltaY != 0) {
+        QPointF newCenter = visibleRect.center();
+        newCenter.rx() += deltaX;
+        newCenter.ry() += deltaY;
+        centerOn(newCenter);
+    }
+#endif
+}
+
+void
 NodeGraph::mouseMoveEvent(QMouseEvent* e)
 {
     QPointF newPos = mapToScene( e->pos() );
@@ -1739,6 +1773,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         } else {
             _imp->_arrowSelected->dragSource(np);
         }
+        scrollViewIfNeeded(newPos);
         break;
     }
     case eEventStateDraggingNode: {
@@ -1773,11 +1808,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
                 }
             }
-            //= _imp->_selection.nodes;
             
             double dxScene = newPos.x() - lastMousePosScene.x();
             double dyScene = newPos.y() - lastMousePosScene.y();
             
+            QPointF newNodesCenter;
             
             bool deltaSet = false;
             for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it = nodesToMove.begin();
@@ -1785,14 +1820,25 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 QPointF pos = it->first->getPos_mt_safe();
                 bool ignoreMagnet = it->second || nodesToMove.size() > 1;
                 it->first->refreshPosition(pos.x() + dxScene, pos.y() + dyScene,ignoreMagnet,newPos);
+                QPointF newNodePos = it->first->getPos_mt_safe();
                 if (!ignoreMagnet) {
                     assert(nodesToMove.size() == 1);
-                    QPointF newNodePos = it->first->getPos_mt_safe();
                     _imp->_deltaSinceMousePress.rx() += newNodePos.x() - pos.x();
                     _imp->_deltaSinceMousePress.ry() += newNodePos.y() - pos.y();
                     deltaSet = true;
                 }
+                newNodePos = it->first->mapToScene(it->first->mapFromParent(newNodePos));
+                newNodesCenter.rx() += newNodePos.x();
+                newNodesCenter.ry() += newNodePos.y();
+                
             }
+            if (!nodesToMove.empty()) {
+                newNodesCenter.rx() /= nodesToMove.size();
+                newNodesCenter.ry() /= nodesToMove.size();
+            }
+            
+            scrollViewIfNeeded(newNodesCenter);
+            
             if (!deltaSet) {
                 _imp->_deltaSinceMousePress.rx() += dxScene;
                 _imp->_deltaSinceMousePress.ry() += dyScene;
@@ -2030,6 +2076,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QPointF p = _imp->_backdropResized->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
+        scrollViewIfNeeded(newPos);
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
@@ -2041,6 +2088,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         double xmax = std::max( cur.x(),startDrag.x() );
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
+        scrollViewIfNeeded(newPos);
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
         _imp->_selectionRect->show();
         break;
