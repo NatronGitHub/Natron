@@ -1872,7 +1872,12 @@ public:
      * @brief Returns true if a sequential render is being aborted
      **/
     bool isSequentialRenderBeingAborted() const;
-
+    
+    /**
+     * @brief Is this node currently doing playback ?
+     **/
+    bool isDoingSequentialRender() const;
+    
 
     /**
      * @brief Starts rendering of all the sequence available, from start to end.

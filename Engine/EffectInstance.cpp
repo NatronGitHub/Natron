@@ -1054,6 +1054,13 @@ EffectInstance::aborted() const
         } else {
             if (args.isRenderResponseToUserInteraction) {
                 
+                if (args.renderRequester) {
+                    //If the viewer is already doing a sequential render, abort
+                    if (args.renderRequester->isDoingSequentialRender()) {
+                        return true;
+                    }
+                }
+                
                 if (args.canAbort) {
                     
                     
@@ -7056,6 +7063,12 @@ bool
 OutputEffectInstance::isSequentialRenderBeingAborted() const
 {
     return _engine ? _engine->isSequentialRenderBeingAborted() : false;
+}
+
+bool
+OutputEffectInstance::isDoingSequentialRender() const
+{
+    return _engine ? _engine->isDoingSequentialRender() : false;
 }
 
 void

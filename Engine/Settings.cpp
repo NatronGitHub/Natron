@@ -2074,7 +2074,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         }
         
         ///Create checkbox to activate/deactivate the plug-in
-        std::string pluginName = plugin->generateUserFriendlyPluginID().toStdString();
+        std::string pluginName = plugin->getPluginID().toStdString();
         
         boost::shared_ptr<String_Knob> pluginLabel = Natron::createKnob<String_Knob>(this, pluginName);
         pluginLabel->setAsLabel();

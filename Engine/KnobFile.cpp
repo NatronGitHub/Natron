@@ -315,6 +315,11 @@ Path_Knob::appendPath(const std::string& path)
     } else {
         std::list<std::pair<std::string,std::string> > paths;
         getVariables(&paths);
+        for (std::list<std::pair<std::string,std::string> >::iterator it = paths.begin(); it!=paths.end(); ++it) {
+            if (it->second == path) {
+                return;
+            }
+        }
         std::string name = generateUniquePathID(paths);
         paths.push_back(std::make_pair(name, path));
         setPaths(paths);

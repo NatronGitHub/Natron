@@ -668,6 +668,11 @@ public:
      **/
     bool isSequentialRenderBeingAborted() const;
     
+    /**
+     * @brief Returns true if playback is active
+     **/
+    bool isDoingSequentialRender() const;
+    
     
 public Q_SLOTS:
 

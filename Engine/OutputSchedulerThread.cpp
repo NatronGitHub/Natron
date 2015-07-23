@@ -600,7 +600,6 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     
     PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
     
-    
     if (firstFrame == lastFrame) {
         _imp->framesToRender.push_back(startingFrame);
         _imp->lastFramePushedIndex = startingFrame;
@@ -728,7 +727,6 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         
         ///Notify that we're running for good, will do nothing if flagged already running
         thread->notifyIsRunning(true);
-        
         
         int ret = _imp->framesToRender.front();
         _imp->framesToRender.pop_front();
@@ -1434,7 +1432,6 @@ OutputSchedulerThread::abortRendering(bool blocking)
     if ( !isRunning() || !isWorking() ) {
         return;
     }
-
 
     bool isMainThread = QThread::currentThread() == qApp->thread();
     
@@ -2454,6 +2451,8 @@ private:
             } catch (...) {
                 stat = eStatusFailed;
             }
+        } else {
+            return;
         }
         
         if (stat == eStatusFailed) {
@@ -2467,7 +2466,9 @@ private:
                     toAppend.push_back(args[i]->params);
                 }
             }
+     
             _imp->scheduler->appendToBuffer(time, view, boost::shared_ptr<TimeLapse>(), toAppend);
+            
         }
 
     }
@@ -2665,10 +2666,16 @@ RenderEngine::hasThreadsWorking() const
 
 }
 
+bool
+RenderEngine::isDoingSequentialRender() const
+{
+    return _imp->scheduler ? _imp->scheduler->isWorking() : false;
+}
+
 void
 RenderEngine::abortRendering(bool blocking)
 {
-    if (_imp->scheduler) {
+    if (_imp->scheduler && _imp->scheduler->isWorking()) {
         _imp->scheduler->abortRendering(blocking);
     }
 }
