@@ -714,6 +714,10 @@ public:
         return _embeddedWidget;
     }
 
+public Q_SLOTS:
+
+    void onProjectNameChanged(const QString& name);
+    
 Q_SIGNALS:
 
     void closed();

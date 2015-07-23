@@ -5246,11 +5246,23 @@ FloatingWidget::FloatingWidget(Gui* gui,
     , _gui(gui)
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
+    if (gui) {
+        boost::shared_ptr<Project> project = gui->getApp()->getProject();
+        QObject::connect(project.get(),SIGNAL(projectNameChanged(QString)), this, SLOT(onProjectNameChanged(QString)));
+        QString projectName = project->getProjectName();
+        setWindowTitle(projectName);
+    }
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
     _scrollArea = new QScrollArea(this);
     _layout->addWidget(_scrollArea);
     _scrollArea->setWidgetResizable(true);
+}
+
+void
+FloatingWidget::onProjectNameChanged(const QString& name)
+{
+    setWindowTitle(name);
 }
 
 static void
