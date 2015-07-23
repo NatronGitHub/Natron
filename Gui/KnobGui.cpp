@@ -1449,6 +1449,10 @@ KnobGui::hide()
 
     if (shouldRemoveWidget) {
         _imp->field->hide();
+    } else {
+        if (!_imp->field->isVisible()) {
+            _imp->field->show();
+        }
     }
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->hide();

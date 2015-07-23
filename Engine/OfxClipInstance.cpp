@@ -242,10 +242,35 @@ OfxClipInstance::getComponentsPresent() const
                 if (input) {
                     input->getComponentsAvailable(time,&comps);
                 }
-                compsAvailable.insert(comps.begin(), comps.end());
+                
+                
+                for (EffectInstance::ComponentsAvailableMap::iterator it = comps.begin(); it != comps.end(); ++it) {
+                    
+                    EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
+                    EffectInstance::ComponentsAvailableMap::iterator colorMatch = compsAvailable.end();
+                    bool isColor = it->first.isColorPlane();
+                    for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
+                        if (it2->first == it->first) {
+                            alreadyExisting = it2;
+                            break;
+                        } else if (isColor && it2->first.isColorPlane()) {
+                            colorMatch = it2;
+                        }
+                    }
+                    if (alreadyExisting == compsAvailable.end()) {
+                        if (colorMatch != compsAvailable.end()) {
+                            if (colorMatch->first.getNumComponents() < it->first.getNumComponents()) {
+                                compsAvailable.erase(colorMatch);
+                            } else {
+                                continue;
+                            }
+                        }
+                        compsAvailable.insert(*it);
+                    }
+                }
+                
             }
-        }
-        
+        } 
         std::list<ImageComponents> userComps;
         _nodeInstance->getNode()->getUserComponents(&userComps);
         
