@@ -411,6 +411,14 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             nodeClipRect.y1 = zoomContext.toZoomCoordinates(0, treeItemRect.bottom()).y();
             
             DopeSheet::ItemType nodeType = it->second->getItemType();
+            if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
+                if (nodeType == DopeSheet::ItemTypeGroup ||
+                    nodeType == DopeSheet::ItemTypeReader ||
+                    nodeType == DopeSheet::ItemTypeTimeOffset ||
+                    nodeType == DopeSheet::ItemTypeFrameRange) {
+                    return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
+                }
+            }
             if (nodeType == DopeSheet::ItemTypeReader) {
                 if (isNearByClipRectLeft(clickZoomCoords, nodeClipRect)) {
                     return getCursorForEventState(DopeSheetView::esReaderLeftTrim);
@@ -420,14 +428,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                     return getCursorForEventState(DopeSheetView::esReaderSlip);
                 }
             }
-            if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
-                if (nodeType == DopeSheet::ItemTypeGroup ||
-                        nodeType == DopeSheet::ItemTypeReader ||
-                        nodeType == DopeSheet::ItemTypeTimeOffset ||
-                        nodeType == DopeSheet::ItemTypeFrameRange) {
-                    return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
-                }
-            }
+            
         }
     } // for (DSTreeItemNodeMap::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
 
