@@ -5417,8 +5417,7 @@ Gui::redrawAllViewers()
 void
 Gui::renderAllViewers()
 {
-    QMutexLocker k(&_imp->_viewerTabsMutex);
-
+    assert(QThread::currentThread() == qApp->thread());
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getInternalNode()->renderCurrentFrame(true);
