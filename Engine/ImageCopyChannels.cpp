@@ -402,7 +402,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
         return;
     }
     
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     assert(!originalImage || getBitDepth() == originalImage->getBitDepth());
     
     

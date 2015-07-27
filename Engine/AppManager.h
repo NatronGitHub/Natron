@@ -49,7 +49,7 @@ class Settings;
 class KnobHolder;
 class NodeSerialization;
 class KnobSerialization;
-
+class RectI;
 namespace Natron {
 class Node;
 class EffectInstance;
@@ -322,6 +322,7 @@ public:
     virtual void showOfxLog() {}
 
     virtual void debugImage(const Natron::Image* /*image*/,
+                            const RectI& /*roi*/,
                             const QString & /*filename = QString()*/) const
     {
     }

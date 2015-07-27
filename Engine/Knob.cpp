@@ -645,7 +645,7 @@ KnobHelper::deleteValueAtTime(int time,
     try {
         curve->removeKeyFrameWithTime( (double)time );
     } catch (const std::exception & e) {
-        qDebug() << e.what();
+        //qDebug() << e.what();
     }
     
     //virtual portion

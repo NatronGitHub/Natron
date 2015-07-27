@@ -678,7 +678,7 @@ Image::onMemoryAllocated(bool diskRestoration)
 void
 Image::setBitmapDirtyZone(const RectI& zone)
 {
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     _bitmap.setDirtyZone(zone);
 }
 
@@ -761,11 +761,11 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     
-    boost::shared_ptr<QReadLocker> k2;
+    boost::shared_ptr<QMutexLocker> k2;
     if (takeSrcLock) {
-        k2.reset(new QReadLocker(&srcImg._entryLock));
+        k2.reset(new QMutexLocker(&srcImg._entryLock));
     }
     
     const RectI & bounds = _bounds;
@@ -814,7 +814,7 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
 void
 Image::setRoD(const RectD& rod)
 {
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     _rod = rod;
     _params->setRoD(rod);
 }
@@ -828,7 +828,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
         return false;
     }
     
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     
     RectI merge = newBounds;
     merge.merge(_bounds);
@@ -1094,7 +1094,7 @@ Image::fill(const RectI & roi,
             float a)
 {
     
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1114,7 +1114,7 @@ Image::fill(const RectI & roi,
 void
 Image::fillZero(const RectI& roi)
 {
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     RectI intersection;
     if (!roi.intersect(_bounds, &intersection)) {
         return;
@@ -1147,7 +1147,7 @@ Image::fillZero(const RectI& roi)
 void
 Image::fillBoundsZero()
 {
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     
     std::size_t rowSize =  getComponents().getNumComponents();
     switch ( getBitDepth() ) {
@@ -1305,7 +1305,7 @@ Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
 unsigned int
 Image::getRowElements() const
 {
-    QReadLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     return getComponentsCount() * _bounds.width();
 }
 
@@ -1329,8 +1329,8 @@ Image::halveRoIForDepth(const RectI & roi,
     }
     
     /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+    QMutexLocker k1(&output->_entryLock);
+    QMutexLocker k2(&_entryLock);
 
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = _bounds;
@@ -1499,8 +1499,8 @@ Image::halve1DImageForDepth(const RectI & roi,
     assert( output->getComponents() == getComponents() );
     
     /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+    QMutexLocker k1(&output->_entryLock);
+    QMutexLocker k2(&_entryLock);
 
     
     const RectI & srcBounds = _bounds;
@@ -1613,7 +1613,7 @@ Image::checkForNaNs(const RectI& roi)
         return false;
     }
  
-    QWriteLocker k(&_entryLock);
+    QMutexLocker k(&_entryLock);
     
     unsigned int compsCount = getComponentsCount();
 
@@ -1670,8 +1670,8 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         return;
     }
     
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+    QMutexLocker k1(&output->_entryLock);
+    QMutexLocker k2(&_entryLock);
     
     int srcRowSize = _bounds.width() * components;
     int dstRowSize = output->_bounds.width() * components;
@@ -1750,8 +1750,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
     
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+    QMutexLocker k1(&output->_entryLock);
+    QMutexLocker k2(&_entryLock);
     
     ///The destination rectangle
     const RectI & dstBounds = output->_bounds;

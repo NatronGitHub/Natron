@@ -88,13 +88,13 @@ public:
 
     boost::shared_ptr<Natron::Image> getOriginalImage() const
     {
-        QReadLocker k(&_entryLock);
+        QMutexLocker k(&_entryLock);
         return _params->getOriginalImage();
     }
 
     void setOriginalImage(const boost::shared_ptr<Natron::Image>& image)
     {
-        QWriteLocker k(&_entryLock);
+        QMutexLocker k(&_entryLock);
         _params->setOriginalImage(image);
     }
 

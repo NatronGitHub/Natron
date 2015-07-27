@@ -224,21 +224,6 @@ public:
     
 private:
 
-    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
-                                       OfxRectD* rod) const;
-    
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
-                                                    const std::string& plane,
-                                                    bool usingReroute,
-                                                    int rerouteInputNb,
-                                                    Natron::EffectInstance* node,
-                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
-    
-    
-    
-    OfxEffectInstance* _nodeInstance;
-    Natron::OfxImageEffectInstance* const _effect;
-    double _aspectRatio;
     /**
      * @brief These are datas that are local to an action call but that we need in order to perform the API call like
      * clipGetRegionOfDefinition or clipGetFrameRange, etc...
@@ -247,10 +232,10 @@ private:
      * - The current time of the timeline otherwise and 0 for mipMapLevel.
      **/
     struct ActionLocalData {
-
+        
         bool isViewValid;
         int view;
-    
+        
         bool isMipmapLevelValid;
         unsigned int mipMapLevel;
         
@@ -260,6 +245,9 @@ private:
         int rerouteInputNb;
         
         std::list<OfxImage*> imagesBeingRendered;
+        
+        //We keep track of the input images fetch so we do not attempt to take a lock on the image if it has already been fetched
+        std::list<boost::weak_ptr<Natron::Image> > inputImagesFetched;
         
         //String indicating what a subsequent call to getComponents should return
         bool clipComponentsValid;
@@ -276,6 +264,7 @@ private:
         , rerouteNode(0)
         , rerouteInputNb(-1)
         , imagesBeingRendered()
+        , inputImagesFetched()
         , clipComponentsValid(false)
         , clipComponents()
         , hasImage(false)
@@ -283,6 +272,24 @@ private:
         }
     };
 
+    
+    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+                                       OfxRectD* rod) const;
+    
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
+                                                    const std::string& plane,
+                                                    bool usingReroute,
+                                                    int rerouteInputNb,
+                                                    Natron::EffectInstance* node,
+                                                    ActionLocalData* tls,
+                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
+    
+    
+    
+    OfxEffectInstance* _nodeInstance;
+    Natron::OfxImageEffectInstance* const _effect;
+    double _aspectRatio;
+ 
     mutable Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
     
     

@@ -18,6 +18,7 @@
 #include <cfloat>
 #include <limits>
 #include <QDebug>
+//#include <QDateTime>
 #include "Global/Macros.h"
 
 #include "Engine/OfxEffectInstance.h"
@@ -819,9 +820,10 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     int rerouteInputNb;
     Natron::EffectInstance* node =0;
     unsigned int mipMapLevel;
+    ActionLocalData* tls = 0;
     if (hasLocalData) {
-        const ActionLocalData& args = _lastActionData.localData();
-        if (!args.isViewValid) {
+        tls = &_lastActionData.localData();
+        if (!tls->isViewValid) {
 #ifdef DEBUG
             if (QThread::currentThread() != qApp->thread()) {
                 qDebug() << _nodeInstance->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
@@ -832,25 +834,25 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
             view = 0;
         } else {
             if (view == -1) {
-                view = args.view;
+                view = tls->view;
             }
         }
         
-        if (!args.isMipmapLevelValid) {
+        if (!tls->isMipmapLevelValid) {
             mipMapLevel = 0;
         } else {
-            mipMapLevel = args.mipMapLevel;
+            mipMapLevel = tls->mipMapLevel;
         }
         
-        if (!args.isTransformDataValid || !args.rerouteNode) {
+        if (!tls->isTransformDataValid || !tls->rerouteNode) {
             node = _nodeInstance;
             usingReroute = false;
             rerouteInputNb = -1;
         } else {
-            node = args.rerouteNode;
+            node = tls->rerouteNode;
             assert(node);
-            rerouteInputNb = args.rerouteInputNb;
-            transform = args.matrix;
+            rerouteInputNb = tls->rerouteInputNb;
+            transform = tls->matrix;
             usingReroute = true;
         }
         
@@ -865,7 +867,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    return getImageInternal(time, scale, view, optionalBounds, plane, usingReroute, rerouteInputNb, node, transform);
+    return getImageInternal(time, scale, view, optionalBounds, plane, usingReroute, rerouteInputNb, node, tls, transform);
 }
 
 OFX::Host::ImageEffect::Image*
@@ -912,6 +914,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
                                   bool usingReroute,
                                   int rerouteInputNb,
                                   Natron::EffectInstance* node,
+                                  ActionLocalData* tls,
                                   const boost::shared_ptr<Transform::Matrix3x3>& transform)
 {
     assert( !isOutput() && node);
@@ -1042,6 +1045,14 @@ OfxClipInstance::getImageInternal(OfxTime time,
                 components = _components;
                 nComps = natronComps.front().getNumComponents();
             }
+            
+           /* // this will dump the image as seen from the plug-in
+            QString filename;
+            QTextStream ts(&filename);
+            QDateTime now = QDateTime::currentDateTime();
+            ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
+            appPTR->debugImage(image.get(), renderWindow, filename);*/
+   
             /*
              * When reaching here, the plug-in asked for a source image on an input clip. If the plug-in is in the render action,
              * the image should have been pre-computed hence the call to getImage does not involve writing the image, so no 
@@ -1056,7 +1067,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
              * we will be attempting to lock for writing an image already locked for reading. To overcome this situation, we just
              * don't take the lock for reading, which should not cause any problem since the effect is in analysis anyway.
              */
-            bool takeLock = !_nodeInstance->isCurrentRenderInAnalysis();
+            bool takeLock = true;
             return new OfxImage(image,true,renderWindow,transform, components, nComps, takeLock, *this);
         }
     }

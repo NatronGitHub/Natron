@@ -142,7 +142,7 @@ public:
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
     KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
-    virtual void debugImage( const Natron::Image* image,const QString & filename = QString() ) const OVERRIDE FINAL;
+    virtual void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
     void setFileToOpen(const QString & str);
 

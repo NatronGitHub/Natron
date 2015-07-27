@@ -23,7 +23,7 @@
 #include <vector>
 #include <fstream>
 #include <QtCore/QFile>
-#include <QtCore/QReadWriteLock>
+#include <QtCore/QMutex>
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -459,6 +459,7 @@ public:
     virtual size_t size() const = 0;
     virtual double getTime() const = 0;
 };
+    
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
  * a set of metadatas called 'Key' and a buffer.
@@ -469,6 +470,7 @@ template <typename DataType, typename KeyType, typename ParamsType>
 class CacheEntryHelper
     : public AbstractCacheEntry<KeyType>
 {
+    
 public:
     
     typedef DataType data_t;
@@ -486,7 +488,7 @@ public:
     , _cache()
     , _removeBackingFileBeforeDestruction(false)
     , _requestedStorage(eStorageModeNone)
-    , _entryLock(QReadWriteLock::Recursive)
+    , _entryLock(QMutex::Recursive)
     {
     }
 
@@ -508,7 +510,7 @@ public:
     , _removeBackingFileBeforeDestruction(false)
     , _requestedPath(path)
     , _requestedStorage(storage)
-    , _entryLock(QReadWriteLock::Recursive)
+    , _entryLock(QMutex::Recursive)
     {
     }
 
@@ -548,12 +550,12 @@ public:
         
         {
             {
-                QReadLocker k(&_entryLock);
+                QMutexLocker k(&_entryLock);
                 if (_data.isAllocated()) {
                     return;
                 }
             }
-            QWriteLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
             onMemoryAllocated(false);
         }
@@ -576,7 +578,7 @@ public:
         assert(!_requestedPath.empty());
         
         {
-            QWriteLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             
             restoreBufferFromFile(_requestedPath);
             
@@ -651,7 +653,7 @@ public:
     void reOpenFileMapping() const
     {
         {
-            QWriteLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             _data.reOpenFileMapping();
         }
         if (_cache) {
@@ -668,7 +670,7 @@ public:
         bool dataAllocated = _data.isAllocated();
         int time = getTime();
         {
-            QWriteLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             
             _data.deallocate();
         }
@@ -702,7 +704,7 @@ public:
      **/
     size_t dataSize() const
     {
-        bool got = _entryLock.tryLockForRead();
+        bool got = _entryLock.tryLock();
         std::size_t r = _data.size();
         if (got) {
             _entryLock.unlock();
@@ -717,7 +719,7 @@ public:
     
     bool isAllocated() const
     {
-        QReadLocker k(&_entryLock);
+        QMutexLocker k(&_entryLock);
         return _data.isAllocated();
     }
 
@@ -733,7 +735,7 @@ public:
         bool isAlloc = _data.isAllocated();
         bool hasRemovedFile;
         {
-            QWriteLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             hasRemovedFile = _data.removeAnyBackingFile();
         }
         
@@ -752,7 +754,7 @@ public:
      * @brief To be called when an entry is going to be removed from the cache entirely.
      **/
     void scheduleForDestruction() {
-        QWriteLocker k(&_entryLock);
+        QMutexLocker k(&_entryLock);
         _removeBackingFileBeforeDestruction = true;
     }
 
@@ -865,7 +867,7 @@ protected:
     bool _removeBackingFileBeforeDestruction;
     std::string _requestedPath;
     Natron::StorageModeEnum _requestedStorage;
-    mutable QReadWriteLock _entryLock;
+    mutable QMutex _entryLock;
 };
 }
 

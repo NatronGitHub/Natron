@@ -244,14 +244,14 @@ namespace Natron {
      **/
         RectI getBounds() const
         {
-            QReadLocker k(&_entryLock);
+            QMutexLocker k(&_entryLock);
             return _bounds;
         };
         virtual size_t size() const OVERRIDE FINAL
         {
             std::size_t dt = dataSize();
             
-            bool got = _entryLock.tryLockForRead();
+            bool got = _entryLock.tryLock();
             dt += _bitmap.getBounds().area();
             if (got) {
                 _entryLock.unlock();
@@ -435,15 +435,19 @@ namespace Natron {
         unsigned char* pixelAt(int x,int y);
         const unsigned char* pixelAt(int x,int y) const;
         
-        
+        /**
+         * @brief Locks the image for read/write access. In the past we used a ReadWriteLock, however we cannot use this
+         * anymore: The lock for read is taken when a plugin attempts to fetch an image from a source clip. But if the plug-ins
+         * fetches twice the very same image (likely if this is a tracker on the last frame for example) then it will deadlock
+         * if a clip is not asking for the exact same region and thus there is something left to render.
+         **/
         void lockForRead() const
         {
-            _entryLock.lockForRead();
+            _entryLock.lock();
         }
-        
         void lockForWrite() const
         {
-            _entryLock.lockForWrite();
+            _entryLock.lock();
         }
         
         void unlock() const
@@ -533,7 +537,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QReadLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
         }
 #endif
@@ -542,7 +546,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return ;
             }
-            QReadLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
         }
 
@@ -552,7 +556,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QReadLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
         }
 #endif
@@ -561,7 +565,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QReadLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
 
@@ -570,7 +574,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.markForRendered(intersection);
@@ -583,7 +587,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.markForRendering(intersection);
@@ -595,7 +599,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_entryLock);
+            QMutexLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.clear(intersection);

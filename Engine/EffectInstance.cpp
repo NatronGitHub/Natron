@@ -1054,6 +1054,11 @@ EffectInstance::aborted() const
         } else {
             if (args.isRenderResponseToUserInteraction) {
                 
+                //Don't allow the plug-in to abort while in analysis.
+                //Need to work on this for the tracker in order to be abortable.
+                if (args.isAnalysis) {
+                    return false;
+                }
                 if (args.renderRequester) {
                     //If the viewer is already doing a sequential render, abort
                     if (args.renderRequester->isDoingSequentialRender()) {

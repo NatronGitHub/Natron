@@ -4591,27 +4591,87 @@ Gui::getRegisteredTabs() const
 
 void
 Gui::debugImage(const Natron::Image* image,
+                const RectI& roi,
                 const QString & filename )
 {
     if (image->getBitDepth() != Natron::eImageBitDepthFloat) {
         qDebug() << "Debug image only works on float images.";
-
         return;
     }
-    RectI rod = image->getBounds();
-    QImage output(rod.width(), rod.height(), QImage::Format_ARGB32);
+    RectI renderWindow;
+    RectI bounds = image->getBounds();
+    if (roi.isNull()) {
+        renderWindow = bounds;
+    } else {
+        if (!roi.intersect(bounds,&renderWindow)) {
+            qDebug() << "The RoI does not interesect the bounds of the image.";
+            return;
+        }
+    }
+    QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
+    lut->validate();
     Natron::Image::ReadAccess acc = image->getReadRights();
-    const float* from = (const float*)acc.pixelAt( rod.left(), rod.bottom() );
-
-    ///offset the pointer to 0,0
-    from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );
-    lut->to_byte_packed(output.bits(), from, rod, rod, rod,
-                        Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, false);
+    const float* from = (const float*)acc.pixelAt( renderWindow.left(), renderWindow.bottom() );
+    assert(from);
+    int srcNComps = (int)image->getComponentsCount();
+    int srcRowElements = srcNComps * bounds.width();
+    
+    for (int y = renderWindow.height() - 1; y >= 0; --y,
+         from += (srcRowElements - srcNComps * renderWindow.width())) {
+        
+        QRgb* dstPixels = (QRgb*)output.scanLine(y);
+        assert(dstPixels);
+        
+        unsigned error_r = 0x80;
+        unsigned error_g = 0x80;
+        unsigned error_b = 0x80;
+        
+        for (int x = 0; x < renderWindow.width(); ++x, from += srcNComps, ++dstPixels) {
+            float r,g,b,a;
+            switch (srcNComps) {
+                case 1:
+                    r = g = b = *from;
+                    a = 1;
+                    break;
+                case 2:
+                    r = *from;
+                    g = *(from + 1);
+                    b = 0;
+                    a = 1;
+                    break;
+                case 3:
+                    r = *from;
+                    g = *(from + 1);
+                    b = *(from + 2);
+                    a = 1;
+                    break;
+                case 4:
+                    r = *from;
+                    g = *(from + 1);
+                    b = *(from + 2);
+                    a = *(from + 3);
+                    break;
+                default:
+                    assert(false);
+                    return;
+            }
+            error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
+            error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
+            error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
+            assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
+            *dstPixels = qRgba(U8(error_r >> 8),
+                              U8(error_g >> 8),
+                              U8(error_b >> 8),
+                              U8(a * 255));
+        }
+    }
+    
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
-    std::cout << "DEBUG: writing image: " << realFileName.toStdString() << std::endl;
+    qDebug() << "Writing image: " << realFileName;
+    renderWindow.debug();
     output.save(realFileName);
 }
 

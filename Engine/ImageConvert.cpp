@@ -689,8 +689,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                            Natron::Image* dstImg) const
 {
     
-    QWriteLocker k(&dstImg->_entryLock);
-    QReadLocker k2(&_entryLock);
+    QMutexLocker k(&dstImg->_entryLock);
+    QMutexLocker k2(&_entryLock);
     
     assert( _bounds.contains(renderWindow) &&  dstImg->_bounds.contains(renderWindow) );
     
