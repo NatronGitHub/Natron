@@ -507,6 +507,7 @@ Node::Node(AppInstance* app,
 {
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
     QObject::connect(this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()));
+    QObject::connect(this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()));
 }
 
 void
@@ -1120,8 +1121,19 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
 }
 
 void
+Node::doComputeHashOnMainThread()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    computeHash();
+}
+
+void
 Node::computeHash()
 {
+    if (QThread::currentThread() != qApp->thread()) {
+        Q_EMIT mustComputeHashOnMainThread();
+        return;
+    }
     std::list<Natron::Node*> marked;
     computeHashInternal(marked);
     
