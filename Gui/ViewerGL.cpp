@@ -1299,7 +1299,7 @@ ViewerGL::toggleOverlays()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->overlay = !_imp->overlay;
-    updateGL();
+    update();
 }
 
 void
@@ -2868,7 +2868,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     (void)overlaysCaught;
 
     if (mustRedraw) {
-        updateGL();
+        update();
     }
 } // mousePressEvent
 
@@ -2913,7 +2913,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         mustRedraw = true;
     }
     if (mustRedraw) {
-        updateGL();
+        update();
     }
 }
 
@@ -3342,7 +3342,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
     }
     double scale = 1. / (1 << mipMapLevel);
     if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale, scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
-        updateGL();
+        update();
     }
     QGLWidget::mouseDoubleClickEvent(e);
 }
@@ -3525,7 +3525,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (oldMipMapLevel != newMipMapLevel) {
         _imp->viewerTab->clearTimelineCacheLine();
     }
-    updateGL();
+    update();
 }
 
 void
@@ -3772,7 +3772,7 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
         _imp->isUserRoISet = true;
     }
     if (!loadingProject) {
-        updateGL();
+        update();
     }
 
 }
@@ -3831,7 +3831,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     }
     double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusGained(scale,scale) ) {
-        updateGL();
+        update();
     }
     QGLWidget::focusInEvent(e);
 }
@@ -3848,7 +3848,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
 
     double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusLost(scale,scale) ) {
-        updateGL();
+        update();
     }
     QGLWidget::focusOutEvent(e);
 }
@@ -3933,9 +3933,9 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
         QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else if ( e->isAutoRepeat() && _imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e) ) {
-        updateGL();
+        update();
     } else if ( _imp->viewerTab->notifyOverlaysKeyDown(scale, scale, e) ) {
-        updateGL();
+        update();
     } else {
         QGLWidget::keyPressEvent(e);
     }
@@ -3951,7 +3951,7 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
     }
     double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
-        updateGL();
+        update();
     } else {
         QGLWidget::keyReleaseEvent(e);
     }
@@ -4137,7 +4137,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     }
     
     _imp->displayPersistentMessage = !_imp->persistentMessages.isEmpty();
-    updateGL();
+    update();
 }
 
 void
