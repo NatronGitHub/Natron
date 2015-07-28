@@ -1985,6 +1985,7 @@ AppManager::loadPythonGroups()
     for (int i = 0; i < allPlugins.size(); ++i) {
         
         QString moduleName = allPlugins[i];
+        qDebug() << "Loading " << moduleName;
         QString modulePath;
         int lastDot = moduleName.lastIndexOf('.');
         if (lastDot != -1) {
@@ -2000,7 +2001,7 @@ AppManager::loadPythonGroups()
         unsigned int version;
         
         if (getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version)) {
-            
+
             QStringList grouping = QString(pluginGrouping.c_str()).split(QChar('/'));
             Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0, true);
             

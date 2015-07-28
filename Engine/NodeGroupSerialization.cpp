@@ -22,6 +22,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewerInstance.h"
+#include <SequenceParsing.h>
 
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
@@ -130,6 +131,25 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             if (!qPyModulePath.endsWith(".py")) {
                 qPyModulePath.append(".py");
             }
+            ///The path that has been saved in the project might not be corresponding on this computer.
+            ///We need to search through all search paths for a match
+            std::string pythonModuleUnPathed = qPyModulePath.toStdString();
+            (void)SequenceParsing::removePath(pythonModuleUnPathed);
+            
+            qPyModulePath.clear();
+            QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
+            for (int i = 0; i < natronPaths.size(); ++i) {
+                QString path = natronPaths[i];
+                if (!path.endsWith("/")) {
+                    path.append('/');
+                }
+                path.append(pythonModuleUnPathed.c_str());
+                if (QFile::exists(path)) {
+                    qPyModulePath = path;
+                    break;
+                }
+            }
+           
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
             QFileInfo pythonModuleInfo(qPyModulePath);
             if (pythonModuleInfo.exists() && appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled()) {
