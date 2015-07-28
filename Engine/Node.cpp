@@ -6448,7 +6448,7 @@ Node::Implementation::runOnNodeDeleteCB()
     
     std::string err;
     std::string output;
-    if (!Natron::interpretPythonScript(cb, &err, &output)) {
+    if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
