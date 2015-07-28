@@ -307,7 +307,9 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
             std::string appID = _publicInterface->getApp()->getAppIDString();
             
             std::stringstream ss;
-            ss << "app = " << appID << "\n";
+            if (appID != "app") {
+                ss << "app = " << appID << "\n";
+            }
             ss << "ret = " << onProjectSave << "(" << filename << "," << appID << ",";
             if (autoSave) {
                 ss << "True)\n";
@@ -373,7 +375,11 @@ ProjectPrivate::runOnProjectCloseCallback()
             return;
         }
         std::string appID = _publicInterface->getApp()->getAppIDString();
-        std::string script = "app = " + appID + "\n" + onProjectClose + "(" + appID + ")\n";
+        std::string script;
+        if (appID != "app") {
+            script = script +  "app = " + appID;
+        }
+        script = script + "\n" + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
         if (!Natron::interpretPythonScript(script, &err, &output)) {
@@ -414,7 +420,11 @@ ProjectPrivate::runOnProjectLoadCallback()
         }
         
         std::string appID = _publicInterface->getApp()->getAppIDString();
-        std::string script = "app = " + appID = "\n" + cb + "(" + appID + ")\n";
+        std::string script;
+        if (appID != "app") {
+            script =  script + "app = " + appID;
+        }
+        script =  script + "\n" + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
         if (!Natron::interpretPythonScript(script, &err, &output)) {

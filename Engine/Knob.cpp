@@ -1581,7 +1581,9 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
 
     std::string tabStr = addTab ? "    " : "";
     std::stringstream ss;
-    ss << tabStr << "app = " << appID << "\n";
+    if (appID != "app") {
+        ss << tabStr << "app = " << appID << "\n";
+    }
     if (isParentGrp) {
         ss << tabStr << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
     } else {

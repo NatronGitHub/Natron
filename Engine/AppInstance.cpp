@@ -1321,7 +1321,11 @@ AppInstance::execOnProjectCreatedCallback()
         return;
     }
     std::string appID = getAppIDString();
-    std::string script = "app = " + appID + "\n" + cb + "(" + appID + ")\n";
+    std::string script;
+    if (appID != "app") {
+        script = script + "app = " + appID;
+    }
+    script = script + "\n" + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
     if (!Natron::interpretPythonScript(script, &err, &output)) {
