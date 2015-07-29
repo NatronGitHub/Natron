@@ -1003,9 +1003,9 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                      it != outputsConnectedToSelectedNode.end(); ++it) {
                     if (it->first->getParentMultiInstanceName().empty()) {
                         bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
-                        assert(ok);
-                        
-                        ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
+                        if (ok) {
+                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
+                        }
                         //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                     }
                 }

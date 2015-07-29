@@ -4344,17 +4344,17 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     if (isHostMaskingEnabled()) {
         foundMaskInput = rectToRender.imgs.find(getMaxInputCount() - 1);
     }
-    
+    if (foundPrefInput != rectToRender.imgs.end() && !foundPrefInput->second.empty()) {
+        originalInputImage = foundPrefInput->second.front();
+    }
     std::map<int,Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes.inputPremult.find(preferredInput);
-    if (foundPrefPremult != planes.inputPremult.end()) {
+    if (foundPrefPremult != planes.inputPremult.end() && originalInputImage) {
         originalImagePremultiplication = foundPrefPremult->second;
     } else {
         originalImagePremultiplication = Natron::eImagePremultiplicationOpaque;
     }
     
-    if (foundPrefInput != rectToRender.imgs.end() && !foundPrefInput->second.empty()) {
-        originalInputImage = foundPrefInput->second.front();
-    }
+   
     if (foundMaskInput != rectToRender.imgs.end() && !foundMaskInput->second.empty()) {
         maskImage = foundMaskInput->second.front();
     }
