@@ -2447,27 +2447,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ViewInvarianceLevel viewInvariance = isViewInvariant();
     
-    // eRenderSafetyInstanceSafe means that there is at most one render per instance
-    // NOTE: the per-instance lock should probably be shared between
-    // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
-    // and read-write on it.
-    // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
-    
-    // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
-    ///locks belongs to an instance)
-    
-    boost::shared_ptr<QMutexLocker> locker;
-    Natron::RenderSafetyEnum safety = getCurrentThreadSafetyThreadLocal();
-    if (safety == eRenderSafetyInstanceSafe) {
-        locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
-    } else if (safety == eRenderSafetyUnsafe) {
-        const Natron::Plugin* p = getNode()->getPlugin();
-        assert(p);
-        locker.reset(new QMutexLocker(p->getPluginLock()));
-    }
-    ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
-    
  
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
@@ -3495,6 +3475,29 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     }
                 }
             }
+            
+            
+            // eRenderSafetyInstanceSafe means that there is at most one render per instance
+            // NOTE: the per-instance lock should probably be shared between
+            // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+            // and read-write on it.
+            // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
+            
+            // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+            ///locks belongs to an instance)
+            
+            boost::shared_ptr<QMutexLocker> locker;
+            Natron::RenderSafetyEnum safety = getCurrentThreadSafetyThreadLocal();
+            if (safety == eRenderSafetyInstanceSafe) {
+                locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
+            } else if (safety == eRenderSafetyUnsafe) {
+                const Natron::Plugin* p = getNode()->getPlugin();
+                assert(p);
+                locker.reset(new QMutexLocker(p->getPluginLock()));
+            }
+            ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+            
+            
             
 # ifdef DEBUG
 
