@@ -6106,11 +6106,30 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
      * Always call getClipPreferences on the inputs first since the preference of this node may 
      * depend on the inputs.
      */
-    
+    boost::shared_ptr<RotoContext> roto = getRotoContext();
+    NodePtr rotoNode;
+    if (roto) {
+        rotoNode = roto->getNode();
+    }
+    boost::shared_ptr<RotoDrawableItem> rotoItem = getAttachedRotoItem();
+
     for (int i = 0; i < getMaxInputCount(); ++i) {
         NodePtr input = getInput(i);
         if (input) {
+            if (rotoItem) {
+                if (rotoItem->getContext()->getNode() == input) {
+                    continue;
+                }
+            }
             input->restoreClipPreferencesRecursive(markedNodes);
+        }
+    }
+    
+    if (roto) {
+        NodeList nodes;
+        roto->getRotoPaintTreeNodes(&nodes);
+        for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
         }
     }
     
