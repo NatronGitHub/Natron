@@ -662,7 +662,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->removeKeyframeButton->setToolTip(Natron::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
     _imp->selectionButtonsBarLayout->addStretch();
-    
+    _imp->selectionButtonsBar->setVisible(false);
+    //////
     
     _imp->brushButtonsBar = new QWidget(parent);
     _imp->brushButtonsBarLayout = new QHBoxLayout(_imp->brushButtonsBar);
@@ -861,6 +862,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->resetCloneOffset->setVisible(false);
     
     _imp->brushButtonsBarLayout->addStretch();
+    _imp->brushButtonsBar->setVisible(false);
     
     ////////////////////////////////////// CREATING VIEWER LEFT TOOLBAR //////////////////////////////////////
     
