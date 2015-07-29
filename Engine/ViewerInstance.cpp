@@ -817,7 +817,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
-        channels = _imp->viewerParamsChannels;
+        channels = _imp->viewerParamsChannels[textureIndex];
     }
     /*computing the RoI*/
     
@@ -1039,7 +1039,7 @@ ViewerInstance::renderViewer_internal(int view,
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
-        channels = _imp->viewerParamsChannels;
+        channels = _imp->viewerParamsChannels[inArgs.params->textureIndex];
     }
     
     ///Check that we were not aborted already
@@ -2430,14 +2430,19 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
 }
 
 void
-ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels)
+ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsChannels = channels;
+        if (!bothInputs) {
+            _imp->viewerParamsChannels[0] = channels;
+        } else {
+            _imp->viewerParamsChannels[0] = channels;
+            _imp->viewerParamsChannels[1] = channels;
+        }
     }
     if ( !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
@@ -2539,13 +2544,13 @@ ViewerInstance::getMipMapLevel() const
 
 
 Natron::DisplayChannelsEnum
-ViewerInstance::getChannels() const
+ViewerInstance::getChannels(int texIndex) const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
 
     QMutexLocker l(&_imp->viewerParamsMutex);
 
-    return _imp->viewerParamsChannels;
+    return _imp->viewerParamsChannels[texIndex];
 }
 
 void

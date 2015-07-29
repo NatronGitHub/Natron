@@ -171,6 +171,21 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionAlpha "channelA"
 #define kShortcutDescActionAlpha "Display Alpha Channel"
 
+#define kShortcutIDActionLuminanceA "luminanceA"
+#define kShortcutDescActionLuminanceA "Display Luminance on input A only"
+
+#define kShortcutIDActionRedA "channelRA"
+#define kShortcutDescActionRedA "Display Red Channel on input A only"
+
+#define kShortcutIDActionGreenA "channelGA"
+#define kShortcutDescActionGreenA "Display Green Channel on input A only"
+
+#define kShortcutIDActionBlueA "channelBA"
+#define kShortcutDescActionBlueA "Display Blue Channel on input A only"
+
+#define kShortcutIDActionAlphaA "channelAA"
+#define kShortcutDescActionAlphaA "Display Alpha Channel on input A only"
+
 #define kShortcutIDActionFitViewer "fitViewer"
 #define kShortcutDescActionFitViewer "Fit Image to Viewer"
 

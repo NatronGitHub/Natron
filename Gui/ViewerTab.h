@@ -148,6 +148,12 @@ public:
     Natron::DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
+    
+private:
+    
+    void setDisplayChannels(int index, bool setBothInputs);
+    
+public:
 
     bool isAutoContrastEnabled() const;
 

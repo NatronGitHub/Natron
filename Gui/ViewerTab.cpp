@@ -1611,37 +1611,92 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
-            _imp->viewerChannels->setCurrentIndex(1);
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, true);
         } else {
-            _imp->viewerChannels->setCurrentIndex(0);
+            _imp->viewerChannels->setCurrentIndex_no_emit(0);
+            setDisplayChannels(0, true);
         }
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRed, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 2) {
-            _imp->viewerChannels->setCurrentIndex(1);
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, true);
         } else {
-            _imp->viewerChannels->setCurrentIndex(2);
+            _imp->viewerChannels->setCurrentIndex_no_emit(2);
+            setDisplayChannels(2, true);
         }
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 3) {
-            _imp->viewerChannels->setCurrentIndex(1);
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, true);
         } else {
-            _imp->viewerChannels->setCurrentIndex(3);
+            _imp->viewerChannels->setCurrentIndex_no_emit(3);
+            setDisplayChannels(3, true);
         }
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 4) {
-            _imp->viewerChannels->setCurrentIndex(1);
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, true);
         } else {
-            _imp->viewerChannels->setCurrentIndex(4);
+            _imp->viewerChannels->setCurrentIndex_no_emit(4);
+            setDisplayChannels(4, true);
         }
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 5) {
-            _imp->viewerChannels->setCurrentIndex(1);
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, true);
         } else {
-            _imp->viewerChannels->setCurrentIndex(5);
+            _imp->viewerChannels->setCurrentIndex_no_emit(5);
+            setDisplayChannels(5, true);
+        }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminanceA, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 0) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(0);
+            setDisplayChannels(0, false);
+        }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRedA, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 2) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(2);
+            setDisplayChannels(2, false);
+        }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionGreenA, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 3) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(3);
+            setDisplayChannels(3, false);
+        }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionBlueA, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 4) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(4);
+            setDisplayChannels(4, false);
+        }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionAlphaA, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 5) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(5);
+            setDisplayChannels(5, false);
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
@@ -1699,37 +1754,41 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     }
 } // keyPressEvent
 
-
+void
+ViewerTab::setDisplayChannels(int i, bool setBothInputs)
+{
+    Natron::DisplayChannelsEnum channels;
+    
+    switch (i) {
+        case 0:
+            channels = Natron::eDisplayChannelsY;
+            break;
+        case 1:
+            channels = Natron::eDisplayChannelsRGB;
+            break;
+        case 2:
+            channels = Natron::eDisplayChannelsR;
+            break;
+        case 3:
+            channels = Natron::eDisplayChannelsG;
+            break;
+        case 4:
+            channels = Natron::eDisplayChannelsB;
+            break;
+        case 5:
+            channels = Natron::eDisplayChannelsA;
+            break;
+        default:
+            channels = Natron::eDisplayChannelsRGB;
+            break;
+    }
+    _imp->viewerNode->setDisplayChannels(channels, setBothInputs);
+}
 
 void
 ViewerTab::onViewerChannelsChanged(int i)
 {
-    Natron::DisplayChannelsEnum channels;
-
-    switch (i) {
-    case 0:
-        channels = Natron::eDisplayChannelsY;
-        break;
-    case 1:
-        channels = Natron::eDisplayChannelsRGB;
-        break;
-    case 2:
-        channels = Natron::eDisplayChannelsR;
-        break;
-    case 3:
-        channels = Natron::eDisplayChannelsG;
-        break;
-    case 4:
-        channels = Natron::eDisplayChannelsB;
-        break;
-    case 5:
-        channels = Natron::eDisplayChannelsA;
-        break;
-    default:
-        channels = Natron::eDisplayChannelsRGB;
-        break;
-    }
-    _imp->viewerNode->setDisplayChannels(channels);
+    setDisplayChannels(i, false);
 }
 
 bool
@@ -2830,7 +2889,7 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
 Natron::DisplayChannelsEnum
 ViewerTab::getChannels() const
 {
-    return _imp->viewerNode->getChannels();
+    return _imp->viewerNode->getChannels(0);
 }
 
 std::string
@@ -2865,7 +2924,7 @@ ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
 std::string
 ViewerTab::getChannelsString() const
 {
-    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
+    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
     return getChannelsString(c);
 }
 
@@ -2875,7 +2934,8 @@ ViewerTab::setChannels(const std::string & channelsStr)
     int index = _imp->viewerChannels->itemIndex( channelsStr.c_str() );
 
     if (index != -1) {
-        _imp->viewerChannels->setCurrentIndex(index);
+        _imp->viewerChannels->setCurrentIndex_no_emit(index);
+        setDisplayChannels(index, true);
     }
 }
 
