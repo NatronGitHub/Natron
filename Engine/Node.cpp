@@ -302,6 +302,11 @@ struct Node::Implementation
     
     void runOnNodeDeleteCB();
     
+    void runOnNodeCreatedCBInternal(const std::string& cb,bool userEdited);
+    
+    void runOnNodeDeleteCBInternal(const std::string& cb);
+
+    
     void appendChild(const boost::shared_ptr<Natron::Node>& child);
     
     void runInputChangedCallback(int index,const std::string& script);
@@ -384,6 +389,8 @@ struct Node::Implementation
     boost::weak_ptr<Bool_Knob> disableNodeKnob;
     boost::weak_ptr<String_Knob> knobChangedCallback;
     boost::weak_ptr<String_Knob> inputChangedCallback;
+    boost::weak_ptr<String_Knob> nodeCreatedCallback;
+    boost::weak_ptr<String_Knob> nodeRemovalCallback;
     
     boost::weak_ptr<Page_Knob> infoPage;
     boost::weak_ptr<String_Knob> infoDisclaimer;
@@ -2505,6 +2512,37 @@ Node::initializeKnobs(int renderScaleSupportPref)
             inputChangedCallback->setName("onInputChanged");
             _imp->nodeSettingsPage.lock()->addKnob(inputChangedCallback);
             _imp->inputChangedCallback = inputChangedCallback;
+            
+            if (isGroup) {
+                boost::shared_ptr<String_Knob> onNodeCreated = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After Node Created");
+                onNodeCreated->setName("afterNodeCreated");
+                onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                              "is created in the group. This will be called in addition to the After Node Created "
+                                              " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                              "The boolean variable userEdited will be set to True if the node was created "
+                                              "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                              "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
+                                              "- thisNode: the node which has just been created\n"
+                                              "- userEdited: a boolean indicating whether the node was created by user interaction or from "
+                                              "a script/project load/copy-paste\n"
+                                              "- app: points to the current application instance\n");
+                onNodeCreated->setAnimationEnabled(false);
+                _imp->nodeCreatedCallback = onNodeCreated;
+                _imp->nodeSettingsPage.lock()->addKnob(onNodeCreated);
+                
+                boost::shared_ptr<String_Knob> onNodeDeleted = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Before Node Removal");
+                onNodeDeleted->setName("beforeNodeRemoval");
+                onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                              "is about to be deleted. This will be called in addition to the Before Node Removal "
+                                              " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                              "This function will not be called when the project is closing.\n"
+                                              "The signature of the callback is: callback(thisNode, app) where:\n"
+                                              "- thisNode: the node about to be deleted\n"
+                                              "- app: points to the current application instance\n");
+                onNodeDeleted->setAnimationEnabled(false);
+                _imp->nodeRemovalCallback = onNodeDeleted;
+                _imp->nodeSettingsPage.lock()->addKnob(onNodeDeleted);
+            }
             
             
             boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
@@ -6386,14 +6424,8 @@ Node::getInputChangedCallback() const
 }
 
 void
-Node::Implementation::runOnNodeCreatedCB(bool userEdited)
+Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,bool userEdited)
 {
-    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
-    if (cb.empty() || !_publicInterface->getGroup()) {
-        return;
-    }
-    
-    
     std::vector<std::string> args;
     std::string error;
     Natron::getFunctionArguments(cb, &error, &args);
@@ -6414,7 +6446,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
         return;
     }
-
+    
     std::string appID = _publicInterface->getApp()->getAppIDString();
     std::stringstream ss;
     ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
@@ -6431,15 +6463,12 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
     }
+
 }
 
 void
-Node::Implementation::runOnNodeDeleteCB()
+Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 {
-    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
-    if (cb.empty()) {
-        return;
-    }
     std::vector<std::string> args;
     std::string error;
     Natron::getFunctionArguments(cb, &error, &args);
@@ -6472,6 +6501,56 @@ Node::Implementation::runOnNodeDeleteCB()
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
     }
+
+}
+
+void
+Node::Implementation::runOnNodeCreatedCB(bool userEdited)
+{
+    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
+    boost::shared_ptr<NodeCollection> group = _publicInterface->getGroup();
+    if (!group) {
+        return;
+    }
+    if (!cb.empty()) {
+        runOnNodeCreatedCBInternal(cb, userEdited);
+    }
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    boost::shared_ptr<String_Knob> nodeCreatedCbKnob = nodeCreatedCallback.lock();
+    if (!nodeCreatedCbKnob && isGroup) {
+        cb = isGroup->getNode()->getAfterNodeCreatedCallback();
+    } else  if (nodeCreatedCbKnob) {
+        cb = nodeCreatedCbKnob->getValue();
+    }
+    if (!cb.empty()) {
+        runOnNodeCreatedCBInternal(cb, userEdited);
+    }
+}
+
+void
+Node::Implementation::runOnNodeDeleteCB()
+{
+    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
+    boost::shared_ptr<NodeCollection> group = _publicInterface->getGroup();
+    if (!group) {
+        return;
+    }
+    if (!cb.empty()) {
+        runOnNodeDeleteCBInternal(cb);
+    }
+
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    boost::shared_ptr<String_Knob> nodeDeletedKnob = nodeRemovalCallback.lock();
+    if (!nodeDeletedKnob && isGroup) {
+        cb = isGroup->getNode()->getBeforeNodeRemovalCallback();
+    } else  if (nodeDeletedKnob) {
+        cb = nodeDeletedKnob->getValue();
+    }
+    if (!cb.empty()) {
+        runOnNodeDeleteCBInternal(cb);
+    }
 }
 
 std::string
@@ -6499,6 +6578,20 @@ std::string
 Node::getAfterFrameRenderCallback() const
 {
     boost::shared_ptr<String_Knob> s = _imp->afterFrameRender.lock();
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+Node::getAfterNodeCreatedCallback() const
+{
+    boost::shared_ptr<String_Knob> s = _imp->nodeCreatedCallback.lock();
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+Node::getBeforeNodeRemovalCallback() const
+{
+    boost::shared_ptr<String_Knob> s = _imp->nodeRemovalCallback.lock();
     return s ? s->getValue() : std::string();
 }
 

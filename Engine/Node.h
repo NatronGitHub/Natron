@@ -909,6 +909,9 @@ public:
     std::string getAfterRenderCallback() const;
     std::string getAfterFrameRenderCallback() const;
     
+    std::string getAfterNodeCreatedCallback() const;
+    std::string getBeforeNodeRemovalCallback() const;
+    
     void computeFrameRangeForReader(const KnobI* fileKnob);
     
     bool getOverlayColor(double* r,double* g,double* b) const;
