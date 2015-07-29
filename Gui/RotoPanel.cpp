@@ -1574,13 +1574,13 @@ RotoPanel::onItemSelectionChanged()
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             QObject::disconnect( isBezier.get(),
-                                SIGNAL( keyframeSet(int) ),
+                                SIGNAL( keyframeSet(double) ),
                                 this,
-                                SLOT( onSelectedBezierKeyframeSet(int) ) );
+                                SLOT( onSelectedBezierKeyframeSet(double) ) );
             QObject::disconnect( isBezier.get(),
-                                SIGNAL( keyframeRemoved(int) ),
+                                SIGNAL( keyframeRemoved(double) ),
                                 this,
-                                SLOT( onSelectedBezierKeyframeRemoved(int) ) );
+                                SLOT( onSelectedBezierKeyframeRemoved(double) ) );
             QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
         }
         ItemKeys::iterator found = _imp->keyframes.find(*it);
