@@ -259,9 +259,11 @@ public:
 
     bool areAllNonOptionalClipsConnected() const;
 
+#ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
     ///True if the effect is currently performing an analysis
     bool isInAnalysis() const;
-    
+#endif
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////
     //////////////////////////////////////// THREAD-LOCAL-STORAGE

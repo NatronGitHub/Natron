@@ -1086,11 +1086,13 @@ OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
     return !inputs->empty();
 }
 
+#ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
 bool
 OfxImageEffectInstance::isInAnalysis() const
 {
     return _properties.getIntProperty(kOfxImageEffectPropInAnalysis) == 1;
 }
+#endif
 
 OfxImageEffectDescriptor::OfxImageEffectDescriptor(OFX::Host::Plugin *plug)
 : OFX::Host::ImageEffect::Descriptor(plug)
