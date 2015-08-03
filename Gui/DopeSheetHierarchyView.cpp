@@ -326,6 +326,7 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
 
+#pragma message WARN("BUG? the value stored to showNode is overwritten below")
     bool showNode = nodeGui->isSettingsPanelVisible();
 
     DopeSheet::ItemType nodeType = dsNode->getItemType();

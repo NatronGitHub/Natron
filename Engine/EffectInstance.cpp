@@ -4544,6 +4544,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  comps,
                                  outputClipPrefDepth,
                                  this);
+#pragma message WARN("BUG? value stored to identityProcessed is never read")
         identityProcessed = true;
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {

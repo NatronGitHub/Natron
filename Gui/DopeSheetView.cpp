@@ -1052,7 +1052,7 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
 
         
         // If necessary, draw the original frame range line
-        float clipRectCenterY;
+        float clipRectCenterY = 0.;
         if (isSelected && dsNode->getItemType() == DopeSheet::ItemTypeReader) {
             NodePtr node = dsNode->getInternalNode();
 
@@ -2941,7 +2941,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         _imp->contextMenu->exec(mapToGlobal(e->pos()));
 
         e->accept();
-        didSomething = true;
+        //didSomething = true;
         return;
     }
 
@@ -3106,7 +3106,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             } // if (treeItem) {
             
         } // if (!didSomething)
-        
+        Q_UNUSED(didSomething);
         
 
         // So the user left clicked on background
