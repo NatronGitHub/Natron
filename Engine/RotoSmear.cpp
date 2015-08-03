@@ -85,8 +85,11 @@ RotoSmear::getOutputPremultiplication() const
 Natron::StatusEnum
 RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
-    (void)EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
-    
+    Natron::StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    if (st != eStatusOK) {
+        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
+    }
+
     RectD maskRod;
     boost::shared_ptr<Node> node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);

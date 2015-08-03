@@ -1653,7 +1653,8 @@ EffectInstance::getRegionOfDefinition(U64 hash,double time,
         }
     }
 
-    return eStatusReplyDefault;
+    // if rod was not set, return default, else return OK
+    return firstInput ? eStatusReplyDefault : eStatusOK;
 }
 
 bool
