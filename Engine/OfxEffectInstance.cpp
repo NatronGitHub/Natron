@@ -2091,12 +2091,14 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
+#pragma message WARN("TODO: render in draft mode when scrubbing (and cache separately)")
         stat = _effect->renderAction( (OfxTime)args.time,
                                      field,
                                      ofxRoI,
                                      args.mappedScale,
                                      args.isSequentialRender,
                                      args.isRenderResponseToUserInteraction,
+                                     /*draft=*/false,
                                      args.view,
                                      viewsCount,
                                      ofxPlanes);

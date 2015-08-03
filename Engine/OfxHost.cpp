@@ -190,6 +190,8 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
+#pragma message WARN("TODO:support draft when scrubbing, and as a global parameter (similar to proxy level, or maybe proxy !=1 could set draft)")
+    _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 0); // change to 1 whent draft is supported
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 #ifdef OFX_EXTENSIONS_NUKE
     ///Nuke transform suite

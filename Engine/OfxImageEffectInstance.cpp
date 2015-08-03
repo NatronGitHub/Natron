@@ -307,7 +307,7 @@ OfxImageEffectInstance::getViewCount(int *nViews) const
 }
 
 OfxStatus
-OfxImageEffectInstance::getViewName(int viewIndex,char** name) const
+OfxImageEffectInstance::getViewName(int viewIndex, const char** name) const
 {
 #pragma message WARN("TODO")
     return kOfxStatFailed;
