@@ -178,6 +178,9 @@ Resources.files = $$PWD/../Gui/Resources/OpenColorIO-Configs
 macx {
     Resources.path = Contents/Resources
     QMAKE_BUNDLE_DATA += Resources
+    Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
+    Fontconfig.path = Resources/etc
+    QMAKE_BUNDLE_DATA += Fontconfig
 }
 !macx {
     Resources.path = $$OUT_PWD
