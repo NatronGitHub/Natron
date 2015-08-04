@@ -465,106 +465,129 @@ CLArgs::isEmpty() const
     return _imp->isEmpty;
 }
 
-#define W_TR_LINE(s) std::cout << QObject::tr(s).toStdString() << std::endl;
-#define W_LINE(s) std::cout << s << std::endl;
-
 void
 CLArgs::printBackGroundWelcomeMessage()
 {
-    W_LINE(NATRON_APPLICATION_NAME);
-    std::cout << QObject::tr("Version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
-    W_TR_LINE("Copyright (C) 2015 the " NATRON_APPLICATION_NAME " developers");
-    W_TR_LINE(">>>Use the --help or -h option to print usage.<<<");
-    std::cout << std::endl;
+    QString msg = QObject::tr("%1 Version %2\n"
+                             "Copyright (C) 2015 the %1 developers\n"
+                              ">>>Use the --help or -h option to print usage.<<<").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING);
+    std::cout << msg.toStdString() << std::endl;
 }
 
 void
 CLArgs::printUsage(const std::string& programName)
 {
-    std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
-    W_TR_LINE("3 distinct execution modes exist in background mode:\n"
-                             "- The execution of " NATRON_APPLICATION_NAME " projects (." NATRON_PROJECT_FILE_EXT ")\n"
-                             "- The execution of Python scripts that contain commands for " NATRON_APPLICATION_NAME "\n"
-              "- An interpreter mode where commands can be given directly to the Python interpreter\n");
-    W_TR_LINE("- General options:\n");
-    W_TR_LINE("[--help] or [-h] prints this help.");
-    W_TR_LINE("[--version] or [-b] prints informations about " NATRON_APPLICATION_NAME " version.");
-    W_TR_LINE("[--background] or [-b] enables background mode rendering.\n No graphical interface will be shown."
-              "When using NatronRenderer or the -t option this argument is implicit and you don't need to use it."
-              "If using " NATRON_APPLICATION_NAME " and this option is not specified then it will load the project as if opened from the file menu.");
-    W_LINE("\n");
-    W_TR_LINE("[--interpreter] or [-t] [optional<python script file path> enables Python interpreter mode.\n"
-              "Python commands can be given to the interpreter and executed on the fly."
-              "An optional Python script filename can be specified to source a script before the interpreter is made accessible."
-              "Note that " NATRON_APPLICATION_NAME " will not start rendering any Write node of the sourced script, you must explicitly "
-              "start it."
-              "NatronRenderer and " NATRON_APPLICATION_NAME "will do the same thing in this mode, only the init.py script will be loaded.");
-    W_LINE("\n");
-    
-    W_TR_LINE("- Options for the execution of " NATRON_APPLICATION_NAME " projects:\n");
-    W_LINE(programName + " <project file path>");
-    W_TR_LINE("[--writer] or [-w] <Writer node script name> [optional]<filename> [optional]<frameRange> specifies a Write node to render.\n"
-              "When in background mode, the renderer will only try to render with the node"
-              " script name following this argument. If no such node exists in the project file, the process will abort."
-              "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project. "
-              "After the writer node script name you can pass an optional output filename and pass an optional frame range in the format "
-              " firstFrame-lastFrame (e.g: 10-40). \n"
-              "Note that several -w options can be set to specify multiple Write nodes to render.\n"
-              "Note that if specified, then the frame range will be the same for all Write nodes that will render.");
-    W_LINE("\n");
-    W_TR_LINE("[--onload] or [-l] <python script file path> specifies a Python script to be executed after a project is created or loaded.");
-    W_TR_LINE("Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python "
-              "function set to the callback onProjectLoaded or onProjectCreated.");
-    W_TR_LINE("The same rules apply to this script as the rules below on the execution of Python scripts.");
-    W_TR_LINE("Some examples of usage of the tool:\n");
-    W_LINE("./Natron /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("./Natron -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("./NatronRenderer -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("./NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("./NatronRenderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("./NatronRenderer -w MyWriter 1-10 -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp");
-    W_LINE("\n");
-    W_TR_LINE("- Options for the execution of Python scripts:\n");
-    W_LINE(programName + " <Python script path>");
-    W_TR_LINE("Note that the following does not apply if the -t option was given.");
-    W_TR_LINE("The script argument can either be the script of a Group that was exported from the graphical user interface or an exported project "
-              "or a script written by hand. When executing a script, " NATRON_APPLICATION_NAME " first looks "
-              "for a function with the following signature:\n"
-              "def createInstance(app,group):\n"
-              "If this function is found, it will be executed, otherwise the whole content "
-              "of the script will be interpreted as though it were given to Python natively.\n"
-              "Either cases, the \"app\" variable will always be defined and pointing to the correct application instance."
-              "Note that if you are using " NATRON_APPLICATION_NAME " it will source the script before creating the graphical user interface "
-              "and will not start rendering. "
-              "If in background mode you must specify the nodes to render either with the [-w] option as described above "
-              "or with the following option:");
-    
-    W_TR_LINE("[--output] or [-o] <filename> <frameRange> specifies an Output node in the script that should be replaced with a Write node.\n"
-              "The option looks for a node named Output1 in the script and will replace it by a Write node much like when creating a Write node "
-              "in interactive mode. A filename must be specified, it will be the filename of the output files. Also a frame range must be specified "
-              "if it was not specified earlier.\n"
-              "This option can also be used to render out multiple Output nodes, in which case it has to be used like this:\n"
-              "[--output1] or [-o1] looks for a node named Output1 \n"
-              "[--output2] or [-o2] looks for a node named Output2 \n"
-              "etc...");
-    W_TR_LINE("Some examples of usage of the tool:\n");
-    W_LINE("./Natron /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("./Natron -b -w MyWriter /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("./NatronRenderer -w MyWriter /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("./NatronRenderer -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("./NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("./NatronRenderer -w MyWriter -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
-    W_LINE("\n");
-    W_TR_LINE("- Options for the execution of the interpreter mode:\n");
-    W_LINE(programName + " -t [optional]<Python script path>");
-    W_TR_LINE(NATRON_APPLICATION_NAME " will first source the script passed in argument, if any and then return control to the user that "
-              "can freely input Python commands that will be interpreted by the Python interpreter.");
-    W_TR_LINE("Some examples of usage of the tool:\n");
-    W_LINE("./Natron -t");
-    W_LINE("./NatronRenderer -t");
-    W_LINE("./NatronRenderer -t /Users/Me/MyNatronScripts/MyScript.py");
-    
-    
+    QString msg = QObject::tr(/* Text must hold in 80 columns ************************************************/
+                              "%3 usage:\n"
+                              "Three distinct execution modes exist in background mode:\n"
+                              "- The execution of %1 projects (.%2)\n"
+                              "- The execution of Python scripts that contain commands for %1\n"
+                              "- An interpreter mode where commands can be given directly to the Python\n"
+                              "  interpreter\n"
+                              "\n"
+                              "General options:\n"
+                              "  -h [ --help ] :\n"
+                              "    Produce help message.\n"
+                              "  -v [ --version ]  :\n"
+                              "    Print informations about %1 version.\n"
+                              "  -b [ --background ] :\n"
+                              "    Enable background rendering mode. No graphical interface is shown.\n"
+                              "    When using %1Renderer or the -t option, this argument is implicit\n"
+                              "    and does not have to be given.\n"
+                              "    If using %1 and this option is not specified, the project is loaded\n"
+                              "    as if opened from the file menu.\n"
+                              "  -t [ --interpreter ] <python script file path> :\n"
+                              "    Enable Python interpreter mode.\n"
+                              "    Python commands can be given to the interpreter and executed on the fly.\n"
+                              "    An optional Python script filename can be specified to source a script\n"
+                              "    before the interpreter is made accessible.\n"
+                              "    Note that %1 will not start rendering any Write node of the sourced\n"
+                              "    script: it must be started explicitely.\n"
+                              "    %1Renderer and %1 do the same thing in this mode, only the\n"
+                              "    init.py script is loaded.\n"
+                              "\n"
+                              /* Text must hold in 80 columns ************************************************/
+                              "Options for the execution of %1 projects:\n"
+                              "  %3 <project file path> [options]\n"
+                              "  -w [ --writer ] <Writer node script name> [<filename>] [<frameRange>] :\n"
+                              "    Specify a Write node to render.\n"
+                              "    When in background mode, the renderer only renders the node script name\n"
+                              "    following this argument. If no such node exists in the project file, the\n"
+                              "    process aborts.\n"
+                              "    Note that if there is no --writer option, it renders all the writers in\n"
+                              "    the project.\n"
+                              "    After the writer node script name you can pass an optional output\n"
+                              "    filename and pass an optional frame range in the format:\n"
+                              "      <firstFrame>-<lastFrame> (e.g: 10-40).\n"
+                              "    Note that several -w options can be set to specify multiple Write nodes\n"
+                              "    to render.\n"
+                              "    Note that if specified, the frame range is the same for all Write nodes\n"
+                              "    to render.\n"
+                              "  -l [ --onload ] <python script file path> :\n"
+                              "    Specify a Python script to be executed after a project is created or\n"
+                              "    loaded.\n"
+                              "    Note that this is executed in GUI mode or with NatronRenderer, after\n"
+                              "    executing the callbacks onProjectLoaded and onProjectCreated.\n"
+                              "    The rules on the execution of Python scripts (see below) also apply to\n"
+                              "    this script.\n"
+                              "Sample uses:\n"
+                              "  %1 /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "  %1 -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "  %1Renderer -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "  %1Renderer -w MyWriter /FastDisk/Pictures/sequence'###'.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "  %1Renderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "  %1Renderer -w MyWriter 1-10 -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp\n"
+                              "\n"
+                              /* Text must hold in 80 columns ************************************************/
+                              "Options for the execution of Python scripts:\n"
+                              "  %3 <Python script path> [options]\n"
+                              "  [Note that the following does not apply if the -t option was given.]\n"
+                              "  The script argument can either be the script of a Group that was exported\n"
+                              "  from the graphical user interface, or an exported project, or a script\n"
+                              "  written by hand.\n"
+                              "  When executing a script, %1 first looks for a function with the\n"
+                              "  following signature:\n"
+                              "    def createInstance(app,group):\n"
+                              "  If this function is found, it is executed, otherwise the whole content of\n"
+                              "  the script is interpreted as though it were given to Python natively.\n"
+                              "  In either case, the \"app\" variable is always defined and points to the\n"
+                              "  correct application instance.\n"
+                              "  Note that the GUI version of the program (%1) sources the script before\n"
+                              "  creating the graphical user interface and does not start rendering.\n"
+                              "  If in background mode, the nodes to render have to be given using the -w\n"
+                              "  option (as described above) or with the following option:\n"
+                              "  -o [ --output ] <filename> <frameRange> :\n"
+                              "    Specify an Output node in the script that should be replaced with a\n"
+                              "    Write node.\n"
+                              "    The option looks for a node named Output1 in the script and replaces it\n"
+                              "    by a Write node (like when creating a Write node in interactive GUI mode).\n"
+                              "    <filename> is a pattern for the output file names.\n"
+                              "    <frameRange> must be specified if it was not specified earlier on the\n"
+                              "    command line.\n"
+                              "    This option can also be used to render out multiple Output nodes, in\n"
+                              "    which case it has to be used like this:\n"
+                              "    -o1 [ --output1 ] : look for a node named Output1.\n"
+                              "    -o2 [ --output2 ] : look for a node named Output2 \n"
+                              "    etc...\n"
+                              "Sample uses:\n"
+                              "  %1 /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "  %1 -b -w MyWriter /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "  %1Renderer -w MyWriter /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "  %1Renderer -o /FastDisk/Pictures/sequence'###'.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "  %1Renderer -o1 /FastDisk/Pictures/sequence'###'.exr -o2 /FastDisk/Pictures/test'###'.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "  %1Renderer -w MyWriter -o /FastDisk/Pictures/sequence'###'.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py\n"
+                              "\n"
+                              /* Text must hold in 80 columns ************************************************/
+                              "Options for the execution of the interpreter mode:\n"
+                              "  %3 -t [<Python script path>]\n"
+                              "  %1 sources the optional script given as argument, if any, and then reads\n"
+                              "  Python commands from the standard input, which are interpreted by Python.\n"
+                              "Sample uses:\n"
+                              "  %1 -t\n"
+                              "  %1Renderer -t\n"
+                              "  %1Renderer -t /Users/Me/MyNatronScripts/MyScript.py\n")
+    .arg(/*%1=*/NATRON_APPLICATION_NAME).arg(/*%2=*/NATRON_PROJECT_FILE_EXT).arg(/*%3=*/programName.c_str());
+    std::cout << msg.toStdString() << std::endl;
 }
 
 
@@ -721,9 +744,8 @@ CLArgsPrivate::parse()
     {
         QStringList::iterator it = hasToken("version", "v");
         if (it != args.end()) {
-            std::cout << NATRON_APPLICATION_NAME << QObject::tr(" version ").toStdString() << NATRON_VERSION_STRING
-            << QObject::tr(" at commit ").toStdString() << GIT_COMMIT << QObject::tr(" on branch ").toStdString() << GIT_BRANCH << QObject::tr(" built on ").toStdString() <<
-            __DATE__ << std::endl;
+            QString msg = QObject::tr("%1 version %2 at commit %3 on branch %4 built on %4").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING).arg(GIT_COMMIT).arg(GIT_BRANCH).arg(__DATE__);
+            std::cout << msg.toStdString() << std::endl;
             error = 1;
             return;
         }
@@ -804,8 +826,7 @@ CLArgsPrivate::parse()
         if (it == args.end()) {
             it = findFileNameWithExtension("py");
             if (it == args.end() && !isInterpreterMode && isBackground) {
-                std::cout << QObject::tr("You must specify the filename of a script or " NATRON_APPLICATION_NAME " project. (." NATRON_PROJECT_FILE_EXT
-                                         ")").toStdString() << std::endl;
+                std::cout << QObject::tr("You must specify the filename of a script or %1 project. (.%2)").arg(NATRON_APPLICATION_NAME).arg(NATRON_PROJECT_FILE_EXT).toStdString() << std::endl;
                 error = 1;
                 return;
             }
