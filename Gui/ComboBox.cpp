@@ -45,6 +45,25 @@ CLANG_DIAG_ON(deprecated-register)
 
 using namespace Natron;
 
+
+/*
+ Copied from QAction.cpp: internal: guesses a descriptive text from a text suited for a menu entry
+ */
+static QString strippedText(QString s)
+{
+    s.remove( QString::fromLatin1("...") );
+    int i = 0;
+    while (i < s.size()) {
+        ++i;
+        if (s.at(i-1) != QLatin1Char('&'))
+            continue;
+        if (i < s.size() && s.at(i) == QLatin1Char('&'))
+            ++i;
+        s.remove(i-1,1);
+    }
+    return s.trimmed();
+}
+
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
     , _readOnly(false)
@@ -634,7 +653,7 @@ ComboBox::setCurrentText_internal(const QString & text)
 
     growMaximumWidthFromText(str);
     
-    _currentText = text;
+    _currentText = strippedText(text);
     QFontMetrics m = fontMetrics();
 
     // if no action matches this text, set the index to a dirty value
@@ -719,6 +738,8 @@ ComboBox::getCurrentIndexText() const
     return getNodeTextRecursive(node,_rootNode.get());
 }
 
+
+
 bool
 ComboBox::setCurrentIndex_internal(int index)
 {
@@ -736,8 +757,8 @@ ComboBox::setCurrentIndex_internal(int index)
         return false;
     }
    
-    str = text;
-
+    str = strippedText(text);
+    
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
