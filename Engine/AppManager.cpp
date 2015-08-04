@@ -986,7 +986,17 @@ AppManager::load(int &argc,
         hadArgs = false;
     }
     initializeQApp(argc, argv);
-    
+
+#if defined(__NATRON_OSX__)
+    {
+        // set FONTCONFIG_PATH to Natron.app/Contents/Resources/etc/fonts (required by plugins using fontconfig)
+        QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
+        qDebug() << "Setting FONTCONFIG_PATH to" << path;
+        qputenv("FONTCONFIG_PATH", path.toUtf8());
+    }
+#endif
+
+
     initPython(argc, argv);
 
     _imp->idealThreadCount = QThread::idealThreadCount();

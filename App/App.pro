@@ -179,7 +179,7 @@ macx {
     Resources.path = Contents/Resources
     QMAKE_BUNDLE_DATA += Resources
     Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
-    Fontconfig.path = Resources/etc
+    Fontconfig.path = Contents/Resources/etc
     QMAKE_BUNDLE_DATA += Fontconfig
 }
 !macx {

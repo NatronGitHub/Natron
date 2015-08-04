@@ -24,8 +24,7 @@
 #include <sys/signal.h>
 #endif
 
-#include <QApplication>
-#include <QtGlobal>
+#include <QCoreApplication>
 
 #include "Gui/GuiApplicationManager.h"
 
@@ -37,11 +36,6 @@ main(int argc,
      char *argv[])
 {
     CLArgs::printBackGroundWelcomeMessage();
-
-#if defined(__NATRON_OSX__)
-    // set FONTCONFIG_PATH to Natron.app/Contents/Resources/etc/fonts (required by plugins using fontconfig)
-    qputenv("FONTCONFIG_PATH", (QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts").toUtf8());
-#endif
 
     CLArgs args(argc,argv,false);
     if (args.getError() > 0) {
