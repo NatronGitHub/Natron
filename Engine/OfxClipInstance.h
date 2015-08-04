@@ -281,7 +281,6 @@ private:
                                                     bool usingReroute,
                                                     int rerouteInputNb,
                                                     Natron::EffectInstance* node,
-                                                    ActionLocalData* tls,
                                                     const boost::shared_ptr<Transform::Matrix3x3>& transform);
     
     
@@ -341,7 +340,6 @@ public:
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       const std::string& components,
                       int nComps,
-                      bool takeLock,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()
