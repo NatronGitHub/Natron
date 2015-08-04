@@ -49,6 +49,10 @@ void
 FrameEntry::copy(const FrameEntry& other)
 {
     U8* dstPixels = data();
+    assert(dstPixels);
+    if (!dstPixels) {
+        return;
+    }
     const U8* srcPixels = other.data();
     
     const TextureRect& srcBounds = other.getKey().getTexRect();

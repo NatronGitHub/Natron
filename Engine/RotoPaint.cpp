@@ -189,8 +189,10 @@ RotoPaint::onInputChanged(int inputNb)
 Natron::StatusEnum
 RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
-    (void)EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
-    
+    Natron::StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    if (st != eStatusOK) {
+        rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
+    }
     RectD maskRod;
     getNode()->getRotoContext()->getMaskRegionOfDefinition(time, view, &maskRod);
     if (rod->isNull()) {

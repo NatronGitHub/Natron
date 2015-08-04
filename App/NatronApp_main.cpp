@@ -18,11 +18,14 @@
 #include <fstream>
 #include <sstream>
 
-#if defined(Q_OS_UNIX)
+#include "Global/Macros.h"
+
+#if defined(__NATRON_UNIX__)
 #include <sys/signal.h>
 #endif
 
 #include <QApplication>
+#include <QtGlobal>
 
 #include "Gui/GuiApplicationManager.h"
 
@@ -34,7 +37,12 @@ main(int argc,
      char *argv[])
 {
     CLArgs::printBackGroundWelcomeMessage();
-    
+
+#if defined(__NATRON_OSX__)
+    // set FONTCONFIG_PATH to Natron.app/Contents/Resources/etc/fonts (required by plugins using fontconfig)
+    qputenv("FONTCONFIG_PATH", (QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts").toUtf8());
+#endif
+
     CLArgs args(argc,argv,false);
     if (args.getError() > 0) {
         return 1;
@@ -70,7 +78,7 @@ main(int argc,
 void
 setShutDownSignal(int signalId)
 {
-#if defined(Q_OS_UNIX)
+#if defined(__NATRON_UNIX__)
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);

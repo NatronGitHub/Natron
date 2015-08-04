@@ -684,11 +684,11 @@ void DSSlipReaderCommand::slipReader(double dt)
         KnobHelper::ValueChangedReturnCodeEnum r;
 
         r = firstFrameKnob->setValue(firstFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-        r = lastFrameKnob->setValue(lastFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-        r = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
-
         Q_UNUSED(r);
-
+        r = lastFrameKnob->setValue(lastFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        Q_UNUSED(r);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        Q_UNUSED(r);
     }
     effectInstance->endChanges();
     

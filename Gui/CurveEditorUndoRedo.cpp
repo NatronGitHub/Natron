@@ -76,7 +76,8 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         if (add && isSetKeyCommand) {
             if (isKnobCurve) {
                 if (isParametric) {
-                    (void)isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
+                    Natron::StatusEnum st = isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
+                    assert(st == Natron::eStatusOK);
                 } else {
                     knob->removeAnimation(isKnobCurve->getDimension());
                 }

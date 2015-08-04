@@ -54,7 +54,7 @@ public:
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-
+    
     /**
      * @brief Returns the pixel scale of the viewport.
      **/

@@ -140,7 +140,7 @@ public:
     
     virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
 
-    virtual OfxStatus getViewName(int viewIndex,char** name) const OVERRIDE FINAL;
+    virtual OfxStatus getViewName(int viewIndex, const char** name) const OVERRIDE FINAL;
     
     /// Run the clip preferences action from the effect.
     ///
@@ -259,9 +259,11 @@ public:
 
     bool areAllNonOptionalClipsConnected() const;
 
+#ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
     ///True if the effect is currently performing an analysis
     bool isInAnalysis() const;
-    
+#endif
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////
     //////////////////////////////////////// THREAD-LOCAL-STORAGE

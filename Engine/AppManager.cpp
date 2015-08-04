@@ -428,6 +428,7 @@ CLArgs::CLArgs(const QStringList &arguments, bool forceBackground)
     _imp->parse();
 }
 
+// GCC 4.2 requires the copy constructor
 CLArgs::CLArgs(const CLArgs& other)
 : _imp(new CLArgsPrivate())
 {

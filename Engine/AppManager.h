@@ -78,7 +78,7 @@ struct AppInstanceRef
 
 
 struct CLArgsPrivate;
-class CLArgs : boost::noncopyable
+class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor
 {
 public:
     
@@ -101,7 +101,7 @@ public:
 
     CLArgs(const QStringList& arguments, bool forceBackground);
     
-    CLArgs(const CLArgs& other);
+    CLArgs(const CLArgs& other); // GCC 4.2 requires the copy constructor
     
     ~CLArgs();
 

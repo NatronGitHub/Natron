@@ -41,7 +41,7 @@ cache:
 before_install:
    - date -u
    - uname -a
-   - export J='-j3'
+   - export J='-j2'
 
 install:
   - . tools/travis/coverity_env.sh
