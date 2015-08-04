@@ -47,6 +47,8 @@
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h" // for removeRecursively
 #include "Global/Enums.h"
+#include "Global/GitVersion.h"
+
 
 #include "Engine/AppInstance.h"
 #include "Engine/OfxHost.h"
@@ -485,6 +487,8 @@ CLArgs::printUsage(const std::string& programName)
                              "- The execution of Python scripts that contain commands for " NATRON_APPLICATION_NAME "\n"
               "- An interpreter mode where commands can be given directly to the Python interpreter\n");
     W_TR_LINE("- General options:\n");
+    W_TR_LINE("[--help] or [-h] prints this help.");
+    W_TR_LINE("[--version] or [-b] prints informations about " NATRON_APPLICATION_NAME " version.");
     W_TR_LINE("[--background] or [-b] enables background mode rendering.\n No graphical interface will be shown."
               "When using NatronRenderer or the -t option this argument is implicit and you don't need to use it."
               "If using " NATRON_APPLICATION_NAME " and this option is not specified then it will load the project as if opened from the file menu.");
@@ -714,6 +718,17 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
 void
 CLArgsPrivate::parse()
 {
+    {
+        QStringList::iterator it = hasToken("version", "v");
+        if (it != args.end()) {
+            std::cout << NATRON_APPLICATION_NAME << QObject::tr(" version ").toStdString() << NATRON_VERSION_STRING
+            << QObject::tr(" at commit ").toStdString() << GIT_COMMIT << QObject::tr(" on branch ").toStdString() << GIT_BRANCH << QObject::tr(" built on ").toStdString() <<
+            __DATE__ << std::endl;
+            error = 1;
+            return;
+        }
+    }
+    
     {
         QStringList::iterator it = hasToken("help", "h");
         if (it != args.end()) {
