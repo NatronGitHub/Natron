@@ -981,7 +981,8 @@ Knob<T>::setValue(const T & v,
     }
 
     ///Add automatically a new keyframe
-    if ( (getAnimationLevel(dimension) != Natron::eAnimationLevelNone) && //< if the knob is animated
+    if (isAnimationEnabled() &&
+        getAnimationLevel(dimension) != Natron::eAnimationLevelNone && //< if the knob is animated
          holder && //< the knob is part of a KnobHolder
          holder->getApp() && //< the app pointer is not NULL
          !holder->getApp()->getProject()->isLoadingProject() && //< we're not loading the project

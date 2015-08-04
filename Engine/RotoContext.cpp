@@ -3182,8 +3182,8 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
         _imp->scale->setValueAtTime(time, sx, 0);
         _imp->scale->setValueAtTime(time, sy, 1);
         
-        _imp->center->setValueAtTime(time, centerX, 0);
-        _imp->center->setValueAtTime(time, centerY, 1);
+        _imp->center->setValue(centerX, 0);
+        _imp->center->setValue(centerY, 1);
         
         _imp->rotate->setValueAtTime(time, rot, 0);
         
