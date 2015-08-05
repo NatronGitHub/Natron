@@ -4054,9 +4054,7 @@ Node::makePreviewImage(SequenceTime time,
                        unsigned int* buf)
 {
     assert(_imp->knobsInitialized);
-    if (!_imp->liveInstance) {
-        return false;
-    }
+    
     
     if (_imp->checkForExitPreview()) {
         return false;
@@ -4070,7 +4068,20 @@ Node::makePreviewImage(SequenceTime time,
     RenderScale scale;
     scale.x = scale.y = 1.;
     U64 nodeHash = getHashValue();
-    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
+    
+    Natron::EffectInstance* effect = 0;
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+    if (isGroup) {
+        effect = isGroup->getOutputNode()->getLiveInstance();
+    } else {
+        effect = _imp->liveInstance.get();
+    }
+    
+    if (!_imp->liveInstance) {
+        return false;
+    }
+    
+    Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -4085,7 +4096,7 @@ Node::makePreviewImage(SequenceTime time,
     scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    const double par = _imp->liveInstance->getPreferredAspectRatio();
+    const double par = effect->getPreferredAspectRatio();
     
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
@@ -4112,15 +4123,15 @@ Node::makePreviewImage(SequenceTime time,
     ImageList planes;
     try {
         Natron::EffectInstance::RenderRoIRetCode retCode =
-        _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                                     scale,
-                                                                     mipMapLevel,
-                                                                     0, //< preview only renders view 0 (left)
-                                                                     false,
-                                                                     renderWindow,
-                                                                     rod,
-                                                                     requestedComps, //< preview is always rgb...
-                                                                     getBitDepth(), _imp->liveInstance.get()) ,&planes);
+        effect->renderRoI( EffectInstance::RenderRoIArgs( time,
+                                                         scale,
+                                                         mipMapLevel,
+                                                         0, //< preview only renders view 0 (left)
+                                                         false,
+                                                         renderWindow,
+                                                         rod,
+                                                         requestedComps, //< preview is always rgb...
+                                                         getBitDepth(), effect) ,&planes);
         if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
             return false;
         }
