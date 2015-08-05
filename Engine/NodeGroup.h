@@ -234,7 +234,8 @@ public:
                                int textureIndex,
                                const TimeLine* timeline,
                                const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                               bool isAnalysis);
+                               bool isAnalysis,
+                               bool draftMode);
     void invalidateParallelRenderArgs();
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
@@ -299,7 +300,8 @@ public:
                              int textureIndex,
                              const TimeLine* timeline,
                              const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                             bool isAnalysis);
+                             bool isAnalysis,
+                             bool draftMode);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     

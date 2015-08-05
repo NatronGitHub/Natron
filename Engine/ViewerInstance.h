@@ -46,6 +46,7 @@ struct ViewerArgs
     boost::shared_ptr<Natron::FrameKey> key;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
+    bool draftModeEnabled;
 };
 
 class ViewerInstance

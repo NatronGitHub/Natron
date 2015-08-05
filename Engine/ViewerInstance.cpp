@@ -369,8 +369,9 @@ public:
                                    bool isAnalysis,
                                    const NodePtr& rotoPaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& activeStroke,
-                                   const NodePtr& viewerInput)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis)
+                                   const NodePtr& viewerInput,
+                                   bool draftMode)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
     , viewerNode(renderRequester->getNode())
@@ -413,7 +414,7 @@ public:
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
             bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling);
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode);
         }
     }
     
@@ -485,7 +486,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            false,
                                            rotoPaintNode,
                                            activeStroke,
-                                           NodePtr());
+                                           NodePtr(),
+                                           false);
         
         
 
@@ -732,7 +734,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     // realMipMapLevel is the mipmap level if the auto proxy is not applied
    // unsigned int realMipMapLevel = mipMapLevel;
-    if (zoomFactor < 1. && getApp()->isUserScrubbingSlider() && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
+    outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();
+    
+    if (zoomFactor < 1. && outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
         mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
     }
@@ -779,7 +783,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                      textureIndex,
                                                      getTimeline().get(),
                                                      NodePtr(),
-                                                     false));
+                                                     false,
+                                                     outArgs->draftModeEnabled));
     }
     
     /**
@@ -1077,7 +1082,8 @@ ViewerInstance::renderViewer_internal(int view,
                                                            false,
                                                            rotoPaintNode,
                                                            boost::shared_ptr<RotoStrokeItem>(),
-                                                           inArgs.activeInputToRender->getNode()));
+                                                           inArgs.activeInputToRender->getNode(),
+                                                           inArgs.draftModeEnabled));
     }
 
     

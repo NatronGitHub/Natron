@@ -181,7 +181,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
         if (_imp->gui) {
-            _imp->gui->setUserScrubbingSlider(true);
+            _imp->gui->setDraftRenderEnabled(true);
         }
         seekInternal(v);
     }
@@ -193,8 +193,8 @@ ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
     if (!_imp->readOnly) {
         bool hasMoved = true;
         if (_imp->gui) {
-            hasMoved = _imp->gui->isUserScrubbingSlider();
-            _imp->gui->setUserScrubbingSlider(false);
+            hasMoved = _imp->gui->isDraftRenderEnabled();
+            _imp->gui->setDraftRenderEnabled(false);
         }
         Q_EMIT editingFinished(hasMoved);
     }

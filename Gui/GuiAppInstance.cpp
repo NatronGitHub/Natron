@@ -476,7 +476,7 @@ GuiAppInstance::getGui() const
 bool
 GuiAppInstance::shouldRefreshPreview() const
 {
-    return !_imp->_gui->isUserScrubbingSlider();
+    return !_imp->_gui->isDraftRenderEnabled();
 }
 
 
@@ -1043,9 +1043,9 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
 }
 
 bool
-GuiAppInstance::isUserScrubbingSlider() const
+GuiAppInstance::isDraftRenderEnabled() const
 {
-    return _imp->_gui ? _imp->_gui->isUserScrubbingSlider() : false;
+    return _imp->_gui ? _imp->_gui->isDraftRenderEnabled() : false;
 }
 
 void

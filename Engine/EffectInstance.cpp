@@ -918,7 +918,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          bool isDuringPaintStrokeCreation,
                                          const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                          Natron::RenderSafetyEnum currentThreadSafety,
-                                         bool doNanHandling)
+                                         bool doNanHandling,
+                                         bool draftMode)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -938,6 +939,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.currentThreadSafety = currentThreadSafety;
     args.rotoPaintNodes = rotoPaintNodes;
     args.doNansHandling = doNanHandling;
+    args.draftMode = draftMode;
     ++args.validArgs;
     
 }
@@ -4517,6 +4519,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();
     actionArgs.originalScale.y = actionArgs.originalScale.x;
+    actionArgs.draftMode = frameArgs.draftMode;
     
     std::list<std::pair<ImageComponents,ImagePtr> > tmpPlanes;
     bool multiPlanar = isMultiPlanar();
@@ -4525,7 +4528,6 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     assert(!outputClipPrefsComps.empty());
     
-    bool identityProcessed = false;
     if (identity) {
         
         std::list<Natron::ImageComponents> comps;
@@ -4544,8 +4546,6 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  comps,
                                  outputClipPrefDepth,
                                  this);
-#pragma message WARN("BUG? value stored to identityProcessed is never read")
-        identityProcessed = true;
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 if (outputUseImage) {
@@ -4633,10 +4633,10 @@ EffectInstance::renderHandler(RenderArgs & args,
                     
                 }
                 return eRenderingFunctorRetOK;
-            }
-        }
+            } // if (renderOk == eRenderRoIRetCodeAborted) {
+        }  //  if (!identityInput) {
         
-    }
+    } // if (identity) {
     
     args._outputPlanes = planes.planes;
     for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
@@ -4653,7 +4653,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             
         }
         
-        if (!identityProcessed && (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
+        if ((it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
             outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) && !isPaintingOverItselfEnabled()) {
             it->second.tmpImage.reset(new Image(prefComp,
                                                 it->second.renderMappedImage->getRoD(),
@@ -4671,7 +4671,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     
 #if NATRON_ENABLE_TRIMAP
-    if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+    if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         for (std::map<Natron::ImageComponents,PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
             if (outputUseImage) {
                 it->second.fullscaleImage->markForRendering(downscaledRectToRender);
@@ -4713,10 +4713,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         }
         actionArgs.outputPlanes = *it;
         
-        Natron::StatusEnum st = eStatusOK;
-        if (!identityProcessed) {
-            st = render_public(actionArgs);
-        }
+        Natron::StatusEnum st = render_public(actionArgs);
         
         renderAborted = aborted();
         
@@ -4731,7 +4728,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         
         if (st != eStatusOK || renderAborted) {
 #if NATRON_ENABLE_TRIMAP
-            if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
                 
                 /*
                  At this point, another thread might have already gotten this image from the cache and could end-up
@@ -6542,7 +6539,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),
                                                  NodePtr(),
-                                                 true);
+                                                 true,
+                                                 false);
 
         RECURSIVE_ACTION();
         EffectPointerThreadProperty_RAII propHolder_raii(this);

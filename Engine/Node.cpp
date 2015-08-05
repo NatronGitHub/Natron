@@ -4112,7 +4112,8 @@ Node::makePreviewImage(SequenceTime time,
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
                                              NodePtr(),
-                                             false);
+                                             false,
+                                             true);
     
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(ImageComponents::getRGBComponents());

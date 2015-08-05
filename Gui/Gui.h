@@ -326,9 +326,9 @@ public:
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
     
-    void setUserScrubbingSlider(bool b);
+    void setDraftRenderEnabled(bool b);
 
-    bool isUserScrubbingSlider() const;
+    bool isDraftRenderEnabled() const;
 
     /*Refresh all previews if the project's preview mode is auto*/
     void refreshAllPreviews();

@@ -154,6 +154,9 @@ struct ParallelRenderArgs
     ///When true, all NaNs will be converted to 1
     bool doNansHandling;
     
+    ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
+    bool draftMode;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -172,6 +175,7 @@ struct ParallelRenderArgs
     , rotoPaintNodes()
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     , doNansHandling(true)
+    , draftMode(false)
     {
         
     }
@@ -644,7 +648,8 @@ public:
                                   bool isDuringPaintStrokeCreation,
                                   const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety,
-                                  bool doNanHandling);
+                                  bool doNanHandling,
+                                  bool draftMode);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
@@ -806,6 +811,7 @@ public:
         EffectInstance::InputImagesMap inputImages;
         bool byPassCache;
         bool processChannels[4];
+        bool draftMode;
     };
 
 protected:
