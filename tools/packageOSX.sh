@@ -22,6 +22,15 @@ CONFIG=release
 NATRONBRANCH=workshop
 OFXBRANCH=master
 
+case $NATRONBRANCH in
+    tags/*)
+	QMAKEEXTRAFLAGS=
+	;;
+    *)
+	QMAKEEXTRAFLAGS=CONFIG+=snapshot
+	;;
+esac	     
+	     
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
 PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig py34-shiboken py34-pyside imagemagick"
 
@@ -118,7 +127,7 @@ shiboken {
     LIBS += -L/opt/local/lib -lshiboken.cpython-34m
 }
 EOF
-qmake -r CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions
+qmake -r CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS
 make $MAKEJFLAGS || exit
 
 

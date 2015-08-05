@@ -81,12 +81,8 @@ static std::string generateUserFriendlyNatronVersionName()
     ret.append(" v");
     ret.append(NATRON_VERSION_STRING);
     const std::string status(NATRON_DEVELOPMENT_STATUS);
-    if (status == NATRON_DEVELOPMENT_ALPHA) {
-        ret.append(" " NATRON_DEVELOPMENT_ALPHA);
-    } else if (status == NATRON_DEVELOPMENT_BETA) {
-        ret.append(" " NATRON_DEVELOPMENT_BETA);
-    } else if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
-        ret.append(" " NATRON_DEVELOPMENT_RELEASE_CANDIDATE);
+    ret.append(" " NATRON_DEVELOPMENT_STATUS);
+    if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
         ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
     }
     return ret;

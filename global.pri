@@ -33,6 +33,11 @@ CONFIG(noassertions) {
    DEFINES *= NDEBUG QT_NO_DEBUG
 }
 
+CONFIG(snapshot) {
+   #message("Compiling an official snapshot (should only be done on the Natron build farm)")
+   DEFINES += NATRON_SNAPSHOT
+}
+
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
 unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
