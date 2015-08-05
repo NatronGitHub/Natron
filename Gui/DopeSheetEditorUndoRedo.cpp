@@ -79,20 +79,19 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
         }
         
         // Move keyframes
-        const KnobsAndGuis &knobs = nodeGui->getKnobs();
+        const std::vector<boost::shared_ptr<KnobI> > &knobs = (*it)->getKnobs();
         
-        for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-            KnobGui *knobGui = (*knobIt).second;
-            boost::shared_ptr<KnobI> knob = knobGui->getKnob();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            const boost::shared_ptr<KnobI>& knob = *knobIt;
             if (!knob->hasAnimation()) {
                 continue;
             }
         
-            for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
+            for (int dim = 0; dim < knob->getDimension(); ++dim) {
                 if (!knob->isAnimated(dim)) {
                     continue;
                 }
-                KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+                KeyFrameSet keyframes = knob->getCurve(dim)->getKeyFrames_mt_safe();
                 
                 for (KeyFrameSet::iterator kfIt = keyframes.begin(); kfIt != keyframes.end(); ++kfIt) {
                     KeyFrame kf = (*kfIt);
