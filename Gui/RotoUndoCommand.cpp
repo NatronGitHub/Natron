@@ -1354,8 +1354,11 @@ MakeBezierUndoCommand::mergeWith(const QUndoCommand *other)
 MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
                                                bool create,
                                                bool fromCenter,
-                                               double dx,
-                                               double dy,
+                                               bool constrained,
+                                               double fromx,
+                                               double fromy,
+                                               double tox,
+                                               double toy,
                                                double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
@@ -1364,10 +1367,11 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
       , _curve()
       , _create(create)
       , _fromCenter(fromCenter)
-      , _x(dx)
-      , _y(dy)
-      , _dx(create ? 0 : dx)
-      , _dy(create ? 0 : dy)
+      , _constrained(constrained)
+      , _fromx(fromx)
+      , _fromy(fromy)
+      , _tox(tox)
+      , _toy(toy)
       , _time(time)
 {
     if (!_create) {
@@ -1395,46 +1399,39 @@ MakeEllipseUndoCommand::redo()
         _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
         _roto->evaluate(true);
     } else {
-        
+        double ytop, xright, ybottom, xleft;
+        double tox = _tox;
+        if (_constrained) {
+            tox =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
+        }
+        if (_fromCenter) {
+            ytop = _fromy - (_toy - _fromy);
+            xleft = _fromx - (tox - _fromx);
+        } else {
+            ytop = _fromy;
+            xleft = _fromx;
+        }
+        ybottom = _toy;
+        xright = tox;
+        double xmid = (xleft + xright) / 2;
+        double ymid = (ytop + ybottom) / 2;
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time,false);
+            _curve = _roto->getContext()->makeBezier(xmid, ytop, kRotoEllipseBaseName, _time, false); //top
             assert(_curve);
-            _curve->addControlPoint(_x + 1,_y - 1, _time);
-            _curve->addControlPoint(_x,_y - 2, _time);
-            _curve->addControlPoint(_x - 1,_y - 1, _time);
+            _curve->addControlPoint(xright, ymid, _time); // right
+            _curve->addControlPoint(xmid, ybottom, _time); // bottom
+            _curve->addControlPoint(xleft, ymid, _time); //left
             _curve->setCurveFinished(true);
         } else {
+            _curve->setPointByIndex(0, _time, xmid, ytop); // top
+            _curve->setPointByIndex(1,_time, xright, ymid); // right
+            _curve->setPointByIndex(2,_time, xmid, ybottom); // bottom
+            _curve->setPointByIndex(3,_time, xleft, ymid); // left
+
             boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
             boost::shared_ptr<BezierCP> right = _curve->getControlPointAtIndex(1);
             boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
             boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
-            if (_fromCenter) {
-                //top only moves by x
-                _curve->movePointByIndex(0,_time, 0, _dy);
-
-                //right
-                _curve->movePointByIndex(1,_time, _dx, 0);
-
-                //bottom
-                _curve->movePointByIndex(2,_time, 0., -_dy );
-
-                //left only moves by y
-                _curve->movePointByIndex(3,_time, -_dx, 0);
-            } else {
-                //top only moves by x
-                _curve->movePointByIndex(0,_time, _dx / 2., 0);
-
-                //right
-                _curve->movePointByIndex(1,_time, _dx, _dy / 2.);
-
-                //bottom
-                _curve->movePointByIndex(2,_time, _dx / 2., _dy );
-
-                //left only moves by y
-                _curve->movePointByIndex(3,_time, 0, _dy / 2.);
-
-            }
-            
             double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
             top->getPositionAtTime(_time, &topX, &topY);
             right->getPositionAtTime(_time, &rightX, &rightY);
@@ -1485,8 +1482,12 @@ MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
     if (_curve != sCmd->_curve) {
         _curve->clone(sCmd->_curve.get());
     }
-    _dx += sCmd->_dx;
-    _dy += sCmd->_dy;
+    _fromx = sCmd->_fromx;
+    _fromy = sCmd->_fromy;
+    _tox = sCmd->_tox;
+    _toy = sCmd->_toy;
+    _fromCenter = sCmd->_fromCenter;
+    _constrained = sCmd->_constrained;
 
     return true;
 }
@@ -1496,8 +1497,12 @@ MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
 
 MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
                                                    bool create,
-                                                   double dx,
-                                                   double dy,
+                                                   bool fromCenter,
+                                                   bool constrained,
+                                                   double fromx,
+                                                   double fromy,
+                                                   double tox,
+                                                   double toy,
                                                    double time)
     : QUndoCommand()
       , _firstRedoCalled(false)
@@ -1506,10 +1511,12 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
       , _indexInLayer(-1)
       , _curve()
       , _create(create)
-      , _x(dx)
-      , _y(dy)
-      , _dx(create ? 0 : dx)
-      , _dy(create ? 0 : dy)
+      , _fromCenter(fromCenter)
+      , _constrained(constrained)
+      , _fromx(fromx)
+      , _fromy(fromy)
+      , _tox(tox)
+      , _toy(toy)
       , _time(time)
 {
     if (!_create) {
@@ -1537,17 +1544,32 @@ MakeRectangleUndoCommand::redo()
         _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
         _roto->evaluate(true);
     } else {
+        double ytop, xright, ybottom, xleft;
+        double tox = _tox;
+        if (_constrained) {
+            tox =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
+        }
+        if (_fromCenter) {
+            ytop = _fromy - (_toy - _fromy);
+            xleft = _fromx - (tox - _fromx);
+        } else {
+            ytop = _fromy;
+            xleft = _fromx;
+        }
+        ybottom = _toy;
+        xright = tox;
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time,false);
+            _curve = _roto->getContext()->makeBezier(xleft, ytop, kRotoRectangleBaseName, _time, false); //topleft
             assert(_curve);
-            _curve->addControlPoint(_x + 1,_y,_time);
-            _curve->addControlPoint(_x + 1,_y - 1,_time);
-            _curve->addControlPoint(_x,_y - 1,_time);
+            _curve->addControlPoint(xright, ytop, _time); // topright
+            _curve->addControlPoint(xright, ybottom, _time); // bottomright
+            _curve->addControlPoint(xleft, ybottom, _time); // bottomleft
             _curve->setCurveFinished(true);
         } else {
-            _curve->movePointByIndex(1,_time, _dx, 0);
-            _curve->movePointByIndex(2,_time, _dx, _dy);
-            _curve->movePointByIndex(3,_time, 0, _dy);
+            _curve->setPointByIndex(0, _time, xleft, ytop); // topleft
+            _curve->setPointByIndex(1,_time, xright, ytop); // topright
+            _curve->setPointByIndex(2,_time, xright, ybottom); // bottomright
+            _curve->setPointByIndex(3,_time, xleft, ybottom); // bottomleft
         }
         boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
@@ -1581,8 +1603,12 @@ MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
     if (_curve != sCmd->_curve) {
         _curve->clone(sCmd->_curve.get());
     }
-    _dx += sCmd->_dx;
-    _dy += sCmd->_dy;
+    _fromx = sCmd->_fromx;
+    _fromy = sCmd->_fromy;
+    _tox = sCmd->_tox;
+    _toy = sCmd->_toy;
+    _fromCenter = sCmd->_fromCenter;
+    _constrained = sCmd->_constrained;
 
     return true;
 }

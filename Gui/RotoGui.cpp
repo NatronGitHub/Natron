@@ -94,7 +94,6 @@ enum EventStateEnum
     eEventStateDraggingSelectedControlPoints,
     eEventStateBuildingBezierControlPointTangent,
     eEventStateBuildingEllipse,
-    eEventStateBuildingEllipseCenter,
     eEventStateBuildingRectangle,
     eEventStateDraggingLeftTangent,
     eEventStateDraggingRightTangent,
@@ -155,6 +154,7 @@ struct RotoGuiSharedData
     bool displayFeather;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
     std::pair<double,double> cloneOffset;
+    QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
 
     RotoGuiSharedData()
     : selectedItems()
@@ -171,6 +171,7 @@ struct RotoGuiSharedData
     , displayFeather(true)
     , strokeBeingPaint()
     , cloneOffset()
+    , click()
     {
         cloneOffset.first = cloneOffset.second = 0.;
     }
@@ -2628,18 +2629,15 @@ RotoGui::penDown(double time,
             
             break;
         case eRotoToolDrawEllipse: {
-            bool fromCenter = modCASIsControl(e);
-            pushUndoCommand( new MakeEllipseUndoCommand(this,true,fromCenter,pos.x(),pos.y(),time) );
-            if (fromCenter) {
-                _imp->state = eEventStateBuildingEllipseCenter;
-            } else {
-                _imp->state = eEventStateBuildingEllipse;
-            }
+            _imp->rotoData->click = pos;
+            pushUndoCommand( new MakeEllipseUndoCommand(this, true, false, false, pos.x(), pos.y(), pos.x(), pos.y(), time) );
+            _imp->state = eEventStateBuildingEllipse;
             didSomething = true;
             break;
         }
         case eRotoToolDrawRectangle: {
-            pushUndoCommand( new MakeRectangleUndoCommand(this,true,pos.x(),pos.y(),time) );
+            _imp->rotoData->click = pos;
+            pushUndoCommand( new MakeRectangleUndoCommand(this, true, false, false, pos.x(), pos.y(), pos.x(), pos.y(), time) );
             _imp->evaluateOnPenUp = true;
             _imp->state = eEventStateBuildingRectangle;
             didSomething = true;
@@ -2795,7 +2793,7 @@ RotoGui::penMotion(double time,
             didSomething = true;
         }
     }
-    if (_imp->hoverState == eHoverStateNothing) {
+    if (_imp->state == eEventStateNone && _imp->hoverState == eHoverStateNothing) {
         if ( (_imp->state != eEventStateDraggingControlPoint) && (_imp->state != eEventStateDraggingSelectedControlPoints) ) {
             for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                 int index = -1;
@@ -2916,20 +2914,18 @@ RotoGui::penMotion(double time,
         break;
     }
     case eEventStateBuildingEllipse: {
-        pushUndoCommand( new MakeEllipseUndoCommand(this,false,false,dx,dy,time) );
+        bool fromCenter = modifierHasControl(e);
+        bool constrained = modifierHasShift(e);
+        pushUndoCommand( new MakeEllipseUndoCommand(this, false, fromCenter, constrained, _imp->rotoData->click.x(), _imp->rotoData->click.y(), pos.x(), pos.y(), time) );
 
         didSomething = true;
         _imp->evaluateOnPenUp = true;
         break;
     }
-    case eEventStateBuildingEllipseCenter: {
-        pushUndoCommand( new MakeEllipseUndoCommand(this,false,true,dx,dy,time) );
-        _imp->evaluateOnPenUp = true;
-        didSomething = true;
-        break;
-    }
     case eEventStateBuildingRectangle: {
-        pushUndoCommand( new MakeRectangleUndoCommand(this,false,dx,dy,time) );
+        bool fromCenter = modifierHasControl(e);
+        bool constrained = modifierHasShift(e);
+        pushUndoCommand( new MakeRectangleUndoCommand(this, false, fromCenter, constrained, _imp->rotoData->click.x(), _imp->rotoData->click.y(), pos.x(), pos.y(), time) );
         didSomething = true;
         _imp->evaluateOnPenUp = true;
         break;

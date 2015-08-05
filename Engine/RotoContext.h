@@ -706,19 +706,29 @@ public:
      * This function asserts that  auto-keying is  enabled.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void movePointByIndex(int index,double time,double dx,double dy);
+    void movePointByIndex(int index, double time, double dx, double dy);
+
+    /**
+     * @brief Set the control point at the given index to x,y.
+     * If feather link is enabled, the feather point will also be moved by the same deltas.
+     * If  there's no keyframe at the current time, a new keyframe will be added.
+     * This function asserts that  auto-keying is  enabled.
+     * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
+     **/
+    void setPointByIndex(int index, double time, double x, double y);
 
     /**
      * @brief Moves the feather point at the given index if any by the given dx and dy.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void moveFeatherByIndex(int index,double time,double dx,double dy);
+    void moveFeatherByIndex(int index, double time, double dx, double dy);
     
 private:
     
-    void movePointByIndexInternal(int index,double time,double dx,double dy,bool onlyFeather);
-    
+    void movePointByIndexInternal(int index, double time, double dx, double dy, bool onlyFeather);
+    void setPointByIndexInternal(int index, double time, double dx, double dy);
+
 public:
     
 
