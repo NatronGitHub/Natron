@@ -475,6 +475,8 @@ enum MergingFunctionEnum
     eMergeFreeze,
     eMergeFrom,
     eMergeGeometric,
+    eMergeGrainExtract,
+    eMergeGrainMerge,
     eMergeHardLight,
     eMergeHue,
     eMergeHypot,

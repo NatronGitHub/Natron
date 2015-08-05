@@ -142,10 +142,9 @@ class FavoriteItemDelegate
     : public QStyledItemDelegate
 {
     
-    QFileSystemModel *_model;
 
 public:
-    FavoriteItemDelegate(QFileSystemModel *model);
+    FavoriteItemDelegate();
 
 private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
