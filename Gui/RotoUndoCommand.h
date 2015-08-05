@@ -436,8 +436,11 @@ public:
     MakeEllipseUndoCommand(RotoGui* roto,
                            bool create,
                            bool fromCenter,
-                           double dx,
-                           double dy,
+                           bool constrained,
+                           double fromx,
+                           double fromy,
+                           double tox,
+                           double toy,
                            double time);
 
     virtual ~MakeEllipseUndoCommand();
@@ -455,8 +458,9 @@ private:
     boost::shared_ptr<Bezier> _curve;
     bool _create;
     bool _fromCenter;
-    double _x,_y;
-    double _dx,_dy;
+    bool _constrained;
+    double _fromx,_fromy;
+    double _tox, _toy;
     double _time;
 };
 
@@ -468,8 +472,12 @@ public:
 
     MakeRectangleUndoCommand(RotoGui* roto,
                              bool create,
-                             double dx,
-                             double dy,
+                             bool fromCenter,
+                             bool constrained,
+                             double fromx,
+                             double fromy,
+                             double tox,
+                             double toy,
                              double time);
 
     virtual ~MakeRectangleUndoCommand();
@@ -486,8 +494,10 @@ private:
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
     bool _create;
-    double _x,_y;
-    double _dx,_dy;
+    bool _fromCenter;
+    bool _constrained;
+    double _fromx,_fromy;
+    double _tox, _toy;
     double _time;
 };
 

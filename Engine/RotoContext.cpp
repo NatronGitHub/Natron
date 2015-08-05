@@ -4203,6 +4203,47 @@ Bezier::movePointByIndexInternal(int index,
 } // movePointByIndexInternal
 
 void
+Bezier::setPointByIndexInternal(int index,
+                                double time,
+                                double x,
+                                double y)
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+
+    Transform::Matrix3x3 trans,invTrans;
+    getTransformAtTime(time, &trans);
+    invTrans = Transform::matInverse(trans);
+
+    double dx, dy;
+
+    {
+        QMutexLocker l(&itemMutex);
+        Transform::Point3D p,left,right;
+        p.z = left.z = right.z = 1;
+
+        boost::shared_ptr<BezierCP> cp;
+        bool isOnKeyframe = false;
+
+        BezierCPs::const_iterator it = _imp->atIndex(index);
+        assert(it != _imp->points.end());
+        cp = *it;
+        cp->getPositionAtTime(time, &p.x, &p.y,true);
+        isOnKeyframe |= cp->getLeftBezierPointAtTime(time, &left.x, &left.y,true);
+        cp->getRightBezierPointAtTime(time, &right.x, &right.y,true);
+
+        p = Transform::matApply(trans, p);
+        left = Transform::matApply(trans, left);
+        right = Transform::matApply(trans, right);
+
+        dx = x - p.x;
+        dy = y - p.y;
+    }
+
+    movePointByIndex(index, time, dx, dy);
+} // setPointByIndexInternal
+
+void
 Bezier::movePointByIndex(int index,
                          double time,
                          double dx,
@@ -4210,6 +4251,15 @@ Bezier::movePointByIndex(int index,
 {
     movePointByIndexInternal(index, time, dx, dy, false);
 } // movePointByIndex
+
+void
+Bezier::setPointByIndex(int index,
+                         double time,
+                         double x,
+                         double y)
+{
+    setPointByIndexInternal(index, time, x, y);
+} // setPointByIndex
 
 void
 Bezier::moveFeatherByIndex(int index,
