@@ -142,6 +142,9 @@ Natron::OfxHost::setProperties()
      Resolve
 
      */
+
+    // see hostStuffs in ofxhImageEffect.cpp
+
     _properties.setStringProperty( kOfxPropName,appPTR->getCurrentSettings()->getHostName() );
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.3
@@ -162,19 +165,19 @@ Natron::OfxHost::setProperties()
     }
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentMotionVectors, 3);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentStereoDisparity, 4);
-    
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
-    
-    ///Setting these makes The Foundry Furnace plug-ins fail in the load action
-    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextReader, 4 );
-    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextWriter, 5 );
 
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthShort,1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthByte,2);
+
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
+
+    ///Setting these makes The Foundry Furnace plug-ins fail in the load action
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextReader, 4 );
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextWriter, 5 );
 
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
@@ -185,20 +188,22 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty( kOfxParamHostPropSupportsChoiceAnimation, Choice_Knob::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, Bool_Knob::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, String_Knob::canAnimateStatic() );
+    _properties.setPointerProperty(kOfxPropHostOSHandle, NULL);
+    _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
+
     _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
     _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
-#pragma message WARN("TODO:support draft when scrubbing, and as a global parameter (similar to proxy level, or maybe proxy !=1 could set draft)")
-    _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 0); // change to 1 whent draft is supported
-    _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
+    _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
+    _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
+
 #ifdef OFX_EXTENSIONS_NUKE
-    ///Nuke transform suite
-    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
-    
     ///Plane suite
     _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 1);
+    ///Nuke transform suite
+    _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
 #endif
 #ifdef OFX_EXTENSIONS_NATRON
     ///Natron extensions
