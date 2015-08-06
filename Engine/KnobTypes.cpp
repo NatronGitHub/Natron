@@ -79,7 +79,7 @@ Int_Knob::setIncrement(int incr,
     }
     
     if ( index >= (int)_increments.size() ) {
-        throw "Int_Knob::setIncrement , dimension out of range";
+        throw std::runtime_error("Int_Knob::setIncrement , dimension out of range");
     }
     _increments[index] = incr;
     Q_EMIT incrementChanged(_increments[index], index);
@@ -263,7 +263,7 @@ Double_Knob::setIncrement(double incr,
         return;
     }
     if ( index >= (int)_increments.size() ) {
-        throw "Double_Knob::setIncrement , dimension out of range";
+        throw std::runtime_error("Double_Knob::setIncrement , dimension out of range");
     }
     
     _increments[index] = incr;
@@ -275,7 +275,7 @@ Double_Knob::setDecimals(int decis,
                          int index)
 {
     if ( index >= (int)_decimals.size() ) {
-        throw "Double_Knob::setDecimals , dimension out of range";
+        throw std::runtime_error("Double_Knob::setDecimals , dimension out of range");
     }
     
     _decimals[index] = decis;
@@ -641,6 +641,15 @@ Choice_Knob::getEntries_mt_safe() const
     return _entries;
 }
 
+const std::string&
+Choice_Knob::getEntry(int v) const
+{
+    if (v < 0 || (int)_entries.size() <= v) {
+        throw std::runtime_error(std::string("Choice_Knob::getEntry: index out of range"));
+    }
+    return _entries[v];
+}
+
 int
 Choice_Knob::getNumEntries() const
 {
@@ -741,6 +750,31 @@ static bool caseInsensitiveCompare(const std::string& a,const std::string& b)
         }
     }
     return true;
+}
+
+Knob<int>::ValueChangedReturnCodeEnum
+Choice_Knob::setValueFromLabel(const std::string & value,
+                               int dimension,
+                               bool turnOffAutoKeying)
+{
+    for (std::size_t i = 0; i < _entries.size(); ++i) {
+        if (caseInsensitiveCompare(_entries[i], value)) {
+            return setValue(i, dimension, turnOffAutoKeying);
+        }
+    }
+    throw std::runtime_error(std::string("Choice_Knob::setValueFromLabel: unknown label ") + value);
+}
+
+void
+Choice_Knob::setDefaultValueFromLabel(const std::string & value,
+                                      int dimension)
+{
+    for (std::size_t i = 0; i < _entries.size(); ++i) {
+        if (caseInsensitiveCompare(_entries[i], value)) {
+            return setDefaultValue(i, dimension);
+        }
+    }
+    throw std::runtime_error(std::string("Choice_Knob::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 void

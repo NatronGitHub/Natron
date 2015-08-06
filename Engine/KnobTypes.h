@@ -412,6 +412,7 @@ public:
     void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
     
     std::vector<std::string> getEntries_mt_safe() const;
+    const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe() const;
     
@@ -446,7 +447,14 @@ public:
     {
         return _isCascading;
     }
-    
+
+    /// set the Choice_Knob value from the label
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
+                                                 int dimension,
+                                                 bool turnOffAutoKeying = false);
+    /// set the Choice_Knob default value from the label
+    void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
+
 Q_SIGNALS:
 
     void populated();

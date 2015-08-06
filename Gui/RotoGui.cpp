@@ -3276,7 +3276,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     boost::shared_ptr<Double_Knob> translateKnob = rotoData->strokeBeingPaint->getBrushCloneTranslateKnob();
     
     const QColor& color = colorPickerLabel->getCurrentColor();
-    int compOp = compositingOperatorButton->activeIndex();
+    MergingFunctionEnum compOp = (MergingFunctionEnum)compositingOperatorButton->activeIndex();
     double opacity = opacitySpinbox->value();
     double size = sizeSpinbox->value();
     double hardness = hardnessSpinBox->value();
@@ -3294,7 +3294,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     double b = Natron::Color::from_func_srgb(color.blueF());
 
     colorKnob->setValues(r,g,b, Natron::eValueChangedReasonNatronGuiEdited);
-    operatorKnob->setValue(compOp,0);
+    operatorKnob->setValueFromLabel(getNatronOperationString(compOp),0);
     opacityKnob->setValue(opacity, 0);
     sizeKnob->setValue(size, 0);
     hardnessKnob->setValue(hardness, 0);
