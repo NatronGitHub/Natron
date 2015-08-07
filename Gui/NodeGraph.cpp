@@ -2189,6 +2189,42 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
             node->setVisibleSettingsPanel(true);
             if (node->getSettingPanel()) {
                 _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+            } else {
+                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+                if (isViewer) {
+                    ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
+                    assert(viewer);
+                    ViewerTab* tab = viewer->getViewerTab();
+                    assert(tab);
+                    
+                    TabWidget* foundTab = 0;
+                    QWidget* parent = tab->parentWidget();
+                    while (parent) {
+                        foundTab = dynamic_cast<TabWidget*>(parent);
+                        if (foundTab) {
+                            break;
+                        }
+                        parent = parent->parentWidget();
+                    }
+                    if (foundTab) {
+                        foundTab->setCurrentWidget(tab);
+                    } else {
+                        
+                        //try to find a floating window
+                        FloatingWidget* floating = 0;
+                        parent = tab->parentWidget();
+                        while (parent) {
+                            floating = dynamic_cast<FloatingWidget*>(parent);
+                            if (floating) {
+                                break;
+                            }
+                            parent = parent->parentWidget();
+                        }
+                        if (floating) {
+                            floating->activateWindow();
+                        }
+                    }
+                }
             }
         }
         if ( !node->wasBeginEditCalled() ) {
