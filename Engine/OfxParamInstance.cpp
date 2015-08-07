@@ -3028,7 +3028,6 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node,
     }
 
     QObject::connect( knob.get(),SIGNAL( mustInitializeOverlayInteract(OverlaySupport*) ),this,SLOT( initializeInteract(OverlaySupport*) ) );
-    QObject::connect( knob.get(), SIGNAL( mustResetToDefault(QVector<int>) ), this, SLOT( onResetToDefault(QVector<int>) ) );
     setDisplayRange();
 }
 
