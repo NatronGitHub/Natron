@@ -2986,7 +2986,11 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         }
         _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
         
-        
+        double firstFrame,lastFrame;
+        reader->getNode()->getLiveInstance()->getFrameRange_public(reader->getNode()->getHashValue(), &firstFrame, &lastFrame);
+        _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
+        _preview->viewerUI->centerOn(firstFrame,lastFrame);
+
     }
     _preview->viewerUI->getInternalNode()->renderCurrentFrame(false);
 }

@@ -49,8 +49,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 #include "Engine/FileSystemModel.h"
 
-#define NATRON_FILE_DIALOG_PREVIEW_READER_NAME "Natron_File_Dialog_Preview_Provider_Reader"
-#define NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME "Natron_File_Dialog_Preview_Provider_Viewer"
 
 class LineEdit;
 class Button;

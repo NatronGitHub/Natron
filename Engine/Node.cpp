@@ -582,7 +582,7 @@ Node::load(const std::string & parentMultiInstanceName,
     if (binary) {
         func = binary->findFunction<EffectBuilder>("BuildEffect");
     }
-    bool isFileDialogPreviewReader = fixedName.contains("Natron_File_Dialog_Preview_Provider_Reader");
+    bool isFileDialogPreviewReader = fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
     if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
@@ -5291,7 +5291,10 @@ Node::onEffectKnobValueChanged(KnobI* what,
             _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
     
             if (leftBound != INT_MIN && rightBound != INT_MAX) {
-                getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+                bool isFileDialogPreviewReader = getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos;
+                if (!isFileDialogPreviewReader) {
+                    getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+                }
             }
         }
         

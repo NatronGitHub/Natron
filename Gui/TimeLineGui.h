@@ -49,8 +49,7 @@ public:
     explicit TimeLineGui(ViewerInstance* viewer,
                          boost::shared_ptr<TimeLine> timeLine,
                          Gui* gui,
-                         QWidget* parent,
-                         const QGLWidget* shareWidget = NULL);
+                         ViewerTab* viewerTab);
 
     virtual ~TimeLineGui() OVERRIDE;
     
