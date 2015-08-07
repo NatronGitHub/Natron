@@ -2809,7 +2809,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated);
 
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view);
+    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view, frameRenderArgs.draftMode);
 
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 

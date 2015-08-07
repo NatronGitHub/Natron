@@ -27,6 +27,7 @@ serialize(Archive & ar,
     ar & boost::serialization::make_nvp("Time",k._time);
     ar & boost::serialization::make_nvp("View",k._view);
     ar & boost::serialization::make_nvp("PixelAspect",k._pixelAspect);
+    ar & boost::serialization::make_nvp("Draft",k._draftMode);
 }
 }
 }

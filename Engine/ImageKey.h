@@ -28,18 +28,18 @@ public:
     U64 _nodeHashKey;
     bool _frameVaryingOrAnimated;
     double _time;
-    //unsigned int _mipMapLevel;
     int _view;
     double _pixelAspect;
+    bool _draftMode;
 
     ImageKey();
 
     ImageKey(U64 nodeHashKey,
              bool frameVaryingOrAnimated,
              double time,
-             //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
              int view,
-             double pixelAspect = 1.);
+             double pixelAspect,
+             bool draftMode);
 
     void fillHash(Hash64* hash) const;
 

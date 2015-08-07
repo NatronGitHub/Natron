@@ -14,6 +14,7 @@ ImageKey::ImageKey()
 //, _mipMapLevel(0)
 , _view(0)
 , _pixelAspect(1)
+, _draftMode(false)
 {
 }
 
@@ -22,14 +23,15 @@ ImageKey::ImageKey(U64 nodeHashKey,
                    double time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
                    int view,
-                   double pixelAspect)
+                   double pixelAspect,
+                   bool draftMode)
 : KeyHelper<U64>()
 , _nodeHashKey(nodeHashKey)
 , _frameVaryingOrAnimated(frameVaryingOrAnimated)
 , _time(time)
-//      , _mipMapLevel(mipMapLevel)
 , _view(view)
 , _pixelAspect(pixelAspect)
+, _draftMode(draftMode)
 {
 }
 
@@ -37,12 +39,12 @@ void
 ImageKey::fillHash(Hash64* hash) const
 {
     hash->append(_nodeHashKey);
-    //hash->append(_mipMapLevel); //< Store different mipmapLevels under the same key
     if (_frameVaryingOrAnimated) {
         hash->append(_time);
     }
     hash->append(_view);
     hash->append(_pixelAspect);
+    hash->append(_draftMode);
 }
 
 bool
@@ -52,11 +54,13 @@ ImageKey::operator==(const ImageKey & other) const
         return _nodeHashKey == other._nodeHashKey &&
         _time == other._time &&
         _view == other._view &&
-        _pixelAspect == other._pixelAspect;
+        _pixelAspect == other._pixelAspect &&
+        _draftMode == other._draftMode;
     } else {
         return _nodeHashKey == other._nodeHashKey &&
         _view == other._view &&
-        _pixelAspect == other._pixelAspect;
+        _pixelAspect == other._pixelAspect &&
+        _draftMode == other._draftMode;
     }
     
 }

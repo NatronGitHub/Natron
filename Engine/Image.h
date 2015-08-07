@@ -191,7 +191,8 @@ namespace Natron {
         static ImageKey makeKey(U64 nodeHashKey,
                                 bool frameVaryingOrAnimated,
                                 double time,
-                                int view);
+                                int view,
+                                bool draftMode);
         static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                          const RectD & rod,    // the image rod in canonical coordinates
                                                          const double par,
