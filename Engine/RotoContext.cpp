@@ -1854,7 +1854,7 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     getNatronCompositingOperators(&operators, &tooltips);
     
     _imp->compOperator->populateChoices(operators,tooltips);
-    _imp->compOperator->setDefaultValue( (int)eMergeCopy);
+    _imp->compOperator->setDefaultValueFromLabel(getNatronOperationString(eMergeCopy));
     
 }
 
@@ -2044,17 +2044,18 @@ RotoDrawableItem::createNodes(bool connectNodes)
     assert(mergeOp);
     
     boost::shared_ptr<Choice_Knob> compOp = getOperatorKnob();
+
+    MergingFunctionEnum op;
     if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
-        mergeOp->setValue(type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
-        compOp->setValue(type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
+        op = (type == eRotoStrokeTypeDodge ?eMergeColorDodge : eMergeColorBurn);
     } else if (type == eRotoStrokeTypeSolid) {
-        mergeOp->setValue((int)eMergeOver, 0);
-        compOp->setValue((int)eMergeOver, 0);
+        op = eMergeOver;
     } else {
-        mergeOp->setValue((int)eMergeCopy, 0);
-        compOp->setValue((int)eMergeCopy, 0);
+        op = eMergeCopy;
     }
-    
+    mergeOp->setValueFromLabel(getNatronOperationString(op), 0);
+    compOp->setValueFromLabel(getNatronOperationString(op), 0);
+
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {
             double strength = isStroke->getBrushEffectKnob()->getValue();
@@ -2315,11 +2316,10 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob)
     }
 
     if (knob == compKnob) {
-        boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
-        if (operation) {
-            int op_i = compKnob->getValue();
-            operation->setValue(op_i, 0);
+        boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+        Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+        if (mergeOp) {
+            mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
         }
     } else if (knob == _imp->sourceColor) {
         refreshNodesConnections();
@@ -2773,15 +2773,13 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         type = eRotoStrokeTypeSolid;
     }
 
-    
-    boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
-    if (operation) {
-        int op_i = getOperatorKnob()->getValue();
-        operation->setValue(op_i, 0);
+    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
+    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+    if (mergeOp) {
+        mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
     }
-    
-    
+
     if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
         boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
         Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
