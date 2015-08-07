@@ -796,7 +796,8 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
-
+    void onCurvesDefaultInitialized();
+    
     ///derived from CurveHolder
     virtual OfxStatus getValue(int curveIndex,OfxTime time,double parametricPosition,double *returnValue) OVERRIDE FINAL;
     virtual OfxStatus getNControlPoints(int curveIndex,double time,int *returnValue) OVERRIDE FINAL;
@@ -827,7 +828,6 @@ public Q_SLOTS:
 
     void initializeInteract(OverlaySupport* widget);
 
-    void onResetToDefault(const QVector<int> & dimensions);
 
 private:
 

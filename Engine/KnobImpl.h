@@ -1927,6 +1927,8 @@ Knob<T>::resetToDefaultValue(int dimension)
         QMutexLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
+    clearExpression(dimension,true);
+    resetExtraToDefaultValue(dimension);
     ignore_result(setValue(defaultV, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
@@ -2579,6 +2581,12 @@ void Knob<T>::computeHasModifications()
                 hasModif = true;
             }
         }
+        
+        
+        if (!hasModif) {
+            hasModif |= hasModificationsVirtual(i);
+        }
+        
         oneChanged |= setHasModifications(i, hasModif, true);
     }
     if (oneChanged && _signalSlotHandler) {

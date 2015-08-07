@@ -3033,14 +3033,9 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node,
 }
 
 void
-OfxParametricInstance::onResetToDefault(const QVector<int> & dimensions)
+OfxParametricInstance::onCurvesDefaultInitialized()
 {
-    for (int i = 0; i < dimensions.size(); ++i) {
-        Natron::StatusEnum st = _knob.lock()->deleteAllControlPoints( dimensions.at(i) );
-        assert(st == Natron::eStatusOK);
-        (void)st;
-        defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
-    }
+    _knob.lock()->setDefaultCurvesFromCurves();
 }
 
 void

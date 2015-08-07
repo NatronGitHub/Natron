@@ -514,10 +514,13 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
+        
         if (stat == kOfxStatFailed) {
             throw std::runtime_error("The parameter failed to create curves from their default\n"
                                      "initialized by the plugin.");
         }
+        ret->onCurvesDefaultInitialized();
+
         knob = ret->getKnob();
         instance = ret;
     }

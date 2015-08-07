@@ -4574,18 +4574,16 @@ Parametric_KnobGui::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >*
 void
 Parametric_KnobGui::resetSelectedCurves()
 {
-    QVector<int> curveIndexes;
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
             if ( it->second.treeItem == selected.at(i) ) {
-                curveIndexes.push_back( it->second.curve->getDimension() );
+                _knob.lock()->resetToDefaultValue(it->second.curve->getDimension());
                 break;
             }
         }
     }
-    _knob.lock()->resetToDefault(curveIndexes);
 }
 
 boost::shared_ptr<KnobI> Parametric_KnobGui::getKnob() const

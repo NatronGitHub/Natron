@@ -1287,6 +1287,7 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
 : Knob<double>(holder,description,dimension,declaredByPlugin)
 , _curvesMutex()
 , _curves(dimension)
+, _defaultCurves(dimension)
 , _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
@@ -1294,6 +1295,7 @@ Parametric_Knob::Parametric_Knob(KnobHolder* holder,
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
         _curves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
+        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this,i) );
     }
 }
 
@@ -1370,6 +1372,20 @@ std::pair<double,double> Parametric_Knob::getParametricRange() const
     return _curves.front()->getXRange();
 }
 
+boost::shared_ptr<Curve>
+Parametric_Knob::getDefaultParametricCurve(int dimension) const
+{
+    assert(dimension >= 0 && dimension < (int)_curves.size());
+    std::pair<int,boost::shared_ptr<KnobI> >  master = getMaster(dimension);
+    if (master.second) {
+        Parametric_Knob* m = dynamic_cast<Parametric_Knob*>(master.second.get());
+        assert(m);
+        return m->getDefaultParametricCurve(dimension);
+    } else {
+        return _defaultCurves[dimension];
+    }
+
+}
 
 boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) const
 {
@@ -1652,8 +1668,35 @@ Parametric_Knob::loadParametricCurves(const std::list< Curve > & curves)
 void
 Parametric_Knob::resetExtraToDefaultValue(int dimension)
 {
-    QVector<int> dimensions(1);
-    dimensions[0] = dimension;
-    Q_EMIT mustResetToDefault(dimensions);
+    (void)deleteAllControlPoints(dimension);
+    _curves[dimension]->clone(*_defaultCurves[dimension]);
+    Q_EMIT curveChanged(dimension);
+
 }
 
+void
+Parametric_Knob::setDefaultCurvesFromCurves()
+{
+    assert(_curves.size() == _defaultCurves.size());
+    for (std::size_t i = 0; i < _curves.size(); ++i) {
+        _defaultCurves[i]->clone(*_curves[i]);
+    }
+}
+
+bool
+Parametric_Knob::hasModificationsVirtual(int dimension) const
+{
+    assert(dimension >= 0 && dimension < (int)_curves.size());
+    KeyFrameSet defKeys = _defaultCurves[dimension]->getKeyFrames_mt_safe();
+    KeyFrameSet keys = _curves[dimension]->getKeyFrames_mt_safe();
+    if (defKeys.size() != keys.size()) {
+        return true;
+    }
+    KeyFrameSet::iterator itO = defKeys.begin();
+    for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it,++itO) {
+        if (*it != *itO) {
+            return true;
+        }
+    }
+    return false;
+}

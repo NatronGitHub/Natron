@@ -1387,6 +1387,12 @@ public:
     
     
     virtual void computeHasModifications() OVERRIDE FINAL;
+    
+protected:
+    
+    virtual bool hasModificationsVirtual(int /*dimension*/) const { return false; }
+    
+public:
 
     /**
      * @brief Get the current value of the knob for the given dimension.
