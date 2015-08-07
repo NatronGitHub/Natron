@@ -27,7 +27,9 @@ Functions
 *    def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ()
 *    def :meth:`set<NatronEngine.ChoiceParam.set>` (x)
 *    def :meth:`set<NatronEngine.ChoiceParam.set>` (x, frame)
+*    def :meth:`set<NatronEngine.ChoiceParam.set>` (label)
 *    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (value)
+*    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (label)
 *    def :meth:`setOptions<NatronEngine.ChoiceParam.setOptions>` (options)
 *    def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value)
 *    def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time)
@@ -167,6 +169,13 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
+.. method:: NatronEngine.ChoiceParam.set(label)
+
+
+    :param label: :class:`str<NatronEngine.std::string>`
+	
+Set the value of this parameter given a *label*. The *label* must match an existing option.
+Strings will be compared without case sensitivity. If not found, nothing happens.
 
 
 .. method:: NatronEngine.ChoiceParam.setDefaultValue(value)
@@ -177,6 +186,14 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 Set the default *value* for this parameter.
 
+.. method:: NatronEngine.ChoiceParam.setDefaultValue(label)
+
+
+    :param label: :class:`str<Natron.std::string>`
+
+
+Set the default value from the *label* for this parameter. The *label* must match an existing option.
+Strings will be compared without case sensitivity. If not found, nothing happens.
 
 
 

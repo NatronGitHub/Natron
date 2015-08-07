@@ -1556,7 +1556,7 @@ public:
     T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Set a default value for the particular dimension.
+     * @brief Set a default value and set the knob value to it for the particular dimension.
      **/
     void setDefaultValue(const T & v,int dimension = 0);
     void setDefaultValueWithoutApplying(const T& v,int dimension = 0);

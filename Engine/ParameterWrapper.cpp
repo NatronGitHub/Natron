@@ -1033,6 +1033,12 @@ ChoiceParam::set(int x, int frame)
     _choiceKnob.lock()->setValueAtTime(frame, x, 0);
 }
 
+void
+ChoiceParam::set(const std::string& label)
+{
+    (void)_choiceKnob.lock()->setValueFromLabel(label, 0);
+}
+
 int
 ChoiceParam::getValue() const
 {
@@ -1061,6 +1067,12 @@ void
 ChoiceParam::setDefaultValue(int value)
 {
     _choiceKnob.lock()->setDefaultValue(value,0);
+}
+
+void
+ChoiceParam::setDefaultValue(const std::string& value)
+{
+    _choiceKnob.lock()->setDefaultValueFromLabel(value);
 }
 
 int

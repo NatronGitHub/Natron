@@ -752,7 +752,7 @@ static bool caseInsensitiveCompare(const std::string& a,const std::string& b)
     return true;
 }
 
-Knob<int>::ValueChangedReturnCodeEnum
+KnobHelper::ValueChangedReturnCodeEnum
 Choice_Knob::setValueFromLabel(const std::string & value,
                                int dimension,
                                bool turnOffAutoKeying)
@@ -762,7 +762,8 @@ Choice_Knob::setValueFromLabel(const std::string & value,
             return setValue(i, dimension, turnOffAutoKeying);
         }
     }
-    throw std::runtime_error(std::string("Choice_Knob::setValueFromLabel: unknown label ") + value);
+    return KnobHelper::eValueChangedReturnCodeNothingChanged;
+    //throw std::runtime_error(std::string("Choice_Knob::setValueFromLabel: unknown label ") + value);
 }
 
 void
@@ -774,7 +775,7 @@ Choice_Knob::setDefaultValueFromLabel(const std::string & value,
             return setDefaultValue(i, dimension);
         }
     }
-    throw std::runtime_error(std::string("Choice_Knob::setDefaultValueFromLabel: unknown label ") + value);
+    //throw std::runtime_error(std::string("Choice_Knob::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 void

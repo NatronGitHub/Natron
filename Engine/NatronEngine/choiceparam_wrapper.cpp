@@ -461,15 +461,19 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: set(int)
-    // 1: set(int,int)
+    // 0: set(std::string)
+    // 1: set(int)
+    // 2: set(int,int)
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // set(int)
+            overloadId = 1; // set(int)
         } else if (numArgs == 2
             && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 1; // set(int,int)
+            overloadId = 2; // set(int,int)
         }
+    } else if (numArgs == 1
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
+        overloadId = 0; // set(std::string)
     }
 
     // Function signature not found.
@@ -477,7 +481,18 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(int x)
+        case 0: // set(const std::string & label)
+        {
+            ::std::string cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // set(std::string)
+                cppSelf->set(cppArg0);
+            }
+            break;
+        }
+        case 1: // set(int x)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -488,7 +503,7 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(int x, int frame)
+        case 2: // set(int x, int frame)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -509,7 +524,7 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_set_TypeError:
-        const char* overloads[] = {"int", "int, int", 0};
+        const char* overloads[] = {"std::string", "int", "int, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.set", overloads);
         return 0;
 }
@@ -526,22 +541,40 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* p
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setDefaultValue(int)
+    // 0: setDefaultValue(std::string)
+    // 1: setDefaultValue(int)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // setDefaultValue(int)
+        overloadId = 1; // setDefaultValue(int)
+    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setDefaultValue(std::string)
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_ChoiceParamFunc_setDefaultValue_TypeError;
 
     // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+    switch (overloadId) {
+        case 0: // setDefaultValue(const std::string & value)
+        {
+            ::std::string cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
 
-        if (!PyErr_Occurred()) {
-            // setDefaultValue(int)
-            cppSelf->setDefaultValue(cppArg0);
+            if (!PyErr_Occurred()) {
+                // setDefaultValue(std::string)
+                cppSelf->setDefaultValue(cppArg0);
+            }
+            break;
+        }
+        case 1: // setDefaultValue(int value)
+        {
+            int cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // setDefaultValue(int)
+                cppSelf->setDefaultValue(cppArg0);
+            }
+            break;
         }
     }
 
@@ -551,7 +584,7 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* p
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setDefaultValue_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"std::string", "int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setDefaultValue", overloads);
         return 0;
 }

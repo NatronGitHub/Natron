@@ -696,6 +696,12 @@ public:
     void set(int x);
     void set(int x, int frame);
     
+    /*
+     * @brief Set the value from label if it exists. 
+     * The label will be compared without case sensitivity to existing entries. If it's not found, nothing is done.
+     */
+    void set(const std::string& label);
+    
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
@@ -724,6 +730,11 @@ public:
      * @brief Set the default value for the given dimension
      **/
     void setDefaultValue(int value);
+    
+    /**
+     * @brief Set the default value from an existing entry. If it does not match (without case sensitivity) an existing entry, nothing is done.
+     **/
+    void setDefaultValue(const std::string& value);
     
     /**
      * @brief Return the default value for the given dimension
