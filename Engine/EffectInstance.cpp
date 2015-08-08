@@ -3814,7 +3814,11 @@ EffectInstance::renderInputImagesForRoI(double time,
             
             ///Convert to pixel coords the RoI
             if ( foundInputRoI->second.isInfinite() ) {
-                throw std::runtime_error(std::string("Plugin ") + this->getPluginLabel() + " asked for an infinite region of interest!");
+                std::stringstream ss;
+                ss << getNode()->getScriptName_mt_safe();
+                ss << tr(" asked for an infinite region of interest upstream").toStdString();
+                setPersistentMessage(Natron::eMessageTypeError, ss.str());
+                return eRenderRoIRetCodeFailed;
             }
             
             const double inputPar = inputEffect->getPreferredAspectRatio();
