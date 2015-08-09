@@ -631,6 +631,8 @@ public:
      **/
     void renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum forward);
     
+    void renderFromCurrentFrameUsingCurrentDirection();
+    
     /**
      * @brief Basically it just renders with the current frame on the timeline.
      * @param abortPrevious If true then it will stop any ongoing render and render the current frame
@@ -691,9 +693,9 @@ public Q_SLOTS:
     
     
     /**
-     * @brief Aborts the internal scheduler
+     * @brief Aborts the internal scheduler and returns true if it was working.
      **/
-    void abortRendering(bool blocking);
+    bool abortRendering(bool blocking);
     void abortRendering_Blocking() { abortRendering(true); }
 
     

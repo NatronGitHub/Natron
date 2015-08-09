@@ -2578,6 +2578,19 @@ RenderEngine::renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum 
 }
 
 void
+RenderEngine::renderFromCurrentFrameUsingCurrentDirection()
+{
+    {
+        QMutexLocker k(&_imp->schedulerCreationLock);
+        if (!_imp->scheduler) {
+            _imp->scheduler = createScheduler(_imp->output);
+        }
+    }
+    
+    _imp->scheduler->renderFromCurrentFrame( _imp->scheduler->getDirectionRequestedToRender());
+}
+
+void
 RenderEngine::renderCurrentFrame(bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -2674,12 +2687,14 @@ RenderEngine::isDoingSequentialRender() const
     return _imp->scheduler ? _imp->scheduler->isWorking() : false;
 }
 
-void
+bool
 RenderEngine::abortRendering(bool blocking)
 {
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
         _imp->scheduler->abortRendering(blocking);
+        return true;
     }
+    return false;
 }
 
 void

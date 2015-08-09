@@ -286,6 +286,7 @@ struct NodeGraphPrivate
     bool _hasMovedOnce;
     
     ViewerTab* lastSelectedViewer;
+    bool wasLaskUserSeekDuringPlayback;
     
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p,
@@ -333,6 +334,7 @@ struct NodeGraphPrivate
     , _deltaSinceMousePress(0,0)
     , _hasMovedOnce(false)
     , lastSelectedViewer(0)
+    , wasLaskUserSeekDuringPlayback(false)
     {
     }
 
@@ -501,8 +503,9 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_menu = new Natron::Menu(this);
     //_imp->_menu->setFont( QFont(appFont,appFontSize) );
 
-    QObject::connect( _imp->_gui->getApp()->getTimeLine().get(),SIGNAL( frameChanged(SequenceTime,int) ),
-                      this,SLOT( onTimeChanged(SequenceTime,int) ) );
+    boost::shared_ptr<TimeLine> timeline = _imp->_gui->getApp()->getTimeLine();
+    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(),SIGNAL( frameAboutToChange() ), this,SLOT( onTimelineTimeAboutToChange() ) );
 }
 
 NodeGraph::~NodeGraph()
@@ -4241,11 +4244,23 @@ NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
     }
 }
 
+void
+NodeGraph::onTimelineTimeAboutToChange()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->wasLaskUserSeekDuringPlayback = false;
+    const std::list<ViewerTab*>& viewers = _imp->_gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
+        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true);
+    }
+}
 
 void
 NodeGraph::onTimeChanged(SequenceTime time,
                          int reason)
 {
+    assert(QThread::currentThread() == qApp->thread());
     std::vector<ViewerInstance* > viewers;
 
     if (!_imp->_gui) {
@@ -4264,10 +4279,20 @@ NodeGraph::onTimeChanged(SequenceTime time,
     
     ViewerInstance* leadViewer = getGui()->getApp()->getLastViewerUsingTimeline();
 
+    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
+    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
+    reason == eTimelineChangeReasonCurveEditorSeek;
+    
+    bool startPlayback = isUserEdited && _imp->wasLaskUserSeekDuringPlayback;
+    
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != leadViewer) || (reason == eTimelineChangeReasonUserSeek) ) {
-            viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+        if (!startPlayback) {
+            if (viewers[i] != leadViewer || isUserEdited) {
+                viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+            }
+        } else {
+            viewers[i]->renderFromCurrentFrameUsingCurrentDirection();
         }
     }
 }

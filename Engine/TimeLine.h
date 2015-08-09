@@ -103,6 +103,8 @@ public Q_SLOTS:
     void goToNextKeyframe();
 
 Q_SIGNALS:
+    
+    void frameAboutToChange();
 
     //reason being a Natron::TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);

@@ -6968,6 +6968,12 @@ OutputEffectInstance::renderCurrentFrame(bool canAbort)
     _engine->renderCurrentFrame(canAbort);
 }
 
+void
+OutputEffectInstance::renderFromCurrentFrameUsingCurrentDirection()
+{
+    _engine->renderFromCurrentFrameUsingCurrentDirection();
+}
+
 bool
 OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 {

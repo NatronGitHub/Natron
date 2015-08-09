@@ -213,6 +213,8 @@ public Q_SLOTS:
     
     void toggleAutoHideInputs(bool setSettings = true);
     
+    void onTimelineTimeAboutToChange();
+    
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     

@@ -1894,6 +1894,8 @@ public:
     void notifyRenderFinished();
 
     void renderCurrentFrame(bool canAbort);
+    
+    void renderFromCurrentFrameUsingCurrentDirection();
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
