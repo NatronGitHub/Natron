@@ -1883,9 +1883,21 @@ ViewerTab::drawOverlays(double scaleX,
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
+        
+        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+        if (!nodeUi) {
+            continue;
+        }
+        bool overlayDeemed = false;
         if (ok) {
+            if (time != transformedTime) {
+                //when retimed, modify the overlay color so it looks deemed to indicate that the user
+                //cannot modify it
+                overlayDeemed = true;
+            }
             time = transformedTime;
         }
+        nodeUi->setOverlayLocked(overlayDeemed);
         
         Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
         ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
@@ -1950,9 +1962,17 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
+        
+        /*
+         * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected 
+         * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+         * that interact is not editable when it is retimed.
+         */
+        if (time != transformedTime) {
+            return false;
+        }
         time = transformedTime;
     }
-    
     
     Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
     ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
@@ -2169,6 +2189,14 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
+        /*
+         * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
+         * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+         * that interact is not editable when it is retimed.
+         */
+        if (time != transformedTime) {
+            return false;
+        }
         time = transformedTime;
     }
     
@@ -2320,6 +2348,14 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
+            /*
+             * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
+             * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+             * that interact is not editable when it is retimed.
+             */
+            if (time != transformedTime) {
+                return false;
+            }
             time = transformedTime;
         }
         
@@ -2399,6 +2435,14 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
     if (ok) {
+        /*
+         * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
+         * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+         * that interact is not editable when it is retimed.
+         */
+        if (time != transformedTime) {
+            return false;
+        }
         time = transformedTime;
     }
 #endif
@@ -2512,6 +2556,14 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, 0, *it, getInternalNode(), &transformedTime);
         if (ok) {
+            /*
+             * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
+             * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+             * that interact is not editable when it is retimed.
+             */
+            if (time != transformedTime) {
+                return false;
+            }
             time = transformedTime;
         }
 #endif
@@ -2553,6 +2605,14 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
     if (ok) {
+        /*
+         * Do not allow interaction with retimed interacts otherwise the user may end up modifying keyframes at unexpected
+         * (or invalid for floating point) frames, which may be confusing. Rather we indicate with the overlay color hint
+         * that interact is not editable when it is retimed.
+         */
+        if (time != transformedTime) {
+            return false;
+        }
         time = transformedTime;
     }
 #endif

@@ -336,6 +336,8 @@ public:
      **/
     void setVisibleDetails(bool visible);
     
+    void setOverlayLocked(bool locked);
+    
     virtual void refreshStateIndicator();
     
     virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
@@ -629,6 +631,7 @@ private:
     boost::shared_ptr<DefaultOverlay> _defaultOverlay;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
 
+    bool _overlayLocked;
 };
 
 
