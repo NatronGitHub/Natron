@@ -1557,22 +1557,29 @@ Project::escapeXML(const std::string &istr)
                 str.replace(i, 1, "&apos;");
                 i += 5;
                 break;
-
-                // control chars we allow:
-            case '\n':
-            case '\r':
-            case '\t':
-                break;
-
             default: {
+                // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
+                // XML, because they would be converted to space when re-read.
+                // See http://www.w3.org/TR/xml/#AVNormalize
                 unsigned char c = (unsigned char)(str[i]);
                 if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
-                    char escaped[7];
-                    // these characters must be escaped in XML 1.1
-                    snprintf(escaped, sizeof(escaped), "&#x%02X;", (unsigned int)c);
-                    str.replace(i, 1, escaped);
-                    i += 5;
-
+                    // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
+                    // XML, because they would be converted to space when re-read.
+                    // See http://www.w3.org/TR/xml/#AVNormalize
+                    if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
+                        // these characters must be escaped in XML 1.1
+                        // http://www.w3.org/TR/xml/#sec-references
+                        std::string ns = "&#x";
+                        if (c > 0xf) {
+                            int d = c / 0x10;
+                            ns += d < 10 ? ('0' + d) : ('A' + d - 10);
+                        }
+                        int d = c & 0xf;
+                        ns += d < 10 ? ('0' + d) : ('A' + d - 10);
+                        ns += ';';
+                        str.replace(i, 1, ns);
+                        i += ns.size() + 1;
+                    }
                 }
             }   break;
         }
@@ -1587,39 +1594,38 @@ Project::unescapeXML(const std::string &istr)
     std::string str = istr;
     i = str.find_first_of("&");
     while (i != std::string::npos) {
-        if (str[i] == '&') {
-            if (!str.compare(i + 1, 3, "lt;")) {
-                str.replace(i, 4, 1, '<');
-            } else if (!str.compare(i + 1, 3, "gt;")) {
-                str.replace(i, 4, 1, '>');
-            } else if (!str.compare(i + 1, 4, "amp;")) {
-                str.replace(i, 5, 1, '&');
-            } else if (!str.compare(i + 1, 5, "apos;")) {
-                str.replace(i, 6, 1, '\'');
-            } else if (!str.compare(i + 1, 5, "quot;")) {
-                str.replace(i, 6, 1, '"');
-            } else if (!str.compare(i + 1, 1, "#")) {
-                size_t end = str.find_first_of(";", i + 2);
-                if (end == std::string::npos) {
-                    // malformed XML
-                    return str;
-                }
-                char *tail = NULL;
-                int errno_save = errno;
-                bool hex = str[i+2] == 'x' || str[i+2] == 'X';
-                char *head = &str[i+ (hex ? 3 : 2)];
-
-                errno = 0;
-                unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-
-                bool fail = errno || (tail - &str[0])!= (long)end || cp > 0xff; // only handle 0x01-0xff
-                errno = errno_save;
-                if (fail) {
-                    return str;
-                }
-                // replace from '&' to ';' (thus the +1)
-                str.replace(i, tail - head + 1, 1, (char)cp);
+        assert(str[i] == '&');
+        if (!str.compare(i + 1, 3, "lt;")) {
+            str.replace(i, 4, 1, '<');
+        } else if (!str.compare(i + 1, 3, "gt;")) {
+            str.replace(i, 4, 1, '>');
+        } else if (!str.compare(i + 1, 4, "amp;")) {
+            str.replace(i, 5, 1, '&');
+        } else if (!str.compare(i + 1, 5, "apos;")) {
+            str.replace(i, 6, 1, '\'');
+        } else if (!str.compare(i + 1, 5, "quot;")) {
+            str.replace(i, 6, 1, '"');
+        } else if (!str.compare(i + 1, 1, "#")) {
+            size_t end = str.find_first_of(";", i + 2);
+            if (end == std::string::npos) {
+                // malformed XML
+                return str;
             }
+            char *tail = NULL;
+            int errno_save = errno;
+            bool hex = str[i+2] == 'x' || str[i+2] == 'X';
+            char *head = &str[i+ (hex ? 3 : 2)];
+
+            errno = 0;
+            unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
+
+            bool fail = errno || (tail - &str[0])!= (long)end || cp > 0xff; // only handle 0x01-0xff
+            errno = errno_save;
+            if (fail) {
+                return str;
+            }
+            // replace from '&' to ';' (thus the +1)
+            str.replace(i, tail - head + 1, 1, (char)cp);
         }
         i = str.find_first_of("&", i + 1);
     }
