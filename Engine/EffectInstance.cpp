@@ -7188,8 +7188,8 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent, double *averag
     for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it!= _timeSpentPerFrameRendered.end(); ++it) {
         *totalTimeSpent += *it;
     }
-    assert(_timeSpentPerFrameRendered.size() != 0);
-    *averageTimePerFrame = *totalTimeSpent / _timeSpentPerFrameRendered.size();
+    size_t c = _timeSpentPerFrameRendered.size();
+    *averageTimePerFrame = (c == 0 ? 0 : *totalTimeSpent / c);
 }
 
 void

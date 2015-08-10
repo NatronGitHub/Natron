@@ -1835,9 +1835,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 newNodesCenter.ry() += newNodePos.y();
                 
             }
-            if (!nodesToMove.empty()) {
-                newNodesCenter.rx() /= nodesToMove.size();
-                newNodesCenter.ry() /= nodesToMove.size();
+            size_t c = nodesToMove.size();
+            if (c) {
+                newNodesCenter.rx() /= c;
+                newNodesCenter.ry() /= c;
             }
             
             scrollViewIfNeeded(newNodesCenter);

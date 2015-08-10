@@ -8858,7 +8858,8 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
 
     double opacity = stroke->getOpacity(time);
 
-    if (isStroke || (isBezier && isBezier->isOpenBezier())) {
+    assert(isStroke || isBezier);
+    if (isStroke || !isBezier || (isBezier && isBezier->isOpenBezier())) {
         std::vector<cairo_pattern_t*> dotPatterns(ROTO_PRESSURE_LEVELS);
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;

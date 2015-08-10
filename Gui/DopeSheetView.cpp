@@ -1230,8 +1230,9 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 
                 // Fill the knob times map
                 if (boost::shared_ptr<DSKnob> rootDSKnob = model->mapNameItemToDSKnob(knobTreeItem->parent())) {
-                    bool knobTimeExists = (knobsKeytimes.find(rootDSKnob.get())->second.find(keyTime)
-                                           != knobsKeytimes.find(rootDSKnob.get())->second.end());
+                    assert(rootDSKnob && knobsKeytimes.find(rootDSKnob.get()) != knobsKeytimes.end());
+                    const std::map<double, bool>& map = knobsKeytimes.find(rootDSKnob.get())->second;
+                    bool knobTimeExists = (map.find(keyTime) != map.end());
 
                     if (!knobTimeExists) {
                         knobsKeytimes[rootDSKnob.get()][keyTime] = kfSelected;
@@ -1871,11 +1872,20 @@ void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
 void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 {
     NodePtr node = group->getInternalNode();
+    assert(node);
+    if (!node) {
+        throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is NULL");
+    }
 
     FrameRange range;
     std::set<double> times;
 
-    NodeList nodes = dynamic_cast<NodeGroup *>(node->getLiveInstance())->getNodes();
+    NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(node->getLiveInstance());
+    assert(nodegroup);
+    if (!nodegroup) {
+        throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
+    }
+    NodeList nodes = nodegroup->getNodes();
 
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it);
@@ -2776,7 +2786,10 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
     if (KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender)) {
         KnobHolder *holder = knobHandler->getKnob()->getHolder();
         Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
-
+        assert(effectInstance);
+        if (!effectInstance) {
+            return;
+        }
         dsNode = _imp->model->findDSNode(effectInstance->getNode().get());
     }
 

@@ -3850,7 +3850,8 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
         
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (isStroke || (isBezier && isBezier->isOpenBezier())) {
+        assert(isStroke || isBezier);
+        if (isStroke || !isBezier || (isBezier && isBezier->isOpenBezier())) {
             continue;
         }
         

@@ -1562,24 +1562,22 @@ Project::escapeXML(const std::string &istr)
                 // XML, because they would be converted to space when re-read.
                 // See http://www.w3.org/TR/xml/#AVNormalize
                 unsigned char c = (unsigned char)(str[i]);
+                // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
+                // XML, because they would be converted to space when re-read.
+                // See http://www.w3.org/TR/xml/#AVNormalize
                 if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
-                    // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-                    // XML, because they would be converted to space when re-read.
-                    // See http://www.w3.org/TR/xml/#AVNormalize
-                    if ((0x01 <= c && c <= 0x1f) || (0x7F <= c && c <= 0x9F)) {
-                        // these characters must be escaped in XML 1.1
-                        // http://www.w3.org/TR/xml/#sec-references
-                        std::string ns = "&#x";
-                        if (c > 0xf) {
-                            int d = c / 0x10;
-                            ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                        }
-                        int d = c & 0xf;
+                    // these characters must be escaped in XML 1.1
+                    // http://www.w3.org/TR/xml/#sec-references
+                    std::string ns = "&#x";
+                    if (c > 0xf) {
+                        int d = c / 0x10;
                         ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                        ns += ';';
-                        str.replace(i, 1, ns);
-                        i += ns.size() + 1;
                     }
+                    int d = c & 0xf;
+                    ns += d < 10 ? ('0' + d) : ('A' + d - 10);
+                    ns += ';';
+                    str.replace(i, 1, ns);
+                    i += ns.size() + 1;
                 }
             }   break;
         }
