@@ -131,11 +131,7 @@ AddMultipleNodesCommand::undo()
 
     for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
-        node->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
-                                     true, //disconnect all nodes, disregarding the first parameter.
-                                     true, //reconnect outputs to inputs of this node?
-                                     true, //hide nodeGui?
-                                     false); // triggerRender
+        
         std::list<ViewerInstance* > viewers;
         node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -144,6 +140,11 @@ AddMultipleNodesCommand::undo()
                 viewersToRefresh.push_back(*it2);
             }
         }
+        node->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
+                                    true, //disconnect all nodes, disregarding the first parameter.
+                                    true, //reconnect outputs to inputs of this node?
+                                    true, //hide nodeGui?
+                                    false); // triggerRender
     }
     
     _graph->clearSelection();
