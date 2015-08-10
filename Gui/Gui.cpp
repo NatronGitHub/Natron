@@ -675,23 +675,13 @@ Gui::closeInstance()
 void
 Gui::closeProject()
 {
-    if ( getApp()->getProject()->hasNodes() ) {
-        int ret = saveWarning();
-        if (ret == 0) {
-            if ( !saveProject() ) {
-                return;
-            }
-        } else if (ret == 2) {
-            return;
-        }
-    }
+    closeInstance();
+
     ///When closing a project we can remove the ViewerCache from memory and put it on disk
     ///since we're not sure it will be used right away
     appPTR->clearPlaybackCache();
-    abortProject(false);
-
-    _imp->_appInstance->getProject()->createViewer();
-    _imp->_appInstance->execOnProjectCreatedCallback();
+    //_imp->_appInstance->getProject()->createViewer();
+    //_imp->_appInstance->execOnProjectCreatedCallback();
 }
 
 void
