@@ -176,3 +176,6 @@ fi
 pwd
 ls
 cat config.pri
+echo "GCC/G++ versions:"
+gcc --version
+g++ --version
