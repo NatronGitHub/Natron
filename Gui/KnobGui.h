@@ -171,7 +171,7 @@ public:
         if (knob) {
             ret = knob->setValue(v,dimension,reason,newKey);
         }
-        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged) {
+        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == Natron::eValueChangedReasonUserEdited) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
