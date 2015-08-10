@@ -153,6 +153,7 @@ Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node
 {
     const std::list<Natron::Node *> &outputs = node->getOutputs();
 
+#pragma message WARN("BUG: this look never does more that one iteration!!!!")
     for (std::list<Natron::Node *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         Natron::Node *output = (*it);
 
