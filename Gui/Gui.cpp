@@ -464,7 +464,7 @@ struct GuiPrivate
         , _lastFocusedGraph(0)
         , _groups()
         , _curveEditor(0)
-        , _dopesheetEditor(0)
+        , _dopeSheetEditor(0)
         , _toolBox(0)
         , _propertiesBin(0)
         , _propertiesScrollArea(0)

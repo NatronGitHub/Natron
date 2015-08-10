@@ -111,8 +111,8 @@ public:
     ~DopeSheetPrivate();
 
     /* functions */
-    Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node) const;
-    Natron::Node *getNearestReaderFromInputs_recursive(Natron::Node *node) const;
+    Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const;
+    Natron::Node *getNearestReaderFromInputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<boost::shared_ptr<DSNode> > *result) const;
 
     void pushUndoCommand(QUndoCommand *cmd);
@@ -149,11 +149,13 @@ DopeSheetPrivate::~DopeSheetPrivate()
     delete selectionModel;
 }
 
-Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node) const
+Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const
 {
     const std::list<Natron::Node *> &outputs = node->getOutputs();
-
-#pragma message WARN("BUG: this look never does more that one iteration!!!!")
+    if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
+        return 0;
+    }
+    markedNodes.push_back(node);
     for (std::list<Natron::Node *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         Natron::Node *output = (*it);
 
@@ -165,17 +167,23 @@ Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node
             return output;
         }
         else {
-            return getNearestTimeFromOutputs_recursive(output);
+            Natron::Node* ret =  getNearestTimeFromOutputs_recursive(output, markedNodes);
+            if (ret) {
+                return ret;
+            }
         }
     }
 
     return NULL;
 }
 
-Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Node *node) const
+Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > &inputs = node->getInputs_mt_safe();
-
+    const std::vector<boost::shared_ptr<Natron::Node> > inputs = node->getInputs_mt_safe();
+    if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
+        return 0;
+    }
+    markedNodes.push_back(node);
     for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = (*it);
 
@@ -191,7 +199,10 @@ Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Nod
             return input.get();
         }
         else {
-            return getNearestReaderFromInputs_recursive(input.get());
+            Natron::Node* ret = getNearestReaderFromInputs_recursive(input.get(), markedNodes);
+            if (ret) {
+                return ret;
+            }
         }
     }
 
@@ -492,7 +503,8 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
  */
 boost::shared_ptr<DSNode> DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
 {
-    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getInternalNode().get());
+    std::list<Natron::Node*> markedNodes;
+    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getInternalNode().get(),markedNodes);
 
     return findDSNode(timeNode);
 }
@@ -500,8 +512,8 @@ boost::shared_ptr<DSNode> DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNod
 Natron::Node *DopeSheet::getNearestReader(DSNode *timeNode) const
 {
     assert(timeNode->isTimeNode());
-
-    Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getInternalNode().get());
+    std::list<Natron::Node*> markedNodes;
+    Natron::Node *nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getInternalNode().get(),markedNodes);
 
     return nearestReader;
 }
