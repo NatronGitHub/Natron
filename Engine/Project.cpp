@@ -1403,7 +1403,8 @@ Project::reset(bool aboutToQuit)
             }
         }
     }
-    
+    clearNodes(true);
+
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
@@ -1417,7 +1418,6 @@ Project::reset(bool aboutToQuit)
     _imp->timeline->removeAllKeyframesIndicators();
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
-    clearNodes(true);
     
     if (!aboutToQuit) {
         const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
