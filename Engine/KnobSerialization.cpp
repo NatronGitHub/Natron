@@ -28,21 +28,24 @@
 #include "Engine/KnobTypes.h"
 
 
-ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
+                                       const boost::shared_ptr<KnobI> & knob,
                                        int dimension)
-    : _knob(knob)
-    , _dimension(dimension)
-    , _master()
-    , _expression()
-    , _exprHasRetVar(false)
+: _serialization(serialization)
+, _knob(knob)
+, _dimension(dimension)
+, _master()
+, _expression()
+, _exprHasRetVar(false)
 {
 }
 
 ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
-                   int dimension,
-                   bool exprHasRetVar,
-                   const std::string& expr)
-: _knob(knob)
+                                       int dimension,
+                                       bool exprHasRetVar,
+                                       const std::string& expr)
+: _serialization(0)
+, _knob(knob)
 , _dimension(dimension)
 , _master()
 , _expression(expr)
@@ -60,6 +63,13 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
     } else {
         _master.masterDimension = -1;
     }
+}
+
+void
+ValueSerialization::setChoiceExtraLabel(const std::string& label)
+{
+    assert(_serialization);
+    _serialization->setChoiceExtraString(label);
 }
 
 boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeName,
@@ -161,4 +171,13 @@ KnobSerialization::restoreExpressions(const boost::shared_ptr<KnobI> & knob)
         appPTR->writeToOfxLog_mt_safe(err);
     }
     
+}
+
+void
+KnobSerialization::setChoiceExtraString(const std::string& label)
+{
+    assert(_extraData);
+    ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
+    assert(cData);
+    cData->_choiceString = label;
 }

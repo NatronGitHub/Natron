@@ -794,7 +794,6 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
     }
     
     int serializedIndex = knob->getValue();
-    
     if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex] == data->_choiceString) ) {
         // we're lucky, entry hasn't changed
         setValue(serializedIndex, 0);

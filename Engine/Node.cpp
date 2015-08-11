@@ -1204,9 +1204,10 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
 {
     
     ///try to find a serialized value for this knob
+    bool found = false;
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
-            
+            found = true;
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
             //if ( knob->getIsPersistant() ) {
@@ -1241,6 +1242,35 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
             
             //}
             break;
+        }
+    }
+    if (!found) {
+        ///Hack for old RGBA checkboxes which have a different name now
+        bool isR = knob->getName() == "r";
+        bool isG = knob->getName() == "g";
+        bool isB = knob->getName() == "b";
+        bool isA = knob->getName() == "a";
+        if (isR || isG || isB || isA) {
+            for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+                if ((isR && (*it)->getName() == kNatronOfxParamProcessR) ||
+                    (isG && (*it)->getName() == kNatronOfxParamProcessG) ||
+                    (isB && (*it)->getName() == kNatronOfxParamProcessB) ||
+                    (isA && (*it)->getName() == kNatronOfxParamProcessA)) {
+                    boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+                    if (updateKnobGui) {
+                        knob->cloneAndUpdateGui(serializedKnob.get());
+                    } else {
+                        knob->clone(serializedKnob);
+                    }
+                    knob->setSecret( serializedKnob->getIsSecret() );
+                    if ( knob->getDimension() == serializedKnob->getDimension() ) {
+                        for (int i = 0; i < knob->getDimension(); ++i) {
+                            knob->setEnabled( i, serializedKnob->isEnabled(i) );
+                        }
+                    }
+
+                }
+            }
         }
     }
 }

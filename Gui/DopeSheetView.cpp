@@ -1230,8 +1230,8 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 
                 // Fill the knob times map
                 if (boost::shared_ptr<DSKnob> rootDSKnob = model->mapNameItemToDSKnob(knobTreeItem->parent())) {
-                    assert(rootDSKnob && knobsKeytimes.find(rootDSKnob.get()) != knobsKeytimes.end());
-                    const std::map<double, bool>& map = knobsKeytimes.find(rootDSKnob.get())->second;
+                    assert(rootDSKnob);
+                    const std::map<double, bool>& map = knobsKeytimes[rootDSKnob.get()];
                     bool knobTimeExists = (map.find(keyTime) != map.end());
 
                     if (!knobTimeExists) {

@@ -152,8 +152,10 @@ public:
     double dmax;
 };
 
+class KnobSerializationBase;
 struct ValueSerialization
 {
+    KnobSerializationBase* _serialization;
     boost::shared_ptr<KnobI> _knob;
     int _dimension;
     MasterSerialization _master;
@@ -161,7 +163,8 @@ struct ValueSerialization
     bool _exprHasRetVar;
     
     ///Load
-    ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+    ValueSerialization(KnobSerializationBase* serialization,
+                       const boost::shared_ptr<KnobI> & knob,
                        int dimension);
     
     ///Save
@@ -170,6 +173,8 @@ struct ValueSerialization
                        bool exprHasRetVar,
                        const std::string& expr);
 
+    void setChoiceExtraLabel(const std::string& label);
+    
     
     template<class Archive>
     void save(Archive & ar,
@@ -293,6 +298,7 @@ struct ValueSerialization
                 if (version < VALUE_SERIALIZATION_REMOVES_EXTRA_DATA) {
                     std::string label;
                     ar & boost::serialization::make_nvp("Label", label);
+                    setChoiceExtraLabel(label);
                 }
                 
             }
@@ -366,7 +372,7 @@ public:
     
     virtual boost::shared_ptr<KnobI> getKnob() const = 0;
     
-    
+    virtual void setChoiceExtraString(const std::string& /*label*/) {}
     
     
 };
@@ -392,6 +398,8 @@ class KnobSerialization : public KnobSerializationBase
     std::string _tooltip;
     bool _useHostOverlay;
 
+    
+    virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -537,7 +545,7 @@ class KnobSerialization : public KnobSerializationBase
         }
         
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob,i);
+            ValueSerialization vs(this,_knob,i);
             ar & boost::serialization::make_nvp("item",vs);
             _masters.push_back(vs._master);
             _expressions.push_back(std::make_pair(vs._expression,vs._exprHasRetVar));
@@ -581,9 +589,11 @@ class KnobSerialization : public KnobSerializationBase
             
             Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
             if (isChoice) {
-                ChoiceExtraData* cData = new ChoiceExtraData;
+                //ChoiceExtraData* cData = new ChoiceExtraData;
+                assert(_extraData);
+                ChoiceExtraData* cData = dynamic_cast<ChoiceExtraData*>(_extraData);
                 ar & boost::serialization::make_nvp("ChoiceLabel",cData->_choiceString);
-                _extraData = cData;
+                //_extraData = cData;
             }
             
             

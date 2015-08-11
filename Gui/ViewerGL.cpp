@@ -2525,7 +2525,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
 
 
-    if (!tiles.empty()) {
+    if (!tiles.empty() && tiles.front()) {
         const ImagePtr& firstTile = tiles.front();
         _imp->viewerTab->setImageFormat(textureIndex, firstTile->getComponents(), depth);
         RectI pixelRoD;
