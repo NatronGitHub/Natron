@@ -32,6 +32,7 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
+#include "Engine/Image.h"
 #include "Engine/TextureRect.h"
 
 #define GAMMA_LUT_NB_VALUES 1023
@@ -108,7 +109,7 @@ public:
     , alphaLayer()
     , alphaChannelName()
     , cachedFrame()
-    , image()
+    , tiles()
     , rod()
     , renderAge(0)
     , isSequential(false)
@@ -148,7 +149,7 @@ public:
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
-    boost::shared_ptr<Natron::Image> image;
+    std::list<boost::shared_ptr<Natron::Image> > tiles;
     RectD rod;
     U64 renderAge;
     bool isSequential;

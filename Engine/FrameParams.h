@@ -23,14 +23,14 @@ public:
 
     FrameParams()
         : NonKeyParams()
-        , _originalImage()
+        , _tiles()
         , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-        , _originalImage(other._originalImage)
+        , _tiles(other._tiles)
         , _rod(other._rod)
     {
     }
@@ -41,9 +41,12 @@ public:
                 int texH,
                 const boost::shared_ptr<Natron::Image>& originalImage)
         : NonKeyParams(1,bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
-        , _originalImage(originalImage)
+        , _tiles()
         , _rod(rod)
     {
+        if (originalImage) {
+            _tiles.push_back(originalImage);
+        }
     }
 
     virtual ~FrameParams()
@@ -63,19 +66,21 @@ public:
         return !(*this == other);
     }
     
-    boost::shared_ptr<Natron::Image> getOriginalImage() const
+    void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
     {
-        return _originalImage.lock();
+        for (std::list<boost::weak_ptr<Natron::Image> >::const_iterator it = _tiles.begin(); it != _tiles.end(); ++it) {
+            ret->push_back(it->lock());
+        }
     }
     
-    void setOriginalImage(const boost::shared_ptr<Natron::Image>& image)
+    void addOriginalTile(const boost::shared_ptr<Natron::Image>& image)
     {
-        _originalImage = image;
+        _tiles.push_back(image);
     }
     
 private:
 
-    boost::weak_ptr<Natron::Image> _originalImage;
+    std::list<boost::weak_ptr<Natron::Image> > _tiles;
     RectI _rod;
 };
 

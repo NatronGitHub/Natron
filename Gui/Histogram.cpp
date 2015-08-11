@@ -431,50 +431,77 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
     QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
     if (selectedInputAction) {
         textureIndex = selectedInputAction->data().toInt();
-    } 
+    }
+    
+    ViewerTab* viewer = 0;
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
-
         return boost::shared_ptr<Natron::Image>();
     } else if (index == 1) {
         //current viewer
-        ViewerTab* lastSelectedViewer = gui->getNodeGraph()->getLastSelectedViewer();
-        boost::shared_ptr<Natron::Image> ret;
-        if (lastSelectedViewer) {
-            ret = lastSelectedViewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,lastSelectedViewer->getInternalNode()->getMipMapLevelFromZoomFactor());
-        }
-        if (ret) {
-            if (!useImageRoD) {
-                if (lastSelectedViewer) {
-                    *imagePortion = lastSelectedViewer->getViewer()->getImageRectangleDisplayed(ret->getBounds(), ret->getPixelAspectRatio(), ret->getMipMapLevel());
-                }
-            } else {
-                *imagePortion = ret->getBounds();
-            }
-        }
-
-        return ret;
+        viewer = gui->getNodeGraph()->getLastSelectedViewer();
+        
     } else {
         boost::shared_ptr<Natron::Image> ret;
         const std::list<ViewerTab*> & viewerTabs = gui->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
-                ret = (*it)->getViewer()->getLastRenderedImage(textureIndex);
-                if (ret) {
-                    if (!useImageRoD) {
-                        *imagePortion = (*it)->getViewer()->getImageRectangleDisplayed(ret->getBounds(), ret->getPixelAspectRatio(), ret->getMipMapLevel());
-                    } else {
-                        *imagePortion = ret->getBounds();
-                    }
-                }
-
-                return ret;
+                viewer = *it;
+                break;
             }
         }
 
-        return ret;
     }
+    
+    std::list<boost::shared_ptr<Natron::Image> > tiles;
+    if (viewer) {
+        viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,viewer->getInternalNode()->getMipMapLevelFromZoomFactor(),&tiles);
+    }
+    
+    ///We must copy all tiles into an image of the whole size
+    boost::shared_ptr<Natron::Image> ret;
+    if (!tiles.empty()) {
+        const    boost::shared_ptr<Natron::Image>& firstTile = tiles.front();
+        RectI bounds;
+        unsigned int mipMapLevel = 0;
+        double par = 1.;
+        Natron::ImageBitDepthEnum depth = Natron::eImageBitDepthFloat;
+        Natron::ImageComponents comps;
+        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+            if (bounds.isNull()) {
+                bounds = (*it)->getBounds();
+                mipMapLevel = (*it)->getMipMapLevel();
+                par = (*it)->getPixelAspectRatio();
+                depth = (*it)->getBitDepth();
+                comps = (*it)->getComponents();
+            } else {
+                bounds.merge((*it)->getBounds());
+                assert(mipMapLevel == (*it)->getMipMapLevel());
+                assert(depth == (*it)->getBitDepth());
+                assert(comps == (*it)->getComponents());
+                assert(par == (*it)->getPixelAspectRatio());
+            }
+        }
+        if (bounds.isNull()) {
+            return ret;
+        }
+        
+        ret.reset(new Natron::Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
+        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+            ret->pasteFrom(**it, (*it)->getBounds(), false);
+        }
+        
+        if (!useImageRoD) {
+            if (viewer) {
+                *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds,par, mipMapLevel);
+            }
+        } else {
+            *imagePortion = ret->getBounds();
+        }
+    }
+    
+    return ret;
 } // getHistogramImage
 
 void

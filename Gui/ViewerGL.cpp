@@ -221,7 +221,7 @@ struct ViewerGL::Implementation
     , savedTexture(0)
     , prevBoundTexture(0)
     , lastRenderedImageMutex()
-    , lastRenderedImage()
+    , lastRenderedTiles()
     , memoryHeldByLastRenderedImages()
     , sizeH()
     , pointerTypeOnPress(Natron::ePenTypePen)
@@ -245,7 +245,7 @@ struct ViewerGL::Implementation
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
             displayingImageMipMapLevel[i] = 0;
-            lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
+            lastRenderedTiles[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
         //menu->setFont( QFont(appFont,appFontSize) );
@@ -343,7 +343,7 @@ struct ViewerGL::Implementation
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
 
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
-    std::vector<boost::shared_ptr<Natron::Image> > lastRenderedImage[2]; //<  last image passed to transferRAMBuffer
+    std::vector<ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
     
     QSize sizeH;
@@ -2416,7 +2416,7 @@ ViewerGL::initShaderGLSL()
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                     const boost::shared_ptr<Natron::Image>& image,
+                                     const std::list<boost::shared_ptr<Natron::Image> >& tiles,
                                      Natron::ImageBitDepthEnum depth,
                                      int time,
                                      const RectD& rod,
@@ -2525,23 +2525,27 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
 
 
-    if (image) {
-        _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), image->getBitDepth());
+    if (!tiles.empty()) {
+        const ImagePtr& firstTile = tiles.front();
+        _imp->viewerTab->setImageFormat(textureIndex, firstTile->getComponents(), depth);
         RectI pixelRoD;
-        image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
+        firstTile->getRoD().toPixelEnclosing(0, firstTile->getPixelAspectRatio(), &pixelRoD);
         {
             QMutexLocker k(&_imp->projectFormatMutex);
-            _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, image->getPixelAspectRatio()));
+            _imp->currentViewerInfo[textureIndex].setDisplayWindow(Format(_imp->projectFormat, firstTile->getPixelAspectRatio()));
         }
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
-            _imp->lastRenderedImage[textureIndex][mipMapLevel] = image;
+            _imp->lastRenderedTiles[textureIndex][mipMapLevel] = tiles;
         }
-        _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
+        _imp->memoryHeldByLastRenderedImages[textureIndex] = 0;
+        for (ImageList::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
+            _imp->memoryHeldByLastRenderedImages[textureIndex] += (*it)->size();
+        }
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
         Q_EMIT imageChanged(textureIndex,true);
     } else {
-        if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
+        if (_imp->lastRenderedTiles[textureIndex][mipMapLevel].empty()) {
             Q_EMIT imageChanged(textureIndex,false);
         } else {
             Q_EMIT imageChanged(textureIndex,true);
@@ -2559,8 +2563,8 @@ ViewerGL::clearLastRenderedImage()
     ViewerInstance* internalNode = getInternalNode();
 
     for (int i = 0; i < 2; ++i) {
-        for (U32 j = 0; j < _imp->lastRenderedImage[i].size(); ++j) {
-            _imp->lastRenderedImage[i][j].reset();
+        for (U32 j = 0; j < _imp->lastRenderedTiles[i].size(); ++j) {
+            _imp->lastRenderedTiles[i][j].clear();
         }
         if (_imp->memoryHeldByLastRenderedImages[i] > 0) {
             internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[i]);
@@ -4897,8 +4901,8 @@ ViewerGL::clearLastRenderedTexture()
         QMutexLocker l(&_imp->lastRenderedImageMutex);
         U64 toUnRegister = 0;
         for (int i = 0; i < 2; ++i) {
-            for (U32 j = 0; j < _imp->lastRenderedImage[i].size(); ++j) {
-                _imp->lastRenderedImage[i][j].reset();
+            for (U32 j = 0; j < _imp->lastRenderedTiles[i].size(); ++j) {
+                _imp->lastRenderedTiles[i][j].clear();
             }
             toUnRegister += _imp->memoryHeldByLastRenderedImages[i];
         }
@@ -4910,59 +4914,56 @@ ViewerGL::clearLastRenderedTexture()
 }
 
 
-boost::shared_ptr<Natron::Image>
-ViewerGL::getLastRenderedImage(int textureIndex) const
+void
+ViewerGL::getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Natron::Image> >* ret) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
     if ( !getInternalNode()->getNode()->isActivated() ) {
-        return boost::shared_ptr<Natron::Image>();
+        return;
     }
     QMutexLocker l(&_imp->lastRenderedImageMutex);
-    for (U32 i = 0; i < _imp->lastRenderedImage[textureIndex].size(); ++i) {
-        if (_imp->lastRenderedImage[textureIndex][i]) {
-            return _imp->lastRenderedImage[textureIndex][i];
+    for (U32 i = 0; i < _imp->lastRenderedTiles[textureIndex].size(); ++i) {
+        if (!_imp->lastRenderedTiles[textureIndex][i].empty()) {
+            *ret = _imp->lastRenderedTiles[textureIndex][i];
         }
     }
-    return boost::shared_ptr<Natron::Image>();
+
 }
 
-boost::shared_ptr<Natron::Image>
-ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const
+void
+ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Natron::Image> >* ret) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
     if ( !getInternalNode()->getNode()->isActivated() ) {
-        return boost::shared_ptr<Natron::Image>();
+        return ;
     }
     
     QMutexLocker l(&_imp->lastRenderedImageMutex);
-    assert(_imp->lastRenderedImage[textureIndex].size() > mipMapLevel);
+    assert(_imp->lastRenderedTiles[textureIndex].size() > mipMapLevel);
     
-    if (_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
-        return _imp->lastRenderedImage[textureIndex][mipMapLevel];
+    if (!_imp->lastRenderedTiles[textureIndex][mipMapLevel].empty()) {
+        *ret = _imp->lastRenderedTiles[textureIndex][mipMapLevel];
     }
     
     //Find an image at higher scale
     if (mipMapLevel > 0) {
         for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
-            if (_imp->lastRenderedImage[textureIndex][i]) {
-                return _imp->lastRenderedImage[textureIndex][i];
+            if (!_imp->lastRenderedTiles[textureIndex][i].empty()) {
+                *ret =  _imp->lastRenderedTiles[textureIndex][i];
             }
         }
     }
     
     //Find an image at lower scale
-    for (U32 i = mipMapLevel + 1; i < _imp->lastRenderedImage[textureIndex].size(); ++i) {
-        if (_imp->lastRenderedImage[textureIndex][i]) {
-            return _imp->lastRenderedImage[textureIndex][i];
+    for (U32 i = mipMapLevel + 1; i < _imp->lastRenderedTiles[textureIndex].size(); ++i) {
+        if (!_imp->lastRenderedTiles[textureIndex][i].empty()) {
+            *ret = _imp->lastRenderedTiles[textureIndex][i];
         }
     }
-    
-    return boost::shared_ptr<Natron::Image>();
-
 }
 
 #ifndef M_LN2
@@ -4992,7 +4993,7 @@ ViewerGL::getCurrentRenderScale() const
 template <typename PIX,int maxValue>
 static
 bool
-getColorAtInternal(Natron::Image* image,
+getColorAtInternal(const ImageList& tiles,
                    int x,
                    int y,             // in pixel coordinates
                    bool forceLinear,
@@ -5003,59 +5004,63 @@ getColorAtInternal(Natron::Image* image,
                    float* b,
                    float* a)
 {
-    Image::ReadAccess racc = image->getReadRights();
-    
-    const PIX* pix = (const PIX*)racc.pixelAt(x, y);
-    
-    if (!pix) {
-        return false;
+    for (ImageList::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+        if ((*it)->getBounds().contains(x,y)) {
+            Image::ReadAccess racc(it->get());
+            const PIX* pix = (const PIX*)racc.pixelAt(x, y);
+            
+            if (!pix) {
+                return false;
+            }
+            
+            int  nComps = (*it)->getComponents().getNumComponents();
+            if (nComps >= 4) {
+                *r = pix[0] / (float)maxValue;
+                *g = pix[1] / (float)maxValue;
+                *b = pix[2] / (float)maxValue;
+                *a = pix[3] / (float)maxValue;
+            } else if (nComps == 3) {
+                *r = pix[0] / (float)maxValue;
+                *g = pix[1] / (float)maxValue;
+                *b = pix[2] / (float)maxValue;
+                *a = 1.;
+            } else if (nComps == 2) {
+                *r = pix[0] / (float)maxValue;
+                *g = pix[1] / (float)maxValue;
+                *b = 1.;
+                *a = 1.;
+            } else {
+                *r = 0.;
+                *g = 0.;
+                *b = 0.;
+                *a = pix[0] / (float)maxValue;
+            }
+            
+            
+            ///convert to linear
+            if (srcColorSpace) {
+                *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
+                *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
+                *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
+            }
+            
+            if (!forceLinear && dstColorSpace) {
+                ///convert to dst color space
+                float from[3];
+                from[0] = *r;
+                from[1] = *g;
+                from[2] = *b;
+                float to[3];
+                dstColorSpace->to_float_planar(to, from, 3);
+                *r = to[0];
+                *g = to[1];
+                *b = to[2];
+            }
+            
+            return true;
+        }
     }
-    
-    int  nComps = image->getComponents().getNumComponents();
-    if (nComps >= 4) {
-        *r = pix[0] / (float)maxValue;
-        *g = pix[1] / (float)maxValue;
-        *b = pix[2] / (float)maxValue;
-        *a = pix[3] / (float)maxValue;
-    } else if (nComps == 3) {
-        *r = pix[0] / (float)maxValue;
-        *g = pix[1] / (float)maxValue;
-        *b = pix[2] / (float)maxValue;
-        *a = 1.;
-    } else if (nComps == 2) {
-        *r = pix[0] / (float)maxValue;
-        *g = pix[1] / (float)maxValue;
-        *b = 1.;
-        *a = 1.;
-    } else {
-        *r = 0.;
-        *g = 0.;
-        *b = 0.;
-        *a = pix[0] / (float)maxValue;
-    }
-    
-    
-    ///convert to linear
-    if (srcColorSpace) {
-        *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
-        *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
-        *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
-    }
-    
-    if (!forceLinear && dstColorSpace) {
-        ///convert to dst color space
-        float from[3];
-        from[0] = *r;
-        from[1] = *g;
-        from[2] = *b;
-        float to[3];
-        dstColorSpace->to_float_planar(to, from, 3);
-        *r = to[0];
-        *g = to[1];
-        *b = to[2];
-    }
-    
-    return true;
+    return false;
 } // getColorAtInternal
 
 bool
@@ -5074,11 +5079,13 @@ ViewerGL::getColorAt(double x,
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
     
+    
     unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    boost::shared_ptr<Image> img = getLastRenderedImageByMipMapLevel(textureIndex,mipMapLevel);
+    ImageList tiles;
+    getLastRenderedImageByMipMapLevel(textureIndex,mipMapLevel,&tiles);
 
     
-    if (!img) {
+    if (tiles.empty()) {
         return false;
         ///Don't do this as this is 8bit data
         /*double colorGPU[4];
@@ -5098,7 +5105,9 @@ ViewerGL::getColorAt(double x,
         return true;*/
     }
     
-    Natron::ImageBitDepthEnum depth = img->getBitDepth();
+    const ImagePtr& firstTile = tiles.front();
+    
+    Natron::ImageBitDepthEnum depth = firstTile->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
@@ -5108,7 +5117,7 @@ ViewerGL::getColorAt(double x,
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        if (img->getComponents().isColorPlane()) {
+        if (firstTile->getComponents().isColorPlane()) {
             srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
             dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
         } else {
@@ -5116,9 +5125,9 @@ ViewerGL::getColorAt(double x,
         }
     }
     
-    const double par = img->getPixelAspectRatio();
+    const double par = firstTile->getPixelAspectRatio();
     
-    double scale = 1. / (1 << img->getMipMapLevel());
+    double scale = 1. / (1 << firstTile->getMipMapLevel());
     
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale / par);
@@ -5126,7 +5135,7 @@ ViewerGL::getColorAt(double x,
     bool gotval;
     switch (depth) {
         case eImageBitDepthByte:
-            gotval = getColorAtInternal<unsigned char, 255>(img.get(),
+            gotval = getColorAtInternal<unsigned char, 255>(tiles,
                                                             xPixel, yPixel,
                                                             forceLinear,
                                                             srcColorSpace,
@@ -5134,7 +5143,7 @@ ViewerGL::getColorAt(double x,
                                                             r, g, b, a);
             break;
         case eImageBitDepthShort:
-            gotval = getColorAtInternal<unsigned short, 65535>(img.get(),
+            gotval = getColorAtInternal<unsigned short, 65535>(tiles,
                                                                xPixel, yPixel,
                                                                forceLinear,
                                                                srcColorSpace,
@@ -5142,7 +5151,7 @@ ViewerGL::getColorAt(double x,
                                                                r, g, b, a);
             break;
         case eImageBitDepthFloat:
-            gotval = getColorAtInternal<float, 1>(img.get(),
+            gotval = getColorAtInternal<float, 1>(tiles,
                                                   xPixel, yPixel,
                                                   forceLinear,
                                                   srcColorSpace,
@@ -5153,7 +5162,7 @@ ViewerGL::getColorAt(double x,
             gotval = false;
             break;
     }
-    *imgMmlevel = img->getMipMapLevel();
+    *imgMmlevel = firstTile->getMipMapLevel();
     return gotval;
 } // getColorAt
 
@@ -5174,10 +5183,12 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     
     unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
 
-    boost::shared_ptr<Image> img = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
+    ImageList tiles;
+    getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel, &tiles);
   
-    if (img) {
-        mipMapLevel = img->getMipMapLevel();
+    if (!tiles.empty()) {
+        mipMapLevel = tiles.front()->getMipMapLevel();
+        *imgMm = mipMapLevel;
     }
     
     ///Convert to pixel coords
@@ -5192,7 +5203,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double gSum = 0.;
     double bSum = 0.;
     double aSum = 0.;
-    if ( !img ) {
+    if ( tiles.empty() ) {
         return false;
         //don't do this as this is 8 bit
         /*
@@ -5279,7 +5290,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     }
     
     
-    Natron::ImageBitDepthEnum depth = img->getBitDepth();
+    Natron::ImageBitDepthEnum depth = tiles.front()->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
@@ -5299,7 +5310,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             bool gotval = false;
             switch (depth) {
                 case eImageBitDepthByte:
-                    gotval = getColorAtInternal<unsigned char, 255>(img.get(),
+                    gotval = getColorAtInternal<unsigned char, 255>(tiles,
                                                                     xPixel, yPixel,
                                                                     forceLinear,
                                                                     srcColorSpace,
@@ -5307,7 +5318,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                                                                     &rPix, &gPix, &bPix, &aPix);
                     break;
                 case eImageBitDepthShort:
-                    gotval = getColorAtInternal<unsigned short, 65535>(img.get(),
+                    gotval = getColorAtInternal<unsigned short, 65535>(tiles,
                                                                        xPixel, yPixel,
                                                                        forceLinear,
                                                                        srcColorSpace,
@@ -5315,7 +5326,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                                                                        &rPix, &gPix, &bPix, &aPix);
                     break;
                 case eImageBitDepthFloat:
-                    gotval = getColorAtInternal<float, 1>(img.get(),
+                    gotval = getColorAtInternal<float, 1>(tiles,
                                                           xPixel, yPixel,
                                                           forceLinear,
                                                           srcColorSpace,
@@ -5334,8 +5345,6 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             }
         }
     }
-    
-    *imgMm = img->getMipMapLevel();
     
     if (area > 0) {
         *r = rSum / area;

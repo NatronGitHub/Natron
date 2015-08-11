@@ -167,7 +167,7 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const boost::shared_ptr<Natron::Image>& image,
+                                            const std::list<boost::shared_ptr<Natron::Image> >& tiles,
                                             Natron::ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
@@ -342,9 +342,9 @@ public:
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
-    boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+    void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Natron::Image> >* ret) const;
     
-    boost::shared_ptr<Natron::Image> getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const;
+    void getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Natron::Image> >* ret) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.

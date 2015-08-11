@@ -16,6 +16,7 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include <list>
 #include <string>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -36,7 +37,7 @@ namespace Natron {
 
 
 
-
+class Image;
 class FrameEntry
     : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
 {
@@ -86,16 +87,16 @@ public:
         return _aborted;
     }
 
-    boost::shared_ptr<Natron::Image> getOriginalImage() const
+    void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
     {
         QMutexLocker k(&_entryLock);
-        return _params->getOriginalImage();
+        _params->getOriginalTiles(ret);
     }
 
-    void setOriginalImage(const boost::shared_ptr<Natron::Image>& image)
+    void addOriginalTile(const boost::shared_ptr<Natron::Image>& image)
     {
         QMutexLocker k(&_entryLock);
-        _params->setOriginalImage(image);
+        _params->addOriginalTile(image);
     }
 
 private:
