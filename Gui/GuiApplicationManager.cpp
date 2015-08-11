@@ -1281,8 +1281,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         }
     }
 # else // !DEBUG
-    (void)readersMap;
-    (void)writersMap;
+    Q_UNUSED(readersMap);
+    Q_UNUSED(writersMap);
 # endif // DEBUG
 
     {

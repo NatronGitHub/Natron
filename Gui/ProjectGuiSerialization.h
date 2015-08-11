@@ -638,7 +638,7 @@ class ProjectGuiSerialization
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
@@ -657,7 +657,7 @@ class ProjectGuiSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("NodesGui",_serializedNodes);
         if (version < PROJECT_GUI_EXERNALISE_GUI_LAYOUT) {
             ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization._layout);

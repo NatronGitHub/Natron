@@ -46,7 +46,7 @@ class Variant
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         QVariant::Type t = type();
         std::string typeStr;
         switch (t) {
@@ -107,7 +107,7 @@ class Variant
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         std::string typeStr;
         ar & boost::serialization::make_nvp("Type",typeStr);
         if (typeStr == "bool") {

@@ -150,7 +150,7 @@ private:
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
-                (void)found; // we don't care if it existed or not
+                Q_UNUSED(found); // we don't care if it existed or not
             }
 
             bool refreshGui;

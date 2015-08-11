@@ -102,7 +102,7 @@ OfxImageEffectInstance::newClipInstance(OFX::Host::ImageEffect::Instance* plugin
                                         OFX::Host::ImageEffect::ClipDescriptor* descriptor,
                                         int index)
 {
-    (void)plugin;
+    Q_UNUSED(plugin);
 
     return new OfxClipInstance(getOfxEffectInstance(), this, index, descriptor);
 }
@@ -775,7 +775,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     
     ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
     bool redrawNeeded = _ofxEffectInstance->checkIfOverlayRedrawNeeded();
-    (void)redrawNeeded;
+    Q_UNUSED(redrawNeeded);
     
     _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 }

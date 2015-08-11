@@ -154,7 +154,7 @@ KnobSerialization::restoreExpressions(const boost::shared_ptr<KnobI> & knob)
     int dims = std::min(knob->getDimension(), _knob->getDimension());
     try {
         for (int i = 0; i < dims; ++i) {
-            (void)knob->restoreExpression(i, _expressions[i].first, _expressions[i].second);
+            knob->restoreExpression(i, _expressions[i].first, _expressions[i].second);
         }
     } catch (const std::exception& e) {
         QString err = QString("Failed to restore expression on %1: %2").arg(knob->getName().c_str()).arg(e.what());

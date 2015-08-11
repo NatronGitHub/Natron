@@ -1039,9 +1039,9 @@ Knob<T>::setValues(const T& value0, const T& value1, Natron::ValueChangedReasonE
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    (void)setValue(value0, 0, reason, &newKey);
+    setValue(value0, 0, reason, &newKey);
     unblockValueChanges();
-    (void)setValue(value1, 1, reason, &newKey);
+    setValue(value1, 1, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1069,10 +1069,10 @@ Knob<T>::setValues(const T& value0, const T& value1, const T& value2, Natron::Va
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    (void)setValue(value0, 0, reason, &newKey);
-    (void)setValue(value1, 1, reason, &newKey);
+    setValue(value0, 0, reason, &newKey);
+    setValue(value1, 1, reason, &newKey);
     unblockValueChanges();
-    (void)setValue(value2, 2, reason, &newKey);
+    setValue(value2, 2, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1100,11 +1100,11 @@ Knob<T>::setValues(const T& value0, const T& value1, const T& value2, const T& v
     assert(getDimension() == 4);
     beginChanges();
     blockValueChanges();
-    (void)setValue(value0, 0, reason, &newKey);
-    (void)setValue(value1, 1, reason, &newKey);
-    (void)setValue(value2, 2, reason, &newKey);
+    setValue(value0, 0, reason, &newKey);
+    setValue(value1, 1, reason, &newKey);
+    setValue(value2, 2, reason, &newKey);
     unblockValueChanges();
-    (void)setValue(value3, 3, reason, &newKey);
+    setValue(value3, 3, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1155,7 +1155,7 @@ Knob<T>::setValueAtTime(int time,
     assert(dimension >= 0 && dimension < getDimension());
     if (!canAnimate() || !isAnimationEnabled()) {
         qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
-        (void)setValue(v, dimension, reason, newKey);
+        setValue(v, dimension, reason, newKey);
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
@@ -1279,9 +1279,9 @@ Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, Natron::Valu
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    (void)setValueAtTime(time, value0, 0, reason, &newKey);
+    setValueAtTime(time, value0, 0, reason, &newKey);
     unblockValueChanges();
-    (void)setValueAtTime(time, value1, 1, reason, &newKey);
+    setValueAtTime(time, value1, 1, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1308,10 +1308,10 @@ Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& val
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    (void)setValueAtTime(time, value0, 0, reason, &newKey);
-    (void)setValueAtTime(time, value1, 1, reason, &newKey);
+    setValueAtTime(time, value0, 0, reason, &newKey);
+    setValueAtTime(time, value1, 1, reason, &newKey);
     unblockValueChanges();
-    (void)setValueAtTime(time, value2, 2, reason, &newKey);
+    setValueAtTime(time, value2, 2, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1339,11 +1339,11 @@ Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& val
     assert(getDimension() == 4);
     beginChanges();
     blockValueChanges();
-    (void)setValueAtTime(time, value0, 0, reason, &newKey);
-    (void)setValueAtTime(time, value1, 1, reason, &newKey);
-    (void)setValueAtTime(time, value2, 2, reason, &newKey);
+    setValueAtTime(time, value0, 0, reason, &newKey);
+    setValueAtTime(time, value1, 1, reason, &newKey);
+    setValueAtTime(time, value2, 2, reason, &newKey);
     unblockValueChanges();
-    (void)setValueAtTime(time, value3, 3, reason, &newKey);
+    setValueAtTime(time, value3, 3, reason, &newKey);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);

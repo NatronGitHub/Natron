@@ -327,7 +327,7 @@ bool
 AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
 {
     try {
-        (void)_knob.lock()->setExpression(dimension,expr,hasRetVariable);
+        _knob.lock()->setExpression(dimension,expr,hasRetVariable);
     } catch (...) {
         return false;
     }
@@ -1036,7 +1036,8 @@ ChoiceParam::set(int x, int frame)
 void
 ChoiceParam::set(const std::string& label)
 {
-    (void)_choiceKnob.lock()->setValueFromLabel(label, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = _choiceKnob.lock()->setValueFromLabel(label, 0);
+    Q_UNUSED(s);
 }
 
 int

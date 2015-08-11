@@ -1027,12 +1027,12 @@ to_short_planar(unsigned short *to,
                 int inDelta,
                 int outDelta)
 {
-    (void)to;
-    (void)from;
-    (void)W;
-    (void)alpha;
-    (void)inDelta;
-    (void)outDelta;
+    Q_UNUSED(to);
+    Q_UNUSED(from);
+    Q_UNUSED(W);
+    Q_UNUSED(alpha);
+    Q_UNUSED(inDelta);
+    Q_UNUSED(outDelta);
     throw std::runtime_error("Linear::to_short_planar not yet implemented.");
 }
 
@@ -1151,15 +1151,15 @@ to_short_packed(unsigned short* to,
                 bool invertY,
                 bool premult)
 {
-    (void)to;
-    (void)from;
-    (void)conversionRect;
-    (void)srcBounds;
-    (void)dstBounds;
-    (void)invertY;
-    (void)premult;
-    (void)inputPacking;
-    (void)outputPacking;
+    Q_UNUSED(to);
+    Q_UNUSED(from);
+    Q_UNUSED(conversionRect);
+    Q_UNUSED(srcBounds);
+    Q_UNUSED(dstBounds);
+    Q_UNUSED(invertY);
+    Q_UNUSED(premult);
+    Q_UNUSED(inputPacking);
+    Q_UNUSED(outputPacking);
     throw std::runtime_error("Linear::to_short_packed not yet implemented.");
 }
 

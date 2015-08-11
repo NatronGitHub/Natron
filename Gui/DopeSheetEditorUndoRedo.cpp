@@ -34,21 +34,23 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    (void)startingTimeKnob->setValue(startingTimeKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    Q_UNUSED(s);
 }
     
 void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    (void)timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    Q_UNUSED(s);
 }
 
 void moveFrameRange(const NodePtr& node, double dt)
 {
     Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kFrameRangeParamNameFrameRange).get());
     assert(frameRangeKnob);
-    (void)frameRangeKnob->setValues(frameRangeKnob->getGuiValue(0) + dt, frameRangeKnob->getGuiValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
+    frameRangeKnob->setValues(frameRangeKnob->getGuiValue(0) + dt, frameRangeKnob->getGuiValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
 }
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)

@@ -1973,20 +1973,20 @@ AppManager::loadPythonGroups()
         
         bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
         assert(ok);
-        (void)ok;
+        Q_UNUSED(ok);
     }
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
     {
         bool ok  = interpretPythonScript("import PySide.QtCore as QtCore", &err, 0);
         assert(ok);
-        (void)ok;
+        Q_UNUSED(ok);
     }
     
     if (!isBackground()) {
         bool ok  = interpretPythonScript("import PySide.QtGui as QtGui", &err, 0);
         assert(ok);
-        (void)ok;
+        Q_UNUSED(ok);
     }
 
     
@@ -2031,7 +2031,7 @@ AppManager::loadPythonGroups()
             
             bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
             assert(ok);
-            (void)ok;
+            Q_UNUSED(ok);
         }
     }
     
@@ -3479,8 +3479,8 @@ AppManager::launchPythonInterpreter()
     std::string err;
     bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
-    (void)ok;
-    
+    Q_UNUSED(ok);
+
    // Natron::PythonGILLocker pgl;
     
     Py_Main(1, &_imp->args[0]);
@@ -4084,7 +4084,7 @@ getGroupInfos(const std::string& modulePath,
         
         bool ok = interpretPythonScript(deleteScript, &err, NULL);
         assert(ok);
-        (void)ok;
+        Q_UNUSED(ok);
         return true;
     }
 }
