@@ -561,7 +561,7 @@ SetExpressionCommand::undo()
 {
     for (int i = 0; i < _knob->getDimension(); ++i) {
         try {
-            (void)_knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
+            _knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
         } catch (...) {
             Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
             break;
@@ -578,7 +578,7 @@ SetExpressionCommand::redo()
     if (_dimension == -1) {
         for (int i = 0; i < _knob->getDimension(); ++i) {
             try {
-               (void) _knob->setExpression(i, _newExpr, _hasRetVar);
+               _knob->setExpression(i, _newExpr, _hasRetVar);
             } catch (...) {
                 Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
                 break;

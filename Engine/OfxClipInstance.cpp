@@ -975,7 +975,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
                 bool isProjectFormat;
                 StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
                 assert(stat == Natron::eStatusOK);
-                (void)stat;
+                Q_UNUSED(stat);
             }
             node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
         }

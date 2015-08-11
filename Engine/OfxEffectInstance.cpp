@@ -1603,13 +1603,13 @@ OfxEffectInstance::getRegionsOfInterest(double time,
         return;
     }
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
-    (void)outputRoD;
+    Q_UNUSED(outputRoD);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        (void)scaleIsOne;
+        Q_UNUSED(scaleIsOne);
     }
 
     OfxStatus stat;
@@ -1932,7 +1932,7 @@ OfxEffectInstance::beginSequenceRender(double first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        (void)scaleIsOne;
+        Q_UNUSED(scaleIsOne);
     }
 
     OfxStatus stat;
@@ -1978,7 +1978,7 @@ OfxEffectInstance::endSequenceRender(double first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        (void)scaleIsOne;
+        Q_UNUSED(scaleIsOne);
     }
 
     OfxStatus stat;

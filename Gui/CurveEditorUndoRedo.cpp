@@ -109,7 +109,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             
                             Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
                             assert(st == Natron::eStatusOK);
-                            (void) st;
+                            Q_UNUSED(st);
                         } else {
                             Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                             Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
@@ -133,7 +133,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
                                                                              it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
                             assert(st == Natron::eStatusOK);
-                            (void)st;
+                            Q_UNUSED(st);
                         } else {
                             isKnobCurve->getInternalKnob()->deleteValueAtTime(it->second[i].getTime(), isKnobCurve->getDimension() );
                         }
@@ -268,7 +268,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             
                             Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
                             assert(st == Natron::eStatusOK);
-                            (void) st;
+                            Q_UNUSED(st);
                         } else {
                             Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
                             Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
@@ -292,7 +292,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
                                                                              it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
                             assert(st == Natron::eStatusOK);
-                            (void)st;
+                            Q_UNUSED(st);
                         } else {
                             isKnobCurve->getInternalKnob()->deleteValueAtTime(it->second[i].getTime(), isKnobCurve->getDimension() );
                         }

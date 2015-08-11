@@ -59,7 +59,7 @@ void
 BezierCP::save(Archive & ar,
                     const unsigned int version) const
 {
-    (void)version;
+    Q_UNUSED(version);
     ar & boost::serialization::make_nvp("X",_imp->x);
     ar & boost::serialization::make_nvp("X_animation",*_imp->curveX);
     ar & boost::serialization::make_nvp("Y",_imp->y);
@@ -184,7 +184,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("Name",name);
         ar & boost::serialization::make_nvp("Label",label);
         ar & boost::serialization::make_nvp("Activated",activated);
@@ -196,7 +196,7 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("Name",name);
         if ( version >= ROTO_ITEM_INTRODUCES_LABEL) {
             ar & boost::serialization::make_nvp("Label",label);
@@ -243,7 +243,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<RotoDrawableItemSerialization,RotoItemSerialization>(
             static_cast<RotoDrawableItemSerialization *>(NULL),
             static_cast<RotoItemSerialization *>(NULL)
@@ -265,7 +265,7 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<RotoDrawableItemSerialization,RotoItemSerialization>(
                                                                                                       static_cast<RotoDrawableItemSerialization *>(NULL),
                                                                                                       static_cast<RotoItemSerialization *>(NULL)
@@ -367,7 +367,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
             static_cast<BezierSerialization *>(NULL),
             static_cast<RotoDrawableItemSerialization *>(NULL)
@@ -390,7 +390,7 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<BezierSerialization,RotoDrawableItemSerialization>(
             static_cast<BezierSerialization *>(NULL),
             static_cast<RotoDrawableItemSerialization *>(NULL)
@@ -464,7 +464,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<RotoStrokeSerialization,RotoDrawableItemSerialization>(
                                                                                                         static_cast<RotoStrokeSerialization *>(NULL),
                                                                                                         static_cast<RotoDrawableItemSerialization *>(NULL)
@@ -480,7 +480,7 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<RotoStrokeSerialization,RotoDrawableItemSerialization>(
                                                                                                         static_cast<RotoStrokeSerialization *>(NULL),
                                                                                                         static_cast<RotoDrawableItemSerialization *>(NULL)
@@ -524,7 +524,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
 
         boost::serialization::void_cast_register<RotoLayerSerialization,RotoItemSerialization>(
             static_cast<RotoLayerSerialization *>(NULL),
@@ -561,7 +561,7 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         boost::serialization::void_cast_register<RotoLayerSerialization,RotoItemSerialization>(
             static_cast<RotoLayerSerialization *>(NULL),
             static_cast<RotoItemSerialization *>(NULL)
@@ -629,7 +629,7 @@ private:
     void save(Archive & ar,
               const unsigned int version) const
     {
-        (void)version;
+        Q_UNUSED(version);
 
         ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
         ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);

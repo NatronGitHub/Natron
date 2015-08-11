@@ -217,7 +217,8 @@ RotoPaint::isIdentity(double time,
         
         RectD maskRod;
         bool isProjectFormat;
-        (void)maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
+        Natron::StatusEnum s = maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
+        Q_UNUSED(s);
         RectI maskPixelRod;
         maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
         if (!maskPixelRod.intersects(roi)) {

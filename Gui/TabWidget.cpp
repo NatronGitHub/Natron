@@ -1101,7 +1101,7 @@ TabWidget::removeTab(QWidget* widget,bool userAction)
     if (index != -1) {
         QWidget* tab = removeTab(index,userAction);
         assert(tab == widget);
-        (void)tab;
+        Q_UNUSED(tab);
     }
 }
 

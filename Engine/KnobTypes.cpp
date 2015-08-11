@@ -1669,7 +1669,8 @@ Parametric_Knob::loadParametricCurves(const std::list< Curve > & curves)
 void
 Parametric_Knob::resetExtraToDefaultValue(int dimension)
 {
-    (void)deleteAllControlPoints(dimension);
+    Natron::StatusEnum s = deleteAllControlPoints(dimension);
+    Q_UNUSED(s);
     _curves[dimension]->clone(*_defaultCurves[dimension]);
     Q_EMIT curveChanged(dimension);
 

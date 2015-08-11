@@ -273,7 +273,7 @@ public:
                 return true;
             } else {
                 int ret_code = std::remove( _path.c_str() );
-                (void)ret_code;
+                Q_UNUSED(ret_code);
                 return false;
             }
         }

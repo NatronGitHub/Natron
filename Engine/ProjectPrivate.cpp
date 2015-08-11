@@ -335,7 +335,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                     filePath = PY3String_asString(ret);
                     bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
                     assert(ok);
-                    (void)ok;
+                    Q_UNUSED(ok);
                 }
                 if (!output.empty()) {
                     _publicInterface->getApp()->appendToScriptEditor(output);

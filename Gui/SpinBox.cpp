@@ -765,7 +765,7 @@ SpinBox::setIncrement(double d)
 #ifdef OLD_SPINBOX_INCREMENT
     _imp->increment = d;
 #else
-    (void)d;
+    Q_UNUSED(d);
 #endif
 }
 

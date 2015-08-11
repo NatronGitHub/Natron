@@ -77,7 +77,7 @@ struct MasterSerialization
     void serialize(Archive & ar,
                    const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("MasterDimension",masterDimension);
         ar & boost::serialization::make_nvp("MasterNodeName",masterNodeName);
         ar & boost::serialization::make_nvp("MasterKnobName",masterKnobName);

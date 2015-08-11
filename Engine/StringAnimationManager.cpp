@@ -305,7 +305,7 @@ StringAnimationManager::load(const std::map<int,std::string> & keyframes)
         k.value = it->second;
         std::pair<Keyframes::iterator,bool> ret = _imp->keyframes.insert(k);
         assert(ret.second);
-        (void)ret;
+        Q_UNUSED(ret);
     }
 }
 
@@ -317,7 +317,7 @@ StringAnimationManager::save(std::map<int,std::string>* keyframes) const
     for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
         std::pair<std::map<int,std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it->time, it->value) );
         assert(success.second);
-        (void)success;
+        Q_UNUSED(success);
     }
 }
 

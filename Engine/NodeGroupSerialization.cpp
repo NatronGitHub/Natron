@@ -134,7 +134,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             ///The path that has been saved in the project might not be corresponding on this computer.
             ///We need to search through all search paths for a match
             std::string pythonModuleUnPathed = qPyModulePath.toStdString();
-            (void)SequenceParsing::removePath(pythonModuleUnPathed);
+            std::string s = SequenceParsing::removePath(pythonModuleUnPathed);
+            Q_UNUSED(s);
             
             qPyModulePath.clear();
             QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();

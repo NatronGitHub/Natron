@@ -1034,8 +1034,8 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
     
     //We must call this otherwise this is never called by Qt for custom widgets (this is a Qt bug)
-    (void)cb->minimumSizeHint();
-    
+    QSize s = cb->minimumSizeHint();
+    Q_UNUSED(s);
 }
 
 void

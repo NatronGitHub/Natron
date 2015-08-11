@@ -288,7 +288,7 @@ public:
                                const std::string & /*message*/,
                               bool canCancel = true)
     {
-        (void)canCancel;
+        Q_UNUSED(canCancel);
     }
 
     virtual void endProgress(KnobHolder* /*effect*/)

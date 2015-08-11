@@ -24,6 +24,31 @@ compiler:
 python:
   - "3.4"
 
+addons:
+  apt:
+    sources:
+    # Natron requires boost >= 1.49 to compile in C++11 mode
+    # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
+    # we use the irie/boost ppa for that purpose
+    - irie-boost
+    # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
+    - xorg-edgers-ppa
+    # ubuntu-toolchain-r/test contains recent versions of gcc
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+    - g++-4.8
+    - libqt4-dev
+    - libglew-dev
+    - libboost-serialization-dev
+    - libexpat1-dev
+    - gdb
+    - libcairo2-dev
+    - python3-dev
+    - python3-pyside
+    - libpyside-dev
+    - libshiboken-dev
+
 matrix:
   exclude:
     - os: osx

@@ -58,7 +58,7 @@ public:
     void serialize(Archive & ar,
                    const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("Left",x1);
         ar & boost::serialization::make_nvp("Bottom",y1);
         ar & boost::serialization::make_nvp("Right",x2);
@@ -490,7 +490,7 @@ public:
     void serialize(Archive & ar,
                    const unsigned int version)
     {
-        (void)version;
+        Q_UNUSED(version);
         ar & boost::serialization::make_nvp("Left",x1);
         ar & boost::serialization::make_nvp("Bottom",y1);
         ar & boost::serialization::make_nvp("Right",x2);

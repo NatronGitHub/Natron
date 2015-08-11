@@ -428,7 +428,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     assert( ph->getOfxPlugin() );
     assert(ph->getOfxPlugin()->mainEntry);
-    (void)ph;
+    Q_UNUSED(ph);
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
     desc = plugin->getContext(context);
     if (!desc) {
