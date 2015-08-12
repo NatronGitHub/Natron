@@ -1607,7 +1607,16 @@ CurveEditor::setSelectedCurveExpression(const QString& expression)
     }
   
     std::string expr = expression.toStdString();
-    boost::shared_ptr<KnobI> knob = curve->getKnobGui()->getKnob();
+    KnobGui* knobgui = curve->getKnobGui();
+    assert(knobgui);
+    if (!knobgui) {
+        throw std::logic_error("CurveEditor::setSelectedCurveExpression: knobgui is NULL");
+    }
+    boost::shared_ptr<KnobI> knob = knobgui->getKnob();
+    assert(knob);
+    if (!knob) {
+        throw std::logic_error("CurveEditor::setSelectedCurveExpression: knob is NULL");
+    }
     int dim = curve->getDimension();
     std::string exprResult;
     if (!expr.empty()) {
@@ -1619,7 +1628,6 @@ CurveEditor::setSelectedCurveExpression(const QString& expression)
         }
     }
     _imp->curveWidget->pushUndoCommand(new SetExpressionCommand(knob,false,dim,expr));
-
 }
 
 void
