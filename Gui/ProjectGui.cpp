@@ -547,9 +547,10 @@ std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const
 void
 ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob)
 {
-    for (std::vector<boost::shared_ptr<Color_Knob> >::iterator it = _colorPickersEnabled.begin(); it != _colorPickersEnabled.end(); ++it) {
-        (*it)->setPickingEnabled(false);
+    while (!_colorPickersEnabled.empty()) {
+        _colorPickersEnabled.front()->setPickingEnabled(false);
     }
+        
     _colorPickersEnabled.clear();
     _colorPickersEnabled.push_back(knob);
 }
