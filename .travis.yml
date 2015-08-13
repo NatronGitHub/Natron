@@ -66,7 +66,8 @@ cache:
 before_install:
    - date -u
    - uname -a
-   - export J='-j2'
+   # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
+   - [[ ${COVERITY_SCAN_BRANCH} == 1 ]] || export J='-j2'
 
 install:
   - . tools/travis/coverity_env.sh

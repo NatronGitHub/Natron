@@ -170,7 +170,16 @@ public:
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
     /// If view is -1, guess it (e.g. from the last renderargs)
     virtual OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+#     ifdef OFX_SUPPORTS_OPENGLRENDER
+    /// override this to fill in the OpenGL texture at the given time.
+    /// The bounds of the image on the image plane should be
+    /// 'appropriate', typically the value returned in getRegionsOfInterest
+    /// on the effect instance. Outside a render call, the optionalBounds should
+    /// be 'appropriate' for the.
+    /// If bounds is not null, fetch the indicated section of the canonical image plane.
+    virtual OFX::Host::ImageEffect::Texture* loadTexture(OfxTime time, const char *format, const OfxRectD *optionalBounds) OVERRIDE FINAL;
+#     endif
+
     virtual OFX::Host::ImageEffect::Image* getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     /// override this to return the rod on the clip for the given view
