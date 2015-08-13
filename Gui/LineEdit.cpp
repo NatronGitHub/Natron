@@ -83,7 +83,7 @@ LineEdit::dropEvent(QDropEvent* e)
 void
 LineEdit::onEditingFinished()
 {
-    clearFocus();
+    //clearFocus();
 }
 
 void
