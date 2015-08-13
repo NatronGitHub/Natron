@@ -1942,18 +1942,42 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     std::vector<KeyPtr> vect;
     for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         boost::shared_ptr<Curve> curve = (*it)->curve->getInternalCurve();
-        assert(curve);
-        KeyFrame prevKey,nextKey;
-        if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
-            if (!_widget->isSelectedKey((*it)->curve, nextKey.getTime())) {
-                double diff = nextKey.getTime() - (*it)->key.getTime() - epsilon;
-                maxRight = std::max(0.,std::min(diff, maxRight));
+        if (curve) {
+            KeyFrame prevKey,nextKey;
+            if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
+                if (!_widget->isSelectedKey((*it)->curve, nextKey.getTime())) {
+                    double diff = nextKey.getTime() - (*it)->key.getTime() - epsilon;
+                    maxRight = std::max(0.,std::min(diff, maxRight));
+                }
             }
-        }
-        if (curve->getPreviousKeyframeTime((*it)->key.getTime(), &prevKey)) {
-            if (!_widget->isSelectedKey((*it)->curve, prevKey.getTime())) {
-                double diff = prevKey.getTime()  - (*it)->key.getTime() + epsilon;
-                maxLeft = std::min(0.,std::max(diff, maxLeft));
+            if (curve->getPreviousKeyframeTime((*it)->key.getTime(), &prevKey)) {
+                if (!_widget->isSelectedKey((*it)->curve, prevKey.getTime())) {
+                    double diff = prevKey.getTime()  - (*it)->key.getTime() + epsilon;
+                    maxLeft = std::min(0.,std::max(diff, maxLeft));
+                }
+            }
+        } else {
+            BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve.get());
+            assert(bezierCurve);
+            std::set<int> keyframes;
+            bezierCurve->getBezier()->getKeyframeTimes(&keyframes);
+            std::set<int>::iterator found = keyframes.find((*it)->key.getTime());
+            assert(found != keyframes.end());
+            if (found != keyframes.begin()) {
+                std::set<int>::iterator prev = found;
+                --prev;
+                if (!_widget->isSelectedKey((*it)->curve, *prev)) {
+                    double diff = *prev  - *found + epsilon;
+                    maxLeft = std::min(0.,std::max(diff, maxLeft));
+                }
+            }
+            if (found != keyframes.end()) {
+                std::set<int>::iterator next = found;
+                ++next;
+                if (!_widget->isSelectedKey((*it)->curve, *next)) {
+                    double diff = *next - *found - epsilon;
+                    maxRight = std::max(0.,std::min(diff, maxRight));
+                }
             }
         }
         vect.push_back(*it);
