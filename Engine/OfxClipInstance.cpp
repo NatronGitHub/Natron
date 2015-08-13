@@ -1063,6 +1063,23 @@ OfxClipInstance::getImageInternal(OfxTime time,
     }
 }
 
+#ifdef OFX_SUPPORTS_OPENGLRENDER
+/// override this to fill in the OpenGL texture at the given time.
+/// The bounds of the image on the image plane should be
+/// 'appropriate', typically the value returned in getRegionsOfInterest
+/// on the effect instance. Outside a render call, the optionalBounds should
+/// be 'appropriate' for the.
+/// If bounds is not null, fetch the indicated section of the canonical image plane.
+OFX::Host::ImageEffect::Texture*
+OfxClipInstance::loadTexture(OfxTime time, const char *format, const OfxRectD *optionalBounds)
+{
+    Q_UNUSED(time);
+    Q_UNUSED(format);
+    Q_UNUSED(optionalBounds);
+    return NULL;
+}
+#endif
+
 std::string
 OfxClipInstance::natronsComponentsToOfxComponents(const Natron::ImageComponents& comp)
 {

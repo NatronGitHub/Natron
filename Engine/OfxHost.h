@@ -108,6 +108,10 @@ public:
     virtual OfxStatus mutexUnLock(const OfxMutexHandle mutex) OVERRIDE;
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
+#ifdef OFX_SUPPORTS_OPENGLRENDER
+    /// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()
+    virtual OfxStatus flushOpenGLResources() const OVERRIDE;
+#endif
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     

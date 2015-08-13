@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 //ofx
 #include <ofxParametricParam.h>
+#include <ofxOpenGLRender.h>
 #ifdef OFX_EXTENSIONS_NUKE
 #include <nuke/fnOfxExtensions.h>
 #endif
@@ -195,7 +196,10 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
-    _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
+    _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2); // OFX 1.2
+#ifdef OFX_SUPPORTS_OPENGLRENDER
+    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+#endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
 
@@ -1267,4 +1271,12 @@ Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 }
 
 #endif // ifdef OFX_SUPPORTS_MULTITHREAD
+
+#ifdef OFX_SUPPORTS_OPENGLRENDER
+/// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()
+OfxStatus Natron::OfxHost::flushOpenGLResources() const
+{
+    return kOfxStatOK;
+}
+#endif
 
