@@ -559,3 +559,15 @@ Effect::getRegionOfDefinition(int time,int view) const
     }
     return rod;
 }
+
+void
+Effect::setSubGraphEditable(bool editable)
+{
+    if (!_node) {
+        return;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_node->getLiveInstance());
+    if (isGroup) {
+        isGroup->setSubGraphEditable(editable);
+    }
+}

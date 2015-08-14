@@ -42,7 +42,7 @@ Functions
 *    def :meth:`setPosition<NatronEngine.Effect.setPosition>` (x, y)
 *    def :meth:`setScriptName<NatronEngine.Effect.setScriptName>` (scriptName)
 *    def :meth:`setSize<NatronEngine.Effect.setSize>` (w, h)
-
+*    def :meth:`setSubGraphEditable<NatronEngine.Effect.setSubGraphEditable>` (editable)
 
 .. _details:
 
@@ -428,7 +428,12 @@ Set the size of the node as it appears on the node graph.
 Note that calling this function will in background mode will do nothing and
 should not be used.
 
+.. method:: NatronEngine.Effect.setSubGraphEditable(editable)
 
+	:param editable: :class:`bool<PySide.QtCore.bool>`
 
+Can be called to disable editing of the group via Natron's graphical user interface.
+This is handy to prevent users from accidentally breaking the sub-graph. 
+This can always be reverted by editing the python script associated.
 
 

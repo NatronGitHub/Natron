@@ -1170,6 +1170,48 @@ static PyObject* Sbk_EffectFunc_setSize(PyObject* self, PyObject* args)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_setSubGraphEditable(PyObject* self, PyObject* pyArg)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setSubGraphEditable(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setSubGraphEditable(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_setSubGraphEditable_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setSubGraphEditable(bool)
+            cppSelf->setSubGraphEditable(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_setSubGraphEditable_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setSubGraphEditable", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_Effect_methods[] = {
     {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
@@ -1198,6 +1240,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"setPosition", (PyCFunction)Sbk_EffectFunc_setPosition, METH_VARARGS},
     {"setScriptName", (PyCFunction)Sbk_EffectFunc_setScriptName, METH_O},
     {"setSize", (PyCFunction)Sbk_EffectFunc_setSize, METH_VARARGS},
+    {"setSubGraphEditable", (PyCFunction)Sbk_EffectFunc_setSubGraphEditable, METH_O},
 
     {0} // Sentinel
 };

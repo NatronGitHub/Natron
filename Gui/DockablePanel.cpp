@@ -466,6 +466,7 @@ DockablePanel::DockablePanel(Gui* gui ,
                 appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP,&enterPix);
                 _imp->_enterInGroupButton = new Button(QIcon(enterPix),"",_imp->_headerWidget);
                 QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
+                QObject::connect(isGroup, SIGNAL(graphEditableChanged(bool)), this, SLOT(onSubGraphEditionChanged(bool)));
                 _imp->_enterInGroupButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
                 _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);
                 _imp->_enterInGroupButton->setToolTip(Natron::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."), Qt::WhiteSpaceNormal));
@@ -2371,6 +2372,12 @@ void
 DockablePanel::onCenterButtonClicked()
 {
     centerOnItem();
+}
+
+void
+DockablePanel::onSubGraphEditionChanged(bool editable)
+{
+    _imp->_enterInGroupButton->setVisible(editable);
 }
 
 void

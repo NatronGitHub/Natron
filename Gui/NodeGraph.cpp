@@ -2237,7 +2237,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         
         if (modCASIsShift(e)) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-            if (isGrp) {
+            if (isGrp && isGrp->isSubGraphEditable()) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
                 NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);

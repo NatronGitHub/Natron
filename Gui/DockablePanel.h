@@ -292,6 +292,8 @@ public Q_SLOTS:
     
     void onEnterInGroupClicked();
     
+    void onSubGraphEditionChanged(bool editable);
+    
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/

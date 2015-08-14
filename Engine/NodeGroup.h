@@ -313,6 +313,8 @@ struct NodeGroupPrivate;
 class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
 {
     
+    Q_OBJECT
+    
 public:
     
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
@@ -401,6 +403,13 @@ public:
     
     bool getIsActivatingGroup() const;
     void setIsActivatingGroup(bool b);
+    
+    void setSubGraphEditable(bool editable);
+    bool isSubGraphEditable() const;
+    
+Q_SIGNALS:
+    
+    void graphEditableChanged(bool);
     
 private:
     

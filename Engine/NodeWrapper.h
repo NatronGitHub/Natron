@@ -322,6 +322,8 @@ public:
     RectD getRegionOfDefinition(int time,int view) const;
     
     static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
+    
+    void setSubGraphEditable(bool editable);
 };
 
 #endif // NODEWRAPPER_H

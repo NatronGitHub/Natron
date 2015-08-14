@@ -1071,6 +1071,7 @@ struct NodeGroupPrivate
     std::list<boost::weak_ptr<Node> > outputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
+    bool isEditable;
     
     boost::shared_ptr<Button_Knob> exportAsTemplate;
     
@@ -1080,6 +1081,7 @@ struct NodeGroupPrivate
     , outputs()
     , isDeactivatingGroup(false)
     , isActivatingGroup(false)
+    , isEditable(true)
     , exportAsTemplate()
     {
         
@@ -1439,6 +1441,21 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
             gui_i->exportGroupAsPythonScript();
         }
     }
+}
+
+void
+NodeGroup::setSubGraphEditable(bool editable)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->isEditable = editable;
+    Q_EMIT graphEditableChanged(editable);
+}
+
+bool
+NodeGroup::isSubGraphEditable() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->isEditable;
 }
 
 
