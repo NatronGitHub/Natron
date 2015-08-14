@@ -988,6 +988,18 @@ RotoPanelPrivate::insertItemRecursively(double time,
                          SIGNAL( compositingOperatorChanged(int,int) ),
                          publicInterface,
                          SLOT( onRotoItemCompOperatorChanged(int,int) ) );
+        
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+        if (isBezier) {
+            ItemKeys::iterator it = keyframes.find(isBezier);
+            if ( it == keyframes.end() ) {
+                TimeLineKeys keys;
+                isBezier->getKeyframeTimes(&keys.keys);
+                keys.visible = false;
+                keyframes.insert( std::make_pair(isBezier, keys) );
+            }
+        }
+        
     } else if (layer) {
         treeItem->setIcon(0, iconLayer);
         ///insert children
