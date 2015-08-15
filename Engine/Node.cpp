@@ -1739,13 +1739,16 @@ Node::setMustQuitProcessing(bool mustQuit)
         QMutexLocker k(&_imp->mustQuitProcessingMutex);
         _imp->mustQuitProcessing = mustQuit;
     }
-    if (isRotoPaintingNode()) {
+    if (getRotoContext()) {
         NodeList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodeList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
             (*it)->setMustQuitProcessing(mustQuit);
         }
     }
+    //Attempt to wake-up a sleeping thread
+    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+    _imp->nodeIsDequeuingCond.wakeAll();
 }
 
 void
