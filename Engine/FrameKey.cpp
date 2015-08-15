@@ -32,6 +32,7 @@ FrameKey::FrameKey()
 , _layer()
 , _alphaChannelFullName()
 , _useShaders(false)
+, _draftMode(false)
 {
     _scale.x = _scale.y = 0.;
 }
@@ -49,7 +50,8 @@ FrameKey::FrameKey(SequenceTime time,
                    const std::string & inputName,
                    const ImageComponents& layer,
                    const std::string& alphaChannelFullName,
-                   bool useShaders)
+                   bool useShaders,
+                   bool draftMode)
 : KeyHelper<U64>()
 , _time(time)
 , _treeVersion(treeVersion)
@@ -65,6 +67,7 @@ FrameKey::FrameKey(SequenceTime time,
 , _layer(layer)
 , _alphaChannelFullName(alphaChannelFullName)
 , _useShaders(useShaders)
+, _draftMode(draftMode)
 {
 }
 
@@ -100,7 +103,7 @@ FrameKey::fillHash(Hash64* hash) const
     }
     
     Hash64_appendQString(hash, _inputName.c_str());
- 
+    hash->append(_draftMode);
 }
 
 bool
@@ -119,5 +122,6 @@ FrameKey::operator==(const FrameKey & other) const
     _scale.y == other._scale.y &&
     _inputName == other._inputName &&
     _layer == other._layer &&
-    _alphaChannelFullName == other._alphaChannelFullName;
+    _alphaChannelFullName == other._alphaChannelFullName &&
+    _draftMode == other._draftMode;
 }

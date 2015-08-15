@@ -47,6 +47,9 @@ struct ViewerArgs
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
+    bool autoContrast;
+    Natron::DisplayChannelsEnum channels;
+    bool userRoIEnabled;
 };
 
 class ViewerInstance

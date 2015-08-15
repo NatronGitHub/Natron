@@ -28,7 +28,8 @@
 #define FRAME_KEY_INTRODUCES_GAMMA 4
 #define FRAME_KEY_CHANGES_BITDEPTH_ENUM 5
 #define FRAME_KEY_HANDLE_FP_CORRECTLY 6
-#define FRAME_KEY_VERSION FRAME_KEY_HANDLE_FP_CORRECTLY
+#define FRAME_KEY_INTRODUCES_DRAFT 7
+#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_DRAFT
 
 template<class Archive>
 void
@@ -64,6 +65,11 @@ Natron::FrameKey::serialize(Archive & ar,
         ar & boost::serialization::make_nvp("UserShader", _useShaders);
     } else {
         _useShaders = false;
+    }
+    if (version >= FRAME_KEY_INTRODUCES_DRAFT) {
+        ar & boost::serialization::make_nvp("Draft", _draftMode);
+    } else {
+        _draftMode = false;
     }
 }
 

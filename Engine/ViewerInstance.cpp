@@ -736,6 +736,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
    // unsigned int realMipMapLevel = mipMapLevel;
     outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();
     
+    //The original mipMapLevel without draft applied
+    unsigned originalMipMapLevel = mipMapLevel;
+    
     if (zoomFactor < 1. && outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
         mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
@@ -746,10 +749,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     RenderScale scaleOne;
     scaleOne.x = scaleOne.y = 1.;
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
-    scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
-    
-    
-    int closestPowerOf2 = 1 << mipMapLevel;
+    scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
     
     
     
@@ -817,19 +817,17 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     assert(_imp->uiContext);
     
-    bool autoContrast;
-    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
-        autoContrast = _imp->viewerParamsAutoContrast;
-        channels = _imp->viewerParamsChannels[textureIndex];
+        outArgs->autoContrast = _imp->viewerParamsAutoContrast;
+        outArgs->channels = _imp->viewerParamsChannels[textureIndex];
     }
     /*computing the RoI*/
     
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
-    RectI roi = autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, mipMapLevel) :
-    _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
+    RectI roi = outArgs->autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, originalMipMapLevel) :
+    _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, originalMipMapLevel);
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
         Q_EMIT disconnectTextureRequest(textureIndex);
@@ -857,7 +855,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->params->textureRect.y2 = roi.y2;
     outArgs->params->textureRect.w = roi.width();
     outArgs->params->textureRect.h = roi.height();
-    outArgs->params->textureRect.closestPo2 = closestPowerOf2;
+    outArgs->params->textureRect.closestPo2 = 1 << originalMipMapLevel;
     outArgs->params->textureRect.par = par;
     
     outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
@@ -871,7 +869,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     outArgs->params->time = time;
     outArgs->params->rod = rod;
-    outArgs->params->mipMapLevel = (unsigned int)mipMapLevel;
+    outArgs->params->mipMapLevel = (unsigned int)originalMipMapLevel;
     outArgs->params->textureIndex = textureIndex;
 
     {
@@ -890,99 +888,129 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         }
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
+    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
     
-    outArgs->key.reset(new FrameKey(time,
-                                    viewerHash,
-                                    outArgs->params->gain,
-                                    outArgs->params->gamma,
-                                    outArgs->params->lut,
-                                    (int)outArgs->params->depth,
-                                    channels,
-                                    view,
-                                    outArgs->params->textureRect,
-                                    scale,
-                                    inputToRenderName,
-                                    outArgs->params->layer,
-                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
-                                    outArgs->params->depth == eImageBitDepthFloat && supportsGLSL()));
+    //When in draft mode first try to get a texture without draft and then try with draft
+    int lookups = outArgs->draftModeEnabled ? 2 : 1;
     
-    bool isCached = false;
-    
-    ///we never use the texture cache when the user RoI is enabled, otherwise we would have
-    ///zillions of textures in the cache, each a few pixels different.
-    assert(_imp->uiContext);
-    boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
-    
-    if (!_imp->uiContext->isUserRegionOfInterestEnabled() && !autoContrast && !rotoPaintNode.get()) {
-        isCached = Natron::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
+    for (int lookup = 0; lookup < lookups; ++lookup) {
+        outArgs->key.reset(new FrameKey(time,
+                                        viewerHash,
+                                        outArgs->params->gain,
+                                        outArgs->params->gamma,
+                                        outArgs->params->lut,
+                                        (int)outArgs->params->depth,
+                                        outArgs->channels,
+                                        view,
+                                        outArgs->params->textureRect,
+                                        scale,
+                                        inputToRenderName,
+                                        outArgs->params->layer,
+                                        outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                                        outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
+                                        lookup == 1));
         
-        ///if we want to force a refresh, we by-pass the cache
-        if (outArgs->forceRender && outArgs->params->cachedFrame) {
-            appPTR->removeFromViewerCache(outArgs->params->cachedFrame);
-            isCached = false;
-            outArgs->params->cachedFrame.reset();
-        }
-
-        if (isCached) {
-            assert(outArgs->params->cachedFrame);
-            cachedFrameParams = outArgs->params->cachedFrame->getParams();
-        }
+        bool isCached = false;
         
-        ///The user changed a parameter or the tree, just clear the cache
-        ///it has no point keeping the cache because we will never find these entries again.
-        U64 lastRenderHash;
-        bool lastRenderedHashValid;
-        {
-            QMutexLocker l(&_imp->lastRenderedHashMutex);
-            lastRenderHash = _imp->lastRenderedHash;
-            lastRenderedHashValid = _imp->lastRenderedHashValid;
-        }
-        if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
-            appPTR->removeAllTexturesFromCacheWithMatchingKey(true, lastRenderHash);
+        ///we never use the texture cache when the user RoI is enabled, otherwise we would have
+        ///zillions of textures in the cache, each a few pixels different.
+        assert(_imp->uiContext);
+        boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
+        
+        if (!outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get()) {
+            isCached = Natron::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
+            
+            if (!isCached && lookups == 2 && lookup == 0) {
+                //Lookup didn't work in non draft mode, try with draft mode now, update the texture rectangle
+                
+                roi = outArgs->autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, mipMapLevel) :
+                _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
+                outArgs->params->textureRect.x1 = roi.x1;
+                outArgs->params->textureRect.x2 = roi.x2;
+                outArgs->params->textureRect.y1 = roi.y1;
+                outArgs->params->textureRect.y2 = roi.y2;
+                outArgs->params->textureRect.w = roi.width();
+                outArgs->params->textureRect.h = roi.height();
+                outArgs->params->textureRect.closestPo2 = 1 << mipMapLevel;
+                outArgs->params->mipMapLevel = mipMapLevel;
+                outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
+                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
+                if (outArgs->params->depth == Natron::eImageBitDepthFloat) {
+                    outArgs->params->bytesCount *= sizeof(float);
+                }
+                continue;
+            }
+            
+            if (!isCached)
+            ///if we want to force a refresh, we by-pass the cache
+            if (outArgs->forceRender && outArgs->params->cachedFrame) {
+                appPTR->removeFromViewerCache(outArgs->params->cachedFrame);
+                isCached = false;
+                outArgs->params->cachedFrame.reset();
+            }
+            
+            if (isCached) {
+                assert(outArgs->params->cachedFrame);
+                cachedFrameParams = outArgs->params->cachedFrame->getParams();
+            }
+            
+            ///The user changed a parameter or the tree, just clear the cache
+            ///it has no point keeping the cache because we will never find these entries again.
+            U64 lastRenderHash;
+            bool lastRenderedHashValid;
             {
                 QMutexLocker l(&_imp->lastRenderedHashMutex);
-                _imp->lastRenderedHashValid = false;
+                lastRenderHash = _imp->lastRenderedHash;
+                lastRenderedHashValid = _imp->lastRenderedHashValid;
+            }
+            if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
+                appPTR->removeAllTexturesFromCacheWithMatchingKey(true, lastRenderHash);
+                {
+                    QMutexLocker l(&_imp->lastRenderedHashMutex);
+                    _imp->lastRenderedHashValid = false;
+                }
             }
         }
-    }
-    
-    if (isCached) {
         
-        /// make sure we have the lock on the texture because it may be in the cache already
-        ///but not yet allocated.
-        FrameEntryLocker entryLocker(_imp.get());
-        if (!entryLocker.tryLock(outArgs->params->cachedFrame)) {
-            outArgs->params->cachedFrame.reset();
-            ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-            //return eStatusReplyDefault;
-            return eStatusOK;
+        if (isCached) {
+            
+            /// make sure we have the lock on the texture because it may be in the cache already
+            ///but not yet allocated.
+            FrameEntryLocker entryLocker(_imp.get());
+            if (!entryLocker.tryLock(outArgs->params->cachedFrame)) {
+                outArgs->params->cachedFrame.reset();
+                ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+                //return eStatusReplyDefault;
+                return eStatusOK;
+            }
+            
+            if (outArgs->params->cachedFrame->getAborted()) {
+                ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
+                ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
+                ///is invalid.
+                outArgs->params->cachedFrame.reset();
+                return eStatusOK;
+            }
+            
+            // how do you make sure cachedFrame->data() is not freed after this line?
+            ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
+            ///Since it is used during the whole function scope it is guaranteed not to be freed before
+            ///The viewer is actually done with it.
+            /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+            ///
+            
+            
+            outArgs->params->ramBuffer = outArgs->params->cachedFrame->data();
+            
+            {
+                QMutexLocker l(&_imp->lastRenderedHashMutex);
+                _imp->lastRenderedHash = viewerHash;
+                _imp->lastRenderedHashValid = true;
+            }
+            
         }
-        
-        if (outArgs->params->cachedFrame->getAborted()) {
-            ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
-            ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
-            ///is invalid.
-            outArgs->params->cachedFrame.reset();
-            return eStatusOK;
-        }
-        
-        // how do you make sure cachedFrame->data() is not freed after this line?
-        ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
-        ///Since it is used during the whole function scope it is guaranteed not to be freed before
-        ///The viewer is actually done with it.
-        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        ///
-        
-        
-        outArgs->params->ramBuffer = outArgs->params->cachedFrame->data();
-        
-        {
-            QMutexLocker l(&_imp->lastRenderedHashMutex);
-            _imp->lastRenderedHash = viewerHash;
-            _imp->lastRenderedHashValid = true;
-        }
-        
-    }
+        break;
+    } // for (int lookup = 0; lookup < lookups; ++lookup) {
     return eStatusOK;
 }
 
@@ -1039,13 +1067,6 @@ ViewerInstance::renderViewer_internal(int view,
     roi.x2 = inArgs.params->textureRect.x2;
     roi.y2 = inArgs.params->textureRect.y2;
     
-    bool autoContrast;
-    Natron::DisplayChannelsEnum channels;
-    {
-        QMutexLocker locker(&_imp->viewerParamsMutex);
-        autoContrast = _imp->viewerParamsAutoContrast;
-        channels = _imp->viewerParamsChannels[inArgs.params->textureIndex];
-    }
     
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
@@ -1092,7 +1113,7 @@ ViewerInstance::renderViewer_internal(int view,
     ///overload the ViewerCache which may become slowe
     assert(_imp->uiContext);
     RectI lastPaintBboxPixel;
-    if (inArgs.forceRender || _imp->uiContext->isUserRegionOfInterestEnabled() || autoContrast || rotoPaintNode.get() != 0) {
+    if (inArgs.forceRender || inArgs.userRoIEnabled || inArgs.autoContrast || rotoPaintNode.get() != 0) {
         
         assert(!inArgs.params->cachedFrame);
         //if we are actively painting, re-use the last texture instead of re-drawing everything
@@ -1361,9 +1382,9 @@ ViewerInstance::renderViewer_internal(int view,
         
         
         if (singleThreaded) {
-            if (autoContrast) {
+            if (inArgs.autoContrast) {
                 double vmin, vmax;
-                std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, channels, viewerRenderRoI);
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, inArgs.channels, viewerRenderRoI);
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
                 
@@ -1378,7 +1399,7 @@ ViewerInstance::renderViewer_internal(int view,
             
             const RenderViewerArgs args(image,
                                         inArgs.params->textureRect,
-                                        channels,
+                                        inArgs.channels,
                                         inArgs.params->srcPremult,
                                         inArgs.key->getBitDepth(),
                                         inArgs.params->gain,
@@ -1405,7 +1426,7 @@ ViewerInstance::renderViewer_internal(int view,
             }
             
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
-            if (autoContrast) {
+            if (inArgs.autoContrast) {
                 
                 double vmin = std::numeric_limits<double>::infinity();
                 double vmax = -std::numeric_limits<double>::infinity();
@@ -1415,7 +1436,7 @@ ViewerInstance::renderViewer_internal(int view,
                     QFuture<std::pair<double,double> > future = QtConcurrent::mapped( splitRects,
                                                                                      boost::bind(findAutoContrastVminVmax,
                                                                                                  image,
-                                                                                                 channels,
+                                                                                                 inArgs.channels,
                                                                                                  _1) );
                     future.waitForFinished();
                     
@@ -1429,7 +1450,7 @@ ViewerInstance::renderViewer_internal(int view,
                         }
                     }
                 } else { //!runInCurrentThread
-                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, channels, viewerRenderRoI);
+                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, inArgs.channels, viewerRenderRoI);
                     vmin = vMinMax.first;
                     vmax = vMinMax.second;
                 }
@@ -1444,7 +1465,7 @@ ViewerInstance::renderViewer_internal(int view,
             
             const RenderViewerArgs args(image,
                                         inArgs.params->textureRect,
-                                        channels,
+                                        inArgs.channels,
                                         inArgs.params->srcPremult,
                                         inArgs.key->getBitDepth(),
                                         inArgs.params->gain,

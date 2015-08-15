@@ -43,7 +43,8 @@ public:
              const std::string & inputName,
              const ImageComponents& layer,
              const std::string& alphaChannelFullName,
-             bool useShaders);
+             bool useShaders,
+             bool draftMode);
 
     void fillHash(Hash64* hash) const;
 
@@ -121,6 +122,7 @@ private:
     ImageComponents _layer;
     std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
     bool _useShaders;
+    bool _draftMode;
 };
 }
 
