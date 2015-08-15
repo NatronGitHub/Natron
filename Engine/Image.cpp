@@ -1182,9 +1182,13 @@ Image::pixelAt(int x,
     } else {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
-        return (unsigned char*)(this->_data.writable())
-        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        unsigned char* ret =  (unsigned char*)this->_data.writable();
+        if (!ret) {
+            return 0;
+        }
+        ret = ret + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
         + (qint64)( x - _bounds.left() ) * compDataSize;
+        return ret;
     }
 }
 
@@ -1199,9 +1203,13 @@ Image::pixelAt(int x,
     } else {
         int compDataSize = getSizeOfForBitDepth( getBitDepth() ) * compsCount;
         
-        return (unsigned char*)(this->_data.readable())
-        + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
+        unsigned char* ret = (unsigned char*)this->_data.readable();
+        if (!ret) {
+            return 0;
+        }
+        ret = ret + (qint64)( y - _bounds.bottom() ) * compDataSize * _bounds.width()
         + (qint64)( x - _bounds.left() ) * compDataSize;
+        return ret;
     }
 }
 

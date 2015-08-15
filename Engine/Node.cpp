@@ -54,6 +54,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/BackDrop.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/DiskCacheNode.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
@@ -2290,6 +2291,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
     Dot* isDot = dynamic_cast<Dot*>(_imp->liveInstance.get());
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+    DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(_imp->liveInstance.get());
     
     ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
     if (!isGroup) {
@@ -2362,7 +2364,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
             
-            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !isReaderOrWriterOrTrackerOrGroup;
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !isReaderOrWriterOrTrackerOrGroup && !isDiskCache;
             
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<Page_Knob> mainPage;
