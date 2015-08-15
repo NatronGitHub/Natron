@@ -67,7 +67,10 @@ before_install:
    - date -u
    - uname -a
    # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
-   - [[ ${COVERITY_SCAN_BRANCH} == 1 ]] || export J='-j2'
+   - if [[ ${COVERITY_SCAN_BRANCH} != 1 ]];
+     then
+       export J='-j2';
+     fi
 
 install:
   - . tools/travis/coverity_env.sh
