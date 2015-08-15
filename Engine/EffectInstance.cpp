@@ -940,6 +940,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.rotoPaintNodes = rotoPaintNodes;
     args.doNansHandling = doNanHandling;
     args.draftMode = draftMode;
+    args.tilesSupported = supportsTiles();
     ++args.validArgs;
     
 }
@@ -2753,10 +2754,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
-
-    bool tilesSupported = supportsTiles();
-    
-    
     
     
     RectI downscaledImageBoundsNc,upscaledImageBoundsNc;
@@ -2767,7 +2764,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ///Make sure the RoI falls within the image bounds
     ///Intersection will be in pixel coordinates
-    if (tilesSupported) {
+    if (frameRenderArgs.tilesSupported) {
         if (useImageAsOutput) {
             if (!roi.intersect(upscaledImageBoundsNc, &roi)) {
                 return eRenderRoIRetCodeOk;
@@ -3071,13 +3068,13 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
         ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
         ///have rendered the rod already.
-        if (!tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
+        if (!frameRenderArgs.tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
         }
     } else {
-        if (tilesSupported) {
+        if (frameRenderArgs.tilesSupported) {
             rectsLeftToRender.push_back(roi);
         } else {
             rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
@@ -3089,7 +3086,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      */
     bool tryIdentityOptim = false;
     RectI inputsRoDIntersectionPixel;
-    if (tilesSupported && !rectsLeftToRender.empty()) {
+    if (frameRenderArgs.tilesSupported && !rectsLeftToRender.empty()) {
         
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
@@ -3284,7 +3281,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (!isPlaneCached) {
             planesToRender.rectsToRender.clear();
             rectsLeftToRender.clear();
-            if (tilesSupported) {
+            if (frameRenderArgs.tilesSupported) {
                 rectsLeftToRender.push_back(roi);
             } else {
                 rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
@@ -3522,6 +3519,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }*/
 # endif
             renderRetCode = renderRoIInternal(args.time,
+                                              frameRenderArgs,
                                               safety,
                                               args.mipMapLevel,
                                               args.view,
@@ -3594,7 +3592,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         
         for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
             
-            if (!tilesSupported) {
+            if (!frameRenderArgs.tilesSupported) {
                 //assert that bounds are consistent with the RoD if tiles are not supported
                 const RectD & srcRodCanonical = useImageAsOutput ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
                 RectI srcBounds;
@@ -3911,6 +3909,7 @@ EffectInstance::renderInputImagesForRoI(double time,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(double time,
+                                  const ParallelRenderArgs& frameArgs,
                                   Natron::RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
@@ -3960,7 +3959,6 @@ EffectInstance::renderRoIInternal(double time,
     renderMappedScale.x = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
     renderMappedScale.y = renderMappedScale.x;
     
-    bool tilesSupported = supportsTiles();
 
 
     RenderingFunctorRetEnum renderStatus = eRenderingFunctorRetOK;
@@ -3987,7 +3985,7 @@ EffectInstance::renderRoIInternal(double time,
         ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
         ///but if the effect doesn't support tiles it won't work.
         ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
-        if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
+        if ( !frameArgs.tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
             ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
             isRotoPaintNode()) {
@@ -4038,9 +4036,6 @@ EffectInstance::renderRoIInternal(double time,
     if (preferredInput != -1 && isInputMask(preferredInput)) {
         preferredInput = -1;
     }
-    
-    assert(_imp->frameRenderArgs.hasLocalData());
-    const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
     
     const QThread* currentThread = QThread::currentThread();
     
@@ -4247,8 +4242,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///now make the preliminaries call to handle that region (getRoI etc...) so just stick with the old rect to render
     
     // check the bitmap!
-    bool tilesSupported = supportsTiles();
-    if (tilesSupported) {
+    if (frameArgs.tilesSupported) {
         if (outputUseImage) {
             
             //The renderMappedImage is cached , read bitmap from it
@@ -4390,7 +4384,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
             RectI dstBounds;
             dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
             
-            if (!tilesSupported) {
+            if (!frameArgs.tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
                 

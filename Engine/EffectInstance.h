@@ -157,6 +157,9 @@ struct ParallelRenderArgs
     ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
     bool draftMode;
     
+    ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
+    bool tilesSupported;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -176,6 +179,7 @@ struct ParallelRenderArgs
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     , doNansHandling(true)
     , draftMode(false)
+    , tilesSupported(false)
     {
         
     }
@@ -1625,6 +1629,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(double time,
+                                          const ParallelRenderArgs& frameArgs,
                                           Natron::RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,
