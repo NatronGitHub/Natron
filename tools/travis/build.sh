@@ -30,7 +30,7 @@ git submodule update --init --recursive
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug"; else qmake -r -spec unsupported/linux-clang CONFIG+="debug"; fi
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
-    if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
+    if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
         make;
     else
         make $J;
