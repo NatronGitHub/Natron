@@ -837,10 +837,9 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,const Natron::Node* 
     return false;
 }
 
-void
-NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
+static void recomputeFrameRangeForAllReadersInternal(NodeCollection* group, int* firstFrame,int* lastFrame, bool setFrameRange)
 {
-    NodeList nodes = getNodes();
+    NodeList nodes = group->getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             
@@ -848,19 +847,25 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
                 double thisFirst,thislast;
                 (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
                 if (thisFirst != INT_MIN) {
-                    *firstFrame = std::min(*firstFrame, (int)thisFirst);
+                    *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
                 }
                 if (thislast != INT_MAX) {
-                    *lastFrame = std::max(*lastFrame, (int)thislast);
+                    *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
                 }
             } else {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
                 if (isGrp) {
-                    recomputeFrameRangeForAllReaders(firstFrame, lastFrame);
+                    recomputeFrameRangeForAllReadersInternal(isGrp, firstFrame, lastFrame, false);
                 }
             }
         }
     }
+}
+
+void
+NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
+{
+    recomputeFrameRangeForAllReadersInternal(this,firstFrame,lastFrame,true);
 }
 
 void

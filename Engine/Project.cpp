@@ -1976,10 +1976,11 @@ Project::unionFrameRangeWith(int first,int last)
 {
     
     int curFirst,curLast;
+    bool mustSet = !_imp->frameRange->hasModifications();
     curFirst = _imp->frameRange->getValue(0);
     curLast = _imp->frameRange->getValue(1);
-    curFirst = std::min(first, curFirst);
-    curLast = std::max(last, curLast);
+    curFirst = !mustSet ? std::min(first, curFirst) : first;
+    curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
     _imp->frameRange->setValue(curFirst, 0);
     _imp->frameRange->setValue(curLast, 1);
