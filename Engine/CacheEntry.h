@@ -313,7 +313,7 @@ public:
     const DataType* readable() const
     {
         if (_storageMode == eStorageModeDisk) {
-            return (const DataType*)_backingFile->data();
+            return _backingFile ? (const DataType*)_backingFile->data() : 0;
         } else {
             return _buffer.getData();
         }
