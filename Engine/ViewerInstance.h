@@ -224,6 +224,8 @@ public:
     
     float interpolateGammaLut(float value);
     
+    void markAllOnRendersAsAborted();
+    
 public Q_SLOTS:
     
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }

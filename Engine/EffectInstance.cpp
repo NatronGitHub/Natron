@@ -1070,17 +1070,16 @@ EffectInstance::aborted() const
                 
                 if (args.canAbort) {
                     
-                    
-                    ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                    bool ret = (args.nodeHash != getHash() ||
-                                args.time != args.timeline->currentFrame() ||
-                                !getNode()->isActivated());
-                    return ret;
-                } else {
                     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
                     if (isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
                         return true;
                     }
+                    
+                    ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
+                    bool ret = !getNode()->isActivated();
+                    return ret;
+                } else {
+                    
                     bool deactivated = !getNode()->isActivated();
                     return deactivated;
                 }
@@ -3120,7 +3119,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 if (stat != eStatusOK && !inputRod.isNull()) {
                     break;
                 }
-                hasMask = true;
+                if (isMask) {
+                    hasMask = true;
+                }
             }
             if (!inputsIntersectionSet) {
                 inputsIntersection = inputRod;
@@ -3140,6 +3141,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
         
     }
+    
+//#pragma message WARN("REMOVE IT")
+    //tryIdentityOptim = false;
     
     if (tryIdentityOptim) {
         optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
@@ -6850,7 +6854,14 @@ void
 EffectInstance::abortAnyEvaluation()
 {
     ///Just change the hash
-    getNode()->incrementKnobsAge();
+    NodePtr node = getNode();
+    assert(node);
+    node->incrementKnobsAge();
+    std::list<ViewerInstance*> viewers;
+    node->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->markAllOnRendersAsAborted();
+    }
 }
 
 double

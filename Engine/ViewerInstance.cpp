@@ -1028,7 +1028,7 @@ ViewerInstance::renderViewer_internal(int view,
      * to optimize threads repartitions across tiles processing of the image.
      */
     if (!isSequentialRender) {
-        if (!_imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge, canAbort)) {
+        if (!_imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge)) {
              return eStatusReplyDefault;
         }
     }
@@ -1169,14 +1169,7 @@ ViewerInstance::renderViewer_internal(int view,
             return eStatusFailed;
         }
         
-        if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
-            ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-            if (!isSequentialRender) {
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            inArgs.params.reset();
-            return eStatusReplyDefault;
-        }
+        entryLocker.lock(inArgs.params->cachedFrame);
         
         ///The entry has already been locked by the cache
 		if (!cached) {
@@ -1996,6 +1989,17 @@ float
 ViewerInstance::interpolateGammaLut(float value)
 {
     return _imp->lookupGammaLut(value);
+}
+
+void
+ViewerInstance::markAllOnRendersAsAborted()
+{
+    QMutexLocker k(&_imp->renderAgeMutex);
+    for (int i = 0; i < 2; ++i) {
+        for (OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin(); it != _imp->currentRenderAges[i].end(); ++it) {
+            it->second.aborted = true;
+        }
+    }
 }
 
 template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>

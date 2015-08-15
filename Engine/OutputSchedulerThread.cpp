@@ -2690,10 +2690,16 @@ RenderEngine::isDoingSequentialRender() const
 bool
 RenderEngine::abortRendering(bool blocking)
 {
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_imp->output);
+    if (viewer) {
+        viewer->markAllOnRendersAsAborted();
+        
+    }
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
         _imp->scheduler->abortRendering(blocking);
         return true;
     }
+    
     return false;
 }
 
