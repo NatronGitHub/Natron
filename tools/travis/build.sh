@@ -29,7 +29,12 @@ git submodule update --init --recursive
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug"; else qmake -r -spec unsupported/linux-clang CONFIG+="debug"; fi
-    make $J
+    # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
+    if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
+        make;
+    else
+        make $J;
+    fi
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
