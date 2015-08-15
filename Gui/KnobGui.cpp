@@ -1432,9 +1432,20 @@ KnobGui::hide()
     if (_imp->animationButton) {
         _imp->animationButton->hide();
     }
-    //also  hide the curve from the curve editor if there's any
+    //also  hide the curve from the curve editor if there's any and the knob is not inside a group
     if ( getKnob()->getHolder()->getApp() ) {
-        getGui()->getCurveEditor()->hideCurves(this);
+        boost::shared_ptr<KnobI> parent = getKnob()->getParentKnob();
+        bool isSecret = true;
+        while (parent) {
+            if (!parent->getIsSecret()) {
+                isSecret = false;
+                break;
+            }
+            parent = parent->getParentKnob();
+        }
+        if (isSecret) {
+            getGui()->getCurveEditor()->hideCurves(this);
+        }
     }
 
     ////In order to remove the row of the layout we have to make sure ALL the knobs on the row
