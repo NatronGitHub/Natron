@@ -33,7 +33,7 @@ You need an up to date macports version. Just download it and install it from <h
 	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
 	sudo port install py34-pyside
-	sudo ln -s python3.4-config /opt/local/bin/python3-config
+	sudo ln -s /opt/local/bin/python3.4-config /opt/local/bin/python3-config
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
