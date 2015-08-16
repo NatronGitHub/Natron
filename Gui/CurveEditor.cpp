@@ -38,7 +38,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/EffectInstance.h"
 #include "Engine/TimeLine.h"
 
-#include "Gui/CurveWidget.h"
+#include "Gui/CurveGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"

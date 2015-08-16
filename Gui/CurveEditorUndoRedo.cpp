@@ -21,6 +21,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/CurveWidget.h"
 
