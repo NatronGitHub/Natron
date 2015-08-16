@@ -74,7 +74,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/LineEdit.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/KnobGuiTypes.h"
-#include "Gui/CurveWidget.h"
+#include "Gui/CurveGui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CustomParamInteract.h"

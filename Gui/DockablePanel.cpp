@@ -87,6 +87,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/CurveGui.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
