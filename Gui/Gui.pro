@@ -64,7 +64,10 @@ SOURCES += \
     ComboBox.cpp \
     CurveEditor.cpp \
     CurveEditorUndoRedo.cpp \
+    CurveGui.cpp \
     CurveWidget.cpp \
+    CurveWidgetDialogs.cpp \
+    CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
     DefaultOverlays.cpp \
     DockablePanel.cpp \
@@ -148,8 +151,11 @@ HEADERS += \
     ComboBox.h \
     CurveEditor.h \
     CurveEditorUndoRedo.h \
+    CurveGui.h \
     CurveSelection.h \
     CurveWidget.h \
+    CurveWidgetDialogs.h \
+    CurveWidgetPrivate.h \
     CustomParamInteract.h \
     DefaultOverlays.h \
     DockablePanel.h \
