@@ -2028,9 +2028,9 @@ static void exportBezierPointAtTime(const boost::shared_ptr<BezierCP>& point,
     
     QString token = isFeather ? "bezier.setFeatherPointAtIndex(" : "bezier.setPointAtIndex(";
     double x,y,lx,ly,rx,ry;
-    point->getPositionAtTime(time, &x, &y);
-    point->getLeftBezierPointAtTime(time, &lx, &ly);
-    point->getRightBezierPointAtTime(time, &rx, &ry);
+    point->getPositionAtTime(false ,time, &x, &y);
+    point->getLeftBezierPointAtTime(false ,time, &lx, &ly);
+    point->getRightBezierPointAtTime(false ,time, &rx, &ry);
     
     WRITE_INDENT(1); WRITE_STATIC_LINE(token + NUM(idx) + ", " +
                                        NUM(time) + ", " + NUM(x) + ", " +
@@ -2060,7 +2060,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                 continue;
             }
             
-            time = cps.front()->getKeyframeTime(0);
+            time = cps.front()->getKeyframeTime(false ,0);
             
             WRITE_INDENT(1); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0, " + NUM(time) + ")");
             WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setScriptName(" + ESC(isBezier->getScriptName()) + ")");

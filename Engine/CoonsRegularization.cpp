@@ -71,13 +71,13 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
         Point ret;
-        (*it)->getPositionAtTime(time, &ret.x, &ret.y);
+        (*it)->getPositionAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     } else if (t == t_i_plus_1) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i_plus_1);
         Point ret;
-        (*it)->getPositionAtTime(time, &ret.x, &ret.y);
+        (*it)->getPositionAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     }
     
@@ -89,10 +89,10 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
         next = cps.begin();
     }
     Point p0,p1,p2,p3;
-    (*it)->getPositionAtTime(time, &p0.x, &p0.y);
-    (*it)->getRightBezierPointAtTime(time, &p1.x, &p1.y);
-    (*next)->getLeftBezierPointAtTime(time, &p2.x, &p2.y);
-    (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+    (*it)->getPositionAtTime(false ,time, &p0.x, &p0.y);
+    (*it)->getRightBezierPointAtTime(false ,time, &p1.x, &p1.y);
+    (*next)->getLeftBezierPointAtTime(false ,time, &p2.x, &p2.y);
+    (*next)->getPositionAtTime(false ,time, &p3.x, &p3.y);
     Point ret;
     Bezier::bezierPoint(p0, p1, p2, p3, t - t_i, &ret);
     return ret;
@@ -112,13 +112,13 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
         Point ret;
-        (*it)->getLeftBezierPointAtTime(time, &ret.x, &ret.y);
+        (*it)->getLeftBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     } else if (t == t_i_plus_1) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i_plus_1);
         Point ret;
-        (*it)->getLeftBezierPointAtTime(time, &ret.x, &ret.y);
+        (*it)->getLeftBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     }
     
@@ -134,9 +134,9 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
     
     Point a,b,c,ab,bc,abc;
     Point ret;
-    (*it)->getPositionAtTime(time, &a.x, &a.y);
-    (*it)->getRightBezierPointAtTime(time, &b.x, &b.y);
-    (*next)->getLeftBezierPointAtTime(time, &c.x, &c.y);
+    (*it)->getPositionAtTime(false ,time, &a.x, &a.y);
+    (*it)->getRightBezierPointAtTime(false ,time, &b.x, &b.y);
+    (*next)->getLeftBezierPointAtTime(false ,time, &c.x, &c.y);
     ab.x = (1. - t) * a.x + t * b.x;
     ab.y = (1. - t) * a.y + t * b.y;
     
@@ -146,7 +146,7 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
     abc.x = (1. - t) * ab.x + t * bc.x;
     abc.y = (1. - t) * ab.y + t * bc.y;
     if (abc.x == a.x && abc.y == a.y) {
-        (*it)->getLeftBezierPointAtTime(time, &ret.x, &ret.y);
+        (*it)->getLeftBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     } else {
         return abc;
@@ -167,13 +167,13 @@ static Point getRightPointAt(const BezierCPs& cps, int time, double t)
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i);
         Point ret;
-        (*it)->getRightBezierPointAtTime(time, &ret.x, &ret.y);
+        (*it)->getRightBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     } else if (t == t_i_plus_1) {
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, t_i_plus_1);
         Point ret;
-        (*it)->getRightBezierPointAtTime(time, &ret.x, &ret.y);
+        (*it)->getRightBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     }
     
@@ -189,9 +189,9 @@ static Point getRightPointAt(const BezierCPs& cps, int time, double t)
     
     Point a,b,c,ab,bc,abc;
     Point ret;
-    (*it)->getRightBezierPointAtTime(time, &a.x, &a.y);
-    (*next)->getLeftBezierPointAtTime(time, &b.x, &b.y);
-    (*next)->getPositionAtTime(time, &c.x, &c.y);
+    (*it)->getRightBezierPointAtTime(false ,time, &a.x, &a.y);
+    (*next)->getLeftBezierPointAtTime(false ,time, &b.x, &b.y);
+    (*next)->getPositionAtTime(false ,time, &c.x, &c.y);
     ab.x = (1. - t) * a.x + t * b.x;
     ab.y = (1. - t) * a.y + t * b.y;
     
@@ -201,7 +201,7 @@ static Point getRightPointAt(const BezierCPs& cps, int time, double t)
     abc.x = (1. - t) * ab.x + t * bc.x;
     abc.y = (1. - t) * ab.y + t * bc.y;
     if (abc.x == c.x && abc.y == c.y) {
-        (*next)->getRightBezierPointAtTime(time, &ret.x, &ret.y);
+        (*next)->getRightBezierPointAtTime(false ,time, &ret.x, &ret.y);
         return ret;
     } else {
         return abc;
@@ -397,9 +397,9 @@ static Point dirVect(const BezierCPs& cps, int time, double t)
 static boost::shared_ptr<BezierCP> makeBezierCPFromPoint(const Point& p, const Point& left, const Point& right)
 {
     boost::shared_ptr<BezierCP> ret(new BezierCP);
-    ret->setStaticPosition(p.x, p.y);
-    ret->setLeftBezierStaticPosition(left.x, left.y);
-    ret->setRightBezierStaticPosition(right.x, right.y);
+    ret->setStaticPosition(false ,p.x, p.y);
+    ret->setLeftBezierStaticPosition(false ,left.x, left.y);
+    ret->setRightBezierStaticPosition(false ,right.x, right.y);
     return ret;
 }
 
@@ -429,10 +429,10 @@ static void findIntersection(const BezierCPs& cps,
         }
       
         Point z0,z1,c0,c1;
-        (*s1)->getPositionAtTime(time, &z0.x, &z0.y);
-        (*s1)->getRightBezierPointAtTime(time, &c0.x, &c0.y);
-        (*s2)->getPositionAtTime(time, &z1.x, &z1.y);
-        (*s2)->getLeftBezierPointAtTime(time, &c1.x, &c1.y);
+        (*s1)->getPositionAtTime(false ,time, &z0.x, &z0.y);
+        (*s1)->getRightBezierPointAtTime(false ,time, &c0.x, &c0.y);
+        (*s2)->getPositionAtTime(false ,time, &z1.x, &z1.y);
+        (*s2)->getLeftBezierPointAtTime(false ,time, &c1.x, &c1.y);
         
         
         Point t3,t2,t1;
@@ -483,7 +483,7 @@ static void findIntersection(const BezierCPs& cps,
                 bool found = false;
                 for (std::vector<std::pair<boost::shared_ptr<BezierCP>,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > >::iterator it = intersections.begin(); it!=intersections.end(); ++it) {
                     Point other;
-                    it->first->getPositionAtTime(time, &other.x, &other.y);
+                    it->first->getPositionAtTime(false ,time, &other.x, &other.y);
                     double distSquared = (interP.x - other.x) * (interP.x - other.x) + (interP.y - other.y) * (interP.y - other.y);
                     if (distSquared <= fuzz2) {
                         found = true;
@@ -672,28 +672,28 @@ static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
         }
         
         Point p1;
-        (*cur)->getPositionAtTime(time, &p1.x, &p1.y);
+        (*cur)->getPositionAtTime(false ,time, &p1.x, &p1.y);
         
         Point p1left;
-        (*cur)->getLeftBezierPointAtTime(time, &p1left.x, &p1left.y);
+        (*cur)->getLeftBezierPointAtTime(false ,time, &p1left.x, &p1left.y);
         
         Point p1right;
-        (*cur)->getRightBezierPointAtTime(time, &p1right.x, &p1right.y);
+        (*cur)->getRightBezierPointAtTime(false ,time, &p1right.x, &p1right.y);
         
         Point p0;
-        (*prev)->getPositionAtTime(time, &p0.x, &p0.y);
+        (*prev)->getPositionAtTime(false ,time, &p0.x, &p0.y);
         
         Point p2;
-        (*next)->getPositionAtTime(time, &p2.x, &p2.y);
+        (*next)->getPositionAtTime(false ,time, &p2.x, &p2.y);
         
         Point p0left;
-        (*prev)->getLeftBezierPointAtTime(time, &p0left.x, &p0left.y);
+        (*prev)->getLeftBezierPointAtTime(false ,time, &p0left.x, &p0left.y);
         
         Point p2right;
-        (*next)->getRightBezierPointAtTime(time, &p2right.x, &p2right.y);
+        (*next)->getRightBezierPointAtTime(false ,time, &p2right.x, &p2right.y);
         
         Point p3;
-        (*nextNext)->getPositionAtTime(time, &p3.x, &p3.y);
+        (*nextNext)->getPositionAtTime(false ,time, &p3.x, &p3.y);
         
         internal[j].x = 1. / 9. * (-4. * p1.x + 6. * (p1left.x + p1right.x) - 2. * (p0.x + p2.x) + 3. * (p0left.x + p2right.x) - p3.x);
         internal[j].y = 1. / 9. * (-4. * p1.y + 6. * (p1left.y + p1right.y) - 2. * (p0.y + p2.y) + 3. * (p0left.y + p2right.y) - p3.y);
@@ -766,7 +766,7 @@ Point findPointInside(const BezierCPs& cps, int time)
             continue;
         }
         Point p;
-        (*it)->getPositionAtTime(time, &p.x, &p.y);
+        (*it)->getPositionAtTime(false ,time, &p.x, &p.y);
         Point q;
         q.x = p.x;
         q.y = p.y + dir.y;
@@ -775,7 +775,7 @@ Point findPointInside(const BezierCPs& cps, int time)
         findIntersection(cps, time, p, q, &newPoint, &beforeIndex);
         if (newPoint && beforeIndex != -1) {
             Point np;
-            newPoint->getPositionAtTime(time, &np.x, &np.y);
+            newPoint->getPositionAtTime(false ,time, &np.x, &np.y);
             if (np.x != p.x || np.y != p.y) {
                 Point m;
                 m.x = 0.5 * (p.x + np.x);
@@ -785,7 +785,7 @@ Point findPointInside(const BezierCPs& cps, int time)
         }
     }
     Point ret;
-    cps.front()->getPositionAtTime(time, &ret.x, &ret.y);
+    cps.front()->getPositionAtTime(false ,time, &ret.x, &ret.y);
     return ret;
 }
 
@@ -1181,10 +1181,10 @@ static int computeWindingNumber(const BezierCPs& patch, int time, const Point& z
         }
         
         Point p0,p1,p2,p3;
-        (*it)->getPositionAtTime(time, &p0.x, &p0.y);
-        (*it)->getRightBezierPointAtTime(time, &p1.x, &p1.y);
-        (*next)->getLeftBezierPointAtTime(time, &p2.x, &p2.y);
-        (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+        (*it)->getPositionAtTime(false ,time, &p0.x, &p0.y);
+        (*it)->getRightBezierPointAtTime(false ,time, &p1.x, &p1.y);
+        (*next)->getLeftBezierPointAtTime(false ,time, &p2.x, &p2.y);
+        (*next)->getPositionAtTime(false ,time, &p3.x, &p3.y);
         
         if (checkCurve(p0, p1, p2, p3, z, &count, maxdepth)) {
             return undefined;
@@ -1208,7 +1208,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         bbox.x2 = -std::numeric_limits<double>::infinity();
         bbox.y1 = std::numeric_limits<double>::infinity();
         bbox.y2 = -std::numeric_limits<double>::infinity();
-        Bezier::bezierSegmentListBboxUpdate(patch, true, false, time, 0, Transform::Matrix3x3(), &bbox);
+        Bezier::bezierSegmentListBboxUpdate(false ,patch, true, false, time, 0, Transform::Matrix3x3(), &bbox);
         if (!bbox.contains(pointInside.x, pointInside.y)) {
             sign = 0;
         } else {

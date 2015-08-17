@@ -5966,7 +5966,9 @@ Node::dequeueActions()
     if (_imp->liveInstance) {
         _imp->liveInstance->dequeueValuesSet();
     }
-    
+    if (_imp->rotoContext) {
+        _imp->rotoContext->dequeueGuiActions();
+    }
     std::list<ConnectInputAction> queue;
     {
         QMutexLocker k(&_imp->connectionQueueMutex);

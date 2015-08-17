@@ -170,7 +170,7 @@ BezierCurve::addControlPoint(double x, double y)
     const std::list<boost::shared_ptr<BezierCP> >& cps = _bezier->getControlPoints();
     int keyframeTime;
     if (!cps.empty()) {
-        keyframeTime = cps.front()->getKeyframeTime(0);
+        keyframeTime = cps.front()->getKeyframeTime(false,0);
     } else {
         keyframeTime = _bezier->getContext()->getTimelineCurrentTime();
     }
