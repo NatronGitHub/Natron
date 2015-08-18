@@ -139,7 +139,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #    fi
     #done
     # Python 2 pyside comes precompiled!
-    brew install pyside
+    brew install pyside shiboken
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
