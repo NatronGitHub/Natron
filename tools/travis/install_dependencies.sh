@@ -70,13 +70,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'boost: LIBS += -lboost_serialization' > config.pri
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
-    ## pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
-    #echo 'pyside: PKGCONFIG -= pyside' >> config.pri
-    #echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
-    #echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
-    #echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
-    #echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)' >> config.pri
+    # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
+    # pyside and shiboken for python2 still need the extra QtCore and QtGui include directories
+    echo 'pyside: PKGCONFIG -= pyside' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)' >> config.pri
     #echo 'pyside: LIBS += -lpyside.cpython-32mu' >> config.pri
+    echo 'pyside: LIBS += -lpyside-python-2.7' >> config.pri
     # pyside doesn't have PySide::getWrapperForQObject on Ubuntu 12.04LTS Precise 
     echo 'pyside: DEFINES += PYSIDE_OLD' >> config.pri
     #echo 'shiboken: PKGCONFIG -= shiboken' >> config.pri
