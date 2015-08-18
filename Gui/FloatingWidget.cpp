@@ -15,105 +15,17 @@
 #include "FloatingWidget.h"
 
 #include <cassert>
-#include <fstream>
-#include <sstream>
 #include <algorithm> // min, max
 
-#include <QtCore/QTextStream>
-#include <QWaitCondition>
-#include <QMutex>
-#include <QCoreApplication>
-#include <QAction>
-#include <QSettings>
-#include <QDebug>
-#include <QThread>
-#include <QCheckBox>
-#include <QTimer>
-#include <QTextEdit>
-
-
-#if QT_VERSION >= 0x050000
-#include <QScreen>
-#endif
-#include <QUndoGroup>
-CLANG_DIAG_OFF(unused-private-field)
-// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QCloseEvent>
-CLANG_DIAG_ON(unused-private-field)
 #include <QHBoxLayout>
-#include <QGraphicsScene>
-#include <QApplication>
-#include <QMenuBar>
+#include <QApplication> // qApp
 #include <QDesktopWidget>
-#include <QToolBar>
-#include <QKeySequence>
 #include <QScrollArea>
-#include <QScrollBar>
-#include <QToolButton>
-#include <QMessageBox>
-#include <QImage>
-#include <QProgressDialog>
-
-#include <cairo/cairo.h>
-
-#include <boost/version.hpp>
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-GCC_DIAG_ON(unused-parameter)
-#include <boost/archive/xml_oarchive.hpp>
-
-#include "Engine/Image.h"
-#include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
-#include "Engine/Lut.h"
-#include "Engine/NoOp.h"
-#include "Engine/Node.h"
-#include "Engine/NodeGroup.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/Plugin.h"
-#include "Engine/ProcessHandler.h"
 #include "Engine/Project.h"
-#include "Engine/Settings.h"
-#include "Engine/ViewerInstance.h"
-
-#include "Gui/AboutWindow.h"
-#include "Gui/ActionShortcuts.h"
-#include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
-#include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
-#include "Gui/FromQtEnums.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/Histogram.h"
-#include "Gui/Menu.h"
-#include "Gui/MessageBox.h"
-#include "Gui/MultiInstancePanel.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/NodeGui.h"
-#include "Gui/NodeSettingsPanel.h"
-#include "Gui/PreferencesPanel.h"
-#include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h"
-#include "Gui/PythonPanels.h"
-#include "Gui/RenderingProgressDialog.h"
-#include "Gui/RightClickableWidget.h"
-#include "Gui/RotoGui.h"
-#include "Gui/ScriptEditor.h"
-#include "Gui/SequenceFileDialog.h"
-#include "Gui/ShortCutEditor.h"
-#include "Gui/SpinBox.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
-#include "Gui/ToolButton.h"
-#include "Gui/Utils.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ViewerTab.h"
-
-#include "SequenceParsing.h"
 
 using namespace Natron;
 

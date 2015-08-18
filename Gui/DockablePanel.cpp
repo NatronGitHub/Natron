@@ -16,85 +16,50 @@
 
 #include <cfloat>
 
-#include <QLayout>
 #include <QAction>
-#include <QApplication>
-#include <QTabWidget>
-#include <QStyle>
+#include <QApplication> // qApp
 #include <QUndoStack>
-#include <QGridLayout>
-#include <QUndoCommand>
-#include <QFormLayout>
-#include <QDebug>
-#include <QToolTip>
-#include <QHeaderView>
-#include <QMutex>
-#include <QTreeWidget>
-#include <QCheckBox>
-#include <QHeaderView>
 #include <QColorDialog>
 #include <QTimer>
 CLANG_DIAG_OFF(unused-private-field)
-// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QPaintEvent>
+//// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+#include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
-#include <QPainter>
-#include <QImage>
-#include <QToolButton>
-#include <QDialogButtonBox>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 #include <ofxNatron.h>
 
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/utility.hpp>
-GCC_DIAG_ON(unused-parameter)
-
-#include "Engine/BackDrop.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/Image.h"
-#include "Engine/Knob.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/NoOp.h"
+#include "Engine/Image.h" // Natron::clamp
+#include "Engine/KnobTypes.h" // Button_Knob
+#include "Engine/NoOp.h" // GroupOutput
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
-#include "Engine/Project.h"
-#include "Engine/Settings.h"
 
-#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/ClickableLabel.h"
-#include "Gui/ComboBox.h"
-#include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/CurveGui.h"
-#include "Gui/DopeSheetEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
-#include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiMacros.h"
-#include "Gui/Histogram.h"
+#include "Gui/GuiMacros.h" // triggerButtonIsRight...
 #include "Gui/KnobGui.h"
-#include "Gui/KnobGuiFactory.h"
-#include "Gui/KnobGuiTypes.h"
-#include "Gui/KnobGuiTypes.h" // for Group_KnobGui
-#include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobGuiTypes.h" // Group_KnobGui, Color_KnobGui
+#include "Gui/KnobUndoCommand.h" // RestoreDefaultsCommand
+#include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
 #include "Gui/MultiInstancePanel.h"
-#include "Gui/NodeCreationDialog.h"
 #include "Gui/NodeGraph.h"
-#include "Gui/NodeGraphUndoRedo.h"
+#include "Gui/NodeGraphUndoRedo.h" // RenameNodeUndoRedoCommand
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/RotoPanel.h"
-#include "Gui/SpinBox.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
-#include "Gui/Utils.h"
+#include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
