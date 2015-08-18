@@ -70,26 +70,7 @@ namespace { // protect local classes in anonymous namespace
     typedef std::list<Node::KnobLink> KnobLinkList;
     typedef std::vector<boost::shared_ptr<Node> > InputsV;
     
-    enum InputActionEnum
-    {
-        eInputActionConnect,
-        eInputActionDisconnect,
-        eInputActionReplace
-    };
-    
-    struct ConnectInputAction
-    {
-        boost::shared_ptr<Natron::Node> node;
-        InputActionEnum type;
-        int inputNb;
-        
-        ConnectInputAction(const boost::shared_ptr<Natron::Node>& input,InputActionEnum type,int inputNb)
-        : node(input)
-        , type(type)
-        , inputNb(inputNb)
-        {
-        }
-    };
+   
     
     class ChannelSelector {
         
@@ -181,8 +162,11 @@ struct Node::Implementation
     , inputsInitialized(false)
     , outputsMutex()
     , outputs()
+    , guiOutputs()
     , inputsMutex()
     , inputs()
+    , guiInputs()
+    , mustCopyGuiInputs(false)
     , liveInstance()
     , inputsComponents()
     , outputComponents()
@@ -239,8 +223,6 @@ struct Node::Implementation
     , timersMutex()
     , lastRenderStartedSlotCallTime()
     , lastInputNRenderStartedSlotCallTime()
-    , connectionQueue()
-    , connectionQueueMutex()
     , nodeIsDequeuing(false)
     , nodeIsDequeuingMutex()
     , nodeIsDequeuingCond()
@@ -330,19 +312,17 @@ struct Node::Implementation
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
-    std::list<Node*> outputs;
+    std::list<Node*> outputs,guiOutputs;
     
     mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
     
-    ///The  inputs are the one used by the GUI whenever the user make changes.
-    ///Finally we use only one set of inputs protected by a mutex. This has the drawback that the
-    ///inputs connections might change throughout the render of a frame and the plug-in might then have
-    ///different results when calling stuff on clips (e.g: getRegionOfDefinition or getComponents).
-    ///I couldn't figure out a clean way to have the inputs stable throughout a render, thread-storage is not enough:
-    ///image effect suite functions that access to clips can be called from other threads than just the render-thread:
-    ///they can be accessed from the multi-thread suite. The problem is we have no way to set thread-local data to multi
-    ///thread suite threads because we don't know at all which node is using it.
-    InputsV inputs;
+    ///The  inputs are the ones used while rendering and guiInputs the ones used by the gui whenever
+    ///the node is currently rendering. Once the render is finished, inputs are refreshed automatically to the value of
+    ///guiInputs
+    InputsV inputs,guiInputs;
+    
+    ///Set to true when inputs must be refreshed to reflect the value of guiInputs
+    bool mustCopyGuiInputs;
     
     //to the inputs in a thread-safe manner.
     boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
@@ -436,10 +416,6 @@ struct Node::Implementation
     QMutex timersMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
     timeval lastRenderStartedSlotCallTime;
     timeval lastInputNRenderStartedSlotCallTime;
-    
-    ///Used when the node is rendering and dequeued when it is done rendering
-    std::list<ConnectInputAction> connectionQueue;
-    QMutex connectionQueueMutex;
     
     ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
     bool nodeIsDequeuing;
@@ -1834,6 +1810,15 @@ Node::getOutputs() const
     return _imp->outputs;
 }
 
+const std::list<Node* > &
+Node::getGuiOutputs() const
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    return _imp->guiOutputs;
+}
+
 void
 Node::getOutputs_mt_safe(std::list<Node* >& outputs) const
 {
@@ -2889,14 +2874,17 @@ Node::initializeInputs()
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
         _imp->inputs.resize(inputCount);
+        _imp->guiInputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
             if (i < (int)oldInputs.size()) {
                 _imp->inputs[i] = oldInputs[i];
+                _imp->guiInputs[i] = oldInputs[i];
             } else {
                 _imp->inputs[i].reset();
+                _imp->guiInputs[i].reset();
             }
         }
         
@@ -2917,43 +2905,11 @@ Node::initializeInputs()
 boost::shared_ptr<Node>
 Node::getInput(int index) const
 {
-    NodePtr parent = _imp->multiInstanceParent.lock();
-    if (parent) {
-        return parent->getInput(index);
-    }
-    if (!_imp->inputsInitialized) {
-        qDebug() << "Node::getInput(): inputs not initialized";
-    }
-    QMutexLocker l(&_imp->inputsMutex);
-    if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
-        return boost::shared_ptr<Node>();
-    }
-    
-    boost::shared_ptr<Node> ret =  _imp->inputs[index];
-    if (ret) {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(ret->getLiveInstance());
-        if (isGrp) {
-            ret =  isGrp->getOutputNodeInput();
-        }
-        
-        if (ret) {
-            GroupInput* isInput = dynamic_cast<GroupInput*>(ret->getLiveInstance());
-            if (isInput) {
-                boost::shared_ptr<NodeCollection> collection = ret->getGroup();
-                assert(collection);
-                isGrp = dynamic_cast<NodeGroup*>(collection.get());
-                if (isGrp) {
-                    ret = isGrp->getRealInputForInput(ret);
-                }
-            }
-        }
-        
-    }
-    return ret;
+    return getInputInternal(false, true, index);
 }
 
 boost::shared_ptr<Node>
-Node::getRealInput(int index) const
+Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const
 {
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
@@ -2967,7 +2923,39 @@ Node::getRealInput(int index) const
         return boost::shared_ptr<Node>();
     }
     
-    return _imp->inputs[index];
+    boost::shared_ptr<Node> ret =  useGuiInput ? _imp->guiInputs[index] : _imp->inputs[index];
+    if (ret && useGroupRedirections) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(ret->getLiveInstance());
+        if (isGrp) {
+            ret =  isGrp->getOutputNodeInput(useGuiInput);
+        }
+        
+        if (ret) {
+            GroupInput* isInput = dynamic_cast<GroupInput*>(ret->getLiveInstance());
+            if (isInput) {
+                boost::shared_ptr<NodeCollection> collection = ret->getGroup();
+                assert(collection);
+                isGrp = dynamic_cast<NodeGroup*>(collection.get());
+                if (isGrp) {
+                    ret = isGrp->getRealInputForInput(useGuiInput,ret);
+                }
+            }
+        }
+        
+    }
+    return ret;
+}
+
+boost::shared_ptr<Node>
+Node::getGuiInput(int index) const
+{
+    return getInputInternal(true, true, index);
+}
+
+boost::shared_ptr<Node>
+Node::getRealInput(int index) const
+{
+    return getInputInternal(false, false, index);
 
 }
 
@@ -2984,7 +2972,7 @@ Node::getInputIndex(const Natron::Node* node) const
 }
 
 const std::vector<boost::shared_ptr<Natron::Node> > &
-Node::getInputs_mt_safe() const
+Node::getInputs() const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2992,10 +2980,25 @@ Node::getInputs_mt_safe() const
     
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
-        return parent->getInputs_mt_safe();
+        return parent->getInputs();
     }
     
     return _imp->inputs;
+}
+
+const std::vector<boost::shared_ptr<Natron::Node> > &
+Node::getGuiInputs() const
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    assert(_imp->inputsInitialized);
+    
+    NodePtr parent = _imp->multiInstanceParent.lock();
+    if (parent) {
+        return parent->getGuiInputs();
+    }
+    
+    return _imp->guiInputs;
 }
 
 std::vector<boost::shared_ptr<Natron::Node> >
@@ -3005,7 +3008,7 @@ Node::getInputs_copy() const
     
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
-        return parent->getInputs_mt_safe();
+        return parent->getInputs();
     }
     
     QMutexLocker l(&_imp->inputsMutex);
@@ -3188,7 +3191,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     }
     
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(input->getLiveInstance());
-    if (isGrp && !isGrp->getOutputNode()) {
+    if (isGrp && !isGrp->getOutputNode(true)) {
         return eCanConnectInput_groupHasNoOutput;
     }
     
@@ -3209,10 +3212,10 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() )) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() )) {
             return eCanConnectInput_indexOutOfRange;
         }
-        if (_imp->inputs[inputNumber]) {
+        if (_imp->guiInputs[inputNumber]) {
             return eCanConnectInput_inputAlreadyConnected;
         }
         
@@ -3223,7 +3226,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
             
             double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
             
-            for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+            for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
                 if (*it) {
                     if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
                         return eCanConnectInput_differentPars;
@@ -3259,30 +3262,29 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         return false;
     }
     
+    bool useGuiInputs = isNodeRendering();
+    _imp->liveInstance->abortAnyEvaluation();
+    
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (!useGuiInputs && _imp->inputs[inputNumber]) ||
+            (useGuiInputs && _imp->guiInputs[inputNumber])) {
             return false;
-        }
-    }
-    
-    ///If the node is currently rendering, queue the action instead of executing it
-    {
-        if (isNodeRendering() && !appPTR->isBackground()) {
-            _imp->liveInstance->abortAnyEvaluation();
-            ConnectInputAction action(input,eInputActionConnect,inputNumber);
-            QMutexLocker cql(&_imp->connectionQueueMutex);
-            _imp->connectionQueue.push_back(action);
-            return true;
         }
     }
     
     {
         ///Set the input
         QMutexLocker l(&_imp->inputsMutex);
-        _imp->inputs[inputNumber] = input;
-        input->connectOutput(this);
+        if (!useGuiInputs) {
+            _imp->inputs[inputNumber] = input;
+            _imp->guiInputs[inputNumber] = input;
+        } else {
+            _imp->guiInputs[inputNumber] = input;
+            _imp->mustCopyGuiInputs = true;
+        }
+        input->connectOutput(useGuiInputs,this);
     }
     
     ///Get notified when the input name has changed
@@ -3291,8 +3293,10 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
     
-    ///Call the instance changed action with a reason clip changed
-    onInputChanged(inputNumber);
+    if (!useGuiInputs) {
+        ///Call the instance changed action with a reason clip changed
+        onInputChanged(inputNumber);
+    }
     
     ///Recompute the hash
     computeHash();
@@ -3303,7 +3307,6 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     if (!inputChangedCB.empty()) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
-
     
     return true;
 }
@@ -3339,6 +3342,8 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
+    bool useGuiInputs = isNodeRendering();
+    _imp->liveInstance->abortAnyEvaluation();
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -3346,25 +3351,27 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
             return false;
         }
     }
-    ///If the node is currently rendering, queue the action instead of executing it
-    {
-        if (isNodeRendering() && !appPTR->isBackground()) {
-            _imp->liveInstance->abortAnyEvaluation();
-            ConnectInputAction action(input,eInputActionReplace,inputNumber);
-            QMutexLocker cql(&_imp->connectionQueueMutex);
-            _imp->connectionQueue.push_back(action);
-            return true;
-        }
-    }
+
     {
         QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
-        if (_imp->inputs[inputNumber]) {
-            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-            _imp->inputs[inputNumber]->disconnectOutput(this);
+        
+        if (!useGuiInputs) {
+            if (_imp->inputs[inputNumber]) {
+                QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+                _imp->inputs[inputNumber]->disconnectOutput(useGuiInputs, this);
+            }
+            _imp->inputs[inputNumber] = input;
+            _imp->guiInputs[inputNumber] = input;
+        } else {
+            if (_imp->guiInputs[inputNumber]) {
+                QObject::connect( _imp->guiInputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+                _imp->guiInputs[inputNumber]->disconnectOutput(useGuiInputs, this);
+            }
+            _imp->guiInputs[inputNumber] = input;
+            _imp->mustCopyGuiInputs = true;
         }
-        _imp->inputs[inputNumber] = input;
-        input->connectOutput(this);
+        input->connectOutput(useGuiInputs, this);
     }
     
     ///Get notified when the input name has changed
@@ -3373,8 +3380,10 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
 
-    ///Call the instance changed action with a reason clip changed
-    onInputChanged(inputNumber);
+    if (!useGuiInputs) {
+        ///Call the instance changed action with a reason clip changed
+        onInputChanged(inputNumber);
+    }
     
     ///Recompute the hash
     computeHash();
@@ -3435,37 +3444,33 @@ Node::switchInput0And1()
         } 
     }
     
-    ///If the node is currently rendering, queue the action instead of executing it
-    {
-        if (isNodeRendering() && !appPTR->isBackground()) {
-            _imp->liveInstance->abortAnyEvaluation();
-            QMutexLocker cql(&_imp->connectionQueueMutex);
-            ///Replace input A
-            {
-                ConnectInputAction action(_imp->inputs[inputBIndex],eInputActionReplace,inputAIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            ///Replace input B
-            {
-                ConnectInputAction action(_imp->inputs[inputAIndex],eInputActionReplace,inputBIndex);
-                _imp->connectionQueue.push_back(action);
-            }
-            
-            return;
-        }
-    }
+    bool useGuiInputs = isNodeRendering();
+    _imp->liveInstance->abortAnyEvaluation();
+    
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
-        boost::shared_ptr<Natron::Node> input0 = _imp->inputs[inputAIndex];
-        _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
-        _imp->inputs[inputBIndex] = input0;
+        boost::shared_ptr<Natron::Node> input0;
+        
+        if (!useGuiInputs) {
+            input0 = _imp->inputs[inputAIndex];
+            _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
+            _imp->inputs[inputBIndex] = input0;
+            _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
+            _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
+        } else {
+            input0 = _imp->guiInputs[inputAIndex];
+            _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
+            _imp->guiInputs[inputBIndex] = input0;
+            _imp->mustCopyGuiInputs = true;
+        }
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
-    onInputChanged(inputAIndex);
-    onInputChanged(inputBIndex);
+    if (!useGuiInputs) {
+        onInputChanged(inputAIndex);
+        onInputChanged(inputBIndex);
+    }
     computeHash();
     
     std::string inputChangedCB = getInputChangedCallback();
@@ -3491,10 +3496,10 @@ Node::onInputLabelChanged(const QString & name)
         return;
     }
     int inputNb = -1;
-    ///No need to lock, guiInputs is only written to by the mainthread
+    ///No need to lock, inputs is only written to by the mainthread
     
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].get() == inp) {
+    for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+        if (_imp->guiInputs[i].get() == inp) {
             inputNb = i;
             break;
         }
@@ -3506,7 +3511,7 @@ Node::onInputLabelChanged(const QString & name)
 }
 
 void
-Node::connectOutput(Node* output)
+Node::connectOutput(bool useGuiValues,Node* output)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3514,7 +3519,12 @@ Node::connectOutput(Node* output)
     
     {
         QMutexLocker l(&_imp->outputsMutex);
-        _imp->outputs.push_back(output);
+        if (!useGuiValues) {
+            _imp->outputs.push_back(output);
+            _imp->guiOutputs.push_back(output);
+        } else {
+            _imp->guiOutputs.push_back(output);
+        }
     }
     Q_EMIT outputsChanged();
 }
@@ -3527,31 +3537,32 @@ Node::disconnectInput(int inputNumber)
     assert(_imp->inputsInitialized);
     
     NodePtr inputShared;
+    bool useGuiValues = isNodeRendering();
+    _imp->liveInstance->abortAnyEvaluation();
+    
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!_imp->inputs[inputNumber]) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!useGuiValues && !_imp->inputs[inputNumber]) ||
+            (useGuiValues && !_imp->guiInputs[inputNumber])) {
             return -1;
         }
-        inputShared = _imp->inputs[inputNumber];
+        inputShared = useGuiValues ? _imp->guiInputs[inputNumber] : _imp->inputs[inputNumber];
     }
     
-    ///If the node is currently rendering, queue the action instead of executing it
-    {
-        if (isNodeRendering() && !appPTR->isBackground()) {
-            _imp->liveInstance->abortAnyEvaluation();
-            ConnectInputAction action(inputShared,eInputActionDisconnect,inputNumber);
-            QMutexLocker cql(&_imp->connectionQueueMutex);
-            _imp->connectionQueue.push_back(action);
-            return inputNumber;
-        }
-    }
+
     
     QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-    inputShared->disconnectOutput(this);
+    inputShared->disconnectOutput(useGuiValues,this);
     
     {
         QMutexLocker l(&_imp->inputsMutex);
-        _imp->inputs[inputNumber].reset();
+        if (!useGuiValues) {
+            _imp->inputs[inputNumber].reset();
+            _imp->guiInputs[inputNumber].reset();
+        } else {
+            _imp->guiInputs[inputNumber].reset();
+            _imp->mustCopyGuiInputs = true;
+        }
     }
     
     if (_imp->isBeingDestroyed) {
@@ -3559,7 +3570,9 @@ Node::disconnectInput(int inputNumber)
     }
     
     Q_EMIT inputChanged(inputNumber);
-    onInputChanged(inputNumber);
+    if (!useGuiValues) {
+        onInputChanged(inputNumber);
+    }
     computeHash();
     
     _imp->ifGroupForceHashChangeOfInputs();
@@ -3578,36 +3591,46 @@ Node::disconnectInput(Node* input)
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int found = -1;
+    bool useGuiValues = isNodeRendering();
+    _imp->liveInstance->abortAnyEvaluation();
     NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i].get() == input) {
-                inputShared = _imp->inputs[i];
-                found = (int)i;
-                break;
+        if (!useGuiValues) {
+            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+                if (_imp->inputs[i].get() == input) {
+                    inputShared = _imp->inputs[i];
+                    found = (int)i;
+                    break;
+                }
+            }
+        } else {
+            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+                if (_imp->guiInputs[i].get() == input) {
+                    inputShared = _imp->guiInputs[i];
+                    found = (int)i;
+                    break;
+                }
             }
         }
     }
     if (found != -1) {
-        ///If the node is currently rendering, queue the action instead of executing it
-        {
-            if (isNodeRendering() && !appPTR->isBackground()) {
-                _imp->liveInstance->abortAnyEvaluation();
-                ConnectInputAction action(inputShared,eInputActionDisconnect,found);
-                QMutexLocker cql(&_imp->connectionQueueMutex);
-                _imp->connectionQueue.push_back(action);
-                return found;
-            }
-        }
         
         {
             QMutexLocker l(&_imp->inputsMutex);
-            _imp->inputs[found].reset();
+            if (!useGuiValues) {
+                _imp->inputs[found].reset();
+                _imp->guiInputs[found].reset();
+            } else {
+                _imp->guiInputs[found].reset();
+                _imp->mustCopyGuiInputs = true;
+            }
         }
-        input->disconnectOutput(this);
+        input->disconnectOutput(useGuiValues,this);
         Q_EMIT inputChanged(found);
-        onInputChanged(found);
+        if (!useGuiValues) {
+            onInputChanged(found);
+        }
         computeHash();
         
         _imp->ifGroupForceHashChangeOfInputs();
@@ -3624,7 +3647,7 @@ Node::disconnectInput(Node* input)
 }
 
 int
-Node::disconnectOutput(Node* output)
+Node::disconnectOutput(bool useGuiValues,Node* output)
 {
     assert(output);
     ////Only called by the main-thread
@@ -3632,13 +3655,25 @@ Node::disconnectOutput(Node* output)
     int ret = -1;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        std::list<Node*>::iterator it = std::find(_imp->outputs.begin(),_imp->outputs.end(),output);
-        
-        if ( it != _imp->outputs.end() ) {
-            ret = std::distance(_imp->outputs.begin(), it);
-            _imp->outputs.erase(it);
+        if (!useGuiValues) {
+            std::list<Node*>::iterator it = std::find(_imp->outputs.begin(),_imp->outputs.end(),output);
+            
+            if ( it != _imp->outputs.end() ) {
+                ret = std::distance(_imp->outputs.begin(), it);
+                _imp->outputs.erase(it);
+            }
         }
+        std::list<Node*>::iterator it = std::find(_imp->guiOutputs.begin(),_imp->guiOutputs.end(),output);
+        
+        if ( it != _imp->guiOutputs.end() ) {
+            ret = std::distance(_imp->guiOutputs.begin(), it);
+            _imp->guiOutputs.erase(it);
+        }
+        
+        
     }
+    
+    //Will just refresh the gui
     Q_EMIT outputsChanged();
     
     return ret;
@@ -3790,7 +3825,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     if (hideGui || !_imp->isMultiInstance) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i]) {
-                _imp->inputs[i]->disconnectOutput(this);
+                _imp->inputs[i]->disconnectOutput(false,this);
             }
         }
     }
@@ -3897,7 +3932,7 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     ///for all inputs, reconnect their output to this node
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
-            _imp->inputs[i]->connectOutput(this);
+            _imp->inputs[i]->connectOutput(false,this);
         }
     }
     
@@ -4107,7 +4142,7 @@ Node::makePreviewImage(SequenceTime time,
     Natron::EffectInstance* effect = 0;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
-        effect = isGroup->getOutputNode()->getLiveInstance();
+        effect = isGroup->getOutputNode(false)->getLiveInstance();
     } else {
         effect = _imp->liveInstance.get();
     }
@@ -5969,28 +6004,25 @@ Node::dequeueActions()
     if (_imp->rotoContext) {
         _imp->rotoContext->dequeueGuiActions();
     }
-    std::list<ConnectInputAction> queue;
+    
+    std::set<int> inputChanges;
     {
-        QMutexLocker k(&_imp->connectionQueueMutex);
-        queue = _imp->connectionQueue;
-        _imp->connectionQueue.clear();
+        QMutexLocker k(&_imp->inputsMutex);
+        assert(_imp->guiInputs.size() == _imp->inputs.size());
+
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i] != _imp->guiInputs[i]) {
+                inputChanges.insert(i);
+            }
+        }
+    }
+    {
+        QMutexLocker k(&_imp->outputsMutex);
+        _imp->outputs = _imp->guiOutputs;
     }
     
-    
-    for (std::list<ConnectInputAction>::iterator it = queue.begin(); it != queue.end(); ++it) {
-        
-        switch (it->type) {
-            case eInputActionConnect:
-                connectInput(it->node, it->inputNb);
-                break;
-            case eInputActionDisconnect:
-                disconnectInput(it->inputNb);
-                break;
-            case eInputActionReplace:
-                replaceInput(it->node, it->inputNb);
-                break;
-        }
-
+    for (std::set<int>::iterator it = inputChanges.begin(); it!=inputChanges.end(); ++it) {
+        inputChanged(*it);
     }
     
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);

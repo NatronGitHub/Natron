@@ -317,9 +317,20 @@ public:
     boost::shared_ptr<Node> getInput(int index) const;
     
     /**
+     * @brief Returns the input as seen on the gui. This is not necessarily the same as the value returned by getInput.
+     **/
+    boost::shared_ptr<Node> getGuiInput(int index) const;
+    
+    /**
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
     boost::shared_ptr<Node> getRealInput(int index) const;
+    
+private:
+    
+    boost::shared_ptr<Node> getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const;
+    
+public:
     
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
@@ -336,7 +347,8 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<boost::shared_ptr<Natron::Node> > & getInputs_mt_safe() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Natron::Node> > & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Natron::Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
     std::vector<boost::shared_ptr<Natron::Node> > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
@@ -423,6 +435,7 @@ public:
     void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
 
     const std::list<Node* > & getOutputs() const;
+    const std::list<Node* > & getGuiOutputs() const;
     void getOutputs_mt_safe(std::list<Node*>& outputs) const;
     
     /**
@@ -534,12 +547,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(Node* output);
+    void connectOutput(bool useGuiValues,Node* output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(Node*output);
+    int disconnectOutput(bool useGuiValues,Node*output);
     
 public:
     
@@ -1034,6 +1047,10 @@ Q_SIGNALS:
 
     void knobsInitialized();
 
+    /*
+     * @brief Emitted whenever an input changed on the GUI. Note that at the time this signal is emitted, the value returned by
+     * getInput() is not necessarily the same as the value returned by getGuiInput() since the node might still be rendering.
+     */
     void inputChanged(int);
 
     void outputsChanged();

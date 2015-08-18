@@ -151,7 +151,7 @@ DopeSheetPrivate::~DopeSheetPrivate()
 
 Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const
 {
-    const std::list<Natron::Node *> &outputs = node->getOutputs();
+    const std::list<Natron::Node *> &outputs = node->getGuiOutputs();
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return 0;
     }
@@ -179,7 +179,7 @@ Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node
 
 Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Node *node,std::list<Natron::Node*>& markedNodes) const
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > inputs = node->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> > &inputs = node->getGuiInputs();
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return 0;
     }
@@ -211,7 +211,7 @@ Natron::Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Natron::Nod
 
 void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vector<boost::shared_ptr<DSNode> > *result) const
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > &inputs = node->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> > &inputs = node->getGuiInputs();
 
     for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = (*it);

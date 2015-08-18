@@ -1072,8 +1072,8 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<boost::weak_ptr<Node> > inputs;
-    std::list<boost::weak_ptr<Node> > outputs;
+    std::vector<boost::weak_ptr<Node> > inputs,guiInputs;
+    std::list<boost::weak_ptr<Node> > outputs,guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
     bool isEditable;
@@ -1083,7 +1083,9 @@ struct NodeGroupPrivate
     NodeGroupPrivate()
     : nodesLock(QMutex::Recursive)
     , inputs()
+    , guiInputs()
     , outputs()
+    , guiOutputs()
     , isDeactivatingGroup(false)
     , isActivatingGroup(false)
     , isEditable(true)
@@ -1188,7 +1190,7 @@ NodeGroup::getInputLabel(int inputNb) const
 double
 NodeGroup::getCurrentTime() const
 {
-    NodePtr node = getOutputNodeInput();
+    NodePtr node = getOutputNodeInput(false);
     if (node) {
         return node->getLiveInstance()->getCurrentTime();
     }
@@ -1198,7 +1200,7 @@ NodeGroup::getCurrentTime() const
 int
 NodeGroup::getCurrentView() const
 {
-    NodePtr node = getOutputNodeInput();
+    NodePtr node = getOutputNodeInput(false);
     if (node) {
         return node->getLiveInstance()->getCurrentView();
     }
@@ -1365,50 +1367,45 @@ NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
 }
 
 boost::shared_ptr<Natron::Node>
-NodeGroup::getOutputNode() const
+NodeGroup::getOutputNode(bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
     ///A group can only have a single output.
-    if (_imp->outputs.empty()) {
+    if ((!useGuiConnexions && _imp->outputs.empty()) || (useGuiConnexions && _imp->guiOutputs.empty())) {
         return NodePtr();
     }
-    return _imp->outputs.front().lock();
-}
-
-NodeList
-NodeGroup::getAllOutputNodes() const
-{
-    NodeList ret;
-    QMutexLocker k(&_imp->nodesLock);
-    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        NodePtr node = it->lock();
-        if (node) {
-            ret.push_back(node);
-        }
-    }
-    return ret;
+    return useGuiConnexions ? _imp->guiOutputs.front().lock() : _imp->outputs.front().lock();
 }
 
 boost::shared_ptr<Natron::Node>
-NodeGroup::getOutputNodeInput() const
+NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
 {
-    NodePtr output = getOutputNode();
+    NodePtr output = getOutputNode(useGuiConnexions);
     if (output) {
-        return output->getInput(0);
+        return useGuiConnexions ? output->getGuiInput(0) : output->getInput(0);
     }
     return NodePtr();
 }
 
 boost::shared_ptr<Natron::Node>
-NodeGroup::getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const
+NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const
 {
     
     {
         QMutexLocker k(&_imp->nodesLock);
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i].lock() == input) {
-                return getNode()->getInput(i);
+        if (!useGuiConnexions) {
+            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+                if (_imp->inputs[i].lock() == input) {
+                    return getNode()->getInput(i);
+                }
             }
+        } else {
+            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+                if (_imp->guiInputs[i].lock() == input) {
+                    return getNode()->getGuiInput(i);
+                }
+            }
+
         }
     }
     return boost::shared_ptr<Natron::Node>();

@@ -893,7 +893,7 @@ NodeGui::refreshPositionEnd(double x,
     refreshEdges();
     NodePtr node = getNode();
     if (node) {
-        const std::list<Natron::Node* > & outputs = node->getOutputs();
+        const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
 
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
@@ -999,7 +999,7 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
+                const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
                 for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGuiI> node_gui_i = (*it)->getNodeGui();
                     if (!node_gui_i) {
@@ -1092,7 +1092,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = getNode()->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = getNode()->getGuiInputs();
     if (_inputEdges.size() != nodeInputs.size()) {
         return;
     }
@@ -1306,7 +1306,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    std::vector<NodePtr> inputs = node->getInputs_copy();
+    const std::vector<NodePtr>& inputs = node->getGuiInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1615,7 +1615,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & inputs = getNode()->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> > & inputs = getNode()->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || _inputEdges.size() != inputs.size() ) {
         return false;
@@ -1746,7 +1746,7 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = node->getOutputs();
+    const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
     for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
@@ -2188,7 +2188,7 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
+        const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGuiI> outputGuiI = (*it)->getNodeGui();
@@ -2395,7 +2395,7 @@ void
 NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
-        if ( getNode()->getOutputs().empty() ) {
+        if ( getNode()->getGuiOutputs().empty() ) {
             if ( !_outputEdge->isVisible() ) {
                 _outputEdge->setActive(true);
                 _outputEdge->show();
@@ -2609,7 +2609,7 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
+    const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
     for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();

@@ -326,17 +326,19 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
 
-#pragma message WARN("BUG? the value stored to showNode is overwritten below")
-    bool showNode = nodeGui->isSettingsPanelVisible();
 
     DopeSheet::ItemType nodeType = dsNode->getItemType();
     QTreeWidgetItem *nodeItem = dsNode->getTreeItem();
 
+    bool showNode;
     if (nodeType == DopeSheet::ItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
-    }
-    else {
+    } else {
         showNode = true;
+    }
+    
+    if (!nodeGui->isSettingsPanelVisible()) {
+        showNode = false;
     }
 
     nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
