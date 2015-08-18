@@ -89,23 +89,23 @@ class OutputEffectInstance;
 typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
 
 
-class PropertiesBinWrapper : public QWidget, public ScriptObject
-{
-public:
-
-    PropertiesBinWrapper(QWidget* parent)
-    : QWidget(parent)
-    , ScriptObject()
-    {
-
-    }
-};
-
 struct GuiPrivate;
+
 class Gui
     : public QMainWindow, public SerializableWindow, public boost::noncopyable
 {
     Q_OBJECT
+
+public:
+    class PropertiesBinWrapper : public QWidget, public ScriptObject
+    {
+    public:
+        PropertiesBinWrapper(QWidget* parent)
+        : QWidget(parent)
+        , ScriptObject()
+        {
+        }
+    };
 
 public:
     explicit Gui(GuiAppInstance* app,
@@ -688,50 +688,4 @@ private:
 
     boost::scoped_ptr<GuiPrivate> _imp;
 };
-
-
-/*This class represents a floating pane that embeds a widget*/
-class FloatingWidget
-    : public QWidget, public SerializableWindow
-{
-    Q_OBJECT
-
-public:
-
-    explicit FloatingWidget(Gui* gui,
-                            QWidget* parent = 0);
-
-    virtual ~FloatingWidget();
-
-    /*Set the embedded widget. Only 1 widget can be embedded
-       by FloatingWidget. Once set, this function does nothing
-       for subsequent calls..*/
-    void setWidget(QWidget* w);
-
-    void removeEmbeddedWidget();
-
-    QWidget* getEmbeddedWidget() const
-    {
-        return _embeddedWidget;
-    }
-
-public Q_SLOTS:
-
-    void onProjectNameChanged(const QString& name);
-    
-Q_SIGNALS:
-
-    void closed();
-
-private:
-
-    virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    QWidget* _embeddedWidget;
-    QScrollArea* _scrollArea;
-    QVBoxLayout* _layout;
-    Gui* _gui;
-};
-
 #endif // NATRON_GUI_GUI_H_

@@ -24,26 +24,26 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/ParameterWrapper.h"
+#include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 
-
-#include "Gui/NodeGui.h"
-#include "Gui/Gui.h"
-#include "Gui/TabWidget.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ProjectGui.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/Histogram.h"
-#include "Gui/Splitter.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/ScriptEditor.h"
+#include "Gui/FloatingWidget.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/Histogram.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/ProjectGui.h"
 #include "Gui/PythonPanels.h"
+#include "Gui/ScriptEditor.h"
+#include "Gui/Splitter.h"
+#include "Gui/TabWidget.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)

@@ -76,6 +76,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Edge.h"
+#include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"

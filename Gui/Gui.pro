@@ -78,6 +78,7 @@ SOURCES += \
     DopeSheetHierarchyView.cpp \
     DopeSheetEditor.cpp \
     Edge.cpp \
+    FloatingWidget.cpp \
     FromQtEnums.cpp \
     Gui.cpp \
     GuiApplicationManager.cpp \
@@ -171,6 +172,7 @@ HEADERS += \
     DopeSheetHierarchyView.h \
     DopeSheetEditor.h \
     Edge.h \
+    FloatingWidget.h \
     FromQtEnums.h \
     GroupBoxLabel.h \
     Gui.h \

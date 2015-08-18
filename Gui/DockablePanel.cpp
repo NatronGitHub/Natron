@@ -15,8 +15,6 @@
 #include "DockablePanel.h"
 
 #include <cfloat>
-#include <iostream>
-#include <fstream>
 
 #include <QLayout>
 #include <QAction>
@@ -73,6 +71,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/CurveEditorUndoRedo.h"
 #include "Gui/CurveGui.h"
 #include "Gui/DopeSheetEditor.h"
+#include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
