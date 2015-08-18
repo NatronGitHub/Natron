@@ -490,6 +490,7 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
+    _graph->update();
 
 }
 
