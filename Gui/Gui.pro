@@ -130,6 +130,7 @@ SOURCES += \
     TrackerGui.cpp \
     Utils.cpp \
     ViewerGL.cpp \
+    ViewerGLPrivate.cpp \
     ViewerTab.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
     NatronGui/pyguiapplication_wrapper.cpp \
@@ -222,6 +223,7 @@ HEADERS += \
     TrackerGui.h \
     Utils.h \
     ViewerGL.h \
+    ViewerGLPrivate.h \
     ViewerTab.h \
     ZoomContext.h \
     ../libs/OpenFX/include/ofxCore.h \

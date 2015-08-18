@@ -444,11 +444,6 @@ private:
     void checkFrameBufferCompleteness(const char where[],bool silent = true);
 
     /**
-     *@brief Checks extensions and init glew on windows. Called by  initializeGL()
-     **/
-    void initAndCheckGlExtensions ();
-
-    /**
      *@brief Initialises shaders. If they were initialized ,returns instantly.
      **/
     void initShaderGLSL(); // init shaders
@@ -462,12 +457,6 @@ private:
     };
 
     /**
-     *@brief Fill the rendering VAO with vertices and texture coordinates
-     * that depends upon the currently displayed texture.
-     **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonModeEnum polygonMode);
-
-    /**
      *@brief Makes the viewer display black only.
      **/
     void clearViewer();
@@ -476,11 +465,6 @@ private:
      *@brief Returns !=0 if the extension given by its name is supported by this OpenGL version.
      **/
     int isExtensionSupported(const char* extension);
-
-    QString getOpenGLVersionString() const;
-
-    QString getGlewVersionString() const;
-
 
     /**
      *@brief Called inside paintGL(). It will draw all the overlays. 
