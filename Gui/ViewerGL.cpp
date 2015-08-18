@@ -40,7 +40,6 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Gui/ActionShortcuts.h" // kShortcutGroupViewer ...
 #include "Gui/CurveWidget.h"
-#include "Gui/DockablePanel.h" // NodeSettingsPanel
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // isMouseShortcut
@@ -50,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
 #include "Gui/Texture.h"
 #include "Gui/ViewerTab.h"

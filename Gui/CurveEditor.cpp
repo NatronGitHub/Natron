@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
+#include "Gui/NodeSettingsPanel.h"
 
 using std::make_pair;
 using std::cout;

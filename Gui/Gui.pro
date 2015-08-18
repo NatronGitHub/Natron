@@ -71,6 +71,7 @@ SOURCES += \
     CustomParamInteract.cpp \
     DefaultOverlays.cpp \
     DockablePanel.cpp \
+    DockablePanelPrivate.cpp \
     DopeSheet.cpp \
     DopeSheetView.cpp \
     DopeSheetEditorUndoRedo.cpp \
@@ -100,6 +101,7 @@ SOURCES += \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
+    NodeSettingsPanel.cpp \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
@@ -107,6 +109,7 @@ SOURCES += \
     QtDecoder.cpp \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
+    RightClickableWidget.cpp \
     RotoGui.cpp \
     RotoPanel.cpp \
     RotoUndoCommand.cpp \
@@ -120,6 +123,7 @@ SOURCES += \
     SpinBox.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
+    TabGroup.cpp \
     TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
@@ -160,6 +164,7 @@ HEADERS += \
     CustomParamInteract.h \
     DefaultOverlays.h \
     DockablePanel.h \
+    DockablePanelPrivate.h \
     DopeSheet.h \
     DopeSheetView.h \
     DopeSheetEditorUndoRedo.h \
@@ -192,6 +197,7 @@ HEADERS += \
     NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeGuiSerialization.h \
+    NodeSettingsPanel.h \
     PreferencesPanel.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
@@ -200,6 +206,7 @@ HEADERS += \
     QtDecoder.h \
     QtEncoder.h \
     RenderingProgressDialog.h \
+    RightClickableWidget.h \
     RotoGui.h \
     RotoPanel.h \
     RotoUndoCommand.h \
@@ -213,6 +220,7 @@ HEADERS += \
     SpinBox.h \
     SplashScreen.h \
     Splitter.h \
+    TabGroup.h \
     TableModelView.h \
     TabWidget.h \
     TextRenderer.h \

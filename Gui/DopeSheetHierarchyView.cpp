@@ -16,6 +16,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
 
 
 typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;

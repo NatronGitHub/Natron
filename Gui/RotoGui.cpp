@@ -17,6 +17,8 @@
 
 #include <algorithm> // min, max
 
+#include "Global/GLIncludes.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QString>
@@ -34,38 +36,38 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include <ofxNatron.h>
+
+#include "Engine/KnobTypes.h"
+#include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
-#include "Engine/TimeLine.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/Lut.h"
 #include "Engine/RotoContextPrivate.h"
-#include "Engine/Transform.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/TimeLine.h"
+#include "Engine/Transform.h"
 
-#include <ofxNatron.h>
-
-#include "Gui/FromQtEnums.h"
-#include "Gui/NodeGui.h"
-#include "Gui/DockablePanel.h"
-#include "Gui/Button.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/RotoUndoCommand.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/ComboBox.h"
-#include "Gui/Gui.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/Menu.h"
+#include "Gui/Button.h"
+#include "Gui/ComboBox.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/FromQtEnums.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/Menu.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/RotoUndoCommand.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Utils.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
-#include "Global/GLIncludes.h"
 
 #define kControlPointMidSize 3
 #define kBezierSelectionTolerance 8
