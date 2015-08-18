@@ -27,6 +27,7 @@
 #include "Engine/Curve.h"
 using namespace Natron;
 
+static AppManager* g_manager = 0;
 
 BaseTest::BaseTest()
     : testing::Test()
@@ -72,23 +73,23 @@ BaseTest::registerTestPlugins()
 void
 BaseTest::SetUp()
 {
-    AppManager* manager = new AppManager;
-    int argc = 0;
-    CLArgs cl;
-    manager->load(argc, 0, cl);
+    if (!g_manager) {
+        g_manager = new AppManager;
+        int argc = 0;
+        CLArgs cl;
+        g_manager->load(argc, 0, cl);
+    }
 
-    _app = manager->getTopLevelInstance();
-
+    _app = g_manager->getTopLevelInstance();
     registerTestPlugins();
+
 }
 
 void
 BaseTest::TearDown()
 {
-    _app->quit();
-    _app = 0;
     appPTR->setNumberOfThreads(0);
-    delete appPTR;
+ 
 }
 
 boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,

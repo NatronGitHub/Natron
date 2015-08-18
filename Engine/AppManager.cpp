@@ -1034,7 +1034,9 @@ AppManager::load(int &argc,
 
 AppManager::~AppManager()
 {
-    assert( _imp->_appInstances.empty() );
+    while (!_imp->_appInstances.empty()) {
+        _imp->_appInstances.begin()->second.app->quit();
+    }
     
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
