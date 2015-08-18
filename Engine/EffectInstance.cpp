@@ -940,7 +940,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.rotoPaintNodes = rotoPaintNodes;
     args.doNansHandling = doNanHandling;
     args.draftMode = draftMode;
-    args.tilesSupported = supportsTiles();
+    args.tilesSupported = getNode()->getCurrentSupportTiles();
     ++args.validArgs;
     
 }
@@ -6560,6 +6560,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         _imp->runChangedParamCallback(k,userEdited,pythonCB);
     }
 
+    ///Refresh the dynamic properties that can be changed during the instanceChanged action
+    node->refreshDynamicProperties();
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.
     ///This is safe to do so because if this is called while in render() it won't clear the input images

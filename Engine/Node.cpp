@@ -242,9 +242,12 @@ struct Node::Implementation
     , createdComponentsMutex()
     , createdComponents()
     , paintStroke()
-    , currentThreadSafetyMutex()
+    , pluginsPropMutex()
     , pluginSafety(Natron::eRenderSafetyInstanceSafe)
     , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , currentSupportTiles(false)
+    , currentSupportOpenGLRender(Natron::ePluginOpenGLRenderSupportNone)
+    , currentSupportSequentialRender(Natron::eSequentialPreferenceNotSequential)
     , duringPaintStrokeCreation(false)
     , lastStrokeMovementMutex()
     , lastStrokeMovementBbox()
@@ -448,8 +451,11 @@ struct Node::Implementation
     
     boost::weak_ptr<RotoDrawableItem> paintStroke;
     
-    mutable QMutex currentThreadSafetyMutex;
+    mutable QMutex pluginsPropMutex;
     Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
+    bool currentSupportTiles;
+    Natron::PluginOpenGLRenderSupport currentSupportOpenGLRender;
+    Natron::SequentialPreferenceEnum currentSupportSequentialRender;
     
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
@@ -613,6 +619,11 @@ Node::load(const std::string & parentMultiInstanceName,
         throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
     }
     
+    /*
+     Set modifiable props
+     */
+    refreshDynamicProperties();
+    
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
     }
@@ -708,22 +719,73 @@ Node::isDuringPaintStrokeCreation() const
 void
 Node::setRenderThreadSafety(Natron::RenderSafetyEnum safety)
 {
-    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    QMutexLocker k(&_imp->pluginsPropMutex);
     _imp->currentThreadSafety = safety;
 }
 
 Natron::RenderSafetyEnum
 Node::getCurrentRenderThreadSafety() const
 {
-    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    QMutexLocker k(&_imp->pluginsPropMutex);
     return _imp->currentThreadSafety;
 }
 
 void
 Node::revertToPluginThreadSafety()
 {
-    QMutexLocker k(&_imp->currentThreadSafetyMutex);
+    QMutexLocker k(&_imp->pluginsPropMutex);
     _imp->currentThreadSafety = _imp->pluginSafety;
+}
+
+void
+Node::setCurrentOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    _imp->currentSupportOpenGLRender = support;
+}
+
+Natron::PluginOpenGLRenderSupport
+Node::getCurrentOpenGLRenderSupport() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->currentSupportOpenGLRender;
+}
+
+void
+Node::setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    _imp->currentSupportSequentialRender = support;
+}
+
+Natron::SequentialPreferenceEnum
+Node::getCurrentSequentialRenderSupport() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->currentSupportSequentialRender;
+}
+
+void
+Node::setCurrentSupportTiles(bool support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    _imp->currentSupportTiles = support;
+}
+
+bool
+Node::getCurrentSupportTiles() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->currentSupportTiles;
+}
+
+void
+Node::refreshDynamicProperties()
+{
+    setCurrentOpenGLRenderSupport(_imp->liveInstance->supportsOpenGLRender());
+    setCurrentSupportTiles(_imp->liveInstance->supportsTiles());
+    setCurrentSequentialRenderSupport(_imp->liveInstance->getSequentialPreference());
+
 }
 
 void

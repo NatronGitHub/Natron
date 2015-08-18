@@ -517,6 +517,12 @@ enum PenType
     ePenTypeCursor,
     ePenTypeEraser
 };
+    
+enum PluginOpenGLRenderSupport {
+    ePluginOpenGLRenderSupportNone, // None
+    ePluginOpenGLRenderSupportYes, // Can do both CPU or GPU
+    ePluginOpenGLRenderSupportNeeded // Can do only GPU
+};
 
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)

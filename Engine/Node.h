@@ -389,6 +389,17 @@ public:
     Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
+    void setCurrentOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support);
+    Natron::PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
+    
+    void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
+    Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+    
+    void setCurrentSupportTiles(bool support);
+    bool getCurrentSupportTiles() const;
+    
+    void refreshDynamicProperties();
+    
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
     void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
