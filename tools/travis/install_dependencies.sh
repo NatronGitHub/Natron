@@ -147,7 +147,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
     fi
 
+    PATH=/usr/local/bin:"$PATH"
     echo "Python version:"
+    type python
     python --version
     python -c "from PySide import QtGui, QtCore, QtOpenGL"
     echo "PySide libs:"
