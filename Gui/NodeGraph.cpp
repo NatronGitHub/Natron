@@ -1777,9 +1777,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             _imp->_arrowSelected->dragSource(np);
         }
         scrollViewIfNeeded(newPos);
+        mustUpdate = true;
         break;
     }
     case eEventStateDraggingNode: {
+        mustUpdate = true;
         if ( !_imp->_selection.empty() ) {
             
             bool controlDown = modCASIsControl(e);
@@ -2072,6 +2074,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         mustUpdateNavigator = true;
         _imp->_root->moveBy(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
+        mustUpdate = true;
         break;
     }
     case eEventStateResizingBackdrop: {
@@ -2081,6 +2084,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         scrollViewIfNeeded(newPos);
+        mustUpdate = true;
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
@@ -2095,6 +2099,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         scrollViewIfNeeded(newPos);
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
         _imp->_selectionRect->show();
+        mustUpdate = true;
         break;
     }
     case eEventStateDraggingNavigator: {
@@ -2104,15 +2109,17 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
             _imp->_lastMousePos = e->pos();
+            update();
             return;
         }
         
     } break;
     case eEventStateZoomingArea: {
-            int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
-            setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-            wheelEventInternal(modCASIsControl(e),delta);
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
+        setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+        wheelEventInternal(modCASIsControl(e),delta);
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        mustUpdate = true;
     } break;
     default:
             mustUpdate = false;
@@ -2124,6 +2131,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
+        mustUpdate = true;
     }
     
     if (mustUpdate) {
@@ -2748,6 +2756,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     }
     wheelEventInternal(modCASIsControl(e), e->delta());
     _imp->_lastMousePos = e->pos();
+    update();
 }
 
 void
