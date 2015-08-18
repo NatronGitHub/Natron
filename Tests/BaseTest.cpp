@@ -188,7 +188,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getInputsGui();
+        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
