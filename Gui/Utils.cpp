@@ -7,7 +7,7 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
-#include "Gui/Utils.h"
+#include "Utils.h"
 
 /*!
  \fn QString Natron::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)

@@ -29,8 +29,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update; sudo apt-get install gcc-4.8 g++-4.8; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90; fi
 
     if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
-    # Python 3.4
-    #sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
+    ## Python 3.4
+    ##sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     # we also need a recent ffmpeg for the newest version of the plugin
@@ -39,14 +39,14 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update
     sudo apt-get update -qq
 
-
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside libpyside-dev libshiboken-dev
+    # Note: Python 3 packages are python3-dev and python3-pyside
+    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
 
     echo "*** Python version:"
-    python3 --version
-    python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    python --version
+    python -c "from PySide import QtGui, QtCore, QtOpenGL"
     echo "*** PySide:"
-    env PKG_CONFIG_PATH=`python3-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
     echo "*** Shiboken:"
     pkg-config --libs shiboken
     cat /usr/lib/x86_64-linux-gnu/pkgconfig/shiboken.pc
@@ -71,17 +71,19 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
+    # pyside and shiboken for python2 still need the extra QtCore and QtGui include directories
     echo 'pyside: PKGCONFIG -= pyside' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)' >> config.pri
-    echo 'pyside: LIBS += -lpyside.cpython-32mu' >> config.pri
+    #echo 'pyside: LIBS += -lpyside.cpython-32mu' >> config.pri
+    echo 'pyside: LIBS += -lpyside-python2.7' >> config.pri
     # pyside doesn't have PySide::getWrapperForQObject on Ubuntu 12.04LTS Precise 
     echo 'pyside: DEFINES += PYSIDE_OLD' >> config.pri
-    echo 'shiboken: PKGCONFIG -= shiboken' >> config.pri
-    echo 'shiboken: INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)' >> config.pri
-    echo 'shiboken: LIBS += -lshiboken.cpython-32mu' >> config.pri
+    #echo 'shiboken: PKGCONFIG -= shiboken' >> config.pri
+    #echo 'shiboken: INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)' >> config.pri
+    #echo 'shiboken: LIBS += -lshiboken.cpython-32mu' >> config.pri
 
     # build OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
@@ -127,27 +129,31 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     brew install qt expat cairo glew
-    # pyside/shiboken take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
-    brew install pyside --with-python3 --without-python &
-    while true; do
-        #ps -p$! 2>& 1>/dev/null
-        #if [ $? = 0 ]; then
-        if ps -p$! 2>& 1>/dev/null; then
-          echo "still going"; sleep 10
-        else
-            break
-        fi
-    done
+    # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
+    #brew install pyside --with-python3 --without-python &
+    #while true; do
+    #    #ps -p$! 2>& 1>/dev/null
+    #    #if [ $? = 0 ]; then
+    #    if ps -p$! 2>& 1>/dev/null; then
+    #      echo "still going"; sleep 10
+    #    else
+    #        break
+    #    fi
+    #done
+    # Python 2 pyside comes precompiled!
+    brew install pyside shiboken
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
     fi
 
+    PATH=/usr/local/bin:"$PATH"
     echo "Python version:"
-    python3 --version
-    python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    type python
+    python --version
+    python -c "from PySide import QtGui, QtCore, QtOpenGL"
     echo "PySide libs:"
-    env PKG_CONFIG_PATH=`python3-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
 
 
     # OpenFX
