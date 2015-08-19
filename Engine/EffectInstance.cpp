@@ -2634,7 +2634,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
         
         foundOutputNeededComps = neededComps.find(-1);
-        assert(foundOutputNeededComps != neededComps.end());
+        if (foundOutputNeededComps == neededComps.end()) {
+            return eRenderRoIRetCodeOk;
+        }
         
         if (processAllComponentsRequested) {
             std::vector<ImageComponents> compVec;
