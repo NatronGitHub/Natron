@@ -3,7 +3,7 @@
 # Auto build Natron through cron
 #
 
-cd /root/natron-linux || exit 1
+cd /root/Natron/tools/linux || exit 1
 
 # Update
 git fetch --all
@@ -25,6 +25,6 @@ echo $PID > /tmp/natron-cron.pid || exit 1
 
 # Build (if changes)
 scl enable devtoolset-2 - << \EOF
-cd /root/natron-linux
+cd /root/Natron/tools/linux
 bash snapshot.sh >/tmp/natron-build.log 2>&1
 EOF
