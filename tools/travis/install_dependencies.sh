@@ -144,7 +144,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew install python pyside shiboken
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
-	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
     fi
 
     PATH=/usr/local/bin:"$PATH"
