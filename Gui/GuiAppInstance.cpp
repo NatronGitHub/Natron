@@ -19,6 +19,7 @@
 #include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
+#include <fontconfig/fontconfig.h>
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
@@ -190,6 +191,10 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 void
 GuiAppInstance::load(const CLArgs& cl)
 {
+    appPTR->setLoadingStatus( tr("Updating fontconfig cache...") );
+    FcConfig *fcConfig = FcInitLoadConfig();
+    FcConfigBuildFonts(fcConfig);
+
     appPTR->setLoadingStatus( tr("Creating user interface...") );
 
     declareCurrentAppVariable_Python();
