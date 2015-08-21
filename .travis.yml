@@ -22,7 +22,7 @@ compiler:
   - clang
 
 python:
-  - "3.4"
+  - "2.7"
 
 addons:
   apt:
@@ -44,8 +44,8 @@ addons:
     - libexpat1-dev
     - gdb
     - libcairo2-dev
-    - python3-dev
-    - python3-pyside
+    - python-dev
+    - python-pyside
     - libpyside-dev
     - libshiboken-dev
 

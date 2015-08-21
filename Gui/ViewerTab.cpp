@@ -3713,7 +3713,7 @@ ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     NodePtr inp;
-    std::vector<boost::shared_ptr<Natron::Node> > inputs  = _imp->viewerNode->getNode()->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
     if (inputNb >= 0 && inputNb < (int)inputs.size()) {
         if (inputs[inputNb]) {
             inp = inputs[inputNb];

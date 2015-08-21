@@ -323,7 +323,7 @@ RotoPaint::render(const RenderActionArgs& args)
         ImagePtr bgImg;
         
         bool triedGetImage = false;
-        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+        //bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
         
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
@@ -340,6 +340,49 @@ RotoPaint::render(const RenderActionArgs& args)
                 ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
                 ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
                 if (bgImg) {
+                    
+                    RectI bgBounds = bgImg->getBounds();
+                    
+                    ///The bg bounds might not be inside the roi, but yet we need to fill the whole roi, so just fill borders
+                    ///with black and transparant, e.g:
+                    /*
+                        AAAAAAAAA
+                        DDXXXXXBB
+                        DDXXXXXBB
+                        DDXXXXXBB
+                        CCCCCCCCC
+                     */
+                    RectI merge = bgBounds;
+                    merge.merge(args.roi);
+                    RectI aRect;
+                    aRect.x1 = merge.x1;
+                    aRect.y1 = bgBounds.y2;
+                    aRect.y2 = merge.y2;
+                    aRect.x2 = merge.x2;
+                    
+                    RectI bRect;
+                    bRect.x1 = bgBounds.x2;
+                    bRect.y1 = bgBounds.y1;
+                    bRect.x2 = merge.x2;
+                    bRect.y2 = bgBounds.y2;
+                    
+                    RectI cRect;
+                    cRect.x1 = merge.x1;
+                    cRect.y1 = merge.y1;
+                    cRect.x2 = merge.x2;
+                    cRect.y2 = bgBounds.y1;
+                    
+                    RectI dRect;
+                    dRect.x1 = merge.x1;
+                    dRect.y1 = bgBounds.y1;
+                    dRect.x2 = bgBounds.x1;
+                    dRect.y2 = bgBounds.y2;
+                    
+                    plane->second->fillZero(aRect);
+                    plane->second->fillZero(bRect);
+                    plane->second->fillZero(cRect);
+                    plane->second->fillZero(dRect);
+
                     plane->second->pasteFrom(*bgImg, args.roi, false);
                 } else {
                     plane->second->fillZero(args.roi);

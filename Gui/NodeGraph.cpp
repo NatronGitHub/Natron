@@ -55,48 +55,49 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 #include "Engine/AppManager.h"
-
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/Hash64.h"
-#include "Engine/FrameEntry.h"
-#include "Engine/Settings.h"
-#include "Engine/KnobFile.h"
-#include "Engine/Project.h"
-#include "Engine/Plugin.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/Node.h"
-#include "Engine/NoOp.h"
 #include "Engine/BackDrop.h"
-#include "Engine/OutputSchedulerThread.h"
+#include "Engine/FrameEntry.h"
+#include "Engine/Hash64.h"
+#include "Engine/KnobFile.h"
+#include "Engine/NoOp.h"
+#include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/ViewerInstance.h"
 
-#include "Gui/TabWidget.h"
-#include "Gui/Edge.h"
-#include "Gui/Gui.h"
-#include "Gui/DockablePanel.h"
-#include "Gui/ToolButton.h"
-#include "Gui/KnobGui.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/NodeGui.h"
-#include "Gui/Gui.h"
-#include "Gui/TimeLineGui.h"
-#include "Gui/SequenceFileDialog.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/NodeGuiSerialization.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/BackDropGui.h"
-#include "Gui/NodeBackDropSerialization.h"
-#include "Gui/NodeGraphUndoRedo.h"
-#include "Gui/NodeCreationDialog.h"
-#include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/BackDropGui.h"
+#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/Edge.h"
+#include "Gui/FloatingWidget.h"
+#include "Gui/Gui.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/Histogram.h"
+#include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeBackDropSerialization.h"
+#include "Gui/NodeCreationDialog.h"
+#include "Gui/NodeGraphUndoRedo.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeGuiSerialization.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/SequenceFileDialog.h"
+#include "Gui/TabWidget.h"
+#include "Gui/TimeLineGui.h"
+#include "Gui/ToolButton.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h"
 
@@ -833,7 +834,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = selected->getNode()->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
             if (!inputs[i]) {
@@ -969,7 +970,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     ///pop it below the selected node
     else {
 
-        const std::list<Natron::Node*>& outputs = selectedNodeInternal->getOutputs();
+        const std::list<Natron::Node*>& outputs = selectedNodeInternal->getGuiOutputs();
         if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
@@ -983,7 +984,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
             
             ///and move the selected node below recusively
-            const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
+            const std::list<Natron::Node* > & outputs = selected->getNode()->getGuiOutputs();
             for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 assert(*it);
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
@@ -1586,7 +1587,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 
                     ///find out if the node is already connected to what the edge is connected
                     bool alreadyConnected = false;
-                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getInputs_mt_safe();
+                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
                     if (src) {
                         for (U32 i = 0; i < inpNodes.size(); ++i) {
                             if ( inpNodes[i] == src->getNode() ) {
@@ -1777,9 +1778,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             _imp->_arrowSelected->dragSource(np);
         }
         scrollViewIfNeeded(newPos);
+        mustUpdate = true;
         break;
     }
     case eEventStateDraggingNode: {
+        mustUpdate = true;
         if ( !_imp->_selection.empty() ) {
             
             bool controlDown = modCASIsControl(e);
@@ -1892,7 +1895,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         
                         bool isAlreadyAnOutput = false;
-                        const std::list<Natron::Node*>& outputs = internalNode->getOutputs();
+                        const std::list<Natron::Node*>& outputs = internalNode->getGuiOutputs();
                         for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                             if (*it2 == (*it)->getNode().get()) {
                                 isAlreadyAnOutput = true;
@@ -2013,7 +2016,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
                     ///find out if the node is already connected to what the edge is connected
                     bool alreadyConnected = false;
-                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getInputs_mt_safe();
+                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
                     for (U32 i = 0; i < inpNodes.size(); ++i) {
                         if ( inpNodes[i] == edge->getSource()->getNode() ) {
                             alreadyConnected = true;
@@ -2072,6 +2075,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         mustUpdateNavigator = true;
         _imp->_root->moveBy(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
+        mustUpdate = true;
         break;
     }
     case eEventStateResizingBackdrop: {
@@ -2081,6 +2085,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         scrollViewIfNeeded(newPos);
+        mustUpdate = true;
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
@@ -2095,6 +2100,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         scrollViewIfNeeded(newPos);
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
         _imp->_selectionRect->show();
+        mustUpdate = true;
         break;
     }
     case eEventStateDraggingNavigator: {
@@ -2104,15 +2110,17 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
             _imp->_lastMousePos = e->pos();
+            update();
             return;
         }
         
     } break;
     case eEventStateZoomingArea: {
-            int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
-            setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-            wheelEventInternal(modCASIsControl(e),delta);
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
+        setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+        wheelEventInternal(modCASIsControl(e),delta);
+        setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+        mustUpdate = true;
     } break;
     default:
             mustUpdate = false;
@@ -2124,6 +2132,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
+        mustUpdate = true;
     }
     
     if (mustUpdate) {
@@ -2415,7 +2424,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
-            const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getOutputs();
+            const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getGuiOutputs();
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
                 boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
@@ -2748,6 +2757,7 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     }
     wheelEventInternal(modCASIsControl(e), e->delta());
     _imp->_lastMousePos = e->pos();
+    update();
 }
 
 void

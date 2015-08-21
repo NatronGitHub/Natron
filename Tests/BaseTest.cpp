@@ -27,6 +27,7 @@
 #include "Engine/Curve.h"
 using namespace Natron;
 
+static AppManager* g_manager = 0;
 
 BaseTest::BaseTest()
     : testing::Test()
@@ -72,23 +73,23 @@ BaseTest::registerTestPlugins()
 void
 BaseTest::SetUp()
 {
-    AppManager* manager = new AppManager;
-    int argc = 0;
-    CLArgs cl;
-    manager->load(argc, 0, cl);
+    if (!g_manager) {
+        g_manager = new AppManager;
+        int argc = 0;
+        CLArgs cl;
+        g_manager->load(argc, 0, cl);
+    }
 
-    _app = manager->getTopLevelInstance();
-
+    _app = g_manager->getTopLevelInstance();
     registerTestPlugins();
+
 }
 
 void
 BaseTest::TearDown()
 {
-    _app->quit();
-    _app = 0;
     appPTR->setNumberOfThreads(0);
-    delete appPTR;
+ 
 }
 
 boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
@@ -144,7 +145,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const std::list<Natron::Node*> & outputs = input->getOutputs();
+        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
         bool foundOutput = false;
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if ( *it == output.get() ) {
@@ -154,7 +155,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -178,7 +179,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const std::list<Natron::Node*> & outputs = input->getOutputs();
+        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
         bool foundOutput = false;
         for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if ( (*it) == output.get() ) {
@@ -188,7 +189,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {

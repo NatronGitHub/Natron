@@ -32,25 +32,26 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/RotoContext.h"
-#include "Engine/TimeLine.h"
-#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h" // for getCompositingOperators
+#include "Engine/TimeLine.h"
 
 #include "Gui/Button.h"
-#include "Gui/SpinBox.h"
 #include "Gui/ClickableLabel.h"
-#include "Gui/NodeGui.h"
+#include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/RotoUndoCommand.h"
-#include "Gui/ComboBox.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/RotoUndoCommand.h"
+#include "Gui/SpinBox.h"
 #include "Gui/Utils.h"
 
 #define COL_LABEL 0

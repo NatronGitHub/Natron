@@ -289,13 +289,18 @@ struct BezierCPPrivate
 
     ///the animation curves for the position in the 2D plane
     boost::shared_ptr<Curve> curveX,curveY;
+    boost::shared_ptr<Curve> guiCurveX,guiCurveY;
     double x,y; //< used when there is no keyframe
-
+    double guiX,guiY;
+    
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
     boost::shared_ptr<Curve> curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
+    boost::shared_ptr<Curve> guiCurveLeftBezierX,guiCurveRightBezierX,guiCurveLeftBezierY,guiCurveRightBezierY;
+    
     mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX,rightX,leftY,rightY; //< used when there is no keyframe
+    double guiLeftX,guiRightX,guiLeftY,guiRightY; //< used when there is no keyframe
     mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
     boost::shared_ptr<Double_Knob> masterTrack; //< is this point linked to a track ?
     SequenceTime offsetTime; //< the time at which the offset must be computed
@@ -304,17 +309,29 @@ struct BezierCPPrivate
     : holder(curve)
     , curveX(new Curve)
     , curveY(new Curve)
+    , guiCurveX(new Curve)
+    , guiCurveY(new Curve)
     , x(0)
     , y(0)
+    , guiX(0)
+    , guiY(0)
     , curveLeftBezierX(new Curve)
     , curveRightBezierX(new Curve)
     , curveLeftBezierY(new Curve)
     , curveRightBezierY(new Curve)
+    , guiCurveLeftBezierX(new Curve)
+    , guiCurveRightBezierX(new Curve)
+    , guiCurveLeftBezierY(new Curve)
+    , guiCurveRightBezierY(new Curve)
     , staticPositionMutex()
     , leftX(0)
     , rightX(0)
     , leftY(0)
     , rightY(0)
+    , guiLeftX(0)
+    , guiRightX(0)
+    , guiLeftY(0)
+    , guiRightY(0)
     , masterMutex()
     , masterTrack()
     , offsetTime(0)
@@ -336,24 +353,40 @@ struct BezierPrivate
     mutable std::map<int,bool> isClockwiseOriented;
     mutable bool isClockwiseOrientedStatic; //< used when the bezier has no keyframes
     
+    mutable std::map<int,bool> guiIsClockwiseOriented;
+    mutable bool guiIsClockwiseOrientedStatic; //< used when the bezier has no keyframes
+    
     bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
     
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
 
     bool isOpenBezier;
     
+    mutable QMutex guiCopyMutex;
+    bool mustCopyGui;
+    
     BezierPrivate(bool isOpenBezier)
     : points()
     , featherPoints()
     , isClockwiseOriented()
     , isClockwiseOrientedStatic(false)
+    , guiIsClockwiseOriented()
+    , guiIsClockwiseOrientedStatic(false)
     , autoRecomputeOrientation(true)
     , finished(false)
     , isOpenBezier(isOpenBezier)
+    , guiCopyMutex()
+    , mustCopyGui(false)
     {
     }
+    
+    void setMustCopyGuiBezier(bool copy)
+    {
+        QMutexLocker k(&guiCopyMutex);
+        mustCopyGui = copy;
+    }
 
-    bool hasKeyframeAtTime(double time) const
+    bool hasKeyframeAtTime(bool useGuiCurves, double time) const
     {
         // PRIVATE - should not lock
 
@@ -362,18 +395,18 @@ struct BezierPrivate
         } else {
             KeyFrame k;
 
-            return points.front()->hasKeyFrameAtTime(time);
+            return points.front()->hasKeyFrameAtTime(useGuiCurves, time);
         }
     }
 
-    void getKeyframeTimes(std::set<int>* times) const
+    void getKeyframeTimes(bool useGuiCurves, std::set<int>* times) const
     {
         // PRIVATE - should not lock
 
         if ( points.empty() ) {
             return;
         }
-        points.front()->getKeyframeTimes(times);
+        points.front()->getKeyframeTimes(useGuiCurves, times);
     }
 
     BezierCPs::const_iterator atIndex(int index) const
@@ -417,7 +450,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
@@ -442,7 +475,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;

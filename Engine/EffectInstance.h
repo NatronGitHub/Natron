@@ -1135,6 +1135,7 @@ public:
         return false;
     }
 
+
     /**
      * @brief Does this effect supports rendering at a different scale than 1 ?
      * There is no OFX property for this purpose. The only solution found for OFX is that if a render
@@ -1161,6 +1162,10 @@ public:
 
     virtual bool doesTemporalClipAccess() const {
         return false;
+    }
+
+    virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const {
+        return Natron::ePluginOpenGLRenderSupportNone;
     }
 
     /**

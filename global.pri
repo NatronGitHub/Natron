@@ -164,10 +164,10 @@ unix {
          cairo:     PKGCONFIG += cairo
      }
 
-     # User may specify an alternate python3-config from the command-line,
-     # as in "qmake PYTHON_CONFIG=python3.4-config" (MacPorts doesn't have a python3-config)
+     # User may specify an alternate python2-config from the command-line,
+     # as in "qmake PYTHON_CONFIG=python2.7-config"
      isEmpty(PYTHON_CONFIG) {
-         PYTHON_CONFIG = python3-config
+         PYTHON_CONFIG = python2-config
      }
      #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
      python {
@@ -176,7 +176,7 @@ unix {
      }
 
      # There may be different pyside.pc/shiboken.pc for different versions of python.
-     # pkg-config will probably give a bad answer, unless python3 is the system default.
+     # pkg-config will probably give a bad answer, unless python2 is the system default.
      # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
      # using a custom config.pri
      shiboken: PKGCONFIG += shiboken

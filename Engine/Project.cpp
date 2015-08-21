@@ -2021,7 +2021,7 @@ Project::createViewer()
     
 static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Natron::Node> >& nodes,const boost::shared_ptr<Natron::Node>& node)
 {
-    const std::list<Natron::Node*>& outputs = node->getOutputs();
+    const std::list<Natron::Node*>& outputs = node->getGuiOutputs();
     
     bool foundOutput = false;
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2038,7 +2038,7 @@ static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Natron::Node>
     
 static bool hasNodeInputsInList(const std::list<boost::shared_ptr<Natron::Node> >& nodes,const boost::shared_ptr<Natron::Node>& node)
 {
-    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getInputs_mt_safe();
+    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getGuiInputs();
     
     bool foundInput = false;
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2068,13 +2068,13 @@ static void addTreeInputs(const std::list<boost::shared_ptr<Natron::Node> >& nod
     if (!hasNodeInputsInList(nodes,node)) {
         Project::TreeInput input;
         input.node = node;
-        input.inputs = node->getInputs_mt_safe();
+        input.inputs = node->getGuiInputs();
         tree.inputs.push_back(input);
         markedNodes.push_back(node);
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getGuiInputs();
         for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
             if (*it2) {
                 addTreeInputs(nodes, *it2, tree, markedNodes);
@@ -2093,13 +2093,13 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
             NodesTree tree;
             tree.output.node = *it;
 
-            const std::list<Natron::Node* >& outputs = (*it)->getOutputs();
+            const std::list<Natron::Node* >& outputs = (*it)->getGuiOutputs();
             for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
                 int idx = (*it2)->inputIndex(it->get());
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }
             
-            const std::vector<boost::shared_ptr<Natron::Node> >& inputs = (*it)->getInputs_mt_safe();
+            const std::vector<boost::shared_ptr<Natron::Node> >& inputs = (*it)->getGuiInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 if (inputs[i]) {
                     addTreeInputs(nodes, inputs[i], tree, markedNodes);
@@ -2109,7 +2109,7 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
             if (tree.inputs.empty()) {
                 TreeInput input;
                 input.node = *it;
-                input.inputs = (*it)->getInputs_mt_safe();
+                input.inputs = (*it)->getGuiInputs();
                 tree.inputs.push_back(input);
             }
             

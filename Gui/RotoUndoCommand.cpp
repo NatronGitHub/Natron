@@ -517,7 +517,7 @@ RemovePointUndoCommand::redo()
             }
         }
         isBezier->setAutoOrientationComputation(true);
-        isBezier->refreshPolygonOrientation();
+        isBezier->refreshPolygonOrientation(true);
     }
 
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
@@ -687,9 +687,9 @@ dragTangent(double time,
 {
     Transform::Point3D ltan,rtan,pos;
     ltan.z = rtan.z = pos.z = 1;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(time, &ltan.x, &ltan.y,true);
-    p.getRightBezierPointAtTime(time, &rtan.x, &rtan.y,true);
-    p.getPositionAtTime(time, &pos.x, &pos.y,true);
+    bool isOnKeyframe = p.getLeftBezierPointAtTime(true,time, &ltan.x, &ltan.y,true);
+    p.getRightBezierPointAtTime(true,time, &rtan.x, &rtan.y,true);
+    p.getPositionAtTime(true,time, &pos.x, &pos.y,true);
     
     pos = Transform::matApply(transform, pos);
     ltan = Transform::matApply(transform, ltan);
@@ -706,7 +706,7 @@ dragTangent(double time,
     }
     double alpha = left ? std::atan2(pos.y - ltan.y,pos.x - ltan.x) : std::atan2(pos.y - rtan.y,pos.x - rtan.x);
     std::set<int> times;
-    p.getKeyframeTimes(&times);
+    p.getKeyframeTimes(true,&times);
 
     if (left) {
         double rightDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - rtan.x;
@@ -869,8 +869,8 @@ MoveFeatherBarUndoCommand::redo()
     
     Transform::Point3D featherPoint,controlPoint;
     featherPoint.z = controlPoint.z = 1.;
-    p->getPositionAtTime(_time, &controlPoint.x, &controlPoint.y);
-    bool isOnKeyframe = fp->getPositionAtTime(_time, &featherPoint.x, &featherPoint.y);
+    p->getPositionAtTime(true,_time, &controlPoint.x, &controlPoint.y);
+    bool isOnKeyframe = fp->getPositionAtTime(true,_time, &featherPoint.x, &featherPoint.y);
     
     controlPoint = Transform::matApply(transform, controlPoint);
     featherPoint = Transform::matApply(transform, featherPoint);
@@ -908,8 +908,8 @@ MoveFeatherBarUndoCommand::redo()
         }
         
         double leftX,leftY,rightX,rightY,norm;
-        Bezier::leftDerivativeAtPoint(_time, **cur, **prev, transform ,&leftX, &leftY);
-        Bezier::rightDerivativeAtPoint(_time, **cur, **next, transform ,&rightX, &rightY);
+        Bezier::leftDerivativeAtPoint(true,_time, **cur, **prev, transform ,&leftX, &leftY);
+        Bezier::rightDerivativeAtPoint(true,_time, **cur, **next, transform ,&rightX, &rightY);
         norm = sqrt( (rightX - leftX) * (rightX - leftX) + (rightY - leftY) * (rightY - leftY) );
         
         ///normalize derivatives by their norm
@@ -1433,10 +1433,10 @@ MakeEllipseUndoCommand::redo()
             boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
             boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
             double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(_time, &topX, &topY);
-            right->getPositionAtTime(_time, &rightX, &rightY);
-            bottom->getPositionAtTime(_time, &btmX, &btmY);
-            left->getPositionAtTime(_time, &leftX, &leftY);
+            top->getPositionAtTime(true,_time, &topX, &topY);
+            right->getPositionAtTime(true,_time, &rightX, &rightY);
+            bottom->getPositionAtTime(true,_time, &btmX, &btmY);
+            left->getPositionAtTime(true,_time, &leftX, &leftY);
             
             _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
             _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);

@@ -35,29 +35,30 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/bind.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "Engine/Node.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/KnobFile.h"
-#include "Engine/EffectInstance.h"
+#include <ofxNatron.h>
+
 #include "Engine/Curve.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 
-#include <ofxNatron.h>
-
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/AnimatedCheckBox.h"
-#include "Gui/SpinBox.h"
-#include "Gui/TableModelView.h"
-#include "Gui/NodeGui.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/SpinBox.h"
+#include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
 
 #define kTrackCenterName "center"

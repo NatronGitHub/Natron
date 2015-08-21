@@ -222,7 +222,7 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         n.node = *it;
 
         ///find all outputs to restore
-        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getOutputs();
+        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getGuiOutputs();
         for (std::list<Natron::Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
             bool restore = true;
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
@@ -311,7 +311,7 @@ RemoveMultipleNodesCommand::redo()
         
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
-        std::list<Natron::Node* > outputs = node->getNode()->getOutputs();
+        std::list<Natron::Node* > outputs = node->getNode()->getGuiOutputs();
         
         std::list<ViewerInstance* > viewers;
         node->getNode()->hasViewersConnected(&viewers);
@@ -338,7 +338,7 @@ RemoveMultipleNodesCommand::redo()
                     InspectorNode* inspector = dynamic_cast<InspectorNode*>( *it2 );
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
-                        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getInputs_mt_safe();
+                        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getGuiInputs();
                         ///set as active input the first non null input
                         for (U32 i = 0; i < inputs.size(); ++i) {
                             if (inputs[i]) {
@@ -490,6 +490,7 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
+    _graph->update();
 
 }
 
@@ -791,7 +792,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
     
     static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
     {
-        const std::list<Natron::Node*>& outputs = node->getNode()->getOutputs();
+        const std::list<Natron::Node*>& outputs = node->getNode()->getGuiOutputs();
         
         bool foundOutput = false;
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -810,7 +811,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
     
     static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
     {
-        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getInputs_mt_safe();
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getGuiInputs();
         
         bool foundInput = false;
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1135,7 +1136,7 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     if (!hasNodeInputsInList(nodes,node)) {
         ExtractedInput input;
         input.node = node;
-        sharedToWeak(node->getNode()->getInputs_mt_safe(),input.inputs);
+        sharedToWeak(node->getNode()->getGuiInputs(),input.inputs);
         tree.inputs.push_back(input);
         markedNodes.push_back(node);
     } else {
@@ -1161,7 +1162,7 @@ static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& 
             ExtractedTree tree;
             tree.output.node = *it;
             boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            const std::list<Natron::Node* >& outputs = n->getOutputs();
+            const std::list<Natron::Node* >& outputs = n->getGuiOutputs();
             for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
                 int idx = (*it2)->inputIndex(n.get());
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
@@ -1178,7 +1179,7 @@ static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& 
             if (tree.inputs.empty()) {
                 ExtractedInput input;
                 input.node = *it;
-                sharedToWeak(n->getInputs_mt_safe(),input.inputs);
+                sharedToWeak(n->getGuiInputs(),input.inputs);
                 tree.inputs.push_back(input);
             }
             
@@ -1462,7 +1463,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         NodeList nodes = group->getNodes();
         std::vector<NodePtr> groupInputs;
         
-        NodePtr groupOutput = group->getOutputNode();
+        NodePtr groupOutput = group->getOutputNode(true);
         group->getInputs(&groupInputs);
         
         std::list<boost::shared_ptr<NodeGui> > nodesToCopy;

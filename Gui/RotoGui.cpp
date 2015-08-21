@@ -17,6 +17,8 @@
 
 #include <algorithm> // min, max
 
+#include "Global/GLIncludes.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QString>
@@ -34,38 +36,38 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include <ofxNatron.h>
+
+#include "Engine/KnobTypes.h"
+#include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
-#include "Engine/TimeLine.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/Lut.h"
 #include "Engine/RotoContextPrivate.h"
-#include "Engine/Transform.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/TimeLine.h"
+#include "Engine/Transform.h"
 
-#include <ofxNatron.h>
-
-#include "Gui/FromQtEnums.h"
-#include "Gui/NodeGui.h"
-#include "Gui/DockablePanel.h"
-#include "Gui/Button.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/RotoUndoCommand.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/ComboBox.h"
-#include "Gui/Gui.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/Menu.h"
+#include "Gui/Button.h"
+#include "Gui/ComboBox.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/FromQtEnums.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
+#include "Gui/Menu.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/RotoUndoCommand.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Utils.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
-#include "Global/GLIncludes.h"
 
 #define kControlPointMidSize 3
 #define kBezierSelectionTolerance 8
@@ -1303,8 +1305,8 @@ RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
 
     Transform::Point3D leftDeriv,rightDeriv;
     leftDeriv.z = rightDeriv.z = 1.;
-    cp->getLeftBezierPointAtTime(time, &leftDeriv.x, &leftDeriv.y);
-    cp->getRightBezierPointAtTime(time, &rightDeriv.x, &rightDeriv.y);
+    cp->getLeftBezierPointAtTime(true ,time, &leftDeriv.x, &leftDeriv.y);
+    cp->getRightBezierPointAtTime(true ,time, &rightDeriv.x, &rightDeriv.y);
     leftDeriv = Transform::matApply(transform, leftDeriv);
     rightDeriv = Transform::matApply(transform, rightDeriv);
 
@@ -1490,7 +1492,7 @@ RotoGui::drawOverlays(double time,
                 }
                 
                 std::list< Point > points;
-                isBezier->evaluateAtTime_DeCasteljau(time,0, 100, &points, NULL);
+                isBezier->evaluateAtTime_DeCasteljau(true,time,0, 100, &points, NULL);
                 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1514,12 +1516,12 @@ RotoGui::drawOverlays(double time,
                                   -std::numeric_limits<double>::infinity(),
                                   -std::numeric_limits<double>::infinity() );
                 
-                bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(time);
+                bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(true,time);
                 
                 
                 if ( isFeatherVisible() ) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(time,0, 100, true, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(true,time,0, 100, true, &featherPoints, &featherBBox);
                     
                     if ( !featherPoints.empty() ) {
                         glLineStipple(2, 0xAAAA);
@@ -1583,11 +1585,11 @@ RotoGui::drawOverlays(double time,
 
                         double x,y;
                         Transform::Point3D p,pF;
-                        (*it2)->getPositionAtTime(time, &p.x, &p.y);
+                        (*it2)->getPositionAtTime(true, time, &p.x, &p.y);
                         p.z = 1.;
 
                         double xF,yF;
-                        (*itF)->getPositionAtTime(time, &pF.x, &pF.y);
+                        (*itF)->getPositionAtTime(true, time, &pF.x, &pF.y);
                         pF.z = 1.;
                         
                         p = Transform::matApply(transform, p);
@@ -1601,7 +1603,7 @@ RotoGui::drawOverlays(double time,
                         ///draw the feather point only if it is distinct from the associated point
                         bool drawFeather = isFeatherVisible();
                         if (drawFeather) {
-                            drawFeather = !(*it2)->equalsAtTime(time, **itF);
+                            drawFeather = !(*it2)->equalsAtTime(true, time, **itF);
                         }
                         
                         
@@ -1720,7 +1722,7 @@ RotoGui::drawOverlays(double time,
                                     featherPoint.y = yF;
                                     
                                     
-                                    Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, clockWise, transform, prevCp, it2, nextCp);
+                                    Bezier::expandToFeatherDistance(true,controlPoint, &featherPoint, distFeatherX, time, clockWise, transform, prevCp, it2, nextCp);
                                     
                                     if ( ( (_imp->state == eEventStateDraggingFeatherBar) &&
                                           ( ( *itF == _imp->rotoData->featherBarBeingDragged.first) ||
@@ -2173,9 +2175,9 @@ handleControlPointMaximum(int time,
 {
     double x,y,xLeft,yLeft,xRight,yRight;
 
-    p.getPositionAtTime(time, &x, &y);
-    p.getLeftBezierPointAtTime(time, &xLeft, &yLeft);
-    p.getRightBezierPointAtTime(time, &xRight, &yRight);
+    p.getPositionAtTime(true, time, &x, &y);
+    p.getLeftBezierPointAtTime(true, time, &xLeft, &yLeft);
+    p.getRightBezierPointAtTime(true, time, &xRight, &yRight);
 
     *r = std::max(x, *r);
     *l = std::min(x, *l);
@@ -2325,7 +2327,7 @@ RotoGui::penDown(double time,
         for (SelectedCPs::iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             if ( (_imp->selectedTool == eRotoToolSelectAll) ||
                 ( _imp->selectedTool == eRotoToolDrawBezier) ) {
-                int ret = it->first->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                int ret = it->first->isNearbyTangent(true, time, pos.x(), pos.y(), tangentSelectionTol);
                 if (ret >= 0) {
                     _imp->rotoData->tangentBeingDragged = it->first;
                     _imp->state = ret == 0 ? eEventStateDraggingLeftTangent : eEventStateDraggingRightTangent;
@@ -2333,7 +2335,7 @@ RotoGui::penDown(double time,
                 } else {
                     ///try with the counter part point
                     if (it->second) {
-                        ret = it->second->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                        ret = it->second->isNearbyTangent(true, time, pos.x(), pos.y(), tangentSelectionTol);
                     }
                     if (ret >= 0) {
                         _imp->rotoData->tangentBeingDragged = it->second;
@@ -2343,7 +2345,7 @@ RotoGui::penDown(double time,
                 }
             } else if (_imp->selectedTool == eRotoToolSelectFeatherPoints) {
                 const boost::shared_ptr<BezierCP> & fp = it->first->isFeatherPoint() ? it->first : it->second;
-                int ret = fp->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                int ret = fp->isNearbyTangent(true, time, pos.x(), pos.y(), tangentSelectionTol);
                 if (ret >= 0) {
                     _imp->rotoData->tangentBeingDragged = fp;
                     _imp->state = ret == 0 ? eEventStateDraggingLeftTangent : eEventStateDraggingRightTangent;
@@ -2351,7 +2353,7 @@ RotoGui::penDown(double time,
                 }
             } else if (_imp->selectedTool == eRotoToolSelectPoints) {
                 const boost::shared_ptr<BezierCP> & cp = it->first->isFeatherPoint() ? it->second : it->first;
-                int ret = cp->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                int ret = cp->isNearbyTangent(true, time, pos.x(), pos.y(), tangentSelectionTol);
                 if (ret >= 0) {
                     _imp->rotoData->tangentBeingDragged = cp;
                     _imp->state = ret == 0 ? eEventStateDraggingLeftTangent : eEventStateDraggingRightTangent;
@@ -2595,7 +2597,7 @@ RotoGui::penDown(double time,
                 int i = 0;
                 for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
                     double x,y;
-                    (*it)->getPositionAtTime(time, &x, &y);
+                    (*it)->getPositionAtTime(true, time, &x, &y);
                     if ( ( x >= (pos.x() - cpSelectionTolerance) ) && ( x <= (pos.x() + cpSelectionTolerance) ) &&
                         ( y >= (pos.y() - cpSelectionTolerance) ) && ( y <= (pos.y() + cpSelectionTolerance) ) ) {
                         if ( it == cps.begin() ) {
@@ -2812,7 +2814,7 @@ RotoGui::penMotion(double time,
         if ( !cursorSet && (_imp->state != eEventStateDraggingLeftTangent) && (_imp->state != eEventStateDraggingRightTangent) ) {
             ///find a nearby tangent
             for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
-                if (it->first->isNearbyTangent(time, pos.x(), pos.y(), cpTol) != -1) {
+                if (it->first->isNearbyTangent(true, time, pos.x(), pos.y(), cpTol) != -1) {
                     _imp->viewer->setCursor( QCursor(Qt::CrossCursor) );
                     cursorSet = true;
                     break;
@@ -3891,7 +3893,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
         if (prevF != fps.begin()) {
             --prevF;
         }
-        bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(time);
+        bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(true,time);
         
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
              itCp != cps.end();
@@ -3906,8 +3908,8 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
 
             Transform::Point3D controlPoint,featherPoint;
             controlPoint.z = featherPoint.z = 1;
-            (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
-            (*itF)->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
+            (*itCp)->getPositionAtTime(true, time, &controlPoint.x, &controlPoint.y);
+            (*itF)->getPositionAtTime(true, time, &featherPoint.x, &featherPoint.y);
 
             controlPoint = Transform::matApply(transform, controlPoint);
             featherPoint = Transform::matApply(transform, featherPoint);
@@ -3917,7 +3919,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
                 cp.y = controlPoint.y;
                 fp.x = featherPoint.x;
                 fp.y = featherPoint.y;
-                Bezier::expandToFeatherDistance(cp, &fp, distFeatherX, time, isClockWiseOriented, transform, prevF, itF, nextF);
+                Bezier::expandToFeatherDistance(true,cp, &fp, distFeatherX, time, isClockWiseOriented, transform, prevF, itF, nextF);
                 featherPoint.x = fp.x;
                 featherPoint.y = fp.y;
             }

@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ScriptObject.h"
 
 #include "Gui/Button.h"
+#include "Gui/FloatingWidget.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"

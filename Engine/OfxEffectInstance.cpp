@@ -36,6 +36,7 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffectAPI.h>
+#include <ofxOpenGLRender.h>
 #include <ofxhHost.h>
 
 #include <tuttle/ofxReadWrite.h>
@@ -999,6 +1000,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
 
+    getNode()->refreshDynamicProperties();
 }
 
 /** @brief map a std::string to a context */
@@ -2678,6 +2680,20 @@ OfxEffectInstance::supportsTiles() const
     }
 
     return effectInstance()->supportsTiles() && outputClip->supportsTiles();
+}
+
+Natron::PluginOpenGLRenderSupport
+OfxEffectInstance::supportsOpenGLRender() const
+{
+    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+    if (str == "false") {
+        return ePluginOpenGLRenderSupportNone;
+    } else if (str == "true") {
+        return ePluginOpenGLRenderSupportYes;
+    } else {
+        assert(str == "needed");
+        return ePluginOpenGLRenderSupportNeeded;
+    }
 }
 
 bool

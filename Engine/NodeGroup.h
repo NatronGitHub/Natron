@@ -386,13 +386,11 @@ public:
     virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
-    boost::shared_ptr<Natron::Node> getOutputNode() const;
+    boost::shared_ptr<Natron::Node> getOutputNode(bool useGuiConnexions) const;
+        
+    boost::shared_ptr<Natron::Node> getOutputNodeInput(bool useGuiConnexions) const;
     
-    std::list<boost::shared_ptr<Natron::Node> > getAllOutputNodes() const;
-    
-    boost::shared_ptr<Natron::Node> getOutputNodeInput() const;
-    
-    boost::shared_ptr<Natron::Node> getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const;
+    boost::shared_ptr<Natron::Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const;
     
     void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
     
