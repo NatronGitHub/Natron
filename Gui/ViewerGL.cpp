@@ -582,7 +582,13 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glCheckError();
         glColor4f(1., 1., 1., 1.);
         double scale = 1. / (1 << mipMapLevel);
-        _imp->viewerTab->drawOverlays(scale,scale);
+        
+        /*
+         Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
+         */
+        double time = getCurrentlyDisplayedTime();
+        _imp->viewerTab->drawOverlays(time,scale,scale);
+        
         glCheckErrorIgnoreOSXBug();
 
         if (_imp->pickerState == ePickerStateRectangle) {

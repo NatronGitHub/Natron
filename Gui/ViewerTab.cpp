@@ -1856,7 +1856,8 @@ static void transformToOpenGLMatrix(const Transform::Matrix3x3& mat,GLdouble* og
 #endif
 
 void
-ViewerTab::drawOverlays(double scaleX,
+ViewerTab::drawOverlays(double time,
+                        double scaleX,
                         double scaleY) const
 {
 
@@ -1869,7 +1870,6 @@ ViewerTab::drawOverlays(double scaleX,
         return;
     }
     
-    double time = _imp->app->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     int view = getCurrentView();
 #endif
