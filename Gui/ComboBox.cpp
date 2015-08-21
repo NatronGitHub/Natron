@@ -417,14 +417,14 @@ ComboBox::createMenu()
     if (!_cascading) {
         _rootNode->isMenu->clear();
         for (U32 i = 0; i < _rootNode->children.size(); ++i) {
+            _rootNode->children[i]->isLeaf->setEnabled( _enabled && !_readOnly );
+            _rootNode->isMenu->addAction(_rootNode->children[i]->isLeaf);
             for (U32 j = 0; j < _separators.size(); ++j) {
                 if (_separators[j] == (int)i) {
                     _rootNode->isMenu->addSeparator();
                     break;
                 }
             }
-            _rootNode->children[i]->isLeaf->setEnabled( _enabled && !_readOnly );
-            _rootNode->isMenu->addAction(_rootNode->children[i]->isLeaf);
         }
     } else {
         setEnabledRecursive(_enabled && !_readOnly,_rootNode.get());

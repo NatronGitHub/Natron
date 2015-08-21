@@ -216,11 +216,6 @@ public Q_SLOTS:
         zoomSlot( (int)v );
     }
 
-    /**
-     *@brief Convenience function. See ViewerGL::zoomSlot(int)
-     * It parses the Qstring and removes the '%' character
-     **/
-    void zoomSlot(QString);
 
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
 

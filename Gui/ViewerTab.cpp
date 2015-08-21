@@ -490,21 +490,21 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->zoomCombobox->setToolTip( "<p><b>" + tr("Zoom:") + "</b></p>"
                                      + tr("The zoom applied to the image on the viewer.") + "</p>");
 
-#pragma message WARN("TODO: add zoom in/zoom out/fit to viewer zoom menu")
-    // Unfortunately, this require a bit of work, because zoomSlot(QString) *parses* the menu entry and thus expects all entries to have the form "xx%".
+   
     // Keyboard shortcuts should be made visible to the user, not only in the shortcut editor, but also at logical places in the GUI.
 
-    //ActionWithShortcut* zoomInAction = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, this);
-    //_imp->zoomCombobox->addAction(zoomInAction);
-    //ActionWithShortcut* zoomOutAction = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, this);
-    //_imp->zoomCombobox->addAction(zoomOutAction);
-    //ActionWithShortcut* zoomFitAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, this);
-    //_imp->zoomCombobox->addAction(zoomFitAction);
+    ActionWithShortcut* fitAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, "Fit", this);
+    ActionWithShortcut* zoomInAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionZoomIn, "+", this);
+    ActionWithShortcut* zoomOutAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionZoomOut, "-", this);
+    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, "100%", this);
+    _imp->zoomCombobox->addAction(fitAction);
+    _imp->zoomCombobox->addAction(zoomInAction);
+    _imp->zoomCombobox->addAction(zoomOutAction);
+    _imp->zoomCombobox->addSeparator();
     _imp->zoomCombobox->addItem("10%");
     _imp->zoomCombobox->addItem("25%");
     _imp->zoomCombobox->addItem("50%");
     _imp->zoomCombobox->addItem("75%");
-    ActionWithShortcut* level100Action = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, "100%", this);
     _imp->zoomCombobox->addAction(level100Action);
     _imp->zoomCombobox->addItem("125%");
     _imp->zoomCombobox->addItem("150%");
@@ -1154,7 +1154,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->viewerNode,SIGNAL( activeInputsChanged() ),this,SLOT( onActiveInputsChanged() ) );
     QObject::connect( _imp->viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
                       SLOT( onColorSpaceComboBoxChanged(int) ) );
-    QObject::connect( _imp->zoomCombobox, SIGNAL( currentIndexChanged(QString) ),_imp->viewer, SLOT( zoomSlot(QString) ) );
+    QObject::connect( _imp->zoomCombobox, SIGNAL( currentIndexChanged(int) ),this, SLOT( onZoomComboboxCurrentIndexChanged(int)) );
     QObject::connect( _imp->viewer, SIGNAL( zoomChanged(int) ), this, SLOT( updateZoomComboBox(int) ) );
     QObject::connect( _imp->gainBox, SIGNAL( valueChanged(double) ), this,SLOT( onGainSpinBoxValueChanged(double) ) );
     QObject::connect( _imp->gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
@@ -1749,6 +1749,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
         _imp->zoomCombobox->setCurrentIndex_no_emit(4);
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, modifiers, key) ) {
+        zoomIn();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {
+        zoomOut();
     } else {
         QWidget::keyPressEvent(e);
     }
@@ -4913,5 +4917,45 @@ ViewerTab::onSyncViewersButtonPressed(bool clicked)
     }
     if (clicked) {
         synchronizeOtherViewersProjection();
+    }
+}
+
+void
+ViewerTab::zoomIn()
+{
+    double factor = _imp->viewer->getZoomFactor();
+    factor *= 1.1;
+    factor *= 100;
+    _imp->viewer->zoomSlot(factor);
+    QString text = QString::number(std::floor(factor + 0.5));
+    _imp->zoomCombobox->setCurrentText_no_emit(text);
+}
+
+void
+ViewerTab::zoomOut()
+{
+    double factor = _imp->viewer->getZoomFactor();
+    factor *= 0.9;
+    factor *= 100;
+    _imp->viewer->zoomSlot(factor);
+    QString text = QString::number(std::floor(factor + 0.5)) + "%";
+    _imp->zoomCombobox->setCurrentText_no_emit(text);
+}
+
+void
+ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
+{
+    QString text = _imp->zoomCombobox->getCurrentIndexText();
+    if (text == "+") {
+        zoomIn();
+    } else if (text == "-") {
+        zoomOut();
+    } else if (text == "Fit") {
+        centerViewer();
+    } else {
+        text.remove( QChar('%') );
+        int v = text.toInt();
+        assert(v > 0);
+        _imp->viewer->zoomSlot(v);
     }
 }

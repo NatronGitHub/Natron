@@ -262,9 +262,14 @@ public:
     void synchronizeOtherViewersProjection();
     
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+    
+    void zoomIn();
+    void zoomOut();
 
 public Q_SLOTS:
 
+    void onZoomComboboxCurrentIndexChanged(int index);
+    
     void startPause(bool);
     void abortRendering();
     void startBackward(bool);

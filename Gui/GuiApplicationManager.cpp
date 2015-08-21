@@ -1466,6 +1466,7 @@ GuiApplicationManager::exitApp()
     }
 }
 
+
 static bool
 matchesModifers(const Qt::KeyboardModifiers & lhs,
                 const Qt::KeyboardModifiers & rhs,
@@ -1752,10 +1753,13 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, kShortcutDescActionPrevTab, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_T);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, kShortcutDescActionCloseTab, Qt::ShiftModifier, Qt::Key_Escape);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus);
-
+    
+    
     ///Viewer
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
+
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRed, kShortcutDescActionRed, Qt::NoModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, kShortcutDescActionGreen, Qt::NoModifier, Qt::Key_G);
@@ -1768,7 +1772,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionBlueA, kShortcutDescActionBlueA, Qt::ShiftModifier, Qt::Key_B);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionAlphaA, kShortcutDescActionAlphaA, Qt::ShiftModifier, Qt::Key_A);
     
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, kShortcutDescActionClipEnabled, Qt::ShiftModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, kShortcutDescActionRefresh, Qt::NoModifier, Qt::Key_U);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, kShortcutDescActionROIEnabled, Qt::ShiftModifier, Qt::Key_W);

@@ -2466,17 +2466,6 @@ ViewerGL::zoomSlot(int v)
 }
 
 void
-ViewerGL::zoomSlot(QString str)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    str.remove( QChar('%') );
-    int v = str.toInt();
-    assert(v > 0);
-    zoomSlot(v);
-}
-
-void
 ViewerGL::fitImageToFormat()
 {
     // always running in the main thread
