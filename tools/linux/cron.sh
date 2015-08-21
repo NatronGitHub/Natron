@@ -6,8 +6,8 @@
 cd /root/Natron/tools/linux || exit 1
 
 # Update
-git fetch --all
-git merge origin/master
+#git fetch --all
+#git merge origin/workshop
 
 # set PID, don't start if running
 PID=$$
