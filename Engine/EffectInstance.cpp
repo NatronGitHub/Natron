@@ -2538,10 +2538,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             // supportsRenderScaleMaybe may have changed, update it
             supportsRS = supportsRenderScaleMaybe();
             renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
-            if (renderFullScaleThenDownscale) {
-                renderMappedScale.x = renderMappedScale.y = 1.;
-                renderMappedMipMapLevel = 0;
-            }
+            renderFullScaleThenDownscale = true;
+            renderMappedScale.x = renderMappedScale.y = 1.;
+            renderMappedMipMapLevel = 0;
+            
         }
         
         if (identity) {
