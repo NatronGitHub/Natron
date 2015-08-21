@@ -944,7 +944,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 continue;
             }
             
-            if (!isCached)
             ///if we want to force a refresh, we by-pass the cache
             if (outArgs->forceRender && outArgs->params->cachedFrame) {
                 appPTR->removeFromViewerCache(outArgs->params->cachedFrame);

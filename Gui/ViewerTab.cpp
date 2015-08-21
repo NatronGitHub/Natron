@@ -559,8 +559,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->refreshButton = new Button(_imp->firstSettingsRow);
     _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
     _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->refreshButton->setToolTip("<p>" + tr("Forces a new render of the current frame.") +
-                                     "</p><p><b>" + tr("Keyboard shortcut:") + " U</b></p>");
+    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionRefresh, "<p>" + tr("Forces a new render of the current frame.") +
+                           "</p>", _imp->refreshButton);
+
     _imp->firstRowLayout->addWidget(_imp->refreshButton);
 
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
@@ -1110,8 +1111,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     icViewerRs.addPixmap(pixViewerRs,QIcon::Normal,QIcon::Off);
     icViewerRs.addPixmap(pixViewerRsChecked,QIcon::Normal,QIcon::On);
     _imp->activateRenderScale->setIcon(icViewerRs);
-
-
+    
     _imp->centerViewerButton->setToolTip("<p>" + tr("Scales the image so it doesn't exceed the size of the viewer and centers it.") +
                                           "</p><p><b>" + tr("Keyboard shortcut:") + " F</b></p>");
 

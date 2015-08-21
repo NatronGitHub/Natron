@@ -2102,7 +2102,7 @@ GuiApplicationManager::getAllShortcuts() const
 void
 GuiApplicationManager::addShortcutAction(const QString & group,
                                          const QString & actionID,
-                                         QAction* action)
+                                         ActionWithShortcut* action)
 {
     AppShortcuts::iterator foundGroup = _imp->_actionShortcuts.find(group);
 
@@ -2131,7 +2131,7 @@ GuiApplicationManager::removeShortcutAction(const QString & group,
         if ( found != foundGroup->second.end() ) {
             KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(found->second);
             if (ka) {
-                std::list<QAction*>::iterator foundAction = std::find(ka->actions.begin(),ka->actions.end(),action);
+                std::list<ActionWithShortcut*>::iterator foundAction = std::find(ka->actions.begin(),ka->actions.end(),action);
                 if ( foundAction != ka->actions.end() ) {
                     ka->actions.erase(foundAction);
 
