@@ -480,6 +480,7 @@ RotoGui::createToolAction(QToolButton* toolGroup,
 {
     QAction *action = new QAction(icon,text,toolGroup);
 
+    
     action->setToolTip("<p>" + text + ": " + tooltip + "</p><p><b>" + tr("Keyboard shortcut:") + " " + shortcut.toString(QKeySequence::NativeText) + "</b></p>");
 
     QPoint data;

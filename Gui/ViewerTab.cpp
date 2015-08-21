@@ -567,12 +567,12 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence rsKs(Qt::CTRL + Qt::Key_P);
-    _imp->activateRenderScale->setToolTip("<p><b>" + tr("Proxy mode:") + "</b></p><p>" + tr(
-                                               "Activates the downscaling by the amount indicated by the value on the right. "
-                                               "The rendered images are degraded and as a result of this the whole rendering pipeline "
-                                               "is much faster.") +
-                                           "</p><p><b>" + tr("Keyboard shortcut:") + " " + rsKs.toString(QKeySequence::NativeText) + "</b></p>");
+    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyEnabled,
+                           "<p><b>" + tr("Proxy mode:") + "</b></p><p>" +
+                           tr("Activates the downscaling by the amount indicated by the value on the right. "
+                              "The rendered images are degraded and as a result of this the whole rendering pipeline "
+                            "is much faster.") + "</p>",_imp->activateRenderScale);
+
     _imp->activateRenderScale->setCheckable(true);
     _imp->activateRenderScale->setChecked(false);
     _imp->activateRenderScale->setDown(false);
@@ -612,7 +612,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperator->addItem(tr("Over"), QIcon(), QKeySequence(), tr("A + B(1 - Aalpha)"));
     _imp->compositingOperator->addItem(tr("Under"), QIcon(), QKeySequence(), tr("A(1 - Balpha) + B"));
     _imp->compositingOperator->addItem(tr("Minus"), QIcon(), QKeySequence(), tr("A - B"));
-    _imp->compositingOperator->addItem(tr("Wipe"), QIcon(), QKeySequence(), tr("Wipe between A and B"));
+    ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "Wipe", _imp->compositingOperator);
+    actionWipe->setToolTip(tr("Wipe between A and B"));
+    _imp->compositingOperator->addAction(actionWipe);
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
     _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
@@ -801,35 +803,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->firstFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->firstFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
-    QString tooltip = "<p>" + tr("First frame") + "</p>";
-    tooltip.append("<p><b>" + tr("Keyboard shortcut:") + " ");
-    tooltip.append( firstFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->firstFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst,"<p>" + tr("First frame") + "</p>", _imp->firstFrame_Button);
     _imp->playerLayout->addWidget(_imp->firstFrame_Button);
 
 
     _imp->previousKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
-    tooltip = "<p>" + tr("Previous keyframe") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( previousKeyFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->previousKeyFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF,"<p>" + tr("Previous Keyframe") + "</p>", _imp->previousKeyFrame_Button);
 
 
     _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Backward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence playbackFrameKey(Qt::Key_J);
-    tooltip = "<p>" + tr("Play backward") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( playbackFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->play_Backward_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward,"<p>" + tr("Play backward") + "</p>", _imp->play_Backward_Button);
     _imp->play_Backward_Button->setCheckable(true);
     _imp->play_Backward_Button->setDown(false);
     _imp->playerLayout->addWidget(_imp->play_Backward_Button);
@@ -838,48 +825,29 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence previousFrameKey(Qt::Key_Left);
-    tooltip = "<p>" + tr("Previous frame") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( previousFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->previousFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious,"<p>" + tr("Previous frame") + "</p>", _imp->previousFrame_Button);
+    
     _imp->playerLayout->addWidget(_imp->previousFrame_Button);
 
 
     _imp->stop_Button = new Button(_imp->playerButtonsContainer);
     _imp->stop_Button->setFocusPolicy(Qt::NoFocus);
     _imp->stop_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence stopKey(Qt::Key_K);
-    tooltip = "<p>" + tr("Stop") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( stopKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->stop_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerStop,"<p>" + tr("Stop") + "</p>", _imp->stop_Button);
     _imp->playerLayout->addWidget(_imp->stop_Button);
 
 
     _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence nextFrameKey(Qt::Key_Right);
-    tooltip = "<p>" + tr("Next frame") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( nextFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->nextFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext,"<p>" + tr("Next frame") + "</p>", _imp->nextFrame_Button);
     _imp->playerLayout->addWidget(_imp->nextFrame_Button);
 
 
     _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Forward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence playKey(Qt::Key_L);
-    tooltip = "<p>" + tr("Play forward") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( playKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->play_Forward_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerForward,"<p>" + tr("Play forward") + "</p>", _imp->play_Forward_Button);
     _imp->play_Forward_Button->setCheckable(true);
     _imp->play_Forward_Button->setDown(false);
     _imp->playerLayout->addWidget(_imp->play_Forward_Button);
@@ -888,23 +856,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
-    tooltip = "<p>" + tr("Next keyframe") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( nextKeyFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->nextKeyFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF,"<p>" + tr("Next Keyframe") + "</p>", _imp->nextKeyFrame_Button);
 
 
     _imp->lastFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->lastFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->lastFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
-    tooltip = "<p>" + tr("Last frame") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( lastFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->lastFrame_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast,"<p>" + tr("Last Frame") + "</p>", _imp->lastFrame_Button);
     _imp->playerLayout->addWidget(_imp->lastFrame_Button);
 
 
@@ -918,12 +876,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
-    tooltip = "<p>" + tr("Previous increment") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( previousIncrFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->previousIncrement_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr,"<p>" + tr("Previous Increment") + "</p>", _imp->previousIncrement_Button);
     _imp->playerLayout->addWidget(_imp->previousIncrement_Button);
 
 
@@ -938,12 +891,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
-    tooltip = "<p>" + tr("Next increment") + "</p>";
-    tooltip.append( "<p><b>" + tr("Keyboard shortcut:") + " " );
-    tooltip.append( nextIncrFrameKey.toString(QKeySequence::NativeText) );
-    tooltip.append("</b></p>");
-    _imp->nextIncrement_Button->setToolTip(tooltip);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr,"<p>" + tr("Next Increment") + "</p>", _imp->nextIncrement_Button);
     _imp->playerLayout->addWidget(_imp->nextIncrement_Button);
 
     _imp->playbackMode_Button = new Button(_imp->playerButtonsContainer);
@@ -1112,20 +1060,18 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     icViewerRs.addPixmap(pixViewerRsChecked,QIcon::Normal,QIcon::On);
     _imp->activateRenderScale->setIcon(icViewerRs);
     
-    _imp->centerViewerButton->setToolTip("<p>" + tr("Scales the image so it doesn't exceed the size of the viewer and centers it.") +
-                                          "</p><p><b>" + tr("Keyboard shortcut:") + " F</b></p>");
+    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer,"<p>" +
+                           tr("Scales the image so it doesn't exceed the size of the viewer and centers it.") +"</p>", _imp->centerViewerButton);
+    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled,"<p>" +
+                           tr("Clips the portion of the image displayed "
+                              "on the viewer to the project format. "
+                              "When off, everything in the union of all nodes "
+                              "region of definition will be displayed.") +"</p>", _imp->clipToProjectFormatButton);
+    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionROIEnabled,"<p>" +
+                           tr("When active, enables the region of interest that will limit"
+                              " the portion of the viewer that is kept updated.") +"</p>", _imp->enableViewerRoI);
 
-    _imp->clipToProjectFormatButton->setToolTip("<p>" + tr("Clips the portion of the image displayed "
-                                                            "on the viewer to the project format. "
-                                                            "When off, everything in the union of all nodes "
-                                                            "region of definition will be displayed.") +
-                                                 "</p><p><b>" + tr("Keyboard shortcut:") + " " + QKeySequence(Qt::SHIFT + Qt::Key_C).toString() +
-                                                 "</b></p>");
 
-    QKeySequence enableViewerKey(Qt::SHIFT + Qt::Key_W);
-    _imp->enableViewerRoI->setToolTip("<p>" + tr("When active, enables the region of interest that will limit"
-                                                  " the portion of the viewer that is kept updated.") +
-                                       "</p><p><b>" + tr("Keyboard shortcut:") + " " + enableViewerKey.toString() + "</b></p>");
     /*=================================================*/
 
     /*frame seeker*/
