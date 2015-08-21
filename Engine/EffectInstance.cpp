@@ -919,7 +919,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                          Natron::RenderSafetyEnum currentThreadSafety,
                                          bool doNanHandling,
-                                         bool draftMode)
+                                         bool draftMode,
+                                         bool viewerProgressReportEnabled)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -941,6 +942,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.doNansHandling = doNanHandling;
     args.draftMode = draftMode;
     args.tilesSupported = getNode()->getCurrentSupportTiles();
+    args.viewerProgressReportEnabled = viewerProgressReportEnabled;
     ++args.validArgs;
     
 }
@@ -3088,7 +3090,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      */
     bool tryIdentityOptim = false;
     RectI inputsRoDIntersectionPixel;
-    if (frameRenderArgs.tilesSupported && !rectsLeftToRender.empty()) {
+    if (frameRenderArgs.tilesSupported && !rectsLeftToRender.empty()
+        && (frameRenderArgs.viewerProgressReportEnabled || isDuringPaintStroke)) {
         
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
@@ -3134,15 +3137,20 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 inputsIntersection.intersect(inputRod, &inputsIntersection);
             }
         }
+        
+        /*
+         If the effect has 1 or more inputs and:
+         - An input is a mask OR
+         - Several inputs have different region of definition
+         Try to split the rectangles to render in smaller rectangles, we have great chances that these smaller rectangles
+         are identity over one of the input effect, thus avoiding pixels to render.
+         */
         if (inputsIntersectionSet && (hasMask || hasDifferentRods)) {
             inputsIntersection.toPixelEnclosing(mipMapLevel, par, &inputsRoDIntersectionPixel);
             tryIdentityOptim = true;
         }
         
     }
-    
-//#pragma message WARN("REMOVE IT")
-    //tryIdentityOptim = false;
     
     if (tryIdentityOptim) {
         optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
@@ -6544,6 +6552,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  getApp()->getTimeLine().get(),
                                                  NodePtr(),
                                                  true,
+                                                 false,
                                                  false);
 
         RECURSIVE_ACTION();

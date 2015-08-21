@@ -4245,7 +4245,8 @@ Node::makePreviewImage(SequenceTime time,
                                              getApp()->getTimeLine().get(),
                                              NodePtr(),
                                              false,
-                                             true);
+                                             true,
+                                             false);
     
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(ImageComponents::getRGBComponents());

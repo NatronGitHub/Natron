@@ -291,6 +291,8 @@ public:
     
     bool isNaNHandlingEnabled() const;
     
+    bool isInViewerProgressReportEnabled() const;
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -369,6 +371,7 @@ private:
     boost::shared_ptr<Bool_Knob> _autoWipe;
     boost::shared_ptr<Bool_Knob> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<Choice_Knob> _autoProxyLevel;
+    boost::shared_ptr<Bool_Knob> _enableProgressReport;
     
     boost::shared_ptr<Page_Knob> _nodegraphTab;
     boost::shared_ptr<Bool_Knob> _autoTurbo;

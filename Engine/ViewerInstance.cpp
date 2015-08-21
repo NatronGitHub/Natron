@@ -370,8 +370,9 @@ public:
                                    const NodePtr& rotoPaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                    const NodePtr& viewerInput,
-                                   bool draftMode)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode)
+                                   bool draftMode,
+                                   bool viewerProgressReportEnabled)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
     , viewerNode(renderRequester->getNode())
@@ -414,7 +415,7 @@ public:
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
             bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode);
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled);
         }
     }
     
@@ -487,6 +488,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            rotoPaintNode,
                                            activeStroke,
                                            NodePtr(),
+                                           false,
                                            false);
         
         
@@ -784,7 +786,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                      getTimeline().get(),
                                                      NodePtr(),
                                                      false,
-                                                     outArgs->draftModeEnabled));
+                                                     outArgs->draftModeEnabled,
+                                                     false));
     }
     
     /**
@@ -1086,10 +1089,13 @@ ViewerInstance::renderViewer_internal(int view,
     ///Don't allow different threads to write the texture entry
     FrameEntryLocker entryLocker(_imp.get());
     
-    
+
     ///Make sure the parallel render args are set on the thread and die when rendering is finished
     boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
+    bool tilingProgressReportPrefEnabled = false;
     if (useTLS) {
+        tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
+
         frameArgs.reset(new ViewerParallelRenderArgsSetter(getApp()->getProject().get(),
                                                            inArgs.params->time,
                                                            view,
@@ -1104,7 +1110,8 @@ ViewerInstance::renderViewer_internal(int view,
                                                            rotoPaintNode,
                                                            boost::shared_ptr<RotoStrokeItem>(),
                                                            inArgs.activeInputToRender->getNode(),
-                                                           inArgs.draftModeEnabled));
+                                                           inArgs.draftModeEnabled,
+                                                           tilingProgressReportPrefEnabled));
     }
 
     
@@ -1266,14 +1273,18 @@ ViewerInstance::renderViewer_internal(int view,
     
     
     std::vector<RectI> splitRoi;
-    if (inArgs.params->cachedFrame && !isSequentialRender && canAbort && inArgs.activeInputToRender->supportsTiles()) {
+    if (tilingProgressReportPrefEnabled &&
+        inArgs.params->cachedFrame &&
+        !isSequentialRender &&
+        canAbort &&
+        inArgs.activeInputToRender->supportsTiles()) {
         /*
          Split the RoI in tiles and update viewer if rendering takes too much time.
          */
        splitRoi = roi.splitIntoSmallerRects(0);
     } else {
         /*
-         We are either during playback or using auto-contrast/User RoI or drawing with rotopaint, just render 1 tile
+         Just render 1 tile
          */
         splitRoi.push_back(roi);
     }
