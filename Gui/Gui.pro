@@ -56,6 +56,7 @@ win32-msvc* {
 SOURCES += \
     AboutWindow.cpp \
     ActionShortcuts.cpp \
+    AddKnobDialog.cpp \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
     BackDropGui.cpp \
@@ -72,6 +73,7 @@ SOURCES += \
     DefaultOverlays.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
+    DockablePanelTabWidget.cpp \
     DopeSheet.cpp \
     DopeSheetView.cpp \
     DopeSheetEditorUndoRedo.cpp \
@@ -93,6 +95,7 @@ SOURCES += \
     KnobUndoCommand.cpp \
     Label.cpp \
     LineEdit.cpp \
+    ManageUserParamsDialog.cpp \
     MessageBox.cpp \
     Menu.cpp \
     MultiInstancePanel.cpp \
@@ -103,6 +106,7 @@ SOURCES += \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
+    PickKnobDialog.cpp \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
@@ -134,6 +138,7 @@ SOURCES += \
     TimeLineGui.cpp \
     TrackerGui.cpp \
     Utils.cpp \
+    VerticalColorBar.cpp \
     ViewerGL.cpp \
     ViewerGLPrivate.cpp \
     ViewerTab.cpp \
@@ -149,6 +154,7 @@ SOURCES += \
 HEADERS += \
     AboutWindow.h \
     ActionShortcuts.h \
+    AddKnobDialog.h \
     AnimatedCheckBox.h \
     AnimationButton.h \
     BackDropGui.h \
@@ -166,6 +172,7 @@ HEADERS += \
     DefaultOverlays.h \
     DockablePanel.h \
     DockablePanelPrivate.h \
+    DockablePanelTabWidget.h \
     DopeSheet.h \
     DopeSheetView.h \
     DopeSheetEditorUndoRedo.h \
@@ -190,6 +197,7 @@ HEADERS += \
     KnobUndoCommand.h \
     Label.h \
     LineEdit.h \
+    ManageUserParamsDialog.h \
     MessageBox.h \
     Menu.h \
     MultiInstancePanel.h \
@@ -200,6 +208,7 @@ HEADERS += \
     NodeGui.h \
     NodeGuiSerialization.h \
     NodeSettingsPanel.h \
+    PickKnobDialog.h \
     PreferencesPanel.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
@@ -232,6 +241,7 @@ HEADERS += \
     ToolButton.h \
     TrackerGui.h \
     Utils.h \
+    VerticalColorBar.h \
     ViewerGL.h \
     ViewerGLPrivate.h \
     ViewerTab.h \

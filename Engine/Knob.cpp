@@ -43,6 +43,7 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/DockablePanelI.h"
 
+class Page_Knob;
 
 using namespace Natron;
 using std::make_pair; using std::pair;
@@ -179,6 +180,26 @@ KnobI::onAnimationRemoved(int dimension)
         removeAnimation(dimension, Natron::eValueChangedReasonUserEdited);
     }
 }
+
+Page_Knob*
+KnobI::getTopLevelPage()
+{
+    boost::shared_ptr<KnobI> parentKnob = getParentKnob();
+    KnobI* parentKnobTmp = parentKnob.get();
+    while (parentKnobTmp) {
+        boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
+        if (!parent) {
+            break;
+        } else {
+            parentKnobTmp = parent.get();
+        }
+    }
+
+    ////find in which page the knob should be
+    Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
+    return isTopLevelParentAPage;
+}
+
 
 /***********************************KNOB HELPER******************************************/
 

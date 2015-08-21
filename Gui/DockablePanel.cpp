@@ -41,6 +41,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
+#include "Gui/DockablePanelTabWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
@@ -50,6 +51,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/KnobUndoCommand.h" // RestoreDefaultsCommand
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
+#include "Gui/ManageUserParamsDialog.h"
 #include "Gui/Menu.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
@@ -60,6 +62,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
 #include "Gui/Utils.h" // convertFromPlainText
+#include "Gui/VerticalColorBar.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
