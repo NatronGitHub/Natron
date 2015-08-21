@@ -110,7 +110,7 @@ public:
     /*Appends a separator to the comboBox.*/
     void addSeparator();
 
-    /*Insert a separator BEFORE the item at the index specified.*/
+    /*Insert a separator after the index specified.*/
     void insertSeparator(int index);
 
     QString itemText(int index) const;

@@ -160,6 +160,9 @@ struct ParallelRenderArgs
     ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported;
     
+    ///True when the preference in Natron is set and the renderRequester is a Viewer
+    bool viewerProgressReportEnabled;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -180,6 +183,7 @@ struct ParallelRenderArgs
     , doNansHandling(true)
     , draftMode(false)
     , tilesSupported(false)
+    , viewerProgressReportEnabled(false)
     {
         
     }
@@ -653,7 +657,8 @@ public:
                                   const std::list<boost::shared_ptr<Natron::Node> >& rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
-                                  bool draftMode);
+                                  bool draftMode,
+                                  bool viewerProgressReportEnabled);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 

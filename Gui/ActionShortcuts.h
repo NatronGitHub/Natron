@@ -534,6 +534,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
 #define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste keyframes"
 
+class QWidget;
 
 inline
 QKeySequence
@@ -621,6 +622,70 @@ public:
     }
 };
 
+
+class ActionWithShortcut
+: public QAction
+{
+        
+    QString _group;
+    QString _actionID;
+    
+public:
+    
+    ActionWithShortcut(const QString & group,
+                       const QString & actionID,
+                       const QString & actionDescription,
+                       QObject* parent,
+                       bool setShortcutOnAction = true);
+    
+    virtual ~ActionWithShortcut();
+    
+    virtual void setShortcutWrapper(const QKeySequence& shortcut);
+
+protected:
+    
+    QKeySequence _shortcut;
+    
+};
+
+/**
+ * @brief Set the widget's tooltip and append in the tooltip the shortcut associated to the action.
+ * This will be dynamically changed when the user edits the shortcuts from the editor.
+ **/
+#define setTooltipWithShortcut(group,actionID,tooltip,widget) ( widget->addAction(new TooltipActionShortcut(group,actionID,tooltip,widget)) )
+
+class TooltipActionShortcut
+: public ActionWithShortcut
+{
+
+    Q_OBJECT
+    
+    QWidget* _widget;
+    QString _originalTooltip;
+    bool _tooltipSetInternally;
+    
+public:
+    
+    TooltipActionShortcut(const QString & group,
+                          const QString & actionID,
+                          const QString & toolip,
+                          QWidget* parent);
+    
+    virtual ~TooltipActionShortcut() {
+        
+    }
+    
+    virtual void setShortcutWrapper(const QKeySequence& shortcut) OVERRIDE FINAL;
+    
+private:
+    
+    virtual bool eventFilter(QObject* watched, QEvent* event) OVERRIDE FINAL;
+    
+    
+    void setTooltipFromOriginalTooltip();
+    
+};
+
 class KeyBoundAction
     : public BoundAction
 {
@@ -628,7 +693,7 @@ public:
 
     Qt::Key currentShortcut; //< the actual shortcut for the keybind
     Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
-    std::list<QAction*> actions; //< list of actions using this shortcut
+    std::list<ActionWithShortcut*> actions; //< list of actions using this shortcut
 
     KeyBoundAction()
         : BoundAction()
@@ -643,8 +708,8 @@ public:
 
     void updateActionsShortcut()
     {
-        for (std::list<QAction*>::iterator it = actions.begin(); it != actions.end(); ++it) {
-            (*it)->setShortcut( makeKeySequence(modifiers, currentShortcut) );
+        for (std::list<ActionWithShortcut*>::iterator it = actions.begin(); it != actions.end(); ++it) {
+            (*it)->setShortcutWrapper( makeKeySequence(modifiers, currentShortcut) );
         }
     }
 };
@@ -675,19 +740,5 @@ typedef std::map<QString,BoundAction*> GroupShortcuts;
 ///All groups shortcuts mapped against the name of the group
 typedef std::map<QString,GroupShortcuts> AppShortcuts;
 
-class ActionWithShortcut
-: public QAction
-{
-    QString _group;
-    QString _actionID;
-    
-public:
-    
-    ActionWithShortcut(const QString & group,
-                       const QString & actionID,
-                       const QString & actionDescription,
-                       QObject* parent);
-    
-    virtual ~ActionWithShortcut();};
 
 #endif // ACTIONSHORTCUTS_H

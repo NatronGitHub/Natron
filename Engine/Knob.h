@@ -36,6 +36,7 @@
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
+class Page_Knob;
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -1025,6 +1026,8 @@ public:
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
+
+    Page_Knob* getTopLevelPage();
 };
 
 

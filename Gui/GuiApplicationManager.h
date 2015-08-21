@@ -49,6 +49,7 @@
 class QPixmap;
 class QCursor;
 
+class ActionWithShortcut;
 class PluginGroupNode;
 class DockablePanel;
 class KnobI;
@@ -174,7 +175,7 @@ public:
      * @brief Register an action to the shortcut manager indicating it is using a shortcut.
      * This is used to update the action's shortcut when it gets modified by the user.
      **/
-    void addShortcutAction(const QString & group,const QString & actionID,QAction* action);
+    void addShortcutAction(const QString & group,const QString & actionID,ActionWithShortcut* action);
     void removeShortcutAction(const QString & group,const QString & actionID,QAction* action);
 
     void notifyShortcutChanged(KeyBoundAction* action);

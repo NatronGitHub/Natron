@@ -953,6 +953,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              getApp()->getTimeLine().get(),
                                              NodePtr(),
                                              false,
+                                             false,
                                              false);
     
     EffectPointerThreadProperty_RAII propHolder_raii(this);

@@ -613,6 +613,17 @@ Settings::initializeKnobs()
     _viewersTab->addKnob(_autoProxyLevel);
     
     
+    _enableProgressReport = Natron::createKnob<Bool_Knob>(this, "Enable progress-report (experimental, slower)");
+    _enableProgressReport->setName("inViewerProgress");
+    _enableProgressReport->setAnimationEnabled(false);
+    _enableProgressReport->setHintToolTip("When enabled, the viewer will decompose the portion to render in small tiles and will "
+                                          "display them whenever they are ready to be displayed. This should provide faster results "
+                                          "on partial images. Note that this option does not support well all effects that have "
+                                          "a larger region to compute that what the real render window is (e.g: Blur). As a result of this, "
+                                          "any graph containing such effect(s) will be slower to render on the viewer than when this option "
+                                          "is unchecked.");
+    _viewersTab->addKnob(_enableProgressReport);
+    
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<Page_Knob>(this, "Nodegraph");
     
@@ -1109,6 +1120,7 @@ Settings::setDefaultValues()
     _autoWipe->setDefaultValue(false);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
+    _enableProgressReport->setDefaultValue(false);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -2963,4 +2975,10 @@ void
 Settings::setOnProjectLoadedCB(const std::string& func)
 {
     _defaultOnProjectLoaded->setValue(func, 0);
+}
+
+bool
+Settings::isInViewerProgressReportEnabled() const
+{
+    return _enableProgressReport->getValue();
 }

@@ -85,7 +85,7 @@ public:
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays(double scaleX, double scaleY) const;
+    void drawOverlays(double time,double scaleX, double scaleY) const;
 
     bool notifyOverlaysPenDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
@@ -262,9 +262,14 @@ public:
     void synchronizeOtherViewersProjection();
     
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+    
+    void zoomIn();
+    void zoomOut();
 
 public Q_SLOTS:
 
+    void onZoomComboboxCurrentIndexChanged(int index);
+    
     void startPause(bool);
     void abortRendering();
     void startBackward(bool);

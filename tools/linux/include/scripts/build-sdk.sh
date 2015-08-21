@@ -92,7 +92,7 @@ fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/python2.pc ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$PY2_TAR ]; then
-    wget $SRC_URL/$PY2_TAR -O $SRC_PATH/$PY2_TAR || exit 1
+    wget $THIRD_PARTY_SRC_URL/$PY2_TAR -O $SRC_PATH/$PY2_TAR || exit 1
   fi
   tar xvf $SRC_PATH/$PY2_TAR || exit 1
   cd Python-2* || exit 1
@@ -497,7 +497,7 @@ fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/vpx.pc ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$VPX_TAR ]; then
-    wget $THIRD_PARTY_SRC_URL/$MODPLUG_TAR -O $SRC_PATH/$VPX_TAR || exit 1
+    wget $THIRD_PARTY_SRC_URL/$VPX_TAR -O $SRC_PATH/$VPX_TAR || exit 1
   fi
   tar xvf $SRC_PATH/$VPX_TAR || exit 1
   cd libvpx-* || exit 1
