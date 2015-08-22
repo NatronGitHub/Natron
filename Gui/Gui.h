@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef NATRON_GUI_GUI_H_
-#define NATRON_GUI_GUI_H_
+#ifndef _Gui_Gui_h_
+#define _Gui_Gui_h_
 
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -54,6 +54,7 @@ class QVBoxLayout;
 class QMutex;
 
 //Natron gui
+#include "Gui/RegisteredTabs.h"
 class GuiLayoutSerialization;
 class GuiAppInstance;
 class NodeGui;
@@ -71,6 +72,7 @@ class ScriptEditor;
 class PyPanel;
 class RectI;
 class DopeSheetEditor;
+class PropertiesBinWrapper;
 
 //Natron engine
 class ViewerInstance;
@@ -85,18 +87,6 @@ class Image;
 class EffectInstance;
 class OutputEffectInstance;
 }
-
-typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
-
-class PropertiesBinWrapper : public QWidget, public ScriptObject
-{
-public:
-    PropertiesBinWrapper(QWidget* parent)
-    : QWidget(parent)
-    , ScriptObject()
-    {
-    }
-};
 
 struct GuiPrivate;
 
@@ -688,4 +678,4 @@ private:
 
     boost::scoped_ptr<GuiPrivate> _imp;
 };
-#endif // NATRON_GUI_GUI_H_
+#endif // _Gui_Gui_h_

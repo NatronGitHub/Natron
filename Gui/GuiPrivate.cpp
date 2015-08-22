@@ -92,6 +92,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ProjectGuiSerialization.h"
+#include "Gui/PropertiesBinWrapper.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RightClickableWidget.h"

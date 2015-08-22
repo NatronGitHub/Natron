@@ -217,10 +217,12 @@ HEADERS += \
     PreferencesPanel.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
+    PropertiesBinWrapper.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
     QtDecoder.h \
     QtEncoder.h \
+    RegisteredTabs.h \
     RenderingProgressDialog.h \
     ResizableMessageBox.h \
     RightClickableWidget.h \

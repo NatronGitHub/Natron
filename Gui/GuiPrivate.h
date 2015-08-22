@@ -36,10 +36,12 @@ class QScrollArea;
 class QUndoGroup;
 class QUndoStack;
 class QWidget;
+class QToolButton;
 
 #include "Global/Enums.h"
 
-#include "Gui/Gui.h" // RegisteredTabs -> move to separate header
+#include "Gui/RegisteredTabs.h"
+
 class AboutWindow;
 class ActionWithShortcut;
 class Button;
@@ -63,7 +65,9 @@ class Splitter;
 class TabWidget;
 class ToolButton;
 class ViewerTab;
-
+class KnobHolder;
+class DockablePanel;
+class ScriptEditor;
 
 
 struct GuiPrivate

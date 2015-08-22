@@ -71,6 +71,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ProjectGuiSerialization.h" // PaneLayout
+#include "Gui/PropertiesBinWrapper.h"
+#include "Gui/RegisteredTabs.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/ResizableMessageBox.h"
 #include "Gui/RightClickableWidget.h"
