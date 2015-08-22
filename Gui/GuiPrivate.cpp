@@ -110,8 +110,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "SequenceParsing.h"
 
-#define kPropertiesBinName "properties"
-
 #define NAMED_PLUGIN_GROUP_NO 15
 
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {

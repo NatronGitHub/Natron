@@ -69,6 +69,7 @@ class KnobHolder;
 class DockablePanel;
 class ScriptEditor;
 
+#define kPropertiesBinName "properties"
 
 struct GuiPrivate
 {
