@@ -58,7 +58,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/NoOp.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"

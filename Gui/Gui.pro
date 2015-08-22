@@ -59,6 +59,7 @@ SOURCES += \
     AddKnobDialog.cpp \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
+    AutoHideToolBar.cpp \
     BackDropGui.cpp \
     Button.cpp \
     ClickableLabel.cpp \
@@ -86,6 +87,7 @@ SOURCES += \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \
     GuiAppWrapper.cpp \
+    GuiPrivate.cpp \
     Histogram.cpp \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
@@ -114,6 +116,7 @@ SOURCES += \
     QtDecoder.cpp \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
+    ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
     RotoGui.cpp \
     RotoPanel.cpp \
@@ -157,6 +160,7 @@ HEADERS += \
     AddKnobDialog.h \
     AnimatedCheckBox.h \
     AnimationButton.h \
+    AutoHideToolBar.h \
     BackDropGui.h \
     Button.h \
     ClickableLabel.h \
@@ -183,10 +187,11 @@ HEADERS += \
     FromQtEnums.h \
     GroupBoxLabel.h \
     Gui.h \
-    GuiMacros.h \
     GuiApplicationManager.h \
     GuiAppInstance.h \
     GuiAppWrapper.h \
+    GuiMacros.h \
+    GuiPrivate.h \
     GlobalGuiWrapper.h \
     Histogram.h \
     InfoViewerWidget.h \
@@ -217,6 +222,7 @@ HEADERS += \
     QtDecoder.h \
     QtEncoder.h \
     RenderingProgressDialog.h \
+    ResizableMessageBox.h \
     RightClickableWidget.h \
     RotoGui.h \
     RotoPanel.h \

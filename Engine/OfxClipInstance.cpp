@@ -18,7 +18,6 @@
 #include <cfloat>
 #include <limits>
 #include <QDebug>
-//#include <QDateTime>
 #include "Global/Macros.h"
 
 #include "Engine/OfxEffectInstance.h"

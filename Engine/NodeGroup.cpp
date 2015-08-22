@@ -24,20 +24,21 @@
 #include <algorithm> // min, max
 
 #include "Engine/AppInstance.h"
-#include "Engine/Node.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/Project.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/KnobFile.h"
-#include "Engine/TimeLine.h"
-#include "Engine/NoOp.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/Plugin.h"
-#include "Engine/NodeGuiI.h"
 #include "Engine/Curve.h"
+#include "Engine/GroupInput.h"
+#include "Engine/GroupOutput.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
 #include "Engine/NodeGraphI.h"
-#include "Engine/Settings.h"
+#include "Engine/NodeGuiI.h"
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Settings.h"
+#include "Engine/TimeLine.h"
+#include "Engine/ViewerInstance.h"
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 1
 

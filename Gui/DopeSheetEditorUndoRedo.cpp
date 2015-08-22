@@ -5,7 +5,6 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NoOp.h"
 #include <Engine/ViewerInstance.h>
 
 #include "Global/GlobalDefines.h"

@@ -32,18 +32,18 @@
 
 #include "Global/QtCompat.h"
 
-#include "Engine/Project.h"
-#include "Engine/Plugin.h"
 #include "Engine/AppManager.h"
-#include "Engine/Node.h"
-#include "Engine/ViewerInstance.h"
 #include "Engine/BlockingBackgroundRender.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/FileDownloader.h"
-#include "Engine/Settings.h"
+#include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/NoOp.h"
+#include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/ViewerInstance.h"
 
 using namespace Natron;
 

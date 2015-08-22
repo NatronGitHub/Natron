@@ -16,7 +16,6 @@
 #include "ViewerGLPrivate.h"
 
 #include <cassert>
-//#include <map>
 #include <algorithm> // min, max
 
 #include "Global/Macros.h"
