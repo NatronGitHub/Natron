@@ -67,6 +67,7 @@ SOURCES += \
     Curve.cpp \
     CurveSerialization.cpp \
     DiskCacheNode.cpp \
+    Dot.cpp \
     EffectInstance.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
@@ -74,6 +75,8 @@ SOURCES += \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
+    GroupInput.cpp \
+    GroupOutput.cpp \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
@@ -101,7 +104,7 @@ SOURCES += \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
     NodeGroupSerialization.cpp \
-    NoOp.cpp \
+    NoOpBase.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -186,6 +189,7 @@ HEADERS += \
     CurveSerialization.h \
     CurvePrivate.h \
     DockablePanelI.h \
+    Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
     FileDownloader.h \
@@ -198,6 +202,8 @@ HEADERS += \
     FrameParams.h \
     FrameParamsSerialization.h \
     GlobalFunctionsWrapper.h \
+    GroupInput.h \
+    GroupOutput.h \
     Hash64.h \
     HistogramCPU.h \
     ImageInfo.h \
@@ -232,7 +238,7 @@ HEADERS += \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
-    NoOp.h \
+    NoOpBase.h \
     OfxClipInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \

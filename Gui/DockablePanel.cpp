@@ -14,15 +14,11 @@
 
 #include "DockablePanel.h"
 
-#include <cfloat>
-
-#include <QAction>
 #include <QApplication> // qApp
-#include <QUndoStack>
 #include <QColorDialog>
 #include <QTimer>
 CLANG_DIAG_OFF(unused-private-field)
-//// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
 #include <QHBoxLayout>
@@ -30,10 +26,9 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <ofxNatron.h>
 
-#include "Engine/EffectInstance.h"
 #include "Engine/Image.h" // Natron::clamp
 #include "Engine/KnobTypes.h" // Button_Knob
-#include "Engine/NoOp.h" // GroupOutput
+#include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
@@ -41,6 +36,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
+#include "Gui/DockablePanelPrivate.h"
 #include "Gui/DockablePanelTabWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
@@ -65,11 +61,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/VerticalColorBar.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
-
-#include "DockablePanelPrivate.h"
-
-#define NATRON_FORM_LAYOUT_LINES_SPACING 0
-#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 
 #define NATRON_VERTICAL_BAR_WIDTH 4

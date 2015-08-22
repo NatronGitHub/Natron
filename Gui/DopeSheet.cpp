@@ -9,10 +9,11 @@
 #include <QUndoStack>
 
 // Natron includes
+#include "Engine/GroupInput.h"
+#include "Engine/GroupOutput.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NoOp.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/ActionShortcuts.h"

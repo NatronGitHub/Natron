@@ -88,6 +88,15 @@ class OutputEffectInstance;
 
 typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
 
+class PropertiesBinWrapper : public QWidget, public ScriptObject
+{
+public:
+    PropertiesBinWrapper(QWidget* parent)
+    : QWidget(parent)
+    , ScriptObject()
+    {
+    }
+};
 
 struct GuiPrivate;
 
@@ -97,15 +106,6 @@ class Gui
     Q_OBJECT
 
 public:
-    class PropertiesBinWrapper : public QWidget, public ScriptObject
-    {
-    public:
-        PropertiesBinWrapper(QWidget* parent)
-        : QWidget(parent)
-        , ScriptObject()
-        {
-        }
-    };
 
 public:
     explicit Gui(GuiAppInstance* app,

@@ -18,9 +18,7 @@
 #include <algorithm> // min, max
 
 #include <QDebug>
-//#ifndef Q_MOC_RUN
-//#include <boost/math/special_functions/fpclassify.hpp>
-//#endif
+
 #include "Engine/AppManager.h"
 
 using namespace Natron;

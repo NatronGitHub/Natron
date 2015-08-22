@@ -59,9 +59,6 @@
 #include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
-//CLANG_DIAG_OFF(deprecated)
-//#include <QFileSystemModel>
-//CLANG_DIAG_ON(deprecated)
 
 inline uint64_t
 getSystemTotalRAM()

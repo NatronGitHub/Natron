@@ -56,10 +56,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 #include "Engine/BackDrop.h"
+#include "Engine/Dot.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
-#include "Engine/NoOp.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"

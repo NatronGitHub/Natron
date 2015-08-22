@@ -23,6 +23,7 @@
 #include <QtGui/QStyle>
 
 #include "Engine/EffectInstance.h"
+#include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 
@@ -36,11 +37,8 @@
 #include "Gui/RotoPanel.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
-#define NATRON_FORM_LAYOUT_LINES_SPACING 0
-#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 
-#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
