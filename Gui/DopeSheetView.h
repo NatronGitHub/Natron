@@ -54,7 +54,9 @@ class TimeLine;
  */
 class DopeSheetView : public QGLWidget, public OverlaySupport
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     /**

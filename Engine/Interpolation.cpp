@@ -17,10 +17,12 @@
 #include <vector>
 #include <algorithm> // min, max
 
-#include <boost/math/special_functions/fpclassify.hpp>
+CLANG_DIAG_OFF(unused-local-typedef)
 GCC_DIAG_OFF(unused-parameter)
+#include <boost/math/special_functions/fpclassify.hpp>
 // boost/optional/optional.hpp:1254:53: warning: unused parameter 'out' [-Wunused-parameter]
 #include <boost/math/special_functions/cbrt.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
 GCC_DIAG_ON(unused-parameter)
 
 #ifndef M_PI

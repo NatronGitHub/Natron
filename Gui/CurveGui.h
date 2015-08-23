@@ -37,7 +37,9 @@ class RotoContext;
 class CurveGui
     : public QObject
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -224,13 +226,13 @@ public:
     boost::shared_ptr<Bezier> getBezier() const ;
     
     virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::pair<double,double> getCurveYRange() const;
+    virtual std::pair<double,double> getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool areKeyFramesTimeClampedToIntegers() const { return true; }
-    virtual bool areKeyFramesValuesClampedToBooleans() const { return false; }
-    virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
-    virtual bool isYComponentMovable() const { return false; }
-    virtual KeyFrameSet getKeyFrames() const;
+    virtual bool areKeyFramesTimeClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool areKeyFramesValuesClampedToBooleans() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    virtual bool areKeyFramesValuesClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool isYComponentMovable() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    virtual KeyFrameSet getKeyFrames() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;

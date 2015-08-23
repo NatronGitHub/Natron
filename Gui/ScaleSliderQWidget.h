@@ -34,10 +34,13 @@ struct ScaleSliderQWidgetPrivate;
 class QColor;
 class QFont;
 class Gui;
+
 class ScaleSliderQWidget
     : public QWidget
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     

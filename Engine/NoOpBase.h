@@ -49,15 +49,15 @@ public:
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
-    virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
-    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN = 0;
-    virtual std::string getDescription() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN = 0;
+    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN = 0;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
         grouping->push_back(PLUGIN_GROUP_OTHER);
     }
 
-    virtual bool isInputOptional(int /*inputNb*/) const
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
     {
         return false;
 

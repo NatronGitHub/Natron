@@ -51,7 +51,9 @@ struct GuiAppInstancePrivate;
 class GuiAppInstance
     : public AppInstance
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -153,7 +155,7 @@ public:
     void discardLastViewerUsingTimeline();
     
 
-    virtual void declareCurrentAppVariable_Python();
+    virtual void declareCurrentAppVariable_Python() OVERRIDE;
 
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
     

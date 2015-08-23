@@ -24,7 +24,9 @@
 #include <algorithm> // min, max
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+CLANG_DIAG_OFF(unused-local-typedef)
 #include <boost/math/special_functions/fpclassify.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
 #endif
 
 #include <QString>

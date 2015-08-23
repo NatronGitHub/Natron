@@ -23,7 +23,9 @@ class NodeBackDropSerialization;
 struct BackDropGuiPrivate;
 class BackDropGui : public NodeGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

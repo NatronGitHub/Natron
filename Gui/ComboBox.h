@@ -52,12 +52,11 @@ struct ComboBoxMenuNode
 class ComboBox
     : public QFrame
 {
-    
+CLANG_DIAG_OFF(inconsistent-missing-override)
+    Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
 private:
-    
-    Q_OBJECT
-
     bool _readOnly;
     bool _enabled;
     int _animation;

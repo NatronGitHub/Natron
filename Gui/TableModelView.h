@@ -234,7 +234,9 @@ struct TableViewPrivate;
 class TableView
     : public QTreeView
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -295,7 +297,9 @@ struct TableModelPrivate;
 class TableModel
     : public QAbstractTableModel
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -330,7 +334,7 @@ public:
     }
 
     QModelIndex index(const TableItem *item) const;
-    Qt::ItemFlags flags(const QModelIndex &index) const;
+    Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setHorizontalHeaderItem(int section, TableItem *item);
     TableItem * takeHorizontalHeaderItem(int section);

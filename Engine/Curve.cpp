@@ -18,7 +18,9 @@
 #include <algorithm>
 #include <stdexcept>
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+CLANG_DIAG_OFF(unused-local-typedef)
 #include <boost/math/special_functions/fpclassify.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
 #endif
 #include "Engine/AppManager.h"
 

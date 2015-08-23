@@ -29,11 +29,14 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 
+#pragma message WARN("move serialization to a separate header")
+CLANG_DIAG_OFF(unused-local-typedef)
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
-GCC_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 #endif

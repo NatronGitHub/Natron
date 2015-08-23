@@ -26,7 +26,11 @@ namespace Natron {
 class ClickableLabel
     : public Label
 {
-    Q_OBJECT Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
+CLANG_DIAG_OFF(inconsistent-missing-override)
+    Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
+
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
     Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)

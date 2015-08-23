@@ -379,7 +379,9 @@ struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -397,7 +399,7 @@ public:
     
     void refreshNodesConnections();
 
-    virtual void clone(const RotoItem*  other);
+    virtual void clone(const RotoItem*  other) OVERRIDE;
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -616,7 +618,9 @@ struct BezierPrivate;
 class Bezier
     : public RotoDrawableItem
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

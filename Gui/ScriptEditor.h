@@ -34,10 +34,13 @@ CLANG_DIAG_ON(uninitialized)
 class Gui;
 
 struct ScriptEditorPrivate;
+
 class ScriptEditor : public QWidget, public ScriptObject
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     ScriptEditor(Gui* gui);

@@ -88,25 +88,25 @@ public:
     }
 
     /*Swaps the buffer of the attached viewer*/
-    virtual OfxStatus swapBuffers()
+    virtual OfxStatus swapBuffers() OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return n_swapBuffers();
     }
 
     /*Calls updateGL() on the attached viewer*/
-    virtual OfxStatus redraw();
+    virtual OfxStatus redraw() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
     virtual void getViewportSize(double &width,
-                                 double &height) const
+                                 double &height) const OVERRIDE FINAL
     {
         n_getViewportSize(width, height);
     }
 
     // hooks to live kOfxInteractPropPixelScale in the property set
     virtual void getPixelScale(double & xScale,
-                               double & yScale) const
+                               double & yScale) const OVERRIDE FINAL
     {
         n_getPixelScale(xScale, yScale);
     }
@@ -114,7 +114,7 @@ public:
     // hooks to kOfxInteractPropBackgroundColour in the property set
     virtual void getBackgroundColour(double &r,
                                      double &g,
-                                     double &b) const
+                                     double &b) const OVERRIDE FINAL
     {
         n_getBackgroundColour(r, g, b);
     }
@@ -122,7 +122,7 @@ public:
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     virtual bool getSuggestedColour(double &r,
                                     double &g,
-                                    double &b) const;
+                                    double &b) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;

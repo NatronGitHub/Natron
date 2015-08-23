@@ -53,7 +53,7 @@ public:
 
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual std::string getDescription() const WARN_UNUSED_RETURN;
+    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
@@ -64,7 +64,7 @@ public:
 
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;  
 
-    virtual bool isInputOptional(int /*inputNb*/) const
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }

@@ -93,7 +93,9 @@ struct GuiPrivate;
 class Gui
     : public QMainWindow, public SerializableWindow, public boost::noncopyable
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -124,7 +126,7 @@ public:
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
-    bool eventFilter(QObject *target, QEvent* e);
+    bool eventFilter(QObject *target, QEvent* e) OVERRIDE;
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
 
@@ -545,7 +547,7 @@ public Q_SLOTS:
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
     void toggleFullScreen();
-    void closeEvent(QCloseEvent* e);
+    void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
     void openProject();
     bool saveProject();

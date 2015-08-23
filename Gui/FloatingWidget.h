@@ -92,7 +92,9 @@ class Gui;
 class FloatingWidget
     : public QWidget, public SerializableWindow
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

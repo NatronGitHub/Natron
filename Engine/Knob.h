@@ -880,14 +880,14 @@ public:
      **/
     virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) = 0;
     virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const = 0;
-    virtual void swapOpenGLBuffers() = 0;
-    virtual void redraw() = 0;
-    virtual void getViewportSize(double &width, double &height) const = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
+    virtual void swapOpenGLBuffers() OVERRIDE = 0;
+    virtual void redraw() OVERRIDE = 0;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
+    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
-    virtual void saveOpenGLContext() = 0;
-    virtual void restoreOpenGLContext() = 0;
+    virtual void saveOpenGLContext() OVERRIDE = 0;
+    virtual void restoreOpenGLContext() OVERRIDE = 0;
     
     
     /**
@@ -1234,11 +1234,11 @@ protected:
 public:
 
     virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isSlave(int dimension) const;
+    virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
+    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
 
     /**
@@ -1250,7 +1250,7 @@ public:
 
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
-    virtual void clearExpressionsResults(int /*dimension*/) {}
+    virtual void clearExpressionsResults(int /*dimension*/) OVERRIDE {}
     
     void incrementExpressionRecursionLevel() const;
     
@@ -1666,7 +1666,7 @@ private:
     
     void queueSetValue(const T& v,int dimension);
     
-    virtual void clearExpressionsResults(int dimension)
+    virtual void clearExpressionsResults(int dimension) OVERRIDE FINAL
     {
         QMutexLocker k(&_valueMutex);
         _exprRes[dimension].clear();
