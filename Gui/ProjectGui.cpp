@@ -251,8 +251,11 @@ AddFormatDialog::getFormat() const
     return Format(0,0,w,h,name.toStdString(),pa);
 }
 
+#pragma message WARN("no version in ProjectGui serialization: this is dangerous")
+template<>
 void
-ProjectGui::save(boost::archive::xml_oarchive & archive) const
+ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive/*,
+                                               const unsigned int version*/) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
@@ -260,8 +263,10 @@ ProjectGui::save(boost::archive::xml_oarchive & archive) const
     archive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
 }
 
+template<>
 void
-ProjectGui::load(boost::archive::xml_iarchive & archive)
+ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & archive/*,
+                                               const unsigned int version*/)
 {
     ProjectGuiSerialization obj;
 

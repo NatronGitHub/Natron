@@ -1332,14 +1332,14 @@ void
 Gui::loadProjectGui(boost::archive::xml_iarchive & obj) const
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->load(obj);
+    _imp->_projectGui->load(obj/*, version*/);
 }
 
 void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->save(archive);
+    _imp->_projectGui->save(archive/*, version*/);
 }
 
 bool

@@ -27,14 +27,6 @@ CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#pragma message WARN("move serialization to a separate header")
-CLANG_DIAG_OFF(unused-local-typedef)
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
-GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/Format.h"
@@ -91,9 +83,13 @@ public:
         return _project.lock();
     }
 
-    void save(boost::archive::xml_oarchive & archive) const;
+    template<class Archive>
+    void save(Archive & ar/*,
+              const unsigned int version*/) const;
 
-    void load(boost::archive::xml_iarchive & archive);
+    template<class Archive>
+    void load(Archive & ar/*,
+              const unsigned int version*/);
 
     void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
 
