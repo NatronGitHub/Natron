@@ -481,7 +481,7 @@ inline T ignore_result(T x)
 #  define CLANG_DIAG_PRAGMA(x)
 #endif
 
-#if (__clang_major__ > 3) || ((__clang_major__ == 3) && (__clang_minor__ >= 6))
+#if __clang__ && ((__clang_major__ > 3) || ((__clang_major__ == 3) && (__clang_minor__ >= 6)))
 #  define CLANG_DIAG_OFF_36(x) CLANG_DIAG_OFF(x)
 #  define CLANG_DIAG_ON_36(x) CLANG_DIAG_ON(x)
 #else
