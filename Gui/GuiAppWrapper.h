@@ -14,6 +14,8 @@
 #define GUIAPPWRAPPER_H
 
 #include "Engine/AppInstanceWrapper.h"
+#include "Engine/ParameterWrapper.h" // ColorTuple
+
 #include "Gui/GuiAppInstance.h"
 
 class PyModalDialog;

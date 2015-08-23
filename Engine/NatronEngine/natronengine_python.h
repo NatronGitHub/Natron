@@ -24,7 +24,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <GlobalDefines.h>
 #include <NodeGroupWrapper.h>
 #include <GlobalFunctionsWrapper.h>
-#include <Rect.h>
+#include <RectD.h>
+#include <RectI.h>
 #include <RotoWrapper.h>
 #include <AppInstanceWrapper.h>
 #include <ParameterWrapper.h>

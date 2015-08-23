@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <Rect.h>
+#include <RectD.h>
 
 class RectDWrapper : public RectD
 {

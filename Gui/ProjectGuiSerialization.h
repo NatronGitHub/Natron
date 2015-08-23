@@ -32,7 +32,9 @@ GCC_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(unused-local-typedef)
 GCC_DIAG_ON(unused-parameter)
 #endif
-#include "Engine/Rect.h"
+
+#include "Engine/RectD.h"
+
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"
 

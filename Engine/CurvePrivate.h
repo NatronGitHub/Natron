@@ -20,7 +20,7 @@
 #endif
 #include <QMutex>
 
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"

@@ -19,7 +19,7 @@
 #include <string>
 
 #include "Global/Macros.h"
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
 class ParallelRenderArgsSetter;

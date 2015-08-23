@@ -7,9 +7,11 @@
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/NonKeyParams.h"
 #include "Engine/Format.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/NonKeyParams.h"
+#include "Engine/RectD.h"
+#include "Engine/RectI.h"
 
 
 namespace Natron {

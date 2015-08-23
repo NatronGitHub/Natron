@@ -16,17 +16,20 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include <list>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
-#include "Engine/Rect.h"
+#include "Engine/RectI.h"
+
+class QString;
 
 class Format;
 struct TextureRect;
-class QString;
 class TimeLine;
-
+class RectD;
 namespace Natron
 {
     class Image;

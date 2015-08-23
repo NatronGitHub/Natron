@@ -48,7 +48,9 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "Engine/Rect.h"
+#include <ofxCore.h> // kOfxFlagInfiniteMin
+
+#include "Engine/RectD.h"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */

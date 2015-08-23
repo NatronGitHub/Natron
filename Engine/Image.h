@@ -31,7 +31,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageComponents.h"
 #include "Engine/ImageParams.h"
 #include "Engine/CacheEntry.h"
-#include "Engine/Rect.h"
+#include "Engine/RectD.h"
 #include "Engine/OutputSchedulerThread.h"
 
 

@@ -17,7 +17,7 @@
 
 #include <algorithm> // min, max
 
-#include "Engine/Rect.h"
+class RectI;
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  * into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
@@ -93,23 +93,7 @@ struct TextureRect
     }
 
     bool intersect(const RectI & r,
-                   RectI* intersection) const
-    {
-        if ( isNull() || r.isNull() ) {
-            return false;
-        }
-
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
-            return false;
-        }
-
-        intersection->x1 = std::max(x1,r.x1);
-        intersection->x2 = std::min(x2,r.x2);
-        intersection->y1 = std::max(y1,r.y1);
-        intersection->y2 = std::min(y2,r.y2);
-
-        return true;
-    }
+                   RectI* intersection) const;
     
     bool contains(const TextureRect& other) const
     {

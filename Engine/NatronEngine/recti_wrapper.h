@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <Rect.h>
+#include <RectI.h>
 
 class RectIWrapper : public RectI
 {

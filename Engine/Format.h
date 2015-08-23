@@ -31,7 +31,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 
-#include "Engine/Rect.h"
+#include "Engine/RectD.h"
+#include "Engine/RectI.h"
 
 #define FORMAT_SERIALIZATION_CHANGES_TO_RECTD 2
 #define FORMAT_SERIALIZATION_CHANGES_TO_RECTI 3

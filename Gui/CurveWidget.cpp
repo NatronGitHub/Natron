@@ -27,9 +27,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QToolButton>
 #include <QDesktopWidget>
 
-#include "Engine/Settings.h"
-#include "Engine/RotoContext.h"
+#include "Engine/ParameterWrapper.h" // IntParam
 #include "Engine/Project.h"
+#include "Engine/RotoContext.h"
+#include "Engine/Settings.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"

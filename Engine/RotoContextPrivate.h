@@ -41,7 +41,7 @@
 #include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 #include "Engine/RotoContext.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/Transform.h"

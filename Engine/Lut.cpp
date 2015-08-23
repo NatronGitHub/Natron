@@ -18,7 +18,7 @@
 #include <cstring> // for memcpy
 #include <algorithm> // min, max
 
-#include "Engine/Rect.h"
+#include "Engine/RectI.h"
 
 namespace Natron {
 namespace Color {

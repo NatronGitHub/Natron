@@ -121,7 +121,8 @@ SOURCES += \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
     PySideCompat.cpp \
-    Rect.cpp \
+    RectD.cpp \
+    RectI.cpp \
     RotoContext.cpp \
     RotoPaint.cpp \
     RotoSerialization.cpp  \
@@ -131,6 +132,7 @@ SOURCES += \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
+    TextureRect.cpp \
     TimeLine.cpp \
     Timer.cpp \
     Transform.cpp \
@@ -257,7 +259,8 @@ HEADERS += \
     ProjectPrivate.h \
     ProjectSerialization.h \
     Pyside_Engine_Python.h \
-    Rect.h \
+    RectD.h \
+    RectI.h \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoPaint.h \

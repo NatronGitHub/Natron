@@ -18,7 +18,7 @@ GCC_DIAG_OFF(missing-field-initializers)
 // Extra includes
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
-#include <Rect.h>
+#include <RectD.h>
 #include <RotoWrapper.h>
 #include <list>
 

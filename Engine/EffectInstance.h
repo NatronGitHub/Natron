@@ -23,12 +23,15 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
+
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
-#include "Engine/Knob.h" // for KnobHolder
-#include "Engine/Rect.h"
-#include "Engine/ImageLocker.h"
+
 #include "Engine/ImageComponents.h"
+#include "Engine/ImageLocker.h"
+#include "Engine/Knob.h" // for KnobHolder
+#include "Engine/RectD.h"
+#include "Engine/RectI.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"

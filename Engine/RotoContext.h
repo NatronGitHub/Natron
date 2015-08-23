@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(deprecated-declarations)
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
 
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 
 
 #define kRotoLayerBaseName "Layer"

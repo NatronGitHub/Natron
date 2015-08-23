@@ -25,9 +25,10 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/Rect.h"
-#include "Engine/NodeGroupWrapper.h"
-#include "Engine/ParameterWrapper.h"
+#include "Engine/Knob.h" // KnobI
+#include "Engine/NodeGroupWrapper.h" // Goup
+//#include "Engine/ParameterWrapper.h"
+#include "Engine/RectD.h"
 
 namespace Natron {
 class Node;

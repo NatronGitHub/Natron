@@ -68,7 +68,7 @@
 #include "Engine/OfxHost.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Project.h"
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"

@@ -18,7 +18,7 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/Rect.h"
+//#include "Engine/Rect.h"
 #include "Engine/TextureRect.h"
 
 class Texture

@@ -10,7 +10,7 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include "Engine/Rect.h"
+#include "Engine/RectI.h"
 #include "Engine/NonKeyParams.h"
 
 namespace Natron {

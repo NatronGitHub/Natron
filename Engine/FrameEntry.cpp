@@ -15,6 +15,8 @@
 
 #include "FrameEntry.h"
 
+#include "Engine/RectI.h"
+
 using namespace Natron;
 
 

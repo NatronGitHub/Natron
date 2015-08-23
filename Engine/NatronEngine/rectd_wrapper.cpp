@@ -15,7 +15,7 @@ GCC_DIAG_OFF(missing-field-initializers)
 #include "rectd_wrapper.h"
 
 // Extra includes
-#include <Rect.h>
+#include <RectD.h>
 
 
 // Native ---------------------------------------------------------

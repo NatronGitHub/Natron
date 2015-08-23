@@ -7,22 +7,23 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/PythonPanels.h"
-#include "Gui/Gui.h"
-#include "Gui/TabWidget.h"
-#include "Gui/SequenceFileDialog.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/NodeGui.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-
+#include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/NodeGroupWrapper.h"
 #include "Engine/NodeWrapper.h"
-#include "Engine/NodeGroup.h"
-#include "Engine/Node.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/TimeLine.h"
+#include "Engine/ParameterWrapper.h" // ColorTuple
 #include "Engine/ScriptObject.h"
+#include "Engine/TimeLine.h"
+#include "Engine/ViewerInstance.h"
+
+#include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/PythonPanels.h"
+#include "Gui/SequenceFileDialog.h"
+#include "Gui/TabWidget.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
 GuiApp::GuiApp(AppInstance* app)
 : App(app)

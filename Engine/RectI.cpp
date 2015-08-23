@@ -4,9 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "Rect.h"
+#include "RectI.h"
 
 #include <algorithm> // min, max
+
+#include "Engine/RectD.h"
 
 #define MINAREA64 4096  // = 4096 pixels (=64*64)
 #define MINAREA128 16384
@@ -88,4 +90,25 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 #endif
 
     return ret;
+}
+
+void
+RectI::toCanonical(unsigned int thisLevel,
+                   double par,
+                   const RectD & rod,
+                   RectD *rect) const
+{
+    toCanonical_noClipping(thisLevel, par, rect);
+    rect->intersect(rod, rect);
+}
+
+void
+RectI::toCanonical_noClipping(unsigned int thisLevel,
+                              double par,
+                              RectD *rect) const
+{
+    rect->x1 = (x1 << thisLevel) * par;
+    rect->x2 = (x2 << thisLevel) * par;
+    rect->y1 = y1 << thisLevel;
+    rect->y2 = y2 << thisLevel;
 }

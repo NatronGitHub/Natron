@@ -31,6 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/ParameterWrapper.h" // Param
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
