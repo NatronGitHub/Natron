@@ -32,7 +32,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
 	# compiling Natron overrides the 3GB limit on travis if building parallel
-        make;
+        make -k; # -k: continue building even if compiler is killed because of the 3GB limit
     else
         export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
 	make $J;
