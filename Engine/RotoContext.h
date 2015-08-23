@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef KNOBROTO_H
-#define KNOBROTO_H
+#ifndef _Engine_RotoContext_h_
+#define _Engine_RotoContext_h_
 
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -20,10 +20,13 @@
 #include <set>
 #include <string>
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#pragma message WARN("move serialization to a separate header")
 #include <boost/serialization/split_member.hpp>
 #endif
 
@@ -1546,4 +1549,4 @@ private:
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 
-#endif // KNOBROTO_H
+#endif // _Engine_RotoContext_h_
