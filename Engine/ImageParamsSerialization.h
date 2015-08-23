@@ -5,8 +5,10 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
-#include "Engine/ImageParams.h"
+#include "ImageParams.h"
+
 #include "Global/GlobalDefines.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_OFF(unused-parameter)
 CLANG_DIAG_OFF(unused-local-typedefs) //-Wunused-local-typedefs
@@ -22,6 +24,7 @@ GCC_DIAG_ON(unused-parameter)
 CLANG_DIAG_ON(unused-local-typedefs) //-Wunused-local-typedefs
 GCC_DIAG_ON(sign-compare)
 #endif
+
 using namespace Natron;
 
 namespace boost {

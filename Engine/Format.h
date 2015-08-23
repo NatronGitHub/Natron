@@ -24,6 +24,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/version.hpp>
+#include <boost/serialization/nvp.hpp>
 CLANG_DIAG_ON(unused-local-typedef)
 GCC_DIAG_ON(unused-parameter)
 #endif

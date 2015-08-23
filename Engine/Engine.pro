@@ -260,7 +260,9 @@ HEADERS += \
     ProjectSerialization.h \
     Pyside_Engine_Python.h \
     RectD.h \
+    RectDSerialization.h \
     RectI.h \
+    RectISerialization.h \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoPaint.h \
@@ -279,6 +281,7 @@ HEADERS += \
     Timer.h \
     Transform.h \
     Variant.h \
+    VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ../Global/Enums.h \
