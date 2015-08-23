@@ -91,7 +91,7 @@ void OnClientDumpRequest(void* context,
                          const google_breakpad::ClientInfo* client_info,
                          const std::wstring* file_path) {
 
-    QString str = QString::fromWCharArray(file_path.c_str());
+    QString str = QString::fromWCharArray(file_path->c_str());
     dumpRequest_xPlatform(str);
 }
 #endif
@@ -146,9 +146,9 @@ main(int argc,
                                           &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
     std::string pipeName = qPipeName.toStdString();
-    std::wstring wpipeName = Natron::s2ws(pipeName);
+    std::wstring wpipeName = s2ws(pipeName);
     std::string stdDumPath = dumpPath.toStdString();
-    std::wstring stdWDumpPath = Natron::s2ws(stdDumPath);
+    std::wstring stdWDumpPath = s2ws(stdDumPath);
     CrashGenerationServer breakpad_server(wpipeName,
                                           0, // SECURITY ATTRS
                                           0, // on client connected cb
