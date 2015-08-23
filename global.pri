@@ -155,12 +155,12 @@ win32-g++ {
 	glew:      PKGCONFIG += glew
     expat:     PKGCONFIG += expat
 	cairo:     PKGCONFIG += cairo
-	shiboken:  PKGCONFIG += shiboken
-    pyside:    PKGCONFIG += pyside
-	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+	shiboken:  PKGCONFIG += shiboken-py2
+    pyside:    PKGCONFIG += pyside-py2
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
 	python:    PKGCONFIG += python-2.7
-	boost:     LIBS += -lboost_serialization
+	boost:     LIBS += -lboost_serialization-mt
 }
 
 unix {

@@ -36,6 +36,7 @@
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/FloatingWidget.h"
