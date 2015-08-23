@@ -6,7 +6,11 @@
 TARGET = Natron
 VERSION = 2.0.0
 TEMPLATE = app
-CONFIG += app
+win32 {
+	CONFIG += console
+} else {
+	CONFIG += app
+}
 CONFIG += moc
 CONFIG += boost glew opengl qt expat cairo python shiboken pyside
 QT += gui core opengl network
