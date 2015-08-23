@@ -83,7 +83,9 @@ struct FileDialogPreviewProvider;
 class UrlModel
     : public QStandardItemModel
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     enum Roles
@@ -94,13 +96,13 @@ public:
 
     explicit UrlModel(const std::map<std::string,std::string>& envVars, QObject *parent = 0);
 
-    QStringList mimeTypes() const;
-    virtual QMimeData * mimeData(const QModelIndexList &indexes) const;
+    QStringList mimeTypes() const OVERRIDE;
+    virtual QMimeData * mimeData(const QModelIndexList &indexes) const OVERRIDE;
     bool canDrop(QDragEnterEvent* e);
     virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) OVERRIDE FINAL;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL;
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) OVERRIDE;
 
 
     void setUrls(const std::vector<QUrl> &urls);
@@ -156,7 +158,9 @@ private:
 class FavoriteView
     : public QListView
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 Q_SIGNALS:
     void urlRequested(const QUrl &url);
@@ -245,14 +249,16 @@ public:
 class FileDialogComboBox
     : public QComboBox
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     
     FileDialogComboBox(SequenceFileDialog *p,QWidget *parent = 0);
     
-    void showPopup();
+    void showPopup() OVERRIDE;
     void setHistory(const QStringList &paths);
     QStringList history() const
     {
@@ -281,7 +287,9 @@ private:
 class SequenceFileDialog
 : public QDialog, public SortableViewI
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     enum FileDialogModeEnum

@@ -1163,7 +1163,9 @@ private:
 class InspectorNode
     : public Natron::Node
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
     int _maxInputs;
 

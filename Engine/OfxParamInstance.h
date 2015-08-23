@@ -115,7 +115,9 @@ private:
 class OfxIntegerInstance
     :  public QObject, public OFX::Host::Param::IntegerInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -159,7 +161,9 @@ private:
 class OfxDoubleInstance
     :  public QObject,  public OFX::Host::Param::DoubleInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxDoubleInstance(OfxEffectInstance* node,
@@ -208,7 +212,9 @@ private:
 class OfxBooleanInstance
     :  public QObject,  public OFX::Host::Param::BooleanInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxBooleanInstance(OfxEffectInstance* node,
@@ -250,7 +256,9 @@ private:
 class OfxChoiceInstance
     : public QObject, public OFX::Host::Param::ChoiceInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxChoiceInstance(OfxEffectInstance* node,
@@ -295,7 +303,9 @@ private:
 class OfxRGBAInstance
     :  public QObject, public OFX::Host::Param::RGBAInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxRGBAInstance(OfxEffectInstance* node,
@@ -342,7 +352,9 @@ private:
 class OfxRGBInstance
     :  public QObject,  public OFX::Host::Param::RGBInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxRGBInstance(OfxEffectInstance* node,
@@ -388,7 +400,9 @@ private:
 class OfxDouble2DInstance
     :  public QObject, public OFX::Host::Param::Double2DInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,
@@ -438,7 +452,9 @@ private:
 class OfxInteger2DInstance
     :  public QObject, public OFX::Host::Param::Integer2DInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxInteger2DInstance(OfxEffectInstance* node,
@@ -483,7 +499,9 @@ private:
 class OfxDouble3DInstance
     :  public QObject, public OFX::Host::Param::Double3DInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,
@@ -533,7 +551,9 @@ private:
 class OfxInteger3DInstance
     :  public QObject, public OFX::Host::Param::Integer3DInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxInteger3DInstance(OfxEffectInstance* node,
@@ -629,7 +649,9 @@ private:
 class OfxStringInstance
     : public QObject, public OFX::Host::Param::StringInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxStringInstance(OfxEffectInstance* node,
@@ -703,7 +725,9 @@ private:
 class OfxCustomInstance
     : public QObject, public OFX::Host::Param::CustomInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxCustomInstance(OfxEffectInstance* node,
@@ -771,7 +795,9 @@ private:
 class OfxParametricInstance
     : public QObject, public OFX::Host::ParametricParam::ParametricInstance, public OfxParamToKnob
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

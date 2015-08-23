@@ -56,7 +56,9 @@ class Node;
 
 class NodeGraph : public QGraphicsView, public NodeGraphI, public ScriptObject, public boost::noncopyable
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -277,8 +279,10 @@ private:
 struct FindNodeDialogPrivate;
 class FindNodeDialog : public QDialog
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     FindNodeDialog(NodeGraph* graph,QWidget* parent);
@@ -308,7 +312,9 @@ private:
 struct EditNodeNameDialogPrivate;
 class EditNodeNameDialog: public QDialog
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
 public:
     

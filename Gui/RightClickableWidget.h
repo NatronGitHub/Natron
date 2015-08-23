@@ -50,14 +50,14 @@ class RotoPanel;
 class MultiInstancePanel;
 class QTabWidget;
 class Group_Knob;
-
-
-
 class DockablePanel;
+
 class RightClickableWidget : public QWidget
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
     DockablePanel* panel;
     
 public:

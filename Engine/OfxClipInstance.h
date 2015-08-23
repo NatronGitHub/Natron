@@ -147,7 +147,7 @@ public:
     virtual const std::vector<std::string>& getComponentsPresent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
-    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC;
+    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
     /// override this to fill in the image at the given time.
@@ -198,7 +198,7 @@ public:
     /// except if thread-local storage is used
     //// EDIT: We don't use this function anymore, instead we handle thread storage ourselves in OfxEffectInstance
     //// via the ClipsThreadStorageSetter, this way we can be sure actions are not called recursively and do other checks.
-    virtual void setView(int /*view*/)
+    virtual void setView(int /*view*/) OVERRIDE
     {
     }
 

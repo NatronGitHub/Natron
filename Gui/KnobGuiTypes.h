@@ -92,7 +92,9 @@ class Node;
 class Int_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -188,7 +190,9 @@ public:
 class Bool_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -236,7 +240,9 @@ private:
 class Double_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -311,7 +317,9 @@ private:
 class Button_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -327,7 +335,7 @@ public:
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     
-    virtual bool showDescriptionLabel() const
+    virtual bool showDescriptionLabel() const OVERRIDE
     {
         return false;
     }
@@ -388,7 +396,9 @@ private:
 class Choice_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -452,7 +462,7 @@ public:
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual bool showDescriptionLabel() const
+    virtual bool showDescriptionLabel() const OVERRIDE
     {
         return false;
     }
@@ -460,7 +470,7 @@ public:
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 private:
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -492,7 +502,9 @@ class Color_KnobGui;
 class ColorPickerLabel
     : public Natron::Label
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -539,7 +551,9 @@ private:
 class Color_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -589,7 +603,7 @@ private:
     void expandAllDimensions();
     void foldAllDimensions();
 
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -631,7 +645,11 @@ private:
 class AnimatingTextEdit
     : public QTextEdit
 {
-    Q_OBJECT Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+CLANG_DIAG_OFF(inconsistent-missing-override)
+    Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
+
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
@@ -687,7 +705,9 @@ class QTextCharFormat;
 class String_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -747,7 +767,7 @@ public Q_SLOTS:
     
 private:
 
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -800,7 +820,9 @@ private:
 class Group_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -862,7 +884,9 @@ class Parametric_KnobGui
     : public KnobGui
     , public CurveSelection
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -876,7 +900,7 @@ public:
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
     
-    virtual bool showDescriptionLabel() const
+    virtual bool showDescriptionLabel() const OVERRIDE
     {
         return false;
     }

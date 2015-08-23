@@ -31,7 +31,9 @@ struct CompleterLineEditPrivate;
 class CompleterLineEdit
     : public LineEdit
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     
@@ -72,7 +74,9 @@ struct NodeCreationDialogPrivate;
 class NodeCreationDialog
     : public QDialog
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

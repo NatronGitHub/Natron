@@ -91,7 +91,9 @@ public:
 class OfxEffectInstance
     : public AbstractOfxEffectInstance
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
@@ -184,7 +186,7 @@ public:
                                   int view,
                                 Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
 
-    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(double time,int view) WARN_UNUSED_RETURN;
+    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(double time,int view) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
@@ -267,7 +269,7 @@ public:
                                                 ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Natron::Node>* passThroughInput) ;
+                                                boost::shared_ptr<Natron::Node>* passThroughInput) OVERRIDE;
 
 
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -381,7 +383,7 @@ private:
         }
     };
 
-    virtual bool checkCanSetValue() const { return isDuringActionThatCanSetValue(); }
+    virtual bool checkCanSetValue() const OVERRIDE { return isDuringActionThatCanSetValue(); }
 
 #define SET_CAN_SET_VALUE(canSetValue) OfxEffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
 

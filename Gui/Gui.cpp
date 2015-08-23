@@ -10,81 +10,31 @@
 #include "Gui.h"
 
 #include <cassert>
-#include <fstream>
-#include <algorithm> // min, max
 
 #include "Global/Macros.h"
-
-#include <QtCore/QTextStream>
-#include <QtCore/QSettings>
-#include <QtCore/QDebug>
-#include <QtCore/QThread>
-#include <QtCore/QTimer>
 
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
 CLANG_DIAG_ON(unused-private-field)
-#include <QHBoxLayout>
 #include <QApplication> // qApp
-#include <QCheckBox>
-#include <QDesktopWidget>
-#include <QScrollBar>
 #include <QMenuBar>
-#include <QProgressDialog>
-#include <QTextEdit>
 #include <QUndoGroup>
 
-#include <cairo/cairo.h>
-
-#include <boost/version.hpp>
-
-#include "Engine/GroupOutput.h"
-#include "Engine/Image.h"
-#include "Engine/Lut.h" // floatToInt
 #include "Engine/Node.h"
 #include "Engine/Project.h"
-#include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/AutoHideToolBar.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
-#include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
-#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
-#include "Gui/Histogram.h"
 #include "Gui/Menu.h"
-#include "Gui/MessageBox.h"
 #include "Gui/NodeGraph.h"
-#include "Gui/NodeGui.h"
-#include "Gui/NodeSettingsPanel.h"
-#include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout
-#include "Gui/PropertiesBinWrapper.h"
-#include "Gui/RegisteredTabs.h"
-#include "Gui/RenderingProgressDialog.h"
-#include "Gui/ResizableMessageBox.h"
-#include "Gui/RightClickableWidget.h"
-#include "Gui/RotoGui.h"
-#include "Gui/ScriptEditor.h"
-#include "Gui/SequenceFileDialog.h"
-#include "Gui/ShortCutEditor.h"
-#include "Gui/SpinBox.h"
-#include "Gui/Splitter.h"
-#include "Gui/TabWidget.h"
 #include "Gui/ToolButton.h"
-#include "Gui/Utils.h" // convertFromPlainText
-#include "Gui/ViewerGL.h"
-#include "Gui/ViewerTab.h"
-
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
-
 
 using namespace Natron;
 

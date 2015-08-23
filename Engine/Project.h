@@ -51,7 +51,9 @@ struct ProjectPrivate;
 class Project
     :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -169,7 +171,7 @@ public:
     void removeLockFile();
     bool getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const;
     
-    virtual bool isProject() const
+    virtual bool isProject() const OVERRIDE
     {
         return true;
     }

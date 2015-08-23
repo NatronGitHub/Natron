@@ -196,7 +196,7 @@ public:
     
     void clearNodeClipBoard();
     
-    virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers) OVERRIDE;
     
     const std::list<PythonUserCommand>& getUserPythonCommands() const;
     
@@ -210,11 +210,11 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    void onPluginLoaded(Natron::Plugin* plugin);
+    void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE;
     virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
-                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
+                                        std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;
     virtual void initGui() OVERRIDE FINAL;
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;

@@ -51,11 +51,13 @@ CLANG_DIAG_ON(unused-private-field)
 #include <cairo/cairo.h>
 
 #include <boost/version.hpp>
+CLANG_DIAG_OFF(unused-local-typedef)
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
-GCC_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
@@ -130,13 +132,8 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
-
 
 using namespace Natron;
-
-
-
 
 
 GuiPrivate::GuiPrivate(GuiAppInstance* app,

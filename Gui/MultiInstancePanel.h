@@ -39,7 +39,9 @@ struct MultiInstancePanelPrivate;
 class MultiInstancePanel
     :  public NamedKnobHolder
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -154,7 +156,9 @@ struct TrackerPanelPrivate;
 class TrackerPanel
     : public MultiInstancePanel
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -208,7 +212,9 @@ private:
 struct TrackSchedulerPrivate;
 class TrackScheduler : public QThread
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
 public:
     

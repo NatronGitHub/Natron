@@ -55,7 +55,9 @@ struct ViewerArgs
 class ViewerInstance
 : public Natron::OutputEffectInstance
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
     friend class ViewerCurrentFrameRequestScheduler;
     

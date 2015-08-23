@@ -57,7 +57,11 @@ class Group_Knob;
 class NodeSettingsPanel
     : public DockablePanel
 {
-    Q_OBJECT Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
+CLANG_DIAG_OFF(inconsistent-missing-override)
+    Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
+
+    Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
     boost::weak_ptr<NodeGui> _nodeGUI;
@@ -87,7 +91,7 @@ public:
         return _nodeGUI.lock();
     }
 
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
+    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const OVERRIDE
     {
         return _multiPanel;
     }
@@ -97,7 +101,7 @@ public:
 private:
 
     
-    virtual RotoPanel* initializeRotoPanel();
+    virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 

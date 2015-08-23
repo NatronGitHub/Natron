@@ -657,9 +657,10 @@ protected:
 class TooltipActionShortcut
 : public ActionWithShortcut
 {
-
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
     QWidget* _widget;
     QString _originalTooltip;
     bool _tooltipSetInternally;

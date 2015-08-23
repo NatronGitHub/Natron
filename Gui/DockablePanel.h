@@ -59,7 +59,9 @@ class DockablePanel
     : public QFrame
     , public DockablePanelI
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

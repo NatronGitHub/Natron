@@ -45,17 +45,17 @@ public:
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
-    virtual std::string getPluginID() const WARN_UNUSED_RETURN
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_DISKCACHE;
     }
 
-    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "DiskCache";
     }
 
-    virtual std::string getDescription() const WARN_UNUSED_RETURN
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
     "When an image is found in the cache, " NATRON_APPLICATION_NAME " will then not request the input branch to render out that image. "
@@ -78,7 +78,7 @@ public:
         return "Source";
     }
     
-    virtual bool isInputOptional(int /*inputNb*/) const
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }

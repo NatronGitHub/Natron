@@ -22,7 +22,10 @@ CLANG_DIAG_ON(uninitialized)
 class AnimatedCheckBox
     : public QFrame
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
+
     int animation;
     bool readOnly;
     bool dirty;

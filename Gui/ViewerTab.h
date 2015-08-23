@@ -53,7 +53,9 @@ class ViewerTab
     : public QWidget
     , public ScriptObject
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
     explicit ViewerTab(const std::list<NodeGui*> & existingRotoNodes,

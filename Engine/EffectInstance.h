@@ -292,7 +292,7 @@ public:
     virtual ~EffectInstance();
 
     
-    virtual bool canHandleEvaluateOnChangeInOtherThread() const { return true; }
+    virtual bool canHandleEvaluateOnChangeInOtherThread() const OVERRIDE { return true; }
     
     /**
      * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
@@ -1879,7 +1879,7 @@ public:
 
     virtual ~OutputEffectInstance();
     
-    virtual bool isOutput() const
+    virtual bool isOutput() const OVERRIDE
     {
         return true;
     }

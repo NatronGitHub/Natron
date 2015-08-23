@@ -26,9 +26,12 @@ CLANG_DIAG_ON(uninitialized)
 
 class ScriptTextEdit : public QTextEdit
 {
-    Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
+    Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
+
 public:
     
     ScriptTextEdit(QWidget* parent);

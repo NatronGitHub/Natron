@@ -52,7 +52,9 @@ class TableItem;
 class File_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
     friend class File_Knob_UndoCommand;
 
@@ -95,7 +97,7 @@ public Q_SLOTS:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -125,7 +127,9 @@ private:
 class OutputFile_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -161,7 +165,7 @@ public Q_SLOTS:
 private:
     
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
@@ -187,7 +191,9 @@ private:
 class Path_KnobGui
     : public KnobGui
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -230,7 +236,7 @@ public Q_SLOTS:
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    virtual bool shouldAddStretch() const { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

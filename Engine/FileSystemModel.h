@@ -110,8 +110,10 @@ class FileSystemModel;
 struct FileGathererThreadPrivate;
 class FileGathererThread : public QThread
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     FileGathererThread(FileSystemModel* model);
@@ -169,8 +171,9 @@ public:
 struct FileSystemModelPrivate;
 class FileSystemModel : public QAbstractItemModel
 {
-    
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
     
 public:
     

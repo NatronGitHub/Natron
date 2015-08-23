@@ -128,8 +128,10 @@ protected:
 struct OutputSchedulerThreadPrivate;
 class OutputSchedulerThread : public QThread
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     friend class RenderThreadTask;
@@ -523,10 +525,10 @@ struct RequestedFrame;
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler : public QThread
 {
-
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
-    
-    
+CLANG_DIAG_ON(inconsistent-missing-override)
+
 public:
     
     ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);

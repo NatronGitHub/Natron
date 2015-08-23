@@ -34,7 +34,11 @@ class QDragLeaveEvent;
 class LineEdit
     : public QLineEdit
 {
-    Q_OBJECT Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
+CLANG_DIAG_OFF(inconsistent-missing-override)
+    Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
+
+    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
     

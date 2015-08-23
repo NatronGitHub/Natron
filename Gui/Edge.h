@@ -54,9 +54,9 @@ public:
 
     virtual ~Edge() OVERRIDE;
 
-    QPainterPath shape() const;
+    QPainterPath shape() const OVERRIDE WARN_UNUSED_RETURN;
 
-    bool contains(const QPointF &point) const;
+    bool contains(const QPointF &point) const OVERRIDE WARN_UNUSED_RETURN;
 
     void setSource(const boost::shared_ptr<NodeGui> & src);
     
@@ -172,7 +172,9 @@ private:
 class LinkArrow
     : public QObject, public QGraphicsLineItem
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 

@@ -19,12 +19,16 @@
 #include "Engine/RotoContextPrivate.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/map.hpp>
+CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/AppManager.h"

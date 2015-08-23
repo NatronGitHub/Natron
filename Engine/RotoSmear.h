@@ -39,17 +39,17 @@ public:
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
-    virtual std::string getPluginID() const WARN_UNUSED_RETURN
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_ROTOSMEAR;
     }
     
-    virtual std::string getPluginLabel() const WARN_UNUSED_RETURN
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "Smear";
     }
     
-    virtual std::string getDescription() const WARN_UNUSED_RETURN { return std::string(); }
+    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
@@ -60,7 +60,7 @@ public:
         return "Source";
     }
     
-    virtual bool isInputOptional(int /*inputNb*/) const
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }

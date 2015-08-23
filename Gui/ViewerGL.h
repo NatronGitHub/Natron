@@ -59,7 +59,9 @@ class Format;
 class ViewerGL
     : public QGLWidget, public OpenGLViewerI
 {
+CLANG_DIAG_OFF(inconsistent-missing-override)
     Q_OBJECT
+CLANG_DIAG_ON(inconsistent-missing-override)
 
 public:
 
@@ -126,7 +128,7 @@ public:
     /**
      *@returns Returns the current zoom factor that is applied to the display.
      **/
-    double getZoomFactor() const;
+    double getZoomFactor() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
