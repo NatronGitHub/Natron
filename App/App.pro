@@ -30,7 +30,7 @@ INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 
 #System library is required on windows to map network share names from drive letters
-win32 {
+win32-msvc* {
     LIBS += mpr.lib
 }
 
