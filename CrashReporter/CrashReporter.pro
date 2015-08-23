@@ -60,7 +60,6 @@ BREAKPAD_PATH = ../google-breakpad/src
 INCLUDEPATH += $$BREAKPAD_PATH
 
 SOURCES += \
-        $$BREAKPAD_PATH/client/minidump_file_writer.cc \
         $$BREAKPAD_PATH/common/md5.cc \
         $$BREAKPAD_PATH/common/string_conversion.cc \
         $$BREAKPAD_PATH/common/convert_UTF.c \
@@ -72,6 +71,7 @@ mac {
         # DEFINES += __DARWIN_UNIX03=0 -- looks like we doesn't need it anymore
 
         SOURCES += \
+				$$BREAKPAD_PATH/client/minidump_file_writer.cc \
                 $$BREAKPAD_PATH/client/mac/handler/breakpad_nlist_64.cc \
                 $$BREAKPAD_PATH/client/mac/handler/minidump_generator.cc \
                 $$BREAKPAD_PATH/client/mac/handler/dynamic_images.cc \
@@ -90,6 +90,7 @@ mac {
 # other *nix
 unix:!mac {
         SOURCES += \
+				$$BREAKPAD_PATH/client/minidump_file_writer.cc \
                 $$BREAKPAD_PATH/client/linux/handler/minidump_descriptor.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_server.cc \
                 $$BREAKPAD_PATH/client/linux/minidump_writer/minidump_writer.cc \

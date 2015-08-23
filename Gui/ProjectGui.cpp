@@ -61,6 +61,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+//Remove when serialization is gone from this file
+#include "Engine/RectISerialization.h"
+#include "Engine/RectDSerialization.h"
+
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
       , _project()

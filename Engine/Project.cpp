@@ -51,6 +51,8 @@
 #include "Engine/KnobFile.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/RectISerialization.h"
+#include "Engine/RectDSerialization.h"
 
 using std::cout; using std::endl;
 using std::make_pair;
