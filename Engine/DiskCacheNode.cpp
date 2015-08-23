@@ -14,6 +14,8 @@
 
 #include "DiskCacheNode.h"
 
+#include <stdexcept>
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"

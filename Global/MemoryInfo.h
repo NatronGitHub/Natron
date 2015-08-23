@@ -23,6 +23,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #if defined(_WIN32)
 #  include <windows.h>

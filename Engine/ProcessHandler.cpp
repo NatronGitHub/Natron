@@ -14,6 +14,8 @@
 
 #include "ProcessHandler.h"
 
+#include <stdexcept>
+
 #include <QProcess>
 #include <QLocalServer>
 #include <QLocalSocket>

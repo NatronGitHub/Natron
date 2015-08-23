@@ -21,6 +21,8 @@
 
 #include <clocale>
 #include <cstddef>
+#include <stdexcept>
+
 #include <QDebug>
 #include <QTextCodec>
 #include <QProcess>

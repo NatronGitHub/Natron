@@ -18,6 +18,7 @@
 #include <string>
 #include <map>
 #include <locale>
+#include <stdexcept>
 
 #include <QDebug>
 

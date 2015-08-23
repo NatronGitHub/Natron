@@ -19,6 +19,7 @@
 #include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
+#include <stdexcept>
 
 #ifdef __NATRON_WIN32__
 #include <stdio.h> //for _snprintf

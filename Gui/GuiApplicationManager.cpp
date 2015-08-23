@@ -15,6 +15,8 @@
 
 #include "GuiApplicationManager.h"
 
+#include <stdexcept>
+
 ///gui
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)

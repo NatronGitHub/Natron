@@ -12,6 +12,7 @@
 #include <cassert>
 #include <fstream>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Global/Macros.h"
 

@@ -19,6 +19,7 @@
 #include <locale>
 #include <sstream>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 CLANG_DIAG_OFF(unused-local-typedef)
 #include <boost/math/special_functions/fpclassify.hpp>

@@ -17,7 +17,10 @@
 
 #include <cfloat>
 #include <limits>
+#include <stdexcept>
+
 #include <QDebug>
+
 #include "Global/Macros.h"
 
 #include "Engine/OfxEffectInstance.h"
