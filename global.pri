@@ -114,7 +114,7 @@ win32 {
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
-  RC_FILE += ../Natron.rc
+  *-msvc: RC_FILE += ../Natron.rc
 }
 
 win32-msvc* {
@@ -145,6 +145,22 @@ win32-msvc* {
         Debug:RCC_DIR = win32/debug/.rcc
         Debug:UI_DIR = win32/debug/.ui
     }
+}
+
+
+win32-g++ {
+	# On MingW everything is defined with pkgconfig except boost
+	QT_CONFIG -= no-pkg-config
+    CONFIG += link_pkgconfig
+	glew:      PKGCONFIG += glew
+    expat:     PKGCONFIG += expat
+	cairo:     PKGCONFIG += cairo
+	shiboken:  PKGCONFIG += shiboken
+    pyside:    PKGCONFIG += pyside
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+	python:    PKGCONFIG += python-2.7
+	boost:     LIBS += -lboost_serialization
 }
 
 unix {
