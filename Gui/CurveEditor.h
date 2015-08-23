@@ -71,9 +71,9 @@ class TimeLine;
 class NodeCurveEditorElement
     : public QObject
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -156,9 +156,9 @@ private:
 class NodeCurveEditorContext
     : public QObject
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -265,9 +265,9 @@ struct BezierEditorContextPrivate;
 class BezierEditorContext
 : public RotoItemEditorContext
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     
@@ -293,9 +293,9 @@ struct RotoCurveEditorContextPrivate;
 class RotoCurveEditorContext
 : public QObject
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     
@@ -340,9 +340,9 @@ class CurveEditor
     , public CurveSelection
     , public ScriptObject
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 

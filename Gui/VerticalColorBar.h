@@ -27,9 +27,9 @@ class QPaintEvent;
 
 class VerticalColorBar : public QWidget
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 private:
     QColor _color;

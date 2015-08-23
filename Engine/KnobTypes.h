@@ -44,9 +44,9 @@ class Node;
 class Int_Knob
     : public QObject, public Knob<int>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -140,9 +140,9 @@ private:
 class Double_Knob
     :  public QObject,public Knob<double>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -393,9 +393,9 @@ private:
 class Choice_Knob
     : public QObject,public Knob<int>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -522,9 +522,9 @@ private:
 class Color_Knob
     :  public QObject, public Knob<double>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -688,9 +688,9 @@ private:
 class Group_Knob
     :  public QObject, public Knob<bool>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
     std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
@@ -741,9 +741,9 @@ private:
 class Page_Knob
     :  public QObject,public Knob<bool>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -790,9 +790,9 @@ private:
 class Parametric_Knob
     :  public QObject, public Knob<double>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
     mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;

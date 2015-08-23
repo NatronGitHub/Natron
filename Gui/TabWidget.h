@@ -79,9 +79,9 @@ private:
 class TabBar
     : public QTabBar
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -112,9 +112,9 @@ private:
 
 class TabWidgetHeader : public QWidget
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     
@@ -140,9 +140,9 @@ struct TabWidgetPrivate;
 class TabWidget
     : public QFrame
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 

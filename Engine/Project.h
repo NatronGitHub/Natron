@@ -51,9 +51,9 @@ struct ProjectPrivate;
 class Project
     :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 

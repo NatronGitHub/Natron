@@ -83,9 +83,9 @@ struct FileDialogPreviewProvider;
 class UrlModel
     : public QStandardItemModel
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     enum Roles
@@ -158,9 +158,9 @@ private:
 class FavoriteView
     : public QListView
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 Q_SIGNALS:
     void urlRequested(const QUrl &url);
@@ -249,9 +249,9 @@ public:
 class FileDialogComboBox
     : public QComboBox
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     
@@ -287,9 +287,9 @@ private:
 class SequenceFileDialog
 : public QDialog, public SortableViewI
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     enum FileDialogModeEnum

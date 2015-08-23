@@ -92,9 +92,9 @@ class Node;
 class Int_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -190,9 +190,9 @@ public:
 class Bool_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -240,9 +240,9 @@ private:
 class Double_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -317,9 +317,9 @@ private:
 class Button_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -396,9 +396,9 @@ private:
 class Choice_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -502,9 +502,9 @@ class Color_KnobGui;
 class ColorPickerLabel
     : public Natron::Label
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
 
@@ -551,9 +551,9 @@ private:
 class Color_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -645,9 +645,9 @@ private:
 class AnimatingTextEdit
     : public QTextEdit
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
@@ -705,9 +705,9 @@ class QTextCharFormat;
 class String_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -820,9 +820,9 @@ private:
 class Group_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
@@ -884,9 +884,9 @@ class Parametric_KnobGui
     : public KnobGui
     , public CurveSelection
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
 
 public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,

@@ -481,6 +481,14 @@ inline T ignore_result(T x)
 #  define CLANG_DIAG_PRAGMA(x)
 #endif
 
+#if (__clang_major__ > 3) || ((__clang_major__ == 3) && (__clang_minor__ >= 6))
+#  define CLANG_DIAG_OFF_36(x) CLANG_DIAG_OFF(x)
+#  define CLANG_DIAG_ON_36(x) CLANG_DIAG_ON(x)
+#else
+#  define CLANG_DIAG_OFF_36(x)
+#  define CLANG_DIAG_ON_36(x)
+#endif
+
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 //  -Wunused-private-field appeared with GCC 4.8
 # define GCC_DIAG_OFF_48(x) GCC_DIAG_OFF(x)

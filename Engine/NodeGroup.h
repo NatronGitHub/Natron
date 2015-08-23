@@ -314,9 +314,9 @@ public:
 struct NodeGroupPrivate;
 class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
     
 public:
     

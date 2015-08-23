@@ -31,9 +31,9 @@ namespace Natron {
 struct MessageBoxPrivate;
 class MessageBox : public QDialog
 {
-CLANG_DIAG_OFF(inconsistent-missing-override)
+CLANG_DIAG_OFF_36(inconsistent-missing-override)
     Q_OBJECT
-CLANG_DIAG_ON(inconsistent-missing-override)
+CLANG_DIAG_ON_36(inconsistent-missing-override)
     
 public:
     
