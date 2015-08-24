@@ -1,0 +1,302 @@
+//  Natron
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+ * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ * contact: immarespond at gmail dot com
+ *
+ */
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#include "NewLayerDialog.h"
+
+#include <cfloat>
+#include <algorithm> // min, max
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QStyle>
+#include <QColorDialog>
+#include <QToolTip>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QHeaderView>
+#include <QApplication>
+#include <QScrollArea>
+GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
+// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+#include <QKeyEvent>
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
+#include <QDebug>
+#include <QFontComboBox>
+#include <QDialogButtonBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Lut.h"
+#include "Engine/Node.h"
+#include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/TimeLine.h"
+
+#include "Gui/Button.h"
+#include "Gui/ClickableLabel.h"
+#include "Gui/ComboBox.h"
+#include "Gui/CurveGui.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/GroupBoxLabel.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiMacros.h"
+#include "Gui/KnobUndoCommand.h"
+#include "Gui/Label.h"
+#include "Gui/ProjectGui.h"
+#include "Gui/ScaleSliderQWidget.h"
+#include "Gui/SpinBox.h"
+#include "Gui/TabGroup.h"
+#include "Gui/Utils.h"
+
+#include "ofxNatron.h"
+
+
+using namespace Natron;
+using std::make_pair;
+
+struct NewLayerDialogPrivate
+{
+    QGridLayout* mainLayout;
+    Natron::Label* layerLabel;
+    LineEdit* layerEdit;
+    Natron::Label* numCompsLabel;
+    SpinBox* numCompsBox;
+    Natron::Label* rLabel;
+    LineEdit* rEdit;
+    Natron::Label* gLabel;
+    LineEdit* gEdit;
+    Natron::Label* bLabel;
+    LineEdit* bEdit;
+    Natron::Label* aLabel;
+    LineEdit* aEdit;
+    
+    Button* setRgbaButton;
+    QDialogButtonBox* buttons;
+    
+    NewLayerDialogPrivate()
+    : mainLayout(0)
+    , layerLabel(0)
+    , layerEdit(0)
+    , numCompsLabel(0)
+    , numCompsBox(0)
+    , rLabel(0)
+    , rEdit(0)
+    , gLabel(0)
+    , gEdit(0)
+    , bLabel(0)
+    , bEdit(0)
+    , aLabel(0)
+    , aEdit(0)
+    , setRgbaButton(0)
+    , buttons(0)
+    {
+        
+    }
+};
+
+NewLayerDialog::NewLayerDialog(QWidget* parent)
+: QDialog(parent)
+, _imp(new NewLayerDialogPrivate())
+{
+    _imp->mainLayout = new QGridLayout(this);
+    _imp->layerLabel = new Natron::Label(tr("Layer Name"),this);
+    _imp->layerEdit = new LineEdit(this);
+    
+    _imp->numCompsLabel = new Natron::Label(tr("No. Channels"),this);
+    _imp->numCompsBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
+    QObject::connect(_imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)));
+    _imp->numCompsBox->setMinimum(1);
+    _imp->numCompsBox->setMaximum(4);
+    _imp->numCompsBox->setValue(4);
+    
+    _imp->rLabel = new Natron::Label(tr("1st Channel"),this);
+    _imp->rEdit = new LineEdit(this);
+    _imp->gLabel = new Natron::Label(tr("2nd Channel"),this);
+    _imp->gEdit = new LineEdit(this);
+    _imp->bLabel = new Natron::Label(tr("3rd Channel"),this);
+    _imp->bEdit = new LineEdit(this);
+    _imp->aLabel = new Natron::Label(tr("4th Channel"),this);
+    _imp->aEdit = new LineEdit(this);
+    
+    _imp->setRgbaButton = new Button(this);
+    _imp->setRgbaButton->setText(tr("Set RGBA"));
+    QObject::connect(_imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()));
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    
+    _imp->mainLayout->addWidget(_imp->layerLabel, 0, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->layerEdit, 0, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->numCompsLabel, 1, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->numCompsBox, 1, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->rLabel, 2, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->rEdit, 2, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->gLabel, 3, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->gEdit, 3, 1, 1, 1);
+
+    
+    _imp->mainLayout->addWidget(_imp->bLabel, 4, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->bEdit, 4, 1, 1, 1);
+
+    
+    _imp->mainLayout->addWidget(_imp->aLabel, 5, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->aEdit, 5, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->setRgbaButton, 6, 0, 1, 2);
+    
+    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 2);
+
+
+    
+}
+
+NewLayerDialog::~NewLayerDialog()
+{
+    
+}
+
+void
+NewLayerDialog::onNumCompsChanged(double value)
+{
+    if (value == 1) {
+        _imp->rLabel->setVisible(false);
+        _imp->rEdit->setVisible(false);
+        _imp->gLabel->setVisible(false);
+        _imp->gEdit->setVisible(false);
+        _imp->bLabel->setVisible(false);
+        _imp->bEdit->setVisible(false);
+        _imp->aLabel->setVisible(true);
+        _imp->aEdit->setVisible(true);
+    } else if (value == 2) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(false);
+        _imp->bEdit->setVisible(false);
+        _imp->aLabel->setVisible(false);
+        _imp->aEdit->setVisible(false);
+    } else if (value == 3) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(true);
+        _imp->bEdit->setVisible(true);
+        _imp->aLabel->setVisible(false);
+        _imp->aEdit->setVisible(false);
+    } else if (value == 3) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(true);
+        _imp->bEdit->setVisible(true);
+        _imp->aLabel->setVisible(true);
+        _imp->aEdit->setVisible(true);
+    }
+}
+
+Natron::ImageComponents
+NewLayerDialog::getComponents() const
+{
+    QString layer = _imp->layerEdit->text();
+    int nComps = (int)_imp->numCompsBox->value();
+    QString r = _imp->rEdit->text();
+    QString g = _imp->gEdit->text();
+    QString b = _imp->bEdit->text();
+    QString a = _imp->aEdit->text();
+    std::string layerFixed = Natron::makeNameScriptFriendly(layer.toStdString());
+    if (layerFixed.empty()) {
+        return Natron::ImageComponents::getNoneComponents();
+    }
+    
+    if (nComps == 1) {
+        if (a.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(a.toStdString());
+        compsGlobal.append(a.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 2) {
+        if (r.isEmpty() || g.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 3) {
+        if (r.isEmpty() || g.isEmpty() || b.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        comps.push_back(b.toStdString());
+        compsGlobal.append(b.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 4) {
+        if (r.isEmpty() || g.isEmpty() || b.isEmpty() | a.isEmpty())  {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        comps.push_back(b.toStdString());
+        compsGlobal.append(b.toStdString());
+        comps.push_back(a.toStdString());
+        compsGlobal.append(a.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    }
+    return Natron::ImageComponents::getNoneComponents();
+}
+
+void
+NewLayerDialog::onRGBAButtonClicked()
+{
+    _imp->rEdit->setText("R");
+    _imp->gEdit->setText("G");
+    _imp->bEdit->setText("B");
+    _imp->aEdit->setText("A");
+    
+    _imp->rLabel->setVisible(true);
+    _imp->rEdit->setVisible(true);
+    _imp->gLabel->setVisible(true);
+    _imp->gEdit->setVisible(true);
+    _imp->bLabel->setVisible(true);
+    _imp->bEdit->setVisible(true);
+    _imp->aLabel->setVisible(true);
+    _imp->aEdit->setVisible(true);
+
+}

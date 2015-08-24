@@ -82,8 +82,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiFactory.h"
-#include "Gui/KnobGuiTypes.h"
-#include "Gui/KnobGuiTypes.h" // for Group_KnobGui
+//#include "Gui/Group_KnobGui.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"

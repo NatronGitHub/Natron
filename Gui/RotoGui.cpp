@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/KnobGuiTypes.h"
+#include "Gui/Color_KnobGui.h" // ColorPickerLabel
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"

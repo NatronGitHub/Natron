@@ -43,7 +43,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h" // triggerButtonIsRight...
 #include "Gui/KnobGui.h"
-#include "Gui/KnobGuiTypes.h" // Group_KnobGui, Color_KnobGui
+#include "Gui/Color_KnobGui.h"
+#include "Gui/Group_KnobGui.h"
 #include "Gui/KnobUndoCommand.h" // RestoreDefaultsCommand
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"

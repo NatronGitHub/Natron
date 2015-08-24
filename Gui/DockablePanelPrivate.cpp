@@ -25,7 +25,7 @@
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/KnobGui.h"
-#include "Gui/KnobGuiTypes.h" // for Group_KnobGui
+#include "Gui/Group_KnobGui.h" // for Group_KnobGui
 #include "Gui/Label.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/TabGroup.h"

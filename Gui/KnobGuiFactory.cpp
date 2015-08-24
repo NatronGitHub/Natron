@@ -23,8 +23,18 @@
 #include "Engine/KnobFile.h"
 
 #include "Gui/KnobGui.h"
-#include "Gui/KnobGuiFile.h"
-#include "Gui/KnobGuiTypes.h"
+#include "Gui/File_KnobGui.h"
+#include "Gui/Int_KnobGui.h"
+#include "Gui/Double_KnobGui.h"
+#include "Gui/Bool_KnobGui.h"
+#include "Gui/Button_KnobGui.h"
+#include "Gui/Choice_KnobGui.h"
+#include "Gui/Separator_KnobGui.h"
+#include "Gui/Group_KnobGui.h"
+#include "Gui/Color_KnobGui.h"
+#include "Gui/String_KnobGui.h"
+#include "Gui/Bool_KnobGui.h"
+#include "Gui/Parametric_KnobGui.h"
 #include "Gui/DockablePanel.h"
 
 using namespace Natron;

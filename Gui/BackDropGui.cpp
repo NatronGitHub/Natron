@@ -23,7 +23,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/BackDrop.h"
 
-#include "Gui/KnobGuiTypes.h"
+#include "Gui/String_KnobGui.h"
 
 #define RESIZE_HANDLE_SIZE 20
 

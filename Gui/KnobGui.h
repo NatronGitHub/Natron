@@ -16,6 +16,9 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include <cfloat> // DBL_MAX
+#include <climits> // INT_MAX
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -55,6 +58,8 @@ class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 class Gui;
 class NodeGui;
+
+#define SLIDER_MAX_RANGE 100000
 
 class KnobGui
     : public QObject,public KnobGuiI
@@ -216,7 +221,18 @@ public:
     bool isSecretRecursive() const;
     
     void createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression);
-    
+
+
+    static bool shouldSliderBeVisible(int sliderMin, int sliderMax)
+    {
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+    }
+
+    static bool shouldSliderBeVisible(double sliderMin, double sliderMax)
+    {
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+    }
+
 public Q_SLOTS:
     
     void onUnlinkActionTriggered();

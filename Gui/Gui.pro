@@ -100,8 +100,16 @@ SOURCES += \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
     KnobGuiFactory.cpp \
-    KnobGuiFile.cpp \
-    KnobGuiTypes.cpp \
+    File_KnobGui.cpp \
+    Int_KnobGui.cpp \
+    Bool_KnobGui.cpp \
+    Double_KnobGui.cpp \
+    Choice_KnobGui.cpp \
+    Separator_KnobGui.cpp \
+    Color_KnobGui.cpp \
+    String_KnobGui.cpp \
+    Group_KnobGui.cpp \
+    Parametric_KnobGui.cpp \
     KnobUndoCommand.cpp \
     Label.cpp \
     LineEdit.cpp \
@@ -110,6 +118,7 @@ SOURCES += \
     MessageBox.cpp \
     Menu.cpp \
     MultiInstancePanel.cpp \
+    NewLayerDialog.cpp \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
@@ -217,7 +226,16 @@ HEADERS += \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiFactory.h \
-    KnobGuiFile.h \
+    File_KnobGui.h \
+    Int_KnobGui.h \
+    Bool_KnobGui.h \
+    Double_KnobGui.h \
+    Choice_KnobGui.h \
+    Separator_KnobGui.h \
+    Color_KnobGui.h \
+    String_KnobGui.h \
+    Group_KnobGui.h \
+    Parametric_KnobGui.h \
     KnobGuiTypes.h \
     KnobUndoCommand.h \
     Label.h \
@@ -227,6 +245,7 @@ HEADERS += \
     MessageBox.h \
     Menu.h \
     MultiInstancePanel.h \
+    NewLayerDialog.h \
     NodeBackDropSerialization.h \
     NodeClipBoard.h \
     NodeCreationDialog.h \
