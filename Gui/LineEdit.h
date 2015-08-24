@@ -34,9 +34,9 @@ class QDragLeaveEvent;
 class LineEdit
     : public QLineEdit
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)

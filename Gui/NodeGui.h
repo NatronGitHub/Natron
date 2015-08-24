@@ -127,9 +127,9 @@ private:
 class NodeGui
 : public QObject,public QGraphicsItem, public NodeGuiI, public boost::enable_shared_from_this<NodeGui>
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     Q_INTERFACES(QGraphicsItem)
     

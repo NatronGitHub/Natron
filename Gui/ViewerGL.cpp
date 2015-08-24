@@ -23,7 +23,7 @@
 #include <QtGui/QMenu>
 #include <QtGui/QToolButton>
 #include <QtGui/QApplication> // qApp
-CLANG_DIAG_OFF(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMouseEvent>

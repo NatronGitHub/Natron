@@ -64,9 +64,9 @@ public:
     template<typename T>
     static U64 toU64(T value)
     {
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
         BOOST_STATIC_ASSERT(sizeof(T) <= 8);
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
         alias_cast_t<T> ac;
         ac.data = value;
 

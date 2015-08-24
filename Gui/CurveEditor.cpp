@@ -25,10 +25,10 @@
 #include <QHeaderView>
 #include <QUndoStack> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QAction>
-CLANG_DIAG_OFF(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
-CLANG_DIAG_ON(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"

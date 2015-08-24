@@ -43,9 +43,9 @@ class QStyleOptionViewItem;
  */
 class HierarchyViewSelectionModel : public QItemSelectionModel
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     
@@ -110,9 +110,9 @@ private:
  */
 class HierarchyView : public QTreeWidget
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     explicit HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent = 0);

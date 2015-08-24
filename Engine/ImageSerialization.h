@@ -9,14 +9,12 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_OFF_48(unused-local-typedefs) //-Wunused-local-typedefs
-CLANG_DIAG_OFF(unused-local-typedefs) //-Wunused-local-typedefs
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 GCC_DIAG_ON(unused-parameter)
-GCC_DIAG_ON_48(unused-local-typedefs) //-Wunused-local-typedefs
-CLANG_DIAG_ON(unused-local-typedefs) //-Wunused-local-typedefs
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 namespace boost {
 namespace serialization {

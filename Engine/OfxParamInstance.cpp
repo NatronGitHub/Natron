@@ -17,9 +17,9 @@
 
 #include <iostream>
 #include <boost/scoped_array.hpp>
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>

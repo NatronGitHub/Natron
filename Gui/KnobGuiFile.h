@@ -52,9 +52,9 @@ class TableItem;
 class File_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class File_Knob_UndoCommand;
 
@@ -127,9 +127,9 @@ private:
 class OutputFile_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -191,9 +191,9 @@ private:
 class Path_KnobGui
     : public KnobGui
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 

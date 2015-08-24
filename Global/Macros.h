@@ -481,28 +481,59 @@ inline T ignore_result(T x)
 #  define CLANG_DIAG_PRAGMA(x)
 #endif
 
-#if __clang__ && ((__clang_major__ > 3) || ((__clang_major__ == 3) && (__clang_minor__ >= 6)))
-#  define CLANG_DIAG_OFF_36(x) CLANG_DIAG_OFF(x)
-#  define CLANG_DIAG_ON_36(x) CLANG_DIAG_ON(x)
+
+/* Usage:
+ CLANG_DIAG_OFF(unused-variable)
+ CLANG_DIAG_OFF(unused-parameter)
+ CLANG_DIAG_OFF(uninitialized)
+ */
+
+
+#ifndef __has_warning         // Optional of course.
+#define __has_warning(x) 0  // Compatibility with non-clang compilers.
+#endif
+
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+//  -Wunused-local-typedefs appeared with GCC 4.8
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF GCC_DIAG_OFF(unused-local-typedefs)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON GCC_DIAG_ON(unused-local-typedefs)
 #else
-#  define CLANG_DIAG_OFF_36(x)
-#  define CLANG_DIAG_ON_36(x)
+#if __has_warning("-Wunused-local-typedefs") // both unused-local-typedefs and unused-local-typedef should be available
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF CLANG_DIAG_OFF(unused-local-typedefs)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON CLANG_DIAG_ON(unused-local-typedefs)
+#else
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 #endif
 
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 //  -Wunused-private-field appeared with GCC 4.8
-# define GCC_DIAG_OFF_48(x) GCC_DIAG_OFF(x)
-# define GCC_DIAG_ON_48(x) GCC_DIAG_ON(x)
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF GCC_DIAG_OFF(unused-private-field)
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON GCC_DIAG_ON(unused-private-field)
 #else
-# define GCC_DIAG_OFF_48(x)
-# define GCC_DIAG_ON_48(x)
+#if __has_warning("-Wunused-private-field")
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF CLANG_DIAG_OFF(unused-private-field)
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON CLANG_DIAG_ON(unused-private-field)
+#else
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
+# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
+#endif
 #endif
 
-/* Usage:
-   CLANG_DIAG_OFF(unused-variable)
-   CLANG_DIAG_OFF(unused-parameter)
-   CLANG_DIAG_OFF(uninitialized)
- */
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 510
+//  -Wsuggest-override appeared with GCC 5.1
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF GCC_DIAG_OFF(suggest-override)
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON GCC_DIAG_ON(suggest-override)
+#else
+#if __has_warning("-Winconsistent-missing-override")
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF CLANG_DIAG_OFF(inconsistent-missing-override)
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON CLANG_DIAG_ON(inconsistent-missing-override)
+#else
+# define GCC_DIAG_SUGGEST_OVERRIDE_OFF
+# define GCC_DIAG_SUGGEST_OVERRIDE_ON
+#endif
+#endif
 
 #if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
 // we want to use override & final, and get no warnings even if not compiling in c++11 mode

@@ -32,10 +32,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <boost/weak_ptr.hpp>
 
 #include <ofxNatron.h>

@@ -18,10 +18,10 @@
 #include <algorithm> // min, max
 
 #include <boost/shared_ptr.hpp>
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>

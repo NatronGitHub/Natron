@@ -37,14 +37,14 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(redeclared-class-member)
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/set_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap.hpp>
 CLANG_DIAG_ON(redeclared-class-member)
 CLANG_DIAG_ON(unknown-pragmas)
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 //#define USE_VARIADIC_TEMPLATES

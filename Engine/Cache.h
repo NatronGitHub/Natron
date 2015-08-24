@@ -39,7 +39,7 @@ GCC_DIAG_OFF(deprecated)
 GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
@@ -51,7 +51,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/split_member.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 

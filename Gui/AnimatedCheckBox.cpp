@@ -14,10 +14,10 @@
 #include <QStyleOption>
 #include "Gui/GuiMacros.h"
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
-CLANG_DIAG_OFF(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
-CLANG_DIAG_ON(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Gui/GuiApplicationManager.h"

@@ -59,9 +59,9 @@ class NodeGui;
 class KnobGui
     : public QObject,public KnobGuiI
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -416,9 +416,9 @@ struct LinkToKnobDialogPrivate;
 class LinkToKnobDialog
     : public QDialog
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -442,9 +442,9 @@ private:
 struct EditScriptDialogPrivate;
 class EditScriptDialog : public QDialog
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     

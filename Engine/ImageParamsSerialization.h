@@ -11,7 +11,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_OFF(unused-parameter)
-CLANG_DIAG_OFF(unused-local-typedefs) //-Wunused-local-typedefs
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(sign-compare)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
@@ -21,7 +21,7 @@ GCC_DIAG_OFF(sign-compare)
 //vector.hpp:216:18: warning: comparison of integers of different signs: 'int' and 'base_type' (aka 'unsigned long') [-Wsign-compare]
 #include <boost/serialization/vector.hpp>
 GCC_DIAG_ON(unused-parameter)
-CLANG_DIAG_ON(unused-local-typedefs) //-Wunused-local-typedefs
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(sign-compare)
 #endif
 

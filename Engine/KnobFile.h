@@ -38,9 +38,9 @@ class SequenceFromFiles;
 class File_Knob
     : public QObject, public AnimatingString_KnobHelper
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -115,9 +115,9 @@ private:
 class OutputFile_Knob
     :  public QObject, public Knob<std::string>
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 

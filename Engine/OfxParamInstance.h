@@ -115,9 +115,9 @@ private:
 class OfxIntegerInstance
     :  public QObject, public OFX::Host::Param::IntegerInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -161,9 +161,9 @@ private:
 class OfxDoubleInstance
     :  public QObject,  public OFX::Host::Param::DoubleInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDoubleInstance(OfxEffectInstance* node,
@@ -212,9 +212,9 @@ private:
 class OfxBooleanInstance
     :  public QObject,  public OFX::Host::Param::BooleanInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxBooleanInstance(OfxEffectInstance* node,
@@ -256,9 +256,9 @@ private:
 class OfxChoiceInstance
     : public QObject, public OFX::Host::Param::ChoiceInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxChoiceInstance(OfxEffectInstance* node,
@@ -303,9 +303,9 @@ private:
 class OfxRGBAInstance
     :  public QObject, public OFX::Host::Param::RGBAInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxRGBAInstance(OfxEffectInstance* node,
@@ -352,9 +352,9 @@ private:
 class OfxRGBInstance
     :  public QObject,  public OFX::Host::Param::RGBInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxRGBInstance(OfxEffectInstance* node,
@@ -400,9 +400,9 @@ private:
 class OfxDouble2DInstance
     :  public QObject, public OFX::Host::Param::Double2DInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDouble2DInstance(OfxEffectInstance* node,
@@ -452,9 +452,9 @@ private:
 class OfxInteger2DInstance
     :  public QObject, public OFX::Host::Param::Integer2DInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxInteger2DInstance(OfxEffectInstance* node,
@@ -499,9 +499,9 @@ private:
 class OfxDouble3DInstance
     :  public QObject, public OFX::Host::Param::Double3DInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxDouble3DInstance(OfxEffectInstance* node,
@@ -551,9 +551,9 @@ private:
 class OfxInteger3DInstance
     :  public QObject, public OFX::Host::Param::Integer3DInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxInteger3DInstance(OfxEffectInstance* node,
@@ -649,9 +649,9 @@ private:
 class OfxStringInstance
     : public QObject, public OFX::Host::Param::StringInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxStringInstance(OfxEffectInstance* node,
@@ -725,9 +725,9 @@ private:
 class OfxCustomInstance
     : public QObject, public OFX::Host::Param::CustomInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     OfxCustomInstance(OfxEffectInstance* node,
@@ -795,9 +795,9 @@ private:
 class OfxParametricInstance
     : public QObject, public OFX::Host::ParametricParam::ParametricInstance, public OfxParamToKnob
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 

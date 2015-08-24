@@ -17,9 +17,10 @@
 
 #include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_OFF_48(unused-local-typedefs) // /opt/boost/include/boost/serialization/static_warning.hpp:104:18: warning: typedef 'STATIC_WARNING_LINE102' locally defined but not used [-Wunused-local-typedefs]
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /opt/boost/include/boost/serialization/static_warning.hpp:104:18: warning: typedef 'STATIC_WARNING_LINE102' locally defined but not used [-Wunused-local-typedefs]
 #include <boost/scoped_ptr.hpp>
-GCC_DIAG_OFF_48(unused-local-typedefs)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -37,9 +38,9 @@ struct ShortCutEditorPrivate;
 class ShortCutEditor
     : public QWidget
 {
-CLANG_DIAG_OFF_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-CLANG_DIAG_ON_36(inconsistent-missing-override)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 

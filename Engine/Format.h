@@ -18,14 +18,14 @@
 
 #include <string>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-CLANG_DIAG_OFF(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #pragma message WARN("move serialization to a separate header")
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
-CLANG_DIAG_ON(unused-local-typedef)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 CLANG_DIAG_OFF(deprecated)
