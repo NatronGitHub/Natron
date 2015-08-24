@@ -8,6 +8,7 @@
 #include <Python.h>
 
 #include "Gui.h"
+#include "GuiPrivate.h"
 
 #include <cassert>
 #include <fstream>
@@ -16,35 +17,16 @@
 
 #include "Global/Macros.h"
 
-//#include <QtCore/QCoreApplication>
-//#include <QtCore/QThread>
-//#include <QtCore/QTimer>
-//
-#include <QVBoxLayout>
-//#include <QGraphicsScene>
 #include <QApplication> // qApp
 #include <QDesktopWidget>
-#include <QScrollBar>
-//#include <QUndoGroup>
-#include <QAction>
 
-//#include "Engine/Node.h"
-//#include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
-//#include "Engine/Project.h"
-#include "Engine/Settings.h"
-//
-//#include "Gui/AboutWindow.h"
-//#include "Gui/AutoHideToolBar.h"
+
 #include "Gui/CurveEditor.h"
-//#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/FloatingWidget.h"
-//#include "Gui/GuiAppInstance.h"
-#include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
-#include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -52,7 +34,6 @@
 #include "Gui/ProjectGuiSerialization.h" // PaneLayout
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/SequenceFileDialog.h"
-//#include "Gui/ShortCutEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
