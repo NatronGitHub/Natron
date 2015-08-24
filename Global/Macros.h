@@ -438,6 +438,13 @@ inline T ignore_result(T x)
 #endif
 #endif
 
+/* https://code.google.com/p/address-sanitizer/wiki/AddressSanitizer#Turning_off_instrumentation */
+#if defined(__clang__) || defined (__GNUC__)
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#else
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS
+#endif
+
 /* ABI */
 #if defined(__ARM_EABI__) || defined(__EABI__)
 #define NATRON_COMPILER_SUPPORTS_EABI 1
