@@ -33,7 +33,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/QtCompat.h"
+#include "Global/QtCompat.h" // removeFileExtension
 
 #include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"

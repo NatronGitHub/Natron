@@ -38,6 +38,8 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
+#include "Global/QtCompat.h" // removeFileExtension
+
 using namespace Natron;
 
 void

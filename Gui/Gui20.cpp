@@ -49,6 +49,8 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+#include "Global/QtCompat.h" // removeFileExtension
+
 #include "SequenceParsing.h"
 
 #define NAMED_PLUGIN_GROUP_NO 15

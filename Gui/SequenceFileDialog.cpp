@@ -90,6 +90,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/Utils.h"
 
+#include "Global/QtCompat.h" // removeFileExtension
+
 #define FILE_DIALOG_DISABLE_ICONS
 
 using std::make_pair;
