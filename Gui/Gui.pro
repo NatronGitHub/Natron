@@ -87,6 +87,7 @@ SOURCES += \
     Gui.cpp \
     Gui05.cpp \
     Gui10.cpp \
+    Gui15.cpp \
     Gui20.cpp \
     Gui30.cpp \
     Gui40.cpp \
