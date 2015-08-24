@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"

@@ -80,7 +80,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/FloatingWidget.h"
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"

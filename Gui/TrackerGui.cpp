@@ -25,7 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"

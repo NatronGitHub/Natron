@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
+#include "Gui/LogWindow.h"
 
 struct RenderingProgressDialogPrivate
 {
@@ -296,37 +297,4 @@ RenderingProgressDialog::onProcessDeleted()
                         SLOT( onFrameRenderedWithTimer(int,double,double) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
-}
-
-LogWindow::LogWindow(const QString & log,
-                     QWidget* parent)
-    : QDialog(parent)
-{
-    mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-
-    textBrowser = new QTextBrowser(this);
-    textBrowser->setOpenExternalLinks(true);
-    textBrowser->setText(log);
-
-    mainLayout->addWidget(textBrowser);
-
-    QWidget* buttonsContainer = new QWidget(this);
-    QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
-    
-    clearButton = new Button(tr("Clear"),buttonsContainer);
-    buttonsLayout->addWidget(clearButton);
-    QObject::connect(clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()));
-    buttonsLayout->addStretch();
-    okButton = new Button(tr("Ok"),buttonsContainer);
-    buttonsLayout->addWidget(okButton);
-    QObject::connect( okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
-    mainLayout->addWidget(buttonsContainer);
-}
-
-void
-LogWindow::onClearButtonClicked()
-{
-    appPTR->clearOfxLog_mt_safe();
-    textBrowser->clear();
 }

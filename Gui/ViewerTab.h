@@ -26,9 +26,11 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
+
 #include "Global/GlobalDefines.h"
+#include "Global/KeySymbols.h" // Key
+
 #include "Engine/ScriptObject.h"
-#include "Gui/FromQtEnums.h"
 
 
 namespace Natron

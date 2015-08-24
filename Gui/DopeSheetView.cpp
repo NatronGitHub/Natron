@@ -44,6 +44,10 @@
 #include "Gui/ZoomContext.h"
 #include "Gui/TabWidget.h"
 
+// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
+CLANG_DIAG_OFF(deprecated-declarations)
+GCC_DIAG_OFF(deprecated-declarations)
+
 namespace {
 //Protect declarations in an anonymous namespace
 

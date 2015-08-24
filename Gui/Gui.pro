@@ -82,12 +82,14 @@ SOURCES += \
     DopeSheetEditor.cpp \
     Edge.cpp \
     FloatingWidget.cpp \
-    FromQtEnums.cpp \
+    QtEnumConvert.cpp \
     Gui.cpp \
     Gui05.cpp \
     Gui10.cpp \
     Gui20.cpp \
     Gui30.cpp \
+    Gui40.cpp \
+    Gui50.cpp \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \
     GuiAppWrapper.cpp \
@@ -101,6 +103,7 @@ SOURCES += \
     KnobUndoCommand.cpp \
     Label.cpp \
     LineEdit.cpp \
+    LogWindow.cpp \
     ManageUserParamsDialog.cpp \
     MessageBox.cpp \
     Menu.cpp \
@@ -188,7 +191,7 @@ HEADERS += \
     DopeSheetEditor.h \
     Edge.h \
     FloatingWidget.h \
-    FromQtEnums.h \
+    QtEnumConvert.h \
     GroupBoxLabel.h \
     Gui.h \
     GuiApplicationManager.h \
@@ -206,6 +209,7 @@ HEADERS += \
     KnobUndoCommand.h \
     Label.h \
     LineEdit.h \
+    LogWindow.h \
     ManageUserParamsDialog.h \
     MessageBox.h \
     Menu.h \

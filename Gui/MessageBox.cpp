@@ -24,7 +24,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 

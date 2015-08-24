@@ -3,14 +3,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*
- * Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- * contact: immarespond at gmail dot com
- *
- */
 
-#ifndef RENDERINGPROGRESSDIALOG_H
-#define RENDERINGPROGRESSDIALOG_H
+#ifndef _Gui_RenderingProgressDialog_h_
+#define _Gui_RenderingProgressDialog_h_
 
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -81,24 +76,4 @@ private:
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };
 
-
-class LogWindow
-    : public QDialog
-{
-    Q_OBJECT
-
-    QVBoxLayout* mainLayout;
-    QTextBrowser* textBrowser;
-    Button* okButton;
-    Button* clearButton;
-public:
-
-    LogWindow(const QString & log,
-              QWidget* parent = 0);
-    
-public Q_SLOTS:
-    
-    void onClearButtonClicked();
-};
-
-#endif // RENDERINGPROGRESSDIALOG_H
+#endif // _Gui_RenderingProgressDialog_h_

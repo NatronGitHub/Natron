@@ -15,7 +15,7 @@
 #include <QByteArray>
 
 #include "Gui/KnobGui.h"
-#include "Gui/FromQtEnums.h"
+#include "Gui/QtEnumConvert.h"
 
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Knob.h"
