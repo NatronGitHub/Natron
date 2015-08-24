@@ -3356,10 +3356,7 @@ AppManager::initPython(int argc,char* argv[])
 #ifndef IS_PYTHON_2
         _imp->args[i] = char2wchar(argv[i]);
 #else
-        size_t argsize = strlen(argv[i]);
-        char* tmp = (char*)malloc(argsize * sizeof(char));
-        strncpy(tmp, argv[i], argsize);
-        _imp->args[i] = tmp;
+        _imp->args[i] = strdup(argv[i]); // free'd in ~AppManagerPrivate()
 #endif
     }
  
