@@ -84,8 +84,10 @@ SOURCES += \
     FloatingWidget.cpp \
     FromQtEnums.cpp \
     Gui.cpp \
+    Gui05.cpp \
     Gui10.cpp \
     Gui20.cpp \
+    Gui30.cpp \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \
     GuiAppWrapper.cpp \
