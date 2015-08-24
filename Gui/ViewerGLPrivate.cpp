@@ -45,9 +45,6 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define M_PI_4      0.785398163397448309615660845819875721  /* pi/4           */
 #endif
 
-#ifndef M_LN2
-#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
-#endif
 
 
 #define MAX_MIP_MAP_LEVELS 20

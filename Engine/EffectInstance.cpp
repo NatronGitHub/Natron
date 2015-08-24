@@ -2543,6 +2543,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
             supportsRS = supportsRenderScaleMaybe();
+#pragma message WARN("value stored to renderFullScaleThenDownscale is never read")
             renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
             renderFullScaleThenDownscale = true;
             renderMappedScale.x = renderMappedScale.y = 1.;

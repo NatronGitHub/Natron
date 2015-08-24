@@ -62,6 +62,7 @@ SOURCES += \
     AutoHideToolBar.cpp \
     BackDropGui.cpp \
     Button.cpp \
+    ChannelsComboBox.cpp \
     ClickableLabel.cpp \
     ComboBox.cpp \
     CurveEditor.cpp \
@@ -152,6 +153,11 @@ SOURCES += \
     ViewerGL.cpp \
     ViewerGLPrivate.cpp \
     ViewerTab.cpp \
+    ViewerTab10.cpp \
+    ViewerTab20.cpp \
+    ViewerTab30.cpp \
+    ViewerTab40.cpp \
+    ViewerTabPrivate.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
     NatronGui/pyguiapplication_wrapper.cpp \
     NatronGui/guiapp_wrapper.cpp \
@@ -170,6 +176,7 @@ HEADERS += \
     AutoHideToolBar.h \
     BackDropGui.h \
     Button.h \
+    ChannelsComboBox.h \
     ClickableLabel.h \
     ComboBox.h \
     CurveEditor.h \
@@ -261,6 +268,7 @@ HEADERS += \
     ViewerGL.h \
     ViewerGLPrivate.h \
     ViewerTab.h \
+    ViewerTabPrivate.h \
     ZoomContext.h \
     ../libs/OpenFX/include/ofxCore.h \
     ../libs/OpenFX/include/ofxDialog.h \

@@ -28,7 +28,7 @@ CLANG_DIAG_OFF(deprecated)
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QDragEnterEvent>
-CLANG_DIAG_ON(unused-private-field)
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
