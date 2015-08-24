@@ -52,6 +52,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/FormatSerialization.h"
 #include "Engine/RectISerialization.h"
 #include "Engine/RectDSerialization.h"
 

@@ -198,6 +198,7 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
+    FormatSerialization.h \
     FrameEntry.h \
     FrameKey.h \
     FrameEntrySerialization.h \
