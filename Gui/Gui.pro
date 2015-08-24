@@ -82,6 +82,8 @@ SOURCES += \
     DopeSheetHierarchyView.cpp \
     DopeSheetEditor.cpp \
     Edge.cpp \
+    EditExpressionDialog.cpp \
+    EditScriptDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
     Gui.cpp \
@@ -101,6 +103,7 @@ SOURCES += \
     KnobGui.cpp \
     KnobGuiFactory.cpp \
     File_KnobGui.cpp \
+    Button_KnobGui.cpp \
     Int_KnobGui.cpp \
     Bool_KnobGui.cpp \
     Double_KnobGui.cpp \
@@ -113,6 +116,7 @@ SOURCES += \
     KnobUndoCommand.cpp \
     Label.cpp \
     LineEdit.cpp \
+    LinkToKnobDialog.cpp \
     LogWindow.cpp \
     ManageUserParamsDialog.cpp \
     MessageBox.cpp \
@@ -122,10 +126,15 @@ SOURCES += \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
+    NodeGraph05.cpp \
     NodeGraph10.cpp \
+    NodeGraph15.cpp \
     NodeGraph20.cpp \
+    NodeGraph25.cpp \
     NodeGraph30.cpp \
+    NodeGraph35.cpp \
     NodeGraph40.cpp \
+    NodeGraph45.cpp \
     NodeGraphPrivate.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
@@ -212,6 +221,8 @@ HEADERS += \
     DopeSheetHierarchyView.h \
     DopeSheetEditor.h \
     Edge.h \
+    EditExpressionDialog.h \
+    EditScriptDialog.h \
     FloatingWidget.h \
     QtEnumConvert.h \
     GroupBoxLabel.h \
@@ -227,6 +238,7 @@ HEADERS += \
     KnobGui.h \
     KnobGuiFactory.h \
     File_KnobGui.h \
+    Button_KnobGui.h \
     Int_KnobGui.h \
     Bool_KnobGui.h \
     Double_KnobGui.h \
@@ -240,6 +252,7 @@ HEADERS += \
     KnobUndoCommand.h \
     Label.h \
     LineEdit.h \
+    LinkToKnobDialog.h \
     LogWindow.h \
     ManageUserParamsDialog.h \
     MessageBox.h \

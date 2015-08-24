@@ -66,31 +66,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-#define SLIDER_MAX_RANGE 100000
-
-#define kFontSizeTag "<font size=\""
-#define kFontColorTag "color=\""
-#define kFontFaceTag "face=\""
-#define kFontEndTag "</font>"
-#define kBoldStartTag "<b>"
-#define kBoldEndTag "</b>"
-#define kItalicStartTag "<i>"
-#define kItalicEndTag "</i>"
-
 using namespace Natron;
 using std::make_pair;
-
-
-static bool shouldSliderBeVisible(int sliderMin,int sliderMax)
-{
-    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
-}
-
-static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
-{
-    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
-}
-
 
 //=============================BUTTON_KNOB_GUI===================================
 
