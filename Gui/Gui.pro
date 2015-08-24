@@ -113,6 +113,10 @@ SOURCES += \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
+    NodeGraph10.cpp \
+    NodeGraph20.cpp \
+    NodeGraph30.cpp \
+    NodeGraph40.cpp \
     NodeGraphPrivate.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
