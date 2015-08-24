@@ -10,8 +10,8 @@
  */
 
 
-#ifndef GUIAPPLICATIONMANAGER_H
-#define GUIAPPLICATIONMANAGER_H
+#ifndef _Gui_GuiApplicationManager_h_
+#define _Gui_GuiApplicationManager_h_
 
 
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -61,24 +61,7 @@ class KeyBoundAction;
 class QAction;
 class NodeSerialization;
 class NodeGuiSerialization;
-
-
-struct NodeClipBoard
-{
-    std::list<boost::shared_ptr<NodeSerialization> > nodes;
-    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
-    
-    NodeClipBoard()
-    : nodes()
-    , nodesUI()
-    {
-    }
-    
-    bool isEmpty() const
-    {
-        return nodes.empty() && nodesUI.empty();
-    }
-};
+struct NodeClipBoard;
 
 struct PythonUserCommand {
     QString grouping;
@@ -235,4 +218,4 @@ private:
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 };
 
-#endif // GUIAPPLICATIONMANAGER_H
+#endif // _Gui_GuiApplicationManager_h_

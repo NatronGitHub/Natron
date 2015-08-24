@@ -56,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/NodeClipBoard.h"
+
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 #include "NatronGui/natrongui_python.h"

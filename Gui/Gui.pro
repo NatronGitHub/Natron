@@ -113,6 +113,7 @@ SOURCES += \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
+    NodeGraphPrivate.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
@@ -223,8 +224,10 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NodeBackDropSerialization.h \
+    NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
+    NodeGraphPrivate.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeGuiSerialization.h \
