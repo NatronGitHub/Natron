@@ -17,6 +17,8 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include "Curve.h"
+
 #include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -31,9 +33,20 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
-#include "Engine/Curve.h"
+
 #include "Engine/CurvePrivate.h"
 
+template<class Archive>
+void
+KeyFrame::serialize(Archive & ar,
+                    const unsigned int /*version*/)
+{
+    ar & boost::serialization::make_nvp("Time",_time);
+    ar & boost::serialization::make_nvp("Value",_value);
+    ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
+    ar & boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
+    ar & boost::serialization::make_nvp("RightDerivative",_rightDerivative);
+}
 
 template<class Archive>
 void

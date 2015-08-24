@@ -58,6 +58,16 @@ GCC_DIAG_ON(unused-parameter)
 #define BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER 4
 #define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER
 
+//BOOST_SERIALIZATION_SPLIT_MEMBER()
+// split member function serialize funcition into save/load
+template<class Archive>
+void
+BezierCP::serialize(Archive &ar,
+                   const unsigned int file_version)
+{
+    boost::serialization::split_member(ar, *this, file_version);
+}
+
 template<class Archive>
 void
 BezierCP::save(Archive & ar,

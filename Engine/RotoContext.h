@@ -26,8 +26,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#pragma message WARN("move serialization to a separate header")
-#include <boost/serialization/split_member.hpp>
 #endif
 
 #include "Global/GlobalDefines.h"
@@ -38,9 +36,6 @@ CLANG_DIAG_OFF(deprecated-declarations)
 #include <QMutex>
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
-
-//#include "Engine/Rect.h"
-
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
@@ -63,11 +58,7 @@ class Image;
 class ImageComponents;
 class Node;
 }
-namespace boost {
-namespace serialization {
-class access;
-}
-}
+namespace boost { namespace serialization { class access; } }
 
 class RectI;
 class RectD;
@@ -218,8 +209,9 @@ private:
     template<class Archive>
     void load(Archive & ar, const unsigned int version);
     
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-    
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 

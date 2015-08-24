@@ -24,17 +24,11 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#pragma message WARN("move serialization to a separate header")
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
 #endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+
+namespace boost { namespace serialization { class access; } }
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 /**
@@ -107,14 +101,7 @@ private:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
-                   const unsigned int /*version*/)
-    {
-        ar & boost::serialization::make_nvp("Time",_time);
-        ar & boost::serialization::make_nvp("Value",_value);
-        ar & boost::serialization::make_nvp("InterpolationMethod",_interpolation);
-        ar & boost::serialization::make_nvp("LeftDerivative",_leftDerivative);
-        ar & boost::serialization::make_nvp("RightDerivative",_rightDerivative);
-    }
+                   const unsigned int version);
 };
 
 struct KeyFrame_compare_time
@@ -135,8 +122,6 @@ class RectD;
 
 class Curve
 {
-    friend class boost::serialization::access;
-
     enum CurveChangedReasonEnum
     {
         eCurveChangedReasonDerivativesChanged = 0,
@@ -280,6 +265,7 @@ public:
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys,double time);
     
 private:
+    friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
