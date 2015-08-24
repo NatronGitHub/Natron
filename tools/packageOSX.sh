@@ -80,7 +80,10 @@ fi
 
 echo "* Compiling Natron version $NATRONBRANCH with OpenFX plugins version $OFXBRANCH"
 echo
-MAKEJFLAGS="-j4"
+if [ -z "$MAKEJFLAGS" ]; then
+	MAKEJFLAGS="-j4"
+fi
+
 OS=`uname -s`
 BITS=64
 if [ "$OS" = "Darwin" ]; then
@@ -123,11 +126,11 @@ boost {
 }
 shiboken {
     PKGCONFIG -= shiboken
-    INCLUDEPATH += /opt/local/include/shiboken-3.4  
-    LIBS += -L/opt/local/lib -lshiboken.cpython-34m
+    INCLUDEPATH += /opt/local/include/shiboken-2.7  
+    LIBS += -L/opt/local/lib -lshiboken-python2.7.1.2
 }
 EOF
-qmake -r CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS
+qmake -r -spec unsupported/macx-clang CONFIG+=c++11 CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS
 make $MAKEJFLAGS || exit
 
 
@@ -142,7 +145,7 @@ EOF
 
 cp Renderer/NatronRenderer App/${APP}/Contents/MacOS
 bin=App/${APP}/Contents/MacOS/NatronRenderer
-for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside.cpython-34m.1.2 shiboken.cpython-34m.1.2 intl.8; do
+for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside-python2.7.1.2 shiboken-python2.7.1.2 intl.8; do
   lib=lib${l}.dylib
   install_name_tool -change /opt/local/lib/$lib @executable_path/../Frameworks/$lib $bin
 done
@@ -152,28 +155,27 @@ done
 
 #Copy the whole Python framework with libraries 
 
-#mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4
+#mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7
 for f in Python; do
-  install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/3.4/${f} @executable_path/../Frameworks/${f}.framework/Versions/3.4/${f} $bin
+  install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/2.7/${f} @executable_path/../Frameworks/${f}.framework/Versions/2.7/${f} $bin
 done
 if otool -L App/${APP}/Contents/MacOS/NatronRenderer  |fgrep /opt/local; then
   echo "Error: MacPorts libraries remaining in $bin, please check"
   exit 1
 fi
 
-mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4 App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/3.4/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4
-ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4.dylib
-ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4m.dylib
-rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/*
-rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/__pycache__
-rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/*/__pycache__
+mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7
+ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/*
+#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/__pycache__
+#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/*/__pycache__
 
-#FILES=$(ls -l opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib|awk '{print $9}')
+#FILES=$(ls -l opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib|awk '{print $9}')
 #for f in FILES; do
 #    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
-#    cp -r $f App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/$FILE || exit 1
+#    cp -r $f App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/$FILE || exit 1
 #done
 
 
@@ -202,35 +204,35 @@ fi
 mkdir -p  $PLUGINDIR/PySide
 
 for lib in QtCore QtGui QtNetwork QtOpenGL;do
-cp /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/${lib}.so $PLUGINDIR/PySide/${lib}.so
+cp /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/${lib}.so $PLUGINDIR/PySide/${lib}.so
 bin=$PLUGINDIR/PySide/${lib}.so
 for f in QtCore QtGui QtNetwork QtOpenGL; do
   install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
-for l in  pyside.cpython-34m.1.2 shiboken.cpython-34m.1.2; do
+for l in  pyside-python2.7.1.2 shiboken-python2.7.1.2; do
   dylib=lib${l}.dylib
   install_name_tool -change /opt/local/lib/$dylib @executable_path/../Frameworks/$dylib $bin
 done
 done
-cp  /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/__init__.py $PLUGINDIR/PySide
-cp  /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/_utils.py $PLUGINDIR/PySide
+cp  /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/__init__.py $PLUGINDIR/PySide
+cp  /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/_utils.py $PLUGINDIR/PySide
 
 #compile openfx-io
 cd openfx-io
-make BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local $MAKEJFLAGS || exit
+make CXX=clang++ BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local $MAKEJFLAGS || exit
 mv IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
 #compile openfx-misc
 cd openfx-misc
-make BITS=$BITS HAVE_CIMG=1 CONFIG=$CONFIG $MAKEJFLAGS || exit
+make CXX=clang++ BITS=$BITS HAVE_CIMG=1 CONFIG=$CONFIG $MAKEJFLAGS || exit
 mv Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "../$PLUGINDIR" || exit
 mv CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
 #compile openfx-arena
 cd openfx-arena
-make USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
+make CXX=clang++ USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG $MAKEJFLAGS || exit
 mv Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
