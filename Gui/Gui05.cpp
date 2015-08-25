@@ -29,6 +29,7 @@
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
+#include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ShortCutEditor.h"
