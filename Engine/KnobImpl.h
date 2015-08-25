@@ -2442,7 +2442,10 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
             }
             if (_signalSlotHandler) {
                 std::list<SequenceTime> keysList;
-                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                KeyFrameSet keys;
+                if (curve) {
+                    keys = curve->getKeyFrames_mt_safe();
+                }
                 for (KeyFrameSet::iterator it = keys.begin(); it!=keys.end(); ++it) {
                     keysList.push_back(it->getTime());
                 }
@@ -2457,6 +2460,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
     cloneExtraData(other,dimension);
     if (getHolder()) {
         getHolder()->updateHasAnimation();
+        computeHasModifications();
     }
 }
 
