@@ -480,9 +480,23 @@ Int_KnobGui::onSpinBoxValueChanged()
 {
     std::list<int> newValues;
 
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        newValues.push_back( _spinBoxes[i].first->value() );
+    if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
+        // each spinbox has a different value
+        for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+            newValues.push_back( _spinBoxes[i].first->value() );
+        }
+    } else {
+        // use the value of the first dimension only, and set all spinboxes
+        if (_spinBoxes.size() > 1) {
+            int v = _spinBoxes[0].first->value();
+            newValues.push_back(v);
+            for (U32 i = 1; i < _spinBoxes.size(); ++i) {
+                newValues.push_back(v);
+                _spinBoxes[i].first->setValue(v);
+            }
+        }
     }
+
     if (_slider) {
         _slider->seekScalePosition( newValues.front() );
     }
