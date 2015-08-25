@@ -248,7 +248,6 @@ HEADERS += \
     String_KnobGui.h \
     Group_KnobGui.h \
     Parametric_KnobGui.h \
-    KnobGuiTypes.h \
     KnobUndoCommand.h \
     Label.h \
     LineEdit.h \
