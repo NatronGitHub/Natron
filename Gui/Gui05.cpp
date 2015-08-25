@@ -27,6 +27,8 @@
 
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
+#include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
@@ -35,6 +37,8 @@
 #include "Gui/ShortCutEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/ViewerTab.h"
+
 
 using namespace Natron;
 
