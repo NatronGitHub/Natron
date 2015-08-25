@@ -46,8 +46,8 @@ export PATH=/usr/local/bin:$INSTALL_PATH/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export PYTHON_HOME=$INSTALL_PATH
-export PYTHON_PATH=$INSTALL_PATH/lib/python3.4
-export PYTHON_INCLUDE=$INSTALL_PATH/include/python3.4
+export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
+export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 
 # Install natron
 cd $TMP_PATH || exit 1
