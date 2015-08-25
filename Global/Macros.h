@@ -20,6 +20,8 @@
 #define __NATRON_LINUX__
 #endif
 
+#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
+#define NATRON_COPYRIGHT "Copyright (C) 2015 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"

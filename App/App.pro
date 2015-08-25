@@ -8,6 +8,7 @@ VERSION = 2.0.0
 TEMPLATE = app
 win32 {
 	CONFIG += console
+	RC_FILE += ../Natron.rc
 } else {
 	CONFIG += app
 }

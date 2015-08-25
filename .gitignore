@@ -2,6 +2,7 @@
 *.com
 *.DS_Store
 *_moc.cpp
+*_resource.rc
 moc*.cpp
 *moc
 build

@@ -11,6 +11,10 @@ CONFIG += boost qt expat cairo python shiboken pyside
 
 TEMPLATE = app
 
+win32 {
+	RC_FILE += ../Natron.rc
+}
+
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 INCLUDEPATH += $$PWD/../libs/OpenFX_extensions

@@ -1,1 +1,27 @@
+#include <windows.h>
+#include "Global/Macros.h"
+
 IDI_ICON1 ICON DISCARDABLE "Gui/Resources/Images/natronIcon256_windows.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     NATRON_VERSION_MAJOR,NATRON_VERSION_MINOR,NATRON_VERSION_REVISION,0
+PRODUCTVERSION  NATRON_VERSION_MAJOR,NATRON_VERSION_MINOR,NATRON_VERSION_REVISION,0
+
+//See https://msdn.microsoft.com/en-us/library/windows/desktop/aa381049%28v=vs.85%29.aspx
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",        NATRON_ORGANIZATION_NAME
+            VALUE "FileDescription",    NATRON_APPLICATION_DESCRIPTION
+            VALUE "FileVersion",        NATRON_VERSION_STRING
+            VALUE "InternalName",       NATRON_APPLICATION_NAME
+            VALUE "LegalCopyright",     NATRON_COPYRIGHT
+            VALUE "LegalTrademarks1",   "All rights reserved."
+            VALUE "OriginalFilename",   NATRON_APPLICATION_NAME ".exe"
+            VALUE "ProductName",        NATRON_APPLICATION_NAME
+            VALUE "ProductVersion",     NATRON_VERSION_STRING
+        END
+    END
+END
