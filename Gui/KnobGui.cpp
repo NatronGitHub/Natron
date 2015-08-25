@@ -2082,18 +2082,24 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
         if (dimension == -1) {
             int dim = knob->getDimension();
             for (int i = 0; i < dim; ++i) {
-                KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    tmpTimes.insert( it->getTime() );
+                boost::shared_ptr<Curve> curve = knob->getCurve(i);
+                if (curve) {
+                    KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                        tmpTimes.insert( it->getTime() );
+                    }
                 }
             }
             for (std::set<SequenceTime>::iterator it=tmpTimes.begin(); it!=tmpTimes.end(); ++it) {
                 times.push_back(*it);
             }
         } else {
-            KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
-            for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                times.push_back( it->getTime() );
+            boost::shared_ptr<Curve> curve = knob->getCurve(dimension);
+            if (curve) {
+                KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+                    times.push_back( it->getTime() );
+                }
             }
         }
         if (!times.empty()) {
