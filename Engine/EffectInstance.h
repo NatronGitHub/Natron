@@ -32,6 +32,7 @@
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
+#include "Engine/RenderStats.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -166,6 +167,9 @@ struct ParallelRenderArgs
     ///True when the preference in Natron is set and the renderRequester is a Viewer
     bool viewerProgressReportEnabled;
     
+    ///Various stats local to the render of a frame
+    boost::shared_ptr<RenderStats> stats;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -187,6 +191,7 @@ struct ParallelRenderArgs
     , draftMode(false)
     , tilesSupported(false)
     , viewerProgressReportEnabled(false)
+    , stats()
     {
         
     }
@@ -605,6 +610,7 @@ public:
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              const Natron::ImageComponents& nodeComponentsPref,
                                              const EffectInstance::InputImagesMap& inputImages,
+                                             const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -661,7 +667,8 @@ public:
                                   Natron::RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
-                                  bool viewerProgressReportEnabled);
+                                  bool viewerProgressReportEnabled,
+                                  const boost::shared_ptr<RenderStats>& stats);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
@@ -1323,9 +1330,7 @@ public:
      **/
     void onNodeHashChanged(U64 hash);
 
-    double getTotalTimeSpentRenderingSinceLastReset() const;
     void resetTotalTimeSpentRendering();
-    void incrementTotalTimeSpentRendering(double v);
 
     virtual void initializeData() {}
 
@@ -1907,13 +1912,13 @@ public:
      * @brief Starts rendering of all the sequence available, from start to end.
      * This function is meant to be called for on-disk renderer only (i.e: not viewers).
      **/
-    void renderFullSequence(BlockingBackgroundRender* renderController,int first,int last);
+    void renderFullSequence(bool enableRenderStats, BlockingBackgroundRender* renderController,int first,int last);
 
     void notifyRenderFinished();
 
     void renderCurrentFrame(bool canAbort);
     
-    void renderFromCurrentFrameUsingCurrentDirection();
+    void renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats);
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
@@ -1940,7 +1945,9 @@ public:
     virtual void initializeData() OVERRIDE FINAL;
     
     void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
-    
+
+    virtual void reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+
 protected:
         
     /**

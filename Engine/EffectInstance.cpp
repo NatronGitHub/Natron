@@ -19,6 +19,7 @@
 #include <sstream>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <fstream>
 
 #include <QtConcurrentMap>
 #include <QReadWriteLock>
@@ -33,6 +34,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
+#include "Global/QtCompat.h"
+
 #include "Engine/AppManager.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
@@ -55,6 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Transform.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Timer.h"
+#include "Engine/RenderStats.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
@@ -446,8 +450,6 @@ struct EffectInstance::Implementation
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
-    , renderingTimersMutex()
-    , totalTimeSpentRendering(0.)
     {
     }
 
@@ -507,9 +509,6 @@ struct EffectInstance::Implementation
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    
-    mutable QMutex renderingTimersMutex;
-    double totalTimeSpentRendering;
     
     void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
     
@@ -760,25 +759,6 @@ struct EffectInstance::Implementation
 };
 
 
-class RenderingTimeRecorder
-{
-    TimeLapse _lapse;
-    EffectInstance* _imp;
-    
-public:
-    
-    RenderingTimeRecorder(EffectInstance* imp)
-    : _lapse()
-    , _imp(imp)
-    {
-        
-    }
-    
-    ~RenderingTimeRecorder()
-    {
-        _imp->incrementTotalTimeSpentRendering(_lapse.getTimeSinceCreation());
-    }
-};
 
 
 class InputImagesHolder_RAII
@@ -840,29 +820,15 @@ EffectInstance::~EffectInstance()
     clearPluginMemoryChunks();
 }
 
-double
-EffectInstance::getTotalTimeSpentRenderingSinceLastReset() const
-{
-    QMutexLocker k(&_imp->renderingTimersMutex);
-    return _imp->totalTimeSpentRendering;
-}
+
 
 void
 EffectInstance::resetTotalTimeSpentRendering()
 {
-    {
-        QMutexLocker k(&_imp->renderingTimersMutex);
-        _imp->totalTimeSpentRendering = 0.;
-    }
+    
     resetTimeSpentRenderingInfos();
 }
 
-void
-EffectInstance::incrementTotalTimeSpentRendering(double v)
-{
-    QMutexLocker k(&_imp->renderingTimersMutex);
-    _imp->totalTimeSpentRendering += v;
-}
 
 void
 EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
@@ -924,7 +890,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          Natron::RenderSafetyEnum currentThreadSafety,
                                          bool doNanHandling,
                                          bool draftMode,
-                                         bool viewerProgressReportEnabled)
+                                         bool viewerProgressReportEnabled,
+                                         const boost::shared_ptr<RenderStats>& stats)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -947,6 +914,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.draftMode = draftMode;
     args.tilesSupported = getNode()->getCurrentSupportTiles();
     args.viewerProgressReportEnabled = viewerProgressReportEnabled;
+    args.stats = stats;
     ++args.validArgs;
     
 }
@@ -1914,6 +1882,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
                                                     const Natron::ImageComponents& nodePrefComps,
                                                     const EffectInstance::InputImagesMap& inputImages,
+                                                    const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
     ImageList cachedImages;
@@ -1938,6 +1907,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     
     if (!isCached) {
         isCached = !useDiskCache ? Natron::getImageFromCache(key,&cachedImages) : Natron::getImageFromDiskCache(key, &cachedImages);
+    }
+    
+    if (stats && !isCached) {
+        stats->addCacheInfosForNode(getNode(), true, false);
     }
     
     if (isCached) {
@@ -2068,15 +2041,26 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             *image = imageToConvert;
             //assert(imageToConvert->getBounds().contains(bounds));
             
+            if (stats) {
+                stats->addCacheInfosForNode(getNode(), false, true);
+            }
+            
         } else if (*image) { //  else if (imageToConvert && !*image)
             
             ///Ensure the image is allocated
             (*image)->allocateMemory();
             
+            if (stats) {
+                stats->addCacheInfosForNode(getNode(), false, false);
+            }
 
+        } else {
+            if (stats) {
+                stats->addCacheInfosForNode(getNode(), true, false);
+            }
         }
         
-    }
+    } // isCached
 
 }
 
@@ -2543,8 +2527,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
             supportsRS = supportsRenderScaleMaybe();
-#pragma message WARN("value stored to renderFullScaleThenDownscale is never read")
-            renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
             renderFullScaleThenDownscale = true;
             renderMappedScale.x = renderMappedScale.y = 1.;
             renderMappedMipMapLevel = 0;
@@ -2588,20 +2570,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 
-                /*RoIMap inputsRoI;
-                inputsRoI.insert( std::make_pair(inputEffectIdentity, canonicalRoI) );
-                Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                            inputsRoI,
-                                                            rod,
-                                                            args.roi,
-                                                            args.time,
-                                                            args.view,
-                                                            identity,
-                                                            inputTimeIdentity,
-                                                            inputNbIdentity,
-                                                            std::map<Natron::ImageComponents,PlaneToRender>(),
-                                                            firstFrame,
-                                                            lastFrame);*/
+                if (frameRenderArgs.stats) {
+                    frameRenderArgs.stats->setNodeIdentity(getNode(), inputEffectIdentity->getNode());
+                }
+
                 
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
@@ -2870,6 +2842,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                 outputDepth,
                                                 *components,
                                                 args.inputImagesList,
+                                                frameRenderArgs.stats,
                                                 &plane.fullscaleImage);
             
             
@@ -3274,7 +3247,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                 &rod,
                                                 args.bitdepth, it->first,
                                                 outputDepth,*components,
-                                                args.inputImagesList, &it->second.fullscaleImage);
+                                                args.inputImagesList, frameRenderArgs.stats, &it->second.fullscaleImage);
             
             ///We must retrieve from the cache exactly the originally retrieved image, otherwise we might have to call  renderInputImagesForRoI
             ///again, which could create a vicious cycle.
@@ -3516,7 +3489,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
-            
+            if (frameRenderArgs.stats) {
+                frameRenderArgs.stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender.outputPremult, processChannels, frameRenderArgs.tilesSupported, !renderFullScaleThenDownscale, args.mipMapLevel);
+            }
             
 # ifdef DEBUG
 
@@ -4505,11 +4480,9 @@ EffectInstance::renderHandler(RenderArgs & args,
                               Natron::ImagePremultiplicationEnum originalImagePremultiplication,
                               ImagePlanesToRender& planes)
 {
-    
-    //Record the time spent rendering
-    boost::shared_ptr<RenderingTimeRecorder> _timeRecorder_;
-    if (isSequentialRender) {
-        _timeRecorder_.reset(new RenderingTimeRecorder(this));
+    boost::shared_ptr<TimeLapse> timeRecorder;
+    if (frameArgs.stats) {
+        timeRecorder.reset(new TimeLapse());
     }
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
@@ -4572,7 +4545,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.downscaleImage->fillZero(downscaledRectToRender);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
                 }
+                if (frameArgs.stats) {
+                    frameArgs.stats->addRenderInfosForNode(getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
+                }
             }
+            
             return eRenderingFunctorRetOK;
         } else {
         
@@ -4589,6 +4566,9 @@ EffectInstance::renderHandler(RenderArgs & args,
                     } else {
                         it->second.downscaleImage->fillZero(downscaledRectToRender);
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    }
+                    if (frameArgs.stats) {
+                        frameArgs.stats->addRenderInfosForNode(getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
                     }
                 }
                 return eRenderingFunctorRetOK;
@@ -4646,6 +4626,10 @@ EffectInstance::renderHandler(RenderArgs & args,
                             it->second.downscaleImage->pasteFrom(**idIt,downscaledRectToRender, false);
                         }
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    }
+                    
+                    if (frameArgs.stats) {
+                        frameArgs.stats->addRenderInfosForNode(getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
                     }
                     
                 }
@@ -4946,6 +4930,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
             } // if (renderFullScaleThenDownscale) {
         } // if (it->second.isAllocatedOnTheFly) {
+        
+        if (frameArgs.stats) {
+            frameArgs.stats->addRenderInfosForNode(getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
+        }
+        
     } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
     
     
@@ -5097,7 +5086,7 @@ EffectInstance::evaluate(KnobI* knob,
                 w.lastFrame = INT_MAX;
                 std::list<AppInstance::RenderWork> works;
                 works.push_back(w);
-                getApp()->startWritersRendering(works);
+                getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(),works);
 
                 return;
             }
@@ -6558,7 +6547,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  NodePtr(),
                                                  true,
                                                  false,
-                                                 false);
+                                                 false,
+                                                 boost::shared_ptr<RenderStats>());
 
         RECURSIVE_ACTION();
         EffectPointerThreadProperty_RAII propHolder_raii(this);
@@ -6992,9 +6982,9 @@ OutputEffectInstance::renderCurrentFrame(bool canAbort)
 }
 
 void
-OutputEffectInstance::renderFromCurrentFrameUsingCurrentDirection()
+OutputEffectInstance::renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats)
 {
-    _engine->renderFromCurrentFrameUsingCurrentDirection();
+    _engine->renderFromCurrentFrameUsingCurrentDirection(enableRenderStats);
 }
 
 bool
@@ -7031,7 +7021,7 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 }
 
 void
-OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderController,int first,int last)
+OutputEffectInstance::renderFullSequence(bool enableRenderStats,BlockingBackgroundRender* renderController,int first,int last)
 {
     _renderController = renderController;
     
@@ -7049,7 +7039,7 @@ OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderControl
         }
     }
     ///If you want writers to render backward (from last to first), just change the flag in parameter here
-    _engine->renderFrameRange(first,last,OutputSchedulerThread::eRenderDirectionForward);
+    _engine->renderFrameRange(enableRenderStats,first,last,OutputSchedulerThread::eRenderDirectionForward);
 
 }
 
@@ -7220,4 +7210,132 @@ OutputEffectInstance::resetTimeSpentRenderingInfos()
 {
     QMutexLocker k(_outputEffectDataLock);
     _timeSpentPerFrameRendered.clear();
+}
+
+void
+OutputEffectInstance::reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+{
+    std::string filename;
+    boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+    if (fileKnob) {
+        OutputFile_Knob* strKnob = dynamic_cast<OutputFile_Knob*>(fileKnob.get());
+        if  (strKnob) {
+            QString qfileName(SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str());
+            Natron::removeFileExtension(qfileName);
+            qfileName.append("-stats.txt");
+            filename = qfileName.toStdString();
+        }
+    }
+    
+    //If there's no filename knob, do not write anything
+    if (filename.empty()) {
+        std::cout << QObject::tr("Cannot write render statistics file: ").toStdString() << getScriptName_mt_safe() <<
+        QObject::tr(" does not seem to have a parameter named \"filename\" to determine the location where to write the stats file.").toStdString() << std::endl;
+        return;
+    }
+    
+    std::ofstream ofile;
+    ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+    try {
+        ofile.open(filename.c_str(),std::ofstream::out);
+    } catch (const std::ios_base::failure & e) {
+        std::cout << QObject::tr("Failure to write render statistics file: ").toStdString() << e.what() << std::endl;
+        return;
+    }
+    
+    if ( !ofile.good() ) {
+        std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
+        return;
+    }
+    
+    for (std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
+        ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
+        ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
+        const RectD& rod = it->second.getRoD();
+        ofile << "Region of definition: x1 = " << rod.x1  << " y1 = " << rod.y1 << " x2 = " << rod.x2 << " y2 = " << rod.y2 << std::endl;
+        ofile << "Is Identity to Effect? ";
+        NodePtr identity = it->second.getInputImageIdentity();
+        if (identity) {
+            ofile << "Yes, to " << identity->getScriptName_mt_safe() << std::endl;
+        } else {
+            ofile << "No" << std::endl;
+        }
+        ofile << "Has render-scale support? " ;
+        if (it->second.isRenderScaleSupportEnabled()) {
+            ofile << "Yes";
+        } else {
+            ofile << "No";
+        }
+        ofile << std::endl;
+        ofile << "Has tiles support? " ;
+        if (it->second.isTilesSupportEnabled()) {
+            ofile << "Yes";
+        } else {
+            ofile << "No";
+        }
+        ofile << std::endl;
+        ofile << "Channels processed: ";
+        
+        bool r,g,b,a;
+        it->second.getChannelsRendered(&r, &g, &b, &a);
+        if (r) {
+            ofile << "red ";
+        }
+        if (g) {
+            ofile << "green";
+        }
+        if (b) {
+            ofile << "blue";
+        }
+        if (a) {
+            ofile << "alpha";
+        }
+        ofile << std::endl;
+        
+        ofile << "Output alpha premultiplication: ";
+        switch (it->second.getOutputPremult()) {
+            case Natron::eImagePremultiplicationOpaque:
+                ofile << "opaque";
+                break;
+            case Natron::eImagePremultiplicationPremultiplied:
+                ofile << "premultiplied";
+                break;
+            case Natron::eImagePremultiplicationUnPremultiplied:
+                ofile << "unpremultiplied";
+                break;
+        }
+        ofile << std::endl;
+        
+        ofile << "Mipmap level(s) rendered: ";
+        for (std::set<unsigned int>::const_iterator it2 = it->second.getMipMapLevelsRendered().begin(); it2!=it->second.getMipMapLevelsRendered().end(); ++it2) {
+            ofile << *it2 << ' ';
+        }
+        ofile << std::endl;
+        int nbCacheMiss,nbCacheHit, nbCacheHitButDownscaled;
+        it->second.getCacheAccessInfos(&nbCacheMiss, &nbCacheHit, &nbCacheHitButDownscaled);
+        ofile << "Nb cache hit: " << nbCacheMiss << std::endl;
+        ofile << "Nb cache miss: " << nbCacheMiss << std::endl;
+        ofile << "Nb cache hit requiring mipmap downscaling: " << nbCacheHitButDownscaled << std::endl;
+        
+        const std::set<std::string>& planes = it->second.getPlanesRendered();
+        ofile << "Plane(s) rendered: ";
+        for (std::set<std::string>::const_iterator it2 = planes.begin(); it2 != planes.end(); ++it2) {
+            ofile << *it2 << ' ';
+        }
+        ofile << std::endl;
+        
+        std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > identityRectangles = it->second.getIdentityRectangles();
+        const std::list<RectI>& renderedRectangles = it->second.getRenderedRectangles();
+        
+        ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
+        for (std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
+            ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
+            << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
+        }
+        
+        ofile << "Rectangles rendered: " << renderedRectangles.size() << std::endl;
+        for ( std::list<RectI>::const_iterator it2 = renderedRectangles.begin(); it2 != renderedRectangles.end(); ++it2) {
+            ofile << "x1 = " << it2->x1 << " y1 = " << it2->y1 << " x2 = " << it2->x2 << " y2 = " << it2->y2 << std::endl;
+        }
+    }
 }

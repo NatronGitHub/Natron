@@ -44,7 +44,7 @@ public:
 
     void notifyFinished();
 
-    void blockingRender(int first,int last);
+    void blockingRender(bool enableRenderStats,int first,int last);
 };
 
 #endif // BLOCKINGBACKGROUNDRENDER_H

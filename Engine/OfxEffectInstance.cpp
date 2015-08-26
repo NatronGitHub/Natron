@@ -954,7 +954,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              NodePtr(),
                                              false,
                                              false,
-                                             false);
+                                             false,
+                                             boost::shared_ptr<RenderStats>());
     
     EffectPointerThreadProperty_RAII propHolder_raii(this);
     

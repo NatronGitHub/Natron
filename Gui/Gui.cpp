@@ -425,6 +425,10 @@ Gui::createMenuActions()
     _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionRenderSelected, kShortcutDescActionRenderSelected, this);
     QObject::connect( _imp->renderSelectedNode, SIGNAL( triggered() ), this, SLOT( renderSelectedNode() ) );
 
+    _imp->enableRenderStats = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats,this);
+    _imp->enableRenderStats->setCheckable(true);
+    _imp->enableRenderStats->setChecked(false);
+    QObject::connect( _imp->enableRenderStats, SIGNAL( triggered() ), this, SLOT(onEnableRenderStatsActionTriggered() ) );
 
     for (int c = 0; c < NATRON_MAX_RECENT_FILES; ++c) {
         _imp->actionsOpenRecentFile[c] = new QAction(this);
@@ -535,6 +539,7 @@ Gui::createMenuActions()
 
     _imp->menuRender->addAction(_imp->renderAllWriters);
     _imp->menuRender->addAction(_imp->renderSelectedNode);
+    _imp->menuRender->addAction(_imp->enableRenderStats);
 
     _imp->cacheMenu->addAction(_imp->actionClearDiskCache);
     _imp->cacheMenu->addAction(_imp->actionClearPlayBackCache);

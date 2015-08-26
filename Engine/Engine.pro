@@ -123,6 +123,7 @@ SOURCES += \
     PySideCompat.cpp \
     RectD.cpp \
     RectI.cpp \
+    RenderStats.cpp \
     RotoContext.cpp \
     RotoPaint.cpp \
     RotoSerialization.cpp  \
@@ -264,6 +265,7 @@ HEADERS += \
     RectDSerialization.h \
     RectI.h \
     RectISerialization.h \
+    RenderStats.h \
     RotoContext.h \
     RotoContextPrivate.h \
     RotoPaint.h \

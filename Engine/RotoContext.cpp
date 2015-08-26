@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Format.h"
 #include "Engine/RotoSerialization.h"
+#include "Engine/RenderStats.h"
 #include "Engine/Transform.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/ViewerInstance.h"
@@ -9129,7 +9130,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
-        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), &image);
+        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
     if (image) {
         return image;

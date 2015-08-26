@@ -148,6 +148,7 @@ SOURCES += \
     QtDecoder.cpp \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
+    RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
     RotoGui.cpp \
@@ -278,6 +279,7 @@ HEADERS += \
     QtEncoder.h \
     RegisteredTabs.h \
     RenderingProgressDialog.h \
+    RenderStatsDialog.h \
     ResizableMessageBox.h \
     RightClickableWidget.h \
     RotoGui.h \

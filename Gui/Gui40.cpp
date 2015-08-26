@@ -35,6 +35,7 @@
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/AboutWindow.h"
+#include "Gui/ActionShortcuts.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -704,7 +705,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering( std::list<AppInstance::RenderRequest>() );
+    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), std::list<AppInstance::RenderRequest>() );
 }
 
 void
@@ -752,6 +753,20 @@ Gui::renderSelectedNode()
                 }
             }
         }
-        _imp->_appInstance->startWritersRendering(workList);
+        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(),workList);
     }
+}
+
+bool
+Gui::areRenderStatsEnabled() const
+{
+    QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
+    return _imp->areRenderStatsEnabled;
+}
+
+void
+Gui::onEnableRenderStatsActionTriggered()
+{
+    QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
+    _imp->areRenderStatsEnabled = _imp->enableRenderStats->isChecked();
 }

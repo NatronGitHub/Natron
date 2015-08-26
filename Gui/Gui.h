@@ -530,6 +530,8 @@ public:
 
     bool isAboutToClose() const;
     
+    bool areRenderStatsEnabled() const;
+    
 Q_SIGNALS:
 
 
@@ -624,6 +626,8 @@ public Q_SLOTS:
     void renderAllWriters();
 
     void renderSelectedNode();
+    
+    void onEnableRenderStatsActionTriggered();
 
     void onRotoSelectedToolChanged(int tool);
 

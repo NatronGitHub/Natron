@@ -1101,3 +1101,10 @@ ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
         _imp->viewer->zoomSlot(v);
     }
 }
+
+void
+ViewerTab::onRenderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+}

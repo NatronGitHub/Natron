@@ -37,6 +37,7 @@ class TimeLine;
 class NodeGraphI;
 class KnobI;
 class ViewerInstance;
+class RenderStats;
 struct NodeCollectionPrivate;
 class NodeCollection
 {
@@ -236,7 +237,8 @@ public:
                                const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                                bool isAnalysis,
                                bool draftMode,
-                               bool viewerProgressReportEnabled);
+                               bool viewerProgressReportEnabled,
+                               const boost::shared_ptr<RenderStats>& stats);
     void invalidateParallelRenderArgs();
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
@@ -303,7 +305,8 @@ public:
                              const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             bool viewerProgressReportEnabled);
+                             bool viewerProgressReportEnabled,
+                             const boost::shared_ptr<RenderStats>& stats);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     

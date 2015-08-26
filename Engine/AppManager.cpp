@@ -364,6 +364,8 @@ struct CLArgsPrivate
     std::pair<int,int> range;
     bool rangeSet;
     
+    bool enableRenderStats;
+    
     bool isEmpty;
     
     CLArgsPrivate()
@@ -378,6 +380,7 @@ struct CLArgsPrivate
     , isInterpreterMode(false)
     , range()
     , rangeSet(false)
+    , enableRenderStats(false)
     , isEmpty(true)
     {
         
@@ -466,6 +469,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->isInterpreterMode = other._imp->isInterpreterMode;
     _imp->range = other._imp->range;
     _imp->rangeSet = other._imp->rangeSet;
+    _imp->enableRenderStats = other._imp->enableRenderStats;
     _imp->isEmpty = other._imp->isEmpty;
 }
 
@@ -540,6 +544,12 @@ CLArgs::printUsage(const std::string& programName)
                               "    executing the callbacks onProjectLoaded and onProjectCreated.\n"
                               "    The rules on the execution of Python scripts (see below) also apply to\n"
                               "    this script.\n"
+                              "  -s [ --render-stats] Enables render statistics that will be produced for\n"
+                              "     each frame in form of a file located next to the image produced by\n"
+                              "     the Writer node, with the same name and a -stats.txt extension. The\n"
+                              "     breakdown contains informations about each nodes, render times etc...\n"
+                              "     This option is useful for debugging purposes or to control that a render\n"
+                              "     is working correctly.\n"
                               "Sample uses:\n"
                               "  %1 /Users/Me/MyNatronProjects/MyProject.ntp\n"
                               "  %1 -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp\n"
@@ -653,6 +663,12 @@ const QString&
 CLArgs::getIPCPipeName() const
 {
     return _imp->ipcPipe;
+}
+
+bool
+CLArgs::areRenderStatsEnabled() const
+{
+    return _imp->enableRenderStats;
 }
 
 bool
@@ -789,6 +805,13 @@ CLArgsPrivate::parse()
         }
     }
     
+    {
+        QStringList::iterator it = hasToken("render-stats", "s");
+        if (it != args.end()) {
+            enableRenderStats = true;
+            args.erase(it);
+        }
+    }
     
     {
         QStringList::iterator it = hasToken("IPCpipe", "");

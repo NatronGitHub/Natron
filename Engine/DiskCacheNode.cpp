@@ -139,7 +139,7 @@ DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, 
         w.lastFrame = INT_MAX;
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
-        getApp()->startWritersRendering(works);
+        getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(),works);
     }
 }
 

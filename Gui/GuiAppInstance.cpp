@@ -691,7 +691,7 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath)
+GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath)
 {
 
 
@@ -756,7 +756,7 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
         }
     } else {
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);
-        w.writer->renderFullSequence(NULL,firstFrame,lastFrame);
+        w.writer->renderFullSequence(enableRenderStats,NULL,firstFrame,lastFrame);
     }
 } // startRenderingFullSequence
 
@@ -1068,4 +1068,10 @@ GuiAppInstance::getIsUserPainting() const
 {
     QMutexLocker k(&_imp->userIsPaintingMutex);
     return _imp->userIsPainting;
+}
+
+bool
+GuiAppInstance::isRenderStatsActionChecked() const
+{
+    return _imp->_gui->areRenderStatsEnabled();
 }

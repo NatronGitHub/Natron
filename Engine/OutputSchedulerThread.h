@@ -27,13 +27,14 @@
 
 ///Natron
 class ViewerInstance;
-class TimeLapse;
+class RenderStats;
 namespace Natron {
     class Node;
     class EffectInstance;
     class OutputEffectInstance;
 }
 
+class RenderStats;
 class RenderEngine;
 
 /**
@@ -69,13 +70,13 @@ struct BufferedFrame
 {
     int view;
     double time;
-    boost::shared_ptr<TimeLapse> timeRecorder;
+    boost::shared_ptr<RenderStats> stats;
     boost::shared_ptr<BufferableObject> frame;
     
     BufferedFrame()
     : view(0)
     , time(0)
-    , timeRecorder()
+    , stats()
     , frame()
     {
         
@@ -115,7 +116,7 @@ protected:
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame(int time) = 0;
+    virtual void renderFrame(int time, bool enableRenderStats) = 0;
         
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
@@ -160,18 +161,18 @@ public:
      **/
     void appendToBuffer(double time,
                         int view,
-                        const boost::shared_ptr<TimeLapse>& timeRecorder,
+                        const boost::shared_ptr<RenderStats>& stats,
                         const boost::shared_ptr<BufferableObject>& frame);
     void appendToBuffer(double time,
                         int view,
-                        const boost::shared_ptr<TimeLapse>& timeRecorder,
+                        const boost::shared_ptr<RenderStats>& stats,
                         const BufferableObjectList& frames);
     
 private:
     
     void appendToBuffer_internal(double time,
                                  int view,
-                                 const boost::shared_ptr<TimeLapse>& timeRecorder,
+                                 const boost::shared_ptr<RenderStats>& stats,
                                  const boost::shared_ptr<BufferableObject>& frame,
                                  bool wakeThread);
     
@@ -191,14 +192,14 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,RenderDirectionEnum forward);
+    void renderFrameRange(bool enableRenderStats, int firstFrame,int lastFrame,RenderDirectionEnum forward);
 
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats, RenderDirectionEnum forward);
 
     
     /**
@@ -210,7 +211,7 @@ public:
     void notifyFrameRendered(int frame,
                              int viewIndex,
                              int viewsCount,
-                             const boost::shared_ptr<TimeLapse>& timeRecorder,
+                             const boost::shared_ptr<RenderStats>& stats,
                              Natron::SchedulingPolicyEnum policy);
 
     /**
@@ -250,7 +251,7 @@ public:
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
-    int pickFrameToRender(RenderThreadTask* thread);
+    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats);
     
 
     /**
@@ -566,6 +567,7 @@ struct CurrentFrameFunctorArgs
 {
     int view;
     int time;
+    boost::shared_ptr<RenderStats> stats;
     ViewerInstance* viewer;
     U64 viewerHash;
     boost::shared_ptr<RequestedFrame> request;
@@ -624,16 +626,16 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFrameRange(bool enableRenderStats, int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats, OutputSchedulerThread::RenderDirectionEnum forward);
     
-    void renderFromCurrentFrameUsingCurrentDirection();
+    void renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats);
     
     /**
      * @brief Basically it just renders with the current frame on the timeline.

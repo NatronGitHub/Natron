@@ -89,6 +89,7 @@ public:
                                                         U64 viewerHash,
                                                         const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                                         bool useTLS,
+                                                        const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
 
     
@@ -105,6 +106,7 @@ private:
                                                         const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                                         bool useTLS,
                                                         U64 renderAge,
+                                                        const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
 
 public:
@@ -126,13 +128,15 @@ public:
                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                     bool useTLS,
                                     boost::shared_ptr<ViewerArgs> args[2],
-                                    const boost::shared_ptr<RequestedFrame>& request) WARN_UNUSED_RETURN;
+                                    const boost::shared_ptr<RequestedFrame>& request,
+                                    const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
     
     Natron::StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
                                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
                                                     boost::shared_ptr<ViewerArgs>* argsB);
 
@@ -231,6 +235,8 @@ public:
     
     void markAllOnRendersAsAborted();
     
+    virtual void reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats) OVERRIDE FINAL;
+    
 public Q_SLOTS:
     
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
@@ -251,7 +257,9 @@ public Q_SLOTS:
 
 
 Q_SIGNALS:
-        
+    
+    void renderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+    
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
@@ -329,6 +337,7 @@ private:
                                              boost::shared_ptr<Natron::Node> rotoPaintNode,
                                              bool useTLS,
                                              const boost::shared_ptr<RequestedFrame>& request,
+                                             const boost::shared_ptr<RenderStats>& stats,
                                              ViewerArgs& inArgs) WARN_UNUSED_RETURN;
     
     

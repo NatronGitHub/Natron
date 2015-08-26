@@ -231,7 +231,7 @@ TEST_F(BaseTest,GenerateDot)
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
     works.push_back(w);
-    _app->startWritersRendering(works);
+    _app->startWritersRendering(false,works);
     
     EXPECT_TRUE(QFile::exists(filePath));
     QFile::remove(filePath);

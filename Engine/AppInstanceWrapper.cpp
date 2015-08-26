@@ -184,7 +184,7 @@ App::render(Effect* writeNode,int firstFrame,int lastFrame)
     
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    _instance->startWritersRendering(l);
+    _instance->startWritersRendering(false, l);
 }
 
 void
@@ -219,7 +219,7 @@ App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,
         l.push_back(w);
 
     }
-    _instance->startWritersRendering(l);
+    _instance->startWritersRendering(false, l);
 }
 
 Param*

@@ -133,6 +133,8 @@ public:
     
     bool isPythonScript() const;
     
+    bool areRenderStatsEnabled() const;
+    
 private:
     
     boost::scoped_ptr<CLArgsPrivate> _imp;

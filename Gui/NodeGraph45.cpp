@@ -225,7 +225,7 @@ NodeGraph::onTimeChanged(SequenceTime time,
                 viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
             }
         } else {
-            viewers[i]->renderFromCurrentFrameUsingCurrentDirection();
+            viewers[i]->renderFromCurrentFrameUsingCurrentDirection(getGui()->getApp()->isRenderStatsActionChecked());
         }
     }
 }

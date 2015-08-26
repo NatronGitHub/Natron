@@ -4254,7 +4254,8 @@ Node::makePreviewImage(SequenceTime time,
                                              NodePtr(),
                                              false,
                                              true,
-                                             false);
+                                             false,
+                                             boost::shared_ptr<RenderStats>());
     
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(ImageComponents::getRGBComponents());

@@ -323,10 +323,10 @@ public:
     
   
     
-    void startWritersRendering(const std::list<RenderRequest>& writers);
-    void startWritersRendering(const std::list<RenderWork>& writers);
+    void startWritersRendering(bool enableRenderStats,const std::list<RenderRequest>& writers);
+    void startWritersRendering(bool enableRenderStats,const std::list<RenderWork>& writers);
 
-    virtual void startRenderingFullSequence(const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
+    virtual void startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
 
     virtual void clearViewersLastRenderedTexture() {}
 
@@ -382,6 +382,7 @@ public:
     virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/) {}
     virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const { return boost::shared_ptr<Natron::Node>(); }
     
+    virtual bool isRenderStatsActionChecked() const { return false; }
     
 public Q_SLOTS:
     

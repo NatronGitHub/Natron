@@ -29,9 +29,9 @@ BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance*
 }
 
 void
-BlockingBackgroundRender::blockingRender(int first,int last)
+BlockingBackgroundRender::blockingRender(bool enableRenderStats,int first,int last)
 {
-    _writer->renderFullSequence(this,first,last);
+    _writer->renderFullSequence(enableRenderStats,this,first,last);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() != -1) {
         QMutexLocker locker(&_runningMutex);
         _running = true;

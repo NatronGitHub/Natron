@@ -31,7 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/KeySymbols.h" // Key
 
 #include "Engine/ScriptObject.h"
-
+#include "Engine/RenderStats.h"
 
 namespace Natron
 {
@@ -398,6 +398,8 @@ public Q_SLOTS:
     void onGainSliderEditingFinished(bool hasMovedOnce);
     
     void onSyncViewersButtonPressed(bool clicked);
+    
+    void onRenderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
     
 private:
     

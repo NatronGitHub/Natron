@@ -100,7 +100,9 @@ struct GuiPrivate
     std::map<PyPanel*, std::string> _userPanels;
 
     bool _isTripleSyncEnabled;
-
+    
+    mutable QMutex areRenderStatsEnabledMutex;
+    bool areRenderStatsEnabled;
 
     ///all the menu actions
     ActionWithShortcut *actionNew_project;
@@ -126,6 +128,7 @@ struct GuiPrivate
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
     ActionWithShortcut *renderAllWriters;
     ActionWithShortcut *renderSelectedNode;
+    ActionWithShortcut *enableRenderStats;
     ActionWithShortcut* actionConnectInput1;
     ActionWithShortcut* actionConnectInput2;
     ActionWithShortcut* actionConnectInput3;

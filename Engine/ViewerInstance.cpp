@@ -51,6 +51,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RenderStats.h"
 #include "Engine/Timer.h"
 
 #include "ViewerInstancePrivate.h"
@@ -374,8 +375,9 @@ public:
                                    const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                    const NodePtr& viewerInput,
                                    bool draftMode,
-                                   bool viewerProgressReportEnabled)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled)
+                                   bool viewerProgressReportEnabled,
+                                   const boost::shared_ptr<RenderStats>& stats)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
     , viewerNode(renderRequester->getNode())
@@ -418,7 +420,7 @@ public:
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
             bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled);
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -444,6 +446,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              int view,
                                              U64 viewerHash,
                                              const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                             const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
                                              boost::shared_ptr<ViewerArgs>* argsB)
 {
@@ -492,16 +495,17 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            activeStroke,
                                            NodePtr(),
                                            false,
-                                           false);
+                                           false,
+                                           stats);
         
         
 
-        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge, args[i].get());
+        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
         
         
         if (status[i] != eStatusFailed && args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            status[i] = renderViewer_internal(view, QThread::currentThread() == qApp->thread(), false, viewerHash, canAbort,rotoPaintNode, false,boost::shared_ptr<RequestedFrame>(),  *args[i]);
+            status[i] = renderViewer_internal(view, QThread::currentThread() == qApp->thread(), false, viewerHash, canAbort,rotoPaintNode, false,boost::shared_ptr<RequestedFrame>(), stats, *args[i]);
             if (status[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -530,7 +534,8 @@ ViewerInstance::renderViewer(int view,
                              const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
-                             const boost::shared_ptr<RequestedFrame>& request)
+                             const boost::shared_ptr<RequestedFrame>& request,
+                             const boost::shared_ptr<RenderStats>& stats)
 {
     if (!_imp->uiContext) {
         return eStatusFailed;
@@ -545,7 +550,11 @@ ViewerInstance::renderViewer(int view,
         
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, useTLS, request, *args[i]);
+            
+            ///We enable render stats just for the A input (i == 0) otherwise we would get crappy results
+            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, useTLS, request,
+                                           i == 0 ? stats : boost::shared_ptr<RenderStats>(),
+                                           *args[i]);
             if (ret[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -663,10 +672,11 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            U64 viewerHash,
                                                            const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                                            bool useTLS,
+                                                           const boost::shared_ptr<RenderStats>& stats,
                                                            ViewerArgs* outArgs)
 {
     U64 renderAge = _imp->getRenderAge(textureIndex);
-    return getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, outArgs);
+    return getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, stats, outArgs);
 }
 
 Natron::StatusEnum
@@ -679,6 +689,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  const boost::shared_ptr<Natron::Node>& rotoPaintNode,
                                                  bool useTLS,
                                                  U64 renderAge,
+                                                 const boost::shared_ptr<RenderStats>& stats,
                                                  ViewerArgs* outArgs)
 {
     
@@ -790,7 +801,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                      NodePtr(),
                                                      false,
                                                      outArgs->draftModeEnabled,
-                                                     false));
+                                                     false,
+                                                     stats));
     }
     
     /**
@@ -977,8 +989,12 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             }
         }
         
-        if (isCached) {
-            
+        if (!isCached) {
+            if (stats) {
+                stats->addCacheInfosForNode(getNode(), true, false);
+            }
+        } else {
+        
             /// make sure we have the lock on the texture because it may be in the cache already
             ///but not yet allocated.
             FrameEntryLocker entryLocker(_imp.get());
@@ -1013,6 +1029,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 _imp->lastRenderedHashValid = true;
             }
             
+            if (stats) {
+                stats->addCacheInfosForNode(getNode(), false, false);
+            }
+            
         }
         break;
     } // for (int lookup = 0; lookup < lookups; ++lookup) {
@@ -1040,6 +1060,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       boost::shared_ptr<Natron::Node> rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<RequestedFrame>& request,
+                                      const boost::shared_ptr<RenderStats>& stats,
                                       ViewerArgs& inArgs)
 {
     //Do not call this if the texture is already cached.
@@ -1113,7 +1134,8 @@ ViewerInstance::renderViewer_internal(int view,
                                                            boost::shared_ptr<RotoStrokeItem>(),
                                                            inArgs.activeInputToRender->getNode(),
                                                            inArgs.draftModeEnabled,
-                                                           tilingProgressReportPrefEnabled));
+                                                           tilingProgressReportPrefEnabled,
+                                                           stats));
     }
 
     
@@ -1291,6 +1313,33 @@ ViewerInstance::renderViewer_internal(int view,
         splitRoi.push_back(roi);
     }
     
+    if (stats) {
+        bool channelsRendered[4];
+        switch (inArgs.channels) {
+            case Natron::eDisplayChannelsRGB:
+            case Natron::eDisplayChannelsY:
+                channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = true;
+                channelsRendered[3] = false;
+                break;
+            case Natron::eDisplayChannelsR:
+                channelsRendered[3] = channelsRendered[1] = channelsRendered[2] = false;
+                channelsRendered[0] = true;
+                break;
+            case Natron::eDisplayChannelsG:
+                channelsRendered[0] = channelsRendered[2] = channelsRendered[3] = false;
+                channelsRendered[1] = true;
+                break;
+            case Natron::eDisplayChannelsB:
+                channelsRendered[0] = channelsRendered[1] = channelsRendered[3] = false;
+                channelsRendered[2] = true;
+                break;
+            case Natron::eDisplayChannelsA:
+                channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = false;
+                channelsRendered[3] = true;
+                break;
+        }
+        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
+    }
     
     /*
      Use a timer to enable progress report if the amount spent rendering exceeds some time
@@ -1393,6 +1442,10 @@ ViewerInstance::renderViewer_internal(int view,
             lastPaintBboxPixel.intersect(viewerRenderRoI, &viewerRenderRoI);
         }
         
+        boost::shared_ptr<TimeLapse> viewerRenderTimeRecorder;
+        if (stats) {
+            viewerRenderTimeRecorder.reset(new TimeLapse());
+        }
         
         if (singleThreaded) {
             if (inArgs.autoContrast) {
@@ -1511,6 +1564,10 @@ ViewerInstance::renderViewer_internal(int view,
         } // if (singleThreaded)
         if (inArgs.params->cachedFrame && image) {
             inArgs.params->cachedFrame->addOriginalTile(image);
+        }
+        
+        if (stats) {
+            stats->addRenderInfosForNode(getNode(), NodePtr(), image->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation());
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
     
@@ -2754,3 +2811,8 @@ ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge) const
     return _imp->isRenderAbortable(textureIndex, renderAge);
 }
 
+void
+ViewerInstance::reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+{
+    Q_EMIT renderStatsAvailable(time, view, stats);
+}

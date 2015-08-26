@@ -203,7 +203,7 @@ ViewerTab::startPause(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionForward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionForward);
     }
 }
 
@@ -283,7 +283,7 @@ ViewerTab::startBackward(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionBackward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionBackward);
 
     }
 }

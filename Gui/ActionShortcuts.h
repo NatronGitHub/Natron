@@ -101,6 +101,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionRenderSelected "renderSelect"
 #define kShortcutDescActionRenderSelected "Render Selected Writers"
 
+#define kShortcutIDActionEnableRenderStats "enableRenderStats"
+#define kShortcutDescActionEnableRenderStats "Enable render statistics"
+
 #define kShortcutIDActionRenderAll "renderAll"
 #define kShortcutDescActionRenderAll "Render All Writers"
 

@@ -453,7 +453,7 @@ AppInstance::load(const CLArgs& cl)
         }
         
         try {
-            startWritersRendering(writersWork);
+            startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
         } catch (const std::exception& e) {
             getProject()->removeLockFile();
             throw e;
@@ -1074,7 +1074,7 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderRequest>& writers)
 {
     
     std::list<RenderWork> renderers;
@@ -1128,11 +1128,11 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
         }
     }
     
-    startWritersRendering(renderers);
+    startWritersRendering(enableRenderStats, renderers);
 }
 
 void
-AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderWork>& writers)
 {
     
     
@@ -1146,7 +1146,7 @@ AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
     if ( appPTR->isBackground() ) {
         
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1,false,QString()) );
+        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,enableRenderStats, _1,false,QString()) );
     } else {
         
         //Take a snapshot of the graph at this time, this will be the version loaded by the process
@@ -1155,13 +1155,13 @@ AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
 
         for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
-            startRenderingFullSequence(*it,renderInSeparateProcess,savePath);
+            startRenderingFullSequence(enableRenderStats,*it,renderInSeparateProcess,savePath);
         }
     }
 }
 
 void
-AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
+AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writerWork.writer);
     double first,last;
@@ -1175,7 +1175,7 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
         last = writerWork.lastFrame;
     }
     
-    backgroundRender.blockingRender(first,last); //< doesn't return before rendering is finished
+    backgroundRender.blockingRender(enableRenderStats,first,last); //< doesn't return before rendering is finished
 }
 
 void

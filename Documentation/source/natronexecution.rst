@@ -52,6 +52,11 @@ Note that this will be executed in GUI mode or with NatronRenderer and it will b
 set to the callback onProjectLoaded or onProjectCreated.
 The same rules apply to this script as the rules below on the execution of Python scripts.
 
+**[ --render-stats]** or **[-s]** Enables render statistics that will be produced for each frame in form of a file located
+ next to the image produced by the Writer node, with the same name and a -stats.txt extension. 
+The breakdown contains informations about each nodes, render times etc...
+This option is useful for debugging purposes or to control that a render is working correctly.
+
 Some examples of usage of the tool::
 
 	Natron /Users/Me/MyNatronProjects/MyProject.ntp

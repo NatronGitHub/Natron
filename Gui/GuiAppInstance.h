@@ -139,7 +139,7 @@ public:
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
 
-    virtual void startRenderingFullSequence(const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath) OVERRIDE FINAL;
+    virtual void startRenderingFullSequence(bool enableRenderStats,const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath) OVERRIDE FINAL;
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
@@ -188,6 +188,8 @@ public:
     
     virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode) OVERRIDE FINAL;
     virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     
 private:
 
