@@ -151,17 +151,8 @@ AboutWindow::AboutWindow(Gui* gui,
 
     _libsText = new QTextBrowser(_tabWidget);
     _libsText->setOpenExternalLinks(true);
-    QString libsText = QString("<p> Qt %1 </p>"
-                               "<p> Boost %2 </p>"
-                               "<p> GLEW %3 </p>"
-                               "<p> OpenGL %4 </p>"
-                               "<p> Cairo %5 </p>")
-                       .arg( gui->getQtVersion() )
-                       .arg( gui->getBoostVersion() )
-                       .arg( gui->getGlewVersion() )
-                       .arg( gui->getOpenGLVersion() )
-                       .arg( gui->getCairoVersion() );
-    _libsText->setText(libsText);
+    updateLibrariesVersions();
+    
     _tabWidget->addTab( _libsText, QObject::tr("Libraries") );
 
     _teamText = new QTextBrowser(_tabWidget);
@@ -187,17 +178,19 @@ AboutWindow::AboutWindow(Gui* gui,
 void
 AboutWindow::updateLibrariesVersions()
 {
-    QString libsText = QString("<p> Qt %1 </p>"
-                               "<p> Boost %2 </p>"
-                               "<p> Glew %3 </p>"
-                               "<p> OpenGL %4 </p>"
-                               "<p> Cairo %5 </p>")
-                       .arg( _gui->getQtVersion() )
-                       .arg( _gui->getBoostVersion() )
-                       .arg( _gui->getGlewVersion() )
-                       .arg( _gui->getOpenGLVersion() )
-                       .arg( _gui->getCairoVersion() );
-
+    QString libsText = QString("<p> Python %1 </p>"
+                               "<p> Qt %2 </p>"
+                               "<p> Boost %3 </p>"
+                               "<p> Glew %4 </p>"
+                               "<p> OpenGL %5 </p>"
+                               "<p> Cairo %6 </p>")
+    .arg(PY_VERSION)
+    .arg( _gui->getQtVersion() )
+    .arg( _gui->getBoostVersion() )
+    .arg( _gui->getGlewVersion() )
+    .arg( _gui->getOpenGLVersion() )
+    .arg( _gui->getCairoVersion() );
+    
     _libsText->setText(libsText);
 }
 
