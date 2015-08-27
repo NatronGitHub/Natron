@@ -2,7 +2,7 @@
 
 ## Version 2.0
 
-- Python 3 API: 
+- Python 2.7 API: 
   - Parameters expressions
   - User-defined parameters
   - Script editor to control the application overall
@@ -14,6 +14,7 @@
 - SeExpr integration within a node: http://www.disneyanimation.com/technology/seexpr.html
 - RotoPaint node with Wacom tablets support
 - DopeSheet editor: This is where you can control easily keyframes and clips in time for motion graphics purposes
+- Render statistics: Available in the Render menu, use this to debug complex compositions
 - New Text plug-in with much more controls than the previous Text node
 - New TextPango node based on the Pango library to directly input Pango Markup Language (html-like),  see https://github.com/olear/openfx-arena/wiki/Pango
 - Many new nodes, based on the ImageMagick library: ReadPSD, ReadSVG, Charcoal, Oilpaint, Sketch, Arc, Polar, Polaroid, Reflection, Roll, Swirl, Tile, Texture

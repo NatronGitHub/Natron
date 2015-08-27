@@ -1941,8 +1941,16 @@ private:
     virtual void
     renderFrame(int time, bool enableRenderStats) {
         
+        Natron::SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
+        
+        /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
+        /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
+        
+        bool renderDirectly = sequentiallity == Natron::eSequentialPreferenceNotSequential;
+
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
-        RenderStatsPtr stats(new RenderStats(enableRenderStats));
+        ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
+        RenderStatsPtr stats(new RenderStats(renderDirectly && enableRenderStats));
         
         std::string cb = _imp->output->getNode()->getBeforeFrameRenderCallback();
         if (!cb.empty()) {
@@ -1987,7 +1995,6 @@ private:
             
             int mainView = 0;
             
-            Natron::SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
             
             ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
             ///We pick the user defined main view in the project settings
@@ -1997,11 +2004,6 @@ private:
                 mainView = _imp->output->getApp()->getMainView();
             }
        
-            
-            /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
-            /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
-        
-            bool renderDirectly = sequentiallity == Natron::eSequentialPreferenceNotSequential;
             
             
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since

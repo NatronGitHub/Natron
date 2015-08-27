@@ -41,8 +41,11 @@ using namespace Natron;
 #define COL_IDENTITY_TILES 10
 #define COL_RENDERED_TILES 11
 #define COL_RENDERED_PLANES 12
+#define COL_NB_CACHE_HIT 13
+#define COL_NB_CACHE_HIT_DOWNSCALED 15
+#define COL_NB_CACHE_MISS 14
 
-#define NUM_COLS 13
+#define NUM_COLS 15
 
 
 enum ItemsRoleEnum
@@ -171,6 +174,30 @@ struct StatRowsCompare
                 TableItem* leftItem = _view->item(lhs.second, COL_RENDERED_PLANES);
                 assert(leftItem);
                 TableItem* rightItem = _view->item(rhs.second, COL_RENDERED_PLANES);
+                assert(rightItem);
+                return leftItem->text() < rightItem->text();
+            } break;
+            case COL_NB_CACHE_HIT:
+            {
+                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_HIT);
+                assert(leftItem);
+                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_HIT);
+                assert(rightItem);
+                return leftItem->text() < rightItem->text();
+            } break;
+            case COL_NB_CACHE_HIT_DOWNSCALED:
+            {
+                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_HIT_DOWNSCALED);
+                assert(leftItem);
+                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_HIT_DOWNSCALED);
+                assert(rightItem);
+                return leftItem->text() < rightItem->text();
+            } break;
+            case COL_NB_CACHE_MISS:
+            {
+                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_MISS);
+                assert(leftItem);
+                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_MISS);
                 assert(rightItem);
                 return leftItem->text() < rightItem->text();
             } break;
@@ -574,6 +601,85 @@ public:
                 view->setItem(row, COL_RENDERED_PLANES, item);
             }
         }
+        {
+            TableItem* item;
+            
+            int nb = 0;
+            QString tilesInfo;
+            if (exists) {
+                item = view->item(row, COL_NB_CACHE_HIT);
+                nb = item->text().toInt();
+            } else {
+                item = new TableItem;
+                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache hit (success)"), Qt::WhiteSpaceNormal);
+                item->setToolTip(tt);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            }
+            assert(item);
+            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+            nb += nbCacheHits;
+            
+            QString str = QString::number(nb);
+            
+            item->setText(str);
+            if (!exists) {
+                view->setItem(row, COL_NB_CACHE_HIT, item);
+            }
+        }
+        {
+            TableItem* item;
+            
+            int nb = 0;
+            QString tilesInfo;
+            if (exists) {
+                item = view->item(row, COL_NB_CACHE_HIT_DOWNSCALED);
+                nb = item->text().toInt();
+            } else {
+                item = new TableItem;
+                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access hit (success) but at higher scale "
+                                                                      "hence requiring downscaling."), Qt::WhiteSpaceNormal);
+                item->setToolTip(tt);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            }
+            assert(item);
+            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+            nb += nbCacheHitButDown;
+            
+            QString str = QString::number(nb);
+            
+            item->setText(str);
+            if (!exists) {
+                view->setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, item);
+            }
+        }
+        {
+            TableItem* item;
+            
+            int nb = 0;
+            QString tilesInfo;
+            if (exists) {
+                item = view->item(row, COL_NB_CACHE_MISS);
+                nb = item->text().toInt();
+            } else {
+                item = new TableItem;
+                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access miss (image missing)"), Qt::WhiteSpaceNormal);
+                item->setToolTip(tt);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            }
+            assert(item);
+            int nbCacheMiss,nbCacheHits,nbCacheHitButDown;
+            stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
+            nb += nbCacheMiss;
+            
+            QString str = QString::number(nb);
+            
+            item->setText(str);
+            if (!exists) {
+                view->setItem(row, COL_NB_CACHE_MISS, item);
+            }
+        }
         if (!exists) {
             rows.push_back(node);
         }
@@ -641,6 +747,18 @@ public:
             }   break;
             case COL_RENDERED_PLANES: {
                 StatRowsCompare<COL_RENDERED_PLANES> o(view);
+                std::sort(vect.begin(), vect.end(), o);
+            }   break;
+            case COL_NB_CACHE_HIT: {
+                StatRowsCompare<COL_NB_CACHE_HIT> o(view);
+                std::sort(vect.begin(), vect.end(), o);
+            }   break;
+            case COL_NB_CACHE_HIT_DOWNSCALED: {
+                StatRowsCompare<COL_NB_CACHE_HIT_DOWNSCALED> o(view);
+                std::sort(vect.begin(), vect.end(), o);
+            }   break;
+            case COL_NB_CACHE_MISS: {
+                StatRowsCompare<COL_NB_CACHE_MISS> o(view);
                 std::sort(vect.begin(), vect.end(), o);
             }   break;
             default:
@@ -807,7 +925,10 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     << tr("Identity")
     << tr("Identity Tiles")
     << tr("Rendered Tiles")
-    << tr("Rendered Planes");
+    << tr("Rendered Planes")
+    << tr("Cache Hits")
+    << tr("Cache Hits Higher Scale")
+    << tr("Cache Misses");
     
     _imp->view->setColumnCount( dimensionNames.size() );
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
@@ -876,6 +997,9 @@ RenderStatsDialog::refreshAdvancedColsVisibility()
     _imp->view->setColumnHidden(COL_IDENTITY_TILES, !checked);
     _imp->view->setColumnHidden(COL_RENDERED_TILES, !checked);
     _imp->view->setColumnHidden(COL_RENDERED_PLANES, !checked);
+    _imp->view->setColumnHidden(COL_NB_CACHE_HIT, !checked);
+    _imp->view->setColumnHidden(COL_NB_CACHE_HIT_DOWNSCALED, !checked);
+    _imp->view->setColumnHidden(COL_NB_CACHE_MISS, !checked);
 }
 
 void

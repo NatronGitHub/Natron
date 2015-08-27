@@ -551,6 +551,7 @@ CLArgs::printUsage(const std::string& programName)
                               "     breakdown contains informations about each nodes, render times etc...\n"
                               "     This option is useful for debugging purposes or to control that a render\n"
                               "     is working correctly.\n"
+                              "     **Please note** that it does not work when writing video files."
                               "Sample uses:\n"
                               "  %1 /Users/Me/MyNatronProjects/MyProject.ntp\n"
                               "  %1 -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp\n"

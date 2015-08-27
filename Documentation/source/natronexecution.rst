@@ -56,6 +56,7 @@ The same rules apply to this script as the rules below on the execution of Pytho
  next to the image produced by the Writer node, with the same name and a -stats.txt extension. 
 The breakdown contains informations about each nodes, render times etc...
 This option is useful for debugging purposes or to control that a render is working correctly.
+**Please note** that it does not work when writing video files.
 
 Some examples of usage of the tool::
 
