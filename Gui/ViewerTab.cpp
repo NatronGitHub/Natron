@@ -751,8 +751,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     manageTimelineSlot(false,timeline);
     
     boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
-    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,int,std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >)),
-                     this, SLOT(onRenderStatsAvailable(int,int,std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >)));
+    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,int,double,RenderStatsMap)),
+                     this, SLOT(onRenderStatsAvailable(int,int,double,RenderStatsMap)));
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
     QObject::connect( wrapperNode.get(),SIGNAL( inputLabelChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
     QObject::connect( _imp->viewerNode,SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()));

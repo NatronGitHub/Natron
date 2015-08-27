@@ -68,6 +68,7 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Project.h"
 #include "Engine/RectISerialization.h"
@@ -2554,6 +2555,8 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<Natron::StandardButtons>();
     qRegisterMetaType<RectI>();
     qRegisterMetaType<RectD>();
+    qRegisterMetaType<RenderStatsPtr>("RenderStatsPtr");
+    qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

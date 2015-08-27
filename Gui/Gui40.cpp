@@ -43,6 +43,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/RenderingProgressDialog.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -757,6 +758,13 @@ Gui::renderSelectedNode()
     }
 }
 
+void
+Gui::setRenderStatsEnabled(bool enabled)
+{
+    QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
+    _imp->areRenderStatsEnabled = enabled;
+}
+
 bool
 Gui::areRenderStatsEnabled() const
 {
@@ -764,9 +772,27 @@ Gui::areRenderStatsEnabled() const
     return _imp->areRenderStatsEnabled;
 }
 
+RenderStatsDialog*
+Gui::getRenderStatsDialog() const
+{
+    return _imp->statsDialog;
+}
+
 void
 Gui::onEnableRenderStatsActionTriggered()
 {
-    QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
-    _imp->areRenderStatsEnabled = _imp->enableRenderStats->isChecked();
+    assert(QThread::currentThread() == qApp->thread());
+    
+    bool checked = _imp->enableRenderStats->isChecked();
+    setRenderStatsEnabled(checked);
+    if (!checked) {
+        if (_imp->statsDialog) {
+            _imp->statsDialog->hide();
+        }
+    } else {
+        if (!_imp->statsDialog) {
+            _imp->statsDialog = new RenderStatsDialog(this);
+        }
+        _imp->statsDialog->show();
+    }
 }

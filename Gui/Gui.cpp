@@ -35,6 +35,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ToolButton.h"
+#include "Gui/RenderStatsDialog.h"
 
 using namespace Natron;
 

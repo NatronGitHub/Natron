@@ -194,6 +194,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->tree->setColumnCount(1);
     _imp->tree->header()->close();
     _imp->tree->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Expanding);
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
 
     _imp->leftPaneLayout->addWidget(_imp->tree);
 

@@ -68,6 +68,7 @@ class ViewerTab;
 class KnobHolder;
 class DockablePanel;
 class ScriptEditor;
+class RenderStatsDialog;
 
 #define kPropertiesBinName "properties"
 
@@ -259,7 +260,9 @@ struct GuiPrivate
 
     ///Menu entries added by the user
     std::map<ActionWithShortcut*, std::string> pythonCommands;
-
+    
+    RenderStatsDialog* statsDialog;
+    
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);
 

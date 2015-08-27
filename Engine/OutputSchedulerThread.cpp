@@ -133,6 +133,7 @@ struct ProducedFrame
 {
     BufferableObjectList frames;
     boost::shared_ptr<RequestedFrame> request;
+    RenderStatsPtr stats;
     bool processRequest;
 };
 
@@ -269,7 +270,7 @@ struct OutputSchedulerThreadPrivate
     
     bool appendBufferedFrame(double time,
                              int view,
-                             const boost::shared_ptr<RenderStats>& stats,
+                             const RenderStatsPtr& stats,
                              const boost::shared_ptr<BufferableObject>& image) WARN_UNUSED_RETURN
     {
         ///Private, shouldn't lock
@@ -1220,7 +1221,7 @@ void
 OutputSchedulerThread::notifyFrameRendered(int frame,
                                            int viewIndex,
                                            int viewsCount,
-                                           const boost::shared_ptr<RenderStats>& stats,
+                                           const RenderStatsPtr& stats,
                                            Natron::SchedulingPolicyEnum policy)
 {
     
@@ -1228,9 +1229,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     double timeSpent;
     int nbCurParallelRenders;
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults;
     if (stats) {
-        statResults = stats->getStats(&timeSpent);
+        std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+        _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
     }
     U64 nbFramesLeftToRender;
     bool isBackground = appPTR->isBackground();
@@ -1254,7 +1255,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                ignore_result(_imp->appendBufferedFrame(0, 0, boost::shared_ptr<RenderStats>(), boost::shared_ptr<BufferableObject>()));
+                ignore_result(_imp->appendBufferedFrame(0, 0, RenderStatsPtr(), boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
             nbCurParallelRenders = getNRenderThreads();
@@ -1350,7 +1351,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 void
 OutputSchedulerThread::appendToBuffer_internal(double time,
                                                int view,
-                                               const boost::shared_ptr<RenderStats>& stats,
+                                               const RenderStatsPtr& stats,
                                                const boost::shared_ptr<BufferableObject>& frame,
                                                bool wakeThread)
 {
@@ -1382,7 +1383,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,
 void
 OutputSchedulerThread::appendToBuffer(double time,
                                       int view,
-                                      const boost::shared_ptr<RenderStats>& stats,
+                                      const RenderStatsPtr& stats,
                                       const boost::shared_ptr<BufferableObject>& image)
 {
     appendToBuffer_internal(time, view, stats, image, true);
@@ -1391,7 +1392,7 @@ OutputSchedulerThread::appendToBuffer(double time,
 void
 OutputSchedulerThread::appendToBuffer(double time,
                                       int view,
-                                      const boost::shared_ptr<RenderStats>& stats,
+                                      const RenderStatsPtr& stats,
                                       const BufferableObjectList& frames)
 {
     if (frames.empty()) {
@@ -1941,7 +1942,7 @@ private:
     renderFrame(int time, bool enableRenderStats) {
         
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
-        boost::shared_ptr<RenderStats> stats(new RenderStats(enableRenderStats));
+        RenderStatsPtr stats(new RenderStats(enableRenderStats));
         
         std::string cb = _imp->output->getNode()->getBeforeFrameRenderCallback();
         if (!cb.empty()) {
@@ -2431,7 +2432,7 @@ private:
     renderFrame(int time, bool enableRenderStats) {
         
         
-        boost::shared_ptr<RenderStats> stats;
+        RenderStatsPtr stats;
         if (enableRenderStats) {
             stats.reset(new RenderStats(enableRenderStats));
         }
@@ -2763,9 +2764,9 @@ RenderEngine::getDesiredFPS() const
 
 
 void
-RenderEngine::notifyFrameProduced(const BufferableObjectList& frames, const boost::shared_ptr<RequestedFrame>& request)
+RenderEngine::notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request)
 {
-    _imp->currentFrameScheduler->notifyFrameProduced(frames, request);
+    _imp->currentFrameScheduler->notifyFrameProduced(frames, stats, request);
 }
 
 OutputSchedulerThread*
@@ -2851,18 +2852,19 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         return false;
     }
     
-    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request, bool processRequest)
+    void notifyFrameProduced(const BufferableObjectList& frames,const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request, bool processRequest)
     {
         QMutexLocker k(&producedQueueMutex);
         ProducedFrame p;
         p.frames = frames;
         p.request = request;
         p.processRequest = processRequest;
+        p.stats = stats;
         producedQueue.push_back(p);
         producedQueueNotEmpty.wakeOne();
     }
     
-    void processProducedFrame(const BufferableObjectList& frames);
+    void processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames);
 
 };
 
@@ -2900,11 +2902,11 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     }
     
     if (args.request) {
-        args.scheduler->notifyFrameProduced(ret, args.request, true);
+        args.scheduler->notifyFrameProduced(ret, args.stats, args.request, true);
     } else {
         
         assert(QThread::currentThread() == qApp->thread());
-        args.scheduler->processProducedFrame(ret);
+        args.scheduler->processProducedFrame(args.stats, ret);
     }
     
     
@@ -2915,7 +2917,7 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
 , _imp(new ViewerCurrentFrameRequestSchedulerPrivate(viewer))
 {
     setObjectName("ViewerCurrentFrameRequestScheduler");
-    QObject::connect(this, SIGNAL(s_processProducedFrameOnMainThread(BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(BufferableObjectList)));
+    QObject::connect(this, SIGNAL(s_processProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)));
 }
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
@@ -2947,6 +2949,7 @@ ViewerCurrentFrameRequestScheduler::run()
             
             ///Wait for the work to be done
             BufferableObjectList frames;
+            RenderStatsPtr stats;
             {
                 QMutexLocker k(&_imp->producedQueueMutex);
                 
@@ -2978,6 +2981,7 @@ ViewerCurrentFrameRequestScheduler::run()
                     firstRequest.reset();
                 }
                 frames = found->frames;
+                stats = found->stats;
                 _imp->producedQueue.erase(found);
             } // QMutexLocker k(&_imp->producedQueueMutex);
             if (_imp->checkForExit()) {
@@ -2988,7 +2992,7 @@ ViewerCurrentFrameRequestScheduler::run()
                 _imp->viewer->setCurrentlyUpdatingOpenGLViewer(true);
                 QMutexLocker processLocker(&_imp->processMutex);
                 _imp->processRunning = true;
-                Q_EMIT s_processProducedFrameOnMainThread(frames);
+                Q_EMIT s_processProducedFrameOnMainThread(stats, frames);
                 
                 while (_imp->processRunning && !_imp->checkForAbortion()) {
                     _imp->processCondition.wait(&_imp->processMutex);
@@ -3012,13 +3016,13 @@ ViewerCurrentFrameRequestScheduler::run()
 }
 
 void
-ViewerCurrentFrameRequestScheduler::doProcessProducedFrameOnMainThread(const BufferableObjectList& frames)
+ViewerCurrentFrameRequestScheduler::doProcessProducedFrameOnMainThread(const RenderStatsPtr& stats, const BufferableObjectList& frames)
 {
-    _imp->processProducedFrame(frames);
+    _imp->processProducedFrame(stats, frames);
 }
 
 void
-ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferableObjectList& frames)
+ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -3028,16 +3032,19 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const Bufferable
         boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
         if (params && params->ramBuffer) {
-            //hasDoneSomething = true;
+            if (stats) {
+                double timeSpent;
+                std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > ret = stats->getStats(&timeSpent);
+                viewer->reportStats(0, 0, timeSpent, ret);
+            }
+
             viewer->updateViewer(params);
         }
     }
     
     
     ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-    //if (hasDoneSomething) {
-        viewer->redrawViewer();
-    //}
+    viewer->redrawViewer();
     
     
     {
@@ -3089,7 +3096,7 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
             _imp->requestsQueue.push_back(boost::shared_ptr<RequestedFrame>());
-            _imp->notifyFrameProduced(BufferableObjectList(), boost::shared_ptr<RequestedFrame>(), true);
+            _imp->notifyFrameProduced(BufferableObjectList(), RenderStatsPtr(), boost::shared_ptr<RequestedFrame>(), true);
             _imp->requestsQueueNotEmpty.wakeOne();
         }
         while (_imp->mustQuit) {
@@ -3117,9 +3124,9 @@ ViewerCurrentFrameRequestScheduler::hasThreadsWorking() const
 }
 
 void
-ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request)
+ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request)
 {
-    _imp->notifyFrameProduced(frames, request, false);
+    _imp->notifyFrameProduced(frames, stats,  request, false);
 }
 
 void
@@ -3138,7 +3145,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     }
     
     bool enableRenderStats = _imp->viewer->getApp()->isRenderStatsActionChecked();
-    boost::shared_ptr<RenderStats> stats;
+    RenderStatsPtr stats;
     if (enableRenderStats) {
         stats.reset(new RenderStats(enableRenderStats));
     }
@@ -3160,6 +3167,11 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         
         for (int i = 0; i < 2 ; ++i) {
             if (args[i]->params && args[i]->params->ramBuffer) {
+                if (stats && i == 0) {
+                    double timeSpent;
+                    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+                    _imp->viewer->reportStats(frame, view, timeSpent, statResults);
+                }
                 _imp->viewer->updateViewer(args[i]->params);
                 args[i].reset();
             }

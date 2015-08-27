@@ -1909,7 +1909,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         isCached = !useDiskCache ? Natron::getImageFromCache(key,&cachedImages) : Natron::getImageFromDiskCache(key, &cachedImages);
     }
     
-    if (stats && !isCached) {
+    if (stats && stats->isInDepthProfilingEnabled() && !isCached) {
         stats->addCacheInfosForNode(getNode(), true, false);
     }
     
@@ -2041,7 +2041,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             *image = imageToConvert;
             //assert(imageToConvert->getBounds().contains(bounds));
             
-            if (stats) {
+            if (stats && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), false, true);
             }
             
@@ -2050,12 +2050,12 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             ///Ensure the image is allocated
             (*image)->allocateMemory();
             
-            if (stats) {
+            if (stats && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), false, false);
             }
 
         } else {
-            if (stats) {
+            if (stats && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), true, false);
             }
         }
@@ -2570,7 +2570,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 
-                if (frameRenderArgs.stats) {
+                if (frameRenderArgs.stats && frameRenderArgs.stats->isInDepthProfilingEnabled()) {
                     frameRenderArgs.stats->setNodeIdentity(getNode(), inputEffectIdentity->getNode());
                 }
 
@@ -3489,8 +3489,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
-            if (frameRenderArgs.stats) {
-                frameRenderArgs.stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender.outputPremult, processChannels, frameRenderArgs.tilesSupported, !renderFullScaleThenDownscale, args.mipMapLevel);
+            if (frameRenderArgs.stats && frameRenderArgs.stats->isInDepthProfilingEnabled()) {
+                frameRenderArgs.stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender.outputPremult, processChannels, frameRenderArgs.tilesSupported, !renderFullScaleThenDownscale, renderMappedMipMapLevel);
             }
             
 # ifdef DEBUG
@@ -4545,7 +4545,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.downscaleImage->fillZero(downscaledRectToRender);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
                 }
-                if (frameArgs.stats) {
+                if (frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled()) {
                     frameArgs.stats->addRenderInfosForNode(getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
                 }
             }
@@ -4567,7 +4567,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.downscaleImage->fillZero(downscaledRectToRender);
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }
-                    if (frameArgs.stats) {
+                    if (frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled()) {
                         frameArgs.stats->addRenderInfosForNode(getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
                     }
                 }
@@ -4628,7 +4628,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }
                     
-                    if (frameArgs.stats) {
+                    if (frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled() ) {
                         frameArgs.stats->addRenderInfosForNode(getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
                     }
                     
@@ -4931,7 +4931,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             } // if (renderFullScaleThenDownscale) {
         } // if (it->second.isAllocatedOnTheFly) {
         
-        if (frameArgs.stats) {
+        if (frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled()) {
             frameArgs.stats->addRenderInfosForNode(getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation());
         }
         
@@ -7213,7 +7213,7 @@ OutputEffectInstance::resetTimeSpentRenderingInfos()
 }
 
 void
-OutputEffectInstance::reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+OutputEffectInstance::reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
 {
     std::string filename;
     boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
@@ -7248,6 +7248,7 @@ OutputEffectInstance::reportStats(int time, int view, const std::map<boost::shar
         return;
     }
     
+    ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime,false).toStdString() << std::endl;
     for (std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
         ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
         ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;

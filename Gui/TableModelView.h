@@ -281,12 +281,14 @@ Q_SIGNALS:
 
     void deleteKeyPressed();
     void itemRightClicked(TableItem* item);
+    void itemDoubleClicked(TableItem* item);
 
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual bool edit(const QModelIndex & index, QAbstractItemView::EditTrigger trigger, QEvent * event) OVERRIDE FINAL;
 
     
@@ -352,6 +354,11 @@ public:
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL;
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role) OVERRIDE FINAL;
     inline long tableIndex(int row, int column) const;
+    
+    /**
+     * @brief Override to implement sorting
+     **/
+    virtual void sort(int /*column*/, Qt::SortOrder order = Qt::AscendingOrder) OVERRIDE { Q_UNUSED(order); }
 
     void itemChanged(TableItem *item);
 

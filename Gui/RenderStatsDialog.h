@@ -18,18 +18,40 @@
 
 #include <QWidget>
 
+#include "Engine/RenderStats.h"
+
+namespace Natron {
+    class Node;
+}
+
+class TableItem;
 class Gui;
+class QItemSelection;
 
 struct RenderStatsDialogPrivate;
 class RenderStatsDialog : public QWidget
 {
+    
+    Q_OBJECT
+    
 public:
     
     RenderStatsDialog(Gui* gui);
     
-    ~RenderStatsDialog();
+    virtual ~RenderStatsDialog();
+    
+    void addStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+    
+public Q_SLOTS:
+    
+    void resetStats();
+    void refreshAdvancedColsVisibility();
+    void onItemClicked(TableItem* item);
+    void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
     
 private:
+    
+    virtual void closeEvent(QCloseEvent * event) OVERRIDE FINAL;
     
     boost::scoped_ptr<RenderStatsDialogPrivate> _imp;
 };

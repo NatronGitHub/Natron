@@ -73,6 +73,7 @@ class PyPanel;
 class RectI;
 class DopeSheetEditor;
 class PropertiesBinWrapper;
+class RenderStatsDialog;
 
 //Natron engine
 class ViewerInstance;
@@ -530,7 +531,12 @@ public:
 
     bool isAboutToClose() const;
     
+    void setRenderStatsEnabled(bool enabled);
     bool areRenderStatsEnabled() const;
+    
+    RenderStatsDialog* getRenderStatsDialog() const;
+    
+    
     
 Q_SIGNALS:
 

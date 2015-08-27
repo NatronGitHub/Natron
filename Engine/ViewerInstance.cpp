@@ -990,7 +990,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         }
         
         if (!isCached) {
-            if (stats) {
+            if (stats  && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), true, false);
             }
         } else {
@@ -1029,7 +1029,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 _imp->lastRenderedHashValid = true;
             }
             
-            if (stats) {
+            if (stats && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), false, false);
             }
             
@@ -1313,7 +1313,7 @@ ViewerInstance::renderViewer_internal(int view,
         splitRoi.push_back(roi);
     }
     
-    if (stats) {
+    if (stats && stats->isInDepthProfilingEnabled()) {
         bool channelsRendered[4];
         switch (inArgs.channels) {
             case Natron::eDisplayChannelsRGB:
@@ -1557,7 +1557,7 @@ ViewerInstance::renderViewer_internal(int view,
             if (splitRoi.size() > 1 && rectIndex < (splitRoi.size() -1)) {
                 unreportedTiles.push_back(viewerRenderRoI);
                 if (reportProgress) {
-                    _imp->reportProgress(inArgs.params, unreportedTiles, request);
+                    _imp->reportProgress(inArgs.params, unreportedTiles, stats, request);
                     unreportedTiles.clear();
                 }
             }
@@ -1566,7 +1566,7 @@ ViewerInstance::renderViewer_internal(int view,
             inArgs.params->cachedFrame->addOriginalTile(image);
         }
         
-        if (stats) {
+        if (stats && stats->isInDepthProfilingEnabled()) {
             stats->addRenderInfosForNode(getNode(), NodePtr(), image->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation());
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
@@ -1593,6 +1593,7 @@ ViewerInstance::renderViewer_internal(int view,
 void
 ViewerInstance::ViewerInstancePrivate::reportProgress(const boost::shared_ptr<UpdateViewerParams>& originalParams,
                                                       const std::list<RectI>& rectangles,
+                                                      const boost::shared_ptr<RenderStats>& stats,
                                                       const boost::shared_ptr<RequestedFrame>& request)
 {
     //update the viewer to report progress
@@ -1622,7 +1623,7 @@ ViewerInstance::ViewerInstancePrivate::reportProgress(const boost::shared_ptr<Up
         params->ramBuffer = tmpBuffer;
         ret.push_back(params);
     }
-    instance->getRenderEngine()->notifyFrameProduced(ret, request);
+    instance->getRenderEngine()->notifyFrameProduced(ret, stats, request);
 }
 
 void
@@ -2812,7 +2813,7 @@ ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge) const
 }
 
 void
-ViewerInstance::reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+ViewerInstance::reportStats(int time, int view, double wallTime, const RenderStatsMap& stats)
 {
-    Q_EMIT renderStatsAvailable(time, view, stats);
+    Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }

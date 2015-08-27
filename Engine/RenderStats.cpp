@@ -348,6 +348,12 @@ RenderStats::~RenderStats()
     
 }
 
+bool
+RenderStats::isInDepthProfilingEnabled() const
+{
+    return _imp->doNodesProfiling;
+}
+
 void
 RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity)
 {

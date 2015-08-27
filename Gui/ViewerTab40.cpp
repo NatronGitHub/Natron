@@ -35,6 +35,7 @@
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/RotoGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
@@ -1103,8 +1104,11 @@ ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
 }
 
 void
-ViewerTab::onRenderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+ViewerTab::onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats)
 {
     assert(QThread::currentThread() == qApp->thread());
-    
+    RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();
+    if (dialog) {
+        dialog->addStats(time, view, wallTime, stats);
+    }
 }

@@ -38,6 +38,8 @@ namespace Natron
     class Node;
     class ImageComponents;
 }
+typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
+
 class ViewerGL;
 class ViewerInstance;
 class Gui;
@@ -399,7 +401,7 @@ public Q_SLOTS:
     
     void onSyncViewersButtonPressed(bool clicked);
     
-    void onRenderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+    void onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
     
 private:
     

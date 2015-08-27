@@ -611,6 +611,7 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     setExpandsOnDoubleClick(false);
 
     setItemDelegate(new HierarchyViewItemDelegate(this));
+    setAttribute(Qt::WA_MacShowFocusRect,0);
 
     setStyleSheet("HierarchyView { border: 0px; }");
 

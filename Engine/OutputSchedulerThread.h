@@ -24,10 +24,12 @@
 
 #include "Global/GlobalDefines.h"
 
-
 ///Natron
 class ViewerInstance;
 class RenderStats;
+
+typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
+
 namespace Natron {
     class Node;
     class EffectInstance;
@@ -70,7 +72,7 @@ struct BufferedFrame
 {
     int view;
     double time;
-    boost::shared_ptr<RenderStats> stats;
+    RenderStatsPtr stats;
     boost::shared_ptr<BufferableObject> frame;
     
     BufferedFrame()
@@ -161,18 +163,18 @@ public:
      **/
     void appendToBuffer(double time,
                         int view,
-                        const boost::shared_ptr<RenderStats>& stats,
+                        const RenderStatsPtr& stats,
                         const boost::shared_ptr<BufferableObject>& frame);
     void appendToBuffer(double time,
                         int view,
-                        const boost::shared_ptr<RenderStats>& stats,
+                        const RenderStatsPtr& stats,
                         const BufferableObjectList& frames);
     
 private:
     
     void appendToBuffer_internal(double time,
                                  int view,
-                                 const boost::shared_ptr<RenderStats>& stats,
+                                 const RenderStatsPtr& stats,
                                  const boost::shared_ptr<BufferableObject>& frame,
                                  bool wakeThread);
     
@@ -211,7 +213,7 @@ public:
     void notifyFrameRendered(int frame,
                              int viewIndex,
                              int viewsCount,
-                             const boost::shared_ptr<RenderStats>& stats,
+                             const RenderStatsPtr& stats,
                              Natron::SchedulingPolicyEnum policy);
 
     /**
@@ -544,15 +546,15 @@ public:
     
     bool hasThreadsWorking() const;
     
-    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request);
+    void notifyFrameProduced(const BufferableObjectList& frames,const RenderStatsPtr& stats, const boost::shared_ptr<RequestedFrame>& request);
     
 public Q_SLOTS:
     
-    void doProcessProducedFrameOnMainThread(const BufferableObjectList& frames);
+    void doProcessProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
     
 Q_SIGNALS:
     
-    void s_processProducedFrameOnMainThread(const BufferableObjectList& frames);
+    void s_processProducedFrameOnMainThread(const RenderStatsPtr& stats,const BufferableObjectList& frames);
     
 private:
     
@@ -567,7 +569,7 @@ struct CurrentFrameFunctorArgs
 {
     int view;
     int time;
-    boost::shared_ptr<RenderStats> stats;
+    RenderStatsPtr stats;
     ViewerInstance* viewer;
     U64 viewerHash;
     boost::shared_ptr<RequestedFrame> request;
@@ -760,7 +762,7 @@ private:
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
     
     friend class ViewerInstance;
-    void notifyFrameProduced(const BufferableObjectList& frames,const boost::shared_ptr<RequestedFrame>& request);
+    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats ,const boost::shared_ptr<RequestedFrame>& request);
 
     
     boost::scoped_ptr<RenderEnginePrivate> _imp;

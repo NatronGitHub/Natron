@@ -240,6 +240,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _scriptEditor(0)
 , _lastEnteredTabWidget(0)
 , pythonCommands()
+, statsDialog(0)
 {
 }
 

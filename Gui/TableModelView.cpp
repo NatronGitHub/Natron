@@ -717,6 +717,7 @@ TableModel::flags(const QModelIndex &index) const
            | Qt::ItemIsDropEnabled;
 }
 
+
 ////////////////TableViewPrivae
 
 struct TableViewPrivate
@@ -738,7 +739,6 @@ TableView::TableView(QWidget* parent)
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
     setItemsExpandable(false);
-    setSortingEnabled(true);
 
     ///The table model here doesn't support sorting
     setSortingEnabled(false);
@@ -981,6 +981,17 @@ TableView::mousePressEvent(QMouseEvent* e)
     } else {
         QTreeView::mousePressEvent(e);
     }
+}
+
+void
+TableView::mouseDoubleClickEvent(QMouseEvent* e)
+{
+    TableItem* item = itemAt( e->pos() );
+    if (item) {
+        Q_EMIT itemDoubleClicked(item);
+    }
+    QTreeView::mouseDoubleClickEvent(e);
+    
 }
 
 void

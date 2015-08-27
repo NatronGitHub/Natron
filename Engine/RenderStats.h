@@ -105,6 +105,8 @@ public:
     
     ~RenderStats();
     
+    bool isInDepthProfilingEnabled() const;
+    
     void setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity);
     
     void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,

@@ -37,6 +37,8 @@ class TimeLine;
 class OpenGLViewerI;
 struct TextureRect;
 
+typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
+
 struct ViewerArgs
 {
     Natron::EffectInstance* activeInputToRender;
@@ -235,7 +237,7 @@ public:
     
     void markAllOnRendersAsAborted();
     
-    virtual void reportStats(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats) OVERRIDE FINAL;
+    virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
 public Q_SLOTS:
     
@@ -258,7 +260,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     
-    void renderStatsAvailable(int time, int view, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+    void renderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
     
     void s_callRedrawOnMainThread();
 
