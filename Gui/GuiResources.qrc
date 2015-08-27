@@ -3,6 +3,7 @@
         <file alias="CHANGELOG.md">../CHANGELOG.md</file>
         <file alias="CONTRIBUTORS.txt">../CONTRIBUTORS.txt</file>
         <file alias="LICENSE.txt">../LICENSE.txt</file>
+        <file alias="LICENSE_SHORT.txt">../LICENSE_SHORT.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
         <file>Resources/Fonts/DroidSans.ttf</file>
         <file>Resources/Images/GroupingIcons/Set1/color_grouping_1.png</file>

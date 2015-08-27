@@ -1,11 +1,26 @@
-//  Natron
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2015 INRIA and Alexandre Gauthier
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "AboutWindow.h"
 
@@ -24,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
+#include "Gui/Utils.h"
 
 AboutWindow::AboutWindow(Gui* gui,
                          QWidget* parent)
@@ -89,25 +105,29 @@ AboutWindow::AboutWindow(Gui* gui,
 #endif
 #endif
     }
-    QString endAbout =
-    QString("<p>This version was generated from the source code branch %3"
-            " at commit %4.</p>"
-            "<p>Copyright (C) 2015 the %1 developers.</p>"
-            "<p>This is free software. You may redistribute copies of it "
-            "under the terms of the <a href=\"http://www.mozilla.org/MPL/2.0/\">"
-            "<font color=\"orange\">MPL Mozilla Public License</font></a>. "
-            "There is NO WARRANTY, to the extent permitted by law.</p>"
-            "<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
-            "for more information on this software.</p>")
-    .arg(NATRON_APPLICATION_NAME) // %1
-    .arg("https://natron.inria.fr") // %2
-    .arg(GIT_BRANCH) // %3
-    .arg(GIT_COMMIT); // %4
+    QString licenseStr;
+    {
+        QFile license(":LICENSE_SHORT.txt");
+        license.open(QIODevice::ReadOnly | QIODevice::Text);
+        licenseStr = Natron::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()), Qt::WhiteSpaceNormal);
+    }
+    aboutText.append(licenseStr);
+
+    QString endAbout = (QString("<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
+                                "for more information on this software.</p>")
+                        .arg(NATRON_APPLICATION_NAME) // %1
+                        .arg("https://natron.inria.fr")); // %2
     aboutText.append(endAbout);
+    QString gitStr = (QString("<p>This version was generated from the source "
+                              "code branch %1 at commit %2.</p>")
+                      .arg(GIT_BRANCH) // %1
+                      .arg(GIT_COMMIT)); // %2
+;
+    aboutText.append(gitStr);
 
     const QString status(NATRON_DEVELOPMENT_STATUS);
     if (status == NATRON_DEVELOPMENT_DEVEL) {
-        QString toAppend = QString("<p>Note: This is a development version of Natron, which probably contains bugs. "
+        QString toAppend = QString("<p>Note: This is a development version, which probably contains bugs. "
                                    "If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
         .arg("https://github.com/MrKepzie/Natron/issues"); // %1
