@@ -237,7 +237,7 @@ public:
                 
                 QString tt = Natron::convertFromPlainText(QObject::tr("The label of the node as it appears on the nodegraph"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
@@ -264,7 +264,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The ID of the plug-in embedded in the node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             item->setText(node->getPluginID().c_str());
@@ -285,7 +285,7 @@ public:
                 QString tt = Natron::convertFromPlainText(QObject::tr("The time spent rendering by this node across all threads"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 timeSoFar = stats.getTotalTimeSpentRendering();
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             item->setData((int)eItemsRoleTime, timeSoFar);
@@ -303,7 +303,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("Whether this node has tiles (portions of the final image) support or not"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             QString str;
@@ -328,7 +328,7 @@ public:
                                                                       "When activated, that means the node can render an image at a "
                                                                       "lower scale."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             QString str;
@@ -353,7 +353,7 @@ public:
                 QString tt = Natron::convertFromPlainText(QObject::tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
                                                                       "1 means scale = 50%, 2 means scale = 25%, etc..."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             const std::set<unsigned int>& mm = stats.getMipMapLevelsRendered();
@@ -375,7 +375,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The channels processed by this node (corresponding to the RGBA checkboxes)"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             QString str;
@@ -409,7 +409,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The alpha premultiplication of the image produced by this node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             Natron::ImagePremultiplicationEnum premult = stats.getOutputPremult();
@@ -439,7 +439,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The region of definition of the image produced"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             const RectD& rod = stats.getRoD();
@@ -459,7 +459,7 @@ public:
                 QString tt = Natron::convertFromPlainText(QObject::tr("When different of \"-\", this node does not render but rather "
                                                                       "directly returns the image produced by the node indicated by its label."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             QString str;
@@ -489,7 +489,7 @@ public:
                 QString tt = Natron::convertFromPlainText(QObject::tr("The list of the tiles that were identity in the image.\n"
                                                                       "Double-click for more info"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > tiles = stats.getIdentityRectangles();
@@ -525,7 +525,7 @@ public:
                 QString tt = Natron::convertFromPlainText(QObject::tr("The list of the tiles effectivly rendered.\n"
                                                                       "Double-click for more infos."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             const std::list<RectI>& tiles = stats.getRenderedRectangles();
@@ -557,7 +557,7 @@ public:
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The list of the planes rendered by this node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable);
+                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
             const std::set<std::string>& planes = stats.getPlanesRendered();
@@ -814,6 +814,8 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect,0);
     _imp->view->setSelectionMode(QAbstractItemView::SingleSelection);
+    _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
+
     
 #if QT_VERSION < 0x050000
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
@@ -901,7 +903,9 @@ RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const s
     for (std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
         _imp->model->editNodeRow(it->first, it->second);
     }
-    
+    if (!stats.empty()) {
+        _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
+    }
 }
 
 void

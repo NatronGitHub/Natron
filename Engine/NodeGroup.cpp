@@ -315,7 +315,7 @@ NodeCollection::refreshViewersAndPreviews()
             } else {
                 ViewerInstance* n = dynamic_cast<ViewerInstance*>((*it)->getLiveInstance());
                 if (n) {
-                    n->getRenderEngine()->renderCurrentFrame(true);
+                    n->renderCurrentFrame(true);
                 }
             }
         }

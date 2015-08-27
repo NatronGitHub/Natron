@@ -198,6 +198,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionRefresh "refresh"
 #define kShortcutDescActionRefresh "Refresh Image"
 
+#define kShortcutIDActionRefreshWithStats "refreshWithStats"
+#define kShortcutDescActionRefreshWithStats "Refresh Image and show render statistics"
+
 #define kShortcutIDActionROIEnabled "userRoiEnabled"
 #define kShortcutDescActionROIEnabled "Enable User RoI"
 

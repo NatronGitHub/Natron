@@ -761,8 +761,11 @@ Gui::renderSelectedNode()
 void
 Gui::setRenderStatsEnabled(bool enabled)
 {
-    QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
-    _imp->areRenderStatsEnabled = enabled;
+    {
+        QMutexLocker k(&_imp->areRenderStatsEnabledMutex);
+        _imp->areRenderStatsEnabled = enabled;
+    }
+    _imp->enableRenderStats->setChecked(enabled);
 }
 
 bool
@@ -775,6 +778,16 @@ Gui::areRenderStatsEnabled() const
 RenderStatsDialog*
 Gui::getRenderStatsDialog() const
 {
+    return _imp->statsDialog;
+}
+
+RenderStatsDialog*
+Gui::getOrCreateRenderStatsDialog()
+{
+    if (_imp->statsDialog) {
+        return _imp->statsDialog;
+    }
+    _imp->statsDialog = new RenderStatsDialog(this);
     return _imp->statsDialog;
 }
 

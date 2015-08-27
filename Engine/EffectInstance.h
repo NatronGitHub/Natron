@@ -1917,6 +1917,8 @@ public:
     void notifyRenderFinished();
 
     void renderCurrentFrame(bool canAbort);
+
+    void renderCurrentFrameWithRenderStats(bool canAbort);
     
     void renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats);
 

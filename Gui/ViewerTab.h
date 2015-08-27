@@ -271,6 +271,8 @@ public:
     
     void zoomIn();
     void zoomOut();
+    
+    void refresh(bool enableRenderStats);
 
 public Q_SLOTS:
 

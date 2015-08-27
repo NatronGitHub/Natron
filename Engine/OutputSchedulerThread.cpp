@@ -2615,7 +2615,7 @@ RenderEngine::renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats
 }
 
 void
-RenderEngine::renderCurrentFrame(bool canAbort)
+RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2624,8 +2624,6 @@ RenderEngine::renderCurrentFrame(bool canAbort)
         qDebug() << "RenderEngine::renderCurrentFrame for a writer is unsupported";
         return;
     }
-    
-    bool enableRenderStats = isViewer->getApp()->isRenderStatsActionChecked();
     
     
     ///If the scheduler is already doing playback, continue it
@@ -2647,7 +2645,7 @@ RenderEngine::renderCurrentFrame(bool canAbort)
         _imp->currentFrameScheduler = new ViewerCurrentFrameRequestScheduler(isViewer);
     }
     
-    _imp->currentFrameScheduler->renderCurrentFrame(canAbort);
+    _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats,canAbort);
 }
 
 
@@ -3130,7 +3128,7 @@ ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectLi
 }
 
 void
-ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
+ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bool canAbort)
 {
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
@@ -3144,7 +3142,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         return;
     }
     
-    bool enableRenderStats = _imp->viewer->getApp()->isRenderStatsActionChecked();
     RenderStatsPtr stats;
     if (enableRenderStats) {
         stats.reset(new RenderStats(enableRenderStats));

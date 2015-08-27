@@ -535,8 +535,7 @@ public:
     bool areRenderStatsEnabled() const;
     
     RenderStatsDialog* getRenderStatsDialog() const;
-    
-    
+    RenderStatsDialog* getOrCreateRenderStatsDialog();
     
 Q_SIGNALS:
 

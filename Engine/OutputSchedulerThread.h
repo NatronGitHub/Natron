@@ -538,7 +538,7 @@ public:
     
     virtual ~ViewerCurrentFrameRequestScheduler();
     
-    void renderCurrentFrame(bool canAbort);
+    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
     
     void quitThread();
     
@@ -644,7 +644,7 @@ public:
      * @param abortPrevious If true then it will stop any ongoing render and render the current frame
      * in a separate thread
      **/
-    void renderCurrentFrame(bool canAbort);
+    void renderCurrentFrame(bool enableRenderStats,bool canAbort);
 
     /**
      * @brief Returns the playback mode of the internal scheduler

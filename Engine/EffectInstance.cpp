@@ -6978,7 +6978,13 @@ OutputEffectInstance::~OutputEffectInstance()
 void
 OutputEffectInstance::renderCurrentFrame(bool canAbort)
 {
-    _engine->renderCurrentFrame(canAbort);
+    _engine->renderCurrentFrame(getApp()->isRenderStatsActionChecked(), canAbort);
+}
+
+void
+OutputEffectInstance::renderCurrentFrameWithRenderStats(bool canAbort)
+{
+    _engine->renderCurrentFrame(true, canAbort);
 }
 
 void
@@ -7283,10 +7289,10 @@ OutputEffectInstance::reportStats(int time, int view, double wallTime, const std
             ofile << "red ";
         }
         if (g) {
-            ofile << "green";
+            ofile << "green ";
         }
         if (b) {
-            ofile << "blue";
+            ofile << "blue ";
         }
         if (a) {
             ofile << "alpha";

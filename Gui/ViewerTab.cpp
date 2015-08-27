@@ -216,11 +216,15 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->refreshButton = new Button(_imp->firstSettingsRow);
     _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
     _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionRefresh, "<p>" + tr("Forces a new render of the current frame.") +
-                           "</p>", _imp->refreshButton);
-
+    {
+        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
+        setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionRefresh, "<p>" + tr("Forces a new render of the current frame.") +
+                               "</p><p>" +
+                               tr("If ") + seq.toString(QKeySequence::NativeText) + tr(" is held, in depth render statistics useful "
+                                                                                       "for debugging will be displayed for this render.") + "</p>", _imp->refreshButton);
+    }
     _imp->firstRowLayout->addWidget(_imp->refreshButton);
-
+    
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);

@@ -33,6 +33,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
 #include "Gui/Gui.h"
@@ -40,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/RotoGui.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
@@ -372,10 +374,22 @@ ViewerTab::centerViewer()
 }
 
 void
-ViewerTab::refresh()
+ViewerTab::refresh(bool enableRenderStats)
 {
     _imp->viewerNode->forceFullComputationOnNextFrame();
-    _imp->viewerNode->renderCurrentFrame(false);
+    if (!enableRenderStats) {
+        _imp->viewerNode->renderCurrentFrame(false);
+    } else {
+        getGui()->getOrCreateRenderStatsDialog()->show();
+        _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
+    }
+}
+
+void
+ViewerTab::refresh()
+{
+    Qt::KeyboardModifiers m = qApp->keyboardModifiers();
+    refresh(m.testFlag(Qt::ShiftModifier) && m.testFlag(Qt::ControlModifier));
 }
 
 ViewerTab::~ViewerTab()
@@ -547,7 +561,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
         onClipToProjectButtonToggle( !_imp->clipToProjectFormatButton->isDown() );
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, modifiers, key) ) {
-        refresh();
+        refresh(false);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionRefreshWithStats, modifiers, key) ) {
+        refresh(true);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key) ) {
         onEnableViewerRoIButtonToggle( !_imp->enableViewerRoI->isDown() );
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
