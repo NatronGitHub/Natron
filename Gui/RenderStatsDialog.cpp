@@ -42,10 +42,10 @@ using namespace Natron;
 #define COL_RENDERED_TILES 11
 #define COL_RENDERED_PLANES 12
 #define COL_NB_CACHE_HIT 13
-#define COL_NB_CACHE_HIT_DOWNSCALED 15
-#define COL_NB_CACHE_MISS 14
+#define COL_NB_CACHE_HIT_DOWNSCALED 14
+#define COL_NB_CACHE_MISS 15
 
-#define NUM_COLS 15
+#define NUM_COLS 16
 
 
 enum ItemsRoleEnum
@@ -255,6 +255,14 @@ public:
             insertRow(row);
         }
         
+        QColor c;
+        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+        if (nodeUi) {
+            double r,g,b;
+            nodeUi->getColor(&r, &g, &b);
+            c.setRgbF(r, g, b);
+        }
+        
         {
             TableItem* item;
             if (exists) {
@@ -269,10 +277,6 @@ public:
             assert(item);
             boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
             if (nodeUi) {
-                double r,g,b;
-                nodeUi->getColor(&r, &g, &b);
-                QColor c;
-                c.setRgbF(r, g, b);
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
             }
@@ -294,6 +298,10 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(node->getPluginID().c_str());
             if (!exists) {
                 view->setItem(row, COL_PLUGIN_ID, item);
@@ -315,6 +323,10 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setData((int)eItemsRoleTime, timeSoFar);
             item->setText(Timer::printAsTime(timeSoFar,false));
             
@@ -340,7 +352,10 @@ public:
                 str = "No";
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_SUPPORT_TILES, item);
             }
@@ -365,7 +380,10 @@ public:
                 str = "No";
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_SUPPORT_RS, item);
             }
@@ -389,7 +407,10 @@ public:
                 str.append(' ');
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_MIPMAP_LEVEL, item);
             }
@@ -422,7 +443,10 @@ public:
                 str.append("A");
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_CHANNELS, item);
             }
@@ -452,7 +476,10 @@ public:
                     break;
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_PREMULT, item);
             }
@@ -472,7 +499,10 @@ public:
             const RectD& rod = stats.getRoD();
             str = QString("(%1, %2, %3, %4)").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2);
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_ROD, item);
             }
@@ -497,7 +527,10 @@ public:
                 str = "-";
             }
             item->setText(str);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             if (!exists) {
                 view->setItem(row, COL_IDENTITY, item);
             }
@@ -532,7 +565,10 @@ public:
             item->setData((int)eItemsRoleIdentityTilesInfo, tilesInfo);
             
             QString str = QString::number(nbIdentityTiles) + QString(" tiles...");
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(str);
             if (!exists) {
                 view->setItem(row, COL_IDENTITY_TILES, item);
@@ -568,7 +604,10 @@ public:
             item->setData((int)eItemsRoleRenderedTilesInfo, tilesInfo);
             
             QString str = QString::number(nbTiles) + QString(" tiles...");
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(str);
             if (!exists) {
                 view->setItem(row, COL_RENDERED_TILES, item);
@@ -595,7 +634,10 @@ public:
                 planesInfo.append(it->c_str());
             }
             
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(planesInfo);
             if (!exists) {
                 view->setItem(row, COL_RENDERED_PLANES, item);
@@ -605,7 +647,6 @@ public:
             TableItem* item;
             
             int nb = 0;
-            QString tilesInfo;
             if (exists) {
                 item = view->item(row, COL_NB_CACHE_HIT);
                 nb = item->text().toInt();
@@ -621,7 +662,10 @@ public:
             nb += nbCacheHits;
             
             QString str = QString::number(nb);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(str);
             if (!exists) {
                 view->setItem(row, COL_NB_CACHE_HIT, item);
@@ -631,7 +675,6 @@ public:
             TableItem* item;
             
             int nb = 0;
-            QString tilesInfo;
             if (exists) {
                 item = view->item(row, COL_NB_CACHE_HIT_DOWNSCALED);
                 nb = item->text().toInt();
@@ -648,7 +691,10 @@ public:
             nb += nbCacheHitButDown;
             
             QString str = QString::number(nb);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(str);
             if (!exists) {
                 view->setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, item);
@@ -658,7 +704,6 @@ public:
             TableItem* item;
             
             int nb = 0;
-            QString tilesInfo;
             if (exists) {
                 item = view->item(row, COL_NB_CACHE_MISS);
                 nb = item->text().toInt();
@@ -674,7 +719,10 @@ public:
             nb += nbCacheMiss;
             
             QString str = QString::number(nb);
-            
+            if (nodeUi) {
+                item->setTextColor(Qt::black);
+                item->setBackgroundColor(c);
+            }
             item->setText(str);
             if (!exists) {
                 view->setItem(row, COL_NB_CACHE_MISS, item);
@@ -945,7 +993,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 #endif
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->setUniformRowHeights(true);
-    _imp->view->setSortingEnabled(true);
+    _imp->view->setSortingEnabled(false);
     _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
