@@ -49,7 +49,7 @@ case $NATRONBRANCH in
 esac	     
 	     
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
-PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig py34-shiboken py34-pyside"
+PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr seexpr ctl fontconfig py34-shiboken py34-pyside"
 
 PORTSOK=yes
 for p in $PORTS; do
