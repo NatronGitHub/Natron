@@ -337,6 +337,7 @@ public:
     virtual bool removeRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
     virtual bool removeColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 
+    void setTable(const QVector<TableItem*>& items);
     void setItem(int row, int column, TableItem *item);
     TableItem * takeItem(int row, int column);
     TableItem * item(int row, int column) const;

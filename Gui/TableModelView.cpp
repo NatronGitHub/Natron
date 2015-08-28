@@ -305,6 +305,30 @@ TableModel::removeColumns(int column,
 }
 
 void
+TableModel::setTable(const QVector<TableItem*>& items)
+{
+    
+    for (int i = 0; i < _imp->tableItems.size(); ++i) {
+        if (_imp->tableItems[i]) {
+            delete _imp->tableItems[i];
+        }
+    }
+    
+    _imp->tableItems = items;
+    for (int i = 0; i < _imp->tableItems.size(); ++i) {
+        _imp->tableItems[i]->id = i;
+    }
+    if (!items.empty()) {
+        QModelIndex tl = QAbstractTableModel::index(0, 0);
+        int cols = columnCount();
+        int lastTableIndex = items.size() - 1;
+        int lastIndexRow = (lastTableIndex - (cols - 1)) / cols;
+        QModelIndex br = QAbstractTableModel::index(lastIndexRow, cols -1);
+        Q_EMIT dataChanged(tl, br);
+    }
+}
+
+void
 TableModel::setItem(int row,
                     int column,
                     TableItem *item)

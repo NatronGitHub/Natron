@@ -109,7 +109,9 @@ struct StatRowsCompare
                 assert(leftItem);
                 TableItem* rightItem = _view->item(rhs.second, COL_TIME);
                 assert(rightItem);
-                return leftItem->data((int)eItemsRoleTime).toDouble() < leftItem->data((int)eItemsRoleTime).toDouble();
+                double ltime = leftItem->data((int)eItemsRoleTime).toDouble();
+                double rtime = rightItem->data((int)eItemsRoleTime).toDouble();
+                return ltime < rtime;
             } break;
             case COL_SUPPORT_TILES:
             {
@@ -832,16 +834,16 @@ public:
                 vect[vect.size() - i - 1] = copy[i];
             }
         }
-        std::vector<int> forwarding(vect.size());
+        QVector<TableItem*> newTable(vect.size() * NUM_COLS);
         for (std::size_t i = 0; i < vect.size(); ++i) {
             rows[i] = vect[i].first;
-            forwarding[vect[i].second] = i;
+            for (int j = 0; j < NUM_COLS; ++j) {
+                TableItem* item = takeItem(vect[i].second, j);
+                assert(item);
+                newTable[(i * NUM_COLS) + j] = item;
+            }
         }
-        QModelIndexList oldList = persistentIndexList();
-        QModelIndexList newList;
-        for (int i = 0; i < oldList.count(); ++i)
-            newList.append(index(forwarding.at(oldList.at(i).row()), 0));
-            changePersistentIndexList(oldList, newList);
+        setTable(newTable);
 
         Q_EMIT layoutChanged();
     }
@@ -1007,8 +1009,9 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 #endif
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->setUniformRowHeights(true);
-    _imp->view->setSortingEnabled(false);
-    _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
+    _imp->view->setSortingEnabled(true);
+    _imp->view->header()->setSortIndicator(COL_TIME, Qt::DescendingOrder);
+    _imp->model->sort(COL_TIME, Qt::DescendingOrder);
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect(selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)));
@@ -1090,7 +1093,9 @@ RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const s
         _imp->model->editNodeRow(it->first, it->second);
     }
     if (!stats.empty()) {
-        _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
+
+        _imp->view->header()->setSortIndicator(COL_TIME, Qt::DescendingOrder);
+        _imp->model->sort(COL_TIME, Qt::DescendingOrder);
     }
 }
 
