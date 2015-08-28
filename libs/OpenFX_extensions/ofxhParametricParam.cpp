@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier
+ * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *Created by Alexandre Gauthier-Foichat-FOICHAT on 6/1/2012.
  *contact: immarespond at gmail dot com
  *
  */

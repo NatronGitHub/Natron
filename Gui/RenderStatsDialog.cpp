@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier
+ * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelectionModel>
+#include <QRegExp>
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
@@ -36,6 +37,7 @@
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
+#include "Gui/LineEdit.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
@@ -109,9 +111,7 @@ struct StatRowsCompare
                 assert(leftItem);
                 TableItem* rightItem = _view->item(rhs.second, COL_TIME);
                 assert(rightItem);
-                double ltime = leftItem->data((int)eItemsRoleTime).toDouble();
-                double rtime = rightItem->data((int)eItemsRoleTime).toDouble();
-                return ltime < rtime;
+                return leftItem->data((int)eItemsRoleTime).toDouble() < leftItem->data((int)eItemsRoleTime).toDouble();
             } break;
             case COL_SUPPORT_TILES:
             {
@@ -834,16 +834,16 @@ public:
                 vect[vect.size() - i - 1] = copy[i];
             }
         }
-        QVector<TableItem*> newTable(vect.size() * NUM_COLS);
+        std::vector<int> forwarding(vect.size());
         for (std::size_t i = 0; i < vect.size(); ++i) {
             rows[i] = vect[i].first;
-            for (int j = 0; j < NUM_COLS; ++j) {
-                TableItem* item = takeItem(vect[i].second, j);
-                assert(item);
-                newTable[(i * NUM_COLS) + j] = item;
-            }
+            forwarding[vect[i].second] = i;
         }
-        setTable(newTable);
+        QModelIndexList oldList = persistentIndexList();
+        QModelIndexList newList;
+        for (int i = 0; i < oldList.count(); ++i)
+            newList.append(index(forwarding.at(oldList.at(i).row()), 0));
+            changePersistentIndexList(oldList, newList);
 
         Q_EMIT layoutChanged();
     }
@@ -871,6 +871,21 @@ struct RenderStatsDialogPrivate
     
     Button* resetButton;
     
+    QWidget* filterContainer;
+    QHBoxLayout* filterLayout;
+    
+    Natron::Label* filtersLabel;
+    
+    Natron::Label* nameFilterLabel;
+    LineEdit* nameFilterEdit;
+    
+    Natron::Label* idFilterLabel;
+    LineEdit* idFilterEdit;
+    
+    Natron::Label* useUnixWildcardsLabel;
+    QCheckBox* useUnixWildcardsCheckbox;
+    
+  
     TableView* view;
     StatsTableModel* model;
     
@@ -888,6 +903,14 @@ struct RenderStatsDialogPrivate
     , totalTimeSpentValueLabel(0)
     , totalSpentTime(0)
     , resetButton(0)
+    , filterContainer(0)
+    , filterLayout(0)
+    , nameFilterLabel(0)
+    , nameFilterEdit(0)
+    , idFilterLabel(0)
+    , idFilterEdit(0)
+    , useUnixWildcardsLabel(0)
+    , useUnixWildcardsCheckbox(0)
     , view(0)
     , model(0)
     {
@@ -895,6 +918,8 @@ struct RenderStatsDialogPrivate
     }
     
     void editNodeRow(const boost::shared_ptr<Natron::Node>& node, const NodeRenderStats& stats);
+    
+    void updateVisibleRowsInternal(const QString& nameFilter, const QString& pluginIDFilter);
         
 
 };
@@ -969,6 +994,54 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->mainLayout->addWidget(_imp->globalInfosContainer);
     
+    _imp->filterContainer = new QWidget(this);
+    _imp->filterLayout = new QHBoxLayout(_imp->filterContainer);
+    
+    _imp->filtersLabel = new Natron::Label(tr("Filters:"),_imp->filterContainer);
+    _imp->filterLayout->addWidget(_imp->filtersLabel);
+    
+    _imp->filterLayout->addSpacing(10);
+    
+    QString nameFilterTt = Natron::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
+                                                           "with a label matching the filter.\nOtherwise if unix wildcards are disabled, "
+                                                           "show only nodes with a label containing the text in the filter."), Qt::WhiteSpaceNormal);
+    _imp->nameFilterLabel = new Natron::Label(tr("Name:"),_imp->filterContainer);
+    _imp->nameFilterLabel->setToolTip(nameFilterTt);
+    _imp->nameFilterEdit = new LineEdit(_imp->filterContainer);
+    _imp->nameFilterEdit->setToolTip(nameFilterTt);
+    QObject::connect(_imp->nameFilterEdit, SIGNAL(editingFinished()), this, SLOT(updateVisibleRows()));
+    QObject::connect(_imp->nameFilterEdit, SIGNAL(textEdited(QString)), this, SLOT(onNameLineEditChanged(QString)));
+    
+    _imp->filterLayout->addWidget(_imp->nameFilterLabel);
+    _imp->filterLayout->addWidget(_imp->nameFilterEdit);
+    
+    _imp->filterLayout->addSpacing(20);
+    
+    QString idFilterTt = Natron::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
+                                                           "with a plugin ID matching the filter.\nOtherwise if unix wildcards are disabled, "
+                                                           "show only nodes with a plugin ID containing the text in the filter."), Qt::WhiteSpaceNormal);
+    _imp->idFilterLabel = new Natron::Label(tr("Plugin ID:"),_imp->idFilterLabel);
+    _imp->idFilterLabel->setToolTip(idFilterTt);
+    _imp->idFilterEdit = new LineEdit(_imp->idFilterEdit);
+    _imp->idFilterEdit->setToolTip(idFilterTt);
+    QObject::connect(_imp->idFilterEdit, SIGNAL(editingFinished()), this, SLOT(updateVisibleRows()));
+    QObject::connect(_imp->idFilterEdit, SIGNAL(textEdited(QString)), this, SLOT(onIDLineEditChanged(QString)));
+    
+    _imp->filterLayout->addWidget(_imp->idFilterLabel);
+    _imp->filterLayout->addWidget(_imp->idFilterEdit);
+    
+    _imp->useUnixWildcardsLabel = new Natron::Label(tr("Use Unix wildcards (*, ?, etc..)"),_imp->filterContainer);
+    _imp->useUnixWildcardsCheckbox = new QCheckBox(_imp->filterContainer);
+    _imp->useUnixWildcardsCheckbox->setChecked(false);
+    QObject::connect(_imp->useUnixWildcardsCheckbox, SIGNAL(toggled(bool)), this, SLOT(updateVisibleRows()));
+    
+    _imp->filterLayout->addWidget(_imp->useUnixWildcardsLabel);
+    _imp->filterLayout->addWidget(_imp->useUnixWildcardsCheckbox);
+    
+    _imp->filterLayout->addStretch();
+    
+    _imp->mainLayout->addWidget(_imp->filterContainer);
+    
     _imp->view = new TableView(this);
     
     _imp->model = new StatsTableModel(0,0,_imp->view);
@@ -1009,9 +1082,8 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 #endif
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->setUniformRowHeights(true);
-    _imp->view->setSortingEnabled(true);
-    _imp->view->header()->setSortIndicator(COL_TIME, Qt::DescendingOrder);
-    _imp->model->sort(COL_TIME, Qt::DescendingOrder);
+    _imp->view->setSortingEnabled(false);
+    _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect(selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)));
@@ -1092,10 +1164,10 @@ RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const s
     for (std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
         _imp->model->editNodeRow(it->first, it->second);
     }
+    
+    updateVisibleRows();
     if (!stats.empty()) {
-
-        _imp->view->header()->setSortIndicator(COL_TIME, Qt::DescendingOrder);
-        _imp->model->sort(COL_TIME, Qt::DescendingOrder);
+        _imp->view->sortByColumn(COL_TIME, Qt::DescendingOrder);
     }
 }
 
@@ -1105,3 +1177,86 @@ RenderStatsDialog::closeEvent(QCloseEvent * /*event*/)
     _imp->gui->setRenderStatsEnabled(false);
 }
 
+void
+RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, const QString& pluginIDFilter)
+{
+    QModelIndex rootIdx = view->rootIndex();
+    const std::vector<boost::weak_ptr<Natron::Node> >& rows = model->getRows();
+
+    
+    if (useUnixWildcardsCheckbox->isChecked()) {
+        QRegExp nameExpr(nameFilter,Qt::CaseInsensitive,QRegExp::Wildcard);
+        if (!nameExpr.isValid()) {
+            return;
+        }
+        
+        QRegExp idExpr(pluginIDFilter,Qt::CaseInsensitive,QRegExp::Wildcard);
+        if (!idExpr.isValid()) {
+            return;
+        }
+   
+        
+
+        int i = 0;
+        for (std::vector<boost::weak_ptr<Natron::Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
+            boost::shared_ptr<Node> node = it->lock();
+            if (!node) {
+                continue;
+            }
+            
+            if ((nameFilter.isEmpty() || nameExpr.exactMatch(node->getLabel().c_str())) &&
+                (pluginIDFilter.isEmpty() || idExpr.exactMatch(node->getPluginID().c_str()))) {
+                
+                if (view->isRowHidden(i, rootIdx)) {
+                    view->setRowHidden(i, rootIdx, false);
+                }
+            } else {
+                if (!view->isRowHidden(i, rootIdx)) {
+                    view->setRowHidden(i, rootIdx, true);
+                }
+            }
+        }
+    } else {
+        
+        int i = 0;
+
+        for (std::vector<boost::weak_ptr<Natron::Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
+            boost::shared_ptr<Node> node = it->lock();
+            if (!node) {
+                continue;
+            }
+            
+            if ((nameFilter.isEmpty() || QString(node->getLabel().c_str()).contains(nameFilter)) &&
+                (pluginIDFilter.isEmpty() || QString(node->getPluginID().c_str()).contains(pluginIDFilter))) {
+                
+                if (view->isRowHidden(i, rootIdx)) {
+                    view->setRowHidden(i, rootIdx, false);
+                }
+            } else {
+                if (!view->isRowHidden(i, rootIdx)) {
+                    view->setRowHidden(i, rootIdx, true);
+                }
+            }
+        }
+  
+    }
+
+}
+
+void
+RenderStatsDialog::updateVisibleRows()
+{
+    _imp->updateVisibleRowsInternal(_imp->nameFilterEdit->text(), _imp->idFilterEdit->text());
+}
+
+void
+RenderStatsDialog::onNameLineEditChanged(const QString& filter)
+{
+    _imp->updateVisibleRowsInternal(filter, _imp->idFilterEdit->text());
+}
+
+void
+RenderStatsDialog::onIDLineEditChanged(const QString& filter)
+{
+    _imp->updateVisibleRowsInternal(_imp->nameFilterEdit->text(), filter);
+}
