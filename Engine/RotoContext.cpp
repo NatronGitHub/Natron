@@ -5182,6 +5182,8 @@ Bezier::removeKeyframe(double time)
         if (found != _imp->isClockwiseOriented.end()) {
             _imp->isClockwiseOriented.erase(found);
         }
+        
+        copyInternalPointsToGuiPoints();
     }
     
     incrementNodesAge();
