@@ -31,6 +31,7 @@
 
 #include <map>
 #include <list>
+#include <vector>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -218,6 +219,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionROIEnabled "userRoiEnabled"
 #define kShortcutDescActionROIEnabled "Enable User RoI"
+
+#define kShortcutIDActionNewROI "newRoi"
+#define kShortcutDescActionNewROI "New user RoI"
+
 
 #define kShortcutIDActionProxyEnabled "proxyEnabled"
 #define kShortcutDescActionProxyEnabled "Enable Proxy Rendering"
@@ -629,6 +634,7 @@ public:
 
     bool editable;
     QString grouping; //< the grouping of the action, such as CurveEditor/
+    QString actionID; //< the unique ID within the grouping
     QString description; //< the description that will be in the shortcut editor
     Qt::KeyboardModifiers modifiers; //< the keyboard modifiers that must be held down during the action
     Qt::KeyboardModifiers defaultModifiers; //< the default keyboard modifiers
@@ -649,7 +655,10 @@ class ActionWithShortcut
 {
         
     QString _group;
-    QString _actionID;
+    
+protected:
+    
+    std::vector<std::pair<QString,QKeySequence> > _shortcuts;
     
 public:
     
@@ -659,13 +668,17 @@ public:
                        QObject* parent,
                        bool setShortcutOnAction = true);
     
+    ActionWithShortcut(const QString & group,
+                       const QStringList & actionIDs,
+                       const QString & actionDescription,
+                       QObject* parent,
+                       bool setShortcutOnAction = true);
+
+    
     virtual ~ActionWithShortcut();
     
-    virtual void setShortcutWrapper(const QKeySequence& shortcut);
+    virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut);
 
-protected:
-    
-    QKeySequence _shortcut;
     
 };
 
@@ -674,6 +687,7 @@ protected:
  * This will be dynamically changed when the user edits the shortcuts from the editor.
  **/
 #define setTooltipWithShortcut(group,actionID,tooltip,widget) ( widget->addAction(new TooltipActionShortcut(group,actionID,tooltip,widget)) )
+#define setTooltipWithShortcut2(group,actionIDs,tooltip,widget) ( widget->addAction(new TooltipActionShortcut(group,actionIDs,tooltip,widget)) )
 
 class TooltipActionShortcut
 : public ActionWithShortcut
@@ -688,8 +702,21 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
+    /**
+     * @brief Set a dynamic shortcut in the tooltip. Reference it with %1 where you want to place the shortcut.
+     **/
     TooltipActionShortcut(const QString & group,
                           const QString & actionID,
+                          const QString & toolip,
+                          QWidget* parent);
+    
+    /**
+     * @brief Same as above except that the tooltip can contain multiple shortcuts.
+     * In that case the tooltip should reference shortcuts by doing so %1, %2 etc... where
+     * %1 references the first actionID, %2 the second ,etc...
+     **/
+    TooltipActionShortcut(const QString & group,
+                          const QStringList & actionIDs,
                           const QString & toolip,
                           QWidget* parent);
     
@@ -697,7 +724,7 @@ public:
         
     }
     
-    virtual void setShortcutWrapper(const QKeySequence& shortcut) OVERRIDE FINAL;
+    virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut) OVERRIDE FINAL;
     
 private:
     
@@ -731,7 +758,7 @@ public:
     void updateActionsShortcut()
     {
         for (std::list<ActionWithShortcut*>::iterator it = actions.begin(); it != actions.end(); ++it) {
-            (*it)->setShortcutWrapper( makeKeySequence(modifiers, currentShortcut) );
+            (*it)->setShortcutWrapper( actionID, makeKeySequence(modifiers, currentShortcut) );
         }
     }
 };

@@ -1791,6 +1791,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefresh, kShortcutDescActionRefresh, Qt::NoModifier, Qt::Key_U);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRefreshWithStats, kShortcutDescActionRefreshWithStats, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_U);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, kShortcutDescActionROIEnabled, Qt::ShiftModifier, Qt::Key_W);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, kShortcutDescActionNewROI, Qt::AltModifier, Qt::Key_W);
+    
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, kShortcutDescActionProxyEnabled, Qt::ControlModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2);
@@ -1955,6 +1957,7 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     kA->modifiers = modifiers;
     kA->defaultShortcut = symbol;
     kA->currentShortcut = symbol;
+    kA->actionID = id;
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, kA) );
     } else {
@@ -2004,6 +2007,7 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
     mA->grouping = grouping;
     mA->description = description;
     mA->defaultModifiers = modifiers;
+    mA->actionID = id;
     if ( modifiers & (Qt::AltModifier | Qt::MetaModifier) ) {
         qDebug() << "Warning: mouse shortcut " << grouping << '/' << description << '(' << id << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
     }

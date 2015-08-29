@@ -228,10 +228,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     {
         QKeySequence seq(Qt::CTRL + Qt::SHIFT);
-        setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionRefresh, "<p>" + tr("Forces a new render of the current frame.") +
-                               "</p><p>" +
-                               tr("If ") + seq.toString(QKeySequence::NativeText) + tr(" is held, in depth render statistics useful "
-                                                                                       "for debugging will be displayed for this render.") + "</p>", _imp->refreshButton);
+        QStringList refreshActions;
+        refreshActions << kShortcutIDActionRefresh;
+        refreshActions << kShortcutIDActionRefreshWithStats;
+        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.") +
+                               "</p>" + "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p><p>" +
+                               tr("Press ") + "%2" + tr(" to activate in-depth render statistics useful "
+                                                   "for debugging the composition.") + "</p>", _imp->refreshButton);
     }
     _imp->firstRowLayout->addWidget(_imp->refreshButton);
     
@@ -242,7 +245,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                            "<p><b>" + tr("Proxy mode:") + "</b></p><p>" +
                            tr("Activates the downscaling by the amount indicated by the value on the right. "
                               "The rendered images are degraded and as a result of this the whole rendering pipeline "
-                            "is much faster.") + "</p>",_imp->activateRenderScale);
+                            "is much faster.") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>",_imp->activateRenderScale);
 
     _imp->activateRenderScale->setCheckable(true);
     _imp->activateRenderScale->setChecked(false);
@@ -474,20 +478,23 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->firstFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->firstFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst,"<p>" + tr("First frame") + "</p>", _imp->firstFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst,"<p>" + tr("First frame") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->firstFrame_Button);
     _imp->playerLayout->addWidget(_imp->firstFrame_Button);
 
 
     _imp->previousKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF,"<p>" + tr("Previous Keyframe") + "</p>", _imp->previousKeyFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF,"<p>" + tr("Previous Keyframe") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousKeyFrame_Button);
 
 
     _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Backward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward,"<p>" + tr("Play backward") + "</p>", _imp->play_Backward_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward,"<p>" + tr("Play backward") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Backward_Button);
     _imp->play_Backward_Button->setCheckable(true);
     _imp->play_Backward_Button->setDown(false);
     _imp->playerLayout->addWidget(_imp->play_Backward_Button);
@@ -496,7 +503,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious,"<p>" + tr("Previous frame") + "</p>", _imp->previousFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious,"<p>" + tr("Previous frame") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousFrame_Button);
     
     _imp->playerLayout->addWidget(_imp->previousFrame_Button);
 
@@ -504,21 +512,24 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->stop_Button = new Button(_imp->playerButtonsContainer);
     _imp->stop_Button->setFocusPolicy(Qt::NoFocus);
     _imp->stop_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerStop,"<p>" + tr("Stop") + "</p>", _imp->stop_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerStop,"<p>" + tr("Stop") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->stop_Button);
     _imp->playerLayout->addWidget(_imp->stop_Button);
 
 
     _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext,"<p>" + tr("Next frame") + "</p>", _imp->nextFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext,"<p>" + tr("Next frame") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextFrame_Button);
     _imp->playerLayout->addWidget(_imp->nextFrame_Button);
 
 
     _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Forward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerForward,"<p>" + tr("Play forward") + "</p>", _imp->play_Forward_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerForward,"<p>" + tr("Play forward") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Forward_Button);
     _imp->play_Forward_Button->setCheckable(true);
     _imp->play_Forward_Button->setDown(false);
     _imp->playerLayout->addWidget(_imp->play_Forward_Button);
@@ -527,13 +538,15 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF,"<p>" + tr("Next Keyframe") + "</p>", _imp->nextKeyFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF,"<p>" + tr("Next Keyframe") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextKeyFrame_Button);
 
 
     _imp->lastFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->lastFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->lastFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast,"<p>" + tr("Last Frame") + "</p>", _imp->lastFrame_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast,"<p>" + tr("Last Frame") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->lastFrame_Button);
     _imp->playerLayout->addWidget(_imp->lastFrame_Button);
 
 
@@ -547,7 +560,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr,"<p>" + tr("Previous Increment") + "</p>", _imp->previousIncrement_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr,"<p>" + tr("Previous Increment") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousIncrement_Button);
     _imp->playerLayout->addWidget(_imp->previousIncrement_Button);
 
 
@@ -562,7 +576,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr,"<p>" + tr("Next Increment") + "</p>", _imp->nextIncrement_Button);
+    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr,"<p>" + tr("Next Increment") + "</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextIncrement_Button);
     _imp->playerLayout->addWidget(_imp->nextIncrement_Button);
 
     _imp->playbackMode_Button = new Button(_imp->playerButtonsContainer);
@@ -732,15 +747,24 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale->setIcon(icViewerRs);
     
     setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer,"<p>" +
-                           tr("Scales the image so it doesn't exceed the size of the viewer and centers it.") +"</p>", _imp->centerViewerButton);
+                           tr("Scales the image so it doesn't exceed the size of the viewer and centers it.") +"</p>" +
+                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->centerViewerButton);
+   
     setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled,"<p>" +
                            tr("Clips the portion of the image displayed "
                               "on the viewer to the project format. "
                               "When off, everything in the union of all nodes "
-                              "region of definition will be displayed.") +"</p>", _imp->clipToProjectFormatButton);
-    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionROIEnabled,"<p>" +
+                              "region of definition will be displayed.") +"</p>" +
+                              "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->clipToProjectFormatButton);
+    
+    QStringList roiActions;
+    roiActions << kShortcutIDActionROIEnabled;
+    roiActions << kShortcutIDActionNewROI;
+    setTooltipWithShortcut2(kShortcutGroupViewer, roiActions,"<p>" +
                            tr("When active, enables the region of interest that will limit"
-                              " the portion of the viewer that is kept updated.") +"</p>", _imp->enableViewerRoI);
+                              " the portion of the viewer that is kept updated.") +"</p>" +
+                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>" +
+                            "<p>" + tr("Press ") + " %2 " + tr("to activate and drag a new region.") + "</p>", _imp->enableViewerRoI);
 
 
     /*=================================================*/

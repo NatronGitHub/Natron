@@ -279,6 +279,8 @@ public:
     bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
+    
+    void setBuildNewUserRoI(bool b);
 
     virtual bool isUserRegionOfInterestEnabled() const OVERRIDE FINAL;
     virtual RectD getUserRegionOfInterest() const OVERRIDE FINAL;

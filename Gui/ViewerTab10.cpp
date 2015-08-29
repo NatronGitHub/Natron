@@ -84,7 +84,17 @@ void
 ViewerTab::onEnableViewerRoIButtonToggle(bool b)
 {
     _imp->enableViewerRoI->setDown(b);
+    _imp->enableViewerRoI->setChecked(b);
     _imp->viewer->setUserRoIEnabled(b);
+}
+
+void
+ViewerTab::onCreateNewRoIPressed()
+{
+    _imp->enableViewerRoI->setDown(true);
+    _imp->enableViewerRoI->setChecked(true);
+    _imp->viewer->setBuildNewUserRoI(true);
+    _imp->viewer->setUserRoIEnabled(true);
 }
 
 void
@@ -576,7 +586,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         refresh(true);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionROIEnabled, modifiers, key) ) {
         onEnableViewerRoIButtonToggle( !_imp->enableViewerRoI->isDown() );
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, modifiers, key) ) {
+        onCreateNewRoIPressed();
+    }else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
         onRenderScaleButtonClicked(!_imp->renderScaleActive);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key) ) {
         _imp->renderScaleCombo->setCurrentIndex(0);

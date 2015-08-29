@@ -100,7 +100,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , persistentMessageType(0)
 , displayPersistentMessage(false)
 , textRenderer()
-, isUserRoISet(false)
 , lastMousePosition()
 , lastDragStartPos()
 , hasMovedSincePress(false)
@@ -114,6 +113,8 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , lastPickerPos()
 , userRoIEnabled(false) // protected by mutex
 , userRoI() // protected by mutex
+, buildUserRoIOnNextPress(false)
+, draggedUserRoI()
 , zoomCtx() // protected by mutex
 , clipToDisplayWindow(true) // protected by mutex
 , wipeControlsMutex()
@@ -136,6 +137,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , wheelDeltaSeekFrame(0)
 , lastTextureRoi()
 , isUpdatingTexture(false)
+, renderOnPenUp(false)
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;

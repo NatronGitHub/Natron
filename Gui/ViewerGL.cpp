@@ -647,7 +647,17 @@ ViewerGL::drawUserRoI()
         RectD userRoI;
         {
             QMutexLocker l(&_imp->userRoIMutex);
-            userRoI = _imp->userRoI;
+            if (_imp->ms == eMouseStateBuildingUserRoI ||
+                _imp->buildUserRoIOnNextPress) {
+                userRoI = _imp->draggedUserRoI;
+            } else {
+                userRoI = _imp->userRoI;
+            }
+        }
+        
+        if (_imp->buildUserRoIOnNextPress) {
+            glLineStipple(2, 0xAAAA);
+            glEnable(GL_LINE_STIPPLE);
         }
 
         ///base rect
@@ -748,6 +758,10 @@ ViewerGL::drawUserRoI()
         glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
         
         glEnd();
+        
+        if (_imp->buildUserRoIOnNextPress) {
+            glDisable(GL_LINE_STIPPLE);
+        }
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 } // drawUserRoI
 
@@ -1581,7 +1595,19 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
-
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        _imp->buildUserRoIOnNextPress) {
+        _imp->draggedUserRoI.x1 = zoomPos.x();
+        _imp->draggedUserRoI.y1 = zoomPos.y();
+        _imp->draggedUserRoI.x2 = _imp->draggedUserRoI.x1 + 1;
+        _imp->draggedUserRoI.y2 = _imp->draggedUserRoI.y1 + 1;
+        _imp->buildUserRoIOnNextPress = false;
+        _imp->ms = eMouseStateBuildingUserRoI;
+        overlaysCaught = true;
+        mustRedraw = true;
+    }
+    
     if (!overlaysCaught &&
         (buttonDownIsMiddle(e) ||
          ( (e)->buttons() == Qt::RightButton && buttonMetaAlt(e) == Qt::AltModifier )) &&
@@ -1806,8 +1832,12 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         if (_imp->hasMovedSincePress) {
             Q_EMIT selectionRectangleChanged(true);
         }
+    } else if (_imp->ms == eMouseStateBuildingUserRoI) {
+        QMutexLocker k(&_imp->userRoIMutex);
+        _imp->userRoI = _imp->draggedUserRoI;
     }
 
+    
     _imp->hasMovedSincePress = false;
 
 
@@ -1824,6 +1854,11 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
     if (mustRedraw) {
         update();
+    }
+    
+    if (_imp->renderOnPenUp) {
+        _imp->renderOnPenUp = false;
+        getInternalNode()->renderCurrentFrame(false);
     }
 }
 
@@ -2054,7 +2089,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->userRoI.y1 -= dySinceLastMove;
                 l.unlock();
                 if ( displayingImage() ) {
-                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                    _imp->renderOnPenUp = true;
                 }
                 mustRedraw = true;
             }
@@ -2066,7 +2101,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->userRoI.x1 -= dxSinceLastMove;
                 l.unlock();
                 if ( displayingImage() ) {
-                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                    _imp->renderOnPenUp = true;
                 }
                 mustRedraw = true;
             }
@@ -2078,7 +2113,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->userRoI.x2 -= dxSinceLastMove;
                 l.unlock();
                 if ( displayingImage() ) {
-                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                    _imp->renderOnPenUp = true;
                 }
                 mustRedraw = true;
             }
@@ -2090,7 +2125,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->userRoI.y2 -= dySinceLastMove;
                 l.unlock();
                 if ( displayingImage() ) {
-                    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                    _imp->renderOnPenUp = true;
                 }
                 mustRedraw = true;
             }
@@ -2102,7 +2137,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->userRoI.translate(-dxSinceLastMove,-dySinceLastMove);
             }
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                _imp->renderOnPenUp = true;
             }
             mustRedraw = true;
             break;
@@ -2117,7 +2152,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             }
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                _imp->renderOnPenUp = true;
             }
             mustRedraw = true;
             break;
@@ -2132,7 +2167,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             }
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                _imp->renderOnPenUp = true;
             }
             mustRedraw = true;
             break;
@@ -2147,7 +2182,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             }
             l.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                _imp->renderOnPenUp = true;
             }
             mustRedraw = true;
             break;
@@ -2161,7 +2196,20 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             }
             _imp->userRoIMutex.unlock();
             if ( displayingImage() ) {
-                _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+                _imp->renderOnPenUp = true;
+            }
+            mustRedraw = true;
+            break;
+        }
+        case eMouseStateBuildingUserRoI: {
+            if ( (_imp->draggedUserRoI.x2 - dxSinceLastMove) > _imp->draggedUserRoI.x1 ) {
+                _imp->draggedUserRoI.x2 -= dxSinceLastMove;
+            }
+            if ( (_imp->draggedUserRoI.y1 - dySinceLastMove) < _imp->draggedUserRoI.y2 ) {
+                _imp->draggedUserRoI.y1 -= dySinceLastMove;
+            }
+            if ( displayingImage() ) {
+                _imp->renderOnPenUp = true;
             }
             mustRedraw = true;
             break;
@@ -2662,14 +2710,18 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     }
     
     
-    
-    if (!_imp->isUserRoISet) {
-        {
-            QMutexLocker l(&_imp->userRoIMutex);
-            _imp->userRoI = canonicalFormat;
-        }
-        _imp->isUserRoISet = true;
+    {
+        double w3 = canonicalFormat.width() / 3.;
+        double h3 = canonicalFormat.height() / 3.;
+        RectD userRoi;
+        userRoi.x1 = canonicalFormat.x1 + w3;
+        userRoi.x2 = canonicalFormat.x2 - w3;
+        userRoi.y1 = canonicalFormat.y1 + h3;
+        userRoi.y2 = canonicalFormat.y2 - h3;
+        QMutexLocker l(&_imp->userRoIMutex);
+        _imp->userRoI = userRoi;
     }
+    
     if (!loadingProject) {
         update();
     }
@@ -3088,6 +3140,15 @@ ViewerGL::isVisibleInViewport(const RectD& rectangle) const
 }
 
 void
+ViewerGL::setBuildNewUserRoI(bool b)
+{
+    _imp->buildUserRoIOnNextPress = b;
+    
+    QMutexLocker k(&_imp->userRoIMutex);
+    _imp->draggedUserRoI = _imp->userRoI;
+}
+
+void
 ViewerGL::setUserRoIEnabled(bool b)
 {
     // always running in the main thread
@@ -3095,6 +3156,9 @@ ViewerGL::setUserRoIEnabled(bool b)
     {
         QMutexLocker(&_imp->userRoIMutex);
         _imp->userRoIEnabled = b;
+    }
+    if (!b) {
+        _imp->buildUserRoIOnNextPress = false;
     }
     if ( displayingImage() ) {
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);

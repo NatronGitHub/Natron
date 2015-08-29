@@ -33,28 +33,62 @@ ActionWithShortcut::ActionWithShortcut(const QString & group,
                                        bool setShortcutOnAction)
 : QAction(parent)
 , _group(group)
-, _actionID(actionID)
-, _shortcut(getKeybind(group, actionID))
+, _shortcuts()
 {
+    QKeySequence seq = getKeybind(group, actionID);
+    _shortcuts.push_back(std::make_pair(actionID, seq));
     assert ( !group.isEmpty() && !actionID.isEmpty() );
     if (setShortcutOnAction) {
-        setShortcut(_shortcut);
+        setShortcut(seq);
     }
     appPTR->addShortcutAction(group, actionID, this);
     setShortcutContext(Qt::WindowShortcut);
     setText( QObject::tr( actionDescription.toStdString().c_str() ) );
 }
 
+ActionWithShortcut::ActionWithShortcut(const QString & group,
+                                       const QStringList & actionIDs,
+                                       const QString & actionDescription,
+                                       QObject* parent,
+                                       bool setShortcutOnAction)
+: QAction(parent)
+, _group(group)
+, _shortcuts()
+{
+    QKeySequence seq0;
+    for (int i = 0; i < actionIDs.size(); ++i) {
+        QKeySequence seq = getKeybind(group, actionIDs[i]);
+        _shortcuts.push_back(std::make_pair(actionIDs[i], seq));
+        if (i == 0) {
+            seq0 = seq;
+        }
+        appPTR->addShortcutAction(group, actionIDs[i], this);
+    }
+    assert ( !group.isEmpty() && !actionIDs.isEmpty() );
+    if (setShortcutOnAction) {
+        setShortcut(seq0);
+    }
+    
+    setShortcutContext(Qt::WindowShortcut);
+    setText( QObject::tr( actionDescription.toStdString().c_str() ) );
+}
+
 ActionWithShortcut::~ActionWithShortcut()
 {
-    assert ( !_group.isEmpty() && !_actionID.isEmpty() );
-    appPTR->removeShortcutAction(_group, _actionID, this);
+    assert ( !_group.isEmpty() && !_shortcuts.empty() );
+    for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
+        appPTR->removeShortcutAction(_group, _shortcuts[i].first, this);
+    }
 }
 
 void
-ActionWithShortcut::setShortcutWrapper(const QKeySequence& shortcut)
+ActionWithShortcut::setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut)
 {
-    _shortcut = shortcut;
+    for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
+        if (_shortcuts[i].first == actionID) {
+            _shortcuts[i].second = shortcut;
+        }
+    }
     setShortcut(shortcut);
 }
 
@@ -72,15 +106,28 @@ TooltipActionShortcut::TooltipActionShortcut(const QString & group,
     _widget->installEventFilter(this);
 }
 
+TooltipActionShortcut::TooltipActionShortcut(const QString & group,
+                                             const QStringList & actionIDs,
+                                             const QString & toolip,
+                                             QWidget* parent)
+: ActionWithShortcut(group,actionIDs,"",parent, false)
+, _widget(parent)
+, _originalTooltip(toolip)
+, _tooltipSetInternally(false)
+{
+    assert(parent);
+    setTooltipFromOriginalTooltip();
+    _widget->installEventFilter(this);
+}
+
 void
 TooltipActionShortcut::setTooltipFromOriginalTooltip()
 {
     QString finalToolTip = _originalTooltip;
-    finalToolTip += "<p><b>";
-    finalToolTip += QObject::tr("Keyboard shortcut: ");
-    finalToolTip += _shortcut.toString(QKeySequence::NativeText);
-    finalToolTip += "</b></p>";
-    
+    for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
+        finalToolTip = finalToolTip.arg(_shortcuts[i].second.toString(QKeySequence::NativeText));
+    }
+
     _tooltipSetInternally = true;
     _widget->setToolTip(finalToolTip);
     _tooltipSetInternally = false;
@@ -103,8 +150,12 @@ TooltipActionShortcut::eventFilter(QObject* watched, QEvent* event)
 }
 
 void
-TooltipActionShortcut::setShortcutWrapper(const QKeySequence& shortcut)
+TooltipActionShortcut::setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut)
 {
-    _shortcut = shortcut;
+    for (std::size_t i = 0; i < _shortcuts.size(); ++i) {
+        if (_shortcuts[i].first == actionID) {
+            _shortcuts[i].second = shortcut;
+        }
+    }
     setTooltipFromOriginalTooltip();
 }

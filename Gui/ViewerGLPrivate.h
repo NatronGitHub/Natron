@@ -64,6 +64,7 @@ enum MouseStateEnum
     eMouseStateDraggingRoiBottomRight,
     eMouseStateDraggingRoiBottomLeft,
     eMouseStateDraggingRoiCross,
+    eMouseStateBuildingUserRoI,
     eMouseStatePickingColor,
     eMouseStateBuildingPickerRectangle,
     eMouseStateDraggingWipeCenter,
@@ -138,7 +139,8 @@ struct ViewerGL::Implementation
     int persistentMessageType;
     bool displayPersistentMessage;
     Natron::TextRenderer textRenderer;
-    bool isUserRoISet;
+    
+    
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
@@ -165,6 +167,9 @@ struct ViewerGL::Implementation
     QMutex userRoIMutex;
     bool userRoIEnabled;
     RectD userRoI; //< in canonical coords
+    bool buildUserRoIOnNextPress;
+    RectD draggedUserRoI;
+    
     ZoomContext zoomCtx; /*!< All zoom related variables are packed into this object. */
     mutable QMutex zoomCtxMutex; /// protectx zoomCtx*
     QMutex clipToDisplayWindowMutex;
@@ -195,6 +200,8 @@ struct ViewerGL::Implementation
     
     RectD lastTextureRoi;
     bool isUpdatingTexture;
+    
+    bool renderOnPenUp;
 
 public:
 

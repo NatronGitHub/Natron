@@ -317,6 +317,8 @@ public Q_SLOTS:
     void showView(int view);
 
     void onEnableViewerRoIButtonToggle(bool);
+    
+    void onCreateNewRoIPressed();
 
     void onAutoContrastChanged(bool b);
 
