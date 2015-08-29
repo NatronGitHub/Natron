@@ -849,12 +849,18 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->autoContrast = _imp->viewerParamsAutoContrast;
         outArgs->channels = _imp->viewerParamsChannels[textureIndex];
     }
+    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
+
     /*computing the RoI*/
     
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
-    RectI roi = outArgs->autoContrast ? _imp->uiContext->getExactImageRectangleDisplayed(rod, par, originalMipMapLevel) :
-    _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, originalMipMapLevel);
+    RectI roi;
+    if (outArgs->autoContrast || outArgs->userRoIEnabled) {
+        roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, par, originalMipMapLevel);
+    } else {
+        roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, originalMipMapLevel);
+    }
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
         Q_EMIT disconnectTextureRequest(textureIndex);
@@ -915,7 +921,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         }
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
-    outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
     
     //When in draft mode first try to get a texture without draft and then try with draft
     int lookups = outArgs->draftModeEnabled ? 2 : 1;
