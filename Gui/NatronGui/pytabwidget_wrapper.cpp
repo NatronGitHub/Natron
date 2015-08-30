@@ -718,7 +718,6 @@ static PyObject* PyTabWidget_PTR_CppToPython_PyTabWidget(const void* cppIn) {
     return Shiboken::Object::newObject(&Sbk_PyTabWidget_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
-static
 void init_PyTabWidget(PyObject* module)
 {
     SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyTabWidget_Type);

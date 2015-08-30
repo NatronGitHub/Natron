@@ -1532,8 +1532,6 @@ static int Sbk_PyModalDialog_clear(PyObject* self)
     return reinterpret_cast<PyTypeObject*>(&SbkObject_Type)->tp_clear(self);
 }
 static int mi_offsets[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-
-static
 int*
 Sbk_PyModalDialog_mi_init(const void* cptr)
 {
@@ -1665,7 +1663,6 @@ static PyObject* PyModalDialog_PTR_CppToPython_PyModalDialog(const void* cppIn) 
 
 }
 
-static
 void init_PyModalDialog(PyObject* module)
 {
     SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyModalDialog_Type);

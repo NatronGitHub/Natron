@@ -1003,7 +1003,6 @@ static PyObject* PyViewer_PTR_CppToPython_PyViewer(const void* cppIn) {
     return Shiboken::Object::newObject(&Sbk_PyViewer_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
-static
 void init_PyViewer(PyObject* module)
 {
     SbkNatronGuiTypes[SBK_PYVIEWER_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyViewer_Type);
