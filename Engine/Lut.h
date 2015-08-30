@@ -16,32 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/*
- *
- * High-speed conversion between 8 bit and floating point image data.
- *
- * Copyright 2002 Bill Spitzak and Digital Domain, Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
- * USA.
- *
- * For use in closed-source software please contact Digital Domain,
- * 300 Rose Avenue, Venice, CA 90291 310-314-2800
- *
- */
-
 ///
 ///// This namespace is kept is synch with what can be found in openfx-io repository. It is used here in Natron for the viewer essentially.
 ///
@@ -267,10 +241,10 @@ public:
      * \a alpha is a pointer to an extra alpha planar buffer if you want to premultiply by alpha the from channel.
      * The input and output buffers must not overlap in memory.
      **/
-    void to_byte_planar(unsigned char* to, const float* from,int W,const float* alpha = NULL,
-                        int inDelta = 1, int outDelta = 1) const;
-    void to_short_planar(unsigned short* to, const float* from,int W,const float* alpha = NULL,
-                         int inDelta = 1, int outDelta = 1) const;
+    //void to_byte_planar(unsigned char* to, const float* from,int W,const float* alpha = NULL,
+    //                    int inDelta = 1, int outDelta = 1) const;
+    //void to_short_planar(unsigned short* to, const float* from,int W,const float* alpha = NULL,
+    //                     int inDelta = 1, int outDelta = 1) const;
     void to_float_planar(float* to, const float* from,int W,const float* alpha = NULL,
                          int inDelta = 1, int outDelta = 1) const;
 
@@ -302,10 +276,10 @@ public:
      **/
     void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
                         const RectI & srcRoD,const RectI & dstRoD,
-                        PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
-    void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
-                         const RectI & srcRoD,const RectI & dstRoD,
-                         PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
+                        PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const; // used by QtWriter
+    //void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
+    //                     const RectI & srcRoD,const RectI & dstRoD,
+    //                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
     void to_float_packed(float* to, const float* from,const RectI & conversionRect,
                          const RectI & srcRoD,const RectI & dstRoD,
                          PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
@@ -393,9 +367,9 @@ namespace Linear {
  * \a alpha is a pointer to an extra alpha planar buffer if you want to premultiply by alpha the from channel.
  * The input and output buffers must not overlap in memory.
  **/
-void to_byte_planar(unsigned char* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
-void to_short_planar(unsigned short* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
-void to_float_planar(float* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
+//void to_byte_planar(unsigned char* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
+//void to_short_planar(unsigned short* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
+//void to_float_planar(float* to, const float* from,int W,const float* alpha = NULL,int inDelta = 1, int outDelta = 1);
 
 
 /**
@@ -421,12 +395,12 @@ void to_float_planar(float* to, const float* from,int W,const float* alpha = NUL
    should be converted with the scan-line (srcRoD.y2 - y - 1) of the
    input buffer.
  **/
-void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
-                    const RectI & srcRoD,const RectI & dstRoD,
-                    PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
-void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
-                     const RectI & srcRoD,const RectI & dstRoD,
-                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
+//void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
+//                    const RectI & srcRoD,const RectI & dstRoD,
+//                    PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
+//void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
+//                     const RectI & srcRoD,const RectI & dstRoD,
+//                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
 void to_float_packed(float* to, const float* from,const RectI & conversionRect,
                      const RectI & srcRoD,const RectI & dstRoD,
                      PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);

@@ -30,6 +30,20 @@
 
 #include "Engine/RectI.h"
 
+/*
+ * The to_byte* and from_byte* functions implement and generalize the algorithm
+ * described in:
+ *
+ * http://dx.doi.org/10.1145/1242073.1242206 Spitzak, B. (2002, July). High-speed conversion of floating point images to 8-bit. In ACM SIGGRAPH 2002 conference abstracts and applications (pp. 193-193). ACM.
+ * https://spitzak.github.io/conversion/sketches_0265.pdf
+ *
+ * Related patents:
+ * http://www.google.com/patents/US5528741 "Method and apparatus for converting floating-point pixel values to byte pixel values by table lookup" (Caduc)
+ * http://www.google.com/patents/US20040100475 http://www.google.com/patents/US6999098 "Apparatus for converting floating point values to gamma corrected fixed point values "
+ * https://www.google.fr/patents/US7456845 https://www.google.fr/patents/US7405736 "Efficient perceptual/physical color space conversion "
+ */
+
+
 namespace Natron {
 namespace Color {
 // compile-time endianness checking found on:
@@ -150,21 +164,23 @@ LutManager::~LutManager()
     }
 }
 
-bool
+static bool
 clip(RectI* what,
      const RectI & to)
 {
     return what->intersect(to, what);
 }
 
-bool
+#ifdef DEAD_CODE
+static bool
 intersects(const RectI & what,
            const RectI & other)
 {
     return what.intersects(other);
 }
+#endif // DEAD_CODE
 
-void
+static void
 getOffsetsForPacking(PixelPackingEnum format,
                      int *r,
                      int *g,
@@ -213,7 +229,7 @@ Lut::fromColorSpaceUint8ToLinearFloatFast(unsigned char v) const
     return fromFunc_uint8_to_float[v];
 }
 
-#if 0
+#ifdef DEAD_CODE
 // It is not recommended to use this function, because the output is quantized
 // If one really needs float, one has to use the full function (or OpenColorIO)
 float
@@ -223,8 +239,7 @@ Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
 
     return Color::intToFloat<0xff01>(toFunc_hipart_to_uint8xx[hipart(v)]);
 }
-
-#endif
+#endif // DEAD_CODE
 
 unsigned char
 Lut::toColorSpaceUint8FromLinearFloatFast(float v) const
@@ -325,6 +340,7 @@ Lut::fillTables() const
     }
 }
 
+#ifdef DEAD_CODE
 void
 Lut::to_byte_planar(unsigned char* to,
                     const float* from,
@@ -375,7 +391,9 @@ Lut::to_byte_planar(unsigned char* to,
         }
     }
 }
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
 void
 Lut::to_short_planar(unsigned short* /*to*/,
                      const float* /*from*/,
@@ -386,6 +404,7 @@ Lut::to_short_planar(unsigned short* /*to*/,
 {
     throw std::runtime_error("Lut::to_short_planar not implemented yet.");
 }
+#endif // DEAD_CODE
 
 void
 Lut::to_float_planar(float* to,
@@ -466,6 +485,7 @@ Lut::to_byte_packed(unsigned char* to,
             dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
             dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
             if (outputHasAlpha) {
+                // alpha is linear and should not be dithered
                 dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
             }
         }
@@ -483,12 +503,14 @@ Lut::to_byte_packed(unsigned char* to,
             dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
             dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
             if (outputHasAlpha) {
+                // alpha is linear and should not be dithered
                 dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
             }
         }
     }
 } // to_byte_packed
 
+#ifdef DEAD_CODE
 void
 Lut::to_short_packed(unsigned short* /*to*/,
                      const float* /*from*/,
@@ -502,6 +524,7 @@ Lut::to_short_packed(unsigned short* /*to*/,
 {
     throw std::runtime_error("Lut::to_short_packed not implemented yet.");
 }
+#endif // DEAD_CODE
 
 void
 Lut::to_float_packed(float* to,
@@ -552,6 +575,7 @@ Lut::to_float_packed(float* to,
             dst_pixels[outCol + outGOffset] = toColorSpaceFloatFromLinearFloat(src_pixels[inCol + inGOffset] * a);
             dst_pixels[outCol + outBOffset] = toColorSpaceFloatFromLinearFloat(src_pixels[inCol + inBOffset] * a);
             if (outputHasAlpha) {
+                // alpha is linear and should not be dithered
                 dst_pixels[outCol + outAOffset] = a;
             }
         }
@@ -668,6 +692,7 @@ Lut::from_byte_packed(float* to,
                 dst_pixels[outCol + outGOffset] = fromColorSpaceUint8ToLinearFloatFast( Color::floatToInt<256>(gf) ) * a;
                 dst_pixels[outCol + outBOffset] = fromColorSpaceUint8ToLinearFloatFast( Color::floatToInt<256>(bf) ) * a;
                 if (outputHasAlpha) {
+                    // alpha is linear
                     dst_pixels[outCol + outAOffset] = a;
                 }
             } else {
@@ -680,6 +705,7 @@ Lut::from_byte_packed(float* to,
                 dst_pixels[outCol + outGOffset] = fromFunc_uint8_to_float[g8];
                 dst_pixels[outCol + outBOffset] = fromFunc_uint8_to_float[b8];
                 if (outputHasAlpha) {
+                    // alpha is linear
                     float a = Color::intToFloat<256>(src_pixels[inCol + inAOffset]);
                     dst_pixels[outCol + outAOffset] = a;
                 }
@@ -758,6 +784,7 @@ Lut::from_float_packed(float* to,
             dst_pixels[outCol + outGOffset] = fromColorSpaceFloatToLinearFloat(gf) * a;
             dst_pixels[outCol + outBOffset] = fromColorSpaceFloatToLinearFloat(bf) * a;
             if (outputHasAlpha) {
+                // alpha is linear
                 dst_pixels[outCol + outAOffset] = a;
             }
         }
@@ -862,6 +889,7 @@ from_byte_packed(float *to,
             dst_pixels[outCol + outGOffset] = Color::intToFloat<256>(src_pixels[inCol + inGOffset]);
             dst_pixels[outCol + outBOffset] = Color::intToFloat<256>(src_pixels[inCol + inBOffset]);
             if (outputHasAlpha) {
+                // alpha is linear
                 dst_pixels[outCol + outAOffset] = Color::intToFloat<256>(a);
             }
         }
@@ -936,6 +964,7 @@ from_float_packed(float *to,
                 dst_pixels[outCol + outGOffset] = src_pixels[inCol + inGOffset];
                 dst_pixels[outCol + outBOffset] = src_pixels[inCol + inBOffset];
                 if (outputHasAlpha) {
+                    // alpha is linear
                     dst_pixels[outCol + outAOffset] = a;
                 }
             }
@@ -943,6 +972,7 @@ from_float_packed(float *to,
     }
 } // from_float_packed
 
+#if 0
 void
 to_byte_planar(unsigned char *to,
                const float *from,
@@ -1028,7 +1058,9 @@ to_byte_planar(unsigned char *to,
         }
     }
 } // to_byte_planar
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
 void
 to_short_planar(unsigned short *to,
                 const float *from,
@@ -1045,7 +1077,9 @@ to_short_planar(unsigned short *to,
     Q_UNUSED(outDelta);
     throw std::runtime_error("Linear::to_short_planar not yet implemented.");
 }
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
 void
 to_float_planar(float *to,
                 const float *from,
@@ -1068,7 +1102,9 @@ to_float_planar(float *to,
         }
     }
 }
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
 void
 to_byte_packed(unsigned char* to,
                const float* from,
@@ -1149,7 +1185,9 @@ to_byte_packed(unsigned char* to,
         }
     }
 } // to_byte_packed
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
 void
 to_short_packed(unsigned short* to,
                 const float* from,
@@ -1172,6 +1210,7 @@ to_short_packed(unsigned short* to,
     Q_UNUSED(outputPacking);
     throw std::runtime_error("Linear::to_short_packed not yet implemented.");
 }
+#endif // DEAD_CODE
 
 void
 to_float_packed(float* to,
@@ -1241,6 +1280,7 @@ LutManager::sRGBLut()
     return LutManager::m_instance.getLut("sRGB",from_func_srgb,to_func_srgb);
 }
 
+static
 float
 from_func_Rec709(float v)
 {
@@ -1251,6 +1291,7 @@ from_func_Rec709(float v)
     }
 }
 
+static
 float
 to_func_Rec709(float v)
 {
@@ -1277,12 +1318,14 @@ LutManager::Rec709Lut()
    whitepoint = 685.0
    gammasensito = 0.6
  */
+static
 float
 from_func_Cineon(float v)
 {
     return ( 1.f / ( 1.f - std::pow(10.f,1.97f) ) ) * std::pow(10.f,( (1023.f * v) - 685.f ) * 0.002f / 0.6f);
 }
 
+static
 float
 to_func_Cineon(float v)
 {
@@ -1297,12 +1340,14 @@ LutManager::CineonLut()
     return LutManager::m_instance.getLut("Cineon",from_func_Cineon,to_func_Cineon);
 }
 
+static
 float
 from_func_Gamma1_8(float v)
 {
     return std::pow(v, 0.55f);
 }
 
+static
 float
 to_func_Gamma1_8(float v)
 {
@@ -1315,12 +1360,14 @@ LutManager::Gamma1_8Lut()
     return LutManager::m_instance.getLut("Gamma1_8",from_func_Gamma1_8,to_func_Gamma1_8);
 }
 
+static
 float
 from_func_Gamma2_2(float v)
 {
     return std::pow(v, 0.45f);
 }
 
+static
 float
 to_func_Gamma2_2(float v)
 {
@@ -1333,12 +1380,14 @@ LutManager::Gamma2_2Lut()
     return LutManager::m_instance.getLut("Gamma2_2",from_func_Gamma2_2,to_func_Gamma2_2);
 }
 
+static
 float
 from_func_Panalog(float v)
 {
     return (std::pow(10.f,(1023.f * v - 681.f) / 444.f) - 0.0408) / 0.96f;
 }
 
+static
 float
 to_func_Panalog(float v)
 {
@@ -1351,12 +1400,14 @@ LutManager::PanaLogLut()
     return LutManager::m_instance.getLut("PanaLog",from_func_Panalog,to_func_Panalog);
 }
 
+static
 float
 from_func_ViperLog(float v)
 {
     return std::pow(10.f,(1023.f * v - 1023.f) / 500.f);
 }
 
+static
 float
 to_func_ViperLog(float v)
 {
@@ -1369,12 +1420,14 @@ LutManager::ViperLogLut()
     return LutManager::m_instance.getLut("ViperLog",from_func_ViperLog,to_func_ViperLog);
 }
 
+static
 float
 from_func_RedLog(float v)
 {
     return (std::pow(10.f,( 1023.f * v - 1023.f ) / 511.f) - 0.01f) / 0.99f;
 }
 
+static
 float
 to_func_RedLog(float v)
 {
@@ -1387,6 +1440,7 @@ LutManager::RedLogLut()
     return LutManager::m_instance.getLut("RedLog",from_func_RedLog,to_func_RedLog);
 }
 
+static
 float
 from_func_AlexaV3LogC(float v)
 {
@@ -1394,6 +1448,7 @@ from_func_AlexaV3LogC(float v)
            : ( v / 0.9661776f - 0.04378604) * 0.18f - 0.00937677f;
 }
 
+static
 float
 to_func_AlexaV3LogC(float v)
 {
