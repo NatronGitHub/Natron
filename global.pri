@@ -174,6 +174,10 @@ win32-g++ {
 	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
 	python:    PKGCONFIG += python-2.7
 	boost:     LIBS += -lboost_serialization-mt
+	boost:     LIBS += -lboost_serialization-mt
+	
+	#See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
+	Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj 
 }
 
 unix {
