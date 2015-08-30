@@ -79,6 +79,7 @@ getParamLabel(OFX::Host::Param::Instance* param)
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
 /// in a generalized manner
 namespace OfxKeyFrame {
+static
 OfxStatus
 getNumKeys(KnobI* knob,
            unsigned int &nKeys)
@@ -106,6 +107,7 @@ getNumKeys(KnobI* knob,
     return kOfxStatOK;
 }
 
+static
 OfxStatus
 getKeyTime(boost::shared_ptr<KnobI> knob,
            int nth,
@@ -142,6 +144,7 @@ getKeyTime(boost::shared_ptr<KnobI> knob,
     return kOfxStatErrBadIndex;
 }
 
+static
 OfxStatus
 getKeyIndex(boost::shared_ptr<KnobI> knob,
             OfxTime time,
@@ -188,6 +191,7 @@ getKeyIndex(boost::shared_ptr<KnobI> knob,
     return kOfxStatFailed;
 }
 
+static
 OfxStatus
 deleteKey(boost::shared_ptr<KnobI> knob,
           OfxTime time)
@@ -199,6 +203,7 @@ deleteKey(boost::shared_ptr<KnobI> knob,
     return kOfxStatOK;
 }
 
+static
 OfxStatus
 deleteAllKeys(boost::shared_ptr<KnobI> knob)
 {
@@ -210,6 +215,7 @@ deleteAllKeys(boost::shared_ptr<KnobI> knob)
 }
 
 // copy one parameter to another, with a range (NULL means to copy all animation)
+static
 OfxStatus
 copyFrom(const boost::shared_ptr<KnobI> & from,
          const boost::shared_ptr<KnobI> &to,

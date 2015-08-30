@@ -24,6 +24,7 @@
 #include <Foundation/NSURL.h>
 
 
+static
 QString fromNSString(const NSString *string)
 {
     if (!string)
@@ -34,16 +35,19 @@ QString fromNSString(const NSString *string)
     return qstring;
 }
 
+static
 NSString *toNSString(const QString &str)
 {
     return [NSString stringWithCharacters: reinterpret_cast<const UniChar*>(str.unicode()) length: str.length()];
 }
 
+static
 QUrl fromNSURL(const NSURL *url)
 {
     return QUrl(fromNSString([url absoluteString]));
 }
 
+static
 NSURL *toNSURL(const QUrl &url)
 {
     return [NSURL URLWithString:toNSString(url.toEncoded())];

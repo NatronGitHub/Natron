@@ -17,6 +17,8 @@ GCC_DIAG_OFF(missing-field-initializers)
 PyTypeObject** SbkNatronGuiTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronGuiTypeConverters;
+
+static
 void cleanGuiTypesAttributes(void) {
     for (int i = 0, imax = SBK_NatronGui_IDX_COUNT; i < imax; i++) {
         PyObject *pyType = reinterpret_cast<PyObject*>(SbkNatronGuiTypes[i]);
@@ -453,6 +455,7 @@ static struct PyModuleDef moduledef = {
 };
 
 #endif
+
 SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     {
         Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("PySide.QtGui"));

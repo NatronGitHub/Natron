@@ -578,6 +578,7 @@ static PyObject* PyGuiApplication_PTR_CppToPython_PyGuiApplication(const void* c
     return Shiboken::Object::newObject(&Sbk_PyGuiApplication_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
+static
 void init_PyGuiApplication(PyObject* module)
 {
     SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyGuiApplication_Type);

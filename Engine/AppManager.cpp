@@ -225,6 +225,7 @@ struct AppManagerPrivate
 };
 
 #ifdef DEBUG
+static
 void crash_application()
 {
 #ifdef __NATRON_UNIX__

@@ -711,6 +711,7 @@ static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
 
 
 
+static
 Point bezier(const Point& a, const Point& b, const Point& c, const Point& d, double t)
 {
     double onemt = 1. - t;
@@ -721,6 +722,7 @@ Point bezier(const Point& a, const Point& b, const Point& c, const Point& d, dou
     return ret;
 }
 
+static
 Point bezierP(const Point& a, const Point& b, const Point& c, const Point& d, double t)
 {
     Point ret;
@@ -729,6 +731,8 @@ Point bezierP(const Point& a, const Point& b, const Point& c, const Point& d, do
     return ret;
 }
 
+#ifdef DEAD_CODE
+static
 Point bezierPP(const Point& a, const Point& b, const Point& c, const Point& d, double t)
 {
     Point ret;
@@ -736,7 +740,10 @@ Point bezierPP(const Point& a, const Point& b, const Point& c, const Point& d, d
     ret.y = 6.0 * (t * (d.y - a.y + 3.0 * (b.y - c.y)) + a.y + c.y - 2.0 * b.y);
     return ret;
 }
+#endif // DEAD_CODE
 
+#ifdef DEAD_CODE
+static
 Point bezierPPP(const Point& a, const Point& b, const Point& c, const Point& d)
 {
     Point ret;
@@ -744,21 +751,27 @@ Point bezierPPP(const Point& a, const Point& b, const Point& c, const Point& d)
     ret.y =  6.0 * (d.y - a.y + 3.0 * (b.y - c.y));
     return ret;
 }
+#endif // DEAD_CODE
 
+static
 Point BuP(const Point P[4][4], int j, double u) {
     return bezierP(P[0][j],P[1][j],P[2][j],P[3][j],u);
 }
 
+static
 Point BvP(const Point P[4][4], int i, double v) {
     return bezierP(P[i][0],P[i][1],P[i][2],P[i][3],v);
 }
 
-double normal(const Point P[4][4], double u, double v) {
+static
+double normal(const Point P[4][4], double u, double v)
+{
     Point a = bezier(BuP(P,0,u),BuP(P,1,u),BuP(P,2,u),BuP(P,3,u),v);
     Point b = bezier(BvP(P,0,v),BvP(P,1,v),BvP(P,2,v),BvP(P,3,v),u);
     return a.x * b.y - a.y * b.x;
 }
 
+static
 Point findPointInside(const BezierCPs& cps, int time)
 {
     /*
@@ -1102,13 +1115,15 @@ static bool insidebbox(const Point& a, const Point& b, const Point& c, const Poi
 
 
 
-inline static bool inrange(double x0, double x1, double x)
+inline static
+bool inrange(double x0, double x1, double x)
 {
     return (x0 <= x && x <= x1) || (x1 <= x && x <= x0);
 }
 
 // Return true if point z is on z0--z1; otherwise compute contribution to
 // winding number.
+static
 bool checkstraight(const Point& z0, const Point& z1, const Point& z, int* count)
 {
     if (z0.y <= z.y && z.y <= z1.y) {
@@ -1133,7 +1148,8 @@ bool checkstraight(const Point& z0, const Point& z1, const Point& z, int* count)
 
 // returns true if point is on curve; otherwise compute contribution to
 // winding number.
-static bool checkCurve(const Point& z0, const Point& c0, const Point& z1, const Point& c1, const Point& z, int* count, unsigned int depth)
+static
+bool checkCurve(const Point& z0, const Point& c0, const Point& z1, const Point& c1, const Point& z, int* count, unsigned int depth)
 {
     if (!depth) {
         return true;

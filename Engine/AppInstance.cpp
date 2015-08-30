@@ -167,6 +167,7 @@ AppInstance::checkForNewVersion() const
 
 //return -1 if a < b, 0 if a == b and 1 if a > b
 //Returns -2 if not understood
+static
 int compareDevStatus(const QString& a,const QString& b)
 {
     if (a == NATRON_DEVELOPMENT_ALPHA) {

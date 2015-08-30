@@ -1872,6 +1872,7 @@ getItemCopyName(RotoPanel* roto,
     return name;
 }
 
+static
 void
 setItemCopyNameRecursive(RotoPanel* panel,
                          const boost::shared_ptr<RotoItem>& item)

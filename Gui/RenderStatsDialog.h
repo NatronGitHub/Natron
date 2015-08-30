@@ -39,9 +39,10 @@ class QItemSelection;
 struct RenderStatsDialogPrivate;
 class RenderStatsDialog : public QWidget
 {
-    
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     
     RenderStatsDialog(Gui* gui);

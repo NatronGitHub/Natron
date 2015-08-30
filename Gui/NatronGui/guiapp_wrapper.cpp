@@ -978,6 +978,7 @@ static PyObject* GuiApp_PTR_CppToPython_GuiApp(const void* cppIn) {
     return Shiboken::Object::newObject(&Sbk_GuiApp_Type, const_cast<void*>(cppIn), false, false, typeName);
 }
 
+static
 void init_GuiApp(PyObject* module)
 {
     SbkNatronGuiTypes[SBK_GUIAPP_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_GuiApp_Type);

@@ -1852,6 +1852,8 @@ static int Sbk_PyPanel_clear(PyObject* self)
     return reinterpret_cast<PyTypeObject*>(&SbkObject_Type)->tp_clear(self);
 }
 static int mi_offsets[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+static
 int*
 Sbk_PyPanel_mi_init(const void* cptr)
 {
