@@ -67,6 +67,8 @@ unix:!mac {
     DEFINES += N_UNDF=0
 }
 
+win32:Debug: DEFINES *= _DEBUG 
+
 SOURCES += \
     CrashDialog.cpp \
     main.cpp
