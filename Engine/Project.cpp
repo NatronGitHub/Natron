@@ -296,14 +296,14 @@ Project::loadProjectInternal(const QString & path,
         throw std::runtime_error( e.what() );
     } catch (const std::ios_base::failure& e) {
         ifile.close();
-        getApp()->endProgress(this);
+        getApp()->progressEnd(this);
         throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
         ifile.close();
         throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
     } catch (...) {
         ifile.close();
-        getApp()->endProgress(this);
+        getApp()->progressEnd(this);
         throw std::runtime_error("Failed to read the project file");
     }
 

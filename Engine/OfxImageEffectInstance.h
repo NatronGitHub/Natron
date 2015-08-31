@@ -229,7 +229,7 @@ public:
     // overridden for Progress::ProgressI
 
     /// Start doing progress.
-    virtual void progressStart(const std::string &message) OVERRIDE FINAL;
+    virtual void progressStart(const std::string &message, const std::string &messageid) OVERRIDE FINAL;
 
     /// finish yer progress
     virtual void progressEnd() OVERRIDE FINAL;

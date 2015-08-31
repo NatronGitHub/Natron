@@ -173,8 +173,9 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 }
 
 void
-Gui::startProgress(KnobHolder* effect,
-                   const std::string & message,
+Gui::progressStart(KnobHolder* effect,
+                   const std::string &message,
+                   const std::string &messageid,
                    bool canCancel)
 {
     if (!effect) {
@@ -211,7 +212,7 @@ Gui::startProgress(KnobHolder* effect,
 }
 
 void
-Gui::endProgress(KnobHolder* effect)
+Gui::progressEnd(KnobHolder* effect)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
         qDebug() << "Progress bars called from a thread different than the main-thread is not supported at the moment.";
@@ -243,7 +244,7 @@ Gui::progressUpdate(KnobHolder* effect,
     if ( found == _imp->_progressBars.end() ) {
         NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
         if (isNamed) {
-            qDebug() << isNamed->getScriptName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+            qDebug() << isNamed->getScriptName_mt_safe().c_str() <<  " called progressUpdate but didn't called progressStart first.";
         }
     } else {
         if ( found->second->wasCanceled() ) {

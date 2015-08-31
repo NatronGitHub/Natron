@@ -161,8 +161,8 @@ Natron::OfxHost::setProperties()
 
     _properties.setStringProperty( kOfxPropName,appPTR->getCurrentSettings()->getHostName() );
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
-    _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.3
-    _properties.setIntProperty(kOfxPropAPIVersion, 3, 1);
+    _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.4
+    _properties.setIntProperty(kOfxPropAPIVersion, 4, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR, 0);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MINOR, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_REVISION, 2);

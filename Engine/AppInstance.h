@@ -294,14 +294,18 @@ public:
     
     virtual bool isGuiFrozen() const { return false; }
 
-    virtual void startProgress(KnobHolder* /*effect*/,
-                               const std::string & /*message*/,
-                              bool canCancel = true)
+    virtual void progressStart(KnobHolder* effect,
+                               const std::string &message,
+                               const std::string &messageid,
+                               bool canCancel = true)
     {
+        Q_UNUSED(effect);
+        Q_UNUSED(message);
+        Q_UNUSED(messageid);
         Q_UNUSED(canCancel);
     }
 
-    virtual void endProgress(KnobHolder* /*effect*/)
+    virtual void progressEnd(KnobHolder* /*effect*/)
     {
     }
 

@@ -1983,7 +1983,7 @@ TrackerPanel::onTrackingStarted()
     ///freeze the tracker node
     setKnobsFrozen(true);
     if (getGui()) {
-        getGui()->startProgress(getMainInstance()->getLiveInstance(), tr("Tracking...").toStdString());
+        getGui()->progressStart(getMainInstance()->getLiveInstance(), tr("Tracking...").toStdString(), "");
     }
 
 }
@@ -1994,7 +1994,7 @@ TrackerPanel::onTrackingFinished()
     setKnobsFrozen(false);
     Q_EMIT trackingEnded();
     if (getGui()) {
-        getGui()->endProgress(getMainInstance()->getLiveInstance());
+        getGui()->progressEnd(getMainInstance()->getLiveInstance());
     }
 }
 

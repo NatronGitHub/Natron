@@ -804,8 +804,9 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::startProgress(KnobHolder* effect,
-                              const std::string & message,
+GuiAppInstance::progressStart(KnobHolder* effect,
+                              const std::string &message,
+                              const std::string &messageid,
                               bool canCancel)
 {
     {
@@ -813,13 +814,13 @@ GuiAppInstance::startProgress(KnobHolder* effect,
         _imp->_showingDialog = true;
     }
 
-    _imp->_gui->startProgress(effect, message, canCancel);
+    _imp->_gui->progressStart(effect, message, messageid, canCancel);
 }
 
 void
-GuiAppInstance::endProgress(KnobHolder* effect)
+GuiAppInstance::progressEnd(KnobHolder* effect)
 {
-    _imp->_gui->endProgress(effect);
+    _imp->_gui->progressEnd(effect);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;

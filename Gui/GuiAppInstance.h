@@ -136,8 +136,8 @@ public:
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
 
     virtual bool isShowingDialog() const OVERRIDE FINAL;
-    virtual void startProgress(KnobHolder* effect,const std::string & message,bool canCancel = true) OVERRIDE FINAL;
-    virtual void endProgress(KnobHolder* effect) OVERRIDE FINAL;
+    virtual void progressStart(KnobHolder* effect, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
+    virtual void progressEnd(KnobHolder* effect) OVERRIDE FINAL;
     virtual bool progressUpdate(KnobHolder* effect,double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;

@@ -738,16 +738,16 @@ OfxImageEffectInstance::editEnd()
 
 /// Start doing progress.
 void
-OfxImageEffectInstance::progressStart(const std::string & message)
+OfxImageEffectInstance::progressStart(const std::string & message, const std::string &messageid)
 {
-    _ofxEffectInstance->getApp()->startProgress(_ofxEffectInstance, message);
+    _ofxEffectInstance->getApp()->progressStart(_ofxEffectInstance, message, messageid);
 }
 
 /// finish yer progress
 void
 OfxImageEffectInstance::progressEnd()
 {
-    _ofxEffectInstance->getApp()->endProgress(_ofxEffectInstance);
+    _ofxEffectInstance->getApp()->progressEnd(_ofxEffectInstance);
 }
 
 /** @brief Indicate how much of the processing task has been completed and reports on any abort status.

@@ -447,9 +447,9 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void startProgress(KnobHolder* effect,const std::string & message, bool canCancel = true);
+    void progressStart(KnobHolder* effect, const std::string &message, const std::string &messageid, bool canCancel = true);
 
-    void endProgress(KnobHolder* effect);
+    void progressEnd(KnobHolder* effect);
 
     bool progressUpdate(KnobHolder* effect,double t);
 
