@@ -3707,7 +3707,7 @@ EffectInstance::renderInputImagesForRoI(double time,
                                         InputImagesMap *inputImages,
                                         RoIMap* inputsRoi)
 {
-    getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view,inputsRoi);
+    getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
 #ifdef DEBUG
     if (!inputsRoi->empty() && framesNeeded.empty() && !isReader()) {
         qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
@@ -5770,11 +5770,8 @@ EffectInstance::getRegionsOfInterest_public(double time,
     NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
-    
 
-    
     getRegionsOfInterest(time, scale, outputRoD, renderWindow, view,ret);
-    
 }
 
 EffectInstance::FramesNeededMap
