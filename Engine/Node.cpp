@@ -269,7 +269,6 @@ struct Node::Implementation
     , lastStrokeMovementMutex()
     , lastStrokeMovementBbox()
     , strokeBitmapCleared(false)
-    , wholeStrokeBbox()
     , lastStrokeIndex(-1)
     , strokeImage()
     , lastStrokePoints()
@@ -478,7 +477,6 @@ struct Node::Implementation
     mutable QMutex lastStrokeMovementMutex;
     RectD lastStrokeMovementBbox;
     bool strokeBitmapCleared;
-    RectD wholeStrokeBbox;
     int lastStrokeIndex;
     ImagePtr strokeImage;
     std::list<std::pair<Natron::Point,double> > lastStrokePoints;
@@ -720,8 +718,8 @@ Node::setWhileCreatingPaintStroke(bool creating)
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
         _imp->duringPaintStrokeCreation = creating;
-        if (!creating) {
-            _imp->strokeImage.reset();
+        if (creating) {
+            _imp->lastStrokeIndex = -1;
         }
     }
 }
@@ -807,14 +805,13 @@ Node::refreshDynamicProperties()
 
 void
 Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                const RectD& wholeBbox,const RectD& lastPointsBbox)
+                                const RectD& lastPointsBbox)
 {
     
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
         _imp->lastStrokePoints = points;
         _imp->lastStrokeMovementBbox = lastPointsBbox;
-        _imp->wholeStrokeBbox = wholeBbox;
         _imp->lastStrokeIndex = newAge;
         _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
@@ -848,8 +845,9 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
 RectD
 Node::getPaintStrokeRoD_duringPainting() const
 {
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->wholeStrokeBbox;
+    RotoStrokeItem* item = dynamic_cast<RotoStrokeItem*>(_imp->paintStroke.lock().get());
+    assert(item);
+    return item->getWholeStrokeRoDWhilePainting();
 }
 
 void
@@ -858,7 +856,7 @@ Node::getPaintStrokeRoD(int time,RectD* bbox) const
     bool duringPaintStroke = _imp->liveInstance->isDuringPaintStrokeCreationThreadLocal();
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (duringPaintStroke) {
-        *bbox = _imp->wholeStrokeBbox;
+        *bbox = getPaintStrokeRoD_duringPainting();
     } else {
         boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
@@ -891,16 +889,16 @@ Node::clearLastPaintStrokeRoD()
 }
 
 void
-Node::getLastPaintStrokePoints(int time,std::list<std::pair<Natron::Point,double> >* points) const
+Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes) const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (_imp->duringPaintStrokeCreation) {
-        *points = _imp->lastStrokePoints;
+        strokes->push_back(_imp->lastStrokePoints);
     } else {
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
-        stroke->evaluateStroke(0, time, points);
+        stroke->evaluateStroke(0, time, strokes);
     }
 }
 
@@ -918,6 +916,12 @@ Node::getStrokeImageAge() const
     return _imp->lastStrokeIndex;
 }
 
+void
+Node::updateStrokeImage(const boost::shared_ptr<Natron::Image>& image)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->strokeImage = image;
+}
 
 boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
@@ -3790,6 +3794,7 @@ void
 Node::clearLastRenderedImage()
 {
     _imp->liveInstance->clearLastRenderedImage();
+    _imp->strokeImage.reset();
 }
 
 /*After this call this node still knows the link to the old inputs/outputs
@@ -6026,14 +6031,14 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes)
     if (mustDequeue) {
 
         
-        ///Flag that the node is dequeuing.
-        ///We don't wait here but in the setParallelRenderArgsInternal instead
-        {
-            QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-            _imp->nodeIsDequeuing = true;
-        }
+        
         Q_EMIT mustDequeueActions();
     }
+    
+    if (_imp->rotoContext) {
+        _imp->rotoContext->notifyRenderFinished();
+    }
+
     
     
     ///mark this
@@ -6079,6 +6084,12 @@ Node::dequeueActions()
 {
     assert(QThread::currentThread() == qApp->thread());
     
+    ///Flag that the node is dequeuing.
+    {
+        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        _imp->nodeIsDequeuing = true;
+    }
+    
     if (_imp->liveInstance) {
         _imp->liveInstance->dequeueValuesSet();
     }
@@ -6106,9 +6117,11 @@ Node::dequeueActions()
         inputChanged(*it);
     }
     
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-    _imp->nodeIsDequeuing = false;
-    _imp->nodeIsDequeuingCond.wakeAll();
+    {
+        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        _imp->nodeIsDequeuing = false;
+        _imp->nodeIsDequeuingCond.wakeAll();
+    }
 }
 
 bool

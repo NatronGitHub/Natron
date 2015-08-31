@@ -399,6 +399,8 @@ public:
     
     void createNodes(bool connectNodes = true);
     
+    void setNodesThreadSafetyForRotopainting();
+    
     void incrementNodesAge();
     
     void refreshNodesConnections();
@@ -526,11 +528,11 @@ Q_SIGNALS:
 public Q_SLOTS:
     
     void onRotoOutputChannelsChanged();
-    void onRotoKnobChanged(int);
+    void onRotoKnobChanged(int,int);
     
 protected:
     
-    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob);
+    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::ValueChangedReasonEnum reason);
     
     virtual void onTransformSet(double /*time*/) {}
     
@@ -1157,7 +1159,18 @@ public:
      * @brief Appends to the paint stroke the raw points list.
      * @returns True if the number of points is > 1
      **/
-    bool appendPoint(const RotoPoint& p);
+    bool appendPoint(bool newStroke,const RotoPoint& p);
+    
+    void addStroke(const boost::shared_ptr<Curve>& xCurve,
+                  const boost::shared_ptr<Curve>& yCurve,
+                  const boost::shared_ptr<Curve>& pCurve);
+    
+    /**
+     * @brief Returns true if the stroke should be removed
+     **/
+    bool removeLastStroke(boost::shared_ptr<Curve>* xCurve,
+                          boost::shared_ptr<Curve>* yCurve,
+                          boost::shared_ptr<Curve>* pCurve);
     
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
@@ -1174,9 +1187,12 @@ public:
 
     
     
-    bool getMostRecentStrokeChangesSinceAge(int lastAge, std::list<std::pair<Natron::Point,double> >* points, RectD* pointsBbox,
-                                             int* newAge);
+    bool getMostRecentStrokeChangesSinceAge(int time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
+                                            RectD* pointsBbox,
+                                            RectD* wholeStrokeBbox,
+                                            int* newAge);
     
+    RectD getWholeStrokeRoDWhilePainting() const;
     
     void setStrokeFinished();
     
@@ -1201,11 +1217,12 @@ public:
     
     
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, double time, std::list<std::pair<Natron::Point,double> >* points,
+    void evaluateStroke(unsigned int mipMapLevel, double time,
+                        std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
                         RectD* bbox = 0) const;
     
-    const Curve& getXControlPoints() const;
-    const Curve& getYControlPoints() const;    
+    std::list<boost::shared_ptr<Curve> > getXControlPoints() const;
+    std::list<boost::shared_ptr<Curve> > getYControlPoints() const;    
 private:
     
     RectD computeBoundingBox(double time) const;
@@ -1362,7 +1379,7 @@ private:
                                                         SequenceTime time,
                                                         Natron::ImageBitDepthEnum depth,
                                                         unsigned int mipmapLevel,
-                                                        const std::list<std::pair<Natron::Point,double> >& points,
+                                                        const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                                                         const boost::shared_ptr<Natron::Image> &image);
     
 public:
@@ -1506,8 +1523,31 @@ public:
     
     void dequeueGuiActions();
     
+    /**
+     * @brief When finishing a stroke with the paint brush, we need to re-render it because the interpolation of the curve
+     * will be much smoother with more points than what it was during painting.
+     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a 
+     * multiple stroke on top of it which could make some artifacts.
+     **/
+    void evaluateNeatStrokeRender();
+    
+    /**
+     * @brief Called when a render is finished to wake-up the main-thread if it was waiting in 
+     * evaluateNeatStrokeRender()
+     **/
+    void notifyRenderFinished();
+    
+    bool isDoingNeatRender() const;
+    
+    void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
+    
 Q_SIGNALS:
 
+    /**
+     * @brief Signalled when the gui should force a new stroke to be added
+     **/
+    void breakMultiStroke();
+    
     /**
      * Emitted when the selection is changed. The integer corresponds to the
      * RotoItem::SelectionReasonEnum enum.

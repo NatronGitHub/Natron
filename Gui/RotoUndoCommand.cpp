@@ -611,6 +611,7 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr
 , _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
 {
     assert(_indexInLayer != -1);
+    setText(QObject::tr("Paint Stroke"));
 }
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
@@ -627,7 +628,6 @@ AddStrokeUndoCommand::undo()
 {
     _roto->removeCurve(_item);
     _roto->evaluate(true);
-    setText(QObject::tr("Paint Stroke"));
 }
 
 void
@@ -640,7 +640,57 @@ AddStrokeUndoCommand::redo()
         _roto->evaluate(true);
     }
     _firstRedoCalled = true;
+}
+
+
+
+AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _item(item)
+, _layer(item->getParentLayer())
+, _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
+, isRemoved(false)
+{
+    assert(_indexInLayer != -1);
     setText(QObject::tr("Paint Stroke"));
+}
+
+AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
+{
+    /*
+     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
+     * are deleted so that the ThreadLocalStorage used is correctly cleared.
+     */
+    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
+}
+
+void
+AddMultiStrokeUndoCommand::undo()
+{
+    if (_item->removeLastStroke(&_xCurve, &_yCurve, &_pCurve)) {
+        _roto->removeCurve(_item);
+        isRemoved = true;
+    }
+    
+    _roto->evaluate(true);
+}
+
+void
+AddMultiStrokeUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        if (_xCurve) {
+            _item->addStroke(_xCurve, _yCurve, _pCurve);
+        }
+        if (isRemoved) {
+            _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
+        }
+        _roto->evaluate(true);
+    }
+    
+    _firstRedoCalled = true;
 }
 
 MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,

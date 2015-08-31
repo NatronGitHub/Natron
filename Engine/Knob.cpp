@@ -72,7 +72,7 @@ KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 }
 
 void
-KnobSignalSlotHandler::onMasterChanged(int dimension)
+KnobSignalSlotHandler::onMasterChanged(int dimension, int /*reason*/)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
@@ -81,7 +81,7 @@ KnobSignalSlotHandler::onMasterChanged(int dimension)
 }
 
 void
-KnobSignalSlotHandler::onExprDependencyChanged(int dimension)
+KnobSignalSlotHandler::onExprDependencyChanged(int dimension, int /*reason*/)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
@@ -691,7 +691,7 @@ KnobHelper::deleteValueAtTime(int time,
     if (!useGuiCurve) {
         
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_updateDependencies(dimension);
+            _signalSlotHandler->s_updateDependencies(dimension, (int)reason);
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(dimension, reason);
@@ -1331,7 +1331,7 @@ KnobHelper::evaluateValueChange(int dimension,
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        _signalSlotHandler->s_updateDependencies(dimension);
+        _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
         checkAnimationLevel(dimension);
     }
 }
@@ -1936,8 +1936,8 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                         if (knob->getHolder() && knob->getSignalSlotHandler() ) {
                             getHolder()->onKnobSlaved(this, other,dimension,false );
                         }
-                        QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
-                                            SLOT(onExprDependencyChanged(int)));
+                        QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int,int)), _signalSlotHandler.get(),
+                                            SLOT(onExprDependencyChanged(int,int)));
                     }
                     otherListeners.erase(it);
                     break;
@@ -2345,7 +2345,7 @@ KnobHelper::slaveTo(int dimension,
 
     if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
 
-        //QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        //QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
@@ -2503,7 +2503,7 @@ KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChang
     if (!useGuiCurve) {
         
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_updateDependencies(dimension);
+            _signalSlotHandler->s_updateDependencies(dimension, (int)reason);
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(dimension, reason);
@@ -2740,9 +2740,9 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::sha
     
     if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
         if (!isExpression) {
-            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int) ) );
+            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int,int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int,int) ) );
         } else {
-            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int) ) );
+            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int,int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int,int) ) );
             
             QMutexLocker k(&slave->_imp->expressionMutex);
             slave->_imp->expressions[fromExprDimension].dependencies.push_back(this);
@@ -2764,7 +2764,7 @@ KnobHelper::removeListener(KnobI* knob)
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
     assert(other);
     if (other && other->_signalSlotHandler && _signalSlotHandler) {
-        QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
     }
     
     QWriteLocker l(&_imp->mastersMutex);

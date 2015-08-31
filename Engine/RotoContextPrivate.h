@@ -41,6 +41,7 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QReadWriteLock>
+#include <QWaitCondition>
 
 #include <cairo/cairo.h>
 
@@ -1397,11 +1398,20 @@ struct RotoStrokeItemPrivate
     Natron::RotoStrokeType type;
     bool finished;
     
-    Curve xCurve,yCurve,pressureCurve;
+    struct StrokeCurves
+    {
+        boost::shared_ptr<Curve> xCurve,yCurve,pressureCurve;
+    };
+    
+    /**
+     * @brief A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
+     **/
+    std::list<StrokeCurves> strokes;
     double curveT0; // timestamp of the first point in curve
     double lastTimestamp;
     RectD bbox;
     
+    RectD wholeStrokeBboxWhilePainting;
     
     
     mutable QMutex strokeDotPatternsMutex;
@@ -1410,12 +1420,11 @@ struct RotoStrokeItemPrivate
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
     , finished(false)
-    , xCurve()
-    , yCurve()
-    , pressureCurve()
+    , strokes()
     , curveT0(0)
     , lastTimestamp(0)
     , bbox()
+    , wholeStrokeBboxWhilePainting()
     , strokeDotPatternsMutex()
     , strokeDotPatterns()
     {
@@ -1509,6 +1518,10 @@ struct RotoContextPrivate
     
     //Used to prevent 2 threads from writing the same image in the rotocontext
     mutable QMutex cacheAccessMutex;
+    
+    mutable QMutex doingNeatRenderMutex;
+    QWaitCondition doingNeatRenderCond;
+    bool doingNeatRender;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -1520,6 +1533,7 @@ struct RotoContextPrivate
     , isCurrentlyLoading(false)
     , node(n)
     , age(0)
+    , doingNeatRender(false)
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
@@ -2120,7 +2134,7 @@ struct RotoContextPrivate
     
     double renderStroke(cairo_t* cr,
                         std::vector<cairo_pattern_t*>& dotPatterns,
-                        const std::list<std::pair<Natron::Point,double> >& points,
+                        const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                         double distToNext,
                         const boost::shared_ptr<RotoDrawableItem>& stroke,
                         bool doBuildup,

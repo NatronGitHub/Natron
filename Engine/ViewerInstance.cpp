@@ -404,17 +404,11 @@ public:
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
                 lastAge = mergeNode->getStrokeImageAge();
-                if (activeStroke->getMostRecentStrokeChangesSinceAge(lastAge, &lastStrokePoints, &lastStrokeBbox, &newAge)) {
-                    if (lastAge == -1) {
-                        wholeStrokeRod = lastStrokeBbox;
-                    } else {
-                        wholeStrokeRod = mergeNode->getPaintStrokeRoD_duringPainting();
-                        wholeStrokeRod.merge(lastStrokeBbox);
-                    }
-                    
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge)) {
+                   
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, wholeStrokeRod, lastStrokeBbox);
+                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox);
                         }
                     }
                     updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);

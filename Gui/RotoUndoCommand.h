@@ -41,6 +41,7 @@ class RotoGui;
 class RotoLayer;
 class RotoPanel;
 class QRectF;
+class Curve;
 class RotoDrawableItem;
 class RotoStrokeItem;
 class QTreeWidgetItem;
@@ -243,6 +244,27 @@ private:
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
     int _indexInLayer;
+};
+
+class AddMultiStrokeUndoCommand : public QUndoCommand
+{
+public:
+    
+    AddMultiStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item);
+    
+    virtual ~AddMultiStrokeUndoCommand();
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoGui* _roto;
+    bool _firstRedoCalled;
+    boost::shared_ptr<RotoStrokeItem> _item;
+    boost::shared_ptr<RotoLayer> _layer;
+    int _indexInLayer;
+    boost::shared_ptr<Curve> _xCurve,_yCurve,_pCurve;
+    bool isRemoved;
 };
 
 

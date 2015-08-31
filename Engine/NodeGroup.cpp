@@ -981,6 +981,14 @@ NodeCollection::invalidateParallelRenderArgs()
             }
         }
         
+        NodeList rotoPaintNodes;
+        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        if (roto) {
+            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
+        }
+        for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+            (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        }
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {

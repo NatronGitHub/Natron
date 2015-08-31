@@ -301,6 +301,7 @@ public Q_SLOTS:
 
     void onDisplayFeatherButtonClicked(bool toggled);
 
+    void onBreakMultiStrokeTriggered();
 
     void smoothSelectedCurve();
     void cuspSelectedCurve();

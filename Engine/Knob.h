@@ -129,10 +129,10 @@ public:
         Q_EMIT animationRemoved(dimension);
     }
     
-    void s_updateDependencies(int dimension)
+    void s_updateDependencies(int dimension,int reason)
     {
-        Q_EMIT updateSlaves(dimension);
-        Q_EMIT updateDependencies(dimension);
+        Q_EMIT updateSlaves(dimension,reason);
+        Q_EMIT updateDependencies(dimension,reason);
     }
     
     void s_knobSlaved(int dim,
@@ -227,9 +227,9 @@ public Q_SLOTS:
     /**
      * @brief Calls KnobI::evaluateValueChange with a reason of Natron::eValueChangedReasonPluginEdited
      **/
-    void onMasterChanged(int);
+    void onMasterChanged(int,int);
     
-    void onExprDependencyChanged(int);
+    void onExprDependencyChanged(int,int);
 
     void onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added);
     
@@ -287,9 +287,9 @@ Q_SIGNALS:
     
     ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
     ///of the changes that occured in this knob, letting them a chance to update their interface.
-    void updateSlaves(int dimension);
+    void updateSlaves(int dimension,int reason);
     
-    void updateDependencies(int dimension);
+    void updateDependencies(int dimension,int reason);
     
     ///Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(int,bool);

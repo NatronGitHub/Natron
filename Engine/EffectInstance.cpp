@@ -1464,6 +1464,9 @@ EffectInstance::getImage(int inputNb,
             } else {
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
                                                       time, view, depth, mipMapLevel);
+                if (roto->isDoingNeatRender()) {
+                    getNode()->updateStrokeImage(inputImg);
+                }
             }
         }
         if (roiPixel) {

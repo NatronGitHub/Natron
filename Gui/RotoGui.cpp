@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QDialogButtonBox>
 #include <QColorDialog>
+#include <QCheckBox>
 #include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -229,6 +230,8 @@ struct RotoGui::RotoGuiPrivate
     ComboBox* timeOffsetMode;
     ComboBox* sourceTypeCombobox;
     Button* resetCloneOffset;
+    Natron::Label* multiStrokeEnabledLabel;
+    QCheckBox* multiStrokeEnabled;
     
     
     RotoToolButton* selectTool;
@@ -299,6 +302,8 @@ struct RotoGui::RotoGuiPrivate
     , timeOffsetMode(0)
     , sourceTypeCombobox(0)
     , resetCloneOffset(0)
+    , multiStrokeEnabledLabel(0)
+    , multiStrokeEnabled(0)
     , selectTool(0)
     , pointsEditionTool(0)
     , bezierEditionTool(0)
@@ -683,7 +688,23 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->setContentsMargins(3, 2, 0, 0);
     _imp->brushButtonsBarLayout->setSpacing(1);
     
-    _imp->brushButtonsBarLayout->addSpacing(5);
+    
+    
+    QString multiTt = Natron::convertFromPlainText(tr("When checked, strokes will be appended to the same item "
+                                                      "in the hierarchy as long as the same tool is selected.\n"
+                                                      "Select another tool to make a new item."),Qt::WhiteSpaceNormal);
+    _imp->multiStrokeEnabledLabel = new Natron::Label(QObject::tr("Multi-stroke:"),_imp->brushButtonsBar);
+    _imp->multiStrokeEnabledLabel->setToolTip(multiTt);
+    _imp->brushButtonsBarLayout->addWidget(_imp->multiStrokeEnabledLabel);
+    
+    _imp->brushButtonsBarLayout->addSpacing(3);
+    
+    _imp->multiStrokeEnabled = new QCheckBox(_imp->brushButtonsBar);
+    _imp->multiStrokeEnabled->setToolTip(multiTt);
+    _imp->multiStrokeEnabled->setChecked(true);
+    _imp->brushButtonsBarLayout->addWidget(_imp->multiStrokeEnabled);
+    
+    _imp->brushButtonsBarLayout->addSpacing(10);
     
     _imp->colorPickerLabel = new ColorPickerLabel(0,_imp->brushButtonsBar);
     _imp->colorPickerLabel->setColor(Qt::white);
@@ -1017,6 +1038,7 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect( _imp->context.get(), SIGNAL( refreshViewerOverlays() ), this, SLOT( onRefreshAsked() ) );
     QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
     QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
+    QObject::connect( _imp->context.get(), SIGNAL( breakMultiStroke() ), this, SLOT( onBreakMultiStrokeTriggered() ) );
     restoreSelectionFromContext();
 }
 
@@ -1424,8 +1446,8 @@ RotoGui::drawOverlays(double time,
                     continue;
                 }
 
-                std::list<std::pair<Point,double> > points;
-                isStroke->evaluateStroke(0, time, &points);
+                std::list<std::list<std::pair<Point,double> > > strokes;
+                isStroke->evaluateStroke(0, time, &strokes);
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
                 if (!locked) {
@@ -1434,59 +1456,69 @@ RotoGui::drawOverlays(double time,
                     curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
                 }
                 glColor4dv(curveColor);
-                glBegin(GL_LINE_STRIP);
-                for (std::list<std::pair<Point,double> >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
-                    glVertex2f(it2->first.x, it2->first.y);
+                
+                for (std::list<std::list<std::pair<Point,double> > >::iterator itStroke = strokes.begin(); itStroke != strokes.end(); ++itStroke) {
+                    glBegin(GL_LINE_STRIP);
+                    for (std::list<std::pair<Point,double> >::const_iterator it2 = itStroke->begin(); it2 != itStroke->end(); ++it2) {
+                        glVertex2f(it2->first.x, it2->first.y);
+                    }
+                    glEnd();
                 }
-                glEnd();
                 
 #ifdef DEBUG
-                KeyFrameSet xSet = isStroke->getXControlPoints().getKeyFrames_mt_safe();
-                KeyFrameSet ySet = isStroke->getYControlPoints().getKeyFrames_mt_safe();
-                assert(xSet.size() == ySet.size());
-                if (xSet.size() > 2) {
-                    KeyFrameSet::iterator xIt = xSet.begin();
-                    ++xIt;
-                    KeyFrameSet::iterator yIt = ySet.begin();
-                    ++yIt;
-                    KeyFrameSet::iterator xNext = xIt;
-                    ++xNext;
-                    KeyFrameSet::iterator yNext = yIt;
-                    ++yNext;
-                    KeyFrameSet::iterator xPrev = xSet.begin();
-                    KeyFrameSet::iterator yPrev = ySet.begin();
-                    for (; xNext != xSet.end(); ++xIt, ++yIt, ++xPrev, ++yPrev,++xNext, ++yNext) {
-                        
-                        double x = xIt->getValue();
-                        double y = yIt->getValue();
-                        
-                        double dtr = xNext->getTime() - xIt->getTime();
-                        double dtl = xIt->getTime() - xPrev->getTime();
-                        assert(dtr >= 0 && dtl >= 0);
-                        
-                        double lx = x - dtl * xIt->getLeftDerivative() / 3.;
-                        double ly = y - dtl * yIt->getLeftDerivative() / 3.;
-                        double rx = x + dtr * xIt->getRightDerivative() / 3.;
-                        double ry = y + dtr * yIt->getRightDerivative() / 3.;
-                        
-                        
-                        glBegin(GL_LINE_STRIP);
-                        glColor3f(0., 0.8, 0.8);
-                        glVertex2d(lx,ly);
-                        glVertex2d(x,y);
-                        glVertex2d(rx,ry);
-                        glEnd();
-                        glBegin(GL_POINTS);
-                        glColor3f(1., 1., 0.);
-                        glVertex2d(lx, ly);
-                        glColor3f(1., 0., 0.);
-                        glVertex2d(x,y);
-                        glColor3f(1., 1., 0.);
-                        glVertex2d(rx,ry);
-                        glEnd();
-                        
+                std::list<boost::shared_ptr<Curve> > xCurves = isStroke->getXControlPoints();
+                std::list<boost::shared_ptr<Curve> > yCurves = isStroke->getYControlPoints();
+                assert(xCurves.size() == yCurves.size());
+                std::list<boost::shared_ptr<Curve> >::iterator itY = yCurves.begin();
+                for (std::list<boost::shared_ptr<Curve> >::iterator itX = xCurves.begin() ;itX!=xCurves.end(); ++itX,++itY) {
+                    KeyFrameSet xSet = (*itX)->getKeyFrames_mt_safe();
+                    KeyFrameSet ySet = (*itY)->getKeyFrames_mt_safe();
+                    assert(xSet.size() == ySet.size());
+                    if (xSet.size() > 2) {
+                        KeyFrameSet::iterator xIt = xSet.begin();
+                        ++xIt;
+                        KeyFrameSet::iterator yIt = ySet.begin();
+                        ++yIt;
+                        KeyFrameSet::iterator xNext = xIt;
+                        ++xNext;
+                        KeyFrameSet::iterator yNext = yIt;
+                        ++yNext;
+                        KeyFrameSet::iterator xPrev = xSet.begin();
+                        KeyFrameSet::iterator yPrev = ySet.begin();
+                        for (; xNext != xSet.end(); ++xIt, ++yIt, ++xPrev, ++yPrev,++xNext, ++yNext) {
+                            
+                            double x = xIt->getValue();
+                            double y = yIt->getValue();
+                            
+                            double dtr = xNext->getTime() - xIt->getTime();
+                            double dtl = xIt->getTime() - xPrev->getTime();
+                            assert(dtr >= 0 && dtl >= 0);
+                            
+                            double lx = x - dtl * xIt->getLeftDerivative() / 3.;
+                            double ly = y - dtl * yIt->getLeftDerivative() / 3.;
+                            double rx = x + dtr * xIt->getRightDerivative() / 3.;
+                            double ry = y + dtr * yIt->getRightDerivative() / 3.;
+                            
+                            
+                            glBegin(GL_LINE_STRIP);
+                            glColor3f(0., 0.8, 0.8);
+                            glVertex2d(lx,ly);
+                            glVertex2d(x,y);
+                            glVertex2d(rx,ry);
+                            glEnd();
+                            glBegin(GL_POINTS);
+                            glColor3f(1., 1., 0.);
+                            glVertex2d(lx, ly);
+                            glColor3f(1., 0., 0.);
+                            glVertex2d(x,y);
+                            glColor3f(1., 1., 0.);
+                            glVertex2d(rx,ry);
+                            glEnd();
+                            
+                        }
                     }
                 }
+                
 #endif
                 
                 
@@ -2675,7 +2707,33 @@ RotoGui::penDown(double time,
                 _imp->mouseCenterOnSizeChange = pos;
             } else {
                 _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
-                _imp->makeStroke(false, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
+                if (_imp->rotoData->strokeBeingPaint &&
+                    _imp->rotoData->strokeBeingPaint->getParentLayer() && 
+                    _imp->multiStrokeEnabled->isChecked()) {
+                    
+                    
+                    boost::shared_ptr<RotoLayer> layer = _imp->rotoData->strokeBeingPaint->getParentLayer();
+                    if (!layer) {
+                        layer = _imp->context->findDeepestSelectedLayer();
+                        if (!layer) {
+                            layer = _imp->context->getOrCreateBaseLayer();
+                        }
+                        assert(layer);
+                        _imp->context->addItem(layer, 0, _imp->rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
+                    }
+                    _imp->context->setStrokeBeingPainted(_imp->rotoData->strokeBeingPaint);
+                    boost::shared_ptr<Int_Knob> lifeTimeFrameKnob = _imp->rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
+                    lifeTimeFrameKnob->setValue(_imp->context->getTimelineCurrentTime(), 0);
+                    
+                    _imp->rotoData->strokeBeingPaint->appendPoint(true, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
+                } else {
+                    if (_imp->rotoData->strokeBeingPaint &&
+                        !_imp->rotoData->strokeBeingPaint->getParentLayer() &&
+                        _imp->multiStrokeEnabled->isChecked()) {
+                        _imp->rotoData->strokeBeingPaint.reset();
+                    }
+                    _imp->makeStroke(false, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
+                }
                 _imp->context->evaluateChange();
                 _imp->state = eEventStateBuildingStroke;
                 _imp->viewer->setCursor(Qt::BlankCursor);
@@ -3078,7 +3136,7 @@ RotoGui::penMotion(double time,
     case eEventStateBuildingStroke: {
         if (_imp->rotoData->strokeBeingPaint) {
             RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
-            if (_imp->rotoData->strokeBeingPaint->appendPoint(p)) {
+            if (_imp->rotoData->strokeBeingPaint->appendPoint(false,p)) {
                 _imp->lastMousePos = pos;
                 _imp->context->evaluateChange_noIncrement();
                 return true;
@@ -3192,9 +3250,20 @@ RotoGui::penUp(double /*time*/,
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->context->getNode()->getApp()->setUserIsPainting(boost::shared_ptr<Node>());
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
-        pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
-        _imp->makeStroke(true, RotoPoint());
-        _imp->context->evaluateChange();
+        if (!_imp->multiStrokeEnabled->isChecked()) {
+            pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
+            _imp->makeStroke(true, RotoPoint());
+        } else {
+            pushUndoCommand(new AddMultiStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
+        }
+        
+        /**
+         * Do a neat render for the stroke (better interpolation). This call is blocking otherwise the user might
+         * attempt to make a new stroke while the previous stroke is not finished... this would yield artifacts.
+         **/
+        _imp->viewer->setCursor(QCursor(Qt::BusyCursor));
+        _imp->context->evaluateNeatStrokeRender();
+        _imp->viewer->unsetCursor();
     }
     
     _imp->state = eEventStateNone;
@@ -3209,6 +3278,12 @@ RotoGui::penUp(double /*time*/,
     }
     
     return true;
+}
+
+void
+RotoGui::onBreakMultiStrokeTriggered()
+{
+    _imp->makeStroke(true, RotoPoint());
 }
 
 void
@@ -3258,8 +3333,13 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
             return;
     }
     
+    if (prepareForLater || !rotoData->strokeBeingPaint) {
+        std::string name = context->generateUniqueName(itemName);
+        rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
+        rotoData->strokeBeingPaint->createNodes(false);
+    }
     if (!prepareForLater) {
-        assert(rotoData->strokeBeingPaint);
+        
         boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
         if (!layer) {
             layer = context->getOrCreateBaseLayer();
@@ -3325,7 +3405,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
-        rotoData->strokeBeingPaint->appendPoint(p);
+        rotoData->strokeBeingPaint->appendPoint(true,p);
     }
     
     //context->clearSelection(RotoItem::eSelectionReasonOther);
