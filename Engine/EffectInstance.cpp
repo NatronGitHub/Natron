@@ -2352,7 +2352,7 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
                     for(;;) {
                         
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
-                        if (!identity) {
+                        if (!identity || identityInputNb == -2) {
                             break;
                         }
                         Natron::EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
