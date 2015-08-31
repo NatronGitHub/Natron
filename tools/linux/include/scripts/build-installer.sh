@@ -1,4 +1,22 @@
 #!/bin/sh
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2015 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
+
 #
 # Build packages and installer for Linux
 #
@@ -76,7 +94,11 @@ cat $INSTALL_PATH/docs/boost/LICENSE_1_0.txt >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 echo "FFMPEG:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
+if [ "$SDK_LIC" == "GPL" ]; then
+  cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
+else
+  cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
+fi
 
 echo "" >>$IO_LIC || exit 1
 echo "JPEG:" >>$IO_LIC || exit 1
@@ -183,6 +205,18 @@ echo "SPEEX:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 cat $INSTALL_PATH/docs/speex/COPYING >>$IO_LIC || exit 1
 
+if [ "$SDK_LIC" == "GPL" ]; then
+  echo "" >>$IO_LIC || exit 1
+  echo "X264:" >>$IO_LIC || exit 1
+  echo "" >>$IO_LIC || exit 1
+  cat $INSTALL_PATH/docs/x264/COPYING >>$IO_LIC || exit 1
+
+  echo "" >>$IO_LIC || exit 1
+  echo "XVID:" >>$IO_LIC || exit 1
+  echo "" >>$IO_LIC || exit 1
+  cat $INSTALL_PATH/docs/xvidcore/LICENSE >>$IO_LIC || exit 1
+fi
+
 # OFX MISC
 OFX_MISC_VERSION=$TAG
 OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
@@ -228,7 +262,7 @@ cat $QS/corelibs.qs > $CLIBS_PATH/meta/installscript.qs || exit 1
 cp $INSTALL_PATH/lib/libQtDBus.so.4 $CLIBS_PATH/data/lib/ || exit 1
 cp $INSTALL_PATH/share/pixmaps/natronIcon256_linux.png $CLIBS_PATH/data/share/pixmaps/ || exit 1
 
-cp -a $INSTALL_PATH/plugins/imageformats $CLIBS_PATH/data/bin/ || exit 1
+cp -a $INSTALL_PATH/plugins/* $CLIBS_PATH/data/bin/ || exit 1
 CORE_DEPENDS=$(ldd $NATRON_PATH/data/bin/*|grep opt | awk '{print $3}')
 for i in $CORE_DEPENDS; do
   cp -v $i $CLIBS_PATH/data/lib/ || exit 1
@@ -280,7 +314,11 @@ else
   (cd $CLIBS_PATH/data/lib/python2.7/site-packages; ln -sf ../../../Plugins/PySide . )
   rm -rf $CLIBS_PATH/data/lib/python2.7/{test,config} || exit 1
 fi
-rm -f $CLIBS_PATH/data/Plugins/PySide/{QtDeclarative,QtHelp,QtScript,QtScriptTools,QtSql,QtTest,QtUiTools,QtXmlPatterns}.so || exit 1
+#rm -f $CLIBS_PATH/data/Plugins/PySide/{QtDeclarative,QtHelp,QtScript,QtScriptTools,QtSql,QtTest,QtUiTools,QtXmlPatterns}.so || exit 1
+PY_DEPENDS=$(ldd $CLIBS_PATH/data/Plugins/PySide/*|grep opt | awk '{print $3}')
+for y in $PY_DEPENDS; do
+  cp -v $y $CLIBS_PATH/data/lib/ || exit 1
+done
 (cd $CLIBS_PATH ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 strip -s $CLIBS_PATH/data/Plugins/PySide/* $CLIBS_PATH/data/lib/python*/* $CLIBS_PATH/data/lib/python*/*/*
 
