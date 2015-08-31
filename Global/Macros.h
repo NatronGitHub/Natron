@@ -529,11 +529,11 @@ inline T ignore_result(T x)
 #endif
 #endif
 
-#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
-//  -Wunused-private-field appeared with GCC 4.8
-# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF GCC_DIAG_OFF(unused-private-field)
-# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON GCC_DIAG_ON(unused-private-field)
-#else
+//#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+////  -Wunused-private-field appeared with GCC 4.8
+//# define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF GCC_DIAG_OFF(unused-private-field)
+//# define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON GCC_DIAG_ON(unused-private-field)
+//#else
 #if __has_warning("-Wunused-private-field")
 # define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF CLANG_DIAG_OFF(unused-private-field)
 # define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON CLANG_DIAG_ON(unused-private-field)
@@ -541,7 +541,7 @@ inline T ignore_result(T x)
 # define GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 # define GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #endif
-#endif
+//#endif
 
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 510
 //  -Wsuggest-override appeared with GCC 5.1
