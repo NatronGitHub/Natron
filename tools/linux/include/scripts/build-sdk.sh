@@ -1,4 +1,22 @@
 #!/bin/sh
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2015 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
+
 #
 # Build Natron SDK (CY2015) for Linux
 #
@@ -599,21 +617,24 @@ if [ ! -f $INSTALL_PATH/lib/libxvidcore.so.4.3 ] && [ "$SDK_LIC" == "GPL" ]; the
 fi
 
 # Install ffmpeg
+LGPL_SETTINGS="--enable-avresample --enable-libmp3lame --enable-libvorbis --enable-libopus --enable-libtheora --enable-libschroedinger --enable-libopenjpeg --enable-libmodplug --enable-libvpx --enable-libspeex --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-indev=jack --disable-outdev=xv --disable-vda --disable-xlib"
+GPL_SETTINGS="${LGPL_SETTINGS} --enable-gpl --enable-libx264 --enable-libxvid --enable-version3"
+
 if [ "$REBUILD_FFMPEG" == "1" ]; then
-  rm -rf $INSTALL_PATH/bin/ff* $INSTALL_PATH/lib/libav* $INSTALL_PATH/lib/libsw* $INSTALL_PATH/include/libav* $INSTALL_PATH/lib/pkgconfig/libav*
+  rm -rf $INSTALL_PATH/ffmpeg-*
 fi
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/libavcodec.pc ]; then
+if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$FFMPEG_TAR ]; then
     wget $THIRD_PARTY_SRC_URL/$FFMPEG_TAR -O $SRC_PATH/$FFMPEG_TAR || exit 1
   fi
   tar xvf $SRC_PATH/$FFMPEG_TAR || exit 1
   cd ffmpeg-2* || exit 1
-  if [ "$SDK_LIC" == "GPL" ]; then
-    FFGPL="--enable-gpl --enable-libx264 --enable-libxvid --enable-version3"
-  fi
-  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-avresample --enable-libmp3lame --enable-libvorbis --enable-libopus --enable-libtheora --enable-libschroedinger --enable-libopenjpeg --enable-libmodplug --enable-libvpx --enable-libspeex --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-indev=jack --disable-outdev=xv --disable-vda --disable-xlib $FFGPL || exit 1
+  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS || exit 1
   make -j${MKJOBS} || exit 1
+  make install || exit 1
+  make distclean
+  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS || exit 1
   make install || exit 1
   mkdir -p $INSTALL_PATH/docs/ffmpeg || exit 1
   cp COPYING* CREDITS $INSTALL_PATH/docs/ffmpeg/
@@ -627,7 +648,7 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     QT_CONF="-no-openssl -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
   else
     QT_TAR=$QT4_TAR
-    QT_CONF="-no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+    QT_CONF="-no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
   fi
 
   if [ ! -f $SRC_PATH/$QT_TAR ]; then
