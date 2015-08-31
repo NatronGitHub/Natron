@@ -108,6 +108,8 @@ SOURCES += \
     Gui40.cpp \
     Gui50.cpp \
     GuiApplicationManager.cpp \
+    GuiApplicationManager10.cpp \
+    GuiApplicationManagerPrivate.cpp \
     GuiAppInstance.cpp \
     GuiAppWrapper.cpp \
     GuiPrivate.cpp \
@@ -242,6 +244,7 @@ HEADERS += \
     GroupBoxLabel.h \
     Gui.h \
     GuiApplicationManager.h \
+    GuiApplicationManagerPrivate.h \
     GuiAppInstance.h \
     GuiAppWrapper.h \
     GuiMacros.h \

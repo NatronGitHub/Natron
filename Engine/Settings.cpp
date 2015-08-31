@@ -1606,8 +1606,8 @@ Settings::tryLoadOpenColorIOConfig()
             for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
                 QDir defaultConfigsDir(defaultConfigsPaths[i]);
                 if ( !defaultConfigsDir.exists() ) {
-                    std::cerr << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                    << defaultConfigsPaths[i].toStdString() <<  "does not exist." << std::endl;
+                    qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
+                    << defaultConfigsPaths[i] << "does not exist.";
                     continue;
                 }
                 ///try to open the .ocio config file first in the defaultConfigsDir
@@ -1638,7 +1638,7 @@ Settings::tryLoadOpenColorIOConfig()
     }
     _ocioRestored = true;
 #ifdef DEBUG
-    std::cout << "setting OCIO=" << configFile.toStdString() << std::endl;
+    qDebug() << "setting OCIO=" << configFile;
 #endif
     qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
 
