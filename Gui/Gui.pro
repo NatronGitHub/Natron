@@ -116,7 +116,10 @@ SOURCES += \
     Histogram.cpp \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
+    KnobGui10.cpp \
+    KnobGui20.cpp \
     KnobGuiFactory.cpp \
+    KnobGuiPrivate.cpp \
     File_KnobGui.cpp \
     Button_KnobGui.cpp \
     Int_KnobGui.cpp \

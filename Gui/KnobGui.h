@@ -70,6 +70,8 @@ class NodeGui;
 
 #define SLIDER_MAX_RANGE 100000
 
+struct KnobGuiPrivate;
+
 class KnobGui
     : public QObject,public KnobGuiI
 {
@@ -432,7 +434,6 @@ private:
 
 private:
 
-    struct KnobGuiPrivate;
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
