@@ -146,6 +146,7 @@ SOURCES += \
     NodeGraph.cpp \
     NodeGraph05.cpp \
     NodeGraph10.cpp \
+    NodeGraph13.cpp \
     NodeGraph15.cpp \
     NodeGraph20.cpp \
     NodeGraph25.cpp \
@@ -154,6 +155,7 @@ SOURCES += \
     NodeGraph40.cpp \
     NodeGraph45.cpp \
     NodeGraphPrivate.cpp \
+    NodeGraphPrivate10.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \

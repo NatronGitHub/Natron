@@ -25,96 +25,37 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
-#include <cstdlib>
-#include <set>
-#include <map>
-#include <vector>
-#include <locale>
-#include <algorithm> // min, max
+#include <cmath>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QGraphicsProxyWidget>
-GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QGraphicsTextItem>
-#include <QFileSystemModel>
-#include <QScrollBar>
-#include <QVBoxLayout>
-#include <QGraphicsLineItem>
-#include <QGraphicsPixmapItem>
-#include <QDialogButtonBox>
-#include <QUndoStack>
-#include <QToolButton>
-#include <QThread>
-#include <QDropEvent>
-#include <QApplication>
-#include <QCheckBox>
-#include <QMimeData>
-#include <QLineEdit>
-#include <QDebug>
-#include <QtCore/QRectF>
-#include <QRegExp>
-#include <QtCore/QTimer>
-#include <QAction>
-#include <QPainter>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QMutex>
+#include <QAction>
+#include <QFileSystemModel>
+#include <QMenu>
+GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
-#include "Engine/AppManager.h"
-#include "Engine/BackDrop.h"
-#include "Engine/Dot.h"
-#include "Engine/FrameEntry.h"
-#include "Engine/Hash64.h"
-#include "Engine/KnobFile.h"
+#include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Node.h"
-#include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
-#include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/BackDropGui.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
-#include "Gui/DockablePanel.h"
-#include "Gui/Edge.h"
-#include "Gui/FloatingWidget.h"
-#include "Gui/Gui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiMacros.h"
-#include "Gui/Histogram.h"
-#include "Gui/KnobGui.h"
-#include "Gui/Label.h"
 #include "Gui/Menu.h"
-#include "Gui/NodeBackDropSerialization.h"
-#include "Gui/NodeClipBoard.h"
-#include "Gui/NodeCreationDialog.h"
-#include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
-#include "Gui/NodeSettingsPanel.h"
 #include "Gui/SequenceFileDialog.h"
-#include "Gui/TabWidget.h"
-#include "Gui/TimeLineGui.h"
 #include "Gui/ToolButton.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h"
 
 using namespace Natron;
-using std::cout; using std::endl;
 
 
 QImage
