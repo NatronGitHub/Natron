@@ -1240,7 +1240,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     
     if (stats) {
         std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
-        _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
+        if (!statResults.empty()) {
+            _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
+        }
     }
     U64 nbFramesLeftToRender;
     bool isBackground = appPTR->isBackground();
