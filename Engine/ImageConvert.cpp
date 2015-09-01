@@ -430,6 +430,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 
                                 ///Apply dst color-space
                                 if (dstMaxValue == 255) {
+                                    assert(k < 3);
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;

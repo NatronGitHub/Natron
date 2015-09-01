@@ -722,7 +722,9 @@ public:
             int nb = 0;
             if (exists) {
                 item = view->item(row, COL_NB_CACHE_MISS);
-                nb = item->text().toInt();
+                if (item) {
+                    nb = item->text().toInt();
+                }
             } else {
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access miss (image missing)"), Qt::WhiteSpaceNormal);
@@ -904,6 +906,7 @@ struct RenderStatsDialogPrivate
     , resetButton(0)
     , filterContainer(0)
     , filterLayout(0)
+    , filtersLabel(0)
     , nameFilterLabel(0)
     , nameFilterEdit(0)
     , idFilterLabel(0)
