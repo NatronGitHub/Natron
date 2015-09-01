@@ -587,7 +587,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/schroedinger-1.0.pc ]; then
 fi
 
 # x264 (GPL)
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/x264.pc ] && [ "$SDK_LIC" == "GPL" ]; then
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/x264.pc ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$X264_TAR ]; then
     wget $THIRD_PARTY_SRC_URL/$X264_TAR -O $SRC_PATH/$X264_TAR || exit 1
@@ -602,7 +602,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/x264.pc ] && [ "$SDK_LIC" == "GPL" ]; then
 fi
 
 # xvid (GPL)
-if [ ! -f $INSTALL_PATH/lib/libxvidcore.so.4.3 ] && [ "$SDK_LIC" == "GPL" ]; then
+if [ ! -f $INSTALL_PATH/lib/libxvidcore.so.4.3 ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$XVID_TAR ]; then
     wget $THIRD_PARTY_SRC_URL/$XVID_TAR -O $SRC_PATH/$XVID_TAR || exit 1

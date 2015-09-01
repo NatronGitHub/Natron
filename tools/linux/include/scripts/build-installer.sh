@@ -84,6 +84,17 @@ for x in $OFX_DEPENDS; do
   cp -v $x $IO_LIBS/ || exit 1
 done
 
+if [ "$SDK_LIC" == "GPL" ]; then
+  FFLIC=gpl
+else
+  FFLIC=lgpl
+fi
+cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavformat.so.56,libavcodec.so.56,libswscale.so.3,libavutil.so.54,libswresample.so.1} $IO_LIBS/ || exit 1
+OFX_LIB_DEP=$(ldd $IO_LIBS/*|grep opt | awk '{print $3}')
+for y in $OFX_LIB_DEP; do
+  cp -v $y $IO_LIBS/ || exit 1
+done
+
 IO_LIC=$OFX_IO_PATH/meta/ofx-io-license.txt
 echo "" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
