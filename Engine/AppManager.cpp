@@ -1048,6 +1048,18 @@ AppManager::load(int &argc,
             qputenv("FONTCONFIG_PATH", path.toUtf8());
         }
     }
+#elif defined(__NATRON_WIN32__)
+	if (qgetenv("FONTCONFIG_PATH").isNull()) {
+        // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
+        QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
+        QString pathcfg = path + "/fonts.conf";
+        if (!QFile(pathcfg).exists()) {
+            qWarning() << "Fontconfig configuration file" << pathcfg << "does not exist, not setting FONTCONFIG_PATH";
+        } else {
+            qDebug() << "Setting FONTCONFIG_PATH to" << path;
+            qputenv("FONTCONFIG_PATH", path.toUtf8());
+        }
+    }
 #endif
 
 
