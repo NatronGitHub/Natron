@@ -86,6 +86,7 @@ public:
     ///    - kOfxBitDepthNone (implying a clip is unconnected image)
     ///    - kOfxBitDepthByte
     ///    - kOfxBitDepthShort
+    ///    - kOfxBitDepthHalf
     ///    - kOfxBitDepthFloat
     const std::string &getUnmappedBitDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

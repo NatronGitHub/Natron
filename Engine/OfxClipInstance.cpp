@@ -77,6 +77,7 @@ OfxClipInstance::getUnmappedBitDepth() const
     
     static const std::string byteStr(kOfxBitDepthByte);
     static const std::string shortStr(kOfxBitDepthShort);
+    static const std::string halfStr(kOfxBitDepthHalf);
     static const std::string floatStr(kOfxBitDepthFloat);
     static const std::string noneStr(kOfxBitDepthNone);
     EffectInstance* inputNode = getAssociatedNode();
@@ -95,6 +96,9 @@ OfxClipInstance::getUnmappedBitDepth() const
                 break;
             case Natron::eImageBitDepthShort:
                 return shortStr;
+                break;
+            case Natron::eImageBitDepthHalf:
+                return halfStr;
                 break;
             case Natron::eImageBitDepthFloat:
                 return floatStr;
@@ -1144,6 +1148,8 @@ OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
         return Natron::eImageBitDepthByte;
     } else if (depth == kOfxBitDepthShort) {
         return Natron::eImageBitDepthShort;
+    } else if (depth == kOfxBitDepthHalf) {
+        return Natron::eImageBitDepthHalf;
     } else if (depth == kOfxBitDepthFloat) {
         return Natron::eImageBitDepthFloat;
     } else if (depth == kOfxBitDepthNone) {
@@ -1163,6 +1169,9 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
     case Natron::eImageBitDepthShort:
 
         return kOfxBitDepthShort;
+    case Natron::eImageBitDepthHalf:
+
+        return kOfxBitDepthHalf;
     case Natron::eImageBitDepthFloat:
 
         return kOfxBitDepthFloat;

@@ -61,6 +61,7 @@
 			isa = PBXAggregateTarget;
 			buildConfigurationList = D7A1965618B2255200F412DA /* Build configuration list for PBXAggregateTarget "NatronRenderer" */;
 			buildPhases = (
+				1ECAC6371B95F44C0064869D /* ShellScript */,
 			);
 			dependencies = (
 				D7A1965C18B2256400F412DA /* PBXTargetDependency */,
@@ -402,6 +403,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "xcodebuild -project Tests/Tests.xcodeproj -configuration $CONFIGURATION";
+			showEnvVarsInLog = 0;
+		};
+		1ECAC6371B95F44C0064869D /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "xcodebuild -project Renderer/NatronRenderer.xcodeproj -configuration $CONFIGURATION";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

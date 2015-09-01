@@ -392,6 +392,7 @@ enum ImageBitDepthEnum
     eImageBitDepthNone = 0,
     eImageBitDepthByte,
     eImageBitDepthShort,
+    eImageBitDepthHalf,
     eImageBitDepthFloat
 };
 
