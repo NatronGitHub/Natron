@@ -61,6 +61,7 @@ class NodeSerialization;
 class KnobSerialization;
 class RectI;
 namespace Natron {
+class OfxImageEffectInstance;
 class Node;
 class EffectInstance;
 class LibraryBinary;
@@ -148,6 +149,21 @@ public:
 private:
     
     boost::scoped_ptr<CLArgsPrivate> _imp;
+};
+
+struct GlobalOFXTLS
+{
+    Natron::OfxImageEffectInstance* lastEffectCallingMainEntry;
+    
+    ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
+    std::list<int> threadIndexes;
+    
+    GlobalOFXTLS()
+    : lastEffectCallingMainEntry(0)
+    , threadIndexes()
+    {
+        
+    }
 };
 
 struct AppManagerPrivate;
@@ -406,7 +422,7 @@ public:
      **/
     int getNRunningThreads() const;
     
-    void setThreadAsActionCaller(bool actionCaller);
+    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
 
     /**
      * @brief Returns a list of IDs of all the plug-ins currently loaded.
@@ -515,11 +531,20 @@ public Q_SLOTS:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
     
+    GlobalOFXTLS& getCurrentThreadTLS();
+    
+    void requestOFXDIalogOnMainThread(void* user_data);
+    
+public Q_SLOTS:
+    
+    void onOFXDialogOnMainThreadReceived(void* user_data);
+    
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
     
+    void s_requestOFXDialogOnMainThread(void* user_data);
     
 protected:
 

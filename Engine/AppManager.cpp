@@ -76,6 +76,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Node.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -339,6 +340,8 @@ AppManager::AppManager()
 {
     assert(!_instance);
     _instance = this;
+    
+    QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(void*)), this, SLOT(onOFXDialogOnMainThreadReceived(void*)));
 }
 
 void
@@ -3207,9 +3210,29 @@ AppManager::getNRunningThreads() const
 }
 
 void
-AppManager::setThreadAsActionCaller(bool actionCaller)
+AppManager::setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller)
 {
-    _imp->ofxHost->setThreadAsActionCaller(actionCaller);
+    _imp->ofxHost->setThreadAsActionCaller(instance,actionCaller);
+}
+
+void
+AppManager::requestOFXDIalogOnMainThread(void* user_data)
+{
+    if (QThread::currentThread() == qApp->thread()) {
+        onOFXDialogOnMainThreadReceived(user_data);
+    } else {
+        Q_EMIT s_requestOFXDialogOnMainThread(user_data);
+    }
+}
+
+void
+AppManager::onOFXDialogOnMainThreadReceived(void* user_data)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
+    if (tls.lastEffectCallingMainEntry) {
+        tls.lastEffectCallingMainEntry->dialog(user_data);
+    }
 }
 
 std::list<std::string>
@@ -3664,6 +3687,12 @@ void
 AppManager::setOnProjectCreatedCallback(const std::string& pythonFunc)
 {
     _imp->_settings->setOnProjectCreatedCB(pythonFunc);
+}
+
+GlobalOFXTLS&
+AppManager::getCurrentThreadTLS()
+{
+    return _imp->ofxHost->getCurrentThreadTLS();
 }
 
 std::list<std::string>

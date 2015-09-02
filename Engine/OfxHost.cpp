@@ -90,17 +90,47 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Node.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
+#include "Engine/ThreadStorage.h"
 
 using namespace Natron;
 
+/**
+ * @brief A application-wide TLS struct containing all stuff needed to workaround OFX poor specs:
+ * missing image effect handles etc...
+ **/
+
+
+
+struct Natron::OfxHostPrivate
+{
+    
+    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    ThreadStorage<GlobalOFXTLS> globalTLS;
+    
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+    std::list<QMutex*> pluginsMutexes;
+    QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
+#endif
+
+    
+    OfxHostPrivate()
+    : imageEffectPluginCache()
+    , globalTLS()
+#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+    , pluginsMutexes()
+    , pluginsMutexesLock(0)
+#endif
+    {
+        
+    }
+    
+};
 
 Natron::OfxHost::OfxHost()
-    : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    , _pluginsMutexes()
-    , _pluginsMutexesLock(new QMutex)
-#endif
+    : _imp(new OfxHostPrivate())
+
 {
+    _imp->imageEffectPluginCache.reset(new OFX::Host::ImageEffect::PluginCache(*this));
 }
 
 Natron::OfxHost::~OfxHost()
@@ -108,9 +138,8 @@ Natron::OfxHost::~OfxHost()
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
 
-    delete _imageEffectPluginCache;
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    delete _pluginsMutexesLock;
+    delete _imp->pluginsMutexesLock;
 #endif
 }
 
@@ -520,7 +549,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
 
     /// register the image effect cache with the global plugin cache
-    _imageEffectPluginCache->registerInCache( *OFX::Host::PluginCache::getPluginCache() );
+    _imp->imageEffectPluginCache->registerInCache( *OFX::Host::PluginCache::getPluginCache() );
 
 
 #if defined(WINDOWS)
@@ -577,7 +606,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     /*Filling node name list and plugin grouping*/
     typedef std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
     const PMap& ofxPlugins =
-    _imageEffectPluginCache->getPluginsByIDMajor();
+    _imp->imageEffectPluginCache->getPluginsByIDMajor();
     
     
     for (PMap::const_iterator it = ofxPlugins.begin();
@@ -781,20 +810,16 @@ Natron::OfxHost::newMemoryInstance(size_t nBytes)
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
-
-///Stored as int, because we need -1; list because we need it recursive for the multiThread func
-static QThreadStorage<std::list<int> > gThreadIndex;
-
-
 void
-Natron::OfxHost::setThreadAsActionCaller(bool actionCaller)
+Natron::OfxHost::setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller)
 {
+    GlobalOFXTLS& local = _imp->globalTLS.localData();
+    local.lastEffectCallingMainEntry = instance;
     if (actionCaller) {
-        gThreadIndex.localData().push_back(-1);
+        local.threadIndexes.push_back(-1);
     } else {
-        std::list<int>& local = gThreadIndex.localData();
-        assert(!local.empty());
-        local.pop_back();
+        assert(!local.threadIndexes.empty());
+        local.threadIndexes.pop_back();
     }
 }
 
@@ -813,8 +838,8 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
-    std::list<int>& localData = gThreadIndex.localData();
-    localData.push_back((int)threadIndex);
+    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
+    local.threadIndexes.push_back((int)threadIndex);
     
     boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
     //Set the TLS if not NULL
@@ -832,7 +857,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     }
 
     ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-    localData.pop_back();
+    local.threadIndexes.pop_back();
 
     return ret;
 }
@@ -863,8 +888,8 @@ public:
     void run() OVERRIDE
     {
         assert(_threadIndex < _threadMax);
-        std::list<int>& localData = gThreadIndex.localData();
-        localData.push_back((int)_threadIndex);
+        GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
+        local.threadIndexes.push_back((int)_threadIndex);
         
         //Copy the TLS of the caller thread to the newly spawned thread
         boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
@@ -882,7 +907,7 @@ public:
         }
 
         ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        localData.pop_back();
+        local.threadIndexes.pop_back();
     }
 
 private:
@@ -1086,18 +1111,15 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex) {
         return kOfxStatFailed;
     }
-
-    if (!gThreadIndex.hasLocalData()) {
-        *threadIndex = 0;
+    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
+    
+    if (!local.threadIndexes.empty() && local.threadIndexes.back() != -1) {
+        *threadIndex = local.threadIndexes.back();
     } else {
-        std::list<int>& localData = gThreadIndex.localData();
-        if (!localData.empty() && localData.back() != -1) {
-            *threadIndex = localData.back();
-        } else {
-            *threadIndex = 0;
-        }
+        *threadIndex = 0;
     }
-
+    
+    
 
     return kOfxStatOK;
 }
@@ -1107,12 +1129,9 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 int
 Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-    if (!gThreadIndex.hasLocalData()) {
-        return 0;
-    } else {
-        std::list<int>& localData = gThreadIndex.localData();
-        return !localData.empty() && localData.back() != -1;
-    }
+    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
+    return !local.threadIndexes.empty() && local.threadIndexes.back() != -1;
+    
 }
 
 // Create a mutex
@@ -1295,9 +1314,8 @@ Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 OfxStatus
 Natron::OfxHost::requestDialog(void* user_data)
 {
-#pragma message WARN("OfxDialogSuiteV1: TODO")
-    // TODO: call Natron::OfxHost::dialog(user_data) in the main thread
-    return kOfxStatFailed;
+    appPTR->requestOFXDIalogOnMainThread(user_data);
+    return kOfxStatOK;
 }
 
 /// @see OfxDialogSuiteV1.NotifyRedrawPending()
@@ -1317,3 +1335,9 @@ OfxStatus Natron::OfxHost::flushOpenGLResources() const
 }
 #endif
 
+
+GlobalOFXTLS&
+Natron::OfxHost::getCurrentThreadTLS()
+{
+    return _imp->globalTLS.localData();
+}

@@ -76,16 +76,19 @@ OfxImageEffectInstance::~OfxImageEffectInstance()
 
 class ThreadIsActionCaller_RAII
 {
+    OfxImageEffectInstance* _self;
+    
 public:
     
-    ThreadIsActionCaller_RAII()
+    ThreadIsActionCaller_RAII(OfxImageEffectInstance* self)
+    : _self(self)
     {
-        appPTR->setThreadAsActionCaller(true);
+        appPTR->setThreadAsActionCaller(_self,true);
     }
     
     ~ThreadIsActionCaller_RAII()
     {
-        appPTR->setThreadAsActionCaller(false);
+        appPTR->setThreadAsActionCaller(_self,false);
     }
 };
 
@@ -95,7 +98,7 @@ OfxImageEffectInstance::mainEntry(const char *action,
                                   OFX::Host::Property::Set *inArgs,
                                   OFX::Host::Property::Set *outArgs)
 {
-    ThreadIsActionCaller_RAII t;
+    ThreadIsActionCaller_RAII t(this);
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 }
 

@@ -28,6 +28,7 @@
 #include <list>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -48,10 +49,14 @@ class AbstractOfxEffectInstance;
 class AppInstance;
 class QMutex;
 class NodeSerialization;
+class GlobalOFXTLS;
 class KnobSerialization;
 namespace Natron {
+class OfxImageEffectInstance;
 class Node;
 class Plugin;
+    
+struct OfxHostPrivate;
 class OfxHost
     : public OFX::Host::ImageEffect::Host
 {
@@ -151,47 +156,21 @@ public:
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(bool actionCaller);
+    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
     
     static OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                            Natron::ContextEnum* ctx);
-private:
+    
+    GlobalOFXTLS& getCurrentThreadTLS();
 
     
-
+private:
+    
     /*Writes all plugins loaded and their descriptors to
-       the OFX plugin cache. (called by the destructor) */
+     the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
 
-    OFX::Host::ImageEffect::PluginCache* _imageEffectPluginCache;
-
-
-    /*plugin name -> pair< plugin id , plugin grouping >
-       The name of the plugin is followed by the first part of the grouping in brackets
-       to help identify two distinct plugins with the same name. e.g :
-       1)Invert [OFX]  with plugin id net.sourceforge.openfx.invert and grouping OFX/
-       2)Invert [Toto] with plugin id com.toto.invert and grouping Toto/SuperPlugins/OFX/
-     */
-    struct OFXPluginEntry
-    {
-        std::string openfxId;
-        std::string grouping;
-        OFXPluginEntry(const std::string &ofxid,
-                       const std::string &grp)
-            : openfxId(ofxid)
-              , grouping(grp)
-        {
-        }
-
-        OFXPluginEntry()
-        {
-        }
-    };
-    
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QMutex*> _pluginsMutexes;
-    QMutex* _pluginsMutexesLock; //<protects _pluginsMutexes
-#endif
+    boost::scoped_ptr<OfxHostPrivate> _imp;
 };
 } // namespace Natron
 
