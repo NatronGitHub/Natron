@@ -892,20 +892,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
         dRect.y2 = _bounds.y2;
         
         WriteAccess wacc(tmpImg.get());
-        std::size_t pixelSize = getComponentsCount();
-        switch (depth) {
-            case eImageBitDepthByte:
-                pixelSize *= sizeof(unsigned char);
-                break;
-            case eImageBitDepthShort:
-                pixelSize *= sizeof(unsigned short);
-                break;
-            case eImageBitDepthFloat:
-                pixelSize *= sizeof(float);
-                break;
-            case eImageBitDepthNone:
-                break;
-        }
+        std::size_t pixelSize = getComponentsCount() * getSizeOfForBitDepth(depth);
         
         if (!aRect.isNull()) {
             char* pix = (char*)tmpImg->pixelAt(aRect.x1, aRect.y1);

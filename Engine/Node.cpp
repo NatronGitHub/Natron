@@ -4318,6 +4318,8 @@ Node::makePreviewImage(SequenceTime time,
             renderPreview<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
+        case Natron::eImageBitDepthHalf:
+            break;
         case Natron::eImageBitDepthFloat: {
             renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
@@ -5836,16 +5838,20 @@ Node::getBitDepth() const
     
     for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
         switch (*it) {
-            case Natron::eImageBitDepthFloat:
-                
-                return Natron::eImageBitDepthFloat;
-                break;
             case Natron::eImageBitDepthByte:
                 foundByte = true;
                 break;
+
             case Natron::eImageBitDepthShort:
                 foundShort = true;
                 break;
+
+            case Natron::eImageBitDepthHalf:
+                break;
+
+            case Natron::eImageBitDepthFloat:
+                return Natron::eImageBitDepthFloat;
+
             case Natron::eImageBitDepthNone:
                 break;
         }

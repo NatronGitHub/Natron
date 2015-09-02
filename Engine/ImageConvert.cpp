@@ -721,6 +721,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                                                                                                      srcColorSpace,
                                                                                                      dstColorSpace,copyBitmap);
                         break;
+                    case eImageBitDepthHalf:
+                        break;
                     case eImageBitDepthFloat:
                         convertToFormatInternal_sameComps<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                                         srcColorSpace,
@@ -745,6 +747,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                                                                                                         srcColorSpace,
                                                                                                         dstColorSpace,copyBitmap);
                         break;
+                    case eImageBitDepthHalf:
+                        break;
                     case eImageBitDepthFloat:
                         convertToFormatInternal_sameComps<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
                                                                                            srcColorSpace,
@@ -755,7 +759,10 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                 }
                 break;
             }
-                
+
+            case eImageBitDepthHalf:
+                break;
+
             case eImageBitDepthFloat: {
                 switch ( getBitDepth() ) {
                     case eImageBitDepthByte:
@@ -767,6 +774,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                         convertToFormatInternal_sameComps<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,copyBitmap);
+                        break;
+                    case eImageBitDepthHalf:
                         break;
                     case eImageBitDepthFloat:
                         ///Same as a copy
@@ -804,6 +813,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                                                                                                    useAlpha0,
                                                                                                    copyBitmap,requiresUnpremult);
                         break;
+                    case eImageBitDepthHalf:
+                        break;
                     case eImageBitDepthFloat:
                         convertToFormatInternalForDepth<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                                       srcColorSpace,
@@ -838,6 +849,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                                                                                                       copyBitmap,requiresUnpremult);
                         
                         break;
+                    case eImageBitDepthHalf:
+                        break;
                     case eImageBitDepthFloat:
                         convertToFormatInternalForDepth<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
                                                                                          srcColorSpace,
@@ -851,6 +864,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                 }
                 break;
             }
+            case eImageBitDepthHalf:
+                break;
             case eImageBitDepthFloat: {
                 switch ( getBitDepth() ) {
                     case eImageBitDepthByte:
@@ -869,6 +884,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                                                                                          useAlpha0,
                                                                                          copyBitmap,requiresUnpremult);
                         
+                        break;
+                    case eImageBitDepthHalf:
                         break;
                     case eImageBitDepthFloat:
                         convertToFormatInternalForDepth<float, float, 1, 1>(renderWindow,*this, *dstImg,

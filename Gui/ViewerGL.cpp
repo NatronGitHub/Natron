@@ -4174,6 +4174,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                                                                        dstColorSpace,
                                                                        &rPix, &gPix, &bPix, &aPix);
                     break;
+                case eImageBitDepthHalf:
+                    break;
                 case eImageBitDepthFloat:
                     gotval = getColorAtInternal<float, 1>(tiles,
                                                           xPixel, yPixel,

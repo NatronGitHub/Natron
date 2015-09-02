@@ -88,15 +88,18 @@ inline int
         getSizeOfForBitDepth(Natron::ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
-    case Natron::eImageBitDepthByte:
-
+    case Natron::eImageBitDepthByte: {
         return sizeof(unsigned char);
-    case Natron::eImageBitDepthShort:
-
+    }
+    case Natron::eImageBitDepthShort: {
         return sizeof(unsigned short);
-    case Natron::eImageBitDepthFloat:
-
+    }
+    case Natron::eImageBitDepthHalf: {
+        return sizeof(unsigned short);
+    }
+    case Natron::eImageBitDepthFloat: {
         return sizeof(float);
+    }
     case Natron::eImageBitDepthNone:
         break;
     }
