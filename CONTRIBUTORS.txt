@@ -1,3 +1,33 @@
+Version 2.0:
+-----------
+
+#Developers:
+
+Frédéric Devernay <devernay@github>
+Alexandre Gauthier-Foichat <MrKepzie@github>
+Ole Andre Rodlie <olar@github> (Openfx-Arena Plug-Ins)
+Axel Airo-Farulla  <AxelAF@github> 
+
+#Artists:
+
+Jean-Christophe Levet (icons + logo + splashscreen + UI design)
+
+#Packaging:
+
+Alexandre Gauthier-Foichat <MrKepzie@github> (Linux & Windows & OSX)
+Ole Andre Rodlie <olar@github> (Linux & Windows)
+Frédéric Devernay <devernay@github> (OSX)
+
+#Testing (not everyone listed):
+
+Omar Brown <blackearth2014@github>
+Ole Andre Rodlie <olar@github>
+François "CoyHot" Grassard <Francois-Grassard@github>
+Francesco Paglia <fPaglia@github>
+rcspam <rcspam@github>
+Jean-Christophe Levet
+
+
 Version 1.0:
 -----------
 

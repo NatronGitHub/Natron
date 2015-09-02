@@ -116,7 +116,7 @@ AboutWindow::AboutWindow(Gui* gui,
     QString endAbout = (QString("<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
                                 "for more information on this software.</p>")
                         .arg(NATRON_APPLICATION_NAME) // %1
-                        .arg("https://natron.inria.fr")); // %2
+                        .arg("https://natron.fr")); // %2
     aboutText.append(endAbout);
     QString gitStr = (QString("<p>This version was generated from the source "
                               "code branch %1 at commit %2.</p>")
