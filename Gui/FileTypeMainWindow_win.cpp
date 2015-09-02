@@ -146,7 +146,7 @@ void DocumentWindow::registerFileType(const QString& documentId,
 
     LONG lSize = _MAX_PATH * 2;
     wchar_t szTempBuffer[_MAX_PATH * 2];
-    LONG lResult = ::RegQueryValue(HKEY_CLASSES_ROOT,
+    LONG lResult = ::RegQueryValueW(HKEY_CLASSES_ROOT,
                                    (const wchar_t*)fileExtension.utf16(),
                                    szTempBuffer,
                                    &lSize);
@@ -207,10 +207,10 @@ void DocumentWindow::enableShellOpen()
 // —— private helpers —————————————————————————
 bool DocumentWindow::ddeInitiate(MSG* message, long* result)
 {
-    if( (0 != LOWORD (message->lParam)) &&
-       (0 != HIWORD (message->lParam)) &&
-       (LOWORD (message->lParam)  m_appAtom) &&
-       (HIWORD(message->lParam)  m_systemTopicAtom))
+     if( (0 != LOWORD(message->lParam)) &&
+        (0 != HIWORD(message->lParam)) &&
+        (LOWORD(message->lParam) == m_appAtom) &&
+        (HIWORD(message->lParam) == m_systemTopicAtom))
     {
         // make duplicates of the incoming atoms (really adding a reference)
         wchar_t atomName[_MAX_PATH];
@@ -220,7 +220,7 @@ bool DocumentWindow::ddeInitiate(MSG* message, long* result)
         Q_ASSERT(::GlobalAddAtomW(atomName)  m_systemTopicAtom);
         
         // send the WM_DDE_ACK (caller will delete duplicate atoms)
-        ::SendMessage((HWND)message->wParam, WM_DDE_ACK, (WPARAM)winId(), MAKELPARAM (m_appAtom, m_systemTopicAtom));
+        ::SendMessage((HWND)message->wParam, WM_DDE_ACK, (WPARAM)winId(), MAKELPARAM(m_appAtom, m_systemTopicAtom));
     }
     *result = 0;
     return true;
