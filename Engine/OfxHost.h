@@ -118,6 +118,17 @@ public:
     virtual OfxStatus mutexUnLock(const OfxMutexHandle mutex) OVERRIDE;
     virtual OfxStatus mutexTryLock(const OfxMutexHandle mutex) OVERRIDE;
 #endif
+#ifdef OFX_SUPPORTS_DIALOG
+    // dialog suite
+    // In OfxDialogSuiteV1, only the host can figure out which effect instance triggered
+    // that request.
+
+    /// @see OfxDialogSuiteV1.RequestDialog()
+    virtual OfxStatus requestDialog(void* user_data) OVERRIDE;
+
+    /// @see OfxDialogSuiteV1.NotifyRedrawPending()
+    virtual OfxStatus notifyRedrawPending() OVERRIDE;
+#endif
 #ifdef OFX_SUPPORTS_OPENGLRENDER
     /// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()
     virtual OfxStatus flushOpenGLResources() const OVERRIDE;
