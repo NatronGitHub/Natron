@@ -127,39 +127,39 @@ void DocumentWindow::registerFileType(const QString& documentId,
                                       bool registerForDDE,
                                       DdeCommands commands)
 {
-    // first register the type ID of our server
+     // first register the type ID of our server
     if (!SetHkcrUserRegKey(documentId, fileTypeName))
         return;
-    
-    if (!SetHkcrUserRegKey(QString("%1DefaultIcon").arg(documentId),
-                           QString("quot;%1quot;,%2").arg(QDir::toNativeSeparators(qApp->applicationFilePath())).arg(appIconIndex)))
+
+    if (!SetHkcrUserRegKey(QString("%1\\DefaultIcon").arg(documentId),
+                   QString("\"%1\",%2").arg(QDir::toNativeSeparators(qApp->applicationFilePath())).arg(appIconIndex)))
         return;
-    
+
     m_registerForDDE = registerForDDE;
-    
+
     if(commands & DDEOpen)
-        registerCommand("Open", documentId, "quot;%1quot;", "[open(quot;%1quot;)]");
+        registerCommand("Open", documentId, " %1", "[open(\"%1\")]");
     if(commands & DDENew)
-        registerCommand("New", documentId, "-new quot;%1quot;", "[new(quot;%1quot;)]");
+        registerCommand("New", documentId, "-new %1", "[new(\"%1\")]");
     if(commands & DDEPrint)
-        registerCommand("Print", documentId, "-print quot;%1quot;", "[print(quot;%1quot;)]");
-    
+        registerCommand("Print", documentId, "-print %1", "[print(\"%1\")]");
+
     LONG lSize = _MAX_PATH * 2;
     wchar_t szTempBuffer[_MAX_PATH * 2];
     LONG lResult = ::RegQueryValue(HKEY_CLASSES_ROOT,
                                    (const wchar_t*)fileExtension.utf16(),
                                    szTempBuffer,
                                    &lSize);
-    
+
     QString temp = QString::fromUtf16((unsigned short*)szTempBuffer);
-    
+
     if (lResult != ERROR_SUCCESS || temp.isEmpty() || temp == documentId)
     {
         // no association for that suffix
         if (!SetHkcrUserRegKey(fileExtension, documentId))
             return;
-        
-        SetHkcrUserRegKey(QString("%1ShellNew").arg(fileExtension), QLatin1String(""), QLatin1String("NullFile"));
+
+        SetHkcrUserRegKey(QString("%1\\ShellNew").arg(fileExtension), QLatin1String(""), QLatin1String("NullFile"));
     }
 }
 
@@ -169,27 +169,27 @@ void DocumentWindow::registerCommand(const QString& command,
                                      const QString ddeCommand)
 {
     QString commandLine = QDir::toNativeSeparators(qApp->applicationFilePath());
-    commandLine.prepend(QLatin1String("quot;"));
-    commandLine.append(QLatin1String("quot;"));
-    
+    commandLine.prepend(QLatin1String("\""));
+    commandLine.append(QLatin1String("\""));
+
     if(!cmdLineArg.isEmpty())
     {
         commandLine.append(QChar(' '));
         commandLine.append(cmdLineArg);
     }
-    
-    if (!SetHkcrUserRegKey(QString("%1shell%2command").arg(documentId).arg(command), commandLine))
-        return; // just skip it
-    
+
+    if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\command").arg(documentId).arg(command), commandLine))
+        return;       // just skip it
+
     if(m_registerForDDE)
     {
-        if (!SetHkcrUserRegKey(QString("%1shell%2ddeexec").arg(documentId).arg(command), ddeCommand))
+        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec").arg(documentId).arg(command), ddeCommand))
             return;
-        
-        if (!SetHkcrUserRegKey(QString("%1shell%2ddeexecapplication").arg(documentId).arg(command), m_appAtomName))
+
+        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec\\application").arg(documentId).arg(command), m_appAtomName))
             return;
-        
-        if (!SetHkcrUserRegKey(QString("%1shell%2ddeexectopic").arg(documentId).arg(command), m_systemTopicAtomName))
+
+        if (!SetHkcrUserRegKey(QString("%1\\shell\\%2\\ddeexec\\topic").arg(documentId).arg(command), m_systemTopicAtomName))
             return;
     }
 }
@@ -249,7 +249,7 @@ bool DocumentWindow::ddeExecute(MSG* message, long* result)
         return true;
     }
     
-    QRegExp regCommand("<sup>$");
+   QRegExp regCommand("^\\[(\\w+)\\((.*)\\)\\]$");
     if(regCommand.exactMatch(command))
     {
         executeDdeCommand(regCommand.cap(1), regCommand.cap(2));
@@ -269,25 +269,25 @@ bool DocumentWindow::ddeTerminate(MSG* message, long* result)
 bool DocumentWindow::SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName)
 {
     HKEY hKey;
-    
-    key.prepend("SoftwareClasses");
-    
+
+    key.prepend("Software\\Classes\\");
+
     LONG lRetVal = RegCreateKey(HKEY_CURRENT_USER,
                                 (const wchar_t*)key.utf16(),
                                 &hKey);
-    
+
     if(ERROR_SUCCESS == lRetVal)
     {
         LONG lResult = ::RegSetValueExW(hKey,
-                                        valueName.isEmpty() ? 0 : (const wchar_t*)valueName.utf16(),
-                                        0,
-                                        REG_SZ,
-                                        (CONST BYTE*)value.utf16(),
-                                        (value.length() + 1) * sizeof(wchar_t));
-        
-        if(::RegCloseKey(hKey)  ERROR_SUCCESS && lResult  ERROR_SUCCESS)
+                                       valueName.isEmpty() ? 0 : (const wchar_t*)valueName.utf16(),
+                                       0,
+                                       REG_SZ,
+                                       (CONST BYTE*)value.utf16(),
+                                       (value.length() + 1) * sizeof(wchar_t));
+
+        if(::RegCloseKey(hKey) == ERROR_SUCCESS && lResult == ERROR_SUCCESS)
             return true;
-        
+
         QMessageBox::warning(0, QString("Error in setting Registry values"),
                              QString("registration database update failed for key '%s'.").arg(key));
     }
@@ -303,13 +303,13 @@ bool DocumentWindow::SetHkcrUserRegKey(QString key, const QString& value, const 
 
 void DocumentWindow::executeDdeCommand(const QString& command, const QString& params)
 {
-    QRegExp regCommand("</sup>quot;(.*)quot;$");
+    QRegExp regCommand("^\"(.*)\"$");
     bool singleCommand = regCommand.exactMatch(params);
-    if((0  command.compare("open", Qt::CaseInsensitive)) && singleCommand)
+    if((0 == command.compare("open", Qt::CaseInsensitive)) && singleCommand)
     {
         ddeOpenFile(regCommand.cap(1));
     }
-    else if((0  command.compare("new", Qt::CaseInsensitive)) && singleCommand)
+    else if((0 == command.compare("new", Qt::CaseInsensitive)) && singleCommand)
     {
         ddeNewFile(regCommand.cap(1));
     }
