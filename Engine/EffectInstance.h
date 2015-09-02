@@ -63,6 +63,7 @@
 #define PLUGINID_OFX_FRAMERANGE "net.sf.openfx.FrameRange"
 #define PLUGINID_OFX_RUNSCRIPT    "fr.inria.openfx.RunScript"
 #define PLUGINID_OFX_READFFMPEG     "fr.inria.openfx.ReadFFmpeg"
+#define PLUGINID_OFX_SHUFFLE     "net.sf.openfx.ShufflePlugin"
 #define PLUGINID_OFX_WRITEFFMPEG     "fr.inria.openfx.WriteFFmpeg"
 #define PLUGINID_OFX_READPFM     "fr.inria.openfx.ReadPFM"
 #define PLUGINID_OFX_WRITEPFM     "fr.inria.openfx.WritePFM"

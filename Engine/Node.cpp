@@ -7208,7 +7208,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
     
     ///Find an input named A
     std::string inputNameToFind,otherName;
-    if (useInputA) {
+    if (useInputA || getPluginID() == PLUGINID_OFX_SHUFFLE) {
         inputNameToFind = "A";
         otherName = "B";
     } else {

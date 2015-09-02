@@ -2802,6 +2802,7 @@ NodeGui::onSwitchInputActionTriggered()
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
+        update();
         node->getApp()->triggerAutoSave();
     }
 }

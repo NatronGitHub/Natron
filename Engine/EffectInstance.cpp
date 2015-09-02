@@ -6281,9 +6281,9 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                     std::list<ImageComponents> components;
                     getPreferredDepthAndComponents(-1, &components, &depth);
                     for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        if (it->isColorPlane()) {
+                        //if (it->isColorPlane()) {
                             compVec.push_back(*it);
-                        }
+                        //}
                     }
 
                 }
@@ -6293,9 +6293,9 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                 std::list<ImageComponents> components;
                 getPreferredDepthAndComponents(-1, &components, &depth);
                 for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                    if (it->isColorPlane()) {
+                    //if (it->isColorPlane()) {
                         compVec.push_back(*it);
-                    }
+                    //}
                 }
             }
             comps->insert(std::make_pair(-1, compVec));
@@ -6320,9 +6320,9 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                         std::list<ImageComponents> components;
                         getPreferredDepthAndComponents(i, &components, &depth);
                         for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                            if (it->isColorPlane()) {
+                            //if (it->isColorPlane()) {
                                 compVec.push_back(*it);
-                            }
+                            //}
                         }
                         
                     }
@@ -6342,9 +6342,9 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                     std::list<ImageComponents> components;
                     getPreferredDepthAndComponents(i, &components, &depth);
                     for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        if (it->isColorPlane()) {
+                        //if (it->isColorPlane()) {
                             compVec.push_back(*it);
-                        }
+                        //}
                     }
                 }
                 comps->insert(std::make_pair(i, compVec));
