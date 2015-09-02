@@ -802,3 +802,11 @@ void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
         v->centerOn_tripleSync(left, right);
     }
 }
+
+#ifdef __NATRON_WIN32__
+void
+Gui::ddeOpenFile(const QString& filePath)
+{
+    openProject(filePath.toStdString());
+}
+#endif

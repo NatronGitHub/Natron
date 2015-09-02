@@ -41,6 +41,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Gui/SerializableWindow.h"
+#ifdef __NATRON_WIN32__
+#include "Gui/FileTypeMainWindow_win.h"
+#endif
 #include "Engine/ScriptObject.h"
 
 
@@ -101,7 +104,13 @@ class OutputEffectInstance;
 struct GuiPrivate;
 
 class Gui
-    : public QMainWindow, public SerializableWindow, public boost::noncopyable
+#ifndef __NATRON_WIN32__
+    : public QMainWindow
+#else
+    : public DocumentWindow
+#endif
+    , public SerializableWindow
+    , public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -545,6 +554,13 @@ public:
     
     RenderStatsDialog* getRenderStatsDialog() const;
     RenderStatsDialog* getOrCreateRenderStatsDialog();
+    
+#ifdef __NATRON_WIN32__
+    /**
+     * @param filePath file that was selected in the explorer
+     */
+    virtual void ddeOpenFile(const QString& filePath) OVERRIDE FINAL;
+#endif
     
 Q_SIGNALS:
 

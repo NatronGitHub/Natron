@@ -121,6 +121,7 @@ SOURCES += \
     KnobGuiFactory.cpp \
     KnobGuiPrivate.cpp \
     File_KnobGui.cpp \
+    FileTypeMainWindow_win.cpp \
     Button_KnobGui.cpp \
     Int_KnobGui.cpp \
     Bool_KnobGui.cpp \
@@ -244,6 +245,7 @@ HEADERS += \
     Edge.h \
     EditExpressionDialog.h \
     EditScriptDialog.h \
+    FileTypeMainWindow_win.h \
     FloatingWidget.h \
     QtEnumConvert.h \
     GroupBoxLabel.h \
