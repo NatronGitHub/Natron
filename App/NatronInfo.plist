@@ -54,6 +54,22 @@
 			<key>CFBundleTypeIconFile</key>
 			<string>natronProjectIcon_osx.icns</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>nl</string>
+			</array>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/vnd.natron.layout</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Natron Layout</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>natronProjectIcon_osx.icns</string>
+		</dict>
 	</array>
 </dict>
 </plist>

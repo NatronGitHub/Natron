@@ -202,6 +202,7 @@ INSTALLS += target
 
 Resources.files = $$PWD/../Gui/Resources/OpenColorIO-Configs
 macx {
+    Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
     Resources.path = Contents/Resources
     QMAKE_BUNDLE_DATA += Resources
     Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
