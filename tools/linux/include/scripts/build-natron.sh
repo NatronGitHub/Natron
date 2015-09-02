@@ -1,4 +1,22 @@
 #!/bin/sh
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2015 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
+
 #
 # Build Natron for Linux
 #
@@ -46,8 +64,14 @@ export PATH=/usr/local/bin:$INSTALL_PATH/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export PYTHON_HOME=$INSTALL_PATH
-export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
-export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
+
+if [ "$PYV" == "3" ]; then
+  export PYTHON_PATH=$INSTALL_PATH/lib/python3.4
+  export PYTHON_INCLUDE=$INSTALL_PATH/include/python3.4
+else
+  export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
+  export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
+fi
 
 # Install natron
 cd $TMP_PATH || exit 1
@@ -101,7 +125,11 @@ if [ "$BUILD_SNAPSHOT" == "1" ]; then
   SNAP="CONFIG+=snapshot"
 fi
 
-CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=release ${SNAP} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+if [ "$PYV" == "3" ]; then
+  PYO="PYTHON_CONFIG=python3.4m-config"
+fi
+
+CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=release ${SNAP} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1

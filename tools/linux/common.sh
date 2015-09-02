@@ -54,7 +54,7 @@ CORELIBS_VERSION=2.0.0
 # SDK
 #
 
-#SDK_LIC=GPL #enable gpl features (ffmpeg)
+SDK_LIC=GPL #enable gpl features (ffmpeg)
 SDK_VERSION=CY2015
 SDK_PATH=/opt
 PYV=2 # Python 2 or 3

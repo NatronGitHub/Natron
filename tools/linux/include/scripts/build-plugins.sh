@@ -55,6 +55,18 @@ export BOOST_ROOT=$INSTALL_PATH
 export OPENJPEG_HOME=$INSTALL_PATH
 export THIRD_PARTY_TOOLS_HOME=$INSTALL_PATH
 
+if [ "$SDK_LIC" == "GPL" ]; then
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-gpl/lib
+  FF_INC="-I${INSTALL_PATH}/ffmpeg-gpl/include"
+  FF_LIB="-L${INSTALL_PATH}/ffmpeg-gpl/lib"
+else
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib/pkgconfig
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-lgpl/lib
+  FF_INC="-I${INSTALL_PATH}/ffmpeg-lgpl/include"
+  FF_LIB="-L${INSTALL_PATH}/ffmpeg-lgpl/lib"
+fi
+
 if [ -d $INSTALL_PATH/Plugins ]; then
   rm -rf $INSTALL_PATH/Plugins || exit 1
 fi
@@ -136,7 +148,7 @@ IO_V=$IO_GIT_VERSION
 sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh || exit 1
 
 
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=release BITS=$BIT || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include ${FF_INC}" LDFLAGS="-L${INSTALL_PATH}/lib ${FF_LIB}" make CONFIG=release BITS=$BIT || exit 1
 cp -a IO/Linux-$BIT-release/IO.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-io || exit 1
