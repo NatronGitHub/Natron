@@ -1285,6 +1285,26 @@ Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 
 #endif // ifdef OFX_SUPPORTS_MULTITHREAD
 
+#ifdef OFX_SUPPORTS_DIALOG
+// dialog
+/// @see OfxDialogSuiteV1.RequestDialog()
+OfxStatus
+Natron::OfxHost::requestDialog(void* user_data)
+{
+#pragma message WARN("OfxDialogSuiteV1: TODO")
+    // TODO: call Natron::OfxHost::dialog(user_data) in the main thread
+    return kOfxStatFailed;
+}
+
+/// @see OfxDialogSuiteV1.NotifyRedrawPending()
+OfxStatus
+Natron::OfxHost::notifyRedrawPending()
+{
+    return kOfxStatReplyDefault;
+}
+
+#endif
+
 #ifdef OFX_SUPPORTS_OPENGLRENDER
 /// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()
 OfxStatus Natron::OfxHost::flushOpenGLResources() const
