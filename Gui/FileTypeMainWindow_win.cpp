@@ -272,7 +272,7 @@ bool DocumentWindow::SetHkcrUserRegKey(QString key, const QString& value, const 
 
     key.prepend("Software\\Classes\\");
 
-    LONG lRetVal = RegCreateKey(HKEY_CURRENT_USER,
+    LONG lRetVal = RegCreateKeyW(HKEY_CURRENT_USER,
                                 (const wchar_t*)key.utf16(),
                                 &hKey);
 
