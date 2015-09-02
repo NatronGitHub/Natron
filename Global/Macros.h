@@ -54,7 +54,7 @@
 #define NATRON_LAYOUT_FILE_EXT "nl"
 #define NATRON_LAYOUT_FILE_MIME_TYPE "application/vnd.natron.layout"
 #define NATRON_PRESETS_FILE_EXT "nps"
-#define NATRON_PRESETS_FILE_EXT "application/vnd.natron.nodepresets"
+#define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
