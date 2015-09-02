@@ -180,7 +180,12 @@ class Plugin
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
     ContextEnum _ofxContext;
+    
+    //Can be activated/deactivated by the user
     bool _isUserCreatable;
+    
+    //Is not visible by the user, just for internal use
+    bool _isInternalOnly;
     
 public:
 
@@ -203,6 +208,7 @@ public:
     , _ofxDescriptor(0)
     , _ofxContext(eContextNone)
     , _isUserCreatable(true)
+    , _isInternalOnly(false)
     {
     }
 
@@ -218,29 +224,36 @@ public:
            bool isReader,
            bool isWriter,
            bool isUserCreatable)
-        : _binary(binary)
-          , _id(id)
-          , _label(label)
-          , _iconFilePath(iconFilePath)
-          , _groupIconFilePath(groupIconFilePath)
-          , _grouping(grouping)
-          , _labelWithoutSuffix()
-          , _lock(lock)
-          , _majorVersion(majorVersion)
-          , _minorVersion(minorVersion)
-          , _hasShortcutSet(false)
-          , _isReader(isReader)
-          , _isWriter(isWriter)
-          , _ofxPlugin(0)
-          , _ofxDescriptor(0)
-          , _ofxContext(eContextNone)
-          , _isUserCreatable(isUserCreatable)
+    : _binary(binary)
+    , _id(id)
+    , _label(label)
+    , _iconFilePath(iconFilePath)
+    , _groupIconFilePath(groupIconFilePath)
+    , _grouping(grouping)
+    , _labelWithoutSuffix()
+    , _lock(lock)
+    , _majorVersion(majorVersion)
+    , _minorVersion(minorVersion)
+    , _hasShortcutSet(false)
+    , _isReader(isReader)
+    , _isWriter(isWriter)
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
+    , _ofxContext(eContextNone)
+    , _isUserCreatable(isUserCreatable)
+    , _isInternalOnly(false)
     {
     }
-
+    
     ~Plugin();
+    
+    bool getIsForInternalUseOnly() const { return _isInternalOnly; }
+    
+    void setForInternalUseOnly(bool b) { _isInternalOnly = b; }
 
-    bool getIsUserCreatable() const { return _isUserCreatable; }
+    bool getIsUserCreatable() const { return _isUserCreatable && !_isInternalOnly ; }
+    
+    void setIsUserCreatable(bool f) { _isUserCreatable = f; }
     
     void setPluginID(const QString & id);
     

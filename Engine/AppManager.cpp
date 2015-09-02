@@ -1632,8 +1632,9 @@ AppManager::loadAllPlugins()
     
     ///Remove from the plug-ins the ignore plug-ins
     for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
+        (*it)->setIsUserCreatable(false);
         
-        PluginsMap::iterator foundId = _imp->_plugins.find((*it)->getPluginID().toStdString());
+        /*PluginsMap::iterator foundId = _imp->_plugins.find((*it)->getPluginID().toStdString());
         if (foundId != _imp->_plugins.end()) {
             PluginMajorsOrdered::iterator found = foundId->second.end();
             
@@ -1676,7 +1677,7 @@ AppManager::loadAllPlugins()
                     _imp->_plugins.erase(foundId);
                 }
             }
-        }
+        }*/
     }
     
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
@@ -1889,8 +1890,9 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+        Natron::Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
                         "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
+        p->setForInternalUseOnly(true);
     }
 
 }
