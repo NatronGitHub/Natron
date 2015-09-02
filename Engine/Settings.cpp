@@ -2078,6 +2078,11 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         assert(it->second.size() > 0);
         
         Natron::Plugin* plugin  = *it->second.rbegin();
+        assert(plugin);
+        
+        if (plugin->getIsForInternalUseOnly()) {
+            continue;
+        }
         
         boost::shared_ptr<Group_Knob> group;
         const QStringList& grouping = plugin->getGrouping();
@@ -2111,7 +2116,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         
         
         boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
-        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
+        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()) && plugin->getIsUserCreatable());
         pluginActivation->setName(it->first + ".enabled");
         pluginActivation->setAnimationEnabled(false);
         pluginActivation->setAddNewLine(false);

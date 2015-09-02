@@ -630,7 +630,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
-        bool userCreatable = openfxId != PLUGINID_OFX_ROTO || p->getDescriptor().isDeprecated();
+        bool userCreatable = !p->getDescriptor().isDeprecated();
+        bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         
         Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
@@ -642,6 +643,9 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                                               p->getVersionMajor(), p->getVersionMinor(),userCreatable );
+        if (isInternalOnly) {
+            natronPlugin->setForInternalUseOnly(true);
+        }
         
         natronPlugin->setOfxPlugin(p);
         
