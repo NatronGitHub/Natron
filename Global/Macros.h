@@ -40,11 +40,19 @@
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
+// The MIME types for Natron documents are:
+// *.ntp: application/vnd.natron.project
+// *.nps: application/vnd.natron.nodepresets
+// *.nl: application/vnd.natron.layout
+// these MIME types are also used in NatronInfo.plist
 #define NATRON_PROJECT_FILE_EXT "ntp"
+#define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
 #define NATRON_CACHE_FILE_EXT "ntc"
 #define NATRON_LAYOUT_FILE_EXT "nl"
+#define NATRON_LAYOUT_FILE_MIME_TYPE "application/vnd.natron.layout"
 #define NATRON_PRESETS_FILE_EXT "nps"
+#define NATRON_PRESETS_FILE_EXT "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"

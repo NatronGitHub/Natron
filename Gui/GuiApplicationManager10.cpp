@@ -240,6 +240,18 @@ Application::event(QEvent* e)
 {
     switch ( e->type() ) {
     case QEvent::FileOpen: {
+        // This class is currently supported for Mac OS X and Symbian only
+        // http://doc.qt.io/qt-4.8/qfileopenevent.html
+        // Linux and MSWindows use command-line arguments instead.
+        // File associations are done using a registry database entry on MSWindows:
+        // https://wiki.qt.io/Assigning_a_file_type_to_an_Application_on_Windows
+        // and a mime entry on most Linux destops (KDE, GNOME):
+        // http://www.freedesktop.org/wiki/Specifications/AddingMIMETutor/
+        // http://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/
+        // The MIME types for Natron documents are:
+        // *.ntp: application/vnd.natron.project
+        // *.nps: application/vnd.natron.nodepresets
+        // *.nl: application/vnd.natron.layout
         assert(_app);
         QFileOpenEvent* foe = dynamic_cast<QFileOpenEvent*>(e);
         assert(foe);
