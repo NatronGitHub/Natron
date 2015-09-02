@@ -47,9 +47,6 @@
 #include <QFileInfo>
 #include <QRegExp>
 
-// —— local includes —————————————————————————-
-#include "documentwindow.h"
-
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent, Qt::WindowFlags flags) :
