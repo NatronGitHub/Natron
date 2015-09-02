@@ -97,7 +97,7 @@
  */
 class DocumentWindow : public QMainWindow
 {
-    Q_OBJECT
+    
 public:
     // —— enums ———————————————————————————
     /**
@@ -121,7 +121,7 @@ public:
     /**
      * Destructor
      */
-    ~DocumentWindow();
+    virtual ~DocumentWindow();
     
     // —— operators ——————————————————————————
     // —— methods ——————————————————————————-
