@@ -9,7 +9,7 @@ Foundry, or Blackmagic Fusion.
 
 It is portable and cross-platform (Linux, OS X, Microsoft Windows).
 
-The project home page is http://natron.inria.fr
+The project home page is http://natron.fr
 
 The project source code repository is https://github.com/MrKepzie/Natron
 
@@ -17,8 +17,8 @@ Features
 --------
 
 - 32 bits floating point linear colour processing pipeline.
-- Colorspace management handled by the famous open-source OpenColorIO library.
-- Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO.
+- Colorspace management handled by the OpenColorIO library.
+- Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO and FFmpeg.
 - Support for many free and open-source OpenFX plugins: 
  * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
  * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
@@ -34,14 +34,13 @@ Features
  * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
  * [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
- * And probably many more. Please tell us if you successfully tested other commercial plugins.
+ * And many more. Please tell us if you successfully tested other commercial plugins.
 
-- OpenFX: Currently almost all features of OpenFX v1.3 are supported
-  (see Documentation/ofxActionsSupported.rtf and
-  Documentation/ofxPropSupported.rtf in the source distribution)
+- OpenFX: Currently almost all features of OpenFX v1.4 are supported
 
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user
-interface.  It is possible to separate on any number of screens the graphical user interface.
+interface.  It is possible to customize and separate on any number of screens the graphical user interface. 
+You can re-use your layouts and share your layout files (.nl)
 
 - Performances:  Never wait for anything to be rendered, in Natron anything you do produces
 real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e:
@@ -68,18 +67,18 @@ for large image sizes.
 3 GB of RAM and a graphic card that supports OpenGL 2.0 or OpenGL 1.5 with some extensions.
 
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes
-with a very accurate and intuitive curve editor.
+with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
 
 - Command line tool for execution of project files. The command line version is executable
- from ssh on a computer without any display. Hence it is possible to use a render farm
+ on a computer without any display. Hence it is possible to use a render farm
   to render Natron's projects. 
   
-- Rotoscoping & Tracking support
+- Rotoscoping, rotopainting and tracking support
   
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
 the views at any time with the OneView node.
 
-- Python 3 scripting integration:
+- Python 2 scripting integration:
     * Parameters expressions
     * User-defined parameters
     * Nodes groups as Python scripts 
@@ -114,14 +113,16 @@ Planned features
     
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
-- Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
+- Integration of Blender's production proven tracker in Natron to replace the existing tracker
+
 
 ### Features planned for future versions
 
-- Dope sheet: Well this is time we implement this, it can be very tedious to organise image sequences 
-without this very useful tool.
+- 3D workspace: support for Cameras, 3D Cards, Camera mapping, 3D tracker
 
 - GMIC http://gmic.eu integration as an OpenFX plug-in
+
+- Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
 
 - Deep data: Support for deep data (multiple samples per pixel)
 
@@ -141,7 +142,7 @@ branch.
 At some point,  version which are no longer supported will get removed from github's branches
 and only a release tag will be available to get the source code at that point.
 
-You can check out the easy tasks left to do [here](https://natron.inria.fr/easy-task-list/).
+You can check out the easy tasks left to do [here](https://natron.fr/easy-task-list/).
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull

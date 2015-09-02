@@ -66,13 +66,24 @@ get_icon(const QString &name)
 
 Gui::Gui(GuiAppInstance* app,
          QWidget* parent)
-    : QMainWindow(parent)
-    , SerializableWindow()
-    , _imp( new GuiPrivate(app, this) )
+#ifndef __NATRON_WIN32__
+: QMainWindow(parent)
+#else
+: DocumentWindow(parent)
+#endif
+, SerializableWindow()
+, _imp( new GuiPrivate(app, this) )
 
 {
+    
+#ifdef __NATRON_WIN32
+    //Register file types
+    registerFileType(NATRON_PROJECT_FILE_MIME_TYPE, "Natron Project file", "." NATRON_PROJECT_FILE_EXT, 0, true);
+    enableShellOpen();
+#endif
+    
     QObject::connect( this, SIGNAL( doDialog(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
-                      SLOT( onDoDialog(int, QString, QString, bool, Natron::StandardButtons, int) ) );
+                     SLOT( onDoDialog(int, QString, QString, bool, Natron::StandardButtons, int) ) );
     QObject::connect( this, SIGNAL( doDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
                       SLOT( onDoDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ) );
     QObject::connect( app, SIGNAL( pluginsPopulated() ), this, SLOT( addToolButttonsToToolBar() ) );
