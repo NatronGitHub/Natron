@@ -2089,7 +2089,9 @@ scaleToTexture8bits(const RectI& roi,
         case Natron::eImageBitDepthShort:
             scaleToTexture8bitsForDepth<unsigned short, 65535>(roi, args,viewer,output);
             break;
-            
+        case Natron::eImageBitDepthHalf:
+            assert(false);
+            break;
         case Natron::eImageBitDepthNone:
             break;
     }
@@ -2352,6 +2354,9 @@ scaleToTexture32bits(const RectI& roi,
             break;
         case Natron::eImageBitDepthShort:
             scaleToTexture32bitsForPremult<unsigned short, 65535>(roi, args, output);
+            break;
+        case Natron::eImageBitDepthHalf:
+            assert(false);
             break;
         case Natron::eImageBitDepthNone:
             break;

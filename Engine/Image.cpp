@@ -966,6 +966,9 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
         case eImageBitDepthShort:
             tmpImg->pasteFromForDepth<unsigned short>(*this, _bounds, usesBitMap(), false);
             break;
+        case eImageBitDepthHalf:
+            assert(false);
+            break;
         case eImageBitDepthFloat:
             tmpImg->pasteFromForDepth<float>(*this, _bounds, usesBitMap(), false);
             break;
@@ -1002,6 +1005,9 @@ Image::pasteFrom(const Natron::Image & src,
         break;
     case eImageBitDepthShort:
         pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
+        break;
+    case eImageBitDepthHalf:
+        assert(false);
         break;
     case eImageBitDepthFloat:
         pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
@@ -1098,6 +1104,9 @@ Image::fill(const RectI & roi,
     case eImageBitDepthShort:
         fillForDepth<unsigned short, 65535>(roi, r, g, b, a);
         break;
+    case eImageBitDepthHalf:
+        assert(false);
+        break;
     case eImageBitDepthFloat:
         fillForDepth<float, 1>(roi, r, g, b, a);
         break;
@@ -1120,6 +1129,9 @@ Image::fillZero(const RectI& roi)
             rowSize *= sizeof(unsigned char);
             break;
         case eImageBitDepthShort:
+            rowSize *= sizeof(unsigned short);
+            break;
+        case eImageBitDepthHalf:
             rowSize *= sizeof(unsigned short);
             break;
         case eImageBitDepthFloat:
@@ -1150,6 +1162,9 @@ Image::fillBoundsZero()
             rowSize *= sizeof(unsigned char);
             break;
         case eImageBitDepthShort:
+            rowSize *= sizeof(unsigned short);
+            break;
+        case eImageBitDepthHalf:
             rowSize *= sizeof(unsigned short);
             break;
         case eImageBitDepthFloat:
@@ -1283,6 +1298,9 @@ Image::getDepthString(Natron::ImageBitDepthEnum depth)
         break;
     case Natron::eImageBitDepthShort:
         s += "16u";
+        break;
+    case Natron::eImageBitDepthHalf:
+        s += "16f";
         break;
     case Natron::eImageBitDepthFloat:
         s += "32f";
@@ -1481,6 +1499,9 @@ Image::halveRoI(const RectI & roi,
     case eImageBitDepthShort:
         halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
         break;
+    case eImageBitDepthHalf:
+        assert(false);
+        break;
     case eImageBitDepthFloat:
         halveRoIForDepth<float,1>(roi,copyBitMap,output);
         break;
@@ -1560,6 +1581,9 @@ Image::halve1DImage(const RectI & roi,
         break;
     case eImageBitDepthShort:
         halve1DImageForDepth<unsigned short, 65535>(roi, output);
+        break;
+    case eImageBitDepthHalf:
+        assert(false);
         break;
     case eImageBitDepthFloat:
         halve1DImageForDepth<float, 1>(roi, output);
@@ -1732,6 +1756,9 @@ Image::upscaleMipMap(const RectI & roi,
         break;
     case eImageBitDepthShort:
         upscaleMipMapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
+        break;
+    case eImageBitDepthHalf:
+        assert(false);
         break;
     case eImageBitDepthFloat:
         upscaleMipMapForDepth<float,1>(roi, fromLevel, toLevel, output);
@@ -1984,6 +2011,9 @@ Image::scaleBox(const RectI & roi,
         break;
     case eImageBitDepthShort:
         scaleBoxForDepth<unsigned short>(roi, output);
+        break;
+    case eImageBitDepthHalf:
+        assert(false);
         break;
     case eImageBitDepthFloat:
         scaleBoxForDepth<float>(roi, output);

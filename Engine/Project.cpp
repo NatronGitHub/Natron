@@ -1528,6 +1528,7 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) con
     case Natron::eImageBitDepthShort:
 
         return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
+    case Natron::eImageBitDepthHalf: // same colorspace as float
     case Natron::eImageBitDepthFloat:
 
         return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();

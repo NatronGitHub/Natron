@@ -9514,6 +9514,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
         case Natron::eImageBitDepthShort:
             convertCairoImageToNatronImage_noColor<unsigned short, 65535>(cairoImg, srcNComps, image.get(), roi,shapeColor, opacity, useOpacityToConvert);
             break;
+        case Natron::eImageBitDepthHalf:
         case Natron::eImageBitDepthNone:
             assert(false);
             break;
