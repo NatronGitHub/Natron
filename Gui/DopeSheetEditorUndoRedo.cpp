@@ -123,7 +123,7 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
                     
                     KeyFrame fake;
                     
-                    knob->moveValueAtTime(kf.getTime(), dim, dt, 0, &fake);
+                    knob->moveValueAtTime(Natron::eCurveChangeReasonDopeSheet,kf.getTime(), dim, dt, 0, &fake);
                 }
             }
         }
@@ -223,7 +223,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
 
         boost::shared_ptr<KnobI> knob = knobContext->getKnobGui()->getKnob();
 
-        knob->moveValueAtTime(selectedKey->key.getTime(),
+        knob->moveValueAtTime(Natron::eCurveChangeReasonDopeSheet,selectedKey->key.getTime(),
                               knobContext->getDimension(),
                               dt, 0, &selectedKey->key);
     }
@@ -423,7 +423,7 @@ DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
     }
     
     boost::shared_ptr<KnobI> knob = knobContext->getKnobGui()->getKnob();
-    knob->transformValueAtTime(key->key.getTime(), knobContext->getDimension(), _transform, &key->key);
+    knob->transformValueAtTime(Natron::eCurveChangeReasonDopeSheet,key->key.getTime(), knobContext->getDimension(), _transform, &key->key);
 }
 
 int
@@ -825,7 +825,7 @@ void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
             continue;
         }
 
-        knobContext->getKnobGui()->getKnob()->setInterpolationAtTime(knobContext->getDimension(),
+        knobContext->getKnobGui()->getKnob()->setInterpolationAtTime(Natron::eCurveChangeReasonDopeSheet,knobContext->getDimension(),
                                                                      it->_key->key.getTime(),
                                                                      interp,
                                                                      &it->_key->key);
@@ -891,7 +891,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             }
         }
         else {
-            knob->deleteValueAtTime(currentTime, knobContext->getDimension());
+            knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,currentTime, knobContext->getDimension());
         }
 
         knob->endChanges();

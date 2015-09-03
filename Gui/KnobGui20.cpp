@@ -694,9 +694,22 @@ KnobGui::getCurve(int dimension) const
 }
 
 void
-KnobGui::onRefreshGuiCurve(int /*dimension*/)
+KnobGui::onRedrawGuiCurve(int reason, int /*dimension*/)
 {
-    Q_EMIT refreshCurveEditor();
+    Natron::CurveChangeReason curveChangeReason = (Natron::CurveChangeReason)reason;
+    switch (curveChangeReason) {
+        case Natron::eCurveChangeReasonCurveEditor:
+            Q_EMIT refreshDopeSheet();
+            break;
+        case Natron::eCurveChangeReasonDopeSheet:
+            Q_EMIT refreshCurveEditor();
+            break;
+        case Natron::eCurveChangeReasonInternal:
+            Q_EMIT refreshDopeSheet();
+            Q_EMIT refreshCurveEditor();
+            break;
+    }
+    
 }
 
 

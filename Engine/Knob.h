@@ -172,9 +172,9 @@ public:
         Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
     }
     
-    void s_refreshGuiCurve(int dimension)
+    void s_redrawGuiCurve(Natron::CurveChangeReason reason, int dimension)
     {
-        Q_EMIT refreshGuiCurve(dimension);
+        Q_EMIT redrawGuiCurve((int)reason,dimension);
     }
     
     void s_minMaxChanged(double mini, double maxi, int index)
@@ -277,7 +277,8 @@ Q_SIGNALS:
     
     void keyFrameInterpolationChanged(SequenceTime time,int dimension);
     
-    void refreshGuiCurve(int dimension);
+    /// Emitted when the gui curve has been cloned
+    void redrawGuiCurve(int reason, int dimension);
     
     ///Emitted whenever all keyframes of a dimension are about removed with a reason different of eValueChangedReasonUserEdited
     void animationAboutToBeRemoved(int);
@@ -502,27 +503,24 @@ protected:
      **/
     virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
+
+public:
+    
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
-
-public:
-
-    /**
-     * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
-     **/
-    void deleteValueAtTime(int time,int dimension);
+    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,int time,int dimension) = 0;
+    
     
     /**
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
-    virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
     
     /**
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
      **/
-    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
      * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
@@ -532,13 +530,13 @@ public:
     /**
      * @brief Changes the interpolation type for the given keyframe
      **/
-    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
+    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
     
     /**
      * @brief Set the left/right derivatives of the control point at the given time.
      **/
-    virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right) = 0;
-    virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) = 0;
+    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,int time,double left,double right) = 0;
+    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,int time,double derivative,bool isLeft) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
@@ -1127,17 +1125,17 @@ private:
     
     
     virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,int time,int dimension) OVERRIDE FINAL;
 
 public:
 
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
-    virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
-    virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
     virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
@@ -1340,7 +1338,7 @@ protected:
     
     void setInternalCurveHasChanged(int dimension, bool changed);
     
-    void guiCurveCloneInternalCurve(int dimension, Natron::ValueChangedReasonEnum reason);
+    void guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension, Natron::ValueChangedReasonEnum reason);
     
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
     

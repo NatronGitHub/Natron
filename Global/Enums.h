@@ -533,6 +533,13 @@ enum PluginOpenGLRenderSupport {
     ePluginOpenGLRenderSupportNeeded // Can do only GPU
 };
 
+enum CurveChangeReason
+{
+     eCurveChangeReasonCurveEditor,
+     eCurveChangeReasonDopeSheet,
+     eCurveChangeReasonInternal
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

@@ -197,7 +197,7 @@ deleteKey(boost::shared_ptr<KnobI> knob,
           OfxTime time)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
-        knob->deleteValueAtTime(time, i);
+        knob->deleteValueAtTime(Natron::eCurveChangeReasonInternal,time, i);
     }
 
     return kOfxStatOK;

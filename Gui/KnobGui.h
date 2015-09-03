@@ -248,7 +248,7 @@ public Q_SLOTS:
     
     void onUnlinkActionTriggered();
 
-    void onRefreshGuiCurve(int dimension);
+    void onRedrawGuiCurve(int reason, int dimension);
     
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
@@ -357,6 +357,8 @@ Q_SIGNALS:
     void knobRedoneChange();
 
     void refreshCurveEditor();
+    
+    void refreshDopeSheet();
     
     void expressionChanged();
     

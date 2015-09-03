@@ -295,7 +295,7 @@ AnimatedParam::getKeyTime(int index,int dimension,double* time) const
 void
 AnimatedParam::deleteValueAtTime(int time,int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(time, dimension);
+    getInternalKnob()->deleteValueAtTime(Natron::eCurveChangeReasonInternal,time, dimension);
 }
 
 void

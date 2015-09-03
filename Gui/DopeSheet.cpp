@@ -1397,6 +1397,9 @@ DSNode::DSNode(DopeSheet *model,
 
         QObject::connect(knobGui, SIGNAL(keyFrameRemoved()),
                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
+        
+        QObject::connect(knobGui, SIGNAL(refreshDopeSheet()),
+                         _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()));
     }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
