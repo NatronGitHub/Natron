@@ -279,7 +279,7 @@ CurveGui::drawCurve(int curveIndex,
         }
         
     }
-    
+
     QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
     QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
 
@@ -555,7 +555,8 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
         if (isParametric) {
             return isParametric->getParametricCurve(_dimension)->getValueAt(x);
         } else {
-            return knob->getRawCurveValueAt(x, _dimension);
+            assert(_internalCurve);
+            return _internalCurve->getValueAt(x,false);
         }
     }
 }
