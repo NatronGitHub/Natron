@@ -41,6 +41,7 @@
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Button.h"
+#include "Gui/ChannelsComboBox.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
@@ -833,6 +834,10 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     if (foundCurIt == components.end()) {
         _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
     } else {
+        if (foundCurIt->getNumComponents() == 1) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(5);
+            setDisplayChannels(5, true);
+        }
         _imp->viewerNode->setActiveLayer(*foundCurIt, false);
     }
     
@@ -844,10 +849,14 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     if (alphaCurChoice == "-") {
         
         ///Try to find color plane, otherwise fallback on any other layer
-        if (foundColorIt != components.end() && foundColorIt->getComponentsNames().size() == 4) {
+        if (foundColorIt != components.end() &&
+            (foundColorIt->getComponentsNames().size() == 4 || foundColorIt->getComponentsNames().size() == 1)) {
+            
+            std::size_t lastComp = foundColorIt->getComponentsNames().size() -1;
+            
             alphaCurChoice = QString(foundColorIt->getLayerName().c_str())
-            + '.' + QString(foundColorIt->getComponentsNames()[3].c_str());
-            foundAlphaChannel = foundColorIt->getComponentsNames()[3];
+            + '.' + QString(foundColorIt->getComponentsNames()[lastComp].c_str());
+            foundAlphaChannel = foundColorIt->getComponentsNames()[lastComp];
             foundCurAlphaIt = foundColorIt;
             
             
@@ -870,6 +879,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     } else {
         _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     }
+    
 }
 
 void

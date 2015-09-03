@@ -1533,8 +1533,13 @@ ViewerInstance::renderViewer_internal(int view,
                     vmin = vmax - 1.;
                 }
                 
-                inArgs.params->gain = 1 / (vmax - vmin);
-                inArgs.params->offset =  -vmin / (vmax - vmin);
+                if (vmax <= 0) {
+                    inArgs.params->gain = 0;
+                    inArgs.params->offset = 0;
+                } else {
+                    inArgs.params->gain = 1 / (vmax - vmin);
+                    inArgs.params->offset =  -vmin / (vmax - vmin);
+                }
             }
             
             const RenderViewerArgs args(image,
@@ -1702,6 +1707,11 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
                     b = src_pixels[2];
                     a = 1.;
                     break;
+                case 2:
+                    r = src_pixels[0];
+                    g = src_pixels[1];
+                    b = 0.;
+                    a = 1.;
                 case 1:
                     a = src_pixels[0];
                     r = g = b = 0.;
