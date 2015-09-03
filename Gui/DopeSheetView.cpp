@@ -2139,7 +2139,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
         if (foundRange != nodeRanges.end()) {
             QPoint visualRectCenter = hierarchyView->visualItemRect(dsNode->getTreeItem()).center();
             QPointF center = zoomContext.toZoomCoordinates(visualRectCenter.x(),visualRectCenter.y());
-            if (zoomCoordsRect.contains(center.x(), center.y())) {
+            if (zoomCoordsRect.contains((foundRange->second.first + foundRange->second.second) / 2. , center.y())) {
                 selectedNodes->push_back(dsNode);
             }
         }
