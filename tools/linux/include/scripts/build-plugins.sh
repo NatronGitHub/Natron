@@ -82,9 +82,7 @@ fi
 if [ -z "$BUILD_ARENA" ]; then
   BUILD_ARENA=1
 fi
-if [ -z "$BUILD_CV" ]; then
-  BUILD_CV=1
-fi
+BUILD_CV=0
 
 # MISC
 if [ "$BUILD_MISC" == "1" ]; then

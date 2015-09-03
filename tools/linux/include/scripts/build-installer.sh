@@ -359,29 +359,29 @@ strip -s $ARENA_LIBS/*
 rm -rf $ARENA_LIBS/libcairo*
 
 # OFX CV
-OFX_CV_VERSION=$TAG
-OFX_CV_PATH=$INSTALLER/packages/$CVPLUG_PKG
-mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
-cat $XML/openfx-opencv.xml | sed "s/_VERSION_/${OFX_CV_VERSION}/;s/_DATE_/${DATE}/" > $OFX_CV_PATH/meta/package.xml || exit 1
-cat $QS/openfx-opencv.qs > $OFX_CV_PATH/meta/installscript.qs || exit 1
-cp -a $INSTALL_PATH/docs/openfx-opencv $OFX_CV_PATH/data/docs/ || exit 1
-cat $OFX_CV_PATH/data/docs/openfx-opencv/README > $OFX_CV_PATH/meta/license.txt || exit 1
-cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/ || exit 1
-strip -s $OFX_CV_PATH/data/Plugins/*/*/*/*
+#OFX_CV_VERSION=$TAG
+#OFX_CV_PATH=$INSTALLER/packages/$CVPLUG_PKG
+#mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
+#cat $XML/openfx-opencv.xml | sed "s/_VERSION_/${OFX_CV_VERSION}/;s/_DATE_/${DATE}/" > $OFX_CV_PATH/meta/package.xml || exit 1
+#cat $QS/openfx-opencv.qs > $OFX_CV_PATH/meta/installscript.qs || exit 1
+#cp -a $INSTALL_PATH/docs/openfx-opencv $OFX_CV_PATH/data/docs/ || exit 1
+#cat $OFX_CV_PATH/data/docs/openfx-opencv/README > $OFX_CV_PATH/meta/license.txt || exit 1
+#cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/ || exit 1
+#strip -s $OFX_CV_PATH/data/Plugins/*/*/*/*
 
-mkdir -p $OFX_CV_PATH/data/lib || exit 1
-OFX_CV_DEPENDS=$(ldd $OFX_CV_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
-for x in $OFX_CV_DEPENDS; do
-  cp -v $x $OFX_CV_PATH/data/lib/ || exit 1
-done
-strip -s $OFX_CV_PATH/data/lib/*
-cp -a $INSTALL_PATH/docs/opencv $OFX_CV_PATH/data/docs/ || exit 1
-cat $INSTALL_PATH/docs/opencv/LICENSE >> $OFX_CV_PATH/meta/ofx-cv-license.txt || exit 1
+#mkdir -p $OFX_CV_PATH/data/lib || exit 1
+#OFX_CV_DEPENDS=$(ldd $OFX_CV_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+#for x in $OFX_CV_DEPENDS; do
+#  cp -v $x $OFX_CV_PATH/data/lib/ || exit 1
+#done
+#strip -s $OFX_CV_PATH/data/lib/*
+#cp -a $INSTALL_PATH/docs/opencv $OFX_CV_PATH/data/docs/ || exit 1
+#cat $INSTALL_PATH/docs/opencv/LICENSE >> $OFX_CV_PATH/meta/ofx-cv-license.txt || exit 1
 
-mkdir -p $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries || exit 1
-mv $OFX_CV_PATH/data/lib/* $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries/ || exit 1
-(cd $OFX_CV_PATH/data/Plugins/segment.ofx.bundle; ln -sf ../inpaint.ofx.bundle/Libraries .)
-rm -rf $OFX_CV_PATH/data/lib || exit 1
+#mkdir -p $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries || exit 1
+#mv $OFX_CV_PATH/data/lib/* $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries/ || exit 1
+#(cd $OFX_CV_PATH/data/Plugins/segment.ofx.bundle; ln -sf ../inpaint.ofx.bundle/Libraries .)
+#rm -rf $OFX_CV_PATH/data/lib || exit 1
 
 # Clean and perms
 chown root:root -R $INSTALLER/*

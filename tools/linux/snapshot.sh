@@ -95,10 +95,10 @@ if [ ! -d $TMP/openfx-arena ]; then
   cd $TMP || exit 1
   git clone $GIT_ARENA || exit 1
 fi
-if [ ! -d $TMP/openfx-opencv ]; then
-  cd $TMP || exit 1
-  git clone $GIT_OPENCV || exit 1
-fi
+#if [ ! -d $TMP/openfx-opencv ]; then
+#  cd $TMP || exit 1
+#  git clone $GIT_OPENCV || exit 1
+#fi
 
 #while :
 #do
@@ -160,18 +160,18 @@ if [ "$FAIL" != "1" ]; then
   fi
 fi
 BUILD_OPENCV=0
-if [ "$FAIL" != "1" ]; then
-  cd $TMP/openfx-opencv
-  git fetch --all || FAIL=1
-  git merge origin/master || FAIL=1
-  GITV_CV=$(git log|head -1|awk '{print $2}')
-  ORIG_CV=$CVPLUG_DEVEL_GIT
-  echo "CV $GITV_CV vs. $ORIG_CV"
-  if [ "$GITV_CV" != "$ORIG_CV" ] && [ "$FAIL" != "1" ]; then
-    echo "CV update needed"
-    BUILD_OPENCV=1
-  fi
-fi
+#if [ "$FAIL" != "1" ]; then
+#  cd $TMP/openfx-opencv
+#  git fetch --all || FAIL=1
+#  git merge origin/master || FAIL=1
+#  GITV_CV=$(git log|head -1|awk '{print $2}')
+#  ORIG_CV=$CVPLUG_DEVEL_GIT
+#  echo "CV $GITV_CV vs. $ORIG_CV"
+#  if [ "$GITV_CV" != "$ORIG_CV" ] && [ "$FAIL" != "1" ]; then
+#    echo "CV update needed"
+#    BUILD_OPENCV=1
+#  fi
+#fi
 
 cd $CWD || exit 1
 if [ "$FAIL" != "1" ]; then
