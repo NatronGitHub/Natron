@@ -725,7 +725,7 @@ Gui::sortAllPluginsToolButtons()
 ToolButton*
 Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 {
-    if (!plugin->getIsUserCreatable()) {
+    if (!plugin->getIsUserCreatable() && plugin->getChildren().empty()) {
         return 0;
     }
 
