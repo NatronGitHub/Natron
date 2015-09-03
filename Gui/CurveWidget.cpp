@@ -1401,8 +1401,10 @@ CurveWidget::setSelectedKeys(const SelectedKeys & keys)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->_selectedKeyFrames = keys;
-    refreshDisplayedTangents();
     refreshSelectedKeysBbox();
+    
+    //Will call update
+    refreshDisplayedTangents();
 }
 
 void
@@ -1411,8 +1413,10 @@ CurveWidget::refreshSelectedKeys()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    refreshDisplayedTangents();
     refreshSelectedKeysBbox();
+    
+    // Wil call update
+    refreshDisplayedTangents();
 }
 
 void
