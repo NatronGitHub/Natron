@@ -1537,6 +1537,8 @@ public:
      **/
     void notifyRenderFinished();
     
+    void setIsDoingNeatRender(bool doing);
+    
     bool isDoingNeatRender() const;
     
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }

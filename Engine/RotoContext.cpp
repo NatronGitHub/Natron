@@ -8757,9 +8757,21 @@ RotoContext::isDoingNeatRender() const
 void
 RotoContext::notifyRenderFinished()
 {
+    setIsDoingNeatRender(false);
+}
+
+void
+RotoContext::setIsDoingNeatRender(bool doing)
+{
+    
     QMutexLocker k(&_imp->doingNeatRenderMutex);
-    _imp->doingNeatRender = false;
-    _imp->doingNeatRenderCond.wakeAll();
+    _imp->doingNeatRender = doing;
+    if (doing && _imp->mustDoNeatRender) {
+        _imp->mustDoNeatRender = false;
+    }
+    if (!doing) {
+        _imp->doingNeatRenderCond.wakeAll();
+    }
 }
 
 void
@@ -8767,9 +8779,11 @@ RotoContext::evaluateNeatStrokeRender()
 {
     {
         QMutexLocker k(&_imp->doingNeatRenderMutex);
-        _imp->doingNeatRender = true;
+        _imp->mustDoNeatRender = true;
     }
     evaluateChange();
+    
+    //EvaluateChange will call setIsDoingNeatRender(true);
     {
         QMutexLocker k(&_imp->doingNeatRenderMutex);
         while (_imp->doingNeatRender) {
