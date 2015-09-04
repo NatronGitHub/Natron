@@ -218,6 +218,7 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
     _imp->animationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->animationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->animationButton->setToolTip( Natron::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);

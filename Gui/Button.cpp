@@ -30,7 +30,7 @@
 Button::Button(QWidget* parent)
     : QPushButton(parent)
 {
-    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     initInternal();
 }
 
@@ -38,7 +38,7 @@ Button::Button(const QString & text,
                QWidget * parent)
     : QPushButton(text,parent)
 {
-    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     initInternal();
 }
 
@@ -47,7 +47,7 @@ Button::Button(const QIcon & icon,
                QWidget * parent)
     : QPushButton(icon,text,parent)
 {
-    setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     initInternal();
 }
 

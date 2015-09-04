@@ -215,6 +215,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _dimensionSwitchButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
         

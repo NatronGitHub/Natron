@@ -197,6 +197,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->syncViewerButton->setCheckable(true);
     _imp->syncViewerButton->setToolTip(Natron::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
     _imp->syncViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->syncViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->syncViewerButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect(_imp->syncViewerButton, SIGNAL(clicked(bool)), this,SLOT(onSyncViewersButtonPressed(bool)));
     _imp->firstRowLayout->addWidget(_imp->syncViewerButton);
@@ -204,12 +205,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->centerViewerButton = new Button(_imp->firstSettingsRow);
     _imp->centerViewerButton->setFocusPolicy(Qt::NoFocus);
     _imp->centerViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->centerViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->firstRowLayout->addWidget(_imp->centerViewerButton);
 
 
     _imp->clipToProjectFormatButton = new Button(_imp->firstSettingsRow);
     _imp->clipToProjectFormatButton->setFocusPolicy(Qt::NoFocus);
     _imp->clipToProjectFormatButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->clipToProjectFormatButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clipToProjectFormatButton->setCheckable(true);
     _imp->clipToProjectFormatButton->setChecked(true);
     _imp->clipToProjectFormatButton->setDown(true);
@@ -218,6 +221,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->enableViewerRoI = new Button(_imp->firstSettingsRow);
     _imp->enableViewerRoI->setFocusPolicy(Qt::NoFocus);
     _imp->enableViewerRoI->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->enableViewerRoI->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->enableViewerRoI->setCheckable(true);
     _imp->enableViewerRoI->setChecked(false);
     _imp->enableViewerRoI->setDown(false);
@@ -226,6 +230,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->refreshButton = new Button(_imp->firstSettingsRow);
     _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
     _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->refreshButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     {
         QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         QStringList refreshActions;
@@ -241,6 +246,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->activateRenderScale->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyEnabled,
                            "<p><b>" + tr("Proxy mode:") + "</b></p><p>" +
                            tr("Activates the downscaling by the amount indicated by the value on the right. "
@@ -322,6 +328,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGainButton->setDown(false);
     _imp->toggleGainButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGainButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->toggleGainButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->toggleGainButton->setToolTip(Natron::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGainButton);
     QObject::connect(_imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)));
@@ -347,7 +354,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->autoConstrastLabel);
 
     _imp->autoContrast = new QCheckBox(_imp->secondSettingsRow);
-    _imp->autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect);
+    _imp->autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
     _imp->autoContrast->setToolTip(autoContrastToolTip);
     _imp->secondRowLayout->addWidget(_imp->autoContrast);
     
@@ -364,6 +371,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGammaButton->setDown(false);
     _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGammaButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->toggleGammaButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->toggleGammaButton->setToolTip(Natron::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting"), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
     
@@ -407,6 +415,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setToolTip(Natron::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
                                                                      "(within the project window only)."), Qt::WhiteSpaceNormal));
     _imp->checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->checkerboardButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
     _imp->secondRowLayout->addWidget(_imp->checkerboardButton);
 
@@ -478,6 +487,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->firstFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->firstFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->firstFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst,"<p>" + tr("First frame") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->firstFrame_Button);
     _imp->playerLayout->addWidget(_imp->firstFrame_Button);
@@ -486,6 +496,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->previousKeyFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF,"<p>" + tr("Previous Keyframe") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousKeyFrame_Button);
 
@@ -493,6 +504,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Backward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->play_Backward_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward,"<p>" + tr("Play backward") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Backward_Button);
     _imp->play_Backward_Button->setCheckable(true);
@@ -503,6 +515,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->previousFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious,"<p>" + tr("Previous frame") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousFrame_Button);
     
@@ -512,6 +525,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->stop_Button = new Button(_imp->playerButtonsContainer);
     _imp->stop_Button->setFocusPolicy(Qt::NoFocus);
     _imp->stop_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->stop_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerStop,"<p>" + tr("Stop") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->stop_Button);
     _imp->playerLayout->addWidget(_imp->stop_Button);
@@ -520,6 +534,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->nextFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext,"<p>" + tr("Next frame") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextFrame_Button);
     _imp->playerLayout->addWidget(_imp->nextFrame_Button);
@@ -528,6 +543,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
     _imp->play_Forward_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->play_Forward_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerForward,"<p>" + tr("Play forward") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Forward_Button);
     _imp->play_Forward_Button->setCheckable(true);
@@ -538,6 +554,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextKeyFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->nextKeyFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF,"<p>" + tr("Next Keyframe") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextKeyFrame_Button);
 
@@ -545,6 +562,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->lastFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->lastFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->lastFrame_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->lastFrame_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast,"<p>" + tr("Last Frame") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->lastFrame_Button);
     _imp->playerLayout->addWidget(_imp->lastFrame_Button);
@@ -560,6 +578,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->previousIncrement_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr,"<p>" + tr("Previous Increment") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousIncrement_Button);
     _imp->playerLayout->addWidget(_imp->previousIncrement_Button);
@@ -576,6 +595,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextIncrement_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextIncrement_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->nextIncrement_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr,"<p>" + tr("Next Increment") + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->nextIncrement_Button);
     _imp->playerLayout->addWidget(_imp->nextIncrement_Button);
@@ -583,6 +603,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playbackMode_Button = new Button(_imp->playerButtonsContainer);
     _imp->playbackMode_Button->setFocusPolicy(Qt::NoFocus);
     _imp->playbackMode_Button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->playbackMode_Button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->playbackMode_Button->setToolTip(Natron::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
     _imp->playerLayout->addWidget(_imp->playbackMode_Button);
 
@@ -618,6 +639,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                                        , Qt::WhiteSpaceNormal);
     
     _imp->canEditFpsBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->canEditFpsBox->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->canEditFpsBox->setToolTip(canEditFpsBoxTT);
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
     QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
@@ -651,6 +673,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->turboButton->setChecked(false);
     _imp->turboButton->setDown(false);
     _imp->turboButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->turboButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
                                   tr("When checked, everything besides the viewer will not be refreshed in the user interface "
                                                                                               "for maximum efficiency during playback.") + "</p>");

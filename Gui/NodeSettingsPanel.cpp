@@ -86,6 +86,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     appPTR->getIcon(NATRON_PIXMAP_SETTINGS,&pixSettings);
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _settingsButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _settingsButton->setToolTip(Natron::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
