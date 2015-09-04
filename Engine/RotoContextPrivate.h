@@ -1522,6 +1522,7 @@ struct RotoContextPrivate
     mutable QMutex doingNeatRenderMutex;
     QWaitCondition doingNeatRenderCond;
     bool doingNeatRender;
+    bool mustDoNeatRender;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -1534,6 +1535,7 @@ struct RotoContextPrivate
     , node(n)
     , age(0)
     , doingNeatRender(false)
+    , mustDoNeatRender(false)
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();

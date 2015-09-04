@@ -6000,7 +6000,9 @@ Node::setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes)
         ++_imp->nodeIsRendering;
     }
     
-    
+    if (_imp->rotoContext) {
+        _imp->rotoContext->setIsDoingNeatRender(true);
+    }
     
     ///mark this
     markedNodes.push_back(this);
