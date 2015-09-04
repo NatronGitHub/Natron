@@ -57,7 +57,7 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
+  QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
@@ -202,10 +202,13 @@ unix {
      isEmpty(PYTHON_CONFIG) {
          PYTHON_CONFIG = python2-config
      }
-     #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
      python {
-         LIBS += $$system($$PYTHON_CONFIG --ldflags)
-         QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
+          #PKGCONFIG += python
+          LIBS += $$system($$PYTHON_CONFIG --ldflags)
+          PYTHON_CFLAGS = $$system($$PYTHON_CONFIG --includes)
+          PYTHON_INCLUDEPATH = $$find(PYTHON_CFLAGS, ^-I.*)
+          PYTHON_INCLUDEPATH ~= s/^-I(.*)/\\1/g
+          INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
      # There may be different pyside.pc/shiboken.pc for different versions of python.
@@ -246,7 +249,7 @@ unix {
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024 -Wno-c++11-extensions
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra
+  QMAKE_CFLAGS_WARN_ON += -Wextra
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }
@@ -263,12 +266,12 @@ addresssanitizer {
   message("  qmake -spec unsupported/macx-clang CONFIG+=addresssanitizer ...")
   message("see http://clang.llvm.org/docs/AddressSanitizer.html")
   CONFIG += debug
-  QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
   QMAKE_LFLAGS += -fsanitize=address -g
 
 #  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+#  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 #  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 }
 
@@ -277,13 +280,13 @@ threadsanitizer {
   message("Compiling with ThreadSanitizer (for clang).")
   message("see http://clang.llvm.org/docs/ThreadSanitizer.html")
   CONFIG += debug
-  QMAKE_CXXFLAGS += -fsanitize=thread -O1
+  QMAKE_CFLAGS += -fsanitize=thread -O1
   QMAKE_CFLAGS += -fsanitize=thread -O1
   QMAKE_LFLAGS += -fsanitize=thread -g
 }
 
 coverage {
-  QMAKE_CXXFLAGS += -fprofile-arcs -ftest-coverage -O0
+  QMAKE_CFLAGS += -fprofile-arcs -ftest-coverage -O0
   QMAKE_LFLAGS += -fprofile-arcs -ftest-coverage
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
