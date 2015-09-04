@@ -101,6 +101,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
     _imp->toggleTripleSyncBtn->setCheckable(true);
     _imp->toggleTripleSyncBtn->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->toggleTripleSyncBtn->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     
     connect(_imp->toggleTripleSyncBtn, SIGNAL(toggled(bool)),
             this, SLOT(toggleTripleSync(bool)));

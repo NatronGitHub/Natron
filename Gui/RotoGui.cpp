@@ -594,6 +594,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
     _imp->autoKeyingEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->autoKeyingEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
     _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
@@ -606,6 +607,7 @@ RotoGui::RotoGui(NodeGui* node,
     featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
     _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
     _imp->featherLinkEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->featherLinkEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked( _imp->context->isFeatherLinkEnabled() );
     _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
@@ -619,6 +621,7 @@ RotoGui::RotoGui(NodeGui* node,
     enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
     _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
     _imp->displayFeatherEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->displayFeatherEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->displayFeatherEnabled->setCheckable(true);
     _imp->displayFeatherEnabled->setChecked(true);
     _imp->displayFeatherEnabled->setDown(true);
@@ -631,6 +634,7 @@ RotoGui::RotoGui(NodeGui* node,
     stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
     _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
     _imp->stickySelectionEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->stickySelectionEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
@@ -644,6 +648,7 @@ RotoGui::RotoGui(NodeGui* node,
     bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
     _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
     _imp->bboxClickAnywhere->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->bboxClickAnywhere->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->bboxClickAnywhere->setCheckable(true);
     _imp->bboxClickAnywhere->setChecked(true);
     _imp->bboxClickAnywhere->setDown(true);
@@ -659,6 +664,7 @@ RotoGui::RotoGui(NodeGui* node,
     rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
     _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
     _imp->rippleEditEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->rippleEditEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked( _imp->context->isRippleEditEnabled() );
     _imp->rippleEditEnabled->setDown( _imp->context->isRippleEditEnabled() );
@@ -670,12 +676,14 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
     _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->addKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
     _imp->addKeyframeButton->setToolTip(Natron::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
     _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
     _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->removeKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
     _imp->removeKeyframeButton->setToolTip(Natron::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
@@ -716,6 +724,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
     _imp->colorWheelButton->setToolTip(Natron::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->colorWheelButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()));
     _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
     
@@ -765,6 +774,7 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect(_imp->pressureOpacityButton, SIGNAL(clicked(bool)), this, SLOT(onPressureOpacityClicked(bool)));
     _imp->pressureOpacityButton->setToolTip(pressOpatt);
     _imp->pressureOpacityButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->pressureOpacityButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->pressureOpacityButton->setCheckable(true);
     _imp->pressureOpacityButton->setChecked(true);
     _imp->pressureOpacityButton->setDown(true);
@@ -791,6 +801,7 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect(_imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)));
     _imp->pressureSizeButton->setToolTip(pressSizett);
     _imp->pressureSizeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->pressureSizeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->pressureSizeButton->setCheckable(true);
     _imp->pressureSizeButton->setChecked(false);
     _imp->pressureSizeButton->setDown(false);
@@ -816,6 +827,7 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect(_imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)));
     _imp->pressureHardnessButton->setToolTip(pressHardnesstt);
     _imp->pressureHardnessButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->pressureHardnessButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->pressureHardnessButton->setCheckable(true);
     _imp->pressureHardnessButton->setChecked(false);
     _imp->pressureHardnessButton->setDown(false);
@@ -837,6 +849,7 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect(_imp->buildUpButton, SIGNAL(clicked(bool)), this, SLOT(onBuildupClicked(bool)));
     _imp->buildUpButton->setToolTip(builduptt);
     _imp->buildUpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->buildUpButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->buildUpButton->setCheckable(true);
     _imp->buildUpButton->setChecked(true);
     _imp->buildUpButton->setDown(true);
@@ -900,10 +913,11 @@ RotoGui::RotoGui(NodeGui* node,
     
     ////////////////////////////////////// CREATING VIEWER LEFT TOOLBAR //////////////////////////////////////
     
-    QSize rotoToolSize(NATRON_LARGE_BUTTON_SIZE,NATRON_LARGE_BUTTON_SIZE);
-    
+    QSize rotoToolSize(NATRON_LARGE_BUTTON_SIZE, NATRON_LARGE_BUTTON_SIZE);
+
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setFixedSize(rotoToolSize);
+    _imp->selectTool->setIconSize(rotoToolSize);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->selectTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     QKeySequence selectShortCut(Qt::Key_Q);
@@ -929,6 +943,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->pointsEditionTool = new RotoToolButton(_imp->toolbar);
     _imp->pointsEditionTool->setFixedSize(rotoToolSize);
+    _imp->pointsEditionTool->setIconSize(rotoToolSize);
     _imp->pointsEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->pointsEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->pointsEditionTool->setText( tr("Add points") );
@@ -947,6 +962,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->bezierEditionTool = new RotoToolButton(_imp->toolbar);
     _imp->bezierEditionTool->setFixedSize(rotoToolSize);
+    _imp->bezierEditionTool->setIconSize(rotoToolSize);
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->bezierEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->bezierEditionTool->setText("Bezier");
@@ -973,6 +989,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->paintBrushTool = new RotoToolButton(_imp->toolbar);
     _imp->paintBrushTool->setFixedSize(rotoToolSize);
+    _imp->paintBrushTool->setIconSize(rotoToolSize);
     _imp->paintBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->paintBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->paintBrushTool->setText("Brush");
@@ -987,6 +1004,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->cloneBrushTool = new RotoToolButton(_imp->toolbar);
     _imp->cloneBrushTool->setFixedSize(rotoToolSize);
+    _imp->cloneBrushTool->setIconSize(rotoToolSize);
     _imp->cloneBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->cloneBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->cloneBrushTool->setText("Clone");
@@ -1000,6 +1018,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->effectBrushTool = new RotoToolButton(_imp->toolbar);
     _imp->effectBrushTool->setFixedSize(rotoToolSize);
+    _imp->effectBrushTool->setIconSize(rotoToolSize);
     _imp->effectBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->effectBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->effectBrushTool->setText("Blur");
@@ -1014,6 +1033,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->mergeBrushTool = new RotoToolButton(_imp->toolbar);
     _imp->mergeBrushTool->setFixedSize(rotoToolSize);
+    _imp->mergeBrushTool->setIconSize(rotoToolSize);
     _imp->mergeBrushTool->setPopupMode(QToolButton::InstantPopup);
     QObject::connect( _imp->mergeBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
     _imp->mergeBrushTool->setText("Dodge");
