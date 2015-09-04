@@ -1398,9 +1398,18 @@ TabBar::makePixmapForDrag(int index)
         addTab(tabs[i].second, tabs[i].first);
     }
 
-
+    
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
+    
+#if QT_VERSION < 0x050000
+    ///Prevent a bug with grabWidget and retina display on Qt4
+    bool isHighDPI = _tabWidget->getGui()->isHighDPI();
+    if (isHighDPI) {
+        tabBarImg = tabBarImg.scaled(tabBarImg.width() / 2., tabBarImg.height() / 2.);
+        currentTabImg = currentTabImg.scaled(currentTabImg.width() / 2., currentTabImg.height() / 2.);
+    }
+#endif
 
     //now we just put together the 2 pixmaps and set it with mid transparancy
     QImage ret(currentTabImg.width(),currentTabImg.height() + tabBarImg.height(),QImage::Format_ARGB32_Premultiplied);
@@ -1967,3 +1976,4 @@ TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }
+

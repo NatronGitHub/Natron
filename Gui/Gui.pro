@@ -513,3 +513,8 @@ Resources/OpenColorIO-Configs/spi-vfx/luts/vd16.spi1d \
 Resources/OpenColorIO-Configs/spi-vfx/luts/vd8.spi1d \
 Resources/OpenColorIO-Configs/spi-vfx/luts/version_8_whitebalanced.spimtx \
 Resources/OpenColorIO-Configs/spi-vfx/make_vfx_ocio.py
+
+macx {
+OBJECTIVE_SOURCES += \
+    QtMac.mm
+}

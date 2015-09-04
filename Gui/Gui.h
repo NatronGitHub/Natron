@@ -99,7 +99,15 @@ class Node;
 class Image;
 class EffectInstance;
 class OutputEffectInstance;
+    
+    
+#if defined(Q_OS_MAC)
+//Implementation in Gui/QtMac.mm
+bool isHighDPIInternal(const QWidget* w);
+#endif
+    
 }
+
 
 struct GuiPrivate;
 
@@ -560,6 +568,15 @@ public:
      * @param filePath file that was selected in the explorer
      */
     virtual void ddeOpenFile(const QString& filePath) OVERRIDE FINAL;
+#endif
+    
+    /**
+     * @brief Returns true on OS X if on a High DPI (Retina) Display.
+     **/
+#ifndef Q_OS_MAC
+    bool isHighDPI() const { return false; }
+#else
+    bool isHighDPI() const { return Natron::isHighDPIInternal(this); }
 #endif
     
 Q_SIGNALS:
