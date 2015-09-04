@@ -26,9 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 #include "Engine/EffectInstance.h"
@@ -38,6 +40,11 @@
 
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 typedef std::list<NodePtr> NodeList;
+
+
+
+
+
 
 namespace Natron {
 class Node;
@@ -241,7 +248,8 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 renderAge,
-                               Natron::OutputEffectInstance* renderRequester,
+                               const boost::shared_ptr<Natron::Node>& treeRoot,
+                               const FrameRequestMap* request,
                                int textureIndex,
                                const TimeLine* timeline,
                                const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
@@ -252,6 +260,7 @@ public:
     void invalidateParallelRenderArgs();
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
+    
     
     void forceGetClipPreferencesOnAllTrees();
     
@@ -300,6 +309,7 @@ class ParallelRenderArgsSetter
     NodeCollection* collection;
     std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
     
+        
 public:
     
     ParallelRenderArgsSetter(NodeCollection* n,
@@ -309,7 +319,8 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             Natron::OutputEffectInstance* renderRequester,
+                             const boost::shared_ptr<Natron::Node>& treeRoot,
+                             const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
                              const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,

@@ -127,6 +127,7 @@ SOURCES += \
     OfxParamInstance.cpp \
     OutputSchedulerThread.cpp \
     ParameterWrapper.cpp \
+    ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     ProcessHandler.cpp \
@@ -267,6 +268,7 @@ HEADERS += \
     OutputSchedulerThread.h \
     OverlaySupport.h \
     ParameterWrapper.h \
+    ParallelRenderArgs.h \
     Plugin.h \
     PluginMemory.h \
     ProcessHandler.h \

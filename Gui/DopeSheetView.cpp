@@ -1835,8 +1835,8 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         double inputFirst,inputLast;
         input->getLiveInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
 
-        Natron::EffectInstance::FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
-        Natron::EffectInstance::FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
+        FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
+        FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
         assert(!framesFirst.empty() && !framesLast.empty());
         
         FrameRange range;

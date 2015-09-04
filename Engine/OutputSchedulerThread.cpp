@@ -1963,7 +1963,9 @@ private:
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
         RenderStatsPtr stats(new RenderStats(renderDirectly && enableRenderStats));
         
-        std::string cb = _imp->output->getNode()->getBeforeFrameRenderCallback();
+        NodePtr outputNode = _imp->output->getNode();
+        
+        std::string cb = outputNode->getBeforeFrameRenderCallback();
         if (!cb.empty()) {
             std::vector<std::string> args;
             std::string error;
@@ -2046,60 +2048,66 @@ private:
                 }
                 
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, i, &rod, &isProjectFormat);
-                if (stat != eStatusFailed) {
-                    std::list<ImageComponents> components;
-                    ImageBitDepthEnum imageDepth;
-                    activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
-                    RectI renderWindow;
-                    rod.toPixelEnclosing(scale, par, &renderWindow);
-                    
-                    ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
-                                                             time,
-                                                             i,
-                                                             false,  // is this render due to user interaction ?
-                                                             canOnlyHandleOneView, // is this sequential ?
-                                                             true, // canAbort ?
-                                                             0, //renderAge
-                                                             _imp->output, // viewer requester
-                                                             0, //texture index
-                                                             _imp->output->getApp()->getTimeLine().get(),
-                                                             NodePtr(),
-                                                             false,
-                                                             false,
-                                                             false,
-                                                             stats);
-                    
-                    RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
-                    
-                    ImageList planes;
-                    EffectInstance::RenderRoIRetCode retCode =
-                    activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
-                                                                                  scale, //< the scale at which to render
-                                                                                  mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                  i, //< the view to render
-                                                                                  false,
-                                                                                  renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                  rod, // < any precomputed rod ? in canonical coordinates
-                                                                                  components,
-                                                                                  imageDepth,
-                                                                                  _imp->output),&planes);
-                    if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                        _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-                        return;
-                    }
-                    
-                    ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
-                    if (!renderDirectly) {
-                        for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
-                            _imp->scheduler->appendToBuffer(time, i, stats, boost::dynamic_pointer_cast<BufferableObject>(*it));
-                        }
-                    } else {
-                        _imp->scheduler->notifyFrameRendered(time, i, viewsCount, stats, eSchedulingPolicyFFA);
-                    }
-                    
-                } else {
+                if (stat == eStatusFailed) {
                     break;
                 }
+                std::list<ImageComponents> components;
+                ImageBitDepthEnum imageDepth;
+                activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+                RectI renderWindow;
+                rod.toPixelEnclosing(scale, par, &renderWindow);
+                
+                FrameRequestMap request;
+                stat = EffectInstance::computeRequestPass(time, i, mipMapLevel, renderWindow, outputNode, request);
+                if (stat == eStatusFailed) {
+                    break;
+                }
+                
+                ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
+                                                         time,
+                                                         i,
+                                                         false,  // is this render due to user interaction ?
+                                                         canOnlyHandleOneView, // is this sequential ?
+                                                         true, // canAbort ?
+                                                         0, //renderAge
+                                                         outputNode, // viewer requester
+                                                         &request,
+                                                         0, //texture index
+                                                         _imp->output->getApp()->getTimeLine().get(),
+                                                         NodePtr(),
+                                                         false,
+                                                         false,
+                                                         false,
+                                                         stats);
+                
+                RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
+                
+                ImageList planes;
+                EffectInstance::RenderRoIRetCode retCode =
+                activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                              scale, //< the scale at which to render
+                                                                              mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                              i, //< the view to render
+                                                                              false,
+                                                                              renderWindow, //< the region of interest (in pixel coordinates)
+                                                                              rod, // < any precomputed rod ? in canonical coordinates
+                                                                              components,
+                                                                              imageDepth,
+                                                                              _imp->output),&planes);
+                if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+                    return;
+                }
+                
+                ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
+                if (!renderDirectly) {
+                    for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
+                        _imp->scheduler->appendToBuffer(time, i, stats, boost::dynamic_pointer_cast<BufferableObject>(*it));
+                    }
+                } else {
+                    _imp->scheduler->notifyFrameRendered(time, i, viewsCount, stats, eSchedulingPolicyFFA);
+                }
+                
             }
             
         } catch (const std::exception& e) {
@@ -2160,7 +2168,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  canOnlyHandleOneView, // is this sequential ?
                                                  true, //canAbort
                                                  0, //renderAge
-                                                 _effect, //viewer
+                                                 _effect->getNode(), //tree root
+                                                 0,
                                                  0, //texture index
                                                  _effect->getApp()->getTimeLine().get(),
                                                  NodePtr(),

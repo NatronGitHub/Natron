@@ -376,7 +376,8 @@ public:
                                    bool isSequential,
                                    bool canAbort,
                                    U64 renderAge,
-                                   Natron::OutputEffectInstance* renderRequester,
+                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                   const FrameRequestMap* request,
                                    int textureIndex,
                                    const TimeLine* timeline,
                                    bool isAnalysis,
@@ -386,10 +387,10 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , rotoPaintNodes()
-    , viewerNode(renderRequester->getNode())
+    , viewerNode(treeRoot)
     , viewerInputNode()
     {
         if (rotoNode) {
@@ -423,7 +424,16 @@ public:
         if (viewerInput && !viewerInput->getGroup()) {
             viewerInputNode = viewerInput;
             bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, renderRequester, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            
+            boost::shared_ptr<NodeFrameRequest> nodeRequest;
+            if (request) {
+                FrameRequestMap::const_iterator foundRequest = request->find(viewerInputNode);
+                if (foundRequest != request->end()) {
+                    nodeRequest = foundRequest->second;
+                }
+            }
+            
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, viewerInput->getHashValue(), viewerInput->getRotoAge(), renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -473,6 +483,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         }
     }
     
+    NodePtr thisNode = getNode();
+    
     
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
@@ -483,6 +495,20 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         
         U64 renderAge = _imp->getRenderAge(i);
 
+        
+        FrameRequestMap request;
+        RectI roi;
+        {
+            roi.x1 = args[i]->params->textureRect.x1;
+            roi.y1 = args[i]->params->textureRect.y1;
+            roi.x2 = args[i]->params->textureRect.x2;
+            roi.y2 = args[i]->params->textureRect.y2;
+        }
+        status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
+        if (status[i] == Natron::eStatusFailed) {
+            continue;
+        }
+        
         ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
                                            time,
                                            view,
@@ -490,7 +516,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            false,
                                            canAbort,
                                            renderAge,
-                                           this,
+                                           thisNode,
+                                           &request,
                                            i,
                                            getTimeline().get(),
                                            false,
@@ -798,7 +825,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                      isSequential, // is this sequential ?
                                                      canAbort,
                                                      renderAge,
-                                                     this,
+                                                     getNode(),
+                                                     0, // request
                                                      textureIndex,
                                                      getTimeline().get(),
                                                      NodePtr(),
@@ -1126,7 +1154,16 @@ ViewerInstance::renderViewer_internal(int view,
     bool tilingProgressReportPrefEnabled = false;
     if (useTLS) {
         tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
-
+        
+        FrameRequestMap request;
+        Natron::StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, roi, getNode(), request);
+        if (stat == eStatusFailed) {
+            if (!isSequentialRender) {
+                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+            }
+            return stat;
+        }
+        
         frameArgs.reset(new ViewerParallelRenderArgsSetter(getApp()->getProject().get(),
                                                            inArgs.params->time,
                                                            view,
@@ -1134,7 +1171,8 @@ ViewerInstance::renderViewer_internal(int view,
                                                            isSequentialRender,
                                                            canAbort,
                                                            inArgs.params->renderAge,
-                                                           this,
+                                                           getNode(),
+                                                           &request,
                                                            inArgs.params->textureIndex,
                                                            getTimeline().get(),
                                                            false,
@@ -1222,8 +1260,6 @@ ViewerInstance::renderViewer_internal(int view,
             Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-            }
-            if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             }
             return eStatusFailed;

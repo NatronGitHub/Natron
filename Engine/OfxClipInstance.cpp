@@ -976,7 +976,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         
         unsigned int mipMapLevel = Image::getLevelFromScale(renderScale.x);
         
-        EffectInstance::RoIMap regionsOfInterests;
+        RoIMap regionsOfInterests;
         bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
         
         
@@ -1003,7 +1003,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         RectD roi;
         if (!optionalBounds) {
             
-            EffectInstance::RoIMap::iterator found = regionsOfInterests.find(inputNode);
+            RoIMap::iterator found = regionsOfInterests.find(inputNode);
             assert(found != regionsOfInterests.end());
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
             roi = found->second;

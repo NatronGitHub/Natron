@@ -235,8 +235,8 @@ ViewerTabPrivate::getOverlayTransform(double time,
 static double transformTimeForNode(Natron::EffectInstance* currentNode, double inTime)
 {
     U64 nodeHash = currentNode->getHash();
-    EffectInstance::FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
-    EffectInstance::FramesNeededMap::iterator foundInput0 = framesNeeded.find(0);
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
+    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0);
     if (foundInput0 == framesNeeded.end()) {
         return inTime;
     }

@@ -193,9 +193,9 @@ public:
                                   const RectD & outputRoD, //!< full RoD in canonical coordinates
                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                   int view,
-                                Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
+                                  RoIMap* ret) OVERRIDE FINAL;
 
-    virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(double time,int view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(double time,int view) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
@@ -297,7 +297,7 @@ public:
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void rerouteInputAndSetTransform(const std::list<EffectInstance::InputMatrix>& inputTransforms) OVERRIDE FINAL;
+    virtual void rerouteInputAndSetTransform(const InputMatrixMap& inputTransforms) OVERRIDE FINAL;
     virtual void clearTransform(int inputNb) OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;

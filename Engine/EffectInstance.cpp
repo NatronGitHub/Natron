@@ -71,10 +71,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
-//This controls how many frames a plug-in can pre-fetch (per view and per input)
-//This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
-//do not all stick altogether in memory
-#define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
+
 
 using namespace Natron;
 
@@ -121,7 +118,7 @@ namespace  {
     
     typedef std::map<ActionKey,IdentityResults,CompareActionsCacheKeys> IdentityCacheMap;
     typedef std::map<ActionKey,RectD,CompareActionsCacheKeys> RoDCacheMap;
-    typedef std::map<ActionKey,EffectInstance::FramesNeededMap,CompareActionsCacheKeys> FramesNeededCacheMap;
+    typedef std::map<ActionKey,FramesNeededMap,CompareActionsCacheKeys> FramesNeededCacheMap;
     
     /**
      * @brief This class stores all results of the following actions:
@@ -291,7 +288,7 @@ namespace  {
 
         }
         
-        bool getFramesNeededResult(U64 hash,double time, int view,unsigned int mipMapLevel,EffectInstance::FramesNeededMap* framesNeeded) {
+        bool getFramesNeededResult(U64 hash,double time, int view,unsigned int mipMapLevel,FramesNeededMap* framesNeeded) {
             
             QMutexLocker l(&_cacheMutex);
             for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
@@ -314,7 +311,7 @@ namespace  {
         }
         
         
-        void setFramesNeededResult(U64 hash,double time, int view, unsigned int mipMapLevel,const EffectInstance::FramesNeededMap& framesNeeded)
+        void setFramesNeededResult(U64 hash,double time, int view, unsigned int mipMapLevel,const FramesNeededMap& framesNeeded)
         {
             
             QMutexLocker l(&_cacheMutex);
@@ -890,7 +887,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          U64 nodeHash,
                                          U64 rotoAge,
                                          U64 renderAge,
-                                         Natron::OutputEffectInstance* renderRequester,
+                                         const boost::shared_ptr<Natron::Node>& treeRoot,
+                                         const boost::shared_ptr<NodeFrameRequest>& nodeRequest,
                                          int textureIndex,
                                          const TimeLine* timeline,
                                          bool isAnalysis,
@@ -909,11 +907,16 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isRenderResponseToUserInteraction = isRenderUserInteraction;
     args.isSequentialRender = isSequential;
     
-    args.nodeHash = nodeHash;
+    if (nodeRequest) {
+        args.request = nodeRequest;
+        args.nodeHash = nodeRequest->nodeHash;
+    } else {
+        args.nodeHash = nodeHash;
+    }
     args.rotoAge = rotoAge;
     args.canAbort = canAbort;
     args.renderAge = renderAge;
-    args.renderRequester = renderRequester;
+    args.treeRoot = treeRoot;
     args.textureIndex = textureIndex;
     args.isAnalysis = isAnalysis;
     args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
@@ -1045,16 +1048,18 @@ EffectInstance::aborted() const
                 if (args.isAnalysis) {
                     return false;
                 }
-                if (args.renderRequester) {
+                ViewerInstance* isViewer  = 0;
+                if (args.treeRoot) {
+                    
+                    isViewer = dynamic_cast<ViewerInstance*>(args.treeRoot->getLiveInstance());
                     //If the viewer is already doing a sequential render, abort
-                    if (args.renderRequester->isDoingSequentialRender()) {
+                    if (isViewer->isDoingSequentialRender()) {
                         return true;
                     }
                 }
                 
                 if (args.canAbort) {
                     
-                    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
                     if (isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
                         return true;
                     }
@@ -1070,8 +1075,10 @@ EffectInstance::aborted() const
                 
             } else {
                 ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
-                if (args.renderRequester) {
-                    return args.renderRequester->isSequentialRenderBeingAborted();
+                if (args.treeRoot) {
+                    Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>(args.treeRoot->getLiveInstance());
+                    assert(effect);
+                    return effect->isSequentialRenderBeingAborted();
                 } else {
                     return false;
                 }
@@ -1242,7 +1249,7 @@ EffectInstance::getThreadLocalInputImages(EffectInstance::InputImagesMap* images
 }
 
 bool
-EffectInstance::getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const
+EffectInstance::getThreadLocalRegionsOfInterests(RoIMap& roiMap) const
 {
     if (!_imp->renderArgs.hasLocalData()) {
         return false;
@@ -1751,7 +1758,7 @@ EffectInstance::getRegionsOfInterest(double /*time*/,
                                      const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                      int /*view*/,
-                                     EffectInstance::RoIMap* ret)
+                                     RoIMap* ret)
 {
     for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = getInput(i);
@@ -1761,10 +1768,10 @@ EffectInstance::getRegionsOfInterest(double /*time*/,
     }
 }
 
-EffectInstance::FramesNeededMap
+FramesNeededMap
 EffectInstance::getFramesNeeded(double time, int view)
 {
-    EffectInstance::FramesNeededMap ret;
+    FramesNeededMap ret;
     RangeD defaultRange;
     
     defaultRange.min = defaultRange.max = time;
@@ -2077,8 +2084,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 }
 
 void
-EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
-                                         std::list<InputMatrix>* inputTransforms)
+EffectInstance::tryConcatenateTransforms(double time,
+                                         int view,
+                                         const RenderScale& scale,
+                                         InputMatrixMap* inputTransforms)
 {
     
     bool canTransform = getCanTransform();
@@ -2097,7 +2106,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
         /*
          * If getting the transform does not succeed, then this effect is treated as any other ones.
          */
-        Natron::StatusEnum stat = getTransform_public(args.time, args.scale, args.view, &inputToTransform, &thisNodeTransform);
+        Natron::StatusEnum stat = getTransform_public(time, scale, view, &inputToTransform, &thisNodeTransform);
         if (stat == eStatusOK) {
             getTransformSucceeded = true;
         }
@@ -2115,9 +2124,8 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
             std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
 
             InputMatrix im;
-            im.inputNb = *it;
             im.newInputEffect = input;
-            im.newInputNbToFetchFrom = im.inputNb;
+            im.newInputNbToFetchFrom = *it;
 
             
             // recursion upstream
@@ -2149,7 +2157,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 } else if (inputCanTransform) {
                     Transform::Matrix3x3 m;
                     inputToTransform = 0;
-                    Natron::StatusEnum stat = input->getTransform_public(args.time, args.scale, args.view, &inputToTransform, &m);
+                    Natron::StatusEnum stat = input->getTransform_public(time, scale, view, &inputToTransform, &m);
                     if (stat == eStatusOK) {
                         matricesByOrder.push_back(m);
                         if (inputToTransform) {
@@ -2185,7 +2193,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                     ++it2;
                 }
                 
-                inputTransforms->push_back(im);
+                inputTransforms->insert(std::make_pair(*it,im));
             }
             
         } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it)
@@ -2197,10 +2205,10 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
 class TransformReroute_RAII
 {
     EffectInstance* self;
-    std::list<EffectInstance::InputMatrix> transforms;
+    InputMatrixMap transforms;
 public:
     
-    TransformReroute_RAII(EffectInstance* self,const std::list<EffectInstance::InputMatrix>& inputTransforms)
+    TransformReroute_RAII(EffectInstance* self,const InputMatrixMap& inputTransforms)
     : self(self)
     , transforms(inputTransforms)
     {
@@ -2209,8 +2217,8 @@ public:
     
     ~TransformReroute_RAII()
     {
-        for (std::list<EffectInstance::InputMatrix>::iterator it = transforms.begin(); it != transforms.end(); ++it) {
-            self->clearTransform(it->inputNb);
+        for (InputMatrixMap::iterator it = transforms.begin(); it != transforms.end(); ++it) {
+            self->clearTransform(it->first);
         }
         
     }
@@ -2730,9 +2738,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
     ///Try to concatenate transform effects
-    std::list<InputMatrix> inputsToTransform;
-    if (appPTR->getCurrentSettings()->isTransformConcatenationEnabled()) {
-        tryConcatenateTransforms(args, &inputsToTransform);
+    InputMatrixMap inputsToTransform;
+    bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+    if (useTransforms) {
+        tryConcatenateTransforms(args.time, args.view, args.scale, &inputsToTransform);
     }
     
     ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
@@ -3185,7 +3194,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
         }
 
-        RenderRoIRetCode inputCode = renderInputImagesForRoI(args.time,
+        RenderRoIRetCode inputCode = renderInputImagesForRoI(useTransforms,
+                                                             args.time,
                                                              args.view,
                                                              par,
                                                              rod,
@@ -3314,7 +3324,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
                 }
                 
-                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(args.time,
+                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(useTransforms,
+                                                                        args.time,
                                                                         args.view,
                                                                         par,
                                                                         rod,
@@ -3689,14 +3700,62 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     return eRenderRoIRetCodeOk;
 } // renderRoI
 
+void
+EffectInstance::transformInputRois(Natron::EffectInstance* self,
+                                   const InputMatrixMap& inputTransforms,
+                                   double par,
+                                   const RenderScale& scale,
+                                   RoIMap* inputsRoi,
+                                   std::map<int, EffectInstance*>* reroutesMap)
+{
+    //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
+    for (InputMatrixMap::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
+        
+        RectD transformedRenderWindow;
+        
+        Natron::EffectInstance* effectInTransformInput = self->getInput(it->first);
+        assert(effectInTransformInput);
+        
+        
+        
+        RoIMap::iterator foundRoI = inputsRoi->find(effectInTransformInput);
+        if (foundRoI == inputsRoi->end()) {
+            //There might be no RoI because it was null
+            continue;
+        }
+        
+        // invert it
+        Transform::Matrix3x3 invertTransform;
+        double det = Transform::matDeterminant(*it->second.cat);
+        if (det != 0.) {
+            invertTransform = Transform::matInverse(*it->second.cat, det);
+        }
+        
+        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, scale.x,
+                                                                               scale.y, false);
+        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par,  scale.x,
+                                                                               scale.y, false);
+        
+        invertTransform = Transform::matMul(Transform::matMul(pixelToCanonical, invertTransform), canonicalToPixel);
+        Transform::transformRegionFromRoD(foundRoI->second, invertTransform, transformedRenderWindow);
+        
+        //Replace the original RoI by the transformed RoI
+        inputsRoi->erase(foundRoI);
+        inputsRoi->insert(std::make_pair(it->second.newInputEffect->getInput(it->second.newInputNbToFetchFrom), transformedRenderWindow));
+        reroutesMap->insert(std::make_pair(it->first, it->second.newInputEffect));
+        
+    }
+}
+
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(double time,
+EffectInstance::renderInputImagesForRoI(bool useTransforms,
+                                        double time,
                                         int view,
                                         double par,
                                         const RectD& rod,
                                         const RectD& canonicalRenderWindow,
-                                        const std::list<InputMatrix>& inputTransforms,
+                                        const InputMatrixMap& inputTransforms,
                                         unsigned int mipMapLevel,
                                         const RenderScale & scale,
                                         const RenderScale& renderMappedScale,
@@ -3716,196 +3775,22 @@ EffectInstance::renderInputImagesForRoI(double time,
 #endif
     
     std::map<int, EffectInstance*> reroutesMap;
-    //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
-    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
-        
-        RectD transformedRenderWindow;
-        
-        Natron::EffectInstance* effectInTransformInput = getInput(it->inputNb);
-        assert(effectInTransformInput);
-        
-        
-        
-        RoIMap::iterator foundRoI = inputsRoi->find(effectInTransformInput);
-        if (foundRoI == inputsRoi->end()) {
-            //There might be no RoI because it was null 
-            continue;
-        }
-        
-        // invert it
-        Transform::Matrix3x3 invertTransform;
-        double det = Transform::matDeterminant(*it->cat);
-        if (det != 0.) {
-            invertTransform = Transform::matInverse(*it->cat, det);
-        }
-        
-        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, scale.x,
-                                                                               scale.y, false);
-        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par,  scale.x,
-                                                                               scale.y, false);
-        
-        invertTransform = Transform::matMul(Transform::matMul(pixelToCanonical, invertTransform), canonicalToPixel);
-        Transform::transformRegionFromRoD(foundRoI->second, invertTransform, transformedRenderWindow);
-        
-        //Replace the original RoI by the transformed RoI
-        inputsRoi->erase(foundRoI);
-        inputsRoi->insert(std::make_pair(it->newInputEffect->getInput(it->newInputNbToFetchFrom), transformedRenderWindow));
-        reroutesMap.insert(std::make_pair(it->inputNb, it->newInputEffect));
-
-    }
-
-    
-    
-    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
-        ///We have to do this here because the enabledness of a mask is a feature added by Natron.
-        bool inputIsMask = isInputMask(it->first);
-        
-        
-        Natron::ImageComponents maskComps;
-        int channelForAlphaInput;
-        NodePtr maskInput;
-        if (inputIsMask) {
-            if (!isMaskEnabled(it->first)) {
-                continue;
-            }
-            channelForAlphaInput = getMaskChannel(it->first,&maskComps,&maskInput);
-        } else {
-            channelForAlphaInput = -1;
-        }
-        
-        if (inputIsMask && (channelForAlphaInput == -1 || maskComps.getNumComponents() == 0)) {
-            continue;
-        }
-
-        ///There cannot be frames needed without components needed.
-        ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(it->first);
-        if (foundCompsNeeded == neededComps.end()) {
-            continue;
-        }
-        
-        EffectInstance* inputEffect;
-        std::map<int, EffectInstance*>::iterator foundReroute = reroutesMap.find(it->first);
-        if (foundReroute != reroutesMap.end()) {
-            inputEffect = foundReroute->second->getInput(it->first);
-        } else {
-            inputEffect = getInput(it->first);
-        }
-        
-        //Redirect the mask input
-        if (maskInput) {
-            inputEffect = maskInput->getLiveInstance();
-        }
-        
-        //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if (getNode()->getAttachedRotoItem() && inputEffect && inputEffect->isRotoPaintNode()) {
-            continue;
-        }
-
-        if (inputEffect) {
-            
-            InputImagesMap::iterator foundInputImages = inputImages->find(it->first);
-            if (foundInputImages == inputImages->end()) {
-                std::pair<InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(it->first, ImageList()));
-                foundInputImages = ret.first;
-                assert(ret.second);
-            }
-            
-            ///What region are we interested in for this input effect ? (This is in Canonical coords)
-            RoIMap::iterator foundInputRoI = inputsRoi->find(inputEffect);
-            if(foundInputRoI == inputsRoi->end()) {
-                continue;
-            }
-            
-            ///Convert to pixel coords the RoI
-            if ( foundInputRoI->second.isInfinite() ) {
-                std::stringstream ss;
-                ss << getNode()->getScriptName_mt_safe();
-                ss << tr(" asked for an infinite region of interest upstream").toStdString();
-                setPersistentMessage(Natron::eMessageTypeError, ss.str());
-                return eRenderRoIRetCodeFailed;
-            }
-            
-            const double inputPar = inputEffect->getPreferredAspectRatio();
-            
-            RectI inputRoIPixelCoords;
-            foundInputRoI->second.toPixelEnclosing(useScaleOneInputImages ? 0 : mipMapLevel, inputPar, &inputRoIPixelCoords);
-    
-            
-            ///Notify the node that we're going to render something with the input
-            assert(it->first != -1); //< see getInputNumber
-            
-            {
-                NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),it->first);
-                
-                ///For all frames requested for this node, render the RoI requested.
-                
-                for (std::map<int, std::vector<OfxRangeD> >::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    
-                    int nbFramesPreFetched = 0;
-                    for (U32 range = 0; range < it2->second.size(); ++range) {
-                        // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
-                        if (it2->second[range].min == (int)it2->second[range].min &&
-                            it2->second[range].max == (int)it2->second[range].max) {
-                            for (double f = it2->second[range].min;
-                                 f <= it2->second[range].max && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
-                                 f += 1.) {
-
-
-                                RenderScale scaleOne;
-                                scaleOne.x = scaleOne.y = 1.;
-
-                                ///Render the input image with the bit depth of its preference
-                                std::list<Natron::ImageComponents> inputPrefComps;
-                                Natron::ImageBitDepthEnum inputPrefDepth;
-                                inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
-                                std::list<ImageComponents> componentsToRender;
-                                for (U32 k = 0; k < foundCompsNeeded->second.size(); ++k) {
-                                    if (foundCompsNeeded->second[k].getNumComponents() > 0) {
-                                        componentsToRender.push_back(foundCompsNeeded->second[k]);
-                                    }
-                                }
-
-                                RenderRoIArgs inArgs(f, //< time
-                                                     useScaleOneInputImages ? scaleOne : scale, //< scale
-                                                     useScaleOneInputImages ? 0 : mipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                     view, //< view
-                                                     byPassCache,
-                                                     inputRoIPixelCoords, //< roi in pixel coordinates
-                                                     RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                     componentsToRender, //< requested comps
-                                                     inputPrefDepth,
-                                                     this);
-
-
-
-                                ImageList inputImgs;
-                                RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
-                                if (ret != eRenderRoIRetCodeOk) {
-                                    return ret;
-                                }
-
-                                for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
-                                    if (*it3) {
-                                        foundInputImages->second.push_back(*it3);
-                                    }
-                                }
-                                if (!inputImgs.empty()) {
-                                    ++nbFramesPreFetched;
-                                }
-                            }
-                        }
-                    }
-                }
-    
-                
-            } // NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),it2->first);
-            
-            if ( aborted() ) {
-                return eRenderRoIRetCodeAborted;
-            }
-        }
-    }
-    return eRenderRoIRetCodeOk;
+    transformInputRois(this, inputTransforms,par,scale,inputsRoi,&reroutesMap);
+   
+    return treeRecurseFunctor(true,
+                              getNode(),
+                              framesNeeded,
+                              *inputsRoi,
+                              reroutesMap,
+                              useTransforms,
+                              0,
+                              mipMapLevel,
+                              NodePtr(),
+                              0,
+                              inputImages,
+                              &neededComps,
+                              useScaleOneInputImages,
+                              byPassCache);
 }
 
 
@@ -5765,7 +5650,7 @@ EffectInstance::getRegionsOfInterest_public(double time,
                                             const RectD & outputRoD, //!< effect RoD in canonical coordinates
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                             int view,
-                                            EffectInstance::RoIMap* ret)
+                                            RoIMap* ret)
 {
     NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
@@ -5774,11 +5659,11 @@ EffectInstance::getRegionsOfInterest_public(double time,
     getRegionsOfInterest(time, scale, outputRoD, renderWindow, view,ret);
 }
 
-EffectInstance::FramesNeededMap
+FramesNeededMap
 EffectInstance::getFramesNeeded_public(U64 hash, double time,int view, unsigned int mipMapLevel)
 {
     NON_RECURSIVE_ACTION();
-    EffectInstance::FramesNeededMap framesNeeded;
+    FramesNeededMap framesNeeded;
     bool foundInCache = _imp->actionsCache.getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
     if (foundInCache) {
         return framesNeeded;
@@ -6550,7 +6435,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  false,
                                                  false,
                                                  0,
-                                                 dynamic_cast<OutputEffectInstance*>(this),
+                                                 node,
+                                                 0, // request
                                                  0, //texture index
                                                  getApp()->getTimeLine().get(),
                                                  NodePtr(),

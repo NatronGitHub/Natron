@@ -4255,6 +4255,14 @@ Node::makePreviewImage(SequenceTime time,
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
     
+    NodePtr thisNode = shared_from_this();
+    
+    FrameRequestMap request;
+    stat = EffectInstance::computeRequestPass(time, 0, mipMapLevel, renderWindow, thisNode, request);
+    if (stat == eStatusFailed) {
+        return false;
+    }
+    
     ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
                                              time,
                                              0, //< preview only renders view 0 (left)
@@ -4262,7 +4270,8 @@ Node::makePreviewImage(SequenceTime time,
                                              false, //isSequential
                                              true, //can abort
                                              0, //render Age
-                                             0, // viewer requester
+                                             thisNode, // viewer requester
+                                             &request,
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
                                              NodePtr(),

@@ -957,7 +957,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              false,
                                              false,
                                              0,
-                                             dynamic_cast<OutputEffectInstance*>(this),
+                                             getNode(),
+                                             0,
                                              0, //texture index
                                              getApp()->getTimeLine().get(),
                                              NodePtr(),
@@ -1608,7 +1609,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
                                         const RectD & outputRoD,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         int view,
-                                        EffectInstance::RoIMap* ret)
+                                        RoIMap* ret)
 {
     assert(_context != eContextNone);
     std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
@@ -1688,11 +1689,11 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     
 } // getRegionsOfInterest
 
-Natron::EffectInstance::FramesNeededMap
+FramesNeededMap
 OfxEffectInstance::getFramesNeeded(double time, int view)
 {
     assert(_context != eContextNone);
-    EffectInstance::FramesNeededMap ret;
+    FramesNeededMap ret;
     if (!_initialized) {
         return ret;
     }
@@ -3083,12 +3084,12 @@ OfxEffectInstance::getTransform(double time,
 }
 
 void
-OfxEffectInstance::rerouteInputAndSetTransform(const std::list<InputMatrix>& inputTransforms)
+OfxEffectInstance::rerouteInputAndSetTransform(const InputMatrixMap& inputTransforms)
 {
-    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
-        OfxClipInstance* clip = getClipCorrespondingToInput(it->inputNb);
+    for (InputMatrixMap::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
+        OfxClipInstance* clip = getClipCorrespondingToInput(it->first);
         assert(clip);
-        clip->setTransformAndReRouteInput(*it->cat, it->newInputEffect, it->newInputNbToFetchFrom);
+        clip->setTransformAndReRouteInput(*it->second.cat, it->second.newInputEffect, it->second.newInputNbToFetchFrom);
     }
     
 }
