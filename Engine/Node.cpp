@@ -1067,7 +1067,9 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     if (std::find(marked.begin(), marked.end(), this) != marked.end()) {
         return;
     }
-    
+    if (!_imp->liveInstance) {
+        return;
+    }
     ///Always called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     if (!_imp->inputsInitialized) {
