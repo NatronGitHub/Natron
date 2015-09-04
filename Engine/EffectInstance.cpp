@@ -1284,22 +1284,22 @@ EffectInstance::getImage(int inputNb,
     
     ///This is the actual layer that we are fetching in input, note that it is different than "comp" which is pointing to Alpha
     ImageComponents maskComps;
-    if (isMask) {
+    //if (isMask) {
         if (!isMaskEnabled(inputNb)) {
             ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
             return ImagePtr();
         }
         NodePtr maskInput;
         channelForMask = getMaskChannel(inputNb,&maskComps,&maskInput);
-        if (maskInput) {
+        if (maskInput && channelForMask != -1) {
             n = maskInput->getLiveInstance();
         }
         
         //Invalid mask
-        if (channelForMask == -1 || maskComps.getNumComponents() == 0) {
+        if (isMask && (channelForMask == -1 || maskComps.getNumComponents() == 0)) {
             return ImagePtr();
         }
-    }
+    //}
     
     
  
@@ -6230,6 +6230,11 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                 ImageComponents layer;
                 bool isAll;
                 bool ok = getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer);
+                
+                ImageComponents maskComp;
+                NodePtr maskInput;
+                int channelMask = getNode()->getMaskChannel(i, &maskComp,&maskInput);
+                
                 if (ok && !isAll) {
                     if (!layer.isColorPlane()) {
                         compVec.push_back(layer);
@@ -6245,16 +6250,11 @@ EffectInstance::getComponentsNeededAndProduced_public(double time, int view,
                         }
                         
                     }
-                } else if (isInputMask(i) && !isInputRotoBrush(i)) {
-                    //Use mask channel selector
-                    ImageComponents maskComp;
-                    NodePtr maskInput;
-                    int channelMask = getNode()->getMaskChannel(i, &maskComp,&maskInput);
-                    if (channelMask != -1 && maskComp.getNumComponents() > 0) {
-                        std::vector<ImageComponents> compVec;
-                        compVec.push_back(maskComp);
-                        comps->insert(std::make_pair(i, compVec));
-                    }
+                } else if (channelMask != -1 && maskComp.getNumComponents() > 0) {
+                    std::vector<ImageComponents> compVec;
+                    compVec.push_back(maskComp);
+                    comps->insert(std::make_pair(i, compVec));
+                    
                 } else {
                     //Use regular clip preferences
                     ImageBitDepthEnum depth;

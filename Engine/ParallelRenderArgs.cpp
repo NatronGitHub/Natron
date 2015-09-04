@@ -55,14 +55,13 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         Natron::ImageComponents maskComps;
         int channelForAlphaInput;
         boost::shared_ptr<Node> maskInput;
-        if (inputIsMask) {
-            if (!effect->isMaskEnabled(inputNb)) {
-                continue;
-            }
-            channelForAlphaInput = effect->getMaskChannel(inputNb,&maskComps,&maskInput);
-        } else {
-            channelForAlphaInput = -1;
+        // if (inputIsMask) {
+        if (!effect->isMaskEnabled(inputNb)) {
+            continue;
         }
+        channelForAlphaInput = effect->getMaskChannel(inputNb,&maskComps,&maskInput);
+        // } else {
+        //}
         
         //No mask
         if (inputIsMask && (channelForAlphaInput == -1 || maskComps.getNumComponents() == 0)) {

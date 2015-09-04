@@ -440,22 +440,24 @@ OfxClipInstance::getConnected() const
             int inputNb = getInputNb();
             
             Natron::EffectInstance* input = 0;
-            if (isMask()) {
-                
-                if (!_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
-                    return false;
-                }
-                ImageComponents comps;
-                boost::shared_ptr<Natron::Node> maskInput;
-                _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
-                if (maskInput) {
-                    input = maskInput->getLiveInstance();
-                }
-                
-            } else {
+            // if (isMask()) {
+            
+            if (!_nodeInstance->getNode()->isMaskEnabled(inputNb)) {
+                return false;
+            }
+            ImageComponents comps;
+            boost::shared_ptr<Natron::Node> maskInput;
+            _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
+            if (maskInput) {
+                input = maskInput->getLiveInstance();
+            }
+            
+            //} else {
+            if (!input) {
                 input = _nodeInstance->getInput(inputNb);
             }
-
+            //}
+            
             return input != NULL;
         }
     }
@@ -1323,18 +1325,23 @@ OfxClipInstance::getAssociatedNode() const
     if (_isOutput) {
         return _nodeInstance;
     } else {
-        if (isMask()) {
-            ImageComponents comps;
-            boost::shared_ptr<Natron::Node> maskInput;
-            int inputNb = getInputNb();
-            _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
-            if (maskInput) {
-                return maskInput->getLiveInstance();
-            }
-            return 0;
-        } else {
-            return _nodeInstance->getInput( getInputNb() );
+        //if (isMask()) {
+        ImageComponents comps;
+        boost::shared_ptr<Natron::Node> maskInput;
+        int inputNb = getInputNb();
+        _nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
+        if (maskInput) {
+            return maskInput->getLiveInstance();
         }
+        
+        //} else {
+        if (!maskInput) {
+            return  _nodeInstance->getInput( getInputNb() );
+        } else {
+            return maskInput->getLiveInstance();
+        }
+       // }
+
     }
 }
 

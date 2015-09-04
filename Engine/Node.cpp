@@ -2384,19 +2384,34 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 } else if (maskName == "B") {
                     foundB = i;
                 }
-
-                if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
+                
+                assert(i < (int)_imp->inputsComponents.size());
+                const std::list<ImageComponents>& inputSupportedComps = _imp->inputsComponents[i];
+                
+                bool isMask = _imp->liveInstance->isInputMask(i);
+                bool supportsOnlyAlpha = inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1;
+                
+                if ((isMask || supportsOnlyAlpha) &&
+                    !_imp->liveInstance->isInputRotoBrush(i) ) {
                     
                     MaskSelector sel;
                     boost::shared_ptr<Bool_Knob> enabled = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
-
+                    
                     enabled->setDefaultValue(false, 0);
                     enabled->setAddNewLine(false);
-                    std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + maskName);
-                    enabled->setName(enableMaskName);
+                    if (isMask) {
+                        std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + maskName);
+                        enabled->setName(enableMaskName);
+                        enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                                   "Turning this off will act as though the mask was disconnected.").toStdString());
+                    } else {
+                        std::string enableMaskName(std::string(kEnableInputKnobName) + "_" + maskName);
+                        enabled->setName(enableMaskName);
+                        enabled->setHintToolTip(tr("Enable the image to come from the channel named by the choice parameter on the right. "
+                                                   "Turning this off will act as though the input was disconnected.").toStdString());
+                    }
                     enabled->setAnimationEnabled(false);
-                    enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                                      "Turning this off will act as though the mask was disconnected.").toStdString());
+                    
                     
                     sel.enabled = enabled;
                     
@@ -2415,9 +2430,14 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     channel->setDefaultValue(choices.size() - 1, 0);
                     channel->setAnimationEnabled(false);
                     channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
-                                                       "Setting this to None is the same as disabling the mask.").toStdString());
-                    std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + maskName);
-                    channel->setName(channelMaskName);
+                                                       "Setting this to None is the same as disconnecting the input.").toStdString());
+                    if (isMask) {
+                        std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + maskName);
+                        channel->setName(channelMaskName);
+                    } else {
+                        std::string channelMaskName(std::string(kInputChannelKnobName) + "_" + maskName);
+                        channel->setName(channelMaskName);
+                    }
                     sel.channel = channel;
                     
                     boost::shared_ptr<String_Knob> channelName = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "",1,false);

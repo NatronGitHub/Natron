@@ -52,7 +52,9 @@ CLANG_DIAG_ON(deprecated)
 #define kDisableNodeKnobName "disableNode"
 #define kUserLabelKnobName "userTextArea"
 #define kEnableMaskKnobName "enableMask"
+#define kEnableInputKnobName "enableInput"
 #define kMaskChannelKnobName "maskChannel"
+#define kInputChannelKnobName "inputChannel"
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
 
