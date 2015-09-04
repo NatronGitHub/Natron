@@ -2339,17 +2339,42 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
         return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     } else if (pluginId == "BackDrop") {
         return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
+    } else if (pluginId == "RotoOFX  [Draw]") {
+        return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     }
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ((*it2)->generateUserFriendlyPluginID() == pluginId &&
-                ((*it2)->getMajorVersion() == majorVersion || majorVersion == -1) &&
-                ((*it2)->getMinorVersion() == minorVersion || minorVersion == -1)) {
-                return *it2;
-            }
+        
+        
+        assert(!it->second.empty());
+        PluginMajorsOrdered::const_iterator it2 = it->second.begin();
+        
+        QString friendlyLabel = (*it2)->getPluginLabel();
+        const QStringList& s = (*it2)->getGrouping();
+        QString grouping;
+        if (s.size() > 0) {
+            grouping = s[0];
         }
+        friendlyLabel += "  [" + grouping + "]";
+
+        if (friendlyLabel == pluginId) {
+            if (majorVersion == -1) {
+                // -1 means we want to load the highest version existing
+                return *(it->second.rbegin());
+            }
+            
+            //Look for the exact version
+            for (; it2 != it->second.end(); ++it2) {
+                if ((*it2)->getMajorVersion() == majorVersion) {
+                    return *it2;
+                }
+            }
+            ///Could not find the exact version... let's just use the highest version found
+            return *(it->second.rbegin());
+
+        }
+        
         
     }
     return 0;
