@@ -193,9 +193,14 @@ struct FrameViewRequestGlobalData
     
     ///The transforms associated to each input branch, set on first request
     InputMatrixMap transforms;
+    std::map<int, Natron::EffectInstance*> reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
+    
+    //Identity data, set on first request
+    int identityInputNb;
+    double inputIdentityTime;
 };
 
 struct FrameViewRequestFinalData
@@ -252,6 +257,16 @@ struct NodeFrameRequest
     ///Set on first request
     U64 nodeHash;
     RenderScale mappedScale;
+    
+    bool getFrameViewRoD(double time, int view, RectD* rod, bool* isProjectFormat) const;
+    
+    bool getFrameViewIdentity(double time, int view, double* inputIdentityTime, int* inputIdentityNb) const;
+    
+    bool getFrameViewFramesViewsNeeded(double time, int view, FramesNeededMap* framesNeeded) const;
+    
+    bool getFrameViewCanonicalRoI(double time, int view, RectD* roi) const;
+    
+    const FrameViewRequest* getFrameViewRequest(double time, int view) const;
 
 };
 

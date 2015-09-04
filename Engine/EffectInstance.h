@@ -587,7 +587,7 @@ public:
      **/
     void invalidateParallelRenderArgsTLS();
 
-    ParallelRenderArgs getParallelRenderArgsTLS() const;
+    const ParallelRenderArgs* getParallelRenderArgsTLS() const;
 
     //Implem in ParallelRenderArgs.cpp
     static Natron::StatusEnum getInputsRoIsFunctor(bool useTransforms,
@@ -1622,7 +1622,8 @@ private:
 
 
     /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI(bool useTransforms,
+    RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
+                                             bool useTransforms,
                                              double time,
                                              int view,
                                              double par,

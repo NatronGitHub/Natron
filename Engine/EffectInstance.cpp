@@ -981,14 +981,14 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 }
 
-ParallelRenderArgs
+const ParallelRenderArgs*
 EffectInstance::getParallelRenderArgsTLS() const
 {
     if (_imp->frameRenderArgs.hasLocalData()) {
-        return _imp->frameRenderArgs.localData();
+        return &_imp->frameRenderArgs.localData();
     } else {
         //qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
-        return ParallelRenderArgs();
+        return 0;
     }
 }
 
@@ -1360,6 +1360,8 @@ EffectInstance::getImage(int inputNb,
     //    Images may be fetched from an attached clip in the following situations...
     //    in the kOfxImageEffectActionRender action
     //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
+    RectD roi;
+    bool roiWasInRequestPass = false;
     
     if (!_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData()) {
         
@@ -1378,7 +1380,20 @@ EffectInstance::getImage(int inputNb,
             }
             
         } else {
-            inputsRoI = renderArgs._regionOfInterestResults;
+            if (n) {
+                const ParallelRenderArgs* inputFrameArgs = n->getParallelRenderArgsTLS();
+                const FrameViewRequest* request = 0;
+                if (inputFrameArgs) {
+                    request = inputFrameArgs->request->getFrameViewRequest(time, view);
+                }
+                if (request) {
+                    roiWasInRequestPass = true;
+                    roi = request->finalData.finalRoi;
+                }
+            }
+            if (!roiWasInRequestPass) {
+                inputsRoI = renderArgs._regionOfInterestResults;
+            }
             rod = renderArgs._rod;
             isIdentity = renderArgs._isIdentity;
             inputIdentityTime = renderArgs._identityTime;
@@ -1391,10 +1406,9 @@ EffectInstance::getImage(int inputNb,
         
     }
     
-    RectD roi;
     if (optionalBoundsParam) {
         roi = optionalBounds;
-    } else {
+    } else if (!roiWasInRequestPass) {
         EffectInstance* inputToFind = 0;
         if (useRotoInput) {
             if (getNode()->getRotoContext()) {
@@ -2412,11 +2426,13 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         frameRenderArgs.isSequentialRender = false;
         frameRenderArgs.isRenderResponseToUserInteraction = true;
         frameRenderArgs.validArgs = true;
+    } else {
+        //The hash must not have changed if we did a pre-pass.
+        assert(!frameRenderArgs.request || frameRenderArgs.nodeHash == frameRenderArgs.request->nodeHash);
     }
     
     ///The args must have been set calling setParallelRenderArgs
     assert(frameRenderArgs.validArgs);
-    
     
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
@@ -2460,7 +2476,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ViewInvarianceLevel viewInvariance = isViewInvariant();
     
-
+    const FrameViewRequest* requestPassData = 0;
+    if (frameRenderArgs.request) {
+        requestPassData = frameRenderArgs.request->getFrameViewRequest(args.time, args.view);
+    }
  
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
@@ -2469,25 +2488,31 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     if ( !args.preComputedRoD.isNull() ) {
         rod = args.preComputedRoD;
     } else {
-        ///before allocating it we must fill the RoD of the image we want to render
-        assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-        StatusEnum stat = getRegionOfDefinition_public(nodeHash,args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
-
-        ///The rod might be NULL for a roto that has no beziers and no input
-        if (stat == eStatusFailed) {
-            ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
-            return eRenderRoIRetCodeOk;
-        } else if (rod.isNull()) {
-            //Nothing to render
-            return eRenderRoIRetCodeOk;
-        }
-        if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
-            // supportsRenderScaleMaybe may have changed, update it
-            supportsRS = supportsRenderScaleMaybe();
-            renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
-            if (renderFullScaleThenDownscale) {
-                renderMappedScale.x = renderMappedScale.y = 1.;
-                renderMappedMipMapLevel = 0;
+        
+        ///Check if the pre-pass already has the RoD
+        if (requestPassData) {
+            rod = requestPassData->globalData.rod;
+            isProjectFormat = requestPassData->globalData.isProjectFormat;
+        } else {
+            assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+            StatusEnum stat = getRegionOfDefinition_public(nodeHash,args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
+            
+            ///The rod might be NULL for a roto that has no beziers and no input
+            if (stat == eStatusFailed) {
+                ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
+                return eRenderRoIRetCodeOk;
+            } else if (rod.isNull()) {
+                //Nothing to render
+                return eRenderRoIRetCodeOk;
+            }
+            if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
+                // supportsRenderScaleMaybe may have changed, update it
+                supportsRS = supportsRenderScaleMaybe();
+                renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
+                if (renderFullScaleThenDownscale) {
+                    renderMappedScale.x = renderMappedScale.y = 1.;
+                    renderMappedMipMapLevel = 0;
+                }
             }
         }
     }
@@ -2538,7 +2563,13 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             inputTimeIdentity = args.time;
         } else {
             try {
-                identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
+                if (requestPassData) {
+                    inputTimeIdentity = requestPassData->globalData.inputIdentityTime;
+                    inputNbIdentity = requestPassData->globalData.identityInputNb;
+                    identity = inputNbIdentity != -1;
+                } else {
+                    identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
+                }
             } catch (...) {
                 return eRenderRoIRetCodeFailed;
             }
@@ -2739,9 +2770,15 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
     ///Try to concatenate transform effects
     InputMatrixMap inputsToTransform;
-    bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-    if (useTransforms) {
-        tryConcatenateTransforms(args.time, args.view, args.scale, &inputsToTransform);
+    bool useTransforms;
+    if (requestPassData) {
+        inputsToTransform = requestPassData->globalData.transforms;
+        useTransforms = !inputsToTransform.empty();
+    } else {
+        bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+        if (useTransforms) {
+            tryConcatenateTransforms(args.time, args.view, args.scale, &inputsToTransform);
+        }
     }
     
     ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
@@ -2939,7 +2976,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
     
     if (framesNeeded.empty()) {
-        framesNeeded = getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipMapLevel);
+        if (requestPassData) {
+            framesNeeded = requestPassData->globalData.frameViewsNeeded;
+        } else {
+            framesNeeded = getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipMapLevel);
+        }
     }
   
     
@@ -3114,8 +3155,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     continue;
                 }
                 bool isProjectFormat;
-                ParallelRenderArgs inputFrameArgs = input->getParallelRenderArgsTLS();
-                U64 inputHash = inputFrameArgs.validArgs ? inputFrameArgs.nodeHash : input->getHash();
+                const ParallelRenderArgs* inputFrameArgs = input->getParallelRenderArgsTLS();
+                U64 inputHash = (inputFrameArgs && inputFrameArgs->validArgs) ? inputFrameArgs->nodeHash : input->getHash();
                 Natron::StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if (stat != eStatusOK && !inputRod.isNull()) {
                     break;
@@ -3194,7 +3235,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
         }
 
-        RenderRoIRetCode inputCode = renderInputImagesForRoI(useTransforms,
+        RenderRoIRetCode inputCode = renderInputImagesForRoI(requestPassData,
+                                                             useTransforms,
                                                              args.time,
                                                              args.view,
                                                              par,
@@ -3324,7 +3366,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
                 }
                 
-                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(useTransforms,
+                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(requestPassData,
+                                                                        useTransforms,
                                                                         args.time,
                                                                         args.view,
                                                                         par,
@@ -3749,7 +3792,8 @@ EffectInstance::transformInputRois(Natron::EffectInstance* self,
 
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(bool useTransforms,
+EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
+                                        bool useTransforms,
                                         double time,
                                         int view,
                                         double par,
@@ -3766,7 +3810,9 @@ EffectInstance::renderInputImagesForRoI(bool useTransforms,
                                         InputImagesMap *inputImages,
                                         RoIMap* inputsRoi)
 {
-    getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
+    if (!request) {
+        getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
+    }
 #ifdef DEBUG
     if (!inputsRoi->empty() && framesNeeded.empty() && !isReader()) {
         qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
@@ -3775,7 +3821,11 @@ EffectInstance::renderInputImagesForRoI(bool useTransforms,
 #endif
     
     std::map<int, EffectInstance*> reroutesMap;
-    transformInputRois(this, inputTransforms,par,scale,inputsRoi,&reroutesMap);
+    if (!request) {
+        transformInputRois(this, inputTransforms,par,scale,inputsRoi,&reroutesMap);
+    } else {
+        reroutesMap = request->globalData.reroutesMap;
+    }
    
     return treeRecurseFunctor(true,
                               getNode(),

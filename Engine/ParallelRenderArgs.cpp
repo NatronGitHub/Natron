@@ -100,9 +100,35 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             }
             
             ///What region are we interested in for this input effect ? (This is in Canonical coords)
-            RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
-            if(foundInputRoI == inputRois.end()) {
-                continue;
+            RectD roi;
+            
+            bool roiIsInRequestPass = false;
+            const ParallelRenderArgs* frameArgs = 0;
+            if (isRenderFunctor) {
+                frameArgs = inputEffect->getParallelRenderArgsTLS();
+                if (frameArgs && frameArgs->request) {
+                    roiIsInRequestPass = true;
+                }
+                
+            }
+            
+            if (!roiIsInRequestPass) {
+                RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
+                if(foundInputRoI == inputRois.end()) {
+                    continue;
+                }
+                if (foundInputRoI->second.isInfinite()) {
+                    std::stringstream ss;
+                    ss << node->getScriptName_mt_safe();
+                    ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
+                    effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
+                    return EffectInstance::eRenderRoIRetCodeFailed;
+                }
+                
+                if (foundInputRoI->second.isNull()) {
+                    continue;
+                }
+                roi = foundInputRoI->second;
             }
             
             ///There cannot be frames needed without components needed.
@@ -118,23 +144,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             }
 
             
-            if (foundInputRoI->second.isInfinite()) {
-                std::stringstream ss;
-                ss << node->getScriptName_mt_safe();
-                ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
-                effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
-                return EffectInstance::eRenderRoIRetCodeFailed;
-            }
-            
-            if (foundInputRoI->second.isNull()) {
-                continue;
-            }
-            
-            RectI inputRoIPixelCoords;
-            if (isRenderFunctor) {
-                const double inputPar = inputEffect->getPreferredAspectRatio();
-                foundInputRoI->second.toPixelEnclosing(useScaleOneInputs ? 0 : originalMipMapLevel, inputPar, &inputRoIPixelCoords);
-            }
+            const double inputPar = inputEffect->getPreferredAspectRatio();
             
             
             ///Notify the node that we're going to render something with the input
@@ -169,7 +179,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                                                    inputNode,
                                                                                                    treeRoot,
                                                                                                    *originalRenderWindow,
-                                                                                                   foundInputRoI->second,
+                                                                                                   roi,
                                                                                                    *requests);
                                     
                                     if (stat == eStatusFailed) {
@@ -200,6 +210,13 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                             componentsToRender.push_back(compsNeeded->at(k));
                                         }
                                     }
+                                    
+                                    if (roiIsInRequestPass) {
+                                        frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
+                                    }
+                                    
+                                    RectI inputRoIPixelCoords;
+                                    roi.toPixelEnclosing(useScaleOneInputs ? 0 : originalMipMapLevel, inputPar, &inputRoIPixelCoords);
                                     
                                     EffectInstance::RenderRoIArgs inArgs(f, //< time
                                                                          useScaleOneInputs ? scaleOne : scale, //< scale
@@ -264,6 +281,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     EffectInstance* effect = node->getLiveInstance();
     assert(effect);
     
+    assert(effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsNo ||
+           effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();
     unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
     
@@ -294,39 +313,104 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     FrameViewRequest* fvRequest = 0;
     NodeFrameViewRequestData::iterator foundFrameView = nodeRequest->frames.find(frameView);
     
+    double par = effect->getPreferredAspectRatio();
+
+    
     if (foundFrameView != nodeRequest->frames.end()) {
         fvRequest = &foundFrameView->second;
     } else {
         
         ///Set up global data specific for this frame view, this is the first time it has been requested so far
         
-        FrameViewRequest tmpFvRequest;
+        {
+            FrameViewRequest tmpFvRequest;
+            std::pair<NodeFrameViewRequestData::iterator,bool> ret = nodeRequest->frames.insert(std::make_pair(frameView, tmpFvRequest));
+            assert(ret.second);
+            fvRequest = &ret.first->second;
+        }
         
         ///Get the RoD
-        Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &tmpFvRequest.globalData.rod, &tmpFvRequest.globalData.isProjectFormat);
+        Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
         //If failed it should have failed earlier
         if (stat == eStatusFailed) {
             return stat;
         }
         
+        
+        ///Check identity
+        fvRequest->globalData.inputIdentityTime = 0.;
+        
+        bool identity;
+        RectI pixelRod;
+        fvRequest->globalData.rod.toPixelEnclosing(mappedLevel, par, &pixelRod);
+        
+        ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
+        
+        if (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) {
+            identity = true;
+            fvRequest->globalData.identityInputNb = -2;
+            fvRequest->globalData.inputIdentityTime = time;
+        } else {
+            try {
+                identity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityInputNb);
+            } catch (...) {
+                return eStatusFailed;
+            }
+        }
+        
+        if (identity) {
+            if (fvRequest->globalData.identityInputNb == -1) {
+                return eStatusOK;
+            } else if (fvRequest->globalData.identityInputNb == -2) {
+                assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
+                // be safe in release mode otherwise we hit an infinite recursion
+                if (fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant) {
+                    StatusEnum stat = getInputsRoIsFunctor(useTransforms,
+                                                           fvRequest->globalData.inputIdentityTime,
+                                                           view,
+                                                           originalMipMapLevel,
+                                                           node,
+                                                           treeRoot,
+                                                           originalRenderWindow,
+                                                           canonicalRenderWindow,
+                                                           requests);
+                    return stat;
+                }
+            }
+            
+            Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+            if (inputEffectIdentity) {
+                StatusEnum stat = getInputsRoIsFunctor(useTransforms,
+                                                       fvRequest->globalData.inputIdentityTime,
+                                                       view,
+                                                       originalMipMapLevel,
+                                                       inputEffectIdentity->getNode(),
+                                                       treeRoot,
+                                                       originalRenderWindow,
+                                                       canonicalRenderWindow,
+                                                       requests);
+                return stat;
+            }
+            
+            //Identity but no input
+            return eStatusFailed;
+        }
+        
         ///Concatenate transforms if needed
         if (useTransforms) {
-            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, &tmpFvRequest.globalData.transforms);
+            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, &fvRequest->globalData.transforms);
         }
         
         ///Get the frame/views needed for this frame/view
-        tmpFvRequest.globalData.frameViewsNeeded = effect->getFramesNeeded_public(nodeRequest->nodeHash, time, view, mappedLevel);
+        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(nodeRequest->nodeHash, time, view, mappedLevel);
         
-        std::pair<NodeFrameViewRequestData::iterator,bool> ret = nodeRequest->frames.insert(std::make_pair(frameView, tmpFvRequest));
-        assert(ret.second);
-        fvRequest = &ret.first->second;
+        
         
         
     } // if (foundFrameView != nodeRequest->frames.end()) {
     
     assert(fvRequest);
     RectD realCanonicalRoI;
-    double par = effect->getPreferredAspectRatio();
     
     if (node != treeRoot) {
         realCanonicalRoI = canonicalRenderWindow;
@@ -340,20 +424,19 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, realCanonicalRoI, view, &fvPerRequestData.inputsRoi);
     
     ///Transform Rois and get the reroutes map
-    std::map<int, Natron::EffectInstance*> reroutesMap;
     if (useTransforms) {
-        transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,&reroutesMap);
+        transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,&fvRequest->globalData.reroutesMap);
     }
     
     
     ///Append the request
-    fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, fvPerRequestData));
+    fvRequest->requests.push_back(std::make_pair(realCanonicalRoI, fvPerRequestData));
     
     EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
                                                               node,
                                                               fvRequest->globalData.frameViewsNeeded,
                                                               fvPerRequestData.inputsRoi,
-                                                              reroutesMap,
+                                                              fvRequest->globalData.reroutesMap,
                                                               useTransforms,
                                                               &originalRenderWindow,
                                                               originalMipMapLevel,
@@ -416,4 +499,63 @@ EffectInstance::computeRequestPass(double time,
     }
     
     return eStatusOK;
+}
+
+const FrameViewRequest*
+NodeFrameRequest::getFrameViewRequest(double time, int view) const
+{
+    FrameViewPair p;
+    p.time = time;
+    p.view = view;
+    NodeFrameViewRequestData::const_iterator found = frames.find(p);
+    if (found == frames.end()) {
+        return 0;
+    }
+    return &found->second;
+}
+
+bool
+NodeFrameRequest::getFrameViewRoD(double time, int view, RectD* rod, bool* isProjectFormat) const
+{
+    const FrameViewRequest* fv = getFrameViewRequest(time, view);
+    if (!fv) {
+        return false;
+    }
+    *rod = fv->globalData.rod;
+    *isProjectFormat = fv->globalData.isProjectFormat;
+    return true;
+}
+
+bool
+NodeFrameRequest::getFrameViewIdentity(double time, int view, double* inputIdentityTime, int* inputIdentityNb) const
+{
+    const FrameViewRequest* fv = getFrameViewRequest(time, view);
+    if (!fv) {
+        return false;
+    }
+    *inputIdentityTime = fv->globalData.inputIdentityTime;
+    *inputIdentityNb = fv->globalData.identityInputNb;
+    return true;
+}
+
+bool
+NodeFrameRequest::getFrameViewFramesViewsNeeded(double time, int view, FramesNeededMap* framesNeeded) const
+{
+    const FrameViewRequest* fv = getFrameViewRequest(time, view);
+    if (!fv) {
+        return false;
+    }
+    *framesNeeded = fv->globalData.frameViewsNeeded;
+    return true;
+}
+
+bool
+NodeFrameRequest::getFrameViewCanonicalRoI(double time, int view, RectD* roi) const
+{
+    const FrameViewRequest* fv = getFrameViewRequest(time, view);
+    if (!fv) {
+        return false;
+    }
+    *roi = fv->finalData.finalRoi;
+    return true;
 }

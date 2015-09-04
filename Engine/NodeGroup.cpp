@@ -932,14 +932,20 @@ NodeCollection::setParallelRenderArgs(int time,
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         }
-        U64 nodeHash = (*it)->getHashValue();
         
+        U64 nodeHash = 0;
+        bool hashSet = false;
         boost::shared_ptr<NodeFrameRequest> nodeRequest;
         if (request) {
             FrameRequestMap::const_iterator foundRequest = request->find(*it);
             if (foundRequest != request->end()) {
                 nodeRequest = foundRequest->second;
+                nodeHash = nodeRequest->nodeHash;
+                hashSet = true;
             }
+        }
+        if (!hashSet) {
+            hashSet = (*it)->getHashValue();
         }
         
         liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
@@ -948,14 +954,21 @@ NodeCollection::setParallelRenderArgs(int time,
         for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
             boost::shared_ptr<NodeFrameRequest> childRequest;
+            U64 nodeHash = 0;
+            bool hashSet = false;
             if (request) {
                 FrameRequestMap::const_iterator foundRequest = request->find(*it2);
                 if (foundRequest != request->end()) {
                     childRequest = foundRequest->second;
+                    nodeHash = nodeRequest->nodeHash;
+                    hashSet = true;
                 }
             }
+            if (!hashSet) {
+                hashSet = (*it2)->getHashValue();
+            }
             
-            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), (*it2)->getRotoAge(), renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, (*it2)->getRotoAge(), renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
         
         if ((*it)->isMultiInstance()) {
@@ -967,18 +980,25 @@ NodeCollection::setParallelRenderArgs(int time,
             for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 
                 boost::shared_ptr<NodeFrameRequest> childRequest;
+                U64 nodeHash = 0;
+                bool hashSet = false;
                 if (request) {
                     FrameRequestMap::const_iterator foundRequest = request->find(*it2);
                     if (foundRequest != request->end()) {
                         childRequest = foundRequest->second;
+                        nodeHash = nodeRequest->nodeHash;
+                        hashSet = true;
                     }
+                }
+                if (!hashSet) {
+                    hashSet = (*it2)->getHashValue();
                 }
                 
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
                 Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,0, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }
         }
@@ -1040,9 +1060,9 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         if (!(*it)->isActivated()) {
             continue;
         }
-        ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
-        if (args.validArgs) {
-            argsMap.insert(std::make_pair(*it, args));
+        const ParallelRenderArgs* args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
+        if (args && args->validArgs) {
+            argsMap.insert(std::make_pair(*it, *args));
         }
         
         if ((*it)->isMultiInstance()) {
@@ -1052,9 +1072,9 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
             NodeList children;
             (*it)->getChildrenMultiInstance(&children);
             for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                ParallelRenderArgs childArgs = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
-                if (childArgs.validArgs) {
-                    argsMap.insert(std::make_pair(*it2, childArgs));
+                const ParallelRenderArgs* childArgs = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
+                if (childArgs && childArgs->validArgs) {
+                    argsMap.insert(std::make_pair(*it2, *childArgs));
                 }
             }
         }
@@ -1062,10 +1082,10 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
         boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
         if (rotoContext) {
-            for (NodeList::iterator it2 = args.rotoPaintNodes.begin(); it2 != args.rotoPaintNodes.end(); ++it2) {
-                ParallelRenderArgs args = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
-                if (args.validArgs) {
-                    argsMap.insert(std::make_pair(*it2, args));
+            for (NodeList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
+                const ParallelRenderArgs* args = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
+                if (args && args->validArgs) {
+                    argsMap.insert(std::make_pair(*it2, *args));
                 }
             }
         }

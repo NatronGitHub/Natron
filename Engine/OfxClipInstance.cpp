@@ -976,41 +976,54 @@ OfxClipInstance::getImageInternal(OfxTime time,
         
         unsigned int mipMapLevel = Image::getLevelFromScale(renderScale.x);
         
-        RoIMap regionsOfInterests;
-        bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
-        
-        
-        if (!gotit) {
-            qDebug() << "Bug in transform concatenations: thread-storage has not been set on the new upstream input.";
-            
-            RectD rod;
-            if (optionalBounds) {
-                rod = bounds;
-            } else {
-                bool isProjectFormat;
-                StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
-                assert(stat == Natron::eStatusOK);
-                Q_UNUSED(stat);
-            }
-            node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
-        }
-        
         EffectInstance* inputNode = node->getInput(rerouteInputNb);
         if (!inputNode) {
             return NULL;
         }
-        
         RectD roi;
-        if (!optionalBounds) {
+        bool roiWasInRequestPass = false;
+        
+        const ParallelRenderArgs* frameArgs = inputNode->getParallelRenderArgsTLS();
+        if (frameArgs && frameArgs->request) {
+            const FrameViewRequest* request =  frameArgs->request->getFrameViewRequest(time, view);
+            if (request) {
+                roi = request->finalData.finalRoi;
+                roiWasInRequestPass = true;
+            }
+        }
+        
+        if (optionalBounds) {
+            roi = bounds;
+        } else if (!roiWasInRequestPass) {
+            RoIMap regionsOfInterests;
+            bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
+            
+            
+            if (!gotit) {
+                qDebug() << "Bug in transform concatenations: thread-storage has not been set on the new upstream input.";
+                
+                RectD rod;
+                if (optionalBounds) {
+                    rod = bounds;
+                } else {
+                    bool isProjectFormat;
+                    StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
+                    assert(stat == Natron::eStatusOK);
+                    Q_UNUSED(stat);
+                }
+                node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
+            }
+            
+            
             
             RoIMap::iterator found = regionsOfInterests.find(inputNode);
             assert(found != regionsOfInterests.end());
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
             roi = found->second;
             
-        } else {
-            roi = bounds;
         }
+        
+       
         
         RectI pixelRoI;
         roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
