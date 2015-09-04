@@ -156,8 +156,35 @@ namespace  {
 
         };
         
+        //In  a list to track the LRU
         std::list<ActionsCacheInstance> _instances;
         std::size_t _maxInstances;
+        
+        std::list<ActionsCacheInstance>::iterator createActionCacheInternal(U64 newHash)
+        {
+            if (_instances.size() >= _maxInstances) {
+                _instances.pop_front();
+            }
+            ActionsCacheInstance cache;
+            cache._hash = newHash;
+            return _instances.insert(_instances.end(),cache);
+        }
+        
+        ActionsCacheInstance& getOrCreateActionCache(U64 newHash)
+        {
+            std::list<ActionsCacheInstance>::iterator found = _instances.end();
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == newHash) {
+                    found = it;
+                    break;
+                }
+            }
+            if (found == _instances.end()) {
+                found = createActionCacheInternal(newHash);
+            }
+            assert(found != _instances.end());
+            return *found;
+        }
         
     public:
         
@@ -176,14 +203,11 @@ namespace  {
         }
         
         
+        
+        
         void invalidateAll(U64 newHash) {
             QMutexLocker l(&_cacheMutex);
-            if (_instances.size() >= _maxInstances) {
-                _instances.pop_front();
-            }
-            ActionsCacheInstance cache;
-            cache._hash = newHash;
-            _instances.push_back(cache);
+            createActionCacheInternal(newHash);
         }
         
         bool getIdentityResult(U64 hash,double time, int view, unsigned int mipMapLevel,int* inputNbIdentity,double* identityTime) {
@@ -213,28 +237,16 @@ namespace  {
             
             
             QMutexLocker l(&_cacheMutex);
-            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
-                if (it->_hash == hash) {
-                    
-                    ActionKey key;
-                    key.time = time;
-                    key.view = view;
-                    key.mipMapLevel = mipMapLevel;
-                    IdentityCacheMap::iterator found = it->_identityCache.find(key);
-                    if ( found != it->_identityCache.end() ) {
-                        found->second.inputIdentityNb = inputNbIdentity;
-                        found->second.inputIdentityTime = identityTime;
-                    } else {
-                        IdentityResults v;
-                        v.inputIdentityNb = inputNbIdentity;
-                        v.inputIdentityTime = identityTime;
-                        it->_identityCache.insert(std::make_pair(key, v));
-                    }
-                    return;
-                }
-            }
+            ActionsCacheInstance& cache = getOrCreateActionCache(hash);
             
-            //the cache for this hash did not exist
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+            
+            IdentityResults& v = cache._identityCache[key];
+            v.inputIdentityNb = inputNbIdentity;
+            v.inputIdentityTime = identityTime;
             
         }
        
@@ -265,26 +277,14 @@ namespace  {
         {
             
             QMutexLocker l(&_cacheMutex);
-            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
-                if (it->_hash == hash) {
-                    
-                    ActionKey key;
-                    key.time = time;
-                    key.view = view;
-                    key.mipMapLevel = mipMapLevel;
-                    
-                    RoDCacheMap::iterator found = it->_rodCache.find(key);
-                    if ( found != it->_rodCache.end() ) {
-                        ///Already set, this is a bug
-                        return;
-                    } else {
-                        it->_rodCache.insert(std::make_pair(key, rod));
-                    }
-                    return;
-                }
-            }
+            ActionsCacheInstance& cache = getOrCreateActionCache(hash);
             
-            //the cache for this hash did not exist
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+            
+            cache._rodCache[key] = rod;
 
         }
         
@@ -315,27 +315,16 @@ namespace  {
         {
             
             QMutexLocker l(&_cacheMutex);
-            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
-                if (it->_hash == hash) {
-                    
-                    ActionKey key;
-                    key.time = time;
-                    key.view = view;
-                    key.mipMapLevel = mipMapLevel;
-                    
-                    FramesNeededCacheMap::iterator found = it->_framesNeededCache.find(key);
-                    if ( found != it->_framesNeededCache.end() ) {
-                        ///Already set, this is a bug
-                        return;
-                    } else {
-                        it->_framesNeededCache.insert(std::make_pair(key, framesNeeded));
-                    }
-                    return;
-                }
-            }
             
-            //the cache for this hash did not exist
+            ActionsCacheInstance& cache = getOrCreateActionCache(hash);
             
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+            
+            cache._framesNeededCache[key] = framesNeeded;
+
         }
         
         bool getTimeDomainResult(U64 hash,double *first,double* last) {
@@ -356,18 +345,11 @@ namespace  {
         {
             
             QMutexLocker l(&_cacheMutex);
-            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
-                if (it->_hash == hash) {
-                    
-                    it->_timeDomainSet = true;
-                    it->_timeDomain.min = first;
-                    it->_timeDomain.max = last;
-                    return;
-                }
-            }
-            
-            //the cache for this hash did not exist
-            
+            ActionsCacheInstance& cache = getOrCreateActionCache(hash);
+            cache._timeDomainSet = true;
+            cache._timeDomain.min = first;
+            cache._timeDomain.max = last;
+
         }
         
     };
@@ -1020,6 +1002,9 @@ EffectInstance::getRenderHash() const
         if (!args.validArgs) {
             return getHash();
         } else {
+            if (args.request) {
+                return args.request->nodeHash;
+            }
             return args.nodeHash;
         }
     }
@@ -5619,8 +5604,7 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
         }
         return Natron::eStatusOK;
     } else {
-        
-        
+   
         ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
         if (QThread::currentThread() != qApp->thread() && _imp->renderArgs.hasLocalData()) {
             const RenderArgs& args = _imp->renderArgs.localData();
