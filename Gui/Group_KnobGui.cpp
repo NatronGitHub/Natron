@@ -97,9 +97,9 @@ GroupBoxLabel::setChecked(bool b)
     _checked = b;
     QPixmap pix;
     if (b) {
-        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_UNFOLDED, &pix);
+        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_UNFOLDED, NATRON_SMALL_BUTTON_ICON_SIZE, &pix);
     } else {
-        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_FOLDED, &pix);
+        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_FOLDED, NATRON_SMALL_BUTTON_ICON_SIZE, &pix);
     }
     setPixmap(pix);
 }

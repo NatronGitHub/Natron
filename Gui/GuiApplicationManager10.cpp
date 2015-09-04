@@ -228,6 +228,7 @@ public:
         : QApplication(argc,argv)
           , _app(app)
     {
+        //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
     }
 
 protected:

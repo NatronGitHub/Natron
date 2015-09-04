@@ -215,7 +215,7 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     _imp->animationMenu = new Natron::Menu( layout->parentWidget() );
     //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
     _imp->animationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->animationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));

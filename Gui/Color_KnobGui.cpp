@@ -327,8 +327,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     
     QPixmap buttonPix;
-    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
-    
+    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
     _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _colorDialogButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));

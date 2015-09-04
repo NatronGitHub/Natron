@@ -100,35 +100,35 @@ getPixmapForGrouping(QPixmap* pixmap,
                      const QString & grouping)
 {
     if (grouping == PLUGIN_GROUP_COLOR) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_FILTER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_IMAGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_DEEP) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_TIME) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_PAINT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_OTHER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_KEYER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TOOLSETS_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_TOOLSETS_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_3D) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_3D_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_3D_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_CHANNEL) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_CHANNEL_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_CHANNEL_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else if (grouping == PLUGIN_GROUP_MERGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     } else {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, pixmap);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
     }
 }
 }

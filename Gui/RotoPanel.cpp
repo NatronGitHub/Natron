@@ -350,11 +350,11 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
     QPixmap prevPix,nextPix,addPix,removePix,clearAnimPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, &prevPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, &nextPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME, &addPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, &removePix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &clearAnimPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &prevPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &nextPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME, NATRON_MEDIUM_BUTTON_ICON_SIZE, &addPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, NATRON_MEDIUM_BUTTON_ICON_SIZE, &removePix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearAnimPix);
 
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -434,27 +434,26 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
 
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     QPixmap pixPaintBrush,pixEraser,pixBlur,pixSmear,pixSharpen,pixDodge,pixBurn,pixClone,pixReveal;
-#pragma message WARN("TODO: these icons have the wrong size, resize the files")
-    appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
-    appPTR->getIcon(NATRON_PIXMAP_BEZIER, &pixBezier);
-    appPTR->getIcon(NATRON_PIXMAP_VISIBLE, &pixVisible);
-    appPTR->getIcon(NATRON_PIXMAP_UNVISIBLE, &pixUnvisible);
-    appPTR->getIcon(NATRON_PIXMAP_LOCKED, &pixLocked);
-    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, &pixUnlocked);
-    appPTR->getIcon(NATRON_PIXMAP_INVERTED, &pixInverted);
-    appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, &pixUninverted);
-    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
-    appPTR->getIcon(NATRON_PIXMAP_ROTO_MERGE, &pixmerge);
-    appPTR->getIcon(NATRON_PIXMAP_OVERLAY, &pixDefault);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SOLID, &pixPaintBrush);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_ERASER, &pixEraser);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BLUR, &pixBlur);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SMEAR, &pixSmear);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SHARPEN, &pixSharpen);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_DODGE, &pixDodge);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BURN, &pixBurn);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_CLONE, &pixClone);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_REVEAL, &pixReveal);
+    appPTR->getIcon(NATRON_PIXMAP_LAYER, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixLayer);
+    appPTR->getIcon(NATRON_PIXMAP_BEZIER, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixBezier);
+    appPTR->getIcon(NATRON_PIXMAP_VISIBLE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixVisible);
+    appPTR->getIcon(NATRON_PIXMAP_UNVISIBLE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixUnvisible);
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixLocked);
+    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixUnlocked);
+    appPTR->getIcon(NATRON_PIXMAP_INVERTED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixInverted);
+    appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixUninverted);
+    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixWheel);
+    appPTR->getIcon(NATRON_PIXMAP_ROTO_MERGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixmerge);
+    appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixDefault);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SOLID, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixPaintBrush);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_ERASER, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixEraser);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BLUR, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixBlur);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SMEAR, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixSmear);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SHARPEN, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixSharpen);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_DODGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixDodge);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BURN, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixBurn);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_CLONE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixClone);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_REVEAL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixReveal);
     
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);

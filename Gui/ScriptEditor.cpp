@@ -111,17 +111,17 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->buttonsContainerLayout->setSpacing(2);
     
     QPixmap undoPix,redoPix,clearHistoPix,sourceScriptPix,loadScriptPix,saveScriptPix,execScriptPix,outputVisiblePix,outputHiddenPix,clearOutpoutPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, &undoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT, &redoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLOSE_PANEL, &clearHistoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &clearHistoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT,&clearOutpoutPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT,&execScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED,&outputVisiblePix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED,&outputHiddenPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT,&sourceScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT,&loadScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT,&saveScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &undoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &redoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLOSE_PANEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearOutpoutPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &execScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputVisiblePix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputHiddenPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &sourceScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &loadScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
     
     _imp->undoB = new Button(QIcon(undoPix),"",_imp->buttonsContainer);
     QKeySequence undoSeq(Qt::CTRL + Qt::Key_BracketLeft);

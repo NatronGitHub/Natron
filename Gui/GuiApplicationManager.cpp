@@ -662,10 +662,11 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_INTERP_CURVE_Z:
                 path = NATRON_IMAGES_PATH "interp_curve_z.png";
                 break;
-            default:
-                assert(!"Missing image.");
+            // DON'T add a default: case here
         } // switch
-
+        if (path.isEmpty()) {
+            assert(!"Missing image.");
+        }
         // put a breakpoint in png_chunk_report to catch the error "libpng warning: iCCP: known incorrect sRGB profile"
 
         // old version:
@@ -679,6 +680,18 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
         QPixmapCache::insert(QString::number(e), *pix);
     }
 } // getIcon
+
+void
+GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+                               int size,
+                               QPixmap* pix) const
+{
+    if ( !QPixmapCache::find(QString::number(e) + ';' + QString::number(size), pix) ) {
+        getIcon(e, pix);
+        *pix = pix->scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QPixmapCache::insert(QString::number(e), *pix);
+    }
+}
 
 const std::list<boost::shared_ptr<PluginGroupNode> >&
 GuiApplicationManager::getTopLevelPluginsToolButtons() const

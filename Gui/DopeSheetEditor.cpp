@@ -95,7 +95,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->toggleTripleSyncBtn = new QPushButton(this);
 
     QPixmap tripleSyncBtnPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, &tripleSyncBtnPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncBtnPix);
 
     _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
     _imp->toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
@@ -189,7 +189,7 @@ void DopeSheetEditor::toggleTripleSync(bool enabled)
             : Natron::NATRON_PIXMAP_UNLOCKED;
 
     QPixmap tripleSyncBtnPix;
-    appPTR->getIcon(tripleSyncPixmapValue, &tripleSyncBtnPix);
+    appPTR->getIcon(tripleSyncPixmapValue, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncBtnPix);
 
     _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
     _imp->toggleTripleSyncBtn->setDown(enabled);

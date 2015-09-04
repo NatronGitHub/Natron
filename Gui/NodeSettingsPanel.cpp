@@ -83,7 +83,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
     
     QPixmap pixSettings;
-    appPTR->getIcon(NATRON_PIXMAP_SETTINGS,&pixSettings);
+    appPTR->getIcon(NATRON_PIXMAP_SETTINGS, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixSettings);
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _settingsButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));

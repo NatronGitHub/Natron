@@ -116,9 +116,9 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _openFileButton = new Button(container);
-    _openFileButton->setFixedSize(17, 17);
+    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QPixmap pix;
-    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip(toolTip());
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
@@ -129,10 +129,10 @@ File_KnobGui::createWidget(QHBoxLayout* layout)
     
     if (knob->getHolder() && knob->isInputImageFile()) {
         _reloadButton = new Button(container);
-        _reloadButton->setFixedSize(17, 17);
+        _reloadButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _reloadButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRefresh;
-        appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixRefresh);
+        appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon(QIcon(pixRefresh));
         _reloadButton->setToolTip(Natron::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
         QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
@@ -500,9 +500,9 @@ OutputFile_KnobGui::createWidget(QHBoxLayout* layout)
 
 
     _openFileButton = new Button( layout->parentWidget() );
-    _openFileButton->setFixedSize(17, 17);
+    _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QPixmap pix;
-    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
@@ -878,10 +878,10 @@ Path_KnobGui::createWidget(QHBoxLayout* layout)
 
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
-        _openFileButton->setFixedSize(17, 17);
+        _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
         QPixmap pix;
-        appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
+        appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );
         QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onOpenFileButtonClicked() ) );
         

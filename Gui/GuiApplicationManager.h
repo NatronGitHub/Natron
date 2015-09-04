@@ -102,7 +102,8 @@ public:
         return false;
     }
 
-    void getIcon(Natron::PixmapEnum e,QPixmap* pix) const;
+    void getIcon(Natron::PixmapEnum e, QPixmap* pix) const;
+    void getIcon(Natron::PixmapEnum e, int size, QPixmap* pix) const;
 
     void setKnobClipBoard(bool copyAnimation,
                           const std::list<Variant> & values,

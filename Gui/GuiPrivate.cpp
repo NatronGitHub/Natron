@@ -335,18 +335,17 @@ GuiPrivate::createPropertiesBinGui()
     propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
     propertiesAreaButtonsLayout->setSpacing(5);
     QPixmap closePanelPix;
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, &closePanelPix);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, NATRON_SMALL_BUTTON_ICON_SIZE, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix), "", propertiesAreaButtonsContainer);
     _clearAllPanelsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _clearAllPanelsButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _clearAllPanelsButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _clearAllPanelsButton->setToolTip( Natron::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL( clicked(bool) ), _gui, SLOT( clearAllVisiblePanels() ) );
     QPixmap minimizePix, maximizePix;
-    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, &minimizePix);
-    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &maximizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, NATRON_SMALL_BUTTON_ICON_SIZE, &minimizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, NATRON_SMALL_BUTTON_ICON_SIZE, &maximizePix);
     QIcon mIc;
     mIc.addPixmap(minimizePix, QIcon::Normal, QIcon::On);
     mIc.addPixmap(maximizePix, QIcon::Normal, QIcon::Off);
