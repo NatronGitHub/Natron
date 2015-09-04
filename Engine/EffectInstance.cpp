@@ -1053,7 +1053,7 @@ EffectInstance::aborted() const
                     
                     isViewer = dynamic_cast<ViewerInstance*>(args.treeRoot->getLiveInstance());
                     //If the viewer is already doing a sequential render, abort
-                    if (isViewer->isDoingSequentialRender()) {
+                    if (isViewer && isViewer->isDoingSequentialRender()) {
                         return true;
                     }
                 }
