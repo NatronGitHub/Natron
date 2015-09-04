@@ -249,6 +249,10 @@ cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INSTALL_PATH/bin/Natron* $NATRON_PATH/data/bin/ || exit 1
 strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer $NATRON_PATH/data/bin/NatronCrashReporter
+
+cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffmpeg $NATRON_PATH/data/bin/ || exit 1
+cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffprobe $NATRON_PATH/data/bin/ || exit 1
+
 wget $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
 rm $NATRON_PATH/data/docs/TuttleOFX-README.txt || exit 1
