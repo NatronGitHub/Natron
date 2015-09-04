@@ -933,24 +933,25 @@ NodeCollection::setParallelRenderArgs(int time,
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         }
         
-        U64 nodeHash = 0;
-        bool hashSet = false;
-        boost::shared_ptr<NodeFrameRequest> nodeRequest;
-        if (request) {
-            FrameRequestMap::const_iterator foundRequest = request->find(*it);
-            if (foundRequest != request->end()) {
-                nodeRequest = foundRequest->second;
-                nodeHash = nodeRequest->nodeHash;
-                hashSet = true;
+        {
+            U64 nodeHash = 0;
+            bool hashSet = false;
+            boost::shared_ptr<NodeFrameRequest> nodeRequest;
+            if (request) {
+                FrameRequestMap::const_iterator foundRequest = request->find(*it);
+                if (foundRequest != request->end()) {
+                    nodeRequest = foundRequest->second;
+                    nodeHash = nodeRequest->nodeHash;
+                    hashSet = true;
+                }
             }
+            if (!hashSet) {
+                nodeHash = (*it)->getHashValue();
+            }
+            
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
+                                                   rotoAge,renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
         }
-        if (!hashSet) {
-            hashSet = (*it)->getHashValue();
-        }
-        
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
-                                               rotoAge,renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
-        
         for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
             boost::shared_ptr<NodeFrameRequest> childRequest;
@@ -960,12 +961,12 @@ NodeCollection::setParallelRenderArgs(int time,
                 FrameRequestMap::const_iterator foundRequest = request->find(*it2);
                 if (foundRequest != request->end()) {
                     childRequest = foundRequest->second;
-                    nodeHash = nodeRequest->nodeHash;
+                    nodeHash = childRequest->nodeHash;
                     hashSet = true;
                 }
             }
             if (!hashSet) {
-                hashSet = (*it2)->getHashValue();
+                nodeHash = (*it2)->getHashValue();
             }
             
             (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, (*it2)->getRotoAge(), renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
@@ -986,12 +987,12 @@ NodeCollection::setParallelRenderArgs(int time,
                     FrameRequestMap::const_iterator foundRequest = request->find(*it2);
                     if (foundRequest != request->end()) {
                         childRequest = foundRequest->second;
-                        nodeHash = nodeRequest->nodeHash;
+                        nodeHash = childRequest->nodeHash;
                         hashSet = true;
                     }
                 }
                 if (!hashSet) {
-                    hashSet = (*it2)->getHashValue();
+                    nodeHash = (*it2)->getHashValue();
                 }
                 
                 assert(*it2);

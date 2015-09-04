@@ -217,6 +217,51 @@ RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
     return Natron::eStatusOK;
 }
 
+FramesNeededMap
+RotoPaint::getFramesNeeded(double time, int view)
+{
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+    if (items.empty()) {
+        return FramesNeededMap();
+    }
+    
+    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+    assert(firstStrokeItem);
+    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+    assert(bottomMerge);
+
+    FramesNeededMap ret;
+    std::map<int, std::vector<OfxRangeD> > views;
+    OfxRangeD range;
+    range.min = range.max = time;
+    views[view].push_back(range);
+    ret.insert(std::make_pair(0,views));
+    return ret;
+}
+
+void
+RotoPaint::getRegionsOfInterest(double /*time*/,
+                          const RenderScale & /*scale*/,
+                          const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
+                          const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                          int /*view*/,
+                          RoIMap* ret)
+{
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+    if (items.empty()) {
+        return;
+    }
+    
+    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+    assert(firstStrokeItem);
+    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+    assert(bottomMerge);
+    
+    ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
+}
+
 bool
 RotoPaint::isIdentity(double time,
                       const RenderScale & scale,

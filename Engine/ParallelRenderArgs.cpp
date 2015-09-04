@@ -23,6 +23,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/RotoContext.h"
 
 using namespace Natron;
 
@@ -42,20 +43,23 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             bool byPassCache) // render functor specific
 {
     EffectInstance* effect = node->getLiveInstance();
+    bool isRoto = node->isRotoPaintingNode();
     
     ///For all frames/views needed, call recursively on inputs with the appropriate RoI
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         
-        bool inputIsMask = effect->isInputMask(it->first);
+        int inputNb = it->first;
+        
+        bool inputIsMask = effect->isInputMask(inputNb);
         
         Natron::ImageComponents maskComps;
         int channelForAlphaInput;
         boost::shared_ptr<Node> maskInput;
         if (inputIsMask) {
-            if (!effect->isMaskEnabled(it->first)) {
+            if (!effect->isMaskEnabled(inputNb)) {
                 continue;
             }
-            channelForAlphaInput = effect->getMaskChannel(it->first,&maskComps,&maskInput);
+            channelForAlphaInput = effect->getMaskChannel(inputNb,&maskComps,&maskInput);
         } else {
             channelForAlphaInput = -1;
         }
@@ -67,11 +71,25 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         //Redirect for transforms if needed
         EffectInstance* inputEffect;
-        std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap.find(it->first);
+        std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap.find(inputNb);
         if (foundReroute != reroutesMap.end()) {
-            inputEffect = foundReroute->second->getInput(it->first);
+            inputEffect = foundReroute->second->getInput(inputNb);
         } else {
-            inputEffect = node->getLiveInstance()->getInput(it->first);
+            if (!isRoto || isRenderFunctor) {
+                inputEffect = node->getLiveInstance()->getInput(inputNb);
+            } else {
+                //For the roto, propagate the request to the internal tree when not rendering
+                boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+                std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+                if (!items.empty()) {
+                    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+                    assert(firstStrokeItem);
+                    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+                    assert(bottomMerge);
+                    inputEffect = bottomMerge->getLiveInstance();
+                }
+ 
+            }
         }
         
         //Redirect the mask input
@@ -91,9 +109,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             
             ImageList* inputImagesList = 0;
             if (isRenderFunctor) {
-                EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(it->first);
+                EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
                 if (foundInputImages == inputImages->end()) {
-                    std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(it->first, ImageList()));
+                    std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
                     inputImagesList = &ret.first->second;
                     assert(ret.second);
                 }
@@ -135,7 +153,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             const std::vector<Natron::ImageComponents>* compsNeeded = 0;
             
             if (neededComps) {
-                EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(it->first);
+                EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
                 if (foundCompsNeeded == neededComps->end()) {
                     continue;
                 } else {
@@ -153,7 +171,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             {
                 boost::shared_ptr<EffectInstance::NotifyInputNRenderingStarted_RAII> inputNIsRendering_RAII;
                 if (isRenderFunctor) {
-                    inputNIsRendering_RAII.reset(new EffectInstance::NotifyInputNRenderingStarted_RAII(node.get(),it->first));
+                    inputNIsRendering_RAII.reset(new EffectInstance::NotifyInputNRenderingStarted_RAII(node.get(),inputNb));
                 }
                 
                 ///For all views requested in input
@@ -365,6 +383,9 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                 assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
                 // be safe in release mode otherwise we hit an infinite recursion
                 if (fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant) {
+                    
+                    fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
+                    
                     StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                            fvRequest->globalData.inputIdentityTime,
                                                            view,
@@ -380,6 +401,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
             
             Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
             if (inputEffectIdentity) {
+                fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
                 StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                        fvRequest->globalData.inputIdentityTime,
                                                        view,

@@ -505,7 +505,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         U64 renderAge = _imp->getRenderAge(i);
 
         
-        FrameRequestMap request;
+        /*FrameRequestMap request;
         RectI roi;
         {
             roi.x1 = args[i]->params->textureRect.x1;
@@ -516,7 +516,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
         if (status[i] == Natron::eStatusFailed) {
             continue;
-        }
+        }*/
         
         ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
                                            time,
@@ -526,7 +526,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            canAbort,
                                            renderAge,
                                            thisNode,
-                                           &request,
+                                           0,
                                            i,
                                            getTimeline().get(),
                                            false,

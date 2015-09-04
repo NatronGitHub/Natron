@@ -906,9 +906,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.view = view;
     args.isRenderResponseToUserInteraction = isRenderUserInteraction;
     args.isSequentialRender = isSequential;
-    
+    args.request = nodeRequest;
     if (nodeRequest) {
-        args.request = nodeRequest;
         args.nodeHash = nodeRequest->nodeHash;
     } else {
         args.nodeHash = nodeHash;
@@ -1383,7 +1382,7 @@ EffectInstance::getImage(int inputNb,
             if (n) {
                 const ParallelRenderArgs* inputFrameArgs = n->getParallelRenderArgsTLS();
                 const FrameViewRequest* request = 0;
-                if (inputFrameArgs) {
+                if (inputFrameArgs && inputFrameArgs->request) {
                     request = inputFrameArgs->request->getFrameViewRequest(time, view);
                 }
                 if (request) {
@@ -3704,18 +3703,19 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             boost::shared_ptr<Image> tmp;
             {
                 Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
-                
-                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), roi, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
+                RectI bounds = it->second.downscaleImage->getBounds();
+
+                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), bounds, mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
                 
                 bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied && it->second.downscaleImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
                 
                 if (useAlpha0ForRGBToRGBAConversion) {
-                    it->second.downscaleImage->convertToFormatAlpha0(roi,
+                    it->second.downscaleImage->convertToFormatAlpha0(bounds,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());
                 } else {
-                    it->second.downscaleImage->convertToFormat(roi,
+                    it->second.downscaleImage->convertToFormat(bounds,
                                                                getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                -1, false, unPremultIfNeeded, tmp.get());
@@ -3814,7 +3814,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
         getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
     }
 #ifdef DEBUG
-    if (!inputsRoi->empty() && framesNeeded.empty() && !isReader()) {
+    if (!inputsRoi->empty() && framesNeeded.empty() && !isReader() && !isRotoPaintNode()) {
         qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
         << "an empty list with getFramesNeededAction";
     }

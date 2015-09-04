@@ -123,6 +123,15 @@ private:
 
     virtual Natron::StatusEnum
     getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual void getRegionsOfInterest(double time,
+                                      const RenderScale & scale,
+                                      const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
+                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                      int view,
+                                      RoIMap* ret) OVERRIDE FINAL;
+    
+    virtual FramesNeededMap getFramesNeeded(double time, int view) OVERRIDE FINAL;
 
     virtual bool isIdentity(double time,
                         const RenderScale & scale,
