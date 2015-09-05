@@ -246,7 +246,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             mustShowErrorsLog = true;
             continue;
         } else {
-            if (n->getPlugin() && n->getPlugin()->getMajorVersion() != (int)majorVersion) {
+            if (!usingPythonModule && n->getPlugin() && n->getPlugin()->getMajorVersion() != (int)majorVersion) {
                 QString text( QObject::tr("WARNING: The node ") );
                 text.append((*it)->getNodeScriptName().c_str());
                 text.append(" (");
