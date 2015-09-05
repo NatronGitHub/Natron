@@ -686,10 +686,12 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                                int size,
                                QPixmap* pix) const
 {
-    if ( !QPixmapCache::find(QString::number(e) + ';' + QString::number(size), pix) ) {
+    if ( !QPixmapCache::find(QString::number(e) + '@' + QString::number(size), pix) ) {
         getIcon(e, pix);
-        *pix = pix->scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        QPixmapCache::insert(QString::number(e), *pix);
+        if (pix->width() != size || pix->height() != size) {
+            *pix = pix->scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            QPixmapCache::insert(QString::number(e), *pix);
+        }
     }
 }
 
