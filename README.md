@@ -115,6 +115,10 @@ Planned features
 
 - Integration of Blender's production proven tracker in Natron to replace the existing tracker
 
+- Node-graph enhancement and optimization
+
+- Multi-layered EXR decoding enhancement (currently the OpenImageIO backend is slow)
+
 
 ### Features planned for future versions
 

@@ -220,7 +220,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             }
         }
         
-        unsigned int majorVersion,minorVersion;
+        int majorVersion,minorVersion;
         if (usingPythonModule) {
             //We already asked the user whether he/she wanted to load a newer version of the PyPlug, let the loadNode function accept it
             majorVersion = -1;
