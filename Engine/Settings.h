@@ -303,6 +303,9 @@ public:
     
     bool isInViewerProgressReportEnabled() const;
     
+    bool isDefaultAppearanceOutdated() const;
+    void restoreDefaultAppearance();
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -408,6 +411,8 @@ private:
     boost::shared_ptr<Color_Knob> _defaultMergeGroupColor;
     boost::shared_ptr<Color_Knob> _defaultViewsGroupColor;
     boost::shared_ptr<Color_Knob> _defaultDeepGroupColor;
+    boost::shared_ptr<Int_Knob> _defaultAppearanceVersion;
+    
     boost::shared_ptr<Page_Knob> _readersTab;
     std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;
     boost::shared_ptr<Page_Knob> _writersTab;
@@ -466,6 +471,7 @@ private:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
+    bool _defaultAppearanceOutdated;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

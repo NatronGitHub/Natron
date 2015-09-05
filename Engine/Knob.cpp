@@ -2734,6 +2734,7 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
     return ret;
 }
 
+//The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
 void
 KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob)
 {

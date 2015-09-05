@@ -264,7 +264,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    bool enabled = knob->isEnabled(dimension);
+    bool enabled = knob->isEnabled(dimension == -1 ? 0 : dimension);
 
     if ( knob->getIsSecret() ) {
         return;
@@ -276,7 +276,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     _imp->copyRightClickMenu->addSeparator();
 
-    bool isSlave = knob->isSlave(dimension) || !knob->getExpression(dimension).empty();
+    bool isSlave = knob->isSlave(dimension == -1 ? 0 : dimension) || !knob->getExpression(dimension == -1 ? 0 : dimension).empty();
     
     
     int dim = knob->getDimension();

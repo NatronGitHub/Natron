@@ -381,6 +381,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainers->hide();
         _slider->hide();
         _dimensionSwitchButton->hide();
+        enableRightClickMenu(_colorLabel,-1);
     }
     
 } // createWidget

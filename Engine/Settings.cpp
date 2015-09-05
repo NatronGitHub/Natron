@@ -45,6 +45,8 @@
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
+#define NATRON_DEFAULT_APPEARANCE_VERSION 1
+
 using namespace Natron;
 
 
@@ -53,6 +55,7 @@ Settings::Settings(AppInstance* appInstance)
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
+    , _defaultAppearanceOutdated(false)
 {
 }
 
@@ -309,6 +312,12 @@ Settings::initializeKnobs()
     
     //////////////APPEARANCE TAB/////////////////
     _appearanceTab = Natron::createKnob<Page_Knob>(this, "Appearance");
+    
+    _defaultAppearanceVersion = Natron::createKnob<Int_Knob>(this, "Appearance version");
+    _defaultAppearanceVersion->setName("appearanceVersion");
+    _defaultAppearanceVersion->setAnimationEnabled(false);
+    _defaultAppearanceVersion->setSecret(true);
+    _appearanceTab->addKnob(_defaultAppearanceVersion);
     
     _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
@@ -706,7 +715,8 @@ Settings::initializeKnobs()
                                                "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
     _usePluginIconsInNodeGraph->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
-
+    
+   
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setAnimationEnabled(false);
@@ -1208,9 +1218,9 @@ Settings::setDefaultValues()
     _echoVariableDeclarationToPython->setDefaultValue(true);
 
     
-    _sunkenColor->setDefaultValue(0.15,0);
-    _sunkenColor->setDefaultValue(0.15,1);
-    _sunkenColor->setDefaultValue(0.15,2);
+    _sunkenColor->setDefaultValue(0.12,0);
+    _sunkenColor->setDefaultValue(0.12,1);
+    _sunkenColor->setDefaultValue(0.12,2);
     
     _baseColor->setDefaultValue(0.19,0);
     _baseColor->setDefaultValue(0.19,1);
@@ -1561,6 +1571,13 @@ Settings::restoreSettings()
         if (!_settingsExisted) {
             _natronSettingsExist->setValue(true, 0);
             saveSetting(_natronSettingsExist.get());
+        }
+        
+        int appearanceVersion = _defaultAppearanceVersion->getValue();
+        if (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
+            _defaultAppearanceOutdated = true;
+            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION, 0);
+            saveSetting(_defaultAppearanceVersion.get());
         }
 
         appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
@@ -2995,4 +3012,28 @@ bool
 Settings::isInViewerProgressReportEnabled() const
 {
     return _enableProgressReport->getValue();
+}
+
+bool
+Settings::isDefaultAppearanceOutdated() const
+{
+    return _defaultAppearanceOutdated;
+}
+
+void
+Settings::restoreDefaultAppearance()
+{
+    std::vector< boost::shared_ptr<KnobI> > children = _appearanceTab->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        Color_Knob* isColorKnob = dynamic_cast<Color_Knob*>(children[i].get());
+        if (isColorKnob && isColorKnob->isSimplified()) {
+            isColorKnob->blockValueChanges();
+            for (int j = 0; j < isColorKnob->getDimension(); ++j) {
+                isColorKnob->resetToDefaultValue(j);
+            }
+            isColorKnob->unblockValueChanges();
+        }
+    }
+    _defaultAppearanceOutdated = false;
+    appPTR->reloadStylesheets();
 }

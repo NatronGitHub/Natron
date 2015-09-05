@@ -248,7 +248,7 @@ QLabel:disabled {
 }
 
 
-TabWidget{background-color: %2;}
+TabWidget{background-color: %4;}
 
 NodeSettingsPanel{
     background-color : %2;
@@ -358,7 +358,7 @@ QCheckBox {
 }
 
 QGraphicsView {
-    background-color: %3;
+    background-color: %2;
 }
 
 QScrollArea {

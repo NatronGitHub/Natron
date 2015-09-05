@@ -226,6 +226,8 @@ GuiAppInstance::load(const CLArgs& cl)
     ///show the gui
     _imp->_gui->show();
 
+    
+    boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
 
     QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
 
@@ -236,12 +238,21 @@ GuiAppInstance::load(const CLArgs& cl)
                                                                       tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                       "on launch of the application ?").toStdString(), false);
             bool checkForUpdates = reply == Natron::eStandardButtonYes;
-            appPTR->getCurrentSettings()->setCheckUpdatesEnabled(checkForUpdates);
+            nSettings->setCheckUpdatesEnabled(checkForUpdates);
         }
 
-        if (appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
+        if (nSettings->isCheckForUpdatesEnabled()) {
             appPTR->setLoadingStatus( tr("Checking if updates are available...") );
             checkForNewVersion();
+        }
+    }
+    
+    if (nSettings->isDefaultAppearanceOutdated()) {
+        Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Appearance").toStdString(),
+                                                                  tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
+                                                                     "Would you like to set the new default appearance?").toStdString(), false);
+        if (reply == Natron::eStandardButtonYes) {
+            nSettings->restoreDefaultAppearance();
         }
     }
 
