@@ -8,7 +8,7 @@
 class StringParamBaseWrapper : public StringParamBase
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { StringParamBase::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { StringParamBase::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~StringParamBaseWrapper();
     static void pysideInitQtMetaTypes();
 };

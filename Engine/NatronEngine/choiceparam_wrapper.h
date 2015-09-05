@@ -8,7 +8,7 @@
 class ChoiceParamWrapper : public ChoiceParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { ChoiceParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ChoiceParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~ChoiceParamWrapper();
     static void pysideInitQtMetaTypes();
 };

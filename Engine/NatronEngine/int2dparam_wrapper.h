@@ -8,7 +8,7 @@
 class Int2DParamWrapper : public Int2DParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { Int2DParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { Int2DParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~Int2DParamWrapper();
     static void pysideInitQtMetaTypes();
 };

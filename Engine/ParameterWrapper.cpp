@@ -323,14 +323,14 @@ AnimatedParam::getCurrentTime() const
 }
 
 void
-Param::_addAsDependencyOf(int fromExprDimension,Param* param)
+Param::_addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
     boost::shared_ptr<KnobI> otherKnob = param->_knob.lock();
     boost::shared_ptr<KnobI> thisKnob = _knob.lock();
     if (otherKnob == thisKnob) {
         return;
     }
-    thisKnob->addListener(true,fromExprDimension, otherKnob);
+    thisKnob->addListener(true,fromExprDimension, thisDimension, otherKnob);
 }
 
 bool
@@ -575,9 +575,9 @@ IntParam::getDisplayMaximum(int dimension) const
 }
 
 int
-IntParam::addAsDependencyOf(int fromExprDimension,Param* param)
+IntParam::addAsDependencyOf(int fromExprDimension,Param* param, int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param, thisDimension);
     return _intKnob.lock()->getValue();
 }
 
@@ -812,9 +812,9 @@ DoubleParam::getDisplayMaximum(int dimension) const
 }
 
 double
-DoubleParam::addAsDependencyOf(int fromExprDimension,Param* param)
+DoubleParam::addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param, thisDimension);
     return _doubleKnob.lock()->getValue();
 }
 
@@ -999,9 +999,9 @@ ColorParam::getDisplayMaximum(int dimension) const
 }
 
 double
-ColorParam::addAsDependencyOf(int fromExprDimension,Param* param)
+ColorParam::addAsDependencyOf(int fromExprDimension,Param* param, int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param, thisDimension);
     return _colorKnob.lock()->getValue();
 }
 
@@ -1155,9 +1155,9 @@ ChoiceParam::getOptions() const
 }
 
 int
-ChoiceParam::addAsDependencyOf(int fromExprDimension,Param* param)
+ChoiceParam::addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param,thisDimension);
     return _choiceKnob.lock()->getValue();
 }
 
@@ -1245,9 +1245,9 @@ BooleanParam::restoreDefaultValue()
 
 
 bool
-BooleanParam::addAsDependencyOf(int fromExprDimension,Param* param)
+BooleanParam::addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param,thisDimension);
     return _boolKnob.lock()->getValue();
 }
 
@@ -1336,9 +1336,9 @@ StringParamBase::restoreDefaultValue()
 
 
 std::string
-StringParamBase::addAsDependencyOf(int fromExprDimension,Param* param)
+StringParamBase::addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
-    _addAsDependencyOf(fromExprDimension, param);
+    _addAsDependencyOf(fromExprDimension, param,thisDimension);
     return _stringKnob.lock()->getValue();
 }
 

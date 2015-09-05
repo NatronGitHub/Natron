@@ -8,7 +8,7 @@
 class GroupParamWrapper : public GroupParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { GroupParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { GroupParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~GroupParamWrapper();
     static void pysideInitQtMetaTypes();
 };

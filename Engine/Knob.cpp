@@ -218,7 +218,9 @@ struct Expr
     std::string originalExpression; //< the one input by the user
     
     bool hasRet;
-    std::list<KnobI*> dependencies;
+    
+    ///The list of pair<knob, dimension> dpendencies for an expression
+    std::list< std::pair<KnobI*,int> > dependencies;
     
     //PyObject* code;
     
@@ -1465,6 +1467,7 @@ KnobHelper::hasAnimation() const
     return false;
 }
 
+
 static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
                                                   char openingChar,
                                                   char closingChar,
@@ -1492,7 +1495,33 @@ static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesis
     return i;
 }
 
+static void extractParameters(std::size_t startParenthesis, std::size_t endParenthesis, const std::string& str, std::vector<std::string>* params)
+{
+    std::size_t i = startParenthesis + 1;
+    int insideParenthesis = 0;
+    while (i < endParenthesis || insideParenthesis < 0) {
+        std::string curParam;
+        if (str.at(i) == '(') {
+            ++insideParenthesis;
+        } else if (str.at(i) == ')') {
+            --insideParenthesis;
+        }
+        while (i < str.size() && (str.at(i) != ',' || insideParenthesis > 0)) {
+            curParam.push_back(str.at(i));
+            ++i;
+            if (str.at(i) == '(') {
+                ++insideParenthesis;
+            } else if (str.at(i) == ')') {
+                --insideParenthesis;
+            }
+        }
+        params->push_back(curParam);
+    }
+}
+
 static bool parseTokenFrom(int fromDim,
+                           int dimensionParamPos,
+                           bool returnsTuple,
                            const std::string& str,
                            const std::string& token,
                            std::size_t inputPos,
@@ -1539,8 +1568,38 @@ static bool parseTokenFrom(int fromDim,
         throw std::invalid_argument("Invalid expr");
     }
     
+    std::vector<std::string> params;
+    ///If the function returns a tuple like get()[dimension], do not extract parameters
+    if (!returnsTuple) {
+        extractParameters(pos, endingParenthesis, str, &params);
+    } else {
+        //try to find the tuple
+        std::size_t it = endingParenthesis + 1;
+        while (str.at(it) == ' ' && it < str.size()) {
+            ++it;
+        }
+        if (it < str.size() && str.at(it) == '[') {
+            std::size_t endingBracket = getMatchingParenthesisPosition(it, '[', ']',  str);
+            if (endingBracket == std::string::npos) {
+                throw std::invalid_argument("Invalid expr");
+            }
+            params.push_back(str.substr(it + 1, endingBracket - it - 1));
+        }
+    }
+    
+    
+    
+    //The get() function does not always returns a tuple
+    if (params.empty() && dimensionParamPos == -1) {
+        params.push_back("-1");
+    }
+    
+    if (dimensionParamPos >= (int)params.size()) {
+        throw std::invalid_argument("Invalid expr");
+    }
+    
     std::stringstream ss;
-    ss << ".addAsDependencyOf(" << fromDim << ",thisParam)\n";
+    ss << ".addAsDependencyOf(" << fromDim << ",thisParam," <<  params[dimensionParamPos] << ")\n";
     std::string toInsert = ss.str();
     
    // tokenSize = endingParenthesis - tokenStart + 1;
@@ -1574,20 +1633,20 @@ static bool parseTokenFrom(int fromDim,
     return true;
 }
 
-static bool extractAllOcurrences(const std::string& str,const std::string& token,int fromDim,std::string *outputScript)
+static bool extractAllOcurrences(const std::string& str,const std::string& token,bool returnsTuple,int dimensionParamPos,int fromDim,std::string *outputScript)
 {
     
     std::size_t tokenStart;
     bool couldFindToken;
     try {
-        couldFindToken = parseTokenFrom(fromDim, str, token, 0, &tokenStart, outputScript);
+        couldFindToken = parseTokenFrom(fromDim, dimensionParamPos, returnsTuple, str, token, 0, &tokenStart, outputScript);
     } catch (...) {
         return false;
     }
     
     while (couldFindToken) {
         try {
-            couldFindToken = parseTokenFrom(fromDim, str, token, tokenStart + 1, &tokenStart, outputScript);
+            couldFindToken = parseTokenFrom(fromDim, dimensionParamPos, returnsTuple, str, token, tokenStart + 1, &tokenStart, outputScript);
         } catch (...) {
             return false;
         }
@@ -1687,23 +1746,23 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     }
     
     std::string script;
-    if  (!extractAllOcurrences(expressionCopy, "getValue",dimension,&script)) {
+    if  (!extractAllOcurrences(expressionCopy, "getValue", false, 0, dimension,&script)) {
         return ;
     }
     
-    if (!extractAllOcurrences(expressionCopy, "getValueAtTime", dimension,&script)) {
+    if (!extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1,  dimension,&script)) {
         return;
     }
     
-    if (!extractAllOcurrences(expressionCopy, "getDerivativeAtTime", dimension,&script)) {
+    if (!extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1,  dimension,&script)) {
         return;
     }
     
-    if (!extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", dimension,&script)) {
+    if (!extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, dimension,&script)) {
         return;
     }
     
-    if (!extractAllOcurrences(expressionCopy, "get", dimension,&script)) {
+    if (!extractAllOcurrences(expressionCopy, "get", true, 0, dimension,&script)) {
         return;
     }
     
@@ -1894,7 +1953,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 }
 
 bool
-KnobHelper::getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const
+KnobHelper::getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const
 {
     QMutexLocker k(&_imp->expressionMutex);
     if (!_imp->expressions[dimension].expression.empty()) {
@@ -1918,16 +1977,16 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
         //_imp->expressions[dimension].code = 0;
     }
     {
-        std::list<KnobI*> dependencies;
+        std::list<std::pair<KnobI*,int> > dependencies;
         {
             QWriteLocker kk(&_imp->mastersMutex);
             dependencies = _imp->expressions[dimension].dependencies;
             _imp->expressions[dimension].dependencies.clear();
         }
-        for (std::list<KnobI*>::iterator it = dependencies.begin();
+        for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
             
-            KnobHelper* other = dynamic_cast<KnobHelper*>(*it);
+            KnobHelper* other = dynamic_cast<KnobHelper*>(it->first);
             assert(other);
             
             std::list<boost::weak_ptr<KnobI> > otherListeners;
@@ -1936,19 +1995,29 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                 otherListeners = other->_imp->listeners;
             }
             
+            int nbTimesFound = 0;
+            std::list<boost::weak_ptr<KnobI> >::iterator firstFound = otherListeners.end();
             for (std::list<boost::weak_ptr<KnobI> >::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
                 boost::shared_ptr<KnobI> knob = it->lock();
                 if (knob.get() == this) {
-                    if (knob) {
-                        if (knob->getHolder() && knob->getSignalSlotHandler() ) {
-                            getHolder()->onKnobSlaved(this, other,dimension,false );
-                        }
-                        QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int,int)), _signalSlotHandler.get(),
-                                            SLOT(onExprDependencyChanged(int,int)));
+                    ++nbTimesFound;
+                    if (firstFound == otherListeners.end()) {
+                        firstFound = it;
                     }
-                    otherListeners.erase(it);
-                    break;
                 }
+            }
+
+            if (getHolder()) {
+                getHolder()->onKnobSlaved(this, other,dimension,false );
+            }
+            if (firstFound != otherListeners.end()) {
+                otherListeners.erase(firstFound);
+            }
+            
+            if (nbTimesFound == 1) {
+                ///Disconnect only if this knob is not a dependency in other dimension
+                QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int,int)), _signalSlotHandler.get(),
+                                    SLOT(onExprDependencyChanged(int,int)));
             }
             
             {
@@ -2380,7 +2449,7 @@ KnobHelper::slaveTo(int dimension,
 
     ///Register this as a listener of the master
     if (helper) {
-        helper->addListener(false,dimension,shared_from_this());
+        helper->addListener(false,dimension, otherDimension, shared_from_this());
     }
     
     return true;
@@ -2663,15 +2732,16 @@ KnobHelper::onMasterChanged(KnobI* master,
 
 
 void
-KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
+KnobHelper::onExprDependencyChanged(KnobI* knob,int dimensionChanged)
 {
     std::set<int> dimensionsToEvaluate;
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
-            std::list<KnobI*>::iterator found = std::find(_imp->expressions[i].dependencies.begin(),_imp->expressions[i].dependencies.end(),knob);
-            if (found != _imp->expressions[i].dependencies.end()) {
-                dimensionsToEvaluate.insert(i);
+            for (std::list<std::pair<KnobI*,int> >::iterator it = _imp->expressions[i].dependencies.begin(); it != _imp->expressions[i].dependencies.end(); ++it) {
+                if (it->first == knob && (it->second == dimensionChanged || it->second == -1)) {
+                    dimensionsToEvaluate.insert(i);
+                }
             }
         }
     }
@@ -2736,7 +2806,7 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
 
 //The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
 void
-KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob)
+KnobHelper::addListener(bool isExpression,int fromExprDimension,int thisDimension, const boost::shared_ptr<KnobI>& knob)
 {
     assert(fromExprDimension != -1);
     KnobHelper* slave = dynamic_cast<KnobHelper*>(knob.get());
@@ -2747,13 +2817,25 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::sha
     }
     
     if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
+        // If this knob is already a dependency of the knob, don't reconnec
+        bool alreadyListening = false;
+        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
+            if (it->lock() == knob) {
+                alreadyListening = true;
+                break;
+            }
+        }
+        
         if (!isExpression) {
-            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int,int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int,int) ) );
+            if (!alreadyListening) {
+                QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int,int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int,int) ) );
+            }
         } else {
-            QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int,int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int,int) ) );
-            
+            if (!alreadyListening) {
+                QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int,int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int,int) ) );
+            }
             QMutexLocker k(&slave->_imp->expressionMutex);
-            slave->_imp->expressions[fromExprDimension].dependencies.push_back(this);
+            slave->_imp->expressions[fromExprDimension].dependencies.push_back(std::make_pair(this,thisDimension));
         }
     }
     if (knob.get() != this) {

@@ -626,6 +626,9 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "eImageBitDepthShort", (long) Natron::eImageBitDepthShort))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTHENUM_IDX],
+        &Sbk_Natron_Type, "eImageBitDepthHalf", (long) Natron::eImageBitDepthHalf))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGEBITDEPTHENUM_IDX],
         &Sbk_Natron_Type, "eImageBitDepthFloat", (long) Natron::eImageBitDepthFloat))
         return ;
     // Register converter for enum 'Natron::ImageBitDepthEnum'.

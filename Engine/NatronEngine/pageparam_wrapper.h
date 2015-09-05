@@ -8,7 +8,7 @@
 class PageParamWrapper : public PageParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { PageParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { PageParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~PageParamWrapper();
     static void pysideInitQtMetaTypes();
 };

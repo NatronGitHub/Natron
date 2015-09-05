@@ -1574,7 +1574,7 @@ Settings::restoreSettings()
         }
         
         int appearanceVersion = _defaultAppearanceVersion->getValue();
-        if (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
+        if (_settingsExisted && appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION, 0);
             saveSetting(_defaultAppearanceVersion.get());

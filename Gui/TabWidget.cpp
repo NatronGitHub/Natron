@@ -1213,7 +1213,30 @@ TabWidget::onCurrentTabDeleted()
 void
 TabWidget::paintEvent(QPaintEvent* e)
 {
+    
     QFrame::paintEvent(e);
+    
+    bool mustDraw = false;
+    {
+        QMutexLocker k(&_imp->tabWidgetStateMutex);
+        mustDraw = _imp->tabs.empty() && _imp->isAnchor;
+    }
+    if (mustDraw) {
+        QPainter p(this);
+        QPen pen = p.pen();
+        pen.setColor(QColor(200,200,200));
+        p.setPen(pen);
+        QFont f = font();
+        f.setPointSize(50);
+        p.setFont(f);
+        QString text = tr("(Viewer Pane)");
+        QFontMetrics fm(f);
+        QPointF pos(width() / 2., height() / 2.);
+        pos.rx() -= (fm.width(text) / 2.);
+        pos.ry() -= (fm.height() / 2.);
+        p.drawText(pos, text);
+    }
+    
 }
 
 void
@@ -1642,9 +1665,13 @@ TabWidget::onShowHideTabBarActionTriggered()
 void
 TabWidget::setAsAnchor(bool anchor)
 {
+    bool mustUpdate = false;
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
         _imp->isAnchor = anchor;
+        if (anchor && _imp->tabs.empty()) {
+            mustUpdate = true;
+        }
     }
     QPixmap pix;
 
@@ -1654,6 +1681,9 @@ TabWidget::setAsAnchor(bool anchor)
         appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON, &pix);
     }
     _imp->leftCornerButton->setIcon( QIcon(pix) );
+    if (mustUpdate) {
+        update();
+    }
 }
 
 void

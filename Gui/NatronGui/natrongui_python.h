@@ -56,9 +56,9 @@ CLANG_DIAG_ON(uninitialized)
 
 // Type indices
 #define SBK_PYTABWIDGET_IDX                                          4
+#define SBK_GUIAPP_IDX                                               0
 #define SBK_PYVIEWER_IDX                                             5
 #define SBK_PYGUIAPPLICATION_IDX                                     1
-#define SBK_GUIAPP_IDX                                               0
 #define SBK_PYPANEL_IDX                                              3
 #define SBK_PYMODALDIALOG_IDX                                        2
 #define SBK_NatronGui_IDX_COUNT                                      6
@@ -70,10 +70,10 @@ extern PyTypeObject** SbkNatronGuiTypes;
 extern SbkConverter** SbkNatronGuiTypeConverters;
 
 // Converter indices
-#define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        0 // std::list<std::string >
-#define SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                         1 // std::list<Effect * >
-#define SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX                      2 // const std::vector<std::string > &
-#define SBK_NATRONGUI_STD_LIST_INT_IDX                               3 // const std::list<int > &
+#define SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                         0 // std::list<Effect * >
+#define SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX                      1 // const std::vector<std::string > &
+#define SBK_NATRONGUI_STD_LIST_INT_IDX                               2 // const std::list<int > &
+#define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        3 // std::list<std::string >
 #define SBK_NATRONGUI_QLIST_QACTIONPTR_IDX                           4 // QList<QAction * >
 #define SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX                           5 // const QList<QObject * > &
 #define SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX                           6 // QList<QByteArray >
@@ -90,9 +90,9 @@ namespace Shiboken
 
 // PyType functions, to get the PyObjectType for a type T
 template<> inline PyTypeObject* SbkType< ::PyTabWidget >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX]); }
+template<> inline PyTypeObject* SbkType< ::GuiApp >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_GUIAPP_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyViewer >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYVIEWER_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyGuiApplication >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX]); }
-template<> inline PyTypeObject* SbkType< ::GuiApp >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_GUIAPP_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyPanel >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYPANEL_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PyModalDialog >() { return reinterpret_cast<PyTypeObject*>(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX]); }
 

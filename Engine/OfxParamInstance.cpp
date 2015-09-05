@@ -88,11 +88,11 @@ getNumKeys(KnobI* knob,
 
     if (knob->canAnimate()) {
         for (int i = 0; i < knob->getDimension(); ++i) {
-            std::list<KnobI*> dependencies;
+            std::list<std::pair<KnobI*,int> > dependencies;
             if (knob->getExpressionDependencies(i, dependencies)) {
-                for (std::list<KnobI*>::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
+                for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
                     unsigned int tmp;
-                    getNumKeys(*it, tmp);
+                    getNumKeys(it->first, tmp);
                     sum += tmp;
                 }
             } else {

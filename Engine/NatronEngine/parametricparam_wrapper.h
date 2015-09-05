@@ -8,7 +8,7 @@
 class ParametricParamWrapper : public ParametricParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { ParametricParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ParametricParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~ParametricParamWrapper();
     static void pysideInitQtMetaTypes();
 };

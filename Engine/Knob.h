@@ -615,7 +615,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const = 0;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const = 0;
 
     /**
      * @brief Called when the master knob has changed its values or keyframes.
@@ -938,7 +938,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) = 0;
+    virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
     virtual bool useNativeOverlayHandle() const { return false; }
@@ -1161,7 +1161,7 @@ public:
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(int dimension, std::list<KnobI*>& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
@@ -1252,7 +1252,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;

@@ -8,7 +8,7 @@
 class AnimatedParamWrapper : public AnimatedParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { AnimatedParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { AnimatedParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~AnimatedParamWrapper();
     static void pysideInitQtMetaTypes();
 };

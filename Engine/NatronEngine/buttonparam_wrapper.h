@@ -8,7 +8,7 @@
 class ButtonParamWrapper : public ButtonParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { ButtonParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ButtonParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~ButtonParamWrapper();
     static void pysideInitQtMetaTypes();
 };

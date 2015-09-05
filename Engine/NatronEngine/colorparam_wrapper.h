@@ -8,7 +8,7 @@
 class ColorParamWrapper : public ColorParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { ColorParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ColorParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~ColorParamWrapper();
     static void pysideInitQtMetaTypes();
 };

@@ -8,7 +8,7 @@
 class FileParamWrapper : public FileParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { FileParam::_addAsDependencyOf(fromExprDimension, param); }
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { FileParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
     virtual ~FileParamWrapper();
     static void pysideInitQtMetaTypes();
 };

@@ -178,7 +178,7 @@ protected:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    void _addAsDependencyOf(int fromExprDimension,Param* param);
+    void _addAsDependencyOf(int fromExprDimension,Param* param, int thisDimension);
 
 };
 
@@ -385,7 +385,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension,Param* param);
+    int addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
 
 };
 
@@ -530,7 +530,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension,Param* param);
+    double addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
 
 };
 
@@ -679,7 +679,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension,Param* param);
+    double addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
     
 };
 
@@ -786,7 +786,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension,Param* param);
+    int addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
     
 };
 
@@ -857,7 +857,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    bool addAsDependencyOf(int fromExprDimension,Param* param);
+    bool addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
     
 };
 
@@ -930,7 +930,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    std::string addAsDependencyOf(int fromExprDimension,Param* param);
+    std::string addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension);
     
    
     
