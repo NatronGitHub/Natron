@@ -22,6 +22,7 @@
 #include <QDialog>
 #include <QMutex>
 
+class QLineEdit;
 class QVBoxLayout;
 class QLabel;
 class QTextEdit;
@@ -59,7 +60,7 @@ private:
     QLabel* _iconLabel;
     QLabel* _infoLabel;
     QLabel* _refLabel;
-    QLabel* _refContent;
+    QLineEdit* _refContent;
     QLabel* _descLabel;
     QTextEdit* _descEdit;
     QFrame* _buttonsFrame;

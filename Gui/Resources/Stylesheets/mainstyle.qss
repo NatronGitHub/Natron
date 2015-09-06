@@ -5,12 +5,16 @@
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
-    color: black;
+    color: %5;
     background-color: %2;
 }
 
 QLabel {
     color: %5;
+}
+
+QFrame {
+   color: black;
 }
 
 Natron--Label[altered="true"] {
