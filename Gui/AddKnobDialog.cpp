@@ -1707,6 +1707,7 @@ AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,AddKnobDialogPrivate:
         default2->setVisible(false);
         default3->setVisible(false);
         defaultValueLabel->setVisible(false);
+        defaultBool->setVisible(false);
     } else {
         defaultValueLabel->setVisible(true);
 

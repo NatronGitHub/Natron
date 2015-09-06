@@ -213,6 +213,8 @@ Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
         return new PageParam(isPage);
     } else if (isParametric) {
         return new ParametricParam(isParametric);
+    } else if (isButton) {
+        return new ButtonParam(isButton);
     }
     return NULL;
 }
