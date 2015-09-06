@@ -18,6 +18,12 @@
 
 #ifdef PYSIDE_OLD
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 // Compatibility function for pyside versions before this commit:
 // https://qt.gitorious.org/pyside/pyside/commit/b3669dca4e4321b204d10b06018d35900b1847ee
 
