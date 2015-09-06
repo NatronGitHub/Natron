@@ -83,7 +83,7 @@ install:
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
     then
-      echo "Don't build on coverty_scan branch.";
+      echo "Don't build on coverity_scan branch.";
       exit 0;
     fi
   - tools/travis/build.sh
