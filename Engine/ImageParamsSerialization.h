@@ -38,10 +38,8 @@ GCC_DIAG_OFF(sign-compare)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
-//vector.hpp:216:18: warning: comparison of integers of different signs: 'int' and 'base_type' (aka 'unsigned long') [-Wsign-compare]
+GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/vector.hpp>
-GCC_DIAG_ON(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(sign-compare)
 #endif
 

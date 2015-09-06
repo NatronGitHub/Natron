@@ -229,6 +229,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             boldIcon.addPixmap(pixBoldChecked,QIcon::Normal,QIcon::On);
             boldIcon.addPixmap(pixBoldUnchecked,QIcon::Normal,QIcon::Off);
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
+            _setBoldButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _setBoldButton->setCheckable(true);
             _setBoldButton->setToolTip(Natron::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
             _setBoldButton->setMaximumSize(18, 18);
@@ -241,6 +242,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
+            _setItalicButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _setItalicButton->setToolTip(Natron::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect( _setItalicButton,SIGNAL( clicked(bool) ),this,SLOT( italicChanged(bool) ) );
@@ -250,6 +252,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             pixBlack.fill(Qt::black);
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
+            _fontColorButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _fontColorButton->setToolTip(Natron::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );

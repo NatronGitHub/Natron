@@ -44,6 +44,11 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhPluginAPICache.h>
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare)
+#include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 #include <ofxOpenGLRender.h>
 #include <ofxhHost.h>

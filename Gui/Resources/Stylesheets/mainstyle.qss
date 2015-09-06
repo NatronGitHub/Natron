@@ -17,6 +17,12 @@ QFrame {
    color: black;
 }
 
+QGroupBox {
+   color: black;
+}
+
+
+
 Natron--Label[altered="true"] {
     color: %10;
 }

@@ -68,7 +68,12 @@ typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
 
-
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare)
+#include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
+#include <ofxPixels.h>
 
 typedef int SequenceTime;
 

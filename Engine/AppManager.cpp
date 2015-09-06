@@ -45,6 +45,9 @@
 #include <QThreadPool>
 #include <QtCore/QAtomicInt>
 
+//#define NATRON_USE_BREAKPAD
+
+
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
 #include "client/mac/handler/exception_handler.h"
@@ -225,6 +228,7 @@ struct AppManagerPrivate
 #endif
 };
 
+#ifdef NATRON_USE_BREAKPAD
 #ifdef DEBUG
 static
 void crash_application()
@@ -236,7 +240,8 @@ void crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
-#endif
+#endif // DEBUG
+#endif // NATRON_USE_BREAKPAD
 
 
 AppManagerPrivate::AppManagerPrivate()
@@ -3646,10 +3651,11 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 	return -1;
 }
 
-#ifdef NATRON_USE_BREAKPAD
 void
 AppManager::onCrashReporterOutputWritten()
 {
+#ifdef NATRON_USE_BREAKPAD
+    
     ///always running in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     
@@ -3683,14 +3689,14 @@ AppManager::onCrashReporterOutputWritten()
         throw std::runtime_error("AppManager::onCrashReporterOutputWritten() received erroneous message");
     }
 
-
-}
 #endif
 
-#ifdef NATRON_USE_BREAKPAD
+}
+
 void
 AppManager::onNewCrashReporterConnectionPending()
 {
+#ifdef NATRON_USE_BREAKPAD
     ///accept only 1 connection!
     if (_imp->crashServerConnection) {
         return;
@@ -3699,8 +3705,8 @@ AppManager::onNewCrashReporterConnectionPending()
     _imp->crashServerConnection = _imp->crashClientServer->nextPendingConnection();
     
     QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
-}
 #endif
+}
 
 void
 AppManager::setOnProjectLoadedCallback(const std::string& pythonFunc)

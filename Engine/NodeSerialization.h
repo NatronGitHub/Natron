@@ -34,10 +34,7 @@ GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
-//vector.hpp:216:18: warning: comparison of integers of different signs: 'int' and 'base_type' (aka 'unsigned long') [-Wsign-compare]
 #include <boost/serialization/vector.hpp>
 GCC_DIAG_ON(sign-compare)
 #include <boost/serialization/list.hpp>

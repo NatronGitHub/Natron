@@ -30,18 +30,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-
 #include "Global/Macros.h"
-// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhPluginCache.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 
-#include "Global/Macros.h"
-#include "Global/Enums.h"
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 

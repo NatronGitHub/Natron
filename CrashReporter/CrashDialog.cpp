@@ -34,9 +34,9 @@
 #include <QApplication>
 #include <QLocalSocket>
 #include <QFileDialog>
-#include <QLineEdit>
 #include <QTextDocument>
 #include <QMessageBox>
+#include <QStyle>
 
 CallbacksManager* CallbacksManager::_instance = 0;
 
@@ -151,9 +151,8 @@ CrashDialog::CrashDialog(const QString &filePath)
         name = name.left(lastDot);
     }
     
-    _refContent = new QLineEdit(_mainFrame);
-    _refContent->setReadOnly(true);
-    _refContent->setText(name);
+    _refContent = new QLabel(name,_mainFrame);
+    _refContent->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
     _gridLayout->addWidget(_refContent,2 , 1, 1, 1);
     
     _descLabel = new QLabel("Description:",_mainFrame);
