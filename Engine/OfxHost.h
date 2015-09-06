@@ -38,6 +38,7 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 
+#include "Global/Enums.h"
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
