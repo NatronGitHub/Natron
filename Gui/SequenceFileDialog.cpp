@@ -320,7 +320,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _lookInCombobox = new FileDialogComboBox(this,_buttonsWidget);
     _buttonsLayout->addWidget(_lookInCombobox);
-    QObject::connect( _lookInCombobox, SIGNAL( activated(QString) ), this, SLOT( goToDirectory(QString) ) );
+    QObject::connect( _lookInCombobox, SIGNAL( activated(QString) ), this, SLOT( onLookingComboboxChanged(QString) ) );
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
 
@@ -1686,26 +1686,20 @@ SequenceFileDialog::autoCompleteFileName(const QString & text)
 }
 
 void
-SequenceFileDialog::goToDirectory(const QString & path)
+SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
 {
-   /* QModelIndex index = _lookInCombobox->model()->index( _lookInCombobox->currentIndex(),
+    QModelIndex index = _lookInCombobox->model()->index( _lookInCombobox->currentIndex(),
                                                          _lookInCombobox->modelColumn(),
                                                          _lookInCombobox->rootModelIndex() );
-    QString path2 = path;
 
     if ( !index.isValid() ) {
-        index =  _model->index( getEnvironmentVariable(path) );
+        return;
     }
     
-    QDir dir(path2);
-    if ( !dir.exists() ) {
-        dir = getEnvironmentVariable(path2);
-    }
-
-    if ( dir.exists() || path2.isEmpty() || ( path2 == _model->myComputer().toString() ) ) {
-        enterDirectory(index);
-    }*/
-	setDirectory(path);
+    QUrl url = index.data(UrlModel::UrlRole).toUrl();
+    url = Natron::toLocalFileUrlFixed(url);
+    //enterDirectory(index);
+	setDirectory(url.path());
 }
 
 QString

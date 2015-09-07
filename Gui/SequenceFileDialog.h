@@ -444,7 +444,7 @@ public Q_SLOTS:
     void seekUrl(const QUrl & url);
 
     ///same as setDirectory but for the look-in combobox
-    void goToDirectory(const QString &);
+    void onLookingComboboxChanged(const QString &);
 
     ///slot called when the selected directory changed, it updates the view with the (not yet fetched) directory.
     void updateView(const QString & currentDirectory);
