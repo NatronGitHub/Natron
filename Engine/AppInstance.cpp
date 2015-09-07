@@ -1404,7 +1404,7 @@ AppInstance::loadProject(const std::string& filename)
     
     QFileInfo file(filename.c_str());
     if (!file.exists()) {
-        return false;
+        return 0;
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
