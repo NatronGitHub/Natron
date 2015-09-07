@@ -49,7 +49,7 @@ case $NATRONBRANCH in
 esac	     
 	     
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
-PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr seexpr ctl fontconfig py34-shiboken py34-pyside"
+PORTS="boost qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py34-shiboken py34-pyside"
 
 PORTSOK=yes
 for p in $PORTS; do
@@ -67,10 +67,10 @@ if [ "$PORTSOK" = "no" ]; then
   exit 1
 fi
 
-if port installed ffmpeg |fgrep '(active)' |fgrep '+gpl' > /dev/null; then
-  echo "ffmpeg port should not be installed with the +gpl2 or +gpl3 variants, please reinstall it using 'sudo port install ffmpeg -gpl2 -gpl3'"
-  exit 1
-fi
+#if port installed ffmpeg |fgrep '(active)' |fgrep '+gpl' > /dev/null; then
+#  echo "ffmpeg port should not be installed with the +gpl2 or +gpl3 variants, please reinstall it using 'sudo port install ffmpeg -gpl2 -gpl3'"
+#  exit 1
+#fi
 
 if pkg-config --cflags glew; then
   true
