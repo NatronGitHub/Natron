@@ -22,6 +22,16 @@
 
 #include <AppKit/NSView.h>
 
+//See https://trac.macports.org/ticket/43283
+#if !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+#import <Cocoa/Cocoa.h> 
+@interface NSScreen (LionAPI)
+ (CGFloat)backingScaleFactor;
+ (NSRect)convertRectToBacking:(NSRect)aRect;
+@end
+
+#endif // 10.7
+
 namespace Natron {
 bool 
 isHighDPIInternal(const QWidget* w) {
