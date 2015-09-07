@@ -1757,6 +1757,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
                     g = src_pixels[1];
                     b = 0.;
                     a = 1.;
+                    break;
                 case 1:
                     a = src_pixels[0];
                     r = g = b = 0.;
