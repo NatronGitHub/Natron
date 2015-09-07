@@ -42,6 +42,12 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
+*g++* | *clang* {
+    CONFIG(relwithdebinfo) {
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS += -O2 -g
+    }
+}
 
 CONFIG(noassertions) {
    DEFINES *= NDEBUG QT_NO_DEBUG
