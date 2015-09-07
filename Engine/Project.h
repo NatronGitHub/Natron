@@ -81,7 +81,7 @@ public:
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
      * @returns The actual filepath of the file saved
      **/
-    QString saveProject(const QString & path,const QString & name,bool autoSave);
+    bool saveProject(const QString & path,const QString & name,bool autoSave, QString* newFilePath = 0);
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file

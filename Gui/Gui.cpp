@@ -135,20 +135,7 @@ Gui::setLeftToolBarVisible(bool visible)
 bool
 Gui::closeInstance()
 {
-    if ( getApp()->getProject()->hasNodes() ) {
-        int ret = saveWarning();
-        if (ret == 0) {
-            if ( !saveProject() ) {
-                return false;
-            }
-        } else if (ret == 2) {
-            return false;
-        }
-    }
-    _imp->saveGuiGeometry();
-    abortProject(true);
-
-    return true;
+    return abortProject(true);
 }
 
 void
@@ -163,9 +150,21 @@ Gui::closeProject()
     //_imp->_appInstance->execOnProjectCreatedCallback();
 }
 
-void
+bool
 Gui::abortProject(bool quitApp)
 {
+    if ( getApp()->getProject()->hasNodes() ) {
+        int ret = saveWarning();
+        if (ret == 0) {
+            if ( !saveProject() ) {
+                return false;
+            }
+        } else if (ret == 2) {
+            return false;
+        }
+    }
+    _imp->saveGuiGeometry();
+    
     _imp->setUndoRedoActions(0,0);
     if (quitApp) {
         ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
@@ -197,6 +196,7 @@ Gui::abortProject(bool quitApp)
     ///Reset current undo/reso actions
     _imp->_currentUndoAction = 0;
     _imp->_currentRedoAction = 0;
+    return true;
 }
 
 void

@@ -201,6 +201,23 @@ public:
     
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     
+    virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual AppInstance* loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    ///Close the current project but keep the window
+    virtual bool resetProject()  OVERRIDE FINAL;
+    
+    ///Reset + close window, quit if last window
+    virtual bool closeProject()  OVERRIDE FINAL;
+    
+    ///Opens a new window
+    virtual AppInstance* newProject()  OVERRIDE FINAL;
+    
+
+
+    
 private:
 
     virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;

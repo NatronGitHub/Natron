@@ -97,6 +97,19 @@ public:
     Param* getProjectParam(const std::string& name) const;
     
     void writeToScriptEditor(const std::string& message);
+    
+    bool saveProject(const std::string& filename);
+    bool saveProjectAs(const std::string& filename);
+    App* loadProject(const std::string& filename);
+    
+    ///Close the current project but keep the window
+    bool resetProject();
+    
+    ///Reset + close window, quit if last window
+    bool closeProject();
+    
+    ///Opens a new window
+    App* newProject();
 };
 
 

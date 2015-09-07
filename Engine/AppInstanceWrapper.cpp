@@ -255,3 +255,52 @@ App::addFormat(const std::string& formatSpec)
         _instance->appendToScriptEditor(formatSpec);
     }
 }
+
+bool
+App::saveProject(const std::string& filename)
+{
+    return _instance->save(filename);
+}
+
+
+bool
+App::saveProjectAs(const std::string& filename)
+{
+    return _instance->saveAs(filename);
+}
+
+App*
+App::loadProject(const std::string& filename)
+{
+    AppInstance* app  =_instance->loadProject(filename);
+    if (!app) {
+        return 0;
+    }
+    return new App(app);
+}
+
+///Close the current project but keep the window
+bool
+App::resetProject()
+{
+    return _instance->resetProject();
+}
+
+///Reset + close window, quit if last window
+bool
+App::closeProject()
+{
+    return _instance->closeProject();
+}
+
+///Opens a new window
+App*
+App::newProject()
+{
+    AppInstance* app  =_instance->newProject();
+    if (!app) {
+        return 0;
+    }
+    return new App(app);
+
+}

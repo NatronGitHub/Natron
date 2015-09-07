@@ -23,6 +23,12 @@ Functions
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 *    def :meth:`render<NatronEngine.App.render>` (task)
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
+*    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
+*    def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
+*    def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
+*    def :meth:`resetProject<NatronEngine.App.resetProject>` ()
+*    def :meth:`closeProject<NatronEngine.App.closeProject>` ()
+*    def :meth:`newProject<NatronEngine.App.newProject>` ()
 *    def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 *    def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 *    def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
@@ -233,3 +239,61 @@ Writes the given *message* to the Script Editor panel of Natron. This can be use
 inform the user of various informations, warnings or errors. 
 
 
+.. method:: NatronEngine.App.saveProject(filename)
+
+	:param filename: :class:`str<NatronEngine.std::string>`
+	:rtype: :class:`bool<PySide.QtCore.bool`
+	
+	Saves the current project under the current project name. Otherwise if the project has
+	never been saved so far, this function asks the user where to save the project in GUI
+	mode and in background mode saves the project to the file indicated by the *filename*
+	parameter. In GUI mode, *filename* is disregarded.
+	
+	This function returns *True* if it saved successfully, *False* otherwise.
+
+.. method:: NatronEngine.App.saveProjectAs(filename)
+
+	:param filename: :class:`str<NatronEngine.std::string>`
+	:rtype: :class:`bool<PySide.QtCore.bool`
+	
+	In GUI mode, prompts the user to save the project at some location. In background mode,
+	the project is saved to *filename*.
+	
+	This function returns *True* if it saved successfully, *False* otherwise.
+	
+.. method:: NatronEngine.App.loadProject(filename)
+
+	:param filename: :class:`str<NatronEngine.std::string>`
+	:rtype: :class:`App<NatronEngine.App>`
+	
+	Loads the project indicated by *filename* in a new :ref:`App<NatronEngine.App>`.
+	In GUI mode, this will open a new window only if the current window has modifications.
+	This function returns the :ref:`App<NatronEngine.App>` object upon success, *None* otherwise.
+	
+	
+.. method:: NatronEngine.App.resetProject()
+
+	:rtype: :class:`bool<PySide.QtCore.bool`
+	
+	Attempts to close the current project, without wiping the window. 
+	In GUI mode, the user is first prompted to saved his/her changes and can abort the
+	reset, in which case this function will return *False*.
+	In background mode this function always succeeds, hence always returns *True*.
+	this always succeed.
+	
+.. method:: NatronEngine.App.closeProject()
+
+	:rtype: :class:`bool<PySide.QtCore.bool`
+	
+	Same as :func:`resetProject()<NatronEngine.App.resetProject>` except that the
+	window will close in GUI mode. 
+	Also, if this is the last :ref:`App<NatronEngine.App>` alive, Natron will close.
+	
+.. method:: NatronEngine.App.newProject()
+
+	:rtype: :class:`App<NatronEngine.App>`
+	
+	Creates a new :ref:`App<NatronEngine.App>`. In GUI mode, this will open a new window.
+	Upon success, the :ref:`App<NatronEngine.App>` object is returned, otherwise *None*
+	is returned.
+	

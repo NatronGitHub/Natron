@@ -1162,7 +1162,8 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
         
         //Take a snapshot of the graph at this time, this will be the version loaded by the process
         bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
-        QString savePath = getProject()->saveProject("","RENDER_SAVE.ntp",true);
+        QString savePath;
+        getProject()->saveProject("","RENDER_SAVE.ntp",true,&savePath);
 
         for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
@@ -1374,4 +1375,76 @@ AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*no
 //        }
 //        isGrp->forceGetClipPreferencesOnAllTrees();
 //    }
+}
+
+bool
+AppInstance::save(const std::string& filename)
+{
+    boost::shared_ptr<Natron::Project> project= getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        QString projectName = project->getProjectName();
+        QString projectPath = project->getProjectPath();
+        return project->saveProject(projectPath, projectName, false);
+    } else {
+        return saveAs(filename);
+    }
+}
+
+bool
+AppInstance::saveAs(const std::string& filename)
+{
+    std::string outFile = filename;
+    std::string path = SequenceParsing::removePath(outFile);
+    return getProject()->saveProject(path.c_str(), outFile.c_str(), false);
+}
+
+AppInstance*
+AppInstance::loadProject(const std::string& filename)
+{
+    
+    QFileInfo file(filename.c_str());
+    if (!file.exists()) {
+        return false;
+    }
+    QString fileUnPathed = file.fileName();
+    QString path = file.path() + "/";
+    
+    CLArgs cl;
+    AppInstance* app = appPTR->newAppInstance(cl);
+    
+    bool ok  = app->getProject()->loadProject( path, fileUnPathed);
+    if (ok) {
+        return app;
+    }
+    
+    app->getProject()->closeProject(true);
+    app->quit();
+    
+    return 0;
+}
+
+///Close the current project but keep the window
+bool
+AppInstance::resetProject()
+{
+    getProject()->closeProject(false);
+    return true;
+}
+
+///Reset + close window, quit if last window
+bool
+AppInstance::closeProject()
+{
+    getProject()->closeProject(true);
+    quit();
+    return true;
+}
+
+///Opens a new project
+AppInstance*
+AppInstance::newProject()
+{
+    CLArgs cl;
+    AppInstance* app = appPTR->newAppInstance(cl);
+    return app;
 }

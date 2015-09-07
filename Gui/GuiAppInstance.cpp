@@ -1097,3 +1097,43 @@ GuiAppInstance::isRenderStatsActionChecked() const
 {
     return _imp->_gui->areRenderStatsEnabled();
 }
+
+
+bool
+GuiAppInstance::save(const std::string& /*filename*/)
+{
+    return _imp->_gui->saveProject();
+}
+
+bool
+GuiAppInstance::saveAs(const std::string& /*filename*/)
+{
+    return _imp->_gui->saveProjectAs();
+}
+
+AppInstance*
+GuiAppInstance::loadProject(const std::string& filename)
+{
+    return _imp->_gui->openProject(filename);
+}
+
+///Close the current project but keep the window
+bool
+GuiAppInstance::resetProject()
+{
+    return _imp->_gui->abortProject(false);
+}
+
+///Reset + close window, quit if last window
+bool
+GuiAppInstance::closeProject()
+{
+    return _imp->_gui->abortProject(true);
+}
+
+///Opens a new window
+AppInstance*
+GuiAppInstance::newProject()
+{
+    return _imp->_gui->createNewProject();
+}

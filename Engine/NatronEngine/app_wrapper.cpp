@@ -15,6 +15,7 @@ GCC_DIAG_OFF(missing-field-initializers)
 #include "app_wrapper.h"
 
 // Extra includes
+#include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
@@ -76,6 +77,32 @@ static PyObject* Sbk_AppFunc_addFormat(PyObject* self, PyObject* pyArg)
         const char* overloads[] = {"std::string", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.addFormat", overloads);
         return 0;
+}
+
+static PyObject* Sbk_AppFunc_closeProject(PyObject* self)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // closeProject()
+            bool cppResult = cppSelf->closeProject();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject* kwds)
@@ -256,6 +283,95 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_AppFunc_loadProject(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: loadProject(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // loadProject(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_loadProject_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // loadProject(std::string)
+            // Begin code injection
+
+            App * cppResult = cppSelf->loadProject(cppArg0);
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult);
+
+            // End of code injection
+
+
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_loadProject_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.loadProject", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_newProject(PyObject* self)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // newProject()
+            // Begin code injection
+
+            App * cppResult = cppSelf->newProject();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult);
+
+            // End of code injection
+
+
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 {
     ::App* cppSelf = 0;
@@ -369,6 +485,122 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
     Sbk_AppFunc_render_TypeError:
         const char* overloads[] = {"NatronEngine.Effect, int, int", "list, list, list", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.render", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_resetProject(PyObject* self)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // resetProject()
+            bool cppResult = cppSelf->resetProject();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_AppFunc_saveProject(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: saveProject(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // saveProject(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_saveProject_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // saveProject(std::string)
+            bool cppResult = cppSelf->saveProject(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_saveProject_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.saveProject", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_saveProjectAs(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: saveProjectAs(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // saveProjectAs(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_saveProjectAs_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // saveProjectAs(std::string)
+            bool cppResult = cppSelf->saveProjectAs(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_saveProjectAs_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.saveProjectAs", overloads);
         return 0;
 }
 
@@ -494,10 +726,16 @@ static PyObject* Sbk_AppFunc_writeToScriptEditor(PyObject* self, PyObject* pyArg
 
 static PyMethodDef Sbk_App_methods[] = {
     {"addFormat", (PyCFunction)Sbk_AppFunc_addFormat, METH_O},
+    {"closeProject", (PyCFunction)Sbk_AppFunc_closeProject, METH_NOARGS},
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
+    {"loadProject", (PyCFunction)Sbk_AppFunc_loadProject, METH_O},
+    {"newProject", (PyCFunction)Sbk_AppFunc_newProject, METH_NOARGS},
     {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS},
+    {"resetProject", (PyCFunction)Sbk_AppFunc_resetProject, METH_NOARGS},
+    {"saveProject", (PyCFunction)Sbk_AppFunc_saveProject, METH_O},
+    {"saveProjectAs", (PyCFunction)Sbk_AppFunc_saveProjectAs, METH_O},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},
     {"timelineGetTime", (PyCFunction)Sbk_AppFunc_timelineGetTime, METH_NOARGS},

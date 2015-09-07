@@ -357,33 +357,36 @@ Project::loadProjectInternal(const QString & path,
 }
     
     
-QString
+bool
 Project::saveProject(const QString & path,
                      const QString & name,
-                     bool autoS)
+                     bool autoS,
+                     QString* newFilePath)
 {
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
-            return QString();
+            return false;
         }
     }
 
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
         if (_imp->isSavingProject) {
-            return QString();
+            return false;
         } else {
             _imp->isSavingProject = true;
         }
     }
-
+    
     QString ret;
+
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
             //We are saving, do not autosave.
             _imp->autoSaveTimer->stop();
+            
             ret = saveProjectInternal(path,name);
             
             ///We just saved, remove the last auto-save which is now obsolete
@@ -413,7 +416,10 @@ Project::saveProject(const QString & path,
     ///Save caches ToC
     appPTR->saveCaches();
     
-    return ret;
+    if (newFilePath) {
+        *newFilePath = ret;
+    }
+    return true;
 }
 
 static bool

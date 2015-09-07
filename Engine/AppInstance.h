@@ -398,6 +398,19 @@ public:
     
     virtual bool isRenderStatsActionChecked() const { return false; }
     
+    virtual bool save(const std::string& filename);
+    virtual bool saveAs(const std::string& filename);
+    virtual AppInstance* loadProject(const std::string& filename);
+    
+    ///Close the current project but keep the window
+    virtual bool resetProject();
+    
+    ///Reset + close window, quit if last window
+    virtual bool closeProject();
+    
+    ///Opens a new window
+    virtual AppInstance* newProject();
+    
 public Q_SLOTS:
     
     void quit();

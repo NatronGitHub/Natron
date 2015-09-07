@@ -896,14 +896,20 @@ Gui::getToolButtonMenuOpened() const
     return _imp->_toolButtonMenuOpened;
 }
 
+AppInstance*
+Gui::createNewProject()
+{
+    CLArgs cl;
+    AppInstance* app = appPTR->newAppInstance(cl);
+    
+    app->execOnProjectCreatedCallback();
+    return app;
+}
 
 void
 Gui::newProject()
 {
-    CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
-
-    app->execOnProjectCreatedCallback();
+    createNewProject();
 }
 
 void
@@ -924,18 +930,18 @@ Gui::openProject()
     }
 }
 
-void
+AppInstance*
 Gui::openProject(const std::string & filename)
 {
-    openProjectInternal(filename);
+    return openProjectInternal(filename);
 }
 
-void
+AppInstance*
 Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     QFileInfo file(absoluteFileName.c_str());
     if (!file.exists()) {
-        return;
+        return false;
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
@@ -949,18 +955,25 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 
-                return;
+                return false;
             }
         }
     }
 
+    AppInstance* ret = 0;
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-        _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
+      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
+        if (ok) {
+            ret = _imp->_appInstance;
+        }
     } else {
         CLArgs cl;
         AppInstance* newApp = appPTR->newAppInstance(cl);
-        newApp->getProject()->loadProject( path, fileUnPathed);
+        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed);
+        if (ok) {
+            ret = newApp;
+        }
     }
 
     QSettings settings;
@@ -973,6 +986,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 
     settings.setValue("recentFileList", recentFiles);
     appPTR->updateAllRecentFileMenus();
+    return ret;
 }
 
 static void
@@ -1005,16 +1019,18 @@ Gui::saveProject()
             return false;
         }
 
-        project->saveProject(projectPath, projectName, false);
+        bool ret = project->saveProject(projectPath, projectName, false);
 
         ///update the open recents
         if (!projectPath.endsWith('/')) {
             projectPath.append('/');
         }
-        QString file = projectPath + projectName;
-        updateRecentFiles(file);
-
-        return true;
+        if (ret) {
+            QString file = projectPath + projectName;
+            updateRecentFiles(file);
+        }
+        return ret;
+        
     } else {
         return saveProjectAs();
     }
@@ -1038,12 +1054,14 @@ Gui::saveProjectAs()
         }
         _imp->_lastSaveProjectOpenedDir = path.c_str();
         
-        _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
+        bool ret = _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
 
-        QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
-        updateRecentFiles(filePath);
+        if (ret) {
+            QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
+            updateRecentFiles(filePath);
+        }
 
-        return true;
+        return ret;
     }
 
     return false;

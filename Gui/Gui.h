@@ -69,6 +69,7 @@ class QMutex;
 #include "Gui/RegisteredTabs.h"
 class GuiLayoutSerialization;
 class GuiAppInstance;
+class AppInstance;
 class NodeGui;
 class TabWidget;
 class ToolButton;
@@ -493,7 +494,7 @@ public:
 
     void checkNumberOfNonFloatingPanes();
 
-    void openProject(const std::string& filename);
+    AppInstance* openProject(const std::string& filename);
 
     bool isGUIFrozen() const;
 
@@ -578,6 +579,14 @@ public:
 #else
     bool isHighDPI() const { return Natron::isHighDPIInternal(this); }
 #endif
+    
+    AppInstance* createNewProject();
+    
+    /**
+     * @brief Close project right away, without any user interaction.
+     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
+     **/
+    bool abortProject(bool quitApp);
     
 Q_SIGNALS:
 
@@ -708,13 +717,9 @@ public Q_SLOTS:
     
 private:
 
-    /**
-     * @brief Close project right away, without any user interaction.
-     * @param quitApp If true, the application will exit, otherwise the main window will stay active.
-     **/
-    void abortProject(bool quitApp);
+    
 
-    void openProjectInternal(const std::string & absoluteFileName);
+    AppInstance* openProjectInternal(const std::string & absoluteFileName);
 
     void setupUi();
 
