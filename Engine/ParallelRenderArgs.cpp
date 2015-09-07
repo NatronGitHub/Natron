@@ -255,7 +255,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                     }
                                     
                                     for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
-                                        if (*it3) {
+                                        if (inputImagesList && *it3) {
                                             inputImagesList->push_back(*it3);
                                         }
                                     }
