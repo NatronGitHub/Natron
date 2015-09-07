@@ -2759,7 +2759,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         inputsToTransform = requestPassData->globalData.transforms;
         useTransforms = !inputsToTransform.empty();
     } else {
-        bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+        useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
         if (useTransforms) {
             tryConcatenateTransforms(args.time, args.view, args.scale, &inputsToTransform);
         }
