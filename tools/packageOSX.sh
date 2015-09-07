@@ -147,7 +147,7 @@ shiboken {
     LIBS += -L/opt/local/lib -lshiboken-python2.7.1.2
 }
 EOF
-qmake -r -spec unsupported/macx-clang CONFIG+=c++11 CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS
+qmake -r -spec unsupported/macx-clang CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS
 make $MAKEJFLAGS || exit
 
 
