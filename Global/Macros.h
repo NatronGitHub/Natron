@@ -164,28 +164,6 @@ NATRON_VERSION_REVISION)
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
-#define NATRON_SMALL_BUTTON_SIZE 15
-#define NATRON_SMALL_BUTTON_ICON_SIZE (NATRON_SMALL_BUTTON_SIZE-2)
-#define NATRON_MEDIUM_BUTTON_SIZE 22
-#define NATRON_MEDIUM_BUTTON_ICON_SIZE (NATRON_MEDIUM_BUTTON_SIZE-4)
-#define NATRON_LARGE_BUTTON_SIZE 30
-#define NATRON_LARGE_BUTTON_ICON_SIZE (NATRON_LARGE_BUTTON_SIZE-2)
-
-#define NATRON_PREVIEW_WIDTH 64
-#define NATRON_PREVIEW_HEIGHT 48
-#define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
-//#define NATRON_FONT "Helvetica"
-//#define NATRON_FONT_ALT "Times"
-#define NATRON_FONT "Droid Sans"
-#define NATRON_FONT_ALT "Droid Sans"
-#define NATRON_FONT_SIZE_6 6
-#define NATRON_FONT_SIZE_8 8
-#define NATRON_FONT_SIZE_10 10
-#define NATRON_FONT_SIZE_11 11
-#define NATRON_FONT_SIZE_12 12
-#define NATRON_FONT_SIZE_13 13
-#define NATRON_MAX_RECENT_FILES 5
-
 //Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.

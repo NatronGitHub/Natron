@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
 
+#include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 

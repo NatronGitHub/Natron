@@ -42,6 +42,7 @@
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"

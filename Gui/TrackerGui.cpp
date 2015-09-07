@@ -38,15 +38,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/Button.h"
-#include "Gui/QtEnumConvert.h"
-#include "Gui/MultiInstancePanel.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Button.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/GuiMacros.h"
+#include "Gui/MultiInstancePanel.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Utils.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/ViewerTab.h"
 
 #define POINT_SIZE 5
 #define CROSS_SIZE 6

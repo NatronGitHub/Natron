@@ -40,6 +40,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/Button.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ScriptTextEdit.h"

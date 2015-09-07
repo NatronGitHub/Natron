@@ -35,6 +35,12 @@
 #include <QtCore/QWaitCondition>
 #include <QToolBar>
 #include <QMessageBox>
+
+#include "Global/Enums.h"
+
+#include "Gui/GuiDefines.h"
+#include "Gui/RegisteredTabs.h"
+
 class QAction;
 class QEvent;
 class QHBoxLayout;
@@ -46,10 +52,6 @@ class QUndoGroup;
 class QUndoStack;
 class QWidget;
 class QToolButton;
-
-#include "Global/Enums.h"
-
-#include "Gui/RegisteredTabs.h"
 
 class AboutWindow;
 class ActionWithShortcut;

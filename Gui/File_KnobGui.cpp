@@ -36,24 +36,26 @@
 #include <QAction>
 #include <QFileSystemWatcher>
 
-#include "Engine/Settings.h"
-#include "Engine/KnobFile.h"
-#include <SequenceParsing.h>
 #include "Engine/EffectInstance.h"
-#include "Engine/Project.h"
-#include "Engine/TimeLine.h"
+#include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/TimeLine.h"
 
-#include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
-#include "Gui/SequenceFileDialog.h"
-#include "Gui/LineEdit.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
-#include "Gui/TableModelView.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/KnobUndoCommand.h"
+#include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
+#include "Gui/SequenceFileDialog.h"
+#include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
+
+#include <SequenceParsing.h>
 
 using namespace Natron;
 

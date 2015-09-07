@@ -35,6 +35,7 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
 #include "Engine/TimeLine.h"
 

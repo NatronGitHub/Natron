@@ -64,6 +64,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"

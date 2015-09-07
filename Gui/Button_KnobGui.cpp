@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"

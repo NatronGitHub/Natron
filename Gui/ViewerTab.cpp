@@ -47,6 +47,7 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Label.h"
 #include "Gui/NodeGui.h"

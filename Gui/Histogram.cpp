@@ -41,26 +41,28 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 #include <QActionGroup>
 
-#include "Engine/Image.h"
-#include "Engine/ViewerInstance.h"
 #include "Engine/HistogramCPU.h"
+#include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/ViewerInstance.h"
 
-#include "Gui/Menu.h"
-#include "Gui/ticks.h"
-#include "Gui/Shaders.h"
-#include "Gui/Gui.h"
-#include "Gui/ComboBox.h"
 #include "Gui/ClickableLabel.h"
-#include "Gui/ViewerTab.h"
+#include "Gui/ComboBox.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/Gui.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/GuiMacros.h"
+#include "Gui/Menu.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/Shaders.h"
+#include "Gui/TextRenderer.h"
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
-#include "Gui/TextRenderer.h"
+#include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
-#include "Gui/GuiMacros.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/CurveWidget.h"
-#include "Gui/GuiApplicationManager.h"
+#include "Gui/ticks.h"
+
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)

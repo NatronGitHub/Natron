@@ -40,6 +40,7 @@
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
+#include "Gui/GuiDefines.h"
 #include "Gui/Menu.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"

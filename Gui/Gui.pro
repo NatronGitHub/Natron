@@ -250,6 +250,7 @@ HEADERS += \
     QtEnumConvert.h \
     GroupBoxLabel.h \
     Gui.h \
+    GuiDefines.h \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
     GuiAppInstance.h \

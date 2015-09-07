@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // isMouseShortcut
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h" // buttonDownIsLeft...
 #include "Gui/Histogram.h"
 #include "Gui/InfoViewerWidget.h"

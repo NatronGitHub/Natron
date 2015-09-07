@@ -29,18 +29,23 @@
 #include <QSettings>
 #include <QThreadPool>
 #include <QThread>
+
 #include "Global/MemoryInfo.h"
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
-#include "Engine/LibraryBinary.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/Project.h"
-#include "Engine/Plugin.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
-#include "Engine/ViewerInstance.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ViewerInstance.h"
+
+#include "Gui/GuiDefines.h"
+
 #include "SequenceParsing.h"
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"

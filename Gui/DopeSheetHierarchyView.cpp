@@ -38,6 +38,7 @@
 #include "Gui/DopeSheet.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"

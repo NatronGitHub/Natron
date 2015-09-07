@@ -230,7 +230,7 @@ struct AppManagerPrivate
 
 #ifdef NATRON_USE_BREAKPAD
 #ifdef DEBUG
-static
+inline
 void crash_application()
 {
 #ifdef __NATRON_UNIX__

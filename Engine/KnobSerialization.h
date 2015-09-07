@@ -30,18 +30,18 @@
 #include "Global/Macros.h"
 #ifndef Q_MOC_RUN
 GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(sign-compare)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
-GCC_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
 #include <boost/serialization/list.hpp>
-GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/vector.hpp>
-GCC_DIAG_ON(sign-compare)
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+GCC_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(sign-compare)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 #include "Engine/Variant.h"
