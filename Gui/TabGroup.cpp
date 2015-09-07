@@ -46,7 +46,7 @@ TabGroup::TabGroup(QWidget* parent)
 }
 
 QGridLayout*
-TabGroup::addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name)
+TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,const QString& name)
 {
     
     QWidget* tab = 0;
@@ -74,10 +74,10 @@ TabGroup::addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name)
 }
 
 void
-TabGroup::removeTab(Group_Knob* group)
+TabGroup::removeTab(KnobGroup* group)
 {
     int i = 0;
-    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
+    for (std::vector<boost::weak_ptr<KnobGroup> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
         if (it->lock().get() == group) {
             _tabWidget->removeTab(i);
             _tabs.erase(it);

@@ -133,13 +133,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
                 //if ( projectKnobs[i]->getIsPersistant() ) {
                 
-                Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(projectKnobs[i].get());
+                KnobChoice* isChoice = dynamic_cast<KnobChoice*>(projectKnobs[i].get());
                 if (isChoice) {
                     const TypeExtraData* extraData = (*it)->getExtraData();
                     const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                     assert(choiceData);
                     
-                    Choice_Knob* serializedKnob = dynamic_cast<Choice_Knob*>((*it)->getKnob().get());
+                    KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>((*it)->getKnob().get());
                     assert(serializedKnob);
                     isChoice->choiceRestoration(serializedKnob, choiceData);
                 } else {

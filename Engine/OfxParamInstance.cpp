@@ -243,7 +243,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
 {
-    boost::shared_ptr<Button_Knob> k = Natron::createKnob<Button_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>( node, getParamLabel(this) );
     _knob = k;
     const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
     k->setIconFilePath(iconFilePath);
@@ -289,7 +289,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobInt> k = Natron::createKnob<KnobInt>( node, getParamLabel(this) );
     _knob = k;
 
     int min = properties.getIntProperty(kOfxParamPropMin);
@@ -457,16 +457,16 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
 
-    boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> dblKnob = Natron::createKnob<KnobDouble>( node, getParamLabel(this) );
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        dblKnob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
+        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        dblKnob->setNormalizedState(0, Double_Knob::eNormalizedStateY);
+        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -488,7 +488,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
 
     if (coordSystem == kOfxParamCoordinatesNormalised) {
         // The defaults should be stored as is, not premultiplied by the project size.
-        // The fact that the default value is normalized should be stored in Knob or Double_Knob.
+        // The fact that the default value is normalized should be stored in Knob or KnobDouble.
 
         // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
         // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
@@ -673,7 +673,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<Bool_Knob> b = Natron::createKnob<Bool_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobBool> b = Natron::createKnob<KnobBool>( node, getParamLabel(this) );
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
     b->setDefaultValue( (bool)def,0 );
@@ -691,7 +691,7 @@ OfxStatus
 OfxBooleanInstance::get(OfxTime time,
                         bool & b)
 {
-    assert( Bool_Knob::canAnimateStatic() );
+    assert( KnobBool::canAnimateStatic() );
     b = _knob.lock()->getValueAtTime(time);
 
     return kOfxStatOK;
@@ -710,7 +710,7 @@ OfxBooleanInstance::set(OfxTime time,
                         bool b)
 {
 
-    assert( Bool_Knob::canAnimateStatic() );
+    assert( KnobBool::canAnimateStatic() );
     _knob.lock()->setValueAtTimeFromPlugin(time, b, 0);
 
     return kOfxStatOK;
@@ -809,7 +809,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<Choice_Knob> choice = Natron::createKnob<Choice_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobChoice> choice = Natron::createKnob<KnobChoice>( node, getParamLabel(this) );
     _knob = choice;
 
     setOption(0); // this actually sets all the options
@@ -838,7 +838,7 @@ OfxStatus
 OfxChoiceInstance::get(OfxTime time,
                        int & v)
 {
-    assert( Choice_Knob::canAnimateStatic() );
+    assert( KnobChoice::canAnimateStatic() );
     v = _knob.lock()->getValueAtTime(time);
 
     return kOfxStatOK;
@@ -989,7 +989,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<Color_Knob> color = Natron::createKnob<Color_Knob>(node, getParamLabel(this),4);
+    boost::shared_ptr<KnobColor> color = Natron::createKnob<KnobColor>(node, getParamLabel(this),4);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1029,7 +1029,7 @@ OfxRGBAInstance::get(double & r,
                      double & b,
                      double & a)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getValue(0);
     g = color->getValue(1);
     b = color->getValue(2);
@@ -1045,7 +1045,7 @@ OfxRGBAInstance::get(OfxTime time,
                      double & b,
                      double & a)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getValueAtTime(time,0);
     g = color->getValueAtTime(time,1);
     b = color->getValueAtTime(time,2);
@@ -1083,7 +1083,7 @@ OfxRGBAInstance::derive(OfxTime time,
                         double & b,
                         double & a)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getDerivativeAtTime(time,0);
     g = color->getDerivativeAtTime(time,1);
     b = color->getDerivativeAtTime(time,2);
@@ -1100,7 +1100,7 @@ OfxRGBAInstance::integrate(OfxTime time1,
                            double & b,
                            double & a)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getIntegrateFromTimeToTime(time1, time2, 0);
     g = color->getIntegrateFromTimeToTime(time1, time2, 1);
     b = color->getIntegrateFromTimeToTime(time1, time2, 2);
@@ -1151,7 +1151,7 @@ OfxRGBAInstance::isAnimated(int dimension) const
 bool
 OfxRGBAInstance::isAnimated() const
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     return color->isAnimated(0) || color->isAnimated(1) || color->isAnimated(2) || color->isAnimated(3);
 }
 
@@ -1216,7 +1216,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<Color_Knob> color  = Natron::createKnob<Color_Knob>(node, getParamLabel(this),3);
+    boost::shared_ptr<KnobColor> color  = Natron::createKnob<KnobColor>(node, getParamLabel(this),3);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1253,7 +1253,7 @@ OfxRGBInstance::get(double & r,
                     double & g,
                     double & b)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getValue(0);
     g = color->getValue(1);
     b = color->getValue(2);
@@ -1267,7 +1267,7 @@ OfxRGBInstance::get(OfxTime time,
                     double & g,
                     double & b)
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     r = color->getValueAtTime(time,0);
     g = color->getValueAtTime(time,1);
     b = color->getValueAtTime(time,2);
@@ -1362,7 +1362,7 @@ OfxRGBInstance::isAnimated(int dimension) const
 bool
 OfxRGBInstance::isAnimated() const
 {
-    boost::shared_ptr<Color_Knob> color = _knob.lock();
+    boost::shared_ptr<KnobColor> color = _knob.lock();
     return color->isAnimated(0) || color->isAnimated(1) || color->isAnimated(2);
 }
 
@@ -1430,14 +1430,14 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     const std::string & coordSystem = getDefaultCoordinateSystem();
     const int dims = 2;
 
-    boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> dblKnob = Natron::createKnob<KnobDouble>(node, getParamLabel(this),dims);
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
-        dblKnob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
-        dblKnob->setNormalizedState(1, Double_Knob::eNormalizedStateY);
+        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateX);
+        dblKnob->setNormalizedState(1, KnobDouble::eNormalizedStateY);
     }
     
     bool isSpatial = doubleType == kOfxParamDoubleTypeNormalisedXY ||
@@ -1492,7 +1492,7 @@ OfxStatus
 OfxDouble2DInstance::get(double & x1,
                          double & x2)
 {
-    boost::shared_ptr<Double_Knob> dblKnob = _knob.lock();
+    boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
     x1 = dblKnob->getValue(0);
     x2 = dblKnob->getValue(1);
 
@@ -1504,7 +1504,7 @@ OfxDouble2DInstance::get(OfxTime time,
                          double & x1,
                          double & x2)
 {
-    boost::shared_ptr<Double_Knob> dblKnob = _knob.lock();
+    boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
     x1 = dblKnob->getValueAtTime(time,0);
     x2 = dblKnob->getValueAtTime(time,1);
 
@@ -1534,7 +1534,7 @@ OfxDouble2DInstance::derive(OfxTime time,
                             double &x1,
                             double & x2)
 {
-    boost::shared_ptr<Double_Knob> dblKnob = _knob.lock();
+    boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
     x1 = dblKnob->getDerivativeAtTime(time,0);
     x2 = dblKnob->getDerivativeAtTime(time,1);
 
@@ -1547,7 +1547,7 @@ OfxDouble2DInstance::integrate(OfxTime time1,
                                double &x1,
                                double & x2)
 {
-    boost::shared_ptr<Double_Knob> dblKnob = _knob.lock();
+    boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
     x1 = dblKnob->getIntegrateFromTimeToTime(time1, time2, 0);
     x2 = dblKnob->getIntegrateFromTimeToTime(time1, time2, 1);
 
@@ -1624,7 +1624,7 @@ OfxDouble2DInstance::isAnimated(int dimension) const
 bool
 OfxDouble2DInstance::isAnimated() const
 {
-    boost::shared_ptr<Double_Knob> dblKnob = _knob.lock();
+    boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
     return dblKnob->isAnimated(0) || dblKnob->isAnimated(1);
 }
 
@@ -1692,7 +1692,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<Int_Knob> iKnob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> iKnob = Natron::createKnob<KnobInt>(node, getParamLabel(this), dims);
     _knob = iKnob;
 
     std::vector<int> minimum(dims);
@@ -1724,7 +1724,7 @@ OfxStatus
 OfxInteger2DInstance::get(int & x1,
                           int & x2)
 {
-    boost::shared_ptr<Int_Knob> iKnob = _knob.lock();
+    boost::shared_ptr<KnobInt> iKnob = _knob.lock();
     x1 = iKnob->getValue(0);
     x2 = iKnob->getValue(1);
 
@@ -1736,7 +1736,7 @@ OfxInteger2DInstance::get(OfxTime time,
                           int & x1,
                           int & x2)
 {
-    boost::shared_ptr<Int_Knob> iKnob = _knob.lock();
+    boost::shared_ptr<KnobInt> iKnob = _knob.lock();
     x1 = iKnob->getValueAtTime(time,0);
     x2 = iKnob->getValueAtTime(time,1);
 
@@ -1885,7 +1885,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<Double_Knob> knob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> knob = Natron::createKnob<KnobDouble>(node, getParamLabel(this),dims);
     _knob = knob;
 
     std::vector<double> minimum(dims);
@@ -1927,7 +1927,7 @@ OfxDouble3DInstance::get(double & x1,
                          double & x2,
                          double & x3)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     x1 = knob->getValue(0);
     x2 = knob->getValue(1);
     x3 = knob->getValue(2);
@@ -1941,7 +1941,7 @@ OfxDouble3DInstance::get(OfxTime time,
                          double & x2,
                          double & x3)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     x1 = knob->getValueAtTime(time,0);
     x2 = knob->getValueAtTime(time,1);
     x3 = knob->getValueAtTime(time,2);
@@ -1975,7 +1975,7 @@ OfxDouble3DInstance::derive(OfxTime time,
                             double & x2,
                             double & x3)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     x1 = knob->getDerivativeAtTime(time,0);
     x2 = knob->getDerivativeAtTime(time,1);
     x3 = knob->getDerivativeAtTime(time,2);
@@ -1990,7 +1990,7 @@ OfxDouble3DInstance::integrate(OfxTime time1,
                                double & x2,
                                double & x3)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     x1 = knob->getIntegrateFromTimeToTime(time1, time2, 0);
     x2 = knob->getIntegrateFromTimeToTime(time1, time2, 1);
     x3 = knob->getIntegrateFromTimeToTime(time1, time2, 2);
@@ -2072,7 +2072,7 @@ OfxDouble3DInstance::isAnimated(int dimension) const
 bool
 OfxDouble3DInstance::isAnimated() const
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     return knob->isAnimated(0) || knob->isAnimated(1) || knob->isAnimated(2);
 }
 
@@ -2140,7 +2140,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<Int_Knob> knob = Natron::createKnob<Int_Knob>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> knob = Natron::createKnob<KnobInt>(node, getParamLabel(this), dims);
     _knob = knob;
 
     std::vector<int> minimum(dims);
@@ -2176,7 +2176,7 @@ OfxInteger3DInstance::get(int & x1,
                           int & x2,
                           int & x3)
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
     x1 = knob->getValue(0);
     x2 = knob->getValue(1);
     x3 = knob->getValue(2);
@@ -2190,7 +2190,7 @@ OfxInteger3DInstance::get(OfxTime time,
                           int & x2,
                           int & x3)
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
     x1 = knob->getValueAtTime(time,0);
     x2 = knob->getValueAtTime(time,1);
     x3 = knob->getValueAtTime(time,2);
@@ -2346,7 +2346,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
 
-    _groupKnob = Natron::createKnob<Group_Knob>( node, getParamLabel(this) );
+    _groupKnob = Natron::createKnob<KnobGroup>( node, getParamLabel(this) );
     int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
     if (isTab) {
         _groupKnob.lock()->setAsTab();
@@ -2392,7 +2392,7 @@ OfxPageInstance::OfxPageInstance(OfxEffectInstance* node,
     : OFX::Host::Param::PageInstance( descriptor,node->effectInstance() )
       , _pageKnob()
 {
-    _pageKnob = Natron::createKnob<Page_Knob>( node, getParamLabel(this) );
+    _pageKnob = Natron::createKnob<KnobPage>( node, getParamLabel(this) );
 }
 
 // callback which should set enabled state as appropriate
@@ -2446,7 +2446,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
 
 
         if (!fileIsOutput) {
-            _fileKnob = Natron::createKnob<File_Knob>( node, getParamLabel(this) );
+            _fileKnob = Natron::createKnob<KnobFile>( node, getParamLabel(this) );
             if (fileIsImage) {
                 _fileKnob.lock()->setAsInputImage();
             }
@@ -2454,7 +2454,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
                 _fileKnob.lock()->setAnimationEnabled(false);
             }
         } else {
-            _outputFileKnob = Natron::createKnob<OutputFile_Knob>( node, getParamLabel(this) );
+            _outputFileKnob = Natron::createKnob<KnobOutputFile>( node, getParamLabel(this) );
             if (fileIsImage) {
                 _outputFileKnob.lock()->setAsOutputImageFile();
             } else {
@@ -2466,11 +2466,11 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
         }
 
     } else if (mode == kOfxParamStringIsDirectoryPath) {
-        _pathKnob = Natron::createKnob<Path_Knob>( node, getParamLabel(this) );
+        _pathKnob = Natron::createKnob<KnobPath>( node, getParamLabel(this) );
         _pathKnob.lock()->setMultiPath(false);
         
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
-        _stringKnob = Natron::createKnob<String_Knob>( node, getParamLabel(this) );
+        _stringKnob = Natron::createKnob<KnobString>( node, getParamLabel(this) );
         if (mode == kOfxParamStringIsLabel) {
             _stringKnob.lock()->setAllDimensionsEnabled(false);
             _stringKnob.lock()->setAsLabel();
@@ -2584,7 +2584,7 @@ OfxStringInstance::set(OfxTime time,
                        const char* str)
 {
 
-    assert( !String_Knob::canAnimateStatic() );
+    assert( !KnobString::canAnimateStatic() );
     if (_fileKnob.lock()) {
         std::string s(str);
         projectEnvVar_setProxy(s);
@@ -2858,7 +2858,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<String_Knob> knob = Natron::createKnob<String_Knob>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobString> knob = Natron::createKnob<KnobString>( node, getParamLabel(this) );
     _knob = knob;
 
     knob->setAsCustom();
@@ -2885,7 +2885,7 @@ OfxStatus
 OfxCustomInstance::get(OfxTime time,
                        std::string & str)
 {
-    assert( String_Knob::canAnimateStatic() );
+    assert( KnobString::canAnimateStatic() );
     // it should call _customParamInterpolationV1Entry
     assert( _node->effectInstance() );
     str = _knob.lock()->getValueAtTime(time, 0);
@@ -2906,7 +2906,7 @@ OfxCustomInstance::set(OfxTime time,
                        const char* str)
 {
 
-    assert( String_Knob::canAnimateStatic() );
+    assert( KnobString::canAnimateStatic() );
     _knob.lock()->setValueAtTimeFromPlugin(time,str,0);
 
     return kOfxStatOK;
@@ -3032,7 +3032,7 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node,
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
 
 
-    boost::shared_ptr<Parametric_Knob> knob = Natron::createKnob<Parametric_Knob>(node, getParamLabel(this),parametricDimension);
+    boost::shared_ptr<KnobParametric> knob = Natron::createKnob<KnobParametric>(node, getParamLabel(this),parametricDimension);
     _knob = knob;
 
     setLabel(); //set label on all curves

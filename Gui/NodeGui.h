@@ -364,7 +364,7 @@ public:
     
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
     
-    virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) OVERRIDE FINAL;
+    virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
     
     boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
     

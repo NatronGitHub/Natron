@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Color_KnobGui.h"
+#include "KnobGuiColor.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -84,7 +84,7 @@ using std::make_pair;
 
 //=============================RGBA_KNOB_GUI===================================
 
-Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiColor::KnobGuiColor(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
     : KnobGui(knob, container)
       , mainContainer(NULL)
@@ -108,7 +108,7 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
       , _dimension( knob->getDimension() )
       , _lastColor(_dimension)
 {
-    boost::shared_ptr<Color_Knob> ck = boost::dynamic_pointer_cast<Color_Knob>(knob);
+    boost::shared_ptr<KnobColor> ck = boost::dynamic_pointer_cast<KnobColor>(knob);
     assert(ck);
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     boost::shared_ptr<KnobSignalSlotHandler> handler = _knob->getSignalSlotHandler();
@@ -123,18 +123,18 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
     _knob = ck;
 }
 
-Color_KnobGui::~Color_KnobGui()
+KnobGuiColor::~KnobGuiColor()
 {
    
 }
 
-void Color_KnobGui::removeSpecificGui()
+void KnobGuiColor::removeSpecificGui()
 {
    delete mainContainer;
 }
 
 void
-Color_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiColor::createWidget(QHBoxLayout* layout)
 {
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     mainContainer = new QWidget( layout->parentWidget() );
@@ -182,7 +182,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     
     //QFont font(appFont,appFontSize);
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     
     std::string dimLabel = knob->getDimensionName(0);
     if (!dimLabel.empty()) {
@@ -388,14 +388,14 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
 } // createWidget
 
 void
-Color_KnobGui::onMustShowAllDimension()
+KnobGuiColor::onMustShowAllDimension()
 {
     _dimensionSwitchButton->setChecked(true);
     onDimensionSwitchClicked();
 }
 
 void
-Color_KnobGui::onSliderValueChanged(double v)
+KnobGuiColor::onSliderValueChanged(double v)
 {
     assert(_knob.lock()->isEnabled(0));
     _rBox->setValue(v);
@@ -410,7 +410,7 @@ Color_KnobGui::onSliderValueChanged(double v)
 }
 
 void
-Color_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
+KnobGuiColor::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -425,7 +425,7 @@ Color_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 }
 
 void
-Color_KnobGui::expandAllDimensions()
+KnobGuiColor::expandAllDimensions()
 {
     ///show all the dimensions
     _dimensionSwitchButton->setChecked(true);
@@ -455,7 +455,7 @@ Color_KnobGui::expandAllDimensions()
 }
 
 void
-Color_KnobGui::foldAllDimensions()
+KnobGuiColor::foldAllDimensions()
 {
     ///hide all the dimensions except red
     _dimensionSwitchButton->setChecked(false);
@@ -477,9 +477,9 @@ Color_KnobGui::foldAllDimensions()
 }
 
 void
-Color_KnobGui::onDimensionSwitchClicked()
+KnobGuiColor::onDimensionSwitchClicked()
 {
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     if (knob->isSimplified()) {
         return;
     }
@@ -499,7 +499,7 @@ Color_KnobGui::onDimensionSwitchClicked()
 }
 
 void
-Color_KnobGui::onMinMaxChanged(double mini,
+KnobGuiColor::onMinMaxChanged(double mini,
                                double maxi,
                                int index)
 {
@@ -525,7 +525,7 @@ Color_KnobGui::onMinMaxChanged(double mini,
 }
 
 void
-Color_KnobGui::onDisplayMinMaxChanged(double mini,
+KnobGuiColor::onDisplayMinMaxChanged(double mini,
                                       double maxi,
                                       int index )
 {
@@ -551,9 +551,9 @@ Color_KnobGui::onDisplayMinMaxChanged(double mini,
 }
 
 void
-Color_KnobGui::setEnabled()
+KnobGuiColor::setEnabled()
 {
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool r = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     //_rBox->setEnabled(r);
@@ -585,9 +585,9 @@ Color_KnobGui::setEnabled()
 }
 
 void
-Color_KnobGui::updateGUI(int dimension)
+KnobGuiColor::updateGUI(int dimension)
 {
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     if (knob->isSimplified()) {
         double r = 0.,g = 0.,b = 0.,a = 1.;
         r = knob->getGuiValue(0);
@@ -661,7 +661,7 @@ Color_KnobGui::updateGUI(int dimension)
 } // updateGUI
 
 void
-Color_KnobGui::reflectAnimationLevel(int dimension,
+KnobGuiColor::reflectAnimationLevel(int dimension,
                                      Natron::AnimationLevelEnum level)
 {
     if (_knob.lock()->isSimplified()) {
@@ -732,7 +732,7 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
 } // reflectAnimationLevel
 
 void
-Color_KnobGui::reflectExpressionState(int dimension,
+KnobGuiColor::reflectExpressionState(int dimension,
                                       bool hasExpr)
 {
     bool isSlaved = _knob.lock()->isSlave(dimension);
@@ -760,7 +760,7 @@ Color_KnobGui::reflectExpressionState(int dimension,
 }
 
 void
-Color_KnobGui::updateToolTip()
+KnobGuiColor::updateToolTip()
 {
     if (hasToolTip()) {
         QString tt = toolTip();
@@ -777,11 +777,11 @@ Color_KnobGui::updateToolTip()
 }
 
 void
-Color_KnobGui::showColorDialog()
+KnobGuiColor::showColorDialog()
 {
     QColorDialog dialog( _rBox->parentWidget() );
 
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     double curR = knob->getGuiValue(0);
     _lastColor[0] = curR;
     double curG = curR;
@@ -867,9 +867,9 @@ Color_KnobGui::showColorDialog()
 } // showColorDialog
 
 void
-Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
+KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     knob->beginChanges();
     knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
     if (_dimension > 1) {
@@ -884,7 +884,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 }
 
 void
-Color_KnobGui::onColorChanged()
+KnobGuiColor::onColorChanged()
 {
     SpinBox* isSpinbox = qobject_cast<SpinBox*>(sender());
     
@@ -930,10 +930,10 @@ Color_KnobGui::onColorChanged()
 }
 
 void
-Color_KnobGui::updateLabel(double r, double g, double b, double a)
+KnobGuiColor::updateLabel(double r, double g, double b, double a)
 {
     QColor color;
-    boost::shared_ptr<Color_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool simple = knob->isSimplified();
     color.setRgbF(Natron::clamp<qreal>(simple ? r : Natron::Color::to_func_srgb(r), 0., 1.),
                   Natron::clamp<qreal>(simple ? g : Natron::Color::to_func_srgb(g), 0., 1.),
@@ -943,7 +943,7 @@ Color_KnobGui::updateLabel(double r, double g, double b, double a)
 }
 
 void
-Color_KnobGui::_hide()
+KnobGuiColor::_hide()
 {
     _rBox->hide();
     _rLabel->hide();
@@ -965,7 +965,7 @@ Color_KnobGui::_hide()
 }
 
 void
-Color_KnobGui::_show()
+KnobGuiColor::_show()
 {
     if (!_knob.lock()->isSimplified()) {
         bool areAllDimensionShown = _dimensionSwitchButton->isChecked();
@@ -993,7 +993,7 @@ Color_KnobGui::_show()
     _colorDialogButton->show();
 }
 
-ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
+ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,QWidget* parent)
     : Natron::Label(parent)
       , _pickingEnabled(false)
     , _knob(knob)
@@ -1042,7 +1042,7 @@ ColorPickerLabel::setEnabledMode(bool enabled)
         _pickingEnabled = false;
         setColor(_currentColor);
         if (_knob) {
-            _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+            _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<KnobColor>(_knob->getKnob()));
         }
     }
 }
@@ -1110,7 +1110,7 @@ ColorPickerLabel::setColor(const QColor & color)
 }
 
 void
-Color_KnobGui::setPickingEnabled(bool enabled)
+KnobGuiColor::setPickingEnabled(bool enabled)
 {
     if (_colorLabel->isPickingEnabled() == enabled) {
         return;
@@ -1120,7 +1120,7 @@ Color_KnobGui::setPickingEnabled(bool enabled)
 }
 
 void
-Color_KnobGui::onPickingEnabled(bool enabled)
+KnobGuiColor::onPickingEnabled(bool enabled)
 {
     if ( getKnob()->getHolder()->getApp() ) {
         if (enabled) {
@@ -1132,7 +1132,7 @@ Color_KnobGui::onPickingEnabled(bool enabled)
 }
 
 void
-Color_KnobGui::setReadOnly(bool readOnly,
+KnobGuiColor::setReadOnly(bool readOnly,
                            int dimension)
 {
     if ( (dimension == 0) && _rBox ) {
@@ -1149,7 +1149,7 @@ Color_KnobGui::setReadOnly(bool readOnly,
 }
 
 void
-Color_KnobGui::setDirty(bool dirty)
+KnobGuiColor::setDirty(bool dirty)
 {
     _rBox->setDirty(dirty);
     if (_dimension > 1) {
@@ -1161,13 +1161,13 @@ Color_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> Color_KnobGui::getKnob() const
+boost::shared_ptr<KnobI> KnobGuiColor::getKnob() const
 {
     return _knob.lock();
 }
 
 void
-Color_KnobGui::reflectModificationsState()
+KnobGuiColor::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();
     

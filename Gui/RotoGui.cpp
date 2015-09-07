@@ -68,7 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/Color_KnobGui.h" // ColorPickerLabel
+#include "Gui/KnobGuiColor.h" // ColorPickerLabel
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -2743,7 +2743,7 @@ RotoGui::penDown(double time,
                         _imp->context->addItem(layer, 0, _imp->rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
                     }
                     _imp->context->setStrokeBeingPainted(_imp->rotoData->strokeBeingPaint);
-                    boost::shared_ptr<Int_Knob> lifeTimeFrameKnob = _imp->rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
+                    boost::shared_ptr<KnobInt> lifeTimeFrameKnob = _imp->rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
                     lifeTimeFrameKnob->setValue(_imp->context->getTimelineCurrentTime(), 0);
                     
                     _imp->rotoData->strokeBeingPaint->appendPoint(true, RotoPoint(pos.x(), pos.y(), pressure, timestamp));
@@ -3374,19 +3374,19 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         rotoData->strokeBeingPaint->createNodes(false);
     }
     assert(rotoData->strokeBeingPaint);
-    boost::shared_ptr<Color_Knob> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
-    boost::shared_ptr<Choice_Knob> operatorKnob = rotoData->strokeBeingPaint->getOperatorKnob();
-    boost::shared_ptr<Double_Knob> opacityKnob = rotoData->strokeBeingPaint->getOpacityKnob();
-    boost::shared_ptr<Double_Knob> sizeKnob = rotoData->strokeBeingPaint->getBrushSizeKnob();
-    boost::shared_ptr<Double_Knob> hardnessKnob = rotoData->strokeBeingPaint->getBrushHardnessKnob();
-    boost::shared_ptr<Bool_Knob> pressureOpaKnob = rotoData->strokeBeingPaint->getPressureOpacityKnob();
-    boost::shared_ptr<Bool_Knob> pressureSizeKnob = rotoData->strokeBeingPaint->getPressureSizeKnob();
-    boost::shared_ptr<Bool_Knob> pressureHardnessKnob = rotoData->strokeBeingPaint->getPressureHardnessKnob();
-    boost::shared_ptr<Bool_Knob> buildUpKnob = rotoData->strokeBeingPaint->getBuildupKnob();
-    boost::shared_ptr<Choice_Knob> timeOffsetModeKnob = rotoData->strokeBeingPaint->getTimeOffsetModeKnob();
-    boost::shared_ptr<Choice_Knob> sourceTypeKnob = rotoData->strokeBeingPaint->getBrushSourceTypeKnob();
-    boost::shared_ptr<Int_Knob> timeOffsetKnob = rotoData->strokeBeingPaint->getTimeOffsetKnob();
-    boost::shared_ptr<Double_Knob> translateKnob = rotoData->strokeBeingPaint->getBrushCloneTranslateKnob();
+    boost::shared_ptr<KnobColor> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
+    boost::shared_ptr<KnobChoice> operatorKnob = rotoData->strokeBeingPaint->getOperatorKnob();
+    boost::shared_ptr<KnobDouble> opacityKnob = rotoData->strokeBeingPaint->getOpacityKnob();
+    boost::shared_ptr<KnobDouble> sizeKnob = rotoData->strokeBeingPaint->getBrushSizeKnob();
+    boost::shared_ptr<KnobDouble> hardnessKnob = rotoData->strokeBeingPaint->getBrushHardnessKnob();
+    boost::shared_ptr<KnobBool> pressureOpaKnob = rotoData->strokeBeingPaint->getPressureOpacityKnob();
+    boost::shared_ptr<KnobBool> pressureSizeKnob = rotoData->strokeBeingPaint->getPressureSizeKnob();
+    boost::shared_ptr<KnobBool> pressureHardnessKnob = rotoData->strokeBeingPaint->getPressureHardnessKnob();
+    boost::shared_ptr<KnobBool> buildUpKnob = rotoData->strokeBeingPaint->getBuildupKnob();
+    boost::shared_ptr<KnobChoice> timeOffsetModeKnob = rotoData->strokeBeingPaint->getTimeOffsetModeKnob();
+    boost::shared_ptr<KnobChoice> sourceTypeKnob = rotoData->strokeBeingPaint->getBrushSourceTypeKnob();
+    boost::shared_ptr<KnobInt> timeOffsetKnob = rotoData->strokeBeingPaint->getTimeOffsetKnob();
+    boost::shared_ptr<KnobDouble> translateKnob = rotoData->strokeBeingPaint->getBrushCloneTranslateKnob();
     
     const QColor& color = colorPickerLabel->getCurrentColor();
     MergingFunctionEnum compOp = (MergingFunctionEnum)compositingOperatorButton->activeIndex();
@@ -3416,7 +3416,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     pressureHardnessKnob->setValue(pressHarness, 0);
     buildUpKnob->setValue(buildUp, 0);
     if (!prepareForLater) {
-        boost::shared_ptr<Int_Knob> lifeTimeFrameKnob = rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
+        boost::shared_ptr<KnobInt> lifeTimeFrameKnob = rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue(context->getTimelineCurrentTime(), 0);
     }
     if (strokeType == Natron::eRotoStrokeTypeClone || strokeType == Natron::eRotoStrokeTypeReveal) {
@@ -4598,7 +4598,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
 
     menu.addSeparator();
 
-    boost::shared_ptr<Double_Knob> isSlaved = cp.first->isSlaved();
+    boost::shared_ptr<KnobDouble> isSlaved = cp.first->isSlaved();
     ActionWithShortcut* linkTo = 0,*unLinkFrom = 0;
     if (!isSlaved) {
         linkTo = new ActionWithShortcut(kShortcutGroupRoto,
@@ -4662,7 +4662,7 @@ class LinkToTrackDialog
 
 public:
 
-    LinkToTrackDialog(const std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > & knobs,
+    LinkToTrackDialog(const std::vector< std::pair<std::string,boost::shared_ptr<KnobDouble> > > & knobs,
                       QWidget* parent)
         : QDialog(parent)
     {
@@ -4670,7 +4670,7 @@ public:
 
         _choice = new ComboBox(this);
 
-        for (std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (std::vector< std::pair<std::string,boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             _choice->addItem( it->first.c_str() );
         }
 
@@ -4696,7 +4696,7 @@ public:
 void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points)
 {
-    std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
+    std::vector< std::pair<std::string,boost::shared_ptr<KnobDouble> > > knobs;
     NodeList activeNodes;
     _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
     for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
@@ -4704,8 +4704,8 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
             boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
             boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kNatronOfxParamStringSublabelName);
             if (k && name) {
-                boost::shared_ptr<Double_Knob> dk = boost::dynamic_pointer_cast<Double_Knob>(k);
-                String_Knob* nameKnob = dynamic_cast<String_Knob*>( name.get() );
+                boost::shared_ptr<KnobDouble> dk = boost::dynamic_pointer_cast<KnobDouble>(k);
+                KnobString* nameKnob = dynamic_cast<KnobString*>( name.get() );
                 if (dk && nameKnob) {
                     std::string trackName = nameKnob->getValue();
                     trackName += "/";
@@ -4724,7 +4724,7 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
     if ( dialog.exec() ) {
         int index = dialog.getSelectedKnob();
         if ( (index >= 0) && ( index < (int)knobs.size() ) ) {
-            const boost::shared_ptr<Double_Knob> & knob = knobs[index].second;
+            const boost::shared_ptr<KnobDouble> & knob = knobs[index].second;
             if ( knob && (knob->getDimension() == 2) ) {
                 pushUndoCommand( new LinkToTrackUndoCommand(this,points,knob) );
             }

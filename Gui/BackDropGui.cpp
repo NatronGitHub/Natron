@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/BackDrop.h"
 
-#include "Gui/String_KnobGui.h"
+#include "Gui/KnobGuiString.h"
 
 #define RESIZE_HANDLE_SIZE 20
 
@@ -82,7 +82,7 @@ BackDropGuiPrivate::getLabelValue() const
 {
     boost::shared_ptr<KnobI> k = _publicInterface->getNode()->getKnobByName("Label");
     assert(k);
-    String_Knob* isStr = dynamic_cast<String_Knob*>(k.get());
+    KnobString* isStr = dynamic_cast<KnobString*>(k.get());
     assert(isStr);
     return isStr->getValue();
 }
@@ -164,7 +164,7 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     QFont f;
     QColor color;
     if (!text.isEmpty()) {
-        String_KnobGui::parseFont(textLabel, &f, &color);
+        KnobGuiString::parseFont(textLabel, &f, &color);
         label->setFont(f);
     }
     

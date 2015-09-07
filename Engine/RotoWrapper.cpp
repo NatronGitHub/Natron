@@ -246,7 +246,7 @@ BezierCurve::slavePointToTrack(int index, int trackTime, DoubleParam* trackCente
         return;
     }
     
-    boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(internalKnob);
+    boost::shared_ptr<KnobDouble> isDouble = boost::dynamic_pointer_cast<KnobDouble>(internalKnob);
     if (!isDouble) {
         return;
     }
@@ -286,7 +286,7 @@ BezierCurve::getPointMasterTrack(int index) const
         return 0;
     }
     
-    boost::shared_ptr<Double_Knob>  knob = cp->isSlaved();
+    boost::shared_ptr<KnobDouble>  knob = cp->isSlaved();
     if (!knob) {
         return 0;
     }
@@ -407,7 +407,7 @@ BooleanParam*
 BezierCurve::getActivatedParam() const
 {
     
-    boost::shared_ptr<Bool_Knob> ret = _bezier->getActivatedKnob();
+    boost::shared_ptr<KnobBool> ret = _bezier->getActivatedKnob();
     if (ret) {
         return new BooleanParam(ret);
     }
@@ -417,7 +417,7 @@ BezierCurve::getActivatedParam() const
 DoubleParam*
 BezierCurve::getOpacityParam() const
 {
-    boost::shared_ptr<Double_Knob> ret = _bezier->getOpacityKnob();
+    boost::shared_ptr<KnobDouble> ret = _bezier->getOpacityKnob();
     if (ret) {
         return new DoubleParam(ret);
     }
@@ -426,7 +426,7 @@ BezierCurve::getOpacityParam() const
 DoubleParam*
 BezierCurve::getFeatherDistanceParam() const
 {
-    boost::shared_ptr<Double_Knob> ret = _bezier->getFeatherKnob();
+    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherKnob();
     if (ret) {
         return new DoubleParam(ret);
     }
@@ -436,7 +436,7 @@ BezierCurve::getFeatherDistanceParam() const
 DoubleParam*
 BezierCurve::getFeatherFallOffParam() const
 {
-    boost::shared_ptr<Double_Knob> ret = _bezier->getFeatherFallOffKnob();
+    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherFallOffKnob();
     if (ret) {
         return new DoubleParam(ret);
     }
@@ -446,7 +446,7 @@ BezierCurve::getFeatherFallOffParam() const
 ColorParam*
 BezierCurve::getColorParam() const
 {
-    boost::shared_ptr<Color_Knob> ret = _bezier->getColorKnob();
+    boost::shared_ptr<KnobColor> ret = _bezier->getColorKnob();
     if (ret) {
         return new ColorParam(ret);
     }
@@ -456,7 +456,7 @@ BezierCurve::getColorParam() const
 ChoiceParam*
 BezierCurve::getCompositingOperatorParam() const
 {
-    boost::shared_ptr<Choice_Knob> ret = _bezier->getOperatorKnob();
+    boost::shared_ptr<KnobChoice> ret = _bezier->getOperatorKnob();
     if (ret) {
         return new ChoiceParam(ret);
     }

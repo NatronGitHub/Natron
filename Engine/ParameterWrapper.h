@@ -278,10 +278,10 @@ class IntParam : public AnimatedParam
 {
     
 protected:
-    boost::weak_ptr<Int_Knob> _intKnob;
+    boost::weak_ptr<KnobInt> _intKnob;
 public:
     
-    IntParam(const boost::shared_ptr<Int_Knob>& knob);
+    IntParam(const boost::shared_ptr<KnobInt>& knob);
     
     virtual ~IntParam();
     
@@ -393,7 +393,7 @@ class Int2DParam : public IntParam
 {
 public:
     
-    Int2DParam(const boost::shared_ptr<Int_Knob>& knob) : IntParam(knob) {}
+    Int2DParam(const boost::shared_ptr<KnobInt>& knob) : IntParam(knob) {}
     
     virtual ~Int2DParam() {}
     
@@ -407,7 +407,7 @@ class Int3DParam : public Int2DParam
 {
 public:
     
-    Int3DParam(const boost::shared_ptr<Int_Knob>& knob) : Int2DParam(knob) {}
+    Int3DParam(const boost::shared_ptr<KnobInt>& knob) : Int2DParam(knob) {}
     
     virtual ~Int3DParam() {}
     
@@ -423,10 +423,10 @@ class DoubleParam : public AnimatedParam
 {
     
 protected:
-    boost::weak_ptr<Double_Knob> _doubleKnob;
+    boost::weak_ptr<KnobDouble> _doubleKnob;
 public:
     
-    DoubleParam(const boost::shared_ptr<Double_Knob>& knob);
+    DoubleParam(const boost::shared_ptr<KnobDouble>& knob);
     
     virtual ~DoubleParam();
     
@@ -538,7 +538,7 @@ class Double2DParam : public DoubleParam
 {
 public:
     
-    Double2DParam(const boost::shared_ptr<Double_Knob>& knob) : DoubleParam(knob) {}
+    Double2DParam(const boost::shared_ptr<KnobDouble>& knob) : DoubleParam(knob) {}
     
     virtual ~Double2DParam() {}
     
@@ -554,7 +554,7 @@ class Double3DParam : public Double2DParam
 {
 public:
     
-    Double3DParam(const boost::shared_ptr<Double_Knob>& knob) : Double2DParam(knob) {}
+    Double3DParam(const boost::shared_ptr<KnobDouble>& knob) : Double2DParam(knob) {}
     
     virtual ~Double3DParam() {}
     
@@ -569,10 +569,10 @@ class ColorParam : public AnimatedParam
 {
     
 protected:
-    boost::weak_ptr<Color_Knob> _colorKnob;
+    boost::weak_ptr<KnobColor> _colorKnob;
 public:
     
-    ColorParam(const boost::shared_ptr<Color_Knob>& knob);
+    ColorParam(const boost::shared_ptr<KnobColor>& knob);
     
     virtual ~ColorParam();
     
@@ -687,10 +687,10 @@ class ChoiceParam : public AnimatedParam
 {
     
 protected:
-    boost::weak_ptr<Choice_Knob> _choiceKnob;
+    boost::weak_ptr<KnobChoice> _choiceKnob;
 public:
     
-    ChoiceParam(const boost::shared_ptr<Choice_Knob>& knob);
+    ChoiceParam(const boost::shared_ptr<KnobChoice>& knob);
     
     virtual ~ChoiceParam();
     
@@ -794,10 +794,10 @@ class BooleanParam : public AnimatedParam
 {
     
 protected:
-    boost::weak_ptr<Bool_Knob> _boolKnob;
+    boost::weak_ptr<KnobBool> _boolKnob;
 public:
     
-    BooleanParam(const boost::shared_ptr<Bool_Knob>& knob);
+    BooleanParam(const boost::shared_ptr<KnobBool>& knob);
     
     virtual ~BooleanParam();
     
@@ -938,7 +938,7 @@ public:
 
 class StringParam : public StringParamBase
 {
-    boost::weak_ptr<String_Knob> _sKnob;
+    boost::weak_ptr<KnobString> _sKnob;
 public:
     
     enum TypeEnum {
@@ -949,7 +949,7 @@ public:
         eStringTypeDefault, //< Same as custom except that it is editable
     };
     
-    StringParam(const boost::shared_ptr<String_Knob>& knob);
+    StringParam(const boost::shared_ptr<KnobString>& knob);
     
     virtual ~StringParam();
     
@@ -963,11 +963,11 @@ public:
 
 class FileParam : public StringParamBase
 {
-    boost::shared_ptr<File_Knob> _sKnob;
+    boost::shared_ptr<KnobFile> _sKnob;
 public:
 
     
-    FileParam(const boost::shared_ptr<File_Knob>& knob);
+    FileParam(const boost::shared_ptr<KnobFile>& knob);
     
     virtual ~FileParam();
   
@@ -985,11 +985,11 @@ public:
 
 class OutputFileParam : public StringParamBase
 {
-    boost::weak_ptr<OutputFile_Knob> _sKnob;
+    boost::weak_ptr<KnobOutputFile> _sKnob;
 public:
     
     
-    OutputFileParam(const boost::shared_ptr<OutputFile_Knob>& knob);
+    OutputFileParam(const boost::shared_ptr<KnobOutputFile>& knob);
     
     virtual ~OutputFileParam();
     
@@ -1007,11 +1007,11 @@ public:
 
 class PathParam : public StringParamBase
 {
-    boost::weak_ptr<Path_Knob> _sKnob;
+    boost::weak_ptr<KnobPath> _sKnob;
 public:
     
     
-    PathParam(const boost::shared_ptr<Path_Knob>& knob);
+    PathParam(const boost::shared_ptr<KnobPath>& knob);
     
     virtual ~PathParam();
     
@@ -1028,10 +1028,10 @@ class ButtonParam : public Param
 {
     
 protected:
-    boost::weak_ptr<Button_Knob> _buttonKnob;
+    boost::weak_ptr<KnobButton> _buttonKnob;
 public:
     
-    ButtonParam(const boost::shared_ptr<Button_Knob>& knob);
+    ButtonParam(const boost::shared_ptr<KnobButton>& knob);
     
     virtual ~ButtonParam();
     
@@ -1046,10 +1046,10 @@ class GroupParam : public Param
 {
     
 protected:
-    boost::weak_ptr<Group_Knob> _groupKnob;
+    boost::weak_ptr<KnobGroup> _groupKnob;
 public:
     
-    GroupParam(const boost::shared_ptr<Group_Knob>& knob);
+    GroupParam(const boost::shared_ptr<KnobGroup>& knob);
     
     virtual ~GroupParam();
     
@@ -1074,10 +1074,10 @@ class PageParam : public Param
 {
     
 protected:
-    boost::weak_ptr<Page_Knob> _pageKnob;
+    boost::weak_ptr<KnobPage> _pageKnob;
 public:
     
-    PageParam(const boost::shared_ptr<Page_Knob>& knob);
+    PageParam(const boost::shared_ptr<KnobPage>& knob);
     
     virtual ~PageParam();
     
@@ -1092,10 +1092,10 @@ class ParametricParam : public Param
 {
     
 protected:
-    boost::weak_ptr<Parametric_Knob> _parametricKnob;
+    boost::weak_ptr<KnobParametric> _parametricKnob;
 public:
     
-    ParametricParam(const boost::shared_ptr<Parametric_Knob>& knob);
+    ParametricParam(const boost::shared_ptr<KnobParametric>& knob);
     
     virtual ~ParametricParam();
    

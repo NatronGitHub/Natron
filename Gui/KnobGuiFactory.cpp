@@ -32,18 +32,18 @@
 #include "Engine/KnobFile.h"
 
 #include "Gui/KnobGui.h"
-#include "Gui/File_KnobGui.h"
-#include "Gui/Int_KnobGui.h"
-#include "Gui/Double_KnobGui.h"
-#include "Gui/Bool_KnobGui.h"
-#include "Gui/Button_KnobGui.h"
-#include "Gui/Choice_KnobGui.h"
-#include "Gui/Separator_KnobGui.h"
-#include "Gui/Group_KnobGui.h"
-#include "Gui/Color_KnobGui.h"
-#include "Gui/String_KnobGui.h"
-#include "Gui/Bool_KnobGui.h"
-#include "Gui/Parametric_KnobGui.h"
+#include "Gui/KnobGuiFile.h"
+#include "Gui/KnobGuiInt.h"
+#include "Gui/KnobGuiDouble.h"
+#include "Gui/KnobGuiBool.h"
+#include "Gui/KnobGuiButton.h"
+#include "Gui/KnobGuiChoice.h"
+#include "Gui/KnobGuiSeparator.h"
+#include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobGuiColor.h"
+#include "Gui/KnobGuiString.h"
+#include "Gui/KnobGuiBool.h"
+#include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
 
 using namespace Natron;
@@ -87,21 +87,21 @@ knobGuiFactoryEntry()
 void
 KnobGuiFactory::loadBultinKnobs()
 {
-    _loadedKnobs.insert( knobGuiFactoryEntry<File_Knob,File_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Int_Knob,Int_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Double_Knob,Double_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Bool_Knob,Bool_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Button_Knob,Button_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<OutputFile_Knob,OutputFile_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Choice_Knob,Choice_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Separator_Knob,Separator_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Group_Knob,Group_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Color_Knob,Color_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<String_Knob,String_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Bool_Knob,Bool_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Parametric_Knob, Parametric_KnobGui>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<Path_Knob, Path_KnobGui>() );
-    // _loadedKnobs.insert(knobGuiFactoryEntry<Table_Knob, Table_KnobGui>());
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobFile, KnobGuiFile>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobInt, KnobGuiInt>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobDouble, KnobGuiDouble>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobButton, KnobGuiButton>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobOutputFile, KnobGuiOutputFile>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobChoice, KnobGuiChoice>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobSeparator, KnobGuiSeparator>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobGroup, KnobGuiGroup>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobColor, KnobGuiColor>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobString, KnobGuiString>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobParametric, KnobGuiParametric>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobPath, KnobGuiPath>() );
+    // _loadedKnobs.insert(knobGuiFactoryEntry<KnobTable, KnobTableGui>());
 }
 
 KnobGui *

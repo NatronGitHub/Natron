@@ -275,10 +275,10 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
         
         boost::shared_ptr<KnobI> knob = (*it)->getInternalKnob();
-        Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knob.get() );
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>( knob.get() );
-        Button_Knob* isButton = dynamic_cast<Button_Knob*>( knob.get() );
-        //Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knob.get() );
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
+        KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
+        //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
         
         if (!isGroup && !isPage && !isButton) {
             boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob));

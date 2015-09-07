@@ -43,9 +43,9 @@ class Lut;
 }
 }
 
-class File_Knob;
-class Choice_Knob;
-class Int_Knob;
+class KnobFile;
+class KnobChoice;
+class KnobInt;
 class QtReader
     : public Natron::EffectInstance
 {
@@ -134,15 +134,15 @@ private:
     std::string _filename;
     QImage* _img;
     QMutex _lock;
-    boost::shared_ptr<File_Knob> _fileKnob;
-    boost::shared_ptr<Int_Knob> _firstFrame;
-    boost::shared_ptr<Choice_Knob> _before;
-    boost::shared_ptr<Int_Knob> _lastFrame;
-    boost::shared_ptr<Choice_Knob> _after;
-    boost::shared_ptr<Choice_Knob> _missingFrameChoice;
-    boost::shared_ptr<Choice_Knob> _frameMode;
-    boost::shared_ptr<Int_Knob> _startingFrame;
-    boost::shared_ptr<Int_Knob> _timeOffset;
+    boost::shared_ptr<KnobFile> _fileKnob;
+    boost::shared_ptr<KnobInt> _firstFrame;
+    boost::shared_ptr<KnobChoice> _before;
+    boost::shared_ptr<KnobInt> _lastFrame;
+    boost::shared_ptr<KnobChoice> _after;
+    boost::shared_ptr<KnobChoice> _missingFrameChoice;
+    boost::shared_ptr<KnobChoice> _frameMode;
+    boost::shared_ptr<KnobInt> _startingFrame;
+    boost::shared_ptr<KnobInt> _timeOffset;
     bool _settingFrameRange;
 };
 

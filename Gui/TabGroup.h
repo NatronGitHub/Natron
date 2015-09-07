@@ -49,7 +49,7 @@ class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
-class Page_Knob;
+class KnobPage;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
@@ -58,7 +58,7 @@ class QGridLayout;
 class RotoPanel;
 class MultiInstancePanel;
 class QTabWidget;
-class Group_Knob;
+class KnobGroup;
 
 /**
  * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
@@ -66,15 +66,15 @@ class Group_Knob;
 class TabGroup : public QFrame
 {
     QTabWidget* _tabWidget;
-    std::vector<boost::weak_ptr<Group_Knob> > _tabs;
+    std::vector<boost::weak_ptr<KnobGroup> > _tabs;
     
 public:
     
     TabGroup(QWidget* parent);
     
-    QGridLayout* addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name);
+    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group,const QString& name);
     
-    void removeTab(Group_Knob* group);
+    void removeTab(KnobGroup* group);
     
     bool isEmpty() const
     {

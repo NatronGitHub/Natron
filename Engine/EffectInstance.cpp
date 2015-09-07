@@ -76,8 +76,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 using namespace Natron;
 
 
-class File_Knob;
-class OutputFile_Knob;
+class KnobFile;
+class KnobOutputFile;
 
 
 
@@ -4943,8 +4943,8 @@ EffectInstance::openImageFileKnob()
     const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->typeName() == File_Knob::typeNameStatic() ) {
-            boost::shared_ptr<File_Knob> fk = boost::dynamic_pointer_cast<File_Knob>(knobs[i]);
+        if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
+            boost::shared_ptr<KnobFile> fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
             assert(fk);
             if ( fk->isInputImageFile() ) {
                 std::string file = fk->getValue();
@@ -4953,8 +4953,8 @@ EffectInstance::openImageFileKnob()
                 }
                 break;
             }
-        } else if ( knobs[i]->typeName() == OutputFile_Knob::typeNameStatic() ) {
-            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+        } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
+            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 std::string file = fk->getValue();
@@ -4987,7 +4987,7 @@ EffectInstance::evaluate(KnobI* knob,
     }
 
 
-    Button_Knob* button = dynamic_cast<Button_Knob*>(knob);
+    KnobButton* button = dynamic_cast<KnobButton*>(knob);
 
     /*if this is a writer (openfx or built-in writer)*/
     if ( isWriter() ) {
@@ -5130,8 +5130,8 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->typeName() == OutputFile_Knob::typeNameStatic() ) {
-            boost::shared_ptr<OutputFile_Knob> fk = boost::dynamic_pointer_cast<OutputFile_Knob>(knobs[i]);
+        if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
+            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 fk->setValue(pattern,0);
@@ -7153,7 +7153,7 @@ OutputEffectInstance::reportStats(int time, int view, double wallTime, const std
     std::string filename;
     boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
     if (fileKnob) {
-        OutputFile_Knob* strKnob = dynamic_cast<OutputFile_Knob*>(fileKnob.get());
+        KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>(fileKnob.get());
         if  (strKnob) {
             QString qfileName(SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str());
             Natron::removeFileExtension(qfileName);

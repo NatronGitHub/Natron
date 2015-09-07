@@ -206,63 +206,63 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     bool found = false;
     // use RTTI to guess curve type
     if (!found) {
-        Double_Knob* k = dynamic_cast<Double_Knob*>(owner);
+        KnobDouble* k = dynamic_cast<KnobDouble*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeDouble;
             found = true;
         }
     }
     if (!found) {
-        Color_Knob* k = dynamic_cast<Color_Knob*>(owner);
+        KnobColor* k = dynamic_cast<KnobColor*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeDouble;
             found = true;
         }
     }
     if (!found) {
-        Int_Knob* k = dynamic_cast<Int_Knob*>(owner);
+        KnobInt* k = dynamic_cast<KnobInt*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeInt;
             found = true;
         }
     }
     if (!found) {
-        Choice_Knob* k = dynamic_cast<Choice_Knob*>(owner);
+        KnobChoice* k = dynamic_cast<KnobChoice*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
             found = true;
         }
     }
     if (!found) {
-        String_Knob* k = dynamic_cast<String_Knob*>(owner);
+        KnobString* k = dynamic_cast<KnobString*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeString;
             found = true;
         }
     }
     if (!found) {
-        File_Knob* k = dynamic_cast<File_Knob*>(owner);
+        KnobFile* k = dynamic_cast<KnobFile*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeString;
             found = true;
         }
     }
     if (!found) {
-        OutputFile_Knob* k = dynamic_cast<OutputFile_Knob*>(owner);
+        KnobOutputFile* k = dynamic_cast<KnobOutputFile*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeString;
             found = true;
         }
     }
     if (!found) {
-        Path_Knob* k = dynamic_cast<Path_Knob*>(owner);
+        KnobPath* k = dynamic_cast<KnobPath*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeString;
             found = true;
         }
     }
     if (!found) {
-        Bool_Knob* k = dynamic_cast<Bool_Knob*>(owner);
+        KnobBool* k = dynamic_cast<KnobBool*>(owner);
         if (k) {
             _imp->type = CurvePrivate::eCurveTypeBool;
             found = true;
@@ -270,7 +270,7 @@ Curve::Curve(KnobI *owner,int dimensionInOwner)
     }
     
     if (!found) {
-        Parametric_Knob* parametric = dynamic_cast<Parametric_Knob*>(owner);
+        KnobParametric* parametric = dynamic_cast<KnobParametric*>(owner);
         if (parametric) {
             _imp->isParametric = true;
             found = true;

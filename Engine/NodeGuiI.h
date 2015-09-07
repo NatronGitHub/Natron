@@ -29,7 +29,7 @@
 #include "Global/Enums.h"
 
 class QPointF;
-class Double_Knob;
+class KnobDouble;
 class KnobI;
 class OverlaySupport;
 namespace Natron {
@@ -96,7 +96,7 @@ public :
     /**
      * @brief Add a default viewer overlay for the given point parameter
      **/
-    virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) = 0;
+    virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) = 0;
     
     virtual void drawDefaultOverlay(double time, double scaleX, double scaleY)  = 0;
     

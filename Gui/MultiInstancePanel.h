@@ -39,7 +39,7 @@ class QVBoxLayout;
 class QHBoxLayout;
 class QItemSelection;
 class TableItem;
-class Button_Knob;
+class KnobButton;
 class Gui;
 /**
  * @brief This class represents a multi-instance settings panel.
@@ -80,7 +80,7 @@ public:
 
     boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
     Gui* getGui() const;
-    virtual void setIconForButton(Button_Knob* /*knob*/)
+    virtual void setIconForButton(KnobButton* /*knob*/)
     {
     }
 
@@ -148,7 +148,7 @@ protected:
 
 private:
 
-    virtual void onButtonTriggered(Button_Knob* button);
+    virtual void onButtonTriggered(KnobButton* button);
 
     void resetInstances(const std::list<Natron::Node*> & instances);
 
@@ -211,8 +211,8 @@ private:
     virtual void initializeExtraKnobs() OVERRIDE FINAL;
     virtual void appendExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
-    virtual void setIconForButton(Button_Knob* knob) OVERRIDE FINAL;
-    virtual void onButtonTriggered(Button_Knob* button) OVERRIDE FINAL;
+    virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
+    virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
@@ -237,7 +237,7 @@ public:
      * @param start the first frame to track, if forward is true then start < end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(int start,int end,bool forward,const std::list<Button_Knob*> & selectedInstances);
+    void track(int start,int end,bool forward,const std::list<KnobButton*> & selectedInstances);
     
     void abortTracking();
     

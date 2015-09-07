@@ -60,11 +60,11 @@ class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
-class Page_Knob;
+class KnobPage;
 class Button;
 class RotoPanel;
 class MultiInstancePanel;
-class Group_Knob;
+class KnobGroup;
 class LineEdit;
 class FloatingWidget;
 
@@ -171,9 +171,9 @@ struct DockablePanelPrivate
                          const boost::shared_ptr<QUndoStack>& stack);
     
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator addPage(Page_Knob* page,const QString & name);
+    PageMap::iterator addPage(KnobPage* page,const QString & name);
 
-    boost::shared_ptr<Page_Knob> ensureDefaultPageKnobCreated() ;
+    boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,

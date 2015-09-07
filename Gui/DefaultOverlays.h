@@ -36,7 +36,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/OfxOverlayInteract.h"
 
-class Double_Knob;
+class KnobDouble;
 class KnobI;
 class QPoint;
 class QPointF;
@@ -53,7 +53,7 @@ public:
     
     boost::shared_ptr<NodeGui> getNode() const;
     
-    bool addPositionParam(const boost::shared_ptr<Double_Knob>& position);
+    bool addPositionParam(const boost::shared_ptr<KnobDouble>& position);
     
     void draw(double time,const RenderScale& renderScale);
     

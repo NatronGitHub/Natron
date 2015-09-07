@@ -54,7 +54,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 class QReadWriteLock;
 class OfxClipInstance;
-class Button_Knob;
+class KnobButton;
 class OverlaySupport;
 class NodeSerialization;
 class KnobSerialization;
@@ -412,7 +412,7 @@ private:
 
     bool _created; // true after the call to createInstance
     bool _initialized; //true when the image effect instance has been created and populated
-    boost::shared_ptr<Button_Knob> _renderButton; //< render button for writers
+    boost::shared_ptr<KnobButton> _renderButton; //< render button for writers
     mutable Natron::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;

@@ -251,7 +251,7 @@ TEST_F(BaseTest,SetValues)
     boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
     assert(generator);
     boost::shared_ptr<KnobI> knob = generator->getKnobByName("radius");
-    Double_Knob* radius = dynamic_cast<Double_Knob*>(knob.get());
+    KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
     assert(radius);
     radius->setValue(100, 0);
     EXPECT_TRUE(radius->getValue() == 100);

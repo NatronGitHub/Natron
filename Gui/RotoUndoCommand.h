@@ -46,7 +46,7 @@ class RotoDrawableItem;
 class RotoStrokeItem;
 class QTreeWidgetItem;
 class RotoItem;
-class Double_Knob;
+class KnobDouble;
 namespace Transform {
 struct Matrix3x3;
 }
@@ -708,7 +708,7 @@ public:
 
     LinkToTrackUndoCommand(RotoGui* roto,
                            const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points,
-                           const boost::shared_ptr<Double_Knob> & track);
+                           const boost::shared_ptr<KnobDouble> & track);
 
     virtual ~LinkToTrackUndoCommand();
 
@@ -719,7 +719,7 @@ private:
 
     RotoGui* _roto;
     std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > _points;
-    boost::shared_ptr<Double_Knob> _track;
+    boost::shared_ptr<KnobDouble> _track;
 };
 
 class UnLinkFromTrackUndoCommand
@@ -729,7 +729,7 @@ class UnLinkFromTrackUndoCommand
     {
         boost::shared_ptr<BezierCP> cp;
         boost::shared_ptr<BezierCP> fp;
-        boost::shared_ptr<Double_Knob> track;
+        boost::shared_ptr<KnobDouble> track;
     };
 
 public:

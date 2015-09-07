@@ -173,7 +173,7 @@ SOURCES += \
     Hash64_Test.cpp \
     Image_Test.cpp \
     Lut_Test.cpp \
-    File_Knob_Test.cpp \
+    KnobFile_Test.cpp \
     Curve_Test.cpp
 
 HEADERS += \

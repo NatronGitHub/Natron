@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Bool_KnobGui.h"
+#include "KnobGuiBool.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 using std::make_pair;
 
-//==========================BOOL_KNOB_GUI======================================
+//==========================KnobBool_GUI======================================
 
 void
 Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
@@ -97,16 +97,16 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 }
 
 
-Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiBool::KnobGuiBool(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _checkBox(0)
 {
-    _knob = boost::dynamic_pointer_cast<Bool_Knob>(knob);
+    _knob = boost::dynamic_pointer_cast<KnobBool>(knob);
 }
 
 void
-Bool_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new Bool_CheckBox( layout->parentWidget() );
     onLabelChanged();
@@ -120,25 +120,25 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
     layout->addWidget(_checkBox);
 }
 
-Bool_KnobGui::~Bool_KnobGui()
+KnobGuiBool::~KnobGuiBool()
 {
 
 }
 
-void Bool_KnobGui::removeSpecificGui()
+void KnobGuiBool::removeSpecificGui()
 {
     _checkBox->setParent(0);
     delete _checkBox;
 }
 
 void
-Bool_KnobGui::updateGUI(int /*dimension*/)
+KnobGuiBool::updateGUI(int /*dimension*/)
 {
     _checkBox->setChecked( _knob.lock()->getGuiValue(0) );
 }
 
 void
-Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
+KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
                                     Natron::AnimationLevelEnum level)
 {
     int value;
@@ -162,7 +162,7 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
-Bool_KnobGui::onLabelChanged()
+KnobGuiBool::onLabelChanged()
 {
     const std::string& label = _knob.lock()->getDescription();
     if (label == "R" || label == "r" || label == "red") {
@@ -187,34 +187,34 @@ Bool_KnobGui::onLabelChanged()
 }
 
 void
-Bool_KnobGui::onLabelClicked(bool b)
+KnobGuiBool::onLabelClicked(bool b)
 {
     _checkBox->setChecked(b);
     pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getGuiValue(0),b, 0, false) );
 }
 
 void
-Bool_KnobGui::onCheckBoxStateChanged(bool b)
+KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
     pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getGuiValue(0),b, 0, false) );
 }
 
 void
-Bool_KnobGui::_hide()
+KnobGuiBool::_hide()
 {
     _checkBox->hide();
 }
 
 void
-Bool_KnobGui::_show()
+KnobGuiBool::_show()
 {
     _checkBox->show();
 }
 
 void
-Bool_KnobGui::setEnabled()
+KnobGuiBool::setEnabled()
 {
-    boost::shared_ptr<Bool_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
 
     bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
@@ -222,26 +222,26 @@ Bool_KnobGui::setEnabled()
 }
 
 void
-Bool_KnobGui::setReadOnly(bool readOnly,
+KnobGuiBool::setReadOnly(bool readOnly,
                           int /*dimension*/)
 {
     _checkBox->setReadOnly(readOnly);
 }
 
 void
-Bool_KnobGui::setDirty(bool dirty)
+KnobGuiBool::setDirty(bool dirty)
 {
     _checkBox->setDirty(dirty);
 }
 
 boost::shared_ptr<KnobI>
-Bool_KnobGui::getKnob() const
+KnobGuiBool::getKnob() const
 {
     return _knob.lock();
 }
 
 void
-Bool_KnobGui::reflectExpressionState(int /*dimension*/,
+KnobGuiBool::reflectExpressionState(int /*dimension*/,
                                      bool hasExpr)
 {
     bool isSlaved = _knob.lock()->isSlave(0);
@@ -250,7 +250,7 @@ Bool_KnobGui::reflectExpressionState(int /*dimension*/,
 }
 
 void
-Bool_KnobGui::updateToolTip()
+KnobGuiBool::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();

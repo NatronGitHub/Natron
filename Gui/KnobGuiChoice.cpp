@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Choice_KnobGui.h"
+#include "KnobGuiChoice.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -85,29 +85,29 @@ using std::make_pair;
 //=============================CHOICE_KNOB_GUI===================================
 
 
-Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiChoice::KnobGuiChoice(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    boost::shared_ptr<Choice_Knob> k = boost::dynamic_pointer_cast<Choice_Knob>(knob);
+    boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
     _entries = k->getEntries_mt_safe();
     QObject::connect( k.get(), SIGNAL( populated() ), this, SLOT( onEntriesPopulated() ) );
     _knob = k;
 }
 
-Choice_KnobGui::~Choice_KnobGui()
+KnobGuiChoice::~KnobGuiChoice()
 {
    
 }
 
-void Choice_KnobGui::removeSpecificGui()
+void KnobGuiChoice::removeSpecificGui()
 {
     delete _comboBox;
 }
 
 void
-Choice_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new ComboBox( layout->parentWidget() );
     _comboBox->setCascading(_knob.lock()->isCascading());
@@ -122,15 +122,15 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void
-Choice_KnobGui::onCurrentIndexChanged(int i)
+KnobGuiChoice::onCurrentIndexChanged(int i)
 {
     pushUndoCommand( new KnobUndoCommand<int>(this,_knob.lock()->getGuiValue(0),i, 0, false, 0) );
 }
 
 void
-Choice_KnobGui::onEntriesPopulated()
+KnobGuiChoice::onEntriesPopulated()
 {
-    boost::shared_ptr<Choice_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
     int activeIndex = knob->getGuiValue();
 
     _comboBox->clear();
@@ -156,7 +156,7 @@ Choice_KnobGui::onEntriesPopulated()
 }
 
 void
-Choice_KnobGui::onItemNewSelected()
+KnobGuiChoice::onItemNewSelected()
 {
     NewLayerDialog dialog(getGui());
     if (dialog.exec()) {
@@ -175,7 +175,7 @@ Choice_KnobGui::onItemNewSelected()
 }
 
 void
-Choice_KnobGui::reflectExpressionState(int /*dimension*/,
+KnobGuiChoice::reflectExpressionState(int /*dimension*/,
                                        bool hasExpr)
 {
     _comboBox->setAnimation(3);
@@ -184,7 +184,7 @@ Choice_KnobGui::reflectExpressionState(int /*dimension*/,
 }
 
 void
-Choice_KnobGui::updateToolTip()
+KnobGuiChoice::updateToolTip()
 {
     QString tt = toolTip();
     _comboBox->setToolTip( tt );
@@ -192,7 +192,7 @@ Choice_KnobGui::updateToolTip()
 
 
 void
-Choice_KnobGui::updateGUI(int /*dimension*/)
+KnobGuiChoice::updateGUI(int /*dimension*/)
 {
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///change the internal value of the knob again...
@@ -202,7 +202,7 @@ Choice_KnobGui::updateGUI(int /*dimension*/)
 }
 
 void
-Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,
+KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
                                       Natron::AnimationLevelEnum level)
 {
     int value;
@@ -226,46 +226,46 @@ Choice_KnobGui::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
-Choice_KnobGui::_hide()
+KnobGuiChoice::_hide()
 {
     _comboBox->hide();
 }
 
 void
-Choice_KnobGui::_show()
+KnobGuiChoice::_show()
 {
     _comboBox->show();
 }
 
 void
-Choice_KnobGui::setEnabled()
+KnobGuiChoice::setEnabled()
 {
-    boost::shared_ptr<Choice_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
     bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     _comboBox->setEnabled_natron(b);
 }
 
 void
-Choice_KnobGui::setReadOnly(bool readOnly,
+KnobGuiChoice::setReadOnly(bool readOnly,
                             int /*dimension*/)
 {
     _comboBox->setReadOnly(readOnly);
 }
 
 void
-Choice_KnobGui::setDirty(bool dirty)
+KnobGuiChoice::setDirty(bool dirty)
 {
     _comboBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
+boost::shared_ptr<KnobI> KnobGuiChoice::getKnob() const
 {
     return _knob.lock();
 }
 
 void
-Choice_KnobGui::reflectModificationsState()
+KnobGuiChoice::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();
     _comboBox->setAltered(!hasModif);

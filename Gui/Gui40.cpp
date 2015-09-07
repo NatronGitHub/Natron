@@ -199,14 +199,14 @@ Gui::setColorPickersColor(double r,double g, double b,double a)
 }
 
 void
-Gui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob)
+Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->registerNewColorPicker(knob);
 }
 
 void
-Gui::removeColorPicker(boost::shared_ptr<Color_Knob> knob)
+Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);

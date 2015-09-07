@@ -245,7 +245,7 @@ public:
     
     double getProjectFrameRate() const;
     
-    boost::shared_ptr<Path_Knob> getEnvVarKnob() const;
+    boost::shared_ptr<KnobPath> getEnvVarKnob() const;
     
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;

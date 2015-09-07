@@ -48,7 +48,7 @@ class QTimer;
 class TimeLine;
 class NodeSerialization;
 class ProjectSerialization;
-class File_Knob;
+class KnobFile;
 namespace Natron {
 class Node;
 class OutputEffectInstance;
@@ -110,31 +110,31 @@ struct ProjectPrivate
     
 
     ///Project parameters (settings)
-    boost::shared_ptr<Path_Knob> envVars;
-    boost::shared_ptr<String_Knob> projectName; //< name of the project, e.g: "Untitled.ntp"
-    boost::shared_ptr<String_Knob> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
-    boost::shared_ptr<Choice_Knob> formatKnob; //< built from builtinFormats & additionalFormats
-    boost::shared_ptr<Button_Knob> addFormatKnob;
-    boost::shared_ptr<Int_Knob> viewsCount;
-    boost::shared_ptr<Int_Knob> mainView;
-    boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    boost::shared_ptr<Choice_Knob> colorSpace8u;
-    boost::shared_ptr<Choice_Knob> colorSpace16u;
-    boost::shared_ptr<Choice_Knob> colorSpace32f;
-    boost::shared_ptr<Double_Knob> frameRate;
-    boost::shared_ptr<Int_Knob> frameRange;
-    boost::shared_ptr<Bool_Knob> lockFrameRange;
+    boost::shared_ptr<KnobPath> envVars;
+    boost::shared_ptr<KnobString> projectName; //< name of the project, e.g: "Untitled.ntp"
+    boost::shared_ptr<KnobString> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
+    boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
+    boost::shared_ptr<KnobButton> addFormatKnob;
+    boost::shared_ptr<KnobInt> viewsCount;
+    boost::shared_ptr<KnobInt> mainView;
+    boost::shared_ptr<KnobBool> previewMode; //< auto or manual
+    boost::shared_ptr<KnobChoice> colorSpace8u;
+    boost::shared_ptr<KnobChoice> colorSpace16u;
+    boost::shared_ptr<KnobChoice> colorSpace32f;
+    boost::shared_ptr<KnobDouble> frameRate;
+    boost::shared_ptr<KnobInt> frameRange;
+    boost::shared_ptr<KnobBool> lockFrameRange;
     
-    boost::shared_ptr<String_Knob> natronVersion;
-    boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
-    boost::shared_ptr<String_Knob> projectCreationDate;
-    boost::shared_ptr<String_Knob> saveDate;
+    boost::shared_ptr<KnobString> natronVersion;
+    boost::shared_ptr<KnobString> originalAuthorName,lastAuthorName;
+    boost::shared_ptr<KnobString> projectCreationDate;
+    boost::shared_ptr<KnobString> saveDate;
     
-    boost::shared_ptr<String_Knob> onProjectLoadCB;
-    boost::shared_ptr<String_Knob> onProjectSaveCB;
-    boost::shared_ptr<String_Knob> onProjectCloseCB;
-    boost::shared_ptr<String_Knob> onNodeCreated;
-    boost::shared_ptr<String_Knob> onNodeDeleted;
+    boost::shared_ptr<KnobString> onProjectLoadCB;
+    boost::shared_ptr<KnobString> onProjectSaveCB;
+    boost::shared_ptr<KnobString> onProjectCloseCB;
+    boost::shared_ptr<KnobString> onNodeCreated;
+    boost::shared_ptr<KnobString> onNodeDeleted;
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
     bool autoSetProjectFormat;

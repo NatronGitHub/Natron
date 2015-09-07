@@ -2145,7 +2145,7 @@ DuplicateItemUndoCommand::redo()
 
 LinkToTrackUndoCommand::LinkToTrackUndoCommand(RotoGui* roto,
                                                const SelectedCpList & points,
-                                               const boost::shared_ptr<Double_Knob> & track)
+                                               const boost::shared_ptr<KnobDouble> & track)
     : QUndoCommand()
       , _roto(roto)
       , _points(points)

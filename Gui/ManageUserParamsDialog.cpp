@@ -77,7 +77,7 @@
 //#include "Engine/EffectInstance.h"
 //#include "Engine/Image.h"
 #include "Engine/Knob.h" // KnobI
-#include "Engine/KnobTypes.h" // Page_Knob
+#include "Engine/KnobTypes.h" // KnobPage
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodePtr
 //#include "Engine/NodeSerialization.h"
@@ -101,7 +101,7 @@
 //#include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 //#include "Gui/KnobGuiFactory.h"
-////#include "Gui/Group_KnobGui.h"
+////#include "Gui/KnobGuiGroup.h"
 //#include "Gui/KnobUndoCommand.h"
 //#include "Gui/LineEdit.h"
 //#include "Gui/Menu.h"
@@ -169,7 +169,7 @@ struct ManageUserParamsDialogPrivate
         
     }
     
-    boost::shared_ptr<Page_Knob> getUserPageKnob() const;
+    boost::shared_ptr<KnobPage> getUserPageKnob() const;
     
     void initializeKnobs(const std::vector<boost::shared_ptr<KnobI> >& knobs,QTreeWidgetItem* parent,std::list<KnobI*>& markedKnobs);
     
@@ -206,7 +206,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
             
-            Page_Knob* page = dynamic_cast<Page_Knob*>(it->get());
+            KnobPage* page = dynamic_cast<KnobPage*>(it->get());
             if (page) {
                 
                 TreeItem pageItem;
@@ -298,7 +298,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
         i.item->setExpanded(true);
         items.push_back(i);
         
-        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it2->get());
+        KnobGroup* isGrp = dynamic_cast<KnobGroup*>(it2->get());
         if (isGrp) {
             std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
             initializeKnobs(children, i.item, markedKnobs);
@@ -307,7 +307,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
 }
 
 
-boost::shared_ptr<Page_Knob>
+boost::shared_ptr<KnobPage>
 ManageUserParamsDialogPrivate::getUserPageKnob() const
 {
     return panel->getUserPageKnob();
@@ -347,7 +347,7 @@ ManageUserParamsDialog::onAddClicked()
     AddKnobDialog dialog(_imp->panel,boost::shared_ptr<KnobI>(),this);
     if (dialog.exec()) {
         //Ensure the user page knob exists
-        boost::shared_ptr<Page_Knob> userPageKnob = _imp->panel->getUserPageKnob();
+        boost::shared_ptr<KnobPage> userPageKnob = _imp->panel->getUserPageKnob();
         
         boost::shared_ptr<KnobI> knob = dialog.getKnob();
         QTreeWidgetItem* parent = 0;
@@ -362,7 +362,7 @@ ManageUserParamsDialog::onAddClicked()
             }
         }
         if (!parent) {
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
+            KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
             if (!isPage) {
                 //Default to user page
                 for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
@@ -402,7 +402,7 @@ ManageUserParamsDialog::onDeleteClicked()
                     delete it->item;
                     _imp->items.erase(it);
                     
-                    boost::shared_ptr<Page_Knob> userPage = _imp->getUserPageKnob();
+                    boost::shared_ptr<KnobPage> userPage = _imp->getUserPageKnob();
                     if (userPage->getChildren().empty()) {
                         userPage->getHolder()->removeDynamicKnob(userPage.get());
                     }
@@ -464,7 +464,7 @@ ManageUserParamsDialog::onUpClicked()
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     
-                    if (dynamic_cast<Page_Knob*>(it->knob.get())) {
+                    if (dynamic_cast<KnobPage*>(it->knob.get())) {
                         break;
                     }
                     QTreeWidgetItem* parent = 0;
@@ -528,7 +528,7 @@ ManageUserParamsDialog::onDownClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
-                    if (dynamic_cast<Page_Knob*>(it->knob.get())) {
+                    if (dynamic_cast<KnobPage*>(it->knob.get())) {
                         break;
                     }
 
@@ -612,8 +612,8 @@ ManageUserParamsDialog::onSelectionChanged()
         }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
-                Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->knob.get());
-                Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->knob.get());
+                KnobPage* isPage = dynamic_cast<KnobPage*>(it->knob.get());
+                KnobGroup* isGroup = dynamic_cast<KnobGroup*>(it->knob.get());
                 if (isPage) {
                     canMove = false;
                     canEdit = false;

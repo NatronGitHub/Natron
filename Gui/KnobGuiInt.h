@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_Button_KnobGui_h_
-#define _Gui_Button_KnobGui_h_
+#ifndef _Gui_KnobGuiInt_h_
+#define _Gui_KnobGuiInt_h_
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,7 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <vector> // Int_KnobGui
+#include <vector> // KnobGuiInt
 #include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -62,17 +62,16 @@ class QFontComboBox;
 
 // Engine
 class KnobI;
-class Int_Knob;
-class Bool_Knob;
-class Double_Knob;
-class Button_Knob;
-class Separator_Knob;
-class Group_Knob;
-class Tab_Knob;
-class Parametric_Knob;
-class Color_Knob;
-class Choice_Knob;
-class String_Knob;
+class KnobInt;
+class KnobBool;
+class KnobDouble;
+class KnobButton;
+class KnobSeparator;
+class KnobGroup;
+class KnobParametric;
+class KnobColor;
+class KnobChoice;
+class KnobString;
 
 // Gui
 class DockablePanel;
@@ -97,7 +96,8 @@ class Node;
 }
 
 //================================
-class Button_KnobGui
+
+class KnobGuiInt
     : public KnobGui
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -105,48 +105,70 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
+
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
                                   DockablePanel *container)
     {
-        return new Button_KnobGui(knob, container);
+        return new KnobGuiInt(knob, container);
     }
 
-    Button_KnobGui(boost::shared_ptr<KnobI> knob,
-                   DockablePanel *container);
+    KnobGuiInt(boost::shared_ptr<KnobI> knob,
+                DockablePanel *container);
 
-    virtual ~Button_KnobGui() OVERRIDE;
-
-    virtual void removeSpecificGui() OVERRIDE FINAL;
+    virtual ~KnobGuiInt() OVERRIDE;
     
-    virtual bool showDescriptionLabel() const OVERRIDE
-    {
-        return false;
-    }
+    virtual void removeSpecificGui() OVERRIDE FINAL;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
-    void emitValueChanged();
+    void onSpinBoxValueChanged();
 
+    void onSliderValueChanged(double);
+    void onSliderEditingFinished(bool hasMovedOnce);
+
+#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+    void onMinMaxChanged(double mini, double maxi, int index = 0);
+#endif
+    
+    void onDisplayMinMaxChanged(double mini,double maxi,int index = 0);
+
+    void onIncrementChanged(int incr, int index = 0);
+    
+    void onDimensionSwitchClicked();
+    
 private:
+    void expandAllDimensions();
+    void foldAllDimensions();
+    
+    void sliderEditingEnd(double d);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
+
+    void setMaximum(int);
+
+    void setMinimum(int);
+
+    virtual bool shouldAddStretch() const OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
-    {
-    }
-
-    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL
-    {
-    }
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
 
 private:
-    Button *_button;
-    boost::weak_ptr<Button_Knob> _knob;
+    std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
+    QWidget *_container;
+    ScaleSliderQWidget *_slider;
+    Button *_dimensionSwitchButton;
+    boost::weak_ptr<KnobInt> _knob;
 };
 
-#endif // _Gui_Button_KnobGui_h_
+
+#endif // _Gui_KnobGuiInt_h_

@@ -38,7 +38,7 @@
 #include <QDialogButtonBox>
 
 #include "Engine/Knob.h" // KnobI
-#include "Engine/KnobTypes.h" // Button_Knob...
+#include "Engine/KnobTypes.h" // KnobButton...
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodeCollection
 
@@ -167,9 +167,9 @@ PickKnobDialog::onNodeComboEditingFinished()
     const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if (!knobs[j]->getIsSecret()) {
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[j].get() );
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[j].get() );
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[j].get() );
+            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
+            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
+            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (!isButton && !isPage && !isGroup) {
                 QString name( knobs[j]->getDescription().c_str() );
                 

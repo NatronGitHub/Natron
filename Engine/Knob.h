@@ -45,7 +45,7 @@
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
-class Page_Knob;
+class KnobPage;
 class Curve;
 class KeyFrame;
 class KnobHolder;
@@ -1034,7 +1034,7 @@ public:
      **/
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
 
-    Page_Knob* getTopLevelPage();
+    KnobPage* getTopLevelPage();
 };
 
 
@@ -1385,7 +1385,7 @@ public:
     /**
      * @brief Make a knob for the given KnobHolder with the given description (the label displayed on
      * its interface) and with the given dimension. The dimension parameter is used for example for the
-     * Color_Knob which has 4 doubles (r,g,b,a), hence 4 dimensions.
+     * KnobColor which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
     Knob(KnobHolder*  holder,
          const std::string & description,
@@ -1421,7 +1421,7 @@ public:
      * @brief Returns the value of the knob at the given time and for the given dimension.
      * If it is not animated, it will call getValue for that dimension and return the result.
      *
-     * This function is overloaded by the String_Knob which can have its custom interpolation
+     * This function is overloaded by the KnobString which can have its custom interpolation
      * but this should be the only knob which should ever need to overload it.
      **/
     T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
@@ -1752,17 +1752,17 @@ private:
 };
 
 
-class AnimatingString_KnobHelper
+class AnimatingKnobStringHelper
     : public Knob<std::string>
 {
 public:
 
-    AnimatingString_KnobHelper(KnobHolder* holder,
+    AnimatingKnobStringHelper(KnobHolder* holder,
                                const std::string &description,
                                int dimension,
                                bool declaredByPlugin = true);
 
-    virtual ~AnimatingString_KnobHelper();
+    virtual ~AnimatingKnobStringHelper();
 
     void stringToKeyFrameValue(int time,const std::string & v,double* returnValue);
 
@@ -1801,19 +1801,19 @@ private:
     StringAnimationManager* _animation;
 };
 
-class Int_Knob;
-class Double_Knob;
-class Bool_Knob;
-class Choice_Knob;
-class Color_Knob;
-class Button_Knob;
-class String_Knob;
-class File_Knob;
-class OutputFile_Knob;
-class Path_Knob;
-class Parametric_Knob;
-class Group_Knob;
-class Page_Knob;
+class KnobInt;
+class KnobDouble;
+class KnobBool;
+class KnobChoice;
+class KnobColor;
+class KnobButton;
+class KnobString;
+class KnobFile;
+class KnobOutputFile;
+class KnobPath;
+class KnobParametric;
+class KnobGroup;
+class KnobPage;
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
@@ -1927,38 +1927,38 @@ public:
     void updateHasAnimation();
     
     //////////////////////////////////////////////////////////////////////////////////////////
-    boost::shared_ptr<Page_Knob> getOrCreateUserPageKnob() ;
+    boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() ;
     /**
      * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
      * created, you must call refreshKnobs() that will re-scan for new parameters
      **/
-    boost::shared_ptr<Int_Knob> createIntKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobInt> createIntKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Double_Knob> createDoubleKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobDouble> createDoubleKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Color_Knob> createColorKnob(const std::string& name, const std::string& label,int dimension);
+    boost::shared_ptr<KnobColor> createColorKnob(const std::string& name, const std::string& label,int dimension);
     
-    boost::shared_ptr<Bool_Knob> createBoolKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobBool> createBoolKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Choice_Knob> createChoiceKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobChoice> createChoiceKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Button_Knob> createButtonKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label);
     
     //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
-    boost::shared_ptr<String_Knob> createStringKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<File_Knob> createFileKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobFile> createFileKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<OutputFile_Knob> createOuptutFileKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobOutputFile> createOuptutFileKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Path_Knob> createPathKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobPath> createPathKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Page_Knob> createPageKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobPage> createPageKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Group_Knob> createGroupKnob(const std::string& name, const std::string& label);
+    boost::shared_ptr<KnobGroup> createGroupKnob(const std::string& name, const std::string& label);
     
-    boost::shared_ptr<Parametric_Knob> createParametricKnob(const std::string& name, const std::string& label,int nbCurves);
+    boost::shared_ptr<KnobParametric> createParametricKnob(const std::string& name, const std::string& label,int nbCurves);
     /**
      * @brief Returns whether the onKnobValueChanged can be called by a separate thread
      **/

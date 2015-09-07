@@ -78,9 +78,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         if (isKnobCurve) {
             knob = isKnobCurve->getInternalKnob();
         }
-        boost::shared_ptr<Parametric_Knob> isParametric;
+        boost::shared_ptr<KnobParametric> isParametric;
         if (knob) {
-            isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         }
 
         if (add && isSetKeyCommand) {
@@ -137,7 +137,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                         }
                     } else {
                         
-                        boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
+                        boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
                         
                         if (knob) {
                             Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
@@ -209,7 +209,7 @@ SetKeysCommand::undo()
     
     if (isKnobCurve) {
         boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-        boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+        boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         if (!isParametric) {
             knob->cloneCurve(isKnobCurve->getDimension(), *_oldCurve);
         } else {
@@ -250,9 +250,9 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         if (isKnobCurve) {
             knob = isKnobCurve->getInternalKnob();
         }
-        boost::shared_ptr<Parametric_Knob> isParametric;
+        boost::shared_ptr<KnobParametric> isParametric;
         if (knob) {
-            isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         }
         
         if (guiKnob && isKnobCurve && !isParametric) {
@@ -296,7 +296,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         }
                     } else {
                         
-                        boost::shared_ptr<Parametric_Knob> knob = boost::dynamic_pointer_cast<Parametric_Knob>( isKnobCurve->getInternalKnob() );
+                        boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
                         
                         if (knob) {
                             Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
@@ -369,7 +369,7 @@ moveKey(KeyPtr &k,
     BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k->curve.get());
     if (isKnobCurve) {
         boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         
         if (isParametric) {
            // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
@@ -548,7 +548,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->key->curve.get());
         if (isKnobCurve) {
             boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+            KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
             
             if (isParametric) {
                 
@@ -721,7 +721,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     if (isKnobCurve) {
         boost::shared_ptr<KnobI> attachedKnob = isKnobCurve->getInternalKnob();
         assert(attachedKnob);
-        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(attachedKnob.get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(attachedKnob.get());
         
         
         double left = undo ? _oldLeft : _newLeft;
@@ -862,7 +862,7 @@ TransformKeysCommand::undo()
     std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > >::iterator itCurve = _curves.begin();
     for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it, ++itCurve) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
-        if (isKnobCurve && !dynamic_cast<Parametric_Knob*>(isKnobCurve->getInternalKnob().get())) {
+        if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
             isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*itCurve->first);
         } else {
             (*it)->getInternalCurve()->clone(*(itCurve->first));
@@ -935,7 +935,7 @@ TransformKeysCommand::redo()
         std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > >::iterator itCurve = _curves.begin();
         for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it, ++itCurve) {
             KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
-            if (isKnobCurve && !dynamic_cast<Parametric_Knob*>(isKnobCurve->getInternalKnob().get())) {
+            if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
                 isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*itCurve->second);
             } else {
                 (*it)->getInternalCurve()->clone(*(itCurve->second));
@@ -1000,7 +1000,7 @@ TransformKeysCommand::transform(const KeyPtr& k)
     
     if (isKnobCurve) {
         boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
-        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         
         if (isParametric) {
             // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();

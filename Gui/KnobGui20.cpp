@@ -129,8 +129,8 @@ KnobGui::copyToClipBoard(bool copyAnimation) const
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
+    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
 
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -203,7 +203,7 @@ KnobGui::pasteClipBoard()
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
 
     int i = 0;
     for (std::list<Variant>::iterator it = values.begin(); it != values.end(); ++it) {
@@ -379,10 +379,10 @@ void
 KnobGui::resetDefault(int /*dimension*/)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    Button_Knob* isBtn = dynamic_cast<Button_Knob*>( knob.get() );
-    Page_Knob* isPage = dynamic_cast<Page_Knob*>( knob.get() );
-    Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knob.get() );
-    Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( knob.get() );
+    KnobButton* isBtn = dynamic_cast<KnobButton*>( knob.get() );
+    KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
+    KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
+    KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( knob.get() );
 
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<boost::shared_ptr<KnobI> > knobs;
@@ -664,7 +664,7 @@ void
 KnobGui::onFrozenChanged(bool frozen)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob.get());
+    KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
     if (isBtn) {
         return;
     }

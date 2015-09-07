@@ -668,7 +668,7 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
 
     if (!skipMasterOrRelative) {
         SequenceTime offsetTime;
-        Double_Knob* masterTrack;
+        KnobDouble* masterTrack;
         {
             QReadLocker l(&_imp->masterMutex);
             offsetTime = _imp->offsetTime;
@@ -796,7 +796,7 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
     }
 
     if (!skipMasterOrRelative) {
-        Double_Knob* masterTrack;
+        KnobDouble* masterTrack;
         SequenceTime offsetTime;
         {
             QReadLocker l(&_imp->masterMutex);
@@ -854,7 +854,7 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
 
 
     if (!skipMasterOrRelative) {
-        Double_Knob* masterTrack;
+        KnobDouble* masterTrack;
         SequenceTime offsetTime;
         {
             QReadLocker l(&_imp->masterMutex);
@@ -1553,7 +1553,7 @@ BezierCP::cloneGuiCurvesToInternalCurves()
 
 void
 BezierCP::slaveTo(SequenceTime offsetTime,
-                  const boost::shared_ptr<Double_Knob> & track)
+                  const boost::shared_ptr<KnobDouble> & track)
 {
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->masterTrack);
@@ -1571,7 +1571,7 @@ BezierCP::unslave()
     _imp->masterTrack.reset();
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 BezierCP::isSlaved() const
 {
     QReadLocker l(&_imp->masterMutex);
@@ -2262,10 +2262,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     assert(mergeOperatorKnob);
-    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+    KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
     assert(mergeOp);
     
-    boost::shared_ptr<Choice_Knob> compOp = getOperatorKnob();
+    boost::shared_ptr<KnobChoice> compOp = getOperatorKnob();
 
     MergingFunctionEnum op;
     if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
@@ -2282,14 +2282,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeBlur) {
             double strength = isStroke->getBrushEffectKnob()->getValue();
             boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
             if (isDbl) {
                 isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
             }
         } else if (type == eRotoStrokeTypeSharpen) {
             //todo
         } else if (type == eRotoStrokeTypeSmear) {
-            boost::shared_ptr<Double_Knob> spacingKnob = isStroke->getBrushSpacingKnob();
+            boost::shared_ptr<KnobDouble> spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
             spacingKnob->setValue(0.05, 0);
         }
@@ -2377,7 +2377,7 @@ RotoDrawableItem::onRotoOutputChannelsChanged()
     
     boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName(kOutputChannelsKnobName);
     assert(outputChansKnob);
-    Choice_Knob* outputChannels = dynamic_cast<Choice_Knob*>(outputChansKnob.get());
+    KnobChoice* outputChannels = dynamic_cast<KnobChoice*>(outputChansKnob.get());
     assert(outputChannels);
     
     int outputchans_i = outputChannels->getValue();
@@ -2419,7 +2419,7 @@ RotoDrawableItem::onRotoOutputChannelsChanged()
             knobs.push_back(bChans.get());
         }
         for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
-            Choice_Knob* nodeChannels = dynamic_cast<Choice_Knob*>(*it);
+            KnobChoice* nodeChannels = dynamic_cast<KnobChoice*>(*it);
             if (nodeChannels) {
                 std::vector<std::string> entries = nodeChannels->getEntries_mt_safe();
                 for (std::size_t i = 0; i < entries.size(); ++i) {
@@ -2526,7 +2526,7 @@ RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
 void
 RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::ValueChangedReasonEnum reason)
 {
-    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
+    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
     if (isStroke) {
@@ -2541,7 +2541,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
     
     if (knob == compKnob) {
         boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+        KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
         if (mergeOp) {
             mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
         }
@@ -2553,7 +2553,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
         switch (type) {
             case Natron::eRotoStrokeTypeBlur: {
                 boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-                Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+                KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
                     isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
                 }
@@ -2576,7 +2576,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
         } else {
             offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
         }
-        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        KnobInt* offset = dynamic_cast<KnobInt*>(offsetKnob.get());
         if (offset) {
             double value = _imp->timeOffset->getValue();
             offset->setValue(value,0);
@@ -2588,62 +2588,62 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
     if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
         if (knob == _imp->cloneTranslate) {
             boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+            KnobDouble* translate = dynamic_cast<KnobDouble*>(translateKnob.get());
             if (translate) {
                 translate->clone(_imp->cloneTranslate.get());
             }
         } else if (knob == _imp->cloneRotate) {
             boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+            KnobDouble* rotate = dynamic_cast<KnobDouble*>(rotateKnob.get());
             if (rotate) {
                 rotate->clone(_imp->cloneRotate.get());
             }
         } else if (knob == _imp->cloneScale) {
             boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+            KnobDouble* scale = dynamic_cast<KnobDouble*>(scaleKnob.get());
             if (scale) {
                 scale->clone(_imp->cloneScale.get());
             }
         } else if (knob == _imp->cloneScaleUniform) {
             boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+            KnobBool* uniform = dynamic_cast<KnobBool*>(uniformKnob.get());
             if (uniform) {
                 uniform->clone(_imp->cloneScaleUniform.get());
             }
         } else if (knob == _imp->cloneSkewX) {
             boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+            KnobDouble* skewX = dynamic_cast<KnobDouble*>(skewxKnob.get());
             if (skewX) {
                 skewX->clone(_imp->cloneSkewX.get());
             }
         } else if (knob == _imp->cloneSkewY) {
             boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+            KnobDouble* skewY = dynamic_cast<KnobDouble*>(skewyKnob.get());
             if (skewY) {
                 skewY->clone(_imp->cloneSkewY.get());
             }
         } else if (knob == _imp->cloneSkewOrder) {
             boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+            KnobChoice* skewOrder = dynamic_cast<KnobChoice*>(skewOrderKnob.get());
             if (skewOrder) {
                 skewOrder->clone(_imp->cloneSkewOrder.get());
             }
         } else if (knob == _imp->cloneCenter) {
             boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+            KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
             if (center) {
                 center->clone(_imp->cloneCenter.get());
                 
             }
         } else if (knob == _imp->cloneFilter) {
             boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+            KnobChoice* filter = dynamic_cast<KnobChoice*>(filterKnob.get());
             if (filter) {
                 filter->clone(_imp->cloneFilter.get());
             }
         } else if (knob == _imp->cloneBlackOutside) {
             boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+            KnobBool* bo = dynamic_cast<KnobBool*>(boKnob.get());
             if (bo) {
                 bo->clone(_imp->cloneBlackOutside.get());
                 
@@ -2891,12 +2891,12 @@ RotoDrawableItem::resetCloneTransformCenter()
         return;
     }
     boost::shared_ptr<KnobI> resetCenterKnob = _imp->effectNode->getKnobByName(kTransformParamResetCenter);
-    Button_Knob* resetCenter = dynamic_cast<Button_Knob*>(resetCenterKnob.get());
+    KnobButton* resetCenter = dynamic_cast<KnobButton*>(resetCenterKnob.get());
     if (!resetCenter) {
         return;
     }
     boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-    Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+    KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
     if (!center) {
         return;
     }
@@ -2997,62 +2997,62 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         type = eRotoStrokeTypeSolid;
     }
 
-    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
+    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
     boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+    KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
     if (mergeOp) {
         mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
     }
 
     if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
         boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-        Double_Knob* translate = dynamic_cast<Double_Knob*>(translateKnob.get());
+        KnobDouble* translate = dynamic_cast<KnobDouble*>(translateKnob.get());
         if (translate) {
             translate->clone(_imp->cloneTranslate.get());
         }
         boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-        Double_Knob* rotate = dynamic_cast<Double_Knob*>(rotateKnob.get());
+        KnobDouble* rotate = dynamic_cast<KnobDouble*>(rotateKnob.get());
         if (rotate) {
             rotate->clone(_imp->cloneRotate.get());
         }
         boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-        Double_Knob* scale = dynamic_cast<Double_Knob*>(scaleKnob.get());
+        KnobDouble* scale = dynamic_cast<KnobDouble*>(scaleKnob.get());
         if (scale) {
             scale->clone(_imp->cloneScale.get());
         }
         boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-        Bool_Knob* uniform = dynamic_cast<Bool_Knob*>(uniformKnob.get());
+        KnobBool* uniform = dynamic_cast<KnobBool*>(uniformKnob.get());
         if (uniform) {
             uniform->clone(_imp->cloneScaleUniform.get());
         }
         boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-        Double_Knob* skewX = dynamic_cast<Double_Knob*>(skewxKnob.get());
+        KnobDouble* skewX = dynamic_cast<KnobDouble*>(skewxKnob.get());
         if (skewX) {
             skewX->clone(_imp->cloneSkewX.get());
         }
         boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-        Double_Knob* skewY = dynamic_cast<Double_Knob*>(skewyKnob.get());
+        KnobDouble* skewY = dynamic_cast<KnobDouble*>(skewyKnob.get());
         if (skewY) {
             skewY->clone(_imp->cloneSkewY.get());
         }
         boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-        Choice_Knob* skewOrder = dynamic_cast<Choice_Knob*>(skewOrderKnob.get());
+        KnobChoice* skewOrder = dynamic_cast<KnobChoice*>(skewOrderKnob.get());
         if (skewOrder) {
             skewOrder->clone(_imp->cloneSkewOrder.get());
         }
         boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-        Double_Knob* center = dynamic_cast<Double_Knob*>(centerKnob.get());
+        KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
         if (center) {
             center->clone(_imp->cloneCenter.get());
             
         }
         boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-        Choice_Knob* filter = dynamic_cast<Choice_Knob*>(filterKnob.get());
+        KnobChoice* filter = dynamic_cast<KnobChoice*>(filterKnob.get());
         if (filter) {
             filter->clone(_imp->cloneFilter.get());
         }
         boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-        Bool_Knob* bo = dynamic_cast<Bool_Knob*>(boKnob.get());
+        KnobBool* bo = dynamic_cast<KnobBool*>(boKnob.get());
         if (bo) {
             bo->clone(_imp->cloneBlackOutside.get());
             
@@ -3066,7 +3066,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         } else {
             offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
         }
-        Int_Knob* offset = dynamic_cast<Int_Knob*>(offsetKnob.get());
+        KnobInt* offset = dynamic_cast<KnobInt*>(offsetKnob.get());
         if (offset) {
             offset->clone(_imp->timeOffset.get());
         }
@@ -3074,7 +3074,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         
     } else if (type == eRotoStrokeTypeBlur) {
         boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
         if (isDbl) {
             isDbl->clone(_imp->effectStrength.get());
         }
@@ -3222,128 +3222,128 @@ RotoDrawableItem::setOverlayColor(const double *color)
     Q_EMIT overlayColorChanged();
 }
 
-boost::shared_ptr<Bool_Knob> RotoDrawableItem::getActivatedKnob() const
+boost::shared_ptr<KnobBool> RotoDrawableItem::getActivatedKnob() const
 {
     return _imp->activated;
 }
 
-boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherKnob() const
+boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherKnob() const
 {
     return _imp->feather;
 }
 
-boost::shared_ptr<Double_Knob> RotoDrawableItem::getFeatherFallOffKnob() const
+boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherFallOffKnob() const
 {
     return _imp->featherFallOff;
 }
 
-boost::shared_ptr<Double_Knob> RotoDrawableItem::getOpacityKnob() const
+boost::shared_ptr<KnobDouble> RotoDrawableItem::getOpacityKnob() const
 {
     return _imp->opacity;
 }
 
 #ifdef NATRON_ROTO_INVERTIBLE
-boost::shared_ptr<Bool_Knob> RotoDrawableItem::getInvertedKnob() const
+boost::shared_ptr<KnobBool> RotoDrawableItem::getInvertedKnob() const
 {
     return _imp->inverted;
 }
 
 #endif
-boost::shared_ptr<Choice_Knob> RotoDrawableItem::getOperatorKnob() const
+boost::shared_ptr<KnobChoice> RotoDrawableItem::getOperatorKnob() const
 {
     return _imp->compOperator;
 }
 
-boost::shared_ptr<Color_Knob> RotoDrawableItem::getColorKnob() const
+boost::shared_ptr<KnobColor> RotoDrawableItem::getColorKnob() const
 {
     return _imp->color;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushSizeKnob() const
 {
     return _imp->brushSize;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushHardnessKnob() const
 {
     return _imp->brushHardness;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushSpacingKnob() const
 {
     return _imp->brushSpacing;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushEffectKnob() const
 {
     return _imp->effectStrength;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushVisiblePortionKnob() const
 {
     return _imp->visiblePortion;
 }
 
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 RotoDrawableItem::getPressureOpacityKnob() const
 {
     return _imp->pressureOpacity;
 }
 
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 RotoDrawableItem::getPressureSizeKnob() const
 {
     return _imp->pressureSize;
 }
 
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 RotoDrawableItem::getPressureHardnessKnob() const
 {
     return _imp->pressureHardness;
 }
 
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 RotoDrawableItem::getBuildupKnob() const
 {
     return _imp->buildUp;
 }
 
-boost::shared_ptr<Int_Knob>
+boost::shared_ptr<KnobInt>
 RotoDrawableItem::getTimeOffsetKnob() const
 {
     return _imp->timeOffset;
 }
 
-boost::shared_ptr<Choice_Knob>
+boost::shared_ptr<KnobChoice>
 RotoDrawableItem::getTimeOffsetModeKnob() const
 {
     return _imp->timeOffsetMode;
 }
 
-boost::shared_ptr<Choice_Knob>
+boost::shared_ptr<KnobChoice>
 RotoDrawableItem::getBrushSourceTypeKnob() const
 {
     return _imp->sourceColor;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getBrushCloneTranslateKnob() const
 {
     return _imp->cloneTranslate;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 RotoDrawableItem::getCenterKnob() const
 {
     return _imp->center;
 }
 
-boost::shared_ptr<Int_Knob>
+boost::shared_ptr<KnobInt>
 RotoDrawableItem::getLifeTimeFrameKnob() const
 {
     return _imp->lifeTimeFrame;
@@ -3849,14 +3849,14 @@ Bezier::~Bezier()
     BezierCPs::iterator itFp = _imp->featherPoints.begin();
     bool useFeather = !_imp->featherPoints.empty();
     for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp) {
-        boost::shared_ptr<Double_Knob> masterCp = (*itCp)->isSlaved();
+        boost::shared_ptr<KnobDouble> masterCp = (*itCp)->isSlaved();
         
         if (masterCp) {
             masterCp->removeSlavedTrack(*itCp);
         }
         
         if (useFeather) {
-            boost::shared_ptr<Double_Knob> masterFp = (*itFp)->isSlaved();
+            boost::shared_ptr<KnobDouble> masterFp = (*itFp)->isSlaved();
             if (masterFp) {
                 masterFp->removeSlavedTrack(*itFp);
             }
@@ -4245,7 +4245,7 @@ Bezier::resetCenterKnob()
         assert(nPoints > 0);
         center.x /= nPoints;
         center.y /= nPoints;
-        boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
+        boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
         if (autoKeying) {
             centerKnob->setValueAtTime(time, center.x, 0);
             centerKnob->setValueAtTime(time, center.y, 1);
@@ -4303,7 +4303,7 @@ Bezier::removeControlPointByIndex(int index)
             return;
         }
         
-        boost::shared_ptr<Double_Knob> isSlaved = (*it)->isSlaved();
+        boost::shared_ptr<KnobDouble> isSlaved = (*it)->isSlaved();
         if (isSlaved) {
             isSlaved->removeSlavedTrack(*it);
         }
@@ -6473,7 +6473,7 @@ RotoStrokeItem::setStrokeFinished()
     if (centerSet) {
         
 
-        boost::shared_ptr<Double_Knob> centerKnob = getCenterKnob();
+        boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
         if (autoKeying) {
             centerKnob->setValueAtTime(time, center.x, 0);
             centerKnob->setValueAtTime(time, center.y, 1);
@@ -7259,7 +7259,7 @@ RotoContext::getLastInsertedItem() const
 }
 
 #ifdef NATRON_ROTO_INVERTIBLE
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 RotoContext::getInvertedKnob() const
 {
     return _imp->inverted.lock();
@@ -7267,7 +7267,7 @@ RotoContext::getInvertedKnob() const
 
 #endif
 
-boost::shared_ptr<Color_Knob>
+boost::shared_ptr<KnobColor>
 RotoContext::getColorKnob() const
 {
     return _imp->colorKnob.lock();
@@ -7681,7 +7681,7 @@ RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
     }
     int lifetime_i = _imp->lifeTime.lock()->getValue();
     _imp->activated.lock()->setSecret(lifetime_i != 3);
-    boost::shared_ptr<Int_Knob> frame = _imp->lifeTimeFrame.lock();
+    boost::shared_ptr<KnobInt> frame = _imp->lifeTimeFrame.lock();
     frame->setSecret(lifetime_i == 3);
     if (lifetime_i != 3) {
         frame->setValue(getTimelineCurrentTime(), 0);
@@ -9676,9 +9676,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     
     assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
     
-    boost::shared_ptr<Double_Knob> brushSizeKnob = stroke->getBrushSizeKnob();
+    boost::shared_ptr<KnobDouble> brushSizeKnob = stroke->getBrushSizeKnob();
     double brushSize = brushSizeKnob->getValueAtTime(time);
-    boost::shared_ptr<Double_Knob> brushSpacingKnob = stroke->getBrushSpacingKnob();
+    boost::shared_ptr<KnobDouble> brushSpacingKnob = stroke->getBrushSpacingKnob();
     double brushSpacing = brushSpacingKnob->getValueAtTime(time);
     if (brushSpacing == 0.) {
         return distToNext;
@@ -9686,18 +9686,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
     
     brushSpacing = std::max(brushSpacing, 0.05);
     
-    boost::shared_ptr<Double_Knob> brushHardnessKnob = stroke->getBrushHardnessKnob();
+    boost::shared_ptr<KnobDouble> brushHardnessKnob = stroke->getBrushHardnessKnob();
     double brushHardness = brushHardnessKnob->getValueAtTime(time);
-    boost::shared_ptr<Double_Knob> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
+    boost::shared_ptr<KnobDouble> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
     double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
     double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
     if ((writeOnEnd - writeOnStart) <= 0.) {
         return distToNext;
     }
     
-    boost::shared_ptr<Bool_Knob> pressureOpacityKnob = stroke->getPressureOpacityKnob();
-    boost::shared_ptr<Bool_Knob> pressureSizeKnob = stroke->getPressureSizeKnob();
-    boost::shared_ptr<Bool_Knob> pressureHardnessKnob = stroke->getPressureHardnessKnob();
+    boost::shared_ptr<KnobBool> pressureOpacityKnob = stroke->getPressureOpacityKnob();
+    boost::shared_ptr<KnobBool> pressureSizeKnob = stroke->getPressureSizeKnob();
+    boost::shared_ptr<KnobBool> pressureHardnessKnob = stroke->getPressureHardnessKnob();
     
     bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
     bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);

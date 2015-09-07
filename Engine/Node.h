@@ -68,7 +68,7 @@ class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
 class OverlaySupport;
-class Double_Knob;
+class KnobDouble;
 class NodeGuiI;
 class RotoContext;
 class NodeCollection;
@@ -973,7 +973,7 @@ public:
     
     bool onOverlayFocusLostDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
     
-    void addDefaultPositionOverlay(const boost::shared_ptr<Double_Knob>& position);
+    void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     
     void removeDefaultOverlay(KnobI* knob);
     

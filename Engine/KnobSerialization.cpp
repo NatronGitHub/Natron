@@ -86,28 +86,28 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
 {
     boost::shared_ptr<KnobI> ret;
 
-    if ( typeName == Int_Knob::typeNameStatic() ) {
-        ret.reset( new Int_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Bool_Knob::typeNameStatic() ) {
-        ret.reset( new Bool_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Double_Knob::typeNameStatic() ) {
-        ret.reset( new Double_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Choice_Knob::typeNameStatic() ) {
-        ret.reset( new Choice_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == String_Knob::typeNameStatic() ) {
-        ret.reset( new String_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Parametric_Knob::typeNameStatic() ) {
-        ret.reset( new Parametric_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Color_Knob::typeNameStatic() ) {
-        ret.reset( new Color_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Path_Knob::typeNameStatic() ) {
-        ret.reset( new Path_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == File_Knob::typeNameStatic() ) {
-        ret.reset( new File_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == OutputFile_Knob::typeNameStatic() ) {
-        ret.reset( new OutputFile_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Button_Knob::typeNameStatic() ) {
-        ret.reset(new Button_Knob(NULL,"",dimension,false));
+    if ( typeName == KnobInt::typeNameStatic() ) {
+        ret.reset( new KnobInt(NULL,"",dimension,false) );
+    } else if ( typeName == KnobBool::typeNameStatic() ) {
+        ret.reset( new KnobBool(NULL,"",dimension,false) );
+    } else if ( typeName == KnobDouble::typeNameStatic() ) {
+        ret.reset( new KnobDouble(NULL,"",dimension,false) );
+    } else if ( typeName == KnobChoice::typeNameStatic() ) {
+        ret.reset( new KnobChoice(NULL,"",dimension,false) );
+    } else if ( typeName == KnobString::typeNameStatic() ) {
+        ret.reset( new KnobString(NULL,"",dimension,false) );
+    } else if ( typeName == KnobParametric::typeNameStatic() ) {
+        ret.reset( new KnobParametric(NULL,"",dimension,false) );
+    } else if ( typeName == KnobColor::typeNameStatic() ) {
+        ret.reset( new KnobColor(NULL,"",dimension,false) );
+    } else if ( typeName == KnobPath::typeNameStatic() ) {
+        ret.reset( new KnobPath(NULL,"",dimension,false) );
+    } else if ( typeName == KnobFile::typeNameStatic() ) {
+        ret.reset( new KnobFile(NULL,"",dimension,false) );
+    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
+        ret.reset( new KnobOutputFile(NULL,"",dimension,false) );
+    } else if ( typeName == KnobButton::typeNameStatic() ) {
+        ret.reset(new KnobButton(NULL,"",dimension,false));
     }
     if (ret) {
         ret->populate();
@@ -160,7 +160,7 @@ void
 KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
                                  const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
 {
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>( knob.get() );
+    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
 
     if ( isDouble && (isDouble->getName() == "center") && (isDouble->getDimension() == 2) ) {
         isDouble->restoreTracks(slavedTracks,allNodes);

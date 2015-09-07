@@ -101,15 +101,15 @@ QtReader::initializeKnobs()
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
-    _fileKnob = getNode()->createKnob<File_Knob>( QObject::tr("File").toStdString() );
+    _fileKnob = getNode()->createKnob<KnobFile>( QObject::tr("File").toStdString() );
     _fileKnob->setAsInputImage();
 
-    _firstFrame =  getNode()->createKnob<Int_Knob>( QObject::tr("First frame").toStdString() );
+    _firstFrame =  getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrame->setAnimationEnabled(false);
     _firstFrame->setDefaultValue(0,0);
 
 
-    _before = getNode()->createKnob<Choice_Knob>( QObject::tr("Before").toStdString() );
+    _before = getNode()->createKnob<KnobChoice>( QObject::tr("Before").toStdString() );
     std::vector<std::string> beforeOptions;
     beforeOptions.push_back( QObject::tr("hold").toStdString() );
     beforeOptions.push_back( QObject::tr("loop").toStdString() );
@@ -120,12 +120,12 @@ QtReader::initializeKnobs()
     _before->setAnimationEnabled(false);
     _before->setDefaultValue(0,0);
 
-    _lastFrame =  getNode()->createKnob<Int_Knob>( QObject::tr("Last frame").toStdString() );
+    _lastFrame =  getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrame->setAnimationEnabled(false);
     _lastFrame->setDefaultValue(0,0);
 
 
-    _after = getNode()->createKnob<Choice_Knob>( QObject::tr("After").toStdString() );
+    _after = getNode()->createKnob<KnobChoice>( QObject::tr("After").toStdString() );
     std::vector<std::string> afterOptions;
     afterOptions.push_back( QObject::tr("hold").toStdString() );
     afterOptions.push_back( QObject::tr("loop").toStdString() );
@@ -136,7 +136,7 @@ QtReader::initializeKnobs()
     _after->setAnimationEnabled(false);
     _after->setDefaultValue(0,0);
 
-    _missingFrameChoice = getNode()->createKnob<Choice_Knob>( QObject::tr("On missing frame").toStdString() );
+    _missingFrameChoice = getNode()->createKnob<KnobChoice>( QObject::tr("On missing frame").toStdString() );
     std::vector<std::string> missingFrameOptions;
     missingFrameOptions.push_back( QObject::tr("Load nearest").toStdString() );
     missingFrameOptions.push_back( QObject::tr("Error").toStdString() );
@@ -145,7 +145,7 @@ QtReader::initializeKnobs()
     _missingFrameChoice->setDefaultValue(0,0);
     _missingFrameChoice->setAnimationEnabled(false);
 
-    _frameMode = getNode()->createKnob<Choice_Knob>( QObject::tr("Frame mode").toStdString() );
+    _frameMode = getNode()->createKnob<KnobChoice>( QObject::tr("Frame mode").toStdString() );
     _frameMode->setAnimationEnabled(false);
     std::vector<std::string> frameModeOptions;
     frameModeOptions.push_back( QObject::tr("Starting frame").toStdString() );
@@ -153,11 +153,11 @@ QtReader::initializeKnobs()
     _frameMode->populateChoices(frameModeOptions);
     _frameMode->setDefaultValue(0,0);
 
-    _startingFrame = getNode()->createKnob<Int_Knob>( QObject::tr("Starting frame").toStdString() );
+    _startingFrame = getNode()->createKnob<KnobInt>( QObject::tr("Starting frame").toStdString() );
     _startingFrame->setAnimationEnabled(false);
     _startingFrame->setDefaultValue(0,0);
 
-    _timeOffset = getNode()->createKnob<Int_Knob>( QObject::tr("Time offset").toStdString() );
+    _timeOffset = getNode()->createKnob<KnobInt>( QObject::tr("Time offset").toStdString() );
     _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue(0,0);
     _timeOffset->setSecret(true);

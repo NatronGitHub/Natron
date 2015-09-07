@@ -227,10 +227,10 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );
-    _properties.setIntProperty( kOfxParamHostPropSupportsStringAnimation, String_Knob::canAnimateStatic() );
-    _properties.setIntProperty( kOfxParamHostPropSupportsChoiceAnimation, Choice_Knob::canAnimateStatic() );
-    _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, Bool_Knob::canAnimateStatic() );
-    _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, String_Knob::canAnimateStatic() );
+    _properties.setIntProperty( kOfxParamHostPropSupportsStringAnimation, KnobString::canAnimateStatic() );
+    _properties.setIntProperty( kOfxParamHostPropSupportsChoiceAnimation, KnobChoice::canAnimateStatic() );
+    _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, KnobBool::canAnimateStatic() );
+    _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, KnobString::canAnimateStatic() );
     _properties.setPointerProperty(kOfxPropHostOSHandle, NULL);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 

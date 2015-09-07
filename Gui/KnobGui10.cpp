@@ -133,7 +133,7 @@ KnobGui::setSecret()
     } else {
         hide();
     }
-    Group_KnobGui* isGrp = dynamic_cast<Group_KnobGui*>(this);
+    KnobGuiGroup* isGrp = dynamic_cast<KnobGuiGroup*>(this);
     if (isGrp) {
         const std::list<KnobGui*>& children = isGrp->getChildren();
         for (std::list<KnobGui*>::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -155,7 +155,7 @@ KnobGui::isSecretRecursive() const
     boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
     
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
-        Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>( _imp->container->getKnobGui(parentKnob) );
+        KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob) );
         assert(parentGui);
         // check for secretness and visibility of the group
         if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
@@ -385,7 +385,7 @@ KnobGui::onSetKeyActionTriggered()
                 kf.setTime(time);
                 Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
                 Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
+                AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
                 Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
                 
                 if (isInt) {
@@ -477,7 +477,7 @@ QString
 KnobGui::toolTip() const
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
     QString tt = getScriptNameHtml();
     
     QString realTt;

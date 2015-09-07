@@ -40,9 +40,9 @@ ProjectSerialization::initialize(const Natron::Project* project)
 
     std::vector< boost::shared_ptr<KnobI> > knobs = project->getKnobs_mt_safe();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
-        Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
+        KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
         if (knobs[i]->getIsPersistant() &&
             !isGroup && !isPage && !isButton &&
             knobs[i]->hasModifications()) {

@@ -551,7 +551,7 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
     if (useExpr) {
         return knob->getValueAtWithExpression(x,_dimension);
     } else {
-        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         if (isParametric) {
             return isParametric->getParametricCurve(_dimension)->getValueAt(x);
         } else {
@@ -565,7 +565,7 @@ boost::shared_ptr<Curve>
 KnobCurveGui::getInternalCurve() const
 {
     boost::shared_ptr<KnobI> knob = getInternalKnob();
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();
     }

@@ -1180,7 +1180,7 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
         if (_imp->tree->itemWidget(it->treeItem,COL_OPERATOR) == comboboxSender) {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             assert(drawable);
-            boost::shared_ptr<Choice_Knob> op = drawable->getOperatorKnob();
+            boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
             op->setValue(index, 0);
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
@@ -1297,7 +1297,7 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                 assert( found != _imp->items.end() );
                 RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                 if (drawable) {
-                    boost::shared_ptr<Bool_Knob> invertedKnob = drawable->getInvertedKnob();
+                    boost::shared_ptr<KnobBool> invertedKnob = drawable->getInvertedKnob();
                     bool isOnKeyframe = invertedKnob->getKeyFrameIndex(0, time) != -1;
                     inverted = !drawable->getInverted(time);
                     invertedSet = true;
@@ -1333,7 +1333,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
-                boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
+                boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
                 colorKnob->setValue(color.redF(), 0);
                 colorKnob->setValue(color.greenF(), 1);
                 colorKnob->setValue(color.blueF(), 2);
@@ -1522,7 +1522,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         assert( found != _imp->items.end() );
                         drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                         if (drawable) {
-                            boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
+                            boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
                             colorKnob->setValue(shapeColor[0], 0);
                             colorKnob->setValue(shapeColor[1], 1);
                             colorKnob->setValue(shapeColor[2], 2);

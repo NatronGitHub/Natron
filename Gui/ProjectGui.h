@@ -48,7 +48,7 @@ class QVBoxLayout;
 class ComboBox;
 class SpinBox;
 class LineEdit;
-class Color_Knob;
+class KnobColor;
 class DockablePanel;
 class ProjectGuiSerialization;
 class Gui;
@@ -101,9 +101,9 @@ public:
     void load(Archive & ar/*,
               const unsigned int version*/);
 
-    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
-    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
 
     bool hasPickers() const
     {
@@ -136,7 +136,7 @@ private:
     boost::weak_ptr<Natron::Project> _project;
     DockablePanel* _panel;
     bool _created;
-    std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
+    std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;
 };
 
 

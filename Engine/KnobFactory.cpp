@@ -75,20 +75,20 @@ knobFactoryEntry()
 void
 KnobFactory::loadBultinKnobs()
 {
-    _loadedKnobs.insert( knobFactoryEntry<File_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Int_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Double_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Bool_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Button_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<OutputFile_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Choice_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Separator_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Group_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Color_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<String_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Parametric_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Path_Knob>() );
-    _loadedKnobs.insert( knobFactoryEntry<Page_Knob>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobFile>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobInt>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobDouble>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobBool>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobButton>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobOutputFile>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobChoice>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobSeparator>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobGroup>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobColor>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobString>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobParametric>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobPath>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobPage>() );
 }
 
 boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,

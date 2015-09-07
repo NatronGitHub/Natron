@@ -120,18 +120,18 @@ SOURCES += \
     KnobGui20.cpp \
     KnobGuiFactory.cpp \
     KnobGuiPrivate.cpp \
-    File_KnobGui.cpp \
+    KnobGuiFile.cpp \
     FileTypeMainWindow_win.cpp \
-    Button_KnobGui.cpp \
-    Int_KnobGui.cpp \
-    Bool_KnobGui.cpp \
-    Double_KnobGui.cpp \
-    Choice_KnobGui.cpp \
-    Separator_KnobGui.cpp \
-    Color_KnobGui.cpp \
-    String_KnobGui.cpp \
-    Group_KnobGui.cpp \
-    Parametric_KnobGui.cpp \
+    KnobGuiButton.cpp \
+    KnobGuiInt.cpp \
+    KnobGuiBool.cpp \
+    KnobGuiDouble.cpp \
+    KnobGuiChoice.cpp \
+    KnobGuiSeparator.cpp \
+    KnobGuiColor.cpp \
+    KnobGuiString.cpp \
+    KnobGuiGroup.cpp \
+    KnobGuiParametric.cpp \
     KnobUndoCommand.cpp \
     Label.cpp \
     LineEdit.cpp \
@@ -262,17 +262,17 @@ HEADERS += \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiFactory.h \
-    File_KnobGui.h \
-    Button_KnobGui.h \
-    Int_KnobGui.h \
-    Bool_KnobGui.h \
-    Double_KnobGui.h \
-    Choice_KnobGui.h \
-    Separator_KnobGui.h \
-    Color_KnobGui.h \
-    String_KnobGui.h \
-    Group_KnobGui.h \
-    Parametric_KnobGui.h \
+    KnobGuiFile.h \
+    KnobGuiButton.h \
+    KnobGuiInt.h \
+    KnobGuiBool.h \
+    KnobGuiDouble.h \
+    KnobGuiChoice.h \
+    KnobGuiSeparator.h \
+    KnobGuiColor.h \
+    KnobGuiString.h \
+    KnobGuiGroup.h \
+    KnobGuiParametric.h \
     KnobUndoCommand.h \
     Label.h \
     LineEdit.h \

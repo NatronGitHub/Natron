@@ -638,7 +638,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
             if (layoutHint == 1) {
                 
-                boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
+                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                 sep->setName((*it)->getName() + "_separator");
                 if (grp) {
                     grp->addKnob(sep);
@@ -671,14 +671,14 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     boost::shared_ptr<KnobI> knob_i = knobHolder->getKnob();
                     assert(knob_i);
                     if (knob_i) {
-                        Page_Knob* pageKnob = dynamic_cast<Page_Knob*>(knob_i.get());
+                        KnobPage* pageKnob = dynamic_cast<KnobPage*>(knob_i.get());
                         assert(pageKnob);
                         if (pageKnob) {
                             pageKnob->addKnob(child);
                         
                             if (child->isSeparatorActivated()) {
                     
-                                boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
+                                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                                 sep->setName(child->getName() + "_separator");
                                 pageKnob->addKnob(sep);
                             }

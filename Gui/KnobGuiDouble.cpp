@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Double_KnobGui.h"
+#include "KnobGuiDouble.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -100,7 +100,7 @@ using std::make_pair;
    - the second is used ONLY by the GUI
  */
 void
-Double_KnobGui::valueAccordingToType(bool normalize,
+KnobGuiDouble::valueAccordingToType(bool normalize,
                                      int dimension,
                                      double* value)
 {
@@ -108,8 +108,8 @@ Double_KnobGui::valueAccordingToType(bool normalize,
         return;
     }
     
-    Double_Knob::NormalizedStateEnum state = _knob.lock()->getNormalizedState(dimension);
-    if (state == Double_Knob::eNormalizedStateX) {
+    KnobDouble::NormalizedStateEnum state = _knob.lock()->getNormalizedState(dimension);
+    if (state == KnobDouble::eNormalizedStateX) {
         Format f;
         getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         if (normalize) {
@@ -117,7 +117,7 @@ Double_KnobGui::valueAccordingToType(bool normalize,
         } else {
             *value *= f.width();
         }
-    } else if (state == Double_Knob::eNormalizedStateY) {
+    } else if (state == KnobDouble::eNormalizedStateY) {
         Format f;
         getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         if (normalize) {
@@ -130,19 +130,19 @@ Double_KnobGui::valueAccordingToType(bool normalize,
 }
 
 bool
-Double_KnobGui::shouldAddStretch() const
+KnobGuiDouble::shouldAddStretch() const
 {
     return _knob.lock()->isSliderDisabled();
 }
 
-Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiDouble::KnobGuiDouble(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
 , _container(0)
 , _slider(0)
 , _dimensionSwitchButton(0)
 {
-    boost::shared_ptr<Double_Knob> k = boost::dynamic_pointer_cast<Double_Knob>(knob);
+    boost::shared_ptr<KnobDouble> k = boost::dynamic_pointer_cast<KnobDouble>(knob);
     assert(k);
     boost::shared_ptr<KnobSignalSlotHandler> handler = k->getSignalSlotHandler();
     if (handler) {
@@ -156,19 +156,19 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
     _knob = k;
 }
 
-Double_KnobGui::~Double_KnobGui()
+KnobGuiDouble::~KnobGuiDouble()
 {
 
 }
 
-void Double_KnobGui::removeSpecificGui()
+void KnobGuiDouble::removeSpecificGui()
 {
     delete _container;
     _spinBoxes.clear();
 }
 
 void
-Double_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiDouble::createWidget(QHBoxLayout* layout)
 {
 
     _container = new QWidget( layout->parentWidget() );
@@ -179,7 +179,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
 
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
 
     if (getKnobsCountOnSameLine() > 1) {
         knob->disableSlider();
@@ -324,7 +324,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
 } // createWidget
 
 void
-Double_KnobGui::onDimensionSwitchClicked()
+KnobGuiDouble::onDimensionSwitchClicked()
 {
     if (!_dimensionSwitchButton) {
         return;
@@ -333,7 +333,7 @@ Double_KnobGui::onDimensionSwitchClicked()
         expandAllDimensions();
     } else {
         foldAllDimensions();
-        boost::shared_ptr<Double_Knob> knob = _knob.lock();
+        boost::shared_ptr<KnobDouble> knob = _knob.lock();
         int dim = knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
@@ -348,12 +348,12 @@ Double_KnobGui::onDimensionSwitchClicked()
 }
 
 void
-Double_KnobGui::expandAllDimensions()
+KnobGuiDouble::expandAllDimensions()
 {
     if (!_dimensionSwitchButton) {
         return;
     }
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     _dimensionSwitchButton->setChecked(true);
     _dimensionSwitchButton->setDown(true);
     _slider->hide();
@@ -368,12 +368,12 @@ Double_KnobGui::expandAllDimensions()
 }
 
 void
-Double_KnobGui::foldAllDimensions()
+KnobGuiDouble::foldAllDimensions()
 {
     if (!_dimensionSwitchButton) {
         return;
     }
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     _dimensionSwitchButton->setChecked(false);
     _dimensionSwitchButton->setDown(false);
     _slider->show();
@@ -389,7 +389,7 @@ Double_KnobGui::foldAllDimensions()
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
-Double_KnobGui::onMinMaxChanged(double mini,
+KnobGuiDouble::onMinMaxChanged(double mini,
                                 double maxi,
                                 int index)
 {
@@ -402,7 +402,7 @@ Double_KnobGui::onMinMaxChanged(double mini,
 #endif
 
 void
-Double_KnobGui::onDisplayMinMaxChanged(double mini,
+KnobGuiDouble::onDisplayMinMaxChanged(double mini,
                                        double maxi,
                                        int index )
 {
@@ -412,7 +412,7 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
         
         double sliderMin = mini;
         double sliderMax = maxi;
-        boost::shared_ptr<Double_Knob> knob = _knob.lock();
+        boost::shared_ptr<KnobDouble> knob = _knob.lock();
         if ( (maxi - mini) >= SLIDER_MAX_RANGE ) {
             ///use min max for slider if dispmin/dispmax was not set
             assert(index < (int)knob->getMinimums().size() && index < (int)knob->getMaximums().size());
@@ -435,7 +435,7 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
 }
 
 void
-Double_KnobGui::onIncrementChanged(double incr,
+KnobGuiDouble::onIncrementChanged(double incr,
                                    int index)
 {
     assert(_spinBoxes.size() > (U32)index);
@@ -444,7 +444,7 @@ Double_KnobGui::onIncrementChanged(double incr,
 }
 
 void
-Double_KnobGui::onDecimalsChanged(int deci,
+KnobGuiDouble::onDecimalsChanged(int deci,
                                   int index)
 {
     assert(_spinBoxes.size() > (U32)index);
@@ -452,9 +452,9 @@ Double_KnobGui::onDecimalsChanged(int deci,
 }
 
 void
-Double_KnobGui::updateGUI(int dimension)
+KnobGuiDouble::updateGUI(int dimension)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     double v = knob->getGuiValue(dimension);
     valueAccordingToType(false, dimension, &v);
     
@@ -500,7 +500,7 @@ Double_KnobGui::updateGUI(int dimension)
 }
 
 void
-Double_KnobGui::reflectAnimationLevel(int dimension,
+KnobGuiDouble::reflectAnimationLevel(int dimension,
                                       Natron::AnimationLevelEnum level)
 {
     int value;
@@ -524,7 +524,7 @@ Double_KnobGui::reflectAnimationLevel(int dimension,
 }
 
 void
-Double_KnobGui::onSliderValueChanged(double d)
+KnobGuiDouble::onSliderValueChanged(double d)
 {
     assert(_knob.lock()->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
@@ -536,7 +536,7 @@ Double_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Double_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
+KnobGuiDouble::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -551,9 +551,9 @@ Double_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 }
 
 void
-Double_KnobGui::sliderEditingEnd(double d)
+KnobGuiDouble::sliderEditingEnd(double d)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     assert(knob->isEnabled(0));
     QString str;
     int digits = std::max(0,(int)-std::floor(std::log10(_slider->increment())));
@@ -580,7 +580,7 @@ Double_KnobGui::sliderEditingEnd(double d)
 }
 
 void
-Double_KnobGui::onSpinBoxValueChanged()
+KnobGuiDouble::onSpinBoxValueChanged()
 {
     std::list<double> newValues;
 
@@ -611,7 +611,7 @@ Double_KnobGui::onSpinBoxValueChanged()
 }
 
 void
-Double_KnobGui::_hide()
+KnobGuiDouble::_hide()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->hide();
@@ -628,7 +628,7 @@ Double_KnobGui::_hide()
 }
 
 void
-Double_KnobGui::_show()
+KnobGuiDouble::_show()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         
@@ -654,9 +654,9 @@ Double_KnobGui::_show()
 }
 
 void
-Double_KnobGui::setEnabled()
+KnobGuiDouble::setEnabled()
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     bool enabled0 = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
     
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
@@ -678,7 +678,7 @@ Double_KnobGui::setEnabled()
 }
 
 void
-Double_KnobGui::setReadOnly(bool readOnly,
+KnobGuiDouble::setReadOnly(bool readOnly,
                             int dimension)
 {
     assert( dimension < (int)_spinBoxes.size() );
@@ -689,7 +689,7 @@ Double_KnobGui::setReadOnly(bool readOnly,
 }
 
 void
-Double_KnobGui::setDirty(bool dirty)
+KnobGuiDouble::setDirty(bool dirty)
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->setDirty(dirty);
@@ -697,16 +697,16 @@ Double_KnobGui::setDirty(bool dirty)
 }
 
 boost::shared_ptr<KnobI>
-Double_KnobGui::getKnob() const
+KnobGuiDouble::getKnob() const
 {
     return _knob.lock();
 }
 
 void
-Double_KnobGui::reflectExpressionState(int dimension,
+KnobGuiDouble::reflectExpressionState(int dimension,
                                        bool hasExpr)
 {
-    boost::shared_ptr<Double_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
     bool isSlaved = knob->isSlave(dimension);
     if (hasExpr) {
         _spinBoxes[dimension].first->setAnimation(3);
@@ -727,7 +727,7 @@ Double_KnobGui::reflectExpressionState(int dimension,
 }
 
 void
-Double_KnobGui::updateToolTip()
+KnobGuiDouble::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
@@ -741,7 +741,7 @@ Double_KnobGui::updateToolTip()
 }
 
 void
-Double_KnobGui::reflectModificationsState() {
+KnobGuiDouble::reflectModificationsState() {
     bool hasModif = _knob.lock()->hasModifications();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->setAltered(!hasModif);

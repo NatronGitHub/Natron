@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Parametric_KnobGui.h"
+#include "KnobGuiParametric.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -82,9 +82,9 @@ using namespace Natron;
 using std::make_pair;
 
 
-//=============================Parametric_KnobGui===================================
+//=============================KnobGuiParametric===================================
 
-Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiParametric::KnobGuiParametric(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
 : KnobGui(knob, container)
 , treeColumn(NULL)
@@ -93,25 +93,25 @@ Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
 , _resetButton(NULL)
 , _curves()
 {
-    _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    _knob = boost::dynamic_pointer_cast<KnobParametric>(knob);
     QObject::connect(_knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)));
 }
 
-Parametric_KnobGui::~Parametric_KnobGui()
+KnobGuiParametric::~KnobGuiParametric()
 {
     
 }
 
-void Parametric_KnobGui::removeSpecificGui()
+void KnobGuiParametric::removeSpecificGui()
 {
     delete _curveWidget;
     delete treeColumn;
 }
 
 void
-Parametric_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<Parametric_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -172,7 +172,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
 } // createWidget
 
 void
-Parametric_KnobGui::onColorChanged(int dimension)
+KnobGuiParametric::onColorChanged(int dimension)
 {
     double r, g, b;
     _knob.lock()->getCurveColor(dimension, &r, &g, &b);
@@ -186,7 +186,7 @@ Parametric_KnobGui::onColorChanged(int dimension)
 }
 
 void
-Parametric_KnobGui::_hide()
+KnobGuiParametric::_hide()
 {
     _curveWidget->hide();
     _tree->hide();
@@ -194,7 +194,7 @@ Parametric_KnobGui::_hide()
 }
 
 void
-Parametric_KnobGui::_show()
+KnobGuiParametric::_show()
 {
     _curveWidget->show();
     _tree->show();
@@ -202,22 +202,22 @@ Parametric_KnobGui::_show()
 }
 
 void
-Parametric_KnobGui::setEnabled()
+KnobGuiParametric::setEnabled()
 {
-    boost::shared_ptr<Parametric_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
     bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     _tree->setEnabled(b);
 }
 
 void
-Parametric_KnobGui::updateGUI(int /*dimension*/)
+KnobGuiParametric::updateGUI(int /*dimension*/)
 {
     _curveWidget->update();
 }
 
 void
-Parametric_KnobGui::onCurveChanged(int dimension)
+KnobGuiParametric::onCurveChanged(int dimension)
 {
     CurveGuis::iterator it = _curves.find(dimension);
 
@@ -233,7 +233,7 @@ Parametric_KnobGui::onCurveChanged(int dimension)
 }
 
 void
-Parametric_KnobGui::onItemsSelectionChanged()
+KnobGuiParametric::onItemsSelectionChanged()
 {
     std::vector<boost::shared_ptr<CurveGui> > curves;
 
@@ -256,7 +256,7 @@ Parametric_KnobGui::onItemsSelectionChanged()
 }
 
 void
-Parametric_KnobGui::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection)
+KnobGuiParametric::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection)
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
@@ -270,7 +270,7 @@ Parametric_KnobGui::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >*
 }
 
 void
-Parametric_KnobGui::resetSelectedCurves()
+KnobGuiParametric::resetSelectedCurves()
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
@@ -284,7 +284,7 @@ Parametric_KnobGui::resetSelectedCurves()
     }
 }
 
-boost::shared_ptr<KnobI> Parametric_KnobGui::getKnob() const
+boost::shared_ptr<KnobI> KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
 }

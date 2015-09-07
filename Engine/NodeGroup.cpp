@@ -771,7 +771,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
                 Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
-                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if (!isString || isStringKnob || knobs[j] == project->getEnvVarKnob()) {
                     continue;
                 }
@@ -808,7 +808,7 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
                 Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
-                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
+                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if (!isString || isStringKnob || knobs[j] == project->getEnvVarKnob()) {
                     continue;
                 }
@@ -1155,7 +1155,7 @@ struct NodeGroupPrivate
     bool isActivatingGroup;
     bool isEditable;
     
-    boost::shared_ptr<Button_Knob> exportAsTemplate;
+    boost::shared_ptr<KnobButton> exportAsTemplate;
     
     NodeGroupPrivate()
     : nodesLock(QMutex::Recursive)
@@ -1300,7 +1300,7 @@ NodeGroup::isInputOptional(int inputNb) const
     assert(input);
     boost::shared_ptr<KnobI> knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
-    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+    KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
     return isBool->getValue();
 }
@@ -1321,7 +1321,7 @@ NodeGroup::isInputMask(int inputNb) const
     assert(input);
     boost::shared_ptr<KnobI> knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
-    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+    KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     assert(isBool);
     return isBool->getValue();
 }
@@ -1331,9 +1331,9 @@ NodeGroup::initializeKnobs()
 {
     boost::shared_ptr<KnobI> nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
     assert(nodePage);
-    Page_Knob* isPage = dynamic_cast<Page_Knob*>(nodePage.get());
+    KnobPage* isPage = dynamic_cast<KnobPage*>(nodePage.get());
     assert(isPage);
-    _imp->exportAsTemplate = Natron::createKnob<Button_Knob>(this, "Export as PyPlug");
+    _imp->exportAsTemplate = Natron::createKnob<KnobButton>(this, "Export as PyPlug");
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");
@@ -1598,14 +1598,14 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
     bool hasExportedValue = false;
     
     Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(knob.get());
-    AnimatingString_KnobHelper* isAnimatedStr = dynamic_cast<AnimatingString_KnobHelper*>(knob.get());
+    AnimatingKnobStringHelper* isAnimatedStr = dynamic_cast<AnimatingKnobStringHelper*>(knob.get());
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
     Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
-    Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
-    String_Knob* isStringKnob = dynamic_cast<String_Knob*>(knob.get());
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
+    KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
     
     ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
     if (isStringKnob &&
@@ -1766,20 +1766,20 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
     return hasExportedValue;
 }
 
-static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& fullyQualifiedNodeName,Group_Knob* group,Page_Knob* page,QTextStream& ts)
+static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& fullyQualifiedNodeName,KnobGroup* group,KnobPage* page,QTextStream& ts)
 {
-    Int_Knob* isInt = dynamic_cast<Int_Knob*>(knob.get());
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(knob.get());
-    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
-    Color_Knob* isColor = dynamic_cast<Color_Knob*>(knob.get());
-    String_Knob* isStr = dynamic_cast<String_Knob*>(knob.get());
-    File_Knob* isFile = dynamic_cast<File_Knob*>(knob.get());
-    OutputFile_Knob* isOutFile = dynamic_cast<OutputFile_Knob*>(knob.get());
-    Path_Knob* isPath = dynamic_cast<Path_Knob*>(knob.get());
-    Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
-    Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob.get());
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    KnobInt* isInt = dynamic_cast<KnobInt*>(knob.get());
+    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(knob.get());
+    KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
+    KnobColor* isColor = dynamic_cast<KnobColor*>(knob.get());
+    KnobString* isStr = dynamic_cast<KnobString*>(knob.get());
+    KnobFile* isFile = dynamic_cast<KnobFile*>(knob.get());
+    KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(knob.get());
+    KnobPath* isPath = dynamic_cast<KnobPath*>(knob.get());
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
+    KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
     if (isInt) {
         QString createToken;
@@ -2144,22 +2144,22 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             QString visibleStr = isBezier->isGloballyActivated() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING("bezier.setVisible(" + visibleStr + ")");
             
-            boost::shared_ptr<Bool_Knob> activatedKnob = isBezier->getActivatedKnob();
+            boost::shared_ptr<KnobBool> activatedKnob = isBezier->getActivatedKnob();
             exportKnobValues(activatedKnob, "bezier.getActivatedParam()", true, ts);
             
-            boost::shared_ptr<Double_Knob> featherDist = isBezier->getFeatherKnob();
+            boost::shared_ptr<KnobDouble> featherDist = isBezier->getFeatherKnob();
             exportKnobValues(featherDist,"bezier.getFeatherDistanceParam()", true, ts);
             
-            boost::shared_ptr<Double_Knob> opacityKnob = isBezier->getOpacityKnob();
+            boost::shared_ptr<KnobDouble> opacityKnob = isBezier->getOpacityKnob();
             exportKnobValues(opacityKnob,"bezier.getOpacityParam()", true, ts);
             
-            boost::shared_ptr<Double_Knob> fallOffKnob = isBezier->getFeatherFallOffKnob();
+            boost::shared_ptr<KnobDouble> fallOffKnob = isBezier->getFeatherFallOffKnob();
             exportKnobValues(fallOffKnob,"bezier.getFeatherFallOffParam()", true, ts);
             
-            boost::shared_ptr<Color_Knob> colorKnob = isBezier->getColorKnob();
+            boost::shared_ptr<KnobColor> colorKnob = isBezier->getColorKnob();
             exportKnobValues(colorKnob, "bezier.getColorParam()", true, ts);
             
-            boost::shared_ptr<Choice_Knob> compositing = isBezier->getOperatorKnob();
+            boost::shared_ptr<KnobChoice> compositing = isBezier->getOperatorKnob();
             exportKnobValues(compositing, "bezier.getCompositingOperatorParam()", true, ts);
 
             
@@ -2188,7 +2188,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                     exportBezierPointAtTime(*it2, false, time, idx, ts);
                     exportBezierPointAtTime(*fpIt, true, time, idx, ts);
                 }
-                boost::shared_ptr<Double_Knob> track = (*it2)->isSlaved();
+                boost::shared_ptr<KnobDouble> track = (*it2)->isSlaved();
                 if (track) {
                     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
                     assert(effect && effect->getNode()->isPointTrackerNode());
@@ -2236,7 +2236,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
 {
     
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
-    std::list<Page_Knob*> userPages;
+    std::list<KnobPage*> userPages;
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ((*it2)->getIsPersistant() && !(*it2)->isUserKnob()) {
             if (exportKnobValues(*it2,"lastNode.getParam(\"" + QString((*it2)->getName().c_str()) + "\")", true, ts)) {
@@ -2246,7 +2246,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
         }
         
         if ((*it2)->isUserKnob()) {
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>(it2->get());
+            KnobPage* isPage = dynamic_cast<KnobPage*>(it2->get());
             if (isPage) {
                 userPages.push_back(isPage);
             }
@@ -2256,7 +2256,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
         WRITE_STATIC_LINE("");
         WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the user-parameters");
     }
-    for (std::list<Page_Knob*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
+    for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
         WRITE_INDENT(1); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
                                       " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
                                       ESC((*it2)->getDescription()) + ")");

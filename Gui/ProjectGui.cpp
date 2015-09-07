@@ -462,7 +462,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         assert(bd);
         bd->setVisibleSettingsPanel(false);
         bd->resize(w,h);
-        String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
+        KnobString* iStr = dynamic_cast<KnobString*>(labelSerialization.get());
         assert(iStr);
         if (iStr) {
             bd->onLabelChanged(iStr->getValue().c_str());
@@ -566,7 +566,7 @@ std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const
 }
 
 void
-ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob)
+ProjectGui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     while (!_colorPickersEnabled.empty()) {
         _colorPickersEnabled.front()->setPickingEnabled(false);
@@ -577,9 +577,9 @@ ProjectGui::registerNewColorPicker(boost::shared_ptr<Color_Knob> knob)
 }
 
 void
-ProjectGui::removeColorPicker(boost::shared_ptr<Color_Knob> knob)
+ProjectGui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
 {
-    std::vector<boost::shared_ptr<Color_Knob> >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
+    std::vector<boost::shared_ptr<KnobColor> >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
 
     if ( found != _colorPickersEnabled.end() ) {
         _colorPickersEnabled.erase(found);
@@ -592,7 +592,7 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
     if ( _colorPickersEnabled.empty() ) {
         return;
     }
-    boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
+    boost::shared_ptr<KnobColor> first = _colorPickersEnabled.front();
 
     for (U32 i = 0; i < _colorPickersEnabled.size(); ++i) {
         if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {

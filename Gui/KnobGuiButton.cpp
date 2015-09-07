@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Separator_KnobGui.h"
+#include "KnobGuiButton.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
@@ -77,57 +78,100 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-
 using namespace Natron;
 using std::make_pair;
 
-//=============================SEPARATOR_KNOB_GUI===================================
+//=============================BUTTON_KNOB_GUI===================================
 
-Separator_KnobGui::Separator_KnobGui(boost::shared_ptr<KnobI> knob,
-                                     DockablePanel *container)
+KnobGuiButton::KnobGuiButton(boost::shared_ptr<KnobI> knob,
+                               DockablePanel *container)
     : KnobGui(knob, container)
-    , _line(0)
+      , _button(0)
 {
-    _knob = boost::dynamic_pointer_cast<Separator_Knob>(knob);
+    _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
 }
 
 void
-Separator_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
-    ///FIXME: this line is never visible.
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
-    _line = new QFrame( layout->parentWidget() );
-    _line->setFixedHeight(2);
-    _line->setGeometry(0, 0, 300, 2);
-    _line->setFrameShape(QFrame::HLine);
-    _line->setFrameShadow(QFrame::Sunken);
-    _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    layout->addWidget(_line);
-}
-
-Separator_KnobGui::~Separator_KnobGui()
-{
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    QString label( knob->getDescription().c_str() );
+    const std::string & iconFilePath = knob->getIconFilePath();
     
+    QString filePath(iconFilePath.c_str());
+    if (!iconFilePath.empty() && !QFile::exists(filePath)) {
+        ///Search all natron paths for a file
+        
+        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
+        for (int i = 0; i < paths.size(); ++i) {
+            QString tmp = paths[i] + QChar('/') + filePath;
+            if (QFile::exists(tmp)) {
+                filePath = tmp;
+                break;
+            }
+        }
+    }
+    
+    QPixmap pix;
+
+    if (pix.load(filePath)) {
+        _button = new Button( QIcon(pix),"",layout->parentWidget() );
+        _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        _button->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    } else {
+        _button = new Button( label,layout->parentWidget() );
+    }
+    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
+    if ( hasToolTip() ) {
+        _button->setToolTip( toolTip() );
+    }
+    layout->addWidget(_button);
 }
 
-void Separator_KnobGui::removeSpecificGui()
+KnobGuiButton::~KnobGuiButton()
 {
-    delete _line;
+}
+
+void KnobGuiButton::removeSpecificGui()
+{
+    delete _button;
 }
 
 void
-Separator_KnobGui::_hide()
+KnobGuiButton::emitValueChanged()
 {
-    _line->hide();
+   _knob.lock()->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
 }
 
 void
-Separator_KnobGui::_show()
+KnobGuiButton::_hide()
 {
-    _line->show();
+    _button->hide();
 }
 
-boost::shared_ptr<KnobI> Separator_KnobGui::getKnob() const
+void
+KnobGuiButton::_show()
+{
+    _button->show();
+}
+
+void
+KnobGuiButton::setEnabled()
+{
+    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+
+    _button->setEnabled(b);
+}
+
+void
+KnobGuiButton::setReadOnly(bool readOnly,
+                            int /*dimension*/)
+{
+    _button->setEnabled(!readOnly);
+}
+
+boost::shared_ptr<KnobI> KnobGuiButton::getKnob() const
 {
     return _knob.lock();
 }

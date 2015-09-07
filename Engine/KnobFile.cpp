@@ -40,42 +40,42 @@ using namespace Natron;
 using std::make_pair;
 using std::pair;
 
-/***********************************FILE_KNOB*****************************************/
+/***********************************KnobFile*****************************************/
 
-File_Knob::File_Knob(KnobHolder* holder,
+KnobFile::KnobFile(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : AnimatingString_KnobHelper(holder, description, dimension,declaredByPlugin)
+    : AnimatingKnobStringHelper(holder, description, dimension,declaredByPlugin)
       , _isInputImage(false)
 {
 }
 
-File_Knob::~File_Knob()
+KnobFile::~KnobFile()
 {
 }
 
 bool
-File_Knob::canAnimate() const
+KnobFile::canAnimate() const
 {
     return true;
 }
 
-const std::string File_Knob::_typeNameStr("InputFile");
+const std::string KnobFile::_typeNameStr("InputFile");
 const std::string &
-File_Knob::typeNameStatic()
+KnobFile::typeNameStatic()
 {
     return _typeNameStr;
 }
 
 const std::string &
-File_Knob::typeName() const
+KnobFile::typeName() const
 {
     return typeNameStatic();
 }
 
 int
-File_Knob::firstFrame() const
+KnobFile::firstFrame() const
 {
     double time;
     bool foundKF = getFirstKeyFrameTime(0, &time);
@@ -84,7 +84,7 @@ File_Knob::firstFrame() const
 }
 
 int
-File_Knob::lastFrame() const
+KnobFile::lastFrame() const
 {
     double time;
     bool foundKF = getLastKeyFrameTime(0, &time);
@@ -93,13 +93,13 @@ File_Knob::lastFrame() const
 }
 
 int
-File_Knob::frameCount() const
+KnobFile::frameCount() const
 {
     return getKeyFramesCount(0);
 }
 
 std::string
-File_Knob::getFileName(int time) const
+KnobFile::getFileName(int time) const
 {
     int view = getHolder() ? getHolder()->getCurrentView() : 0;
     
@@ -111,9 +111,9 @@ File_Knob::getFileName(int time) const
     }
 }
 
-/***********************************OUTPUT_FILE_KNOB*****************************************/
+/***********************************KnobOutputFile*****************************************/
 
-OutputFile_Knob::OutputFile_Knob(KnobHolder* holder,
+KnobOutputFile::KnobOutputFile(KnobHolder* holder,
                                  const std::string &description,
                                  int dimension,
                                  bool declaredByPlugin)
@@ -124,34 +124,34 @@ OutputFile_Knob::OutputFile_Knob(KnobHolder* holder,
 }
 
 bool
-OutputFile_Knob::canAnimate() const
+KnobOutputFile::canAnimate() const
 {
     return false;
 }
 
-const std::string OutputFile_Knob::_typeNameStr("OutputFile");
+const std::string KnobOutputFile::_typeNameStr("OutputFile");
 const std::string &
-OutputFile_Knob::typeNameStatic()
+KnobOutputFile::typeNameStatic()
 {
     return _typeNameStr;
 }
 
 const std::string &
-OutputFile_Knob::typeName() const
+KnobOutputFile::typeName() const
 {
     return typeNameStatic();
 }
 
 QString
-OutputFile_Knob::generateFileNameAtTime(SequenceTime time) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time) const
 {
     int view = getHolder() ? getHolder()->getCurrentView() : 0;
     return SequenceParsing::generateFileNameFromPattern(getValue(0), time, view).c_str();
 }
 
-/***********************************PATH_KNOB*****************************************/
+/***********************************KnobPath*****************************************/
 
-Path_Knob::Path_Knob(KnobHolder* holder,
+KnobPath::KnobPath(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
@@ -160,39 +160,39 @@ Path_Knob::Path_Knob(KnobHolder* holder,
 {
 }
 
-const std::string Path_Knob::_typeNameStr("Path");
+const std::string KnobPath::_typeNameStr("Path");
 const std::string &
-Path_Knob::typeNameStatic()
+KnobPath::typeNameStatic()
 {
     return _typeNameStr;
 }
 
 bool
-Path_Knob::canAnimate() const
+KnobPath::canAnimate() const
 {
     return false;
 }
 
 const std::string &
-Path_Knob::typeName() const
+KnobPath::typeName() const
 {
     return typeNameStatic();
 }
 
 void
-Path_Knob::setMultiPath(bool b)
+KnobPath::setMultiPath(bool b)
 {
     _isMultiPath = b;
 }
 
 bool
-Path_Knob::isMultiPath() const
+KnobPath::isMultiPath() const
 {
     return _isMultiPath;
 }
 
 void
-Path_Knob::getVariables(std::list<std::pair<std::string,std::string> >* paths) const
+KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) const
 {
     if (!_isMultiPath) {
         return;
@@ -238,7 +238,7 @@ Path_Knob::getVariables(std::list<std::pair<std::string,std::string> >* paths) c
 
 
 void
-Path_Knob::getPaths(std::list<std::string> *paths) const
+KnobPath::getPaths(std::list<std::string> *paths) const
 {
     std::string raw = getValue().c_str();
     
@@ -255,7 +255,7 @@ Path_Knob::getPaths(std::list<std::string> *paths) const
 }
 
 void
-Path_Knob::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
+KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
 {
     if (!_isMultiPath) {
         return;
@@ -277,7 +277,7 @@ Path_Knob::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
 }
 
 std::string
-Path_Knob::generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths)
+KnobPath::generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths)
 {
     std::string baseName("Path");
     int idx = 0;
@@ -303,7 +303,7 @@ Path_Knob::generateUniquePathID(const std::list<std::pair<std::string,std::strin
 }
 
 void
-Path_Knob::prependPath(const std::string& path)
+KnobPath::prependPath(const std::string& path)
 {
     if (!_isMultiPath) {
         setValue(path, 0);
@@ -317,7 +317,7 @@ Path_Knob::prependPath(const std::string& path)
 }
 
 void
-Path_Knob::appendPath(const std::string& path)
+KnobPath::appendPath(const std::string& path)
 {
     if (!_isMultiPath) {
         setValue(path, 0);

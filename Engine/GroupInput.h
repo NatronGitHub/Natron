@@ -34,8 +34,8 @@
 class GroupInput
 : public NoOpBase
 {
-    boost::weak_ptr<Bool_Knob> optional;
-    boost::weak_ptr<Bool_Knob> mask;
+    boost::weak_ptr<KnobBool> optional;
+    boost::weak_ptr<KnobBool> mask;
     
 public:
     

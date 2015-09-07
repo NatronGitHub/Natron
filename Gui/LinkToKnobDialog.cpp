@@ -77,7 +77,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/Group_KnobGui.h"
+#include "Gui/KnobGuiGroup.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
@@ -202,9 +202,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     boost::shared_ptr<KnobI> from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[j].get() );
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[j].get() );
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[j].get() );
+            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
+            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
+            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name( knobs[j]->getDescription().c_str() );
 

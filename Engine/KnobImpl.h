@@ -358,7 +358,7 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
         index = 1;
     }
     
-    const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
+    const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
     if (!isStringAnimated) {
         return std::string();
     }
@@ -671,7 +671,7 @@ template <>
 bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool /*clamp*/, std::string* ret) const
 {
     
-    const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
+    const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
     if (isStringAnimated) {
         *ret = isStringAnimated->getStringAtTime(time,dimension);
         ///ret is not empty if the animated string knob has a custom interpolation
@@ -1146,7 +1146,7 @@ void
 Knob<std::string>::makeKeyFrame(Curve* /*curve*/,double time,const std::string& v,KeyFrame* key)
 {
     double keyFrameValue = 0.;
-    AnimatingString_KnobHelper* isStringAnimatedKnob = dynamic_cast<AnimatingString_KnobHelper*>(this);
+    AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
     assert(isStringAnimatedKnob);
     if (isStringAnimatedKnob) {
         isStringAnimatedKnob->stringToKeyFrameValue(time,v,&keyFrameValue);
@@ -1594,7 +1594,7 @@ Knob<std::string>::getKeyFrameValueByIndex(int dimension,
 
     std::string value;
 
-    const AnimatingString_KnobHelper* animatedString = dynamic_cast<const AnimatingString_KnobHelper*>(this);
+    const AnimatingKnobStringHelper* animatedString = dynamic_cast<const AnimatingKnobStringHelper*>(this);
     assert(animatedString);
     if (animatedString) {
         boost::shared_ptr<Curve> curve = getCurve(dimension);
@@ -1970,8 +1970,8 @@ Knob<double>::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(dimension);
 
-    ///A Knob<double> is not always a Double_Knob (it can also be a Color_Knob)
-    Double_Knob* isDouble = dynamic_cast<Double_Knob*>(this);
+    ///A Knob<double> is not always a KnobDouble (it can also be a KnobColor)
+    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
     double def;
     
     clearExpression(dimension,true);

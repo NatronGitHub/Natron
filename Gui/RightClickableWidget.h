@@ -49,7 +49,7 @@ class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
-class Page_Knob;
+class KnobPage;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
@@ -58,7 +58,7 @@ class QGridLayout;
 class RotoPanel;
 class MultiInstancePanel;
 class QTabWidget;
-class Group_Knob;
+class KnobGroup;
 class DockablePanel;
 
 class RightClickableWidget : public QWidget

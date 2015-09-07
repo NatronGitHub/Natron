@@ -29,7 +29,7 @@
 struct BackDropPrivate
 {
     
-    boost::weak_ptr<String_Knob> knobLabel;
+    boost::weak_ptr<KnobString> knobLabel;
     
     BackDropPrivate()
     : knobLabel()
@@ -59,9 +59,9 @@ BackDrop::getDescription() const
 void
 BackDrop::initializeKnobs()
 {
-    boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<String_Knob> knobLabel = Natron::createKnob<String_Knob>( this, "Label");
+    boost::shared_ptr<KnobString> knobLabel = Natron::createKnob<KnobString>( this, "Label");
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);

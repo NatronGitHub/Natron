@@ -30,7 +30,7 @@
 
 class QVBoxLayout;
 
-class String_Knob;
+class KnobString;
 
 class NodeGraph;
 class DockablePanel;

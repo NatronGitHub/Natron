@@ -62,10 +62,10 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         std::list<boost::shared_ptr<KnobI> > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
-            Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
-            //Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
+            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
+            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
+            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
+            //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knobs[i].get() );
             
             if (isPage && knobs[i]->isUserKnob()) {
                 userPages.push_back(knobs[i]);

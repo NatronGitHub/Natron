@@ -72,11 +72,11 @@ namespace boost { namespace serialization { class access; } }
 class RectI;
 class RectD;
 class KnobI;
-class Bool_Knob;
-class Double_Knob;
-class Int_Knob;
-class Choice_Knob;
-class Color_Knob;
+class KnobBool;
+class KnobDouble;
+class KnobInt;
+class KnobChoice;
+class KnobColor;
 typedef struct _cairo_pattern cairo_pattern_t;
 
 class Curve;
@@ -200,8 +200,8 @@ public:
     /**
      * The functions below are to slave/unslave a control point to a track
      **/
-    void slaveTo(SequenceTime offsetTime,const boost::shared_ptr<Double_Knob> & track);
-    boost::shared_ptr<Double_Knob> isSlaved() const;
+    void slaveTo(SequenceTime offsetTime,const boost::shared_ptr<KnobDouble> & track);
+    boost::shared_ptr<KnobDouble> isSlaved() const;
     void unslave();
 
     SequenceTime getOffsetTime() const;
@@ -464,30 +464,30 @@ public:
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
-    boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
-    boost::shared_ptr<Double_Knob> getFeatherKnob() const;
-    boost::shared_ptr<Double_Knob> getFeatherFallOffKnob() const;
-    boost::shared_ptr<Double_Knob> getOpacityKnob() const;
+    boost::shared_ptr<KnobBool> getActivatedKnob() const;
+    boost::shared_ptr<KnobDouble> getFeatherKnob() const;
+    boost::shared_ptr<KnobDouble> getFeatherFallOffKnob() const;
+    boost::shared_ptr<KnobDouble> getOpacityKnob() const;
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    boost::shared_ptr<KnobBool> getInvertedKnob() const;
 #endif
-    boost::shared_ptr<Choice_Knob> getOperatorKnob() const;
-    boost::shared_ptr<Color_Knob> getColorKnob() const;
-    boost::shared_ptr<Double_Knob> getCenterKnob() const;
-    boost::shared_ptr<Int_Knob> getLifeTimeFrameKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
-    boost::shared_ptr<Bool_Knob> getPressureOpacityKnob() const;
-    boost::shared_ptr<Bool_Knob> getPressureSizeKnob() const;
-    boost::shared_ptr<Bool_Knob> getPressureHardnessKnob() const;
-    boost::shared_ptr<Bool_Knob> getBuildupKnob() const;
-    boost::shared_ptr<Int_Knob> getTimeOffsetKnob() const;
-    boost::shared_ptr<Choice_Knob> getTimeOffsetModeKnob() const;
-    boost::shared_ptr<Choice_Knob> getBrushSourceTypeKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushCloneTranslateKnob() const;
+    boost::shared_ptr<KnobChoice> getOperatorKnob() const;
+    boost::shared_ptr<KnobColor> getColorKnob() const;
+    boost::shared_ptr<KnobDouble> getCenterKnob() const;
+    boost::shared_ptr<KnobInt> getLifeTimeFrameKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushSizeKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushHardnessKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushSpacingKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushEffectKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushVisiblePortionKnob() const;
+    boost::shared_ptr<KnobBool> getPressureOpacityKnob() const;
+    boost::shared_ptr<KnobBool> getPressureSizeKnob() const;
+    boost::shared_ptr<KnobBool> getPressureHardnessKnob() const;
+    boost::shared_ptr<KnobBool> getBuildupKnob() const;
+    boost::shared_ptr<KnobInt> getTimeOffsetKnob() const;
+    boost::shared_ptr<KnobChoice> getTimeOffsetModeKnob() const;
+    boost::shared_ptr<KnobChoice> getBrushSourceTypeKnob() const;
+    boost::shared_ptr<KnobDouble> getBrushCloneTranslateKnob() const;
     
     void setKeyframeOnAllTransformParameters(double time);
 
@@ -1471,9 +1471,9 @@ public:
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
 
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<Bool_Knob> getInvertedKnob() const;
+    boost::shared_ptr<KnobBool> getInvertedKnob() const;
 #endif
-    boost::shared_ptr<Color_Knob> getColorKnob() const;
+    boost::shared_ptr<KnobColor> getColorKnob() const;
 
 
     boost::shared_ptr<RotoItem> getLastItemLocked() const;

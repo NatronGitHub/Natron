@@ -636,19 +636,19 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
 
-    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
-    Int_Knob* isInt = dynamic_cast<Int_Knob*>(knob.get());
-    Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
-    Color_Knob* isColor = dynamic_cast<Color_Knob*>(knob.get());
-    String_Knob* isString = dynamic_cast<String_Knob*>(knob.get());
-    File_Knob* isFile = dynamic_cast<File_Knob*>(knob.get());
-    OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>(knob.get());
-    Path_Knob* isPath = dynamic_cast<Path_Knob*>(knob.get());
-    Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
-    Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
-    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob.get());
-    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
+    KnobInt* isInt = dynamic_cast<KnobInt*>(knob.get());
+    KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
+    KnobColor* isColor = dynamic_cast<KnobColor*>(knob.get());
+    KnobString* isString = dynamic_cast<KnobString*>(knob.get());
+    KnobFile* isFile = dynamic_cast<KnobFile*>(knob.get());
+    KnobOutputFile* isOutputFile = dynamic_cast<KnobOutputFile*>(knob.get());
+    KnobPath* isPath = dynamic_cast<KnobPath*>(knob.get());
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
+    KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+    KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
     const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
     std::string newKnobName = nodeScriptName +  knob->getName();
@@ -660,33 +660,33 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     groupNodeGui->ensurePanelCreated();
     NodeSettingsPanel* groupNodePanel = groupNodeGui->getSettingPanel();
     assert(groupNodePanel);
-    boost::shared_ptr<Page_Knob> groupUserPageNode = groupNodePanel->getUserPageKnob();
+    boost::shared_ptr<KnobPage> groupUserPageNode = groupNodePanel->getUserPageKnob();
     
     boost::shared_ptr<KnobI> output;
     if (isBool) {
-        boost::shared_ptr<Bool_Knob> newKnob = effect->createBoolKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newKnobName, knob->getDescription());
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<Int_Knob> newKnob = effect->createIntKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newKnobName, knob->getDescription(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<Double_Knob> newKnob = effect->createDoubleKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newKnobName, knob->getDescription(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
         output = newKnob;
     } else if (isChoice) {
-        boost::shared_ptr<Choice_Knob> newKnob = effect->createChoiceKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newKnobName, knob->getDescription());
         newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<Color_Knob> newKnob = effect->createColorKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newKnobName, knob->getDescription(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isColor->getMinimums(), isColor->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isColor->getDisplayMinimums(),isColor->getDisplayMaximums());
         output = newKnob;
     } else if (isString) {
-        boost::shared_ptr<String_Knob> newKnob = effect->createStringKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newKnobName, knob->getDescription());
         if (isString->isLabel()) {
             newKnob->setAsLabel();
         }
@@ -701,41 +701,41 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         }
         output = newKnob;
     } else if (isFile) {
-        boost::shared_ptr<File_Knob> newKnob = effect->createFileKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newKnobName, knob->getDescription());
         if (isFile->isInputImageFile()) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
-        boost::shared_ptr<OutputFile_Knob> newKnob = effect->createOuptutFileKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newKnobName, knob->getDescription());
         if (isOutputFile->isOutputImageFile()) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
-        boost::shared_ptr<Path_Knob> newKnob = effect->createPathKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newKnobName, knob->getDescription());
         if (isPath->isMultiPath()) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
         
     } else if (isGrp) {
-        boost::shared_ptr<Group_Knob> newKnob = effect->createGroupKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newKnobName, knob->getDescription());
         if (isGrp->isTab()) {
             newKnob->setAsTab();
         }
         output = newKnob;
         
     } else if (isPage) {
-        boost::shared_ptr<Page_Knob> newKnob = effect->createPageKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newKnobName, knob->getDescription());
         output = newKnob;
         
     } else if (isBtn) {
-        boost::shared_ptr<Button_Knob> newKnob = effect->createButtonKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newKnobName, knob->getDescription());
         output = newKnob;
         
     } else if (isParametric) {
-        boost::shared_ptr<Parametric_Knob> newKnob = effect->createParametricKnob(newKnobName, knob->getDescription(), isParametric->getDimension());
+        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newKnobName, knob->getDescription(), isParametric->getDimension());
         output = newKnob;
     }
     output->cloneDefaultValues(knob.get());

@@ -69,7 +69,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGui.h"
-#include "Gui/String_KnobGui.h"
+#include "Gui/KnobGuiString.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
@@ -318,7 +318,7 @@ NodeGui::initialize(NodeGraph* dag,
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
-        String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
+        KnobString* strKnob = dynamic_cast<KnobString*>(knob.get());
         if (strKnob) {
             onNodeExtraLabelChanged(strKnob->getValue().c_str());
         }
@@ -2716,7 +2716,7 @@ NodeGui::setNameItemHtml(const QString & name,
     QFont f;
     QColor color;
     if (hasFontData) {
-        String_KnobGui::parseFont(textLabel, &f, &color);
+        KnobGuiString::parseFont(textLabel, &f, &color);
     }
     _nameItem->setFont(f);
 
@@ -2739,7 +2739,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         ///The multi-instances store in the kNatronOfxParamStringSublabelName knob the name of the instance
         ///Since the "main-instance" is the one displayed on the node-graph we don't want it to display its name
         ///hence we remove it
-        _nodeLabel = String_KnobGui::removeNatronHtmlTag(_nodeLabel);
+        _nodeLabel = KnobGuiString::removeNatronHtmlTag(_nodeLabel);
     }
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
@@ -2747,7 +2747,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     //For the merge node, set its operator icon
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
-        QString op = String_KnobGui::getNatronHtmlTagContent(label);
+        QString op = KnobGuiString::getNatronHtmlTagContent(label);
         //Remove surrounding parenthesis
         if (op[0] == QChar('(')) {
             op.remove(0, 1);
@@ -3431,7 +3431,7 @@ NodeGui::setColor(double r, double g, double b)
 }
 
 void
-NodeGui::addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point)
+NodeGui::addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (!_defaultOverlay) {

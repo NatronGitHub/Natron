@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Group_KnobGui.h"
+#include "KnobGuiGroup.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -105,7 +105,7 @@ GroupBoxLabel::setChecked(bool b)
     setPixmap(pix);
 }
 
-Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiGroup::KnobGuiGroup(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
 : KnobGui(knob, container)
 , _checked(false)
@@ -113,18 +113,18 @@ Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
 , _children()
 , _childrenToEnable()
 , _tabGroup(0)
-, _knob( boost::dynamic_pointer_cast<Group_Knob>(knob))
+, _knob( boost::dynamic_pointer_cast<KnobGroup>(knob))
 {
 
 }
 
-Group_KnobGui::~Group_KnobGui()
+KnobGuiGroup::~KnobGuiGroup()
 {
     
 }
 
 TabGroup*
-Group_KnobGui::getOrCreateTabWidget()
+KnobGuiGroup::getOrCreateTabWidget()
 {
     if (_tabGroup) {
         return _tabGroup;
@@ -135,13 +135,13 @@ Group_KnobGui::getOrCreateTabWidget()
 }
 
 void
-Group_KnobGui::removeTabWidget()
+KnobGuiGroup::removeTabWidget()
 {
     delete _tabGroup;
     _tabGroup = 0;
 }
 
-void Group_KnobGui::removeSpecificGui()
+void KnobGuiGroup::removeSpecificGui()
 {
     delete _button;
 //    for (std::list<KnobGui*>::iterator it = _children.begin() ; it != _children.end(); ++it) {
@@ -151,19 +151,19 @@ void Group_KnobGui::removeSpecificGui()
 }
 
 void
-Group_KnobGui::addKnob(KnobGui *child)
+KnobGuiGroup::addKnob(KnobGui *child)
 {
     _children.push_back(child);
 }
 
 bool
-Group_KnobGui::isChecked() const
+KnobGuiGroup::isChecked() const
 {
     return hasWidgetBeenCreated() ? _button->isChecked() : true;
 }
 
 void
-Group_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiGroup::createWidget(QHBoxLayout* layout)
 {
     _button = new GroupBoxLabel( layout->parentWidget() );
     if ( hasToolTip() ) {
@@ -176,7 +176,7 @@ Group_KnobGui::createWidget(QHBoxLayout* layout)
 }
 
 void
-Group_KnobGui::setChecked(bool b)
+KnobGuiGroup::setChecked(bool b)
 {
     if (b == _checked) {
         return;
@@ -201,7 +201,7 @@ Group_KnobGui::setChecked(bool b)
 }
 
 bool
-Group_KnobGui::eventFilter(QObject */*target*/,
+KnobGuiGroup::eventFilter(QObject */*target*/,
                            QEvent* /*event*/)
 {
     //if(e->type() == QEvent::Paint){
@@ -213,7 +213,7 @@ Group_KnobGui::eventFilter(QObject */*target*/,
 }
 
 void
-Group_KnobGui::updateGUI(int /*dimension*/)
+KnobGuiGroup::updateGUI(int /*dimension*/)
 {
     bool b = _knob.lock()->getGuiValue(0);
 
@@ -224,7 +224,7 @@ Group_KnobGui::updateGUI(int /*dimension*/)
 }
 
 void
-Group_KnobGui::_hide()
+KnobGuiGroup::_hide()
 {
     if (_button) {
         _button->hide();
@@ -235,7 +235,7 @@ Group_KnobGui::_hide()
 }
 
 void
-Group_KnobGui::_show()
+KnobGuiGroup::_show()
 {
 //    if ( _knob->getIsSecret() ) {
 //        return;
@@ -252,9 +252,9 @@ Group_KnobGui::_show()
 }
 
 void
-Group_KnobGui::setEnabled()
+KnobGuiGroup::setEnabled()
 {
-    boost::shared_ptr<Group_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobGroup> knob = _knob.lock();
     bool enabled = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     if (_button) {
@@ -281,7 +281,7 @@ Group_KnobGui::setEnabled()
     }
 }
 
-boost::shared_ptr<KnobI> Group_KnobGui::getKnob() const
+boost::shared_ptr<KnobI> KnobGuiGroup::getKnob() const
 {
     return _knob.lock();
 }

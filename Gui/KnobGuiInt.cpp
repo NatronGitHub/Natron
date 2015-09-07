@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Int_KnobGui.h"
+#include "KnobGuiInt.h"
 
 #include <cfloat>
 #include <algorithm> // min, max
@@ -84,14 +84,14 @@ using std::make_pair;
 
 
 //==========================INT_KNOB_GUI======================================
-Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
+KnobGuiInt::KnobGuiInt(boost::shared_ptr<KnobI> knob,
                          DockablePanel *container)
     : KnobGui(knob, container)
       , _container(0)
       , _slider(0)
       , _dimensionSwitchButton(0)
 {
-    boost::shared_ptr<Int_Knob> iKnob = boost::dynamic_pointer_cast<Int_Knob>(knob);
+    boost::shared_ptr<KnobInt> iKnob = boost::dynamic_pointer_cast<KnobInt>(knob);
     assert(iKnob);
     boost::shared_ptr<KnobSignalSlotHandler> handler = iKnob->getSignalSlotHandler();
     if (handler) {
@@ -105,12 +105,12 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
     _knob = iKnob;
 }
 
-Int_KnobGui::~Int_KnobGui()
+KnobGuiInt::~KnobGuiInt()
 {
 }
 
 void
-Int_KnobGui::removeSpecificGui()
+KnobGuiInt::removeSpecificGui()
 {
     _container->setParent(NULL);
     delete _container;
@@ -118,10 +118,10 @@ Int_KnobGui::removeSpecificGui()
 }
 
 void
-Int_KnobGui::createWidget(QHBoxLayout* layout)
+KnobGuiInt::createWidget(QHBoxLayout* layout)
 {
     
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
     int dim = knob->getDimension();
     _container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(_container);
@@ -245,7 +245,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
-Int_KnobGui::onMinMaxChanged(double mini,
+KnobGuiInt::onMinMaxChanged(double mini,
                              double maxi,
                              int index)
 {
@@ -257,7 +257,7 @@ Int_KnobGui::onMinMaxChanged(double mini,
 #endif
 
 void
-Int_KnobGui::onDimensionSwitchClicked()
+KnobGuiInt::onDimensionSwitchClicked()
 {
     if (!_dimensionSwitchButton) {
         return;
@@ -266,7 +266,7 @@ Int_KnobGui::onDimensionSwitchClicked()
         expandAllDimensions();
     } else {
         foldAllDimensions();
-        boost::shared_ptr<Int_Knob> knob = _knob.lock();
+        boost::shared_ptr<KnobInt> knob = _knob.lock();
         int dim = knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
@@ -281,13 +281,13 @@ Int_KnobGui::onDimensionSwitchClicked()
 }
 
 bool
-Int_KnobGui::shouldAddStretch() const
+KnobGuiInt::shouldAddStretch() const
 {
     return _knob.lock()->isSliderDisabled();
 }
 
 void
-Int_KnobGui::expandAllDimensions()
+KnobGuiInt::expandAllDimensions()
 {
     if (!_dimensionSwitchButton) {
         return;
@@ -307,7 +307,7 @@ Int_KnobGui::expandAllDimensions()
 }
 
 void
-Int_KnobGui::foldAllDimensions()
+KnobGuiInt::foldAllDimensions()
 {
     if (!_dimensionSwitchButton) {
         return;
@@ -331,7 +331,7 @@ Int_KnobGui::foldAllDimensions()
 
 
 void
-Int_KnobGui::onDisplayMinMaxChanged(double mini,
+KnobGuiInt::onDisplayMinMaxChanged(double mini,
                                     double maxi,
                                     int index)
 {
@@ -340,7 +340,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
         double sliderMax = maxi;
         if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
             
-            boost::shared_ptr<Int_Knob> knob = _knob.lock();
+            boost::shared_ptr<KnobInt> knob = _knob.lock();
             ///use min max for slider if dispmin/dispmax was not set
             assert(index < (int)knob->getMinimums().size() && index < (int)knob->getMaximums().size());
             int max = knob->getMaximums()[index];
@@ -361,7 +361,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
 }
 
 void
-Int_KnobGui::onIncrementChanged(int incr,
+KnobGuiInt::onIncrementChanged(int incr,
                                 int index)
 {
     assert(_spinBoxes.size() > (U32)index);
@@ -369,9 +369,9 @@ Int_KnobGui::onIncrementChanged(int incr,
 }
 
 void
-Int_KnobGui::updateGUI(int dimension)
+KnobGuiInt::updateGUI(int dimension)
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
     int v = knob->getGuiValue(dimension);
 
     if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
@@ -415,7 +415,7 @@ Int_KnobGui::updateGUI(int dimension)
 }
 
 void
-Int_KnobGui::reflectAnimationLevel(int dimension,
+KnobGuiInt::reflectAnimationLevel(int dimension,
                                    Natron::AnimationLevelEnum level)
 {
     int value;
@@ -439,7 +439,7 @@ Int_KnobGui::reflectAnimationLevel(int dimension,
 }
 
 void
-Int_KnobGui::onSliderValueChanged(double d)
+KnobGuiInt::onSliderValueChanged(double d)
 {
     assert(_knob.lock()->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
@@ -451,7 +451,7 @@ Int_KnobGui::onSliderValueChanged(double d)
 }
 
 void
-Int_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
+KnobGuiInt::onSliderEditingFinished(bool hasMovedOnce)
 {
     assert(_knob.lock()->isEnabled(0));
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -466,9 +466,9 @@ Int_KnobGui::onSliderEditingFinished(bool hasMovedOnce)
 }
 
 void
-Int_KnobGui::sliderEditingEnd(double d)
+KnobGuiInt::sliderEditingEnd(double d)
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
 
     if (_dimensionSwitchButton) {
         int dims = knob->getDimension();
@@ -489,7 +489,7 @@ Int_KnobGui::sliderEditingEnd(double d)
 }
 
 void
-Int_KnobGui::onSpinBoxValueChanged()
+KnobGuiInt::onSpinBoxValueChanged()
 {
     std::list<int> newValues;
 
@@ -517,7 +517,7 @@ Int_KnobGui::onSpinBoxValueChanged()
 }
 
 void
-Int_KnobGui::_hide()
+KnobGuiInt::_hide()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->hide();
@@ -534,7 +534,7 @@ Int_KnobGui::_hide()
 }
 
 void
-Int_KnobGui::_show()
+KnobGuiInt::_show()
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         
@@ -562,9 +562,9 @@ Int_KnobGui::_show()
 }
 
 void
-Int_KnobGui::setEnabled()
+KnobGuiInt::setEnabled()
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
 
     bool enabled0 = knob->isEnabled(0) && !knob->isSlave(0) && knob->getExpression(0).empty();
     
@@ -586,7 +586,7 @@ Int_KnobGui::setEnabled()
 }
 
 void
-Int_KnobGui::setReadOnly(bool readOnly,
+KnobGuiInt::setReadOnly(bool readOnly,
                          int dimension)
 {
     assert( dimension < (int)_spinBoxes.size() );
@@ -597,23 +597,23 @@ Int_KnobGui::setReadOnly(bool readOnly,
 }
 
 void
-Int_KnobGui::setDirty(bool dirty)
+KnobGuiInt::setDirty(bool dirty)
 {
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i].first->setDirty(dirty);
     }
 }
 
-boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
+boost::shared_ptr<KnobI> KnobGuiInt::getKnob() const
 {
     return _knob.lock();
 }
 
 void
-Int_KnobGui::reflectExpressionState(int dimension,
+KnobGuiInt::reflectExpressionState(int dimension,
                                     bool hasExpr)
 {
-    boost::shared_ptr<Int_Knob> knob = _knob.lock();
+    boost::shared_ptr<KnobInt> knob = _knob.lock();
 
     bool isSlaved = knob->isSlave(dimension);
     if (hasExpr) {
@@ -635,11 +635,11 @@ Int_KnobGui::reflectExpressionState(int dimension,
 }
 
 void
-Int_KnobGui::updateToolTip()
+KnobGuiInt::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        boost::shared_ptr<Int_Knob> knob = _knob.lock();
+        boost::shared_ptr<KnobInt> knob = _knob.lock();
 
         for (int i = 0; i < knob->getDimension(); ++i) {
             _spinBoxes[i].first->setToolTip( tt );
@@ -651,7 +651,7 @@ Int_KnobGui::updateToolTip()
 }
 
 void
-Int_KnobGui::reflectModificationsState()
+KnobGuiInt::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {

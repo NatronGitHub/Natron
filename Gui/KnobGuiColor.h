@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_Color_KnobGui_h_
-#define _Gui_Color_KnobGui_h_
+#ifndef _Gui_KnobGuiColor_h_
+#define _Gui_KnobGuiColor_h_
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,7 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <vector> // Int_KnobGui
+#include <vector> // KnobGuiInt
 #include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -62,17 +62,16 @@ class QFontComboBox;
 
 // Engine
 class KnobI;
-class Int_Knob;
-class Bool_Knob;
-class Double_Knob;
-class Button_Knob;
-class Separator_Knob;
-class Group_Knob;
-class Tab_Knob;
-class Parametric_Knob;
-class Color_Knob;
-class Choice_Knob;
-class String_Knob;
+class KnobInt;
+class KnobBool;
+class KnobDouble;
+class KnobButton;
+class KnobSeparator;
+class KnobGroup;
+class KnobParametric;
+class KnobColor;
+class KnobChoice;
+class KnobString;
 
 // Gui
 class DockablePanel;
@@ -98,7 +97,7 @@ class Node;
 
 //================================
 
-class Color_KnobGui;
+class KnobGuiColor;
 class ColorPickerLabel
     : public Natron::Label
 {
@@ -108,7 +107,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(Color_KnobGui* knob,QWidget* parent = NULL);
+    ColorPickerLabel(KnobGuiColor* knob,QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
     {
@@ -144,11 +143,11 @@ private:
 
     bool _pickingEnabled;
     QColor _currentColor;
-    Color_KnobGui* _knob;
+    KnobGuiColor* _knob;
 };
 
 
-class Color_KnobGui
+class KnobGuiColor
     : public KnobGui
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -159,13 +158,13 @@ public:
     static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
                                   DockablePanel *container)
     {
-        return new Color_KnobGui(knob, container);
+        return new KnobGuiColor(knob, container);
     }
 
-    Color_KnobGui(boost::shared_ptr<KnobI> knob,
+    KnobGuiColor(boost::shared_ptr<KnobI> knob,
                   DockablePanel *container);
 
-    virtual ~Color_KnobGui() OVERRIDE;
+    virtual ~KnobGuiColor() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
@@ -238,8 +237,8 @@ private:
     Button *_dimensionSwitchButton;
     ScaleSliderQWidget* _slider;
     int _dimension;
-    boost::weak_ptr<Color_Knob> _knob;
+    boost::weak_ptr<KnobColor> _knob;
     std::vector<double> _lastColor;
 };
 
-#endif // _Gui_Color_KnobGui_h_
+#endif // _Gui_KnobGuiColor_h_

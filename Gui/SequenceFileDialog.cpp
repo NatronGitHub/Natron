@@ -2991,7 +2991,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     if (reader) {
         const std::vector<boost::shared_ptr<KnobI> > & knobs = reader->getNode()->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
-            File_Knob* fileKnob = dynamic_cast<File_Knob*>(knobs[i].get());
+            KnobFile* fileKnob = dynamic_cast<KnobFile*>(knobs[i].get());
             if ( fileKnob && fileKnob->isInputImageFile() ) {
                 fileKnob->setValue(pattern,0);
             }

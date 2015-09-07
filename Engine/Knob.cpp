@@ -53,7 +53,7 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/DockablePanelI.h"
 
-class Page_Knob;
+class KnobPage;
 
 using namespace Natron;
 using std::make_pair; using std::pair;
@@ -184,7 +184,7 @@ KnobI::onAnimationRemoved(int dimension)
     }
 }
 
-Page_Knob*
+KnobPage*
 KnobI::getTopLevelPage()
 {
     boost::shared_ptr<KnobI> parentKnob = getParentKnob();
@@ -199,7 +199,7 @@ KnobI::getTopLevelPage()
     }
 
     ////find in which page the knob should be
-    Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
+    KnobPage* isTopLevelParentAPage = dynamic_cast<KnobPage*>(parentKnobTmp);
     return isTopLevelParentAPage;
 }
 
@@ -446,8 +446,8 @@ KnobHelper::deleteKnob()
     
     boost::shared_ptr<KnobI> parent = _imp->parentKnob.lock();
     if (parent) {
-        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(parent.get());
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
+        KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(parent.get());
+        KnobPage* isPage = dynamic_cast<KnobPage*>(parent.get());
         if (isGrp) {
             isGrp->removeKnob(this);
         } else if (isPage) {
@@ -456,8 +456,8 @@ KnobHelper::deleteKnob()
             assert(false);
         }
     }
-    Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(this);
-    Page_Knob* isPage = dynamic_cast<Page_Knob*>(this);
+    KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
+    KnobPage* isPage = dynamic_cast<KnobPage*>(this);
     if (isGrp) {
         std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::iterator it = children.begin(); it != children.end(); ++it) {
@@ -550,8 +550,8 @@ KnobHelper::populate()
     boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
     setSignalSlotHandler(handler);
 
-    Color_Knob* isColor = dynamic_cast<Color_Knob*>(this);
-    Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(this);
+    KnobColor* isColor = dynamic_cast<KnobColor*>(this);
+    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(this);
     if (isSep) {
         _imp->IsPersistant = false;
     }
@@ -759,7 +759,7 @@ KnobHelper::moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimen
     }
     
     ///Make sure string animation follows up
-    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(this);
+    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
     std::string v;
     if (isString) {
         isString->stringFromInterpolatedValue(k.getValue(), &v);
@@ -852,7 +852,7 @@ KnobHelper::transformValueAtTime(Natron::CurveChangeReason curveChangeReason, in
     }
     
     ///Make sure string animation follows up
-    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(this);
+    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
     std::string v;
     if (isString) {
         isString->stringFromInterpolatedValue(k.getValue(), &v);
@@ -2404,7 +2404,7 @@ KnobHelper::slaveTo(int dimension,
     }
 
     assert( !other->isSlave(otherDimension) );
-    if (dynamic_cast<Button_Knob*>(this)) {
+    if (dynamic_cast<KnobButton*>(this)) {
         return false;
     }
     {
@@ -3208,8 +3208,8 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
         return;
     }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
-    Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
-    Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
+    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
+    KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
     
     //the knob belongs to a group/page , change its index within the group instead
     if (parentIsGrp) {
@@ -3244,8 +3244,8 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
         return;
     }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
-    Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parent.get());
-    Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parent.get());
+    KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
+    KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
     
     //the knob belongs to a group/page , change its index within the group instead
     if (parentIsGrp) {
@@ -3275,18 +3275,18 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
     
 }
 
-boost::shared_ptr<Page_Knob>
+boost::shared_ptr<KnobPage>
 KnobHolder::getOrCreateUserPageKnob() 
 {
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             if ((*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
-                return boost::dynamic_pointer_cast<Page_Knob>(*it);
+                return boost::dynamic_pointer_cast<KnobPage>(*it);
             }
         }
     }
-    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
@@ -3296,17 +3296,17 @@ KnobHolder::getOrCreateUserPageKnob()
     return ret;
 }
 
-boost::shared_ptr<Int_Knob>
+boost::shared_ptr<KnobInt>
 KnobHolder::createIntKnob(const std::string& name, const std::string& label,int dimension)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Int_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
-    boost::shared_ptr<Int_Knob> ret = Natron::createKnob<Int_Knob>(this,label, dimension, false);
+    boost::shared_ptr<KnobInt> ret = Natron::createKnob<KnobInt>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3315,17 +3315,17 @@ KnobHolder::createIntKnob(const std::string& name, const std::string& label,int 
     return ret;
 }
 
-boost::shared_ptr<Double_Knob>
+boost::shared_ptr<KnobDouble>
 KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,int dimension)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Double_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
-    boost::shared_ptr<Double_Knob> ret = Natron::createKnob<Double_Knob>(this,label, dimension, false);
+    boost::shared_ptr<KnobDouble> ret = Natron::createKnob<KnobDouble>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3334,17 +3334,17 @@ KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,i
     return ret;
 }
 
-boost::shared_ptr<Color_Knob>
+boost::shared_ptr<KnobColor>
 KnobHolder::createColorKnob(const std::string& name, const std::string& label,int dimension)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Color_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
-    boost::shared_ptr<Color_Knob> ret = Natron::createKnob<Color_Knob>(this,label, dimension, false);
+    boost::shared_ptr<KnobColor> ret = Natron::createKnob<KnobColor>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3353,17 +3353,17 @@ KnobHolder::createColorKnob(const std::string& name, const std::string& label,in
     return ret;
 }
 
-boost::shared_ptr<Bool_Knob>
+boost::shared_ptr<KnobBool>
 KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Bool_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
-    boost::shared_ptr<Bool_Knob> ret = Natron::createKnob<Bool_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobBool> ret = Natron::createKnob<KnobBool>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3372,17 +3372,17 @@ KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
     return ret;
 }
 
-boost::shared_ptr<Choice_Knob>
+boost::shared_ptr<KnobChoice>
 KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Choice_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
-    boost::shared_ptr<Choice_Knob> ret = Natron::createKnob<Choice_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobChoice> ret = Natron::createKnob<KnobChoice>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3391,17 +3391,17 @@ KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
     return ret;
 }
 
-boost::shared_ptr<Button_Knob>
+boost::shared_ptr<KnobButton>
 KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Button_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
-    boost::shared_ptr<Button_Knob> ret = Natron::createKnob<Button_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobButton> ret = Natron::createKnob<KnobButton>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3411,17 +3411,17 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
 }
 
 //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
-boost::shared_ptr<String_Knob>
+boost::shared_ptr<KnobString>
 KnobHolder::createStringKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<String_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobString>(existingKnob);
     }
-    boost::shared_ptr<String_Knob> ret = Natron::createKnob<String_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobString> ret = Natron::createKnob<KnobString>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3431,17 +3431,17 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
 
 }
 
-boost::shared_ptr<File_Knob>
+boost::shared_ptr<KnobFile>
 KnobHolder::createFileKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<File_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
-    boost::shared_ptr<File_Knob> ret = Natron::createKnob<File_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobFile> ret = Natron::createKnob<KnobFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3450,17 +3450,17 @@ KnobHolder::createFileKnob(const std::string& name, const std::string& label)
     return ret;
 }
 
-boost::shared_ptr<OutputFile_Knob>
+boost::shared_ptr<KnobOutputFile>
 KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<OutputFile_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
-    boost::shared_ptr<OutputFile_Knob> ret = Natron::createKnob<OutputFile_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobOutputFile> ret = Natron::createKnob<KnobOutputFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3470,17 +3470,17 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
 
 }
 
-boost::shared_ptr<Path_Knob>
+boost::shared_ptr<KnobPath>
 KnobHolder::createPathKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Path_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
-    boost::shared_ptr<Path_Knob> ret = Natron::createKnob<Path_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobPath> ret = Natron::createKnob<KnobPath>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3490,17 +3490,17 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
 
 }
 
-boost::shared_ptr<Group_Knob>
+boost::shared_ptr<KnobGroup>
 KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Group_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
-    boost::shared_ptr<Group_Knob> ret = Natron::createKnob<Group_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobGroup> ret = Natron::createKnob<KnobGroup>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3510,17 +3510,17 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
 
 }
 
-boost::shared_ptr<Page_Knob>
+boost::shared_ptr<KnobPage>
 KnobHolder::createPageKnob(const std::string& name, const std::string& label)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Page_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
-    boost::shared_ptr<Page_Knob> ret = Natron::createKnob<Page_Knob>(this,label, 1, false);
+    boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3530,17 +3530,17 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
 
 }
 
-boost::shared_ptr<Parametric_Knob>
+boost::shared_ptr<KnobParametric>
 KnobHolder::createParametricKnob(const std::string& name, const std::string& label,int nbCurves)
 {
     boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<Parametric_Knob>(existingKnob);
+        return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
-    boost::shared_ptr<Parametric_Knob> ret = Natron::createKnob<Parametric_Knob>(this,label, nbCurves, false);
+    boost::shared_ptr<KnobParametric> ret = Natron::createKnob<KnobParametric>(this,label, nbCurves, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<Page_Knob> pageknob = getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
     Q_UNUSED(pageknob);
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
@@ -3921,7 +3921,7 @@ KnobHolder::evaluate_public(KnobI* knob,
     
     if ( isSignificant && getApp() ) {
         ///Don't trigger autosaves for buttons
-        Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
+        KnobButton* isButton = dynamic_cast<KnobButton*>(knob);
         if (!isButton) {
             getApp()->triggerAutoSave();
         }
@@ -4043,10 +4043,10 @@ KnobHolder::restoreDefaultValues()
     beginChanges();
 
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        Button_Knob* isBtn = dynamic_cast<Button_Knob*>( _imp->knobs[i].get() );
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>( _imp->knobs[i].get() );
-        Group_Knob* isGroup = dynamic_cast<Group_Knob*>( _imp->knobs[i].get() );
-        Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( _imp->knobs[i].get() );
+        KnobButton* isBtn = dynamic_cast<KnobButton*>( _imp->knobs[i].get() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( _imp->knobs[i].get() );
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( _imp->knobs[i].get() );
+        KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( _imp->knobs[i].get() );
         
         ///Don't restore buttons and the node label
         if ( !isBtn && !isPage && !isGroup && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
@@ -4142,9 +4142,9 @@ KnobHolder::updateHasAnimation()
 
 /***************************STRING ANIMATION******************************************/
 void
-AnimatingString_KnobHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
+AnimatingKnobStringHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
 {
-    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
+    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
     
     if (isAnimatedString) {
         _animation->clone( isAnimatedString->getAnimation() );
@@ -4152,9 +4152,9 @@ AnimatingString_KnobHelper::cloneExtraData(KnobI* other,int /*dimension*/ )
 }
 
 bool
-AnimatingString_KnobHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
+AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*dimension*/)
 {
-    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
+    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
     
     if (isAnimatedString) {
        return  _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
@@ -4163,19 +4163,19 @@ AnimatingString_KnobHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,int /*d
 }
 
 void
-AnimatingString_KnobHelper::cloneExtraData(KnobI* other,
+AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
                                            SequenceTime offset,
                                            const RangeD* range,
                                            int /*dimension*/)
 {
-    AnimatingString_KnobHelper* isAnimatedString = dynamic_cast<AnimatingString_KnobHelper*>(other);
+    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
     
     if (isAnimatedString) {
         _animation->clone(isAnimatedString->getAnimation(), offset, range);
     }
 }
 
-AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder* holder,
+AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                        const std::string &description,
                                                        int dimension,
                                                        bool declaredByPlugin)
@@ -4184,13 +4184,13 @@ AnimatingString_KnobHelper::AnimatingString_KnobHelper(KnobHolder* holder,
 {
 }
 
-AnimatingString_KnobHelper::~AnimatingString_KnobHelper()
+AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 {
     delete _animation;
 }
 
 void
-AnimatingString_KnobHelper::stringToKeyFrameValue(int time,
+AnimatingKnobStringHelper::stringToKeyFrameValue(int time,
                                                   const std::string & v,
                                                   double* returnValue)
 {
@@ -4198,27 +4198,27 @@ AnimatingString_KnobHelper::stringToKeyFrameValue(int time,
 }
 
 void
-AnimatingString_KnobHelper::stringFromInterpolatedValue(double interpolated,
+AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
                                                         std::string* returnValue) const
 {
     _animation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
 
 void
-AnimatingString_KnobHelper::animationRemoved_virtual(int /*dimension*/)
+AnimatingKnobStringHelper::animationRemoved_virtual(int /*dimension*/)
 {
     _animation->clearKeyFrames();
 }
 
 void
-AnimatingString_KnobHelper::keyframeRemoved_virtual(int /*dimension*/,
+AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
                                                     double time)
 {
     _animation->removeKeyFrame(time);
 }
 
 std::string
-AnimatingString_KnobHelper::getStringAtTime(double time,
+AnimatingKnobStringHelper::getStringAtTime(double time,
                                             int dimension) const
 {
     std::string ret;
@@ -4236,20 +4236,20 @@ AnimatingString_KnobHelper::getStringAtTime(double time,
 }
 
 void
-AnimatingString_KnobHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
+AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
                                                    void* ofxParamHandle)
 {
     _animation->setCustomInterpolation(func, ofxParamHandle);
 }
 
 void
-AnimatingString_KnobHelper::loadAnimation(const std::map<int,std::string> & keyframes)
+AnimatingKnobStringHelper::loadAnimation(const std::map<int,std::string> & keyframes)
 {
     _animation->load(keyframes);
 }
 
 void
-AnimatingString_KnobHelper::saveAnimation(std::map<int,std::string>* keyframes) const
+AnimatingKnobStringHelper::saveAnimation(std::map<int,std::string>* keyframes) const
 {
     _animation->save(keyframes);
 }

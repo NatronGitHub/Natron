@@ -49,7 +49,7 @@ class KnobGui;
 class KnobHolder;
 class NodeGui;
 class Gui;
-class Page_Knob;
+class KnobPage;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
@@ -58,7 +58,7 @@ class QGridLayout;
 class RotoPanel;
 class MultiInstancePanel;
 class QTabWidget;
-class Group_Knob;
+class KnobGroup;
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -154,9 +154,9 @@ public:
     
     void setUserPageActiveIndex();
     
-    boost::shared_ptr<Page_Knob> getUserPageKnob() const;
+    boost::shared_ptr<KnobPage> getUserPageKnob() const;
     
-    void getUserPages(std::list<Page_Knob*>& userPages) const;
+    void getUserPages(std::list<KnobPage*>& userPages) const;
     
     void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
     

@@ -458,7 +458,7 @@ OfxEffectInstance::initializeContextDependentParams()
 {
     assert(_context != eContextNone);
     if ( isWriter() ) {
-        _renderButton = Natron::createKnob<Button_Knob>(this, "Render");
+        _renderButton = Natron::createKnob<KnobButton>(this, "Render");
         _renderButton->setHintToolTip("Starts rendering the specified frame range.");
         _renderButton->setAsRenderButton();
     }
@@ -2530,7 +2530,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && getNode()->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && getNode()->isNodeDisabled() ) {
         return;
     }
 

@@ -286,7 +286,7 @@ TrackerGui::drawOverlays(double time,
                 ///Draw a custom interact, indicating the track isn't selected
                 boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
-                Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
+                KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
                 assert(dblKnob);
 
                 //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
@@ -395,7 +395,7 @@ TrackerGui::penDown(double time,
         boost::shared_ptr<Node> instance = it->first.lock();
         boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
-        Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
+        KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
         double x,y;
         x = dblKnob->getValueAtTime(time, 0);
@@ -415,7 +415,7 @@ TrackerGui::penDown(double time,
         boost::shared_ptr<Node> newInstance = _imp->panel->createNewInstance(true);
         boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
-        Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
+        KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
         dblKnob->beginChanges();
         dblKnob->blockValueChanges();
@@ -668,7 +668,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
         boost::shared_ptr<Node> instance = it->first.lock();
         boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
-        Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
+        KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
         double x,y;
         x = dblKnob->getValue(0);

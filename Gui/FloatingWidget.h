@@ -84,7 +84,7 @@ class DopeSheetEditor;
 //Natron engine
 class ViewerInstance;
 class PluginGroupNode;
-class Color_Knob;
+class KnobColor;
 class ProcessHandler;
 class NodeCollection;
 class KnobHolder;

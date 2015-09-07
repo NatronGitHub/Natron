@@ -1154,7 +1154,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     }
     
     double dv;
-    ///Parametric curve editor (the ones of the Parametric_Knob) never clamp keyframes to integer in the X direction
+    ///Parametric curve editor (the ones of the KnobParametric) never clamp keyframes to integer in the X direction
     ///We also want them to allow the user to move freely the keyframes around, hence the !clampToIntegers
     if ( (_mouseDragOrientation.y() != 0) || !useOneDirectionOnly ) {
         if (!useOneDirectionOnly) {

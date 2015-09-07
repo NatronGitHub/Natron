@@ -55,8 +55,8 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
+    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
+    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
 
 
     for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -99,8 +99,8 @@ PasteUndoCommand::undo()
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
+    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
+    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
     if (_copyAnimation) {
         bool hasKeyframes = false;
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
@@ -171,8 +171,8 @@ PasteUndoCommand::redo()
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
-    AnimatingString_KnobHelper* isAnimatingString = dynamic_cast<AnimatingString_KnobHelper*>( internalKnob.get() );
-    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(internalKnob);
+    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( internalKnob.get() );
+    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(internalKnob);
     bool hasKeyframeData = false;
     if ( !newCurves.empty() ) {
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
@@ -269,26 +269,26 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
     boost::shared_ptr<KnobI> copy;
     int dimension = originalKnob->getDimension();
 
-    if ( typeName == Int_Knob::typeNameStatic() ) {
-        copy.reset( new Int_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Bool_Knob::typeNameStatic() ) {
-        copy.reset( new Bool_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Double_Knob::typeNameStatic() ) {
-        copy.reset( new Double_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Choice_Knob::typeNameStatic() ) {
-        copy.reset( new Choice_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == String_Knob::typeNameStatic() ) {
-        copy.reset( new String_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Parametric_Knob::typeNameStatic() ) {
-        copy.reset( new Parametric_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Color_Knob::typeNameStatic() ) {
-        copy.reset( new Color_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == Path_Knob::typeNameStatic() ) {
-        copy.reset( new Path_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == File_Knob::typeNameStatic() ) {
-        copy.reset( new File_Knob(NULL,"",dimension,false) );
-    } else if ( typeName == OutputFile_Knob::typeNameStatic() ) {
-        copy.reset( new OutputFile_Knob(NULL,"",dimension,false) );
+    if ( typeName == KnobInt::typeNameStatic() ) {
+        copy.reset( new KnobInt(NULL,"",dimension,false) );
+    } else if ( typeName == KnobBool::typeNameStatic() ) {
+        copy.reset( new KnobBool(NULL,"",dimension,false) );
+    } else if ( typeName == KnobDouble::typeNameStatic() ) {
+        copy.reset( new KnobDouble(NULL,"",dimension,false) );
+    } else if ( typeName == KnobChoice::typeNameStatic() ) {
+        copy.reset( new KnobChoice(NULL,"",dimension,false) );
+    } else if ( typeName == KnobString::typeNameStatic() ) {
+        copy.reset( new KnobString(NULL,"",dimension,false) );
+    } else if ( typeName == KnobParametric::typeNameStatic() ) {
+        copy.reset( new KnobParametric(NULL,"",dimension,false) );
+    } else if ( typeName == KnobColor::typeNameStatic() ) {
+        copy.reset( new KnobColor(NULL,"",dimension,false) );
+    } else if ( typeName == KnobPath::typeNameStatic() ) {
+        copy.reset( new KnobPath(NULL,"",dimension,false) );
+    } else if ( typeName == KnobFile::typeNameStatic() ) {
+        copy.reset( new KnobFile(NULL,"",dimension,false) );
+    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
+        copy.reset( new KnobOutputFile(NULL,"",dimension,false) );
     }
 
     ///If this is another type of knob this is wrong since they do not hold any value

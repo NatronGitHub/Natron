@@ -91,7 +91,7 @@ class RenderStatsDialog;
 //Natron engine
 class ViewerInstance;
 class PluginGroupNode;
-class Color_Knob;
+class KnobColor;
 class ProcessHandler;
 class NodeCollection;
 class KnobHolder;
@@ -372,9 +372,9 @@ public:
 
     void setColorPickersColor(double r,double g, double b,double a);
 
-    void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
-    void removeColorPicker(boost::shared_ptr<Color_Knob> knob);
+    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
 
     bool hasPickers() const;
 

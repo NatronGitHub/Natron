@@ -57,7 +57,7 @@ enum PositionInteractState
 
 struct PositionInteract
 {
-    boost::shared_ptr<Double_Knob> param;
+    boost::shared_ptr<KnobDouble> param;
     QPointF dragPos;
     PositionInteractState state;
     
@@ -131,7 +131,7 @@ DefaultOverlay::getNode() const
 }
 
 bool
-DefaultOverlay::addPositionParam(const boost::shared_ptr<Double_Knob>& position)
+DefaultOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
 {
     assert(QThread::currentThread() == qApp->thread());
     

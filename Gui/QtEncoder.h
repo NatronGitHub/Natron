@@ -33,11 +33,11 @@ class Lut;
 }
 }
 
-class OutputFile_Knob;
-class Choice_Knob;
-class Button_Knob;
-class Int_Knob;
-class Bool_Knob;
+class KnobOutputFile;
+class KnobChoice;
+class KnobButton;
+class KnobInt;
+class KnobBool;
 
 class QtWriter
     : public Natron::OutputEffectInstance
@@ -102,12 +102,12 @@ protected:
 private:
 
     const Natron::Color::Lut* _lut;
-    boost::shared_ptr<Bool_Knob> _premultKnob;
-    boost::shared_ptr<OutputFile_Knob> _fileKnob;
-    boost::shared_ptr<Choice_Knob> _frameRangeChoosal;
-    boost::shared_ptr<Int_Knob> _firstFrameKnob;
-    boost::shared_ptr<Int_Knob> _lastFrameKnob;
-    boost::shared_ptr<Button_Knob> _renderKnob;
+    boost::shared_ptr<KnobBool> _premultKnob;
+    boost::shared_ptr<KnobOutputFile> _fileKnob;
+    boost::shared_ptr<KnobChoice> _frameRangeChoosal;
+    boost::shared_ptr<KnobInt> _firstFrameKnob;
+    boost::shared_ptr<KnobInt> _lastFrameKnob;
+    boost::shared_ptr<KnobButton> _renderKnob;
 };
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

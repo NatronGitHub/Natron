@@ -134,14 +134,14 @@ QtWriter::initializeKnobs()
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
-    _premultKnob = getNode()->createKnob<Bool_Knob>( QObject::tr("Premultiply by alpha").toStdString() );
+    _premultKnob = getNode()->createKnob<KnobBool>( QObject::tr("Premultiply by alpha").toStdString() );
     _premultKnob->setAnimationEnabled(false);
     _premultKnob->setDefaultValue(false,0);
 
-    _fileKnob = getNode()->createKnob<OutputFile_Knob>("File");
+    _fileKnob = getNode()->createKnob<KnobOutputFile>("File");
     _fileKnob->setAsOutputImageFile();
 
-    _frameRangeChoosal = getNode()->createKnob<Choice_Knob>( QObject::tr("Frame range").toStdString() );
+    _frameRangeChoosal = getNode()->createKnob<KnobChoice>( QObject::tr("Frame range").toStdString() );
     _frameRangeChoosal->setAnimationEnabled(false);
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back( QObject::tr("Union of input ranges").toStdString() );
@@ -150,15 +150,15 @@ QtWriter::initializeKnobs()
     _frameRangeChoosal->populateChoices(frameRangeChoosalEntries);
     _frameRangeChoosal->setDefaultValue(1,0);
 
-    _firstFrameKnob = getNode()->createKnob<Int_Knob>( QObject::tr("First frame").toStdString() );
+    _firstFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrameKnob->setAnimationEnabled(false);
     _firstFrameKnob->setSecret(true);
 
-    _lastFrameKnob = getNode()->createKnob<Int_Knob>( QObject::tr("Last frame").toStdString() );
+    _lastFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrameKnob->setAnimationEnabled(false);
     _lastFrameKnob->setSecret(true);
 
-    _renderKnob = getNode()->createKnob<Button_Knob>( QObject::tr("Render").toStdString() );
+    _renderKnob = getNode()->createKnob<KnobButton>( QObject::tr("Render").toStdString() );
     _renderKnob->setAsRenderButton();
 }
 

@@ -42,10 +42,10 @@ CLANG_DIAG_ON(deprecated)
 namespace SequenceParsing {
 class SequenceFromFiles;
 }
-/******************************FILE_KNOB**************************************/
+/******************************KnobFile**************************************/
 
-class File_Knob
-    : public QObject, public AnimatingString_KnobHelper
+class KnobFile
+    : public QObject, public AnimatingKnobStringHelper
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -58,15 +58,15 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new File_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobFile(holder, description, dimension,declaredByPlugin);
     }
 
-    File_Knob(KnobHolder* holder,
+    KnobFile(KnobHolder* holder,
               const std::string &description,
               int dimension,
               bool declaredByPlugin);
 
-    virtual ~File_Knob();
+    virtual ~KnobFile();
 
     static const std::string & typeNameStatic();
 
@@ -119,9 +119,9 @@ private:
     int _isInputImage;
 };
 
-/******************************OUTPUT_FILE_KNOB**************************************/
+/******************************KnobOutputFile**************************************/
 
-class OutputFile_Knob
+class KnobOutputFile
     :  public QObject, public Knob<std::string>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -135,10 +135,10 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new OutputFile_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobOutputFile(holder, description, dimension,declaredByPlugin);
     }
 
-    OutputFile_Knob(KnobHolder* holder,
+    KnobOutputFile(KnobHolder* holder,
                     const std::string &description,
                     int dimension,
                     bool declaredByPlugin);
@@ -187,7 +187,7 @@ private:
 };
 
 
-/******************************PATH_KNOB**************************************/
+/******************************KnobPath**************************************/
 
 
 /**
@@ -197,7 +197,7 @@ private:
  * Split all the ';' characters to get all different variables
  * then for each variable split the ':' to get the name and the value of the variable.
  **/
-class Path_Knob
+class KnobPath
     : public Knob<std::string>
 {
 
@@ -208,10 +208,10 @@ public:
                                   int dimension,
                                   bool declaredByPlugin = true)
     {
-        return new Path_Knob(holder, description, dimension,declaredByPlugin);
+        return new KnobPath(holder, description, dimension,declaredByPlugin);
     }
 
-    Path_Knob(KnobHolder* holder,
+    KnobPath(KnobHolder* holder,
               const std::string &description,
               int dimension,
               bool declaredByPlugin);

@@ -46,18 +46,18 @@ class Plugin;
 }
 
 class KnobI;
-class File_Knob;
-class Page_Knob;
-class Double_Knob;
-class Int_Knob;
-class Bool_Knob;
-class Group_Knob;
-class Choice_Knob;
-class Path_Knob;
-class Color_Knob;
-class String_Knob;
+class KnobFile;
+class KnobPage;
+class KnobDouble;
+class KnobInt;
+class KnobBool;
+class KnobGroup;
+class KnobChoice;
+class KnobPath;
+class KnobColor;
+class KnobString;
 class QSettings;
-class Separator_Knob;
+class KnobSeparator;
 class Settings
     : public KnobHolder
 {
@@ -322,44 +322,44 @@ private:
     bool tryLoadOpenColorIOConfig();
 
 
-    boost::shared_ptr<Page_Knob> _generalTab;
-    boost::shared_ptr<Bool_Knob> _natronSettingsExist;
+    boost::shared_ptr<KnobPage> _generalTab;
+    boost::shared_ptr<KnobBool> _natronSettingsExist;
   
-    boost::shared_ptr<Bool_Knob> _checkForUpdates;
-    boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
-    boost::shared_ptr<Int_Knob> _autoSaveDelay;
-    boost::shared_ptr<Bool_Knob> _linearPickers;
-    boost::shared_ptr<Bool_Knob> _convertNaNValues;
-    boost::shared_ptr<Int_Knob> _numberOfThreads;
-    boost::shared_ptr<Int_Knob> _numberOfParallelRenders;
-    boost::shared_ptr<Bool_Knob> _useThreadPool;
-    boost::shared_ptr<Int_Knob> _nThreadsPerEffect;
-    boost::shared_ptr<Bool_Knob> _renderInSeparateProcess;
-    boost::shared_ptr<Bool_Knob> _autoPreviewEnabledForNewProjects;
-    boost::shared_ptr<Bool_Knob> _firstReadSetProjectFormat;
-    boost::shared_ptr<Bool_Knob> _fixPathsOnProjectPathChanged;
-    boost::shared_ptr<Int_Knob> _maxPanelsOpened;
-    boost::shared_ptr<Bool_Knob> _useCursorPositionIncrements;
-    boost::shared_ptr<File_Knob> _defaultLayoutFile;
-    boost::shared_ptr<Bool_Knob> _renderOnEditingFinished;
-    boost::shared_ptr<Bool_Knob> _activateRGBSupport;
-    boost::shared_ptr<Bool_Knob> _activateTransformConcatenationSupport;
-    boost::shared_ptr<String_Knob> _hostName;
-    boost::shared_ptr<Choice_Knob> _ocioConfigKnob;
-    boost::shared_ptr<Bool_Knob> _warnOcioConfigKnobChanged;
-    boost::shared_ptr<Bool_Knob> _ocioStartupCheck;
-    boost::shared_ptr<File_Knob> _customOcioConfigFile;
-    boost::shared_ptr<Page_Knob> _cachingTab;
+    boost::shared_ptr<KnobBool> _checkForUpdates;
+    boost::shared_ptr<KnobBool> _notifyOnFileChange;
+    boost::shared_ptr<KnobInt> _autoSaveDelay;
+    boost::shared_ptr<KnobBool> _linearPickers;
+    boost::shared_ptr<KnobBool> _convertNaNValues;
+    boost::shared_ptr<KnobInt> _numberOfThreads;
+    boost::shared_ptr<KnobInt> _numberOfParallelRenders;
+    boost::shared_ptr<KnobBool> _useThreadPool;
+    boost::shared_ptr<KnobInt> _nThreadsPerEffect;
+    boost::shared_ptr<KnobBool> _renderInSeparateProcess;
+    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
+    boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
+    boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
+    boost::shared_ptr<KnobInt> _maxPanelsOpened;
+    boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
+    boost::shared_ptr<KnobFile> _defaultLayoutFile;
+    boost::shared_ptr<KnobBool> _renderOnEditingFinished;
+    boost::shared_ptr<KnobBool> _activateRGBSupport;
+    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
+    boost::shared_ptr<KnobString> _hostName;
+    boost::shared_ptr<KnobChoice> _ocioConfigKnob;
+    boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;
+    boost::shared_ptr<KnobBool> _ocioStartupCheck;
+    boost::shared_ptr<KnobFile> _customOcioConfigFile;
+    boost::shared_ptr<KnobPage> _cachingTab;
 
-    boost::shared_ptr<Bool_Knob> _aggressiveCaching;
+    boost::shared_ptr<KnobBool> _aggressiveCaching;
     ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    boost::shared_ptr<Int_Knob> _maxPlayBackPercent;
-    boost::shared_ptr<String_Knob> _maxPlaybackLabel;
+    boost::shared_ptr<KnobInt> _maxPlayBackPercent;
+    boost::shared_ptr<KnobString> _maxPlaybackLabel;
 
     ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
     ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
-    boost::shared_ptr<Int_Knob> _maxRAMPercent;
-    boost::shared_ptr<String_Knob> _maxRAMLabel;
+    boost::shared_ptr<KnobInt> _maxRAMPercent;
+    boost::shared_ptr<KnobString> _maxRAMLabel;
 
     ///The percentage of the system total's RAM you want to keep free from cache usage
     ///When the cache grows and reaches a point where it is about to cross that threshold
@@ -367,107 +367,107 @@ private:
     ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
     ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
     ///10% seems a reasonable value.
-    boost::shared_ptr<Int_Knob> _unreachableRAMPercent;
-    boost::shared_ptr<String_Knob> _unreachableRAMLabel;
+    boost::shared_ptr<KnobInt> _unreachableRAMPercent;
+    boost::shared_ptr<KnobString> _unreachableRAMLabel;
     
     ///The total disk space allowed for all Natron's caches
-    boost::shared_ptr<Int_Knob> _maxViewerDiskCacheGB;
-    boost::shared_ptr<Int_Knob> _maxDiskCacheNodeGB;
-    boost::shared_ptr<Path_Knob> _diskCachePath;
+    boost::shared_ptr<KnobInt> _maxViewerDiskCacheGB;
+    boost::shared_ptr<KnobInt> _maxDiskCacheNodeGB;
+    boost::shared_ptr<KnobPath> _diskCachePath;
     
-    boost::shared_ptr<Page_Knob> _viewersTab;
-    boost::shared_ptr<Choice_Knob> _texturesMode;
-    boost::shared_ptr<Int_Knob> _powerOf2Tiling;
-    boost::shared_ptr<Int_Knob> _checkerboardTileSize;
-    boost::shared_ptr<Color_Knob> _checkerboardColor1;
-    boost::shared_ptr<Color_Knob> _checkerboardColor2;
-    boost::shared_ptr<Bool_Knob> _autoWipe;
-    boost::shared_ptr<Bool_Knob> _autoProxyWhenScrubbingTimeline;
-    boost::shared_ptr<Choice_Knob> _autoProxyLevel;
-    boost::shared_ptr<Bool_Knob> _enableProgressReport;
+    boost::shared_ptr<KnobPage> _viewersTab;
+    boost::shared_ptr<KnobChoice> _texturesMode;
+    boost::shared_ptr<KnobInt> _powerOf2Tiling;
+    boost::shared_ptr<KnobInt> _checkerboardTileSize;
+    boost::shared_ptr<KnobColor> _checkerboardColor1;
+    boost::shared_ptr<KnobColor> _checkerboardColor2;
+    boost::shared_ptr<KnobBool> _autoWipe;
+    boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
+    boost::shared_ptr<KnobChoice> _autoProxyLevel;
+    boost::shared_ptr<KnobBool> _enableProgressReport;
     
-    boost::shared_ptr<Page_Knob> _nodegraphTab;
-    boost::shared_ptr<Bool_Knob> _autoTurbo;
-    boost::shared_ptr<Bool_Knob> _useNodeGraphHints;
-    boost::shared_ptr<Bool_Knob> _snapNodesToConnections;
-    boost::shared_ptr<Bool_Knob> _useBWIcons;
-    boost::shared_ptr<Int_Knob> _maxUndoRedoNodeGraph;
-    boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
-    boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
-    boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
-    boost::shared_ptr<Bool_Knob> _usePluginIconsInNodeGraph;
-    boost::shared_ptr<Color_Knob> _defaultNodeColor;
-    boost::shared_ptr<Color_Knob> _defaultBackdropColor;
-    boost::shared_ptr<Color_Knob> _defaultGeneratorColor;
-    boost::shared_ptr<Color_Knob> _defaultReaderColor;
-    boost::shared_ptr<Color_Knob> _defaultWriterColor;
-    boost::shared_ptr<Color_Knob> _defaultColorGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultFilterGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultTransformGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultTimeGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultDrawGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultKeyerGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultChannelGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultMergeGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultViewsGroupColor;
-    boost::shared_ptr<Color_Knob> _defaultDeepGroupColor;
-    boost::shared_ptr<Int_Knob> _defaultAppearanceVersion;
+    boost::shared_ptr<KnobPage> _nodegraphTab;
+    boost::shared_ptr<KnobBool> _autoTurbo;
+    boost::shared_ptr<KnobBool> _useNodeGraphHints;
+    boost::shared_ptr<KnobBool> _snapNodesToConnections;
+    boost::shared_ptr<KnobBool> _useBWIcons;
+    boost::shared_ptr<KnobInt> _maxUndoRedoNodeGraph;
+    boost::shared_ptr<KnobInt> _disconnectedArrowLength;
+    boost::shared_ptr<KnobBool> _hideOptionalInputsAutomatically;
+    boost::shared_ptr<KnobBool> _useInputAForMergeAutoConnect;
+    boost::shared_ptr<KnobBool> _usePluginIconsInNodeGraph;
+    boost::shared_ptr<KnobColor> _defaultNodeColor;
+    boost::shared_ptr<KnobColor> _defaultBackdropColor;
+    boost::shared_ptr<KnobColor> _defaultGeneratorColor;
+    boost::shared_ptr<KnobColor> _defaultReaderColor;
+    boost::shared_ptr<KnobColor> _defaultWriterColor;
+    boost::shared_ptr<KnobColor> _defaultColorGroupColor;
+    boost::shared_ptr<KnobColor> _defaultFilterGroupColor;
+    boost::shared_ptr<KnobColor> _defaultTransformGroupColor;
+    boost::shared_ptr<KnobColor> _defaultTimeGroupColor;
+    boost::shared_ptr<KnobColor> _defaultDrawGroupColor;
+    boost::shared_ptr<KnobColor> _defaultKeyerGroupColor;
+    boost::shared_ptr<KnobColor> _defaultChannelGroupColor;
+    boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
+    boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
+    boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
+    boost::shared_ptr<KnobInt> _defaultAppearanceVersion;
     
-    boost::shared_ptr<Page_Knob> _readersTab;
-    std::vector< boost::shared_ptr<Choice_Knob> > _readersMapping;
-    boost::shared_ptr<Page_Knob> _writersTab;
-    std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
+    boost::shared_ptr<KnobPage> _readersTab;
+    std::vector< boost::shared_ptr<KnobChoice> > _readersMapping;
+    boost::shared_ptr<KnobPage> _writersTab;
+    std::vector< boost::shared_ptr<KnobChoice> >  _writersMapping;
     
-    boost::shared_ptr<Path_Knob> _extraPluginPaths;
-    boost::shared_ptr<Path_Knob> _templatesPluginPaths;
-    boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
-    boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
-    boost::shared_ptr<Page_Knob> _pluginsTab;
+    boost::shared_ptr<KnobPath> _extraPluginPaths;
+    boost::shared_ptr<KnobPath> _templatesPluginPaths;
+    boost::shared_ptr<KnobBool> _preferBundledPlugins;
+    boost::shared_ptr<KnobBool> _loadBundledPlugins;
+    boost::shared_ptr<KnobPage> _pluginsTab;
     
-    boost::shared_ptr<Page_Knob> _pythonPage;
-    boost::shared_ptr<String_Knob> _onProjectCreated;
-    boost::shared_ptr<String_Knob> _defaultOnProjectLoaded;
-    boost::shared_ptr<String_Knob> _defaultOnProjectSave;
-    boost::shared_ptr<String_Knob> _defaultOnProjectClose;
-    boost::shared_ptr<String_Knob> _defaultOnNodeCreated;
-    boost::shared_ptr<String_Knob> _defaultOnNodeDelete;
-    boost::shared_ptr<Bool_Knob> _loadPyPlugsFromPythonScript;
+    boost::shared_ptr<KnobPage> _pythonPage;
+    boost::shared_ptr<KnobString> _onProjectCreated;
+    boost::shared_ptr<KnobString> _defaultOnProjectLoaded;
+    boost::shared_ptr<KnobString> _defaultOnProjectSave;
+    boost::shared_ptr<KnobString> _defaultOnProjectClose;
+    boost::shared_ptr<KnobString> _defaultOnNodeCreated;
+    boost::shared_ptr<KnobString> _defaultOnNodeDelete;
+    boost::shared_ptr<KnobBool> _loadPyPlugsFromPythonScript;
     
-    boost::shared_ptr<Bool_Knob> _echoVariableDeclarationToPython;
-    boost::shared_ptr<Page_Knob> _appearanceTab;
+    boost::shared_ptr<KnobBool> _echoVariableDeclarationToPython;
+    boost::shared_ptr<KnobPage> _appearanceTab;
     
-    boost::shared_ptr<Choice_Knob> _systemFontChoice;
-    boost::shared_ptr<Int_Knob> _fontSize;
+    boost::shared_ptr<KnobChoice> _systemFontChoice;
+    boost::shared_ptr<KnobInt> _fontSize;
     
-    boost::shared_ptr<Group_Knob> _guiColors;
-    boost::shared_ptr<Color_Knob> _sunkenColor;
-    boost::shared_ptr<Color_Knob> _baseColor;
-    boost::shared_ptr<Color_Knob> _raisedColor;
-    boost::shared_ptr<Color_Knob> _selectionColor;
-    boost::shared_ptr<Color_Knob> _textColor;
-    boost::shared_ptr<Color_Knob> _altTextColor;
-    boost::shared_ptr<Color_Knob> _timelinePlayheadColor;
-    boost::shared_ptr<Color_Knob> _timelineBGColor;
-    boost::shared_ptr<Color_Knob> _timelineBoundsColor;
-    boost::shared_ptr<Color_Knob> _interpolatedColor;
-    boost::shared_ptr<Color_Knob> _keyframeColor;
-    boost::shared_ptr<Color_Knob> _exprColor;
-    boost::shared_ptr<Color_Knob> _cachedFrameColor;
-    boost::shared_ptr<Color_Knob> _diskCachedFrameColor;
+    boost::shared_ptr<KnobGroup> _guiColors;
+    boost::shared_ptr<KnobColor> _sunkenColor;
+    boost::shared_ptr<KnobColor> _baseColor;
+    boost::shared_ptr<KnobColor> _raisedColor;
+    boost::shared_ptr<KnobColor> _selectionColor;
+    boost::shared_ptr<KnobColor> _textColor;
+    boost::shared_ptr<KnobColor> _altTextColor;
+    boost::shared_ptr<KnobColor> _timelinePlayheadColor;
+    boost::shared_ptr<KnobColor> _timelineBGColor;
+    boost::shared_ptr<KnobColor> _timelineBoundsColor;
+    boost::shared_ptr<KnobColor> _interpolatedColor;
+    boost::shared_ptr<KnobColor> _keyframeColor;
+    boost::shared_ptr<KnobColor> _exprColor;
+    boost::shared_ptr<KnobColor> _cachedFrameColor;
+    boost::shared_ptr<KnobColor> _diskCachedFrameColor;
     
-    boost::shared_ptr<Group_Knob> _curveEditorColors;
-    boost::shared_ptr<Color_Knob> _curveEditorBGColor;
-    boost::shared_ptr<Color_Knob> _gridColor;
-    boost::shared_ptr<Color_Knob> _curveEditorScaleColor;
+    boost::shared_ptr<KnobGroup> _curveEditorColors;
+    boost::shared_ptr<KnobColor> _curveEditorBGColor;
+    boost::shared_ptr<KnobColor> _gridColor;
+    boost::shared_ptr<KnobColor> _curveEditorScaleColor;
 
-    boost::shared_ptr<Group_Knob> _dopeSheetEditorColors;
-    boost::shared_ptr<Color_Knob> _dopeSheetEditorBackgroundColor;
-    boost::shared_ptr<Color_Knob> _dopeSheetEditorRootSectionBackgroundColor;
-    boost::shared_ptr<Color_Knob> _dopeSheetEditorKnobSectionBackgroundColor;
-    boost::shared_ptr<Color_Knob> _dopeSheetEditorScaleColor;
-    boost::shared_ptr<Color_Knob> _dopeSheetEditorGridColor;
+    boost::shared_ptr<KnobGroup> _dopeSheetEditorColors;
+    boost::shared_ptr<KnobColor> _dopeSheetEditorBackgroundColor;
+    boost::shared_ptr<KnobColor> _dopeSheetEditorRootSectionBackgroundColor;
+    boost::shared_ptr<KnobColor> _dopeSheetEditorKnobSectionBackgroundColor;
+    boost::shared_ptr<KnobColor> _dopeSheetEditorScaleColor;
+    boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
     
-    std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
+    std::map<std::string,boost::shared_ptr<KnobChoice> > _perPluginRenderScaleSupport;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
