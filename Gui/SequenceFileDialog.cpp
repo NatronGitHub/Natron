@@ -190,14 +190,25 @@ static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& p
 
 		QString driveName = path.mid(0,2);
 
-		TCHAR szDeviceName[512]; 
+		TCHAR szDeviceName[512];
 		DWORD dwResult, cchBuff = sizeof(szDeviceName);
+#ifdef UNICODE
+        dwResult = WNetGetConnection(Natron::s2ws(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
+#else
 		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
+#endif
 		if (dwResult == NO_ERROR) {
 			ret = path.mid(2,-1);
 
-			//Replace \\ with / 
-			QString qDeviceName(szDeviceName);
+			//Replace \\ with /
+#ifdef UNICODE
+            std::wstring wstr(szDeviceName);
+            std::string str((const char*)&wstr[0], sizeof(wchar_t)/sizeof(char)*wstr.size());
+            QString qDeviceName(str.c_str());
+#else
+            QString qDeviceName(szDeviceName);
+#endif
+			
 			qDeviceName.replace('\\','/');
 
 			//Make sure we remember the mapping
