@@ -29,6 +29,7 @@
 				1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */,
 				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
 				D7A1965E18B2257700F412DA /* PBXTargetDependency */,
+				1EE26C831B9D959C001EEE0B /* PBXTargetDependency */,
 			);
 			name = all;
 			productName = all;
@@ -56,6 +57,17 @@
 			);
 			name = Tests;
 			productName = Tests;
+		};
+		1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 1EE26C7F1B9D9553001EEE0B /* Build configuration list for PBXAggregateTarget "NatronCrashReporter" */;
+			buildPhases = (
+				1EE26C7E1B9D9553001EEE0B /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = NatronCrashReporter;
+			productName = NatronRenderer;
 		};
 		D7A1965518B2255200F412DA /* NatronRenderer */ = {
 			isa = PBXAggregateTarget;
@@ -141,6 +153,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
+		};
+		1EE26C821B9D959C001EEE0B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1EE26C7B1B9D9553001EEE0B;
+			remoteInfo = NatronCrashReporter;
 		};
 		ACCCA4B61A87A0C500A20E4A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -320,6 +339,7 @@
 				1EADE5F818AA407D00EF3180 /* Tests */,
 				1E5F8F5118AA91330045A477 /* libs */,
 				D7A1965518B2255200F412DA /* NatronRenderer */,
+				1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */,
 			);
 		};
 /* End PBXProject section */
@@ -419,6 +439,20 @@
 			shellScript = "xcodebuild -project Renderer/NatronRenderer.xcodeproj -configuration $CONFIGURATION";
 			showEnvVarsInLog = 0;
 		};
+		1EE26C7E1B9D9553001EEE0B /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "xcodebuild -project CrashReporter/NatronCrashReporter.xcodeproj -configuration $CONFIGURATION";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -451,6 +485,11 @@
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
+		};
+		1EE26C831B9D959C001EEE0B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */;
+			targetProxy = 1EE26C821B9D959C001EEE0B /* PBXContainerItemProxy */;
 		};
 		D7A1964818B2242E00F412DA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -542,6 +581,20 @@
 			};
 			name = Release;
 		};
+		1EE26C801B9D9553001EEE0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		1EE26C811B9D9553001EEE0B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		D7A1965718B2255200F412DA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -600,6 +653,15 @@
 			buildConfigurations = (
 				1EADE5FA18AA407D00EF3180 /* Debug */,
 				1EADE5FB18AA407D00EF3180 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1EE26C7F1B9D9553001EEE0B /* Build configuration list for PBXAggregateTarget "NatronCrashReporter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1EE26C801B9D9553001EEE0B /* Debug */,
+				1EE26C811B9D9553001EEE0B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
