@@ -9,13 +9,15 @@ QWidget {
     background-color: %2;
 }
 
+QFrame {
+   color: black;
+}
+
+/*QLabel inherits QFrame so we put it afterwards, otherwise the label text will be black too.*/
 QLabel {
     color: %5;
 }
 
-QFrame {
-   color: black;
-}
 
 QGroupBox {
    color: black;
