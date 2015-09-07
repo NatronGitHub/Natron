@@ -69,7 +69,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         //Redirect for transforms if needed
-        EffectInstance* inputEffect;
+        EffectInstance* inputEffect = NULL;
         std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap.find(inputNb);
         if (foundReroute != reroutesMap.end()) {
             inputEffect = foundReroute->second->getInput(inputNb);
