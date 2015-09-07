@@ -76,7 +76,13 @@ static std::string getUserName()
     TCHAR user_name[UNLEN+1];
     DWORD user_name_size = sizeof(user_name);
     GetUserName(user_name, &user_name_size);
-    return user_name;
+#ifdef UNICODE
+    std::wstring wUserName(user_name);
+    std::string sUserName((const char*)&wUserName[0], sizeof(wchar_t)/sizeof(char)*wUserName.size());
+    return sUserName;
+#else
+    return std::string(user_name);
+#endif
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;
     passwd = getpwuid( getuid() );
