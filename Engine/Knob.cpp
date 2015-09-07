@@ -1592,9 +1592,10 @@ static bool parseTokenFrom(int fromDim,
     //The get() function does not always returns a tuple
     if (params.empty() && dimensionParamPos == -1) {
         params.push_back("-1");
+        ++dimensionParamPos;
     }
     
-    if (dimensionParamPos >= (int)params.size()) {
+    if (dimensionParamPos < 0 || (int)params.size() <= dimensionParamPos) {
         throw std::invalid_argument("Invalid expr");
     }
     
