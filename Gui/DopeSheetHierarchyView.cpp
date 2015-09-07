@@ -726,6 +726,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
     QTreeWidgetItem *item = itemFromIndex(index);
 
     bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot);
+    bool isTreeViewTopItem = !itemAbove(item);
     boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->findParentDSNode(item);
 
     QRect rowRect = option.rect;
@@ -766,7 +767,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 
         _imp->drawPluginIconArea(painter, dsNode, rowRect, drawPluginIconToo);
 
-        if (drawPluginIconToo) {
+        if (drawPluginIconToo && !isTreeViewTopItem) {
             _imp->drawNodeTopSeparation(painter, item, rowRect);
         }
 
