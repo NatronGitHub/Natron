@@ -73,7 +73,7 @@ using std::make_pair;
 static std::string getUserName()
 {
 #ifdef __NATRON_WIN32__
-    char user_name[UNLEN+1];
+    TCHAR user_name[UNLEN+1];
     DWORD user_name_size = sizeof(user_name);
     GetUserName(user_name, &user_name_size);
     return user_name;
