@@ -1082,11 +1082,11 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
         boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
-        if (rotoContext) {
+        if (args && rotoContext) {
             for (NodeList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                const ParallelRenderArgs* args = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
-                if (args && args->validArgs) {
-                    argsMap.insert(std::make_pair(*it2, *args));
+                const ParallelRenderArgs* args2 = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
+                if (args2 && args2->validArgs) {
+                    argsMap.insert(std::make_pair(*it2, *args2));
                 }
             }
         }
