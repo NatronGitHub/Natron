@@ -33,7 +33,7 @@
 #include <QStandardPaths>
 #endif
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #ifdef __NATRON_OSX__
 #include <CoreServices/CoreServices.h>
@@ -180,16 +180,21 @@ macLocation(StandardPaths::StandardLocationEnum type,
 static QString
 qSystemDirectory()
 {
-    QVarLengthArray<char, MAX_PATH> fullPath;
 
+    QVarLengthArray<TCHAR, MAX_PATH> fullPath;
     UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
     if (retLen > MAX_PATH) {
         fullPath.resize(retLen);
         retLen = ::GetSystemDirectory(fullPath.data(), retLen);
     }
-
+#ifdef UNICODE
+	std::wstring ws(fullPath.constData(), retLen);
+	std::string str((const char*)&ws[0], sizeof(wchar_t)/sizeof(char)*ws.size());
+#else
+	std::string str (fullPath.constData(), retLen);
+#endif
     // in some rare cases retLen might be 0
-    return QString::fromLatin1( fullPath.constData(), int(retLen) );
+    return QString(str.c_str());
 }
 
 static HINSTANCE

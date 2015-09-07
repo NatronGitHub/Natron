@@ -30,6 +30,10 @@
 #include <QThreadPool>
 #include <QThread>
 
+#ifdef WINDOWS
+#include <tchar.h>
+#endif
+
 #include "Global/MemoryInfo.h"
 
 #include "Engine/AppManager.h"
@@ -976,7 +980,8 @@ Settings::initializeKnobs()
 #elif defined(WINDOWS)
     
 #ifdef UNICODE
-    std::wstring basePath = getStdOFXPluginPath("") + std::wstring(" and C:\\Program Files\\Common Files\\OFX\\Plugins");
+    std::wstring basePath = std::wstring(getStdOFXPluginPath(""));
+	basePath.append(std::wstring(__T(" and C:\\Program Files\\Common Files\\OFX\\Plugins")));
     std::string searchPath((const char*)&basePath[0], sizeof(wchar_t)/sizeof(char)*basePath.size());
 #else
     std::string searchPath(getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
