@@ -310,7 +310,7 @@ RotoSmear::render(const RenderActionArgs& args)
         }
         
         
-        double distToNext;
+        double distToNext = 0.;
 
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
