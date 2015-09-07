@@ -291,3 +291,6 @@ coverage {
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
 
+breakpad {
+  DEFINES += NATRON_USE_BREAKPAD
+}
