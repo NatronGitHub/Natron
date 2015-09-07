@@ -1922,7 +1922,9 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it);
 
-        if (!model->findDSNode(node.get())) {
+        boost::shared_ptr<DSNode> dsNode = model->findDSNode(node.get());
+        
+        if (!dsNode) {
             continue;
         }
 
@@ -1931,25 +1933,13 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
         if (!nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible()) {
             continue;
         }
-
-        std::string pluginID = node->getPluginID();
-
-        if (pluginID == PLUGINID_OFX_READOIIO ||
-                pluginID == PLUGINID_OFX_READFFMPEG ||
-                pluginID == PLUGINID_OFX_READPFM) {
-            Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
-            assert(startingTimeKnob);
-            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameFirstFrame).get());
-            assert(firstFrameKnob);
-            Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
-            assert(lastFrameKnob);
-
-            int startingTimeValue = startingTimeKnob->getGuiValue();
-            int firstFrameValue = firstFrameKnob->getGuiValue();
-            int lastFrameValue = lastFrameKnob->getGuiValue();
-
-            times.insert(startingTimeValue);
-            times.insert(startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
+        
+        computeNodeRange(dsNode.get());
+        
+        std::map<DSNode *, FrameRange >::iterator found = nodeRanges.find(dsNode.get());
+        if (found != nodeRanges.end()) {
+            times.insert(found->second.first);
+            times.insert(found->second.second);
         }
 
         const KnobsAndGuis &knobs = nodeGui->getKnobs();
