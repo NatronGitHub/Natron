@@ -133,7 +133,9 @@ win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
-  DEFINES -= _UNICODE UNICODE
+
+  #Unicode is required for breakpad and openfx HostSupport.
+  DEFINES += _UNICODE UNICODE
 }
 
 win32-msvc* {
