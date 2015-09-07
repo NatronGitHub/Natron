@@ -227,8 +227,16 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
     ********************************************************
     *********************************************************/
+#ifdef UNICODE
+    std::wstring wpath = Natron::s2ws(path);
+    file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
+                               0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+
+#else
     file_handle = ::CreateFile(path.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+#endif
+    
     if (file_handle == INVALID_HANDLE_VALUE) {
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
