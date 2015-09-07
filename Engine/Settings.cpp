@@ -968,22 +968,28 @@ Settings::initializeKnobs()
     
     _extraPluginPaths = Natron::createKnob<KnobPath>(this, "OpenFX plugins search path");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for OpenFX plugins. "
-                                                                                                       "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
-                                                                                                       "The priority order for system-wide plugins, from high to low, is:\n"
-                                                                                                       "- plugins found in OFX_PLUGIN_PATH\n"
-                                                                                                       "- plugins found in \""
-                                               #if defined(WINDOWS)
-                                                   ) + getStdOFXPluginPath("") +
-                                       std::string("\" and \"C:\\Program Files\\Common Files\\OFX\\Plugins"
-                                               #endif
-                                               #if defined(__linux__) || defined(__FreeBSD__)
-                                                   "/usr/OFX/Plugins"
-                                               #endif
-                                               #if defined(__APPLE__)
-                                                   "/Library/OFX/Plugins"
-                                               #endif
-                                                   "\".\n"
+    
+#if defined(__linux__) || defined(__FreeBSD__)
+    std::string searchPath("/usr/OFX/Plugins");
+#elif defined(__APPLE__)
+    std::string searchPath("/Library/OFX/Plugins");
+#elif defined(WINDOWS)
+    
+#ifdef UNICODE
+    std::wstring basePath = getStdOFXPluginPath("") + std::wstring(" and C:\\Program Files\\Common Files\\OFX\\Plugins");
+    std::string searchPath((const char*)&basePath[0], sizeof(wchar_t)/sizeof(char)*basePath.size());
+#else
+    std::string searchPath(getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
+#endif
+#endif
+    
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME
+                                                   " should scan for OpenFX plugins. "
+                                                   "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
+                                                   "The priority order for system-wide plugins, from high to low, is:\n"
+                                                   "- plugins found in OFX_PLUGIN_PATH\n"
+                                                   "- plugins found in "
+                                                   + searchPath + "\n"
                                                    "Plugins bundled with the binary distribution of Natron may have either "
                                                    "higher or lower priority, depending on the \"Prefer bundled plugins over "
                                                    "system-wide plugins\" setting.\n"
