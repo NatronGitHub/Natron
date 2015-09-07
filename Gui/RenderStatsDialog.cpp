@@ -693,7 +693,9 @@ public:
             int nb = 0;
             if (exists) {
                 item = view->item(row, COL_NB_CACHE_HIT_DOWNSCALED);
-                nb = item->text().toInt();
+                if (item) {
+                    nb = item->text().toInt();
+                }
             } else {
                 item = new TableItem;
                 QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access hit (success) but at higher scale "
