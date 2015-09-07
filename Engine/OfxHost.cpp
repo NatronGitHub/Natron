@@ -553,7 +553,13 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
 
 #if defined(WINDOWS)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath( getStdOFXPluginPath("Nuke") );
+#ifdef UNICODE
+    std::wstring wpath = getStdOFXPluginPath("Nuke");
+    std::string path((const char*)&wpath[0], sizeof(wchar_t)/sizeof(char)*wpath.size());
+#else
+    std::string path = getStdOFXPluginPath("Nuke");
+#endif
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
 #endif
 #if defined(__linux__) || defined(__FreeBSD__)
