@@ -288,9 +288,6 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
     }
 
     
-    const int maxColorComps = std::min(dstNComps, 3);
-    assert(maxColorComps <= 3);
-
     ///special case comp == alpha && channelForAlpha = -1 clear out the mask
     if ( dstNComps == 1 && (channelForAlpha == -1) ) {
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(renderWindow.x1, renderWindow.y1);
@@ -391,7 +388,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                             alphaForUnPremult = 1.;
                         }
                         
-                        for (int k = 0; k < maxColorComps; ++k) {
+                        for (int k = 0; k < 3 && k < dstNComps; ++k) {
                             SRCPIX sourcePixel = k < srcNComps ? srcPixels[k] : 0.;
                             DSTPIX pix;
                             if (!useColorspaces || (!srcLut && !dstLut)) {
@@ -450,7 +447,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
 #                 ifdef DEBUG
                             assert(dstPixels[k] == dstPixels[k]); // check for NaN
 #                 endif
-                       } // for (int k = 0; k < maxColorComps; ++k) {
+                       } // for (int k = 0; k < k < 3 && k < dstNComps; ++k) {
                         
                         if (dstNComps == 4) {
                             // For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA or XY--->RGBA
