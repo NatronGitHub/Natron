@@ -89,7 +89,13 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 
     _binaryPath = binaryPath;
 #ifdef __NATRON_WIN32__
+#ifdef UNICODE
+    std::wstring ws = Natron::s2ws(binaryPath);
+    _library = LoadLibrary(ws.c_str());
+#else
     _library = LoadLibrary( binaryPath.c_str() );
+#endif
+    
 #elif defined(__NATRON_UNIX__)
     _library = dlopen(binaryPath.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #endif

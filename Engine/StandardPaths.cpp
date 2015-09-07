@@ -172,7 +172,7 @@ macLocation(StandardPaths::StandardLocationEnum type,
     if ( (type == Natron::StandardPaths::eStandardLocationData) || (type == Natron::StandardPaths::eStandardLocationCache) ) {
         appendOrganizationAndApp(path);
     }
-
+    
     return path;
 }
 
@@ -219,7 +219,13 @@ load(const wchar_t *libraryName,
             fullPathAttempt.append( QLatin1Char('\\') );
         }
         fullPathAttempt.append(fileName);
-        HINSTANCE inst = ::LoadLibrary( (LPCSTR)fullPathAttempt.toStdString().c_str() );
+        
+#ifdef UNICODE
+        std::wstring ws = Natron::s2ws(fullPathAttempt.toStdString());
+        HINSTANCE inst = ::LoadLibrary( ws.c_str() );
+#else
+        HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
+#endif
         if (inst != 0) {
             return inst;
         }
