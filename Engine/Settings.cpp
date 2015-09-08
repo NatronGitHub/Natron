@@ -52,6 +52,10 @@
 
 #include "SequenceParsing.h"
 
+#ifdef WINDOWS
+#include <ofxhPluginCache.h>
+#endif
+
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 #define NATRON_DEFAULT_APPEARANCE_VERSION 1
@@ -91,11 +95,6 @@ getDefaultOcioConfigPaths()
     return QStringList( QString(binaryPath + "../Resources/OpenColorIO-Configs") );
 #endif
 }
-
-#if defined(WINDOWS)
-// defined in ofxhPluginCache.cpp
-const TCHAR * getStdOFXPluginPath(const std::string &hostId);
-#endif
 
 void
 Settings::initializeKnobs()
@@ -974,11 +973,11 @@ Settings::initializeKnobs()
 #elif defined(WINDOWS)
     
 #ifdef UNICODE
-    std::wstring basePath = std::wstring(getStdOFXPluginPath(""));
+    std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath(""));
 	basePath.append(std::wstring(__T(" and C:\\Program Files\\Common Files\\OFX\\Plugins")));
     std::string searchPath((const char*)&basePath[0], sizeof(wchar_t)/sizeof(char)*basePath.size());
 #else
-    std::string searchPath(getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
+    std::string searchPath(OFX::Host::PluginCache::getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
 #endif
 #endif
     

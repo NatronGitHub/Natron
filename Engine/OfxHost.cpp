@@ -535,11 +535,6 @@ Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
 }
 
-#if defined(WINDOWS)
-// defined in ofxhPluginCache.cpp
-const TCHAR * getStdOFXPluginPath(const std::string &hostId);
-#endif
-
 void
 Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                 std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
@@ -554,10 +549,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
 #if defined(WINDOWS)
 #ifdef UNICODE
-    std::wstring wpath = getStdOFXPluginPath("Nuke");
+    std::wstring wpath = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
     std::string path((const char*)&wpath[0], sizeof(wchar_t)/sizeof(char)*wpath.size());
 #else
-    std::string path = getStdOFXPluginPath("Nuke");
+    std::string path = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
 #endif
     OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
