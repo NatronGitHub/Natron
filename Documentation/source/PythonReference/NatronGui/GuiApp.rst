@@ -29,6 +29,11 @@ Functions
 *    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
 *    def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 *    def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
+*    def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
+*    def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
+*    def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
+*    def :meth:`selectAllNodes<NatronGui.GuiApp.selectAllNodes>` ([group=None])
+*    def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
 *    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
 *    def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
 
@@ -38,9 +43,9 @@ Functions
 Detailed Description
 ---------------------------
 
-See :doc:`App` for the documentation of base functionnalities of this class.
+See :ref:`App<NatronEngine.App>` for the documentation of base functionnalities of this class.
 
-To create a new :doc:`modal dialog<NatronGui.PyModalDialog>` , use the 
+To create a new :ref:`modal dialog<NatronGui.PyModalDialog>` , use the 
 :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>`function.
 
 Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
@@ -204,16 +209,54 @@ If no *group* is specified, this will return the selection in the main node grap
 	groupSelection = app.getSelectedNodes(group)
 	
 	
-.. method :: NatronGui.GuiApp.getViewer(scriptName)
+.. method:: NatronGui.GuiApp.getViewer(scriptName)
 
 	:param scriptName: :class:`str`
 	
 Returns the viewer with the given *scriptName* if one can be found.
 
 
-.. method :: NatronGui.GuiApp.getUserPanel(scriptName)
+.. method:: NatronGui.GuiApp.getUserPanel(scriptName)
 
 	:param scriptName: :class:`str`
 	
 Returns a user panel matching the given *scriptName* if there is any.
 
+
+.. method:: NatronGui.GuiApp.selectNode(node,clearPreviousSelection)
+
+	:param node: :class:`Effect<NatronEngine.Effect>`
+	:param clearPreviousSelection: :class:`bool<PySide.QtCore.bool>`
+	
+	Select the given *node* in its containing nodegraph. If *clearPreviousSelection* is set to *True*, all
+	the current selection will be wiped prior to selecting the *node*; otherwise the *node*
+	will just be added to the selection.
+
+.. method:: NatronGui.GuiApp.deselectNode(node)
+
+	:param node: :class:`Effect<NatronEngine.Effect>`
+	
+	Deselect the given *node* in its containing nodegraph. If the *node* is not selected,
+	this function does nothing.
+
+.. method:: NatronGui.GuiApp.setSelection(nodes)
+
+	:param nodes: :class:`sequence`
+	
+	Set all the given *nodes* selected in the nodegraph containing them and wipe 
+	any current selection. 
+	
+	.. note::
+		All nodes must be part of the same nodegraph (group), otherwise this function will fail.
+
+.. method:: NatronGui.GuiApp.selectAllNodes([group=None])
+
+	:param group: :class:`Group<NatronEngine.Group>`
+	
+	Select all nodes in the given *group*. If *group* is *None*, all nodes in the top-level
+	nodegraph will be selected.
+
+.. method:: NatronGui.GuiApp.clearSelection([group=None])
+
+	Wipe any current selection in the given *group*. If *group* is *None*, the selection
+	in the top-level nodegraph will be cleared.

@@ -40,6 +40,76 @@ GuiAppWrapper::~GuiAppWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_GuiAppFunc_clearSelection(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.clearSelection(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:clearSelection", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: clearSelection(Group*)
+    if (numArgs == 0) {
+        overloadId = 0; // clearSelection(Group*)
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0])))) {
+        overloadId = 0; // clearSelection(Group*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_clearSelection_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "group");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.clearSelection(): got multiple values for keyword argument 'group'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0]))))
+                    goto Sbk_GuiAppFunc_clearSelection_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Group* cppArg0 = 0;
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // clearSelection(Group*)
+            cppSelf->clearSelection(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_clearSelection_TypeError:
+        const char* overloads[] = {"NatronEngine.Group = None", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.clearSelection", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
 {
     ::GuiApp* cppSelf = 0;
@@ -64,6 +134,50 @@ static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_GuiAppFunc_deselectNode(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: deselectNode(Effect*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArg)))) {
+        overloadId = 0; // deselectNode(Effect*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_deselectNode_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Effect* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // deselectNode(Effect*)
+            cppSelf->deselectNode(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_deselectNode_TypeError:
+        const char* overloads[] = {"NatronEngine.Effect", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.deselectNode", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* args, PyObject* kwds)
@@ -820,6 +934,175 @@ static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* arg
         return 0;
 }
 
+static PyObject* Sbk_GuiAppFunc_selectAllNodes(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.selectAllNodes(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:selectAllNodes", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: selectAllNodes(Group*)
+    if (numArgs == 0) {
+        overloadId = 0; // selectAllNodes(Group*)
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0])))) {
+        overloadId = 0; // selectAllNodes(Group*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "group");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.selectAllNodes(): got multiple values for keyword argument 'group'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0]))))
+                    goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Group* cppArg0 = 0;
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // selectAllNodes(Group*)
+            cppSelf->selectAllNodes(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_selectAllNodes_TypeError:
+        const char* overloads[] = {"NatronEngine.Group = None", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.selectAllNodes", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_selectNode(PyObject* self, PyObject* args)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "selectNode", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: selectNode(Effect*,bool)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+        overloadId = 0; // selectNode(Effect*,bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_selectNode_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Effect* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // selectNode(Effect*,bool)
+            cppSelf->selectNode(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_selectNode_TypeError:
+        const char* overloads[] = {"NatronEngine.Effect, bool", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.selectNode", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_setSelection(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setSelection(std::list<Effect*>)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX], (pyArg)))) {
+        overloadId = 0; // setSelection(std::list<Effect*>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_setSelection_TypeError;
+
+    // Call function/method
+    {
+        ::std::list<Effect * > cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setSelection(std::list<Effect*>)
+            cppSelf->setSelection(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_setSelection_TypeError:
+        const char* overloads[] = {"list", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.setSelection", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_GuiAppFunc_unregisterPythonPanel(PyObject* self, PyObject* pyArg)
 {
     ::GuiApp* cppSelf = 0;
@@ -865,7 +1148,9 @@ static PyObject* Sbk_GuiAppFunc_unregisterPythonPanel(PyObject* self, PyObject* 
 }
 
 static PyMethodDef Sbk_GuiApp_methods[] = {
+    {"clearSelection", (PyCFunction)Sbk_GuiAppFunc_clearSelection, METH_VARARGS|METH_KEYWORDS},
     {"createModalDialog", (PyCFunction)Sbk_GuiAppFunc_createModalDialog, METH_NOARGS},
+    {"deselectNode", (PyCFunction)Sbk_GuiAppFunc_deselectNode, METH_O},
     {"getDirectoryDialog", (PyCFunction)Sbk_GuiAppFunc_getDirectoryDialog, METH_VARARGS|METH_KEYWORDS},
     {"getFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_getFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},
@@ -878,6 +1163,9 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},
     {"saveFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_saveFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"saveSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_saveSequenceDialog, METH_VARARGS|METH_KEYWORDS},
+    {"selectAllNodes", (PyCFunction)Sbk_GuiAppFunc_selectAllNodes, METH_VARARGS|METH_KEYWORDS},
+    {"selectNode", (PyCFunction)Sbk_GuiAppFunc_selectNode, METH_VARARGS},
+    {"setSelection", (PyCFunction)Sbk_GuiAppFunc_setSelection, METH_O},
     {"unregisterPythonPanel", (PyCFunction)Sbk_GuiAppFunc_unregisterPythonPanel, METH_O},
 
     {0} // Sentinel

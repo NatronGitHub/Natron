@@ -136,6 +136,12 @@ public:
     
     std::list<Effect*> getSelectedNodes(Group* group = 0) const;
     
+    void selectNode(Effect* effect, bool clearPreviousSelection);
+    void setSelection(const std::list<Effect*>& nodes);
+    void selectAllNodes(Group* group = 0);
+    void deselectNode(Effect* effect);
+    void clearSelection(Group* group = 0);
+    
     PyViewer* getViewer(const std::string& scriptName) const;
     
     PyPanel* getUserPanel(const std::string& scriptName) const;

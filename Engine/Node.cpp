@@ -6324,6 +6324,17 @@ Node::getNodeGui() const
 }
 
 bool
+Node::isUserSelected() const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (!gui) {
+        return false;
+    }
+    return gui->isUserSelected();
+}
+
+
+bool
 Node::isSettingsPanelOpened() const
 {
     boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();

@@ -286,6 +286,12 @@ Effect::setColor(double r, double g, double b)
     _node->setColor(r, g, b);
 }
 
+bool
+Effect::isNodeSelected() const
+{
+    _node->isUserSelected();
+}
+
 void
 Effect::beginChanges()
 {

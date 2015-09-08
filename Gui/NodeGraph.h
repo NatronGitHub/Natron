@@ -86,6 +86,8 @@ public:
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
     
+    void deselectNode(const boost::shared_ptr<NodeGui>& n);
+    
     void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
     
     void clearSelection();

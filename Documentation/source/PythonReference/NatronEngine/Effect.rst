@@ -37,6 +37,7 @@ Functions
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
+*    def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
 *    def :meth:`setColor<NatronEngine.Effect.setColor>` (r, g, b)
 *    def :meth:`setLabel<NatronEngine.Effect.setLabel>` (name)
 *    def :meth:`setPosition<NatronEngine.Effect.setPosition>` (x, y)
@@ -346,6 +347,16 @@ should not be used.
 
 
 Convenience function to return the user page parameter if this Effect has one.
+
+
+.. method:: NatronEngine.Effect.isUserSelected()
+
+
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+	Returns true if this node is selected in its containing nodegraph.
+
 
 
 

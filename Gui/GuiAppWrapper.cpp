@@ -270,6 +270,151 @@ GuiApp::getSelectedNodes(Group* group) const
     return ret;
 }
 
+
+void
+GuiApp::selectNode(Effect* effect, bool clearPreviousSelection)
+{
+    if (!effect || appPTR->isBackground()) {
+        return;
+    }
+    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    if (!collection) {
+        return;
+    }
+    
+    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    if (!nodeUi) {
+        return;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    NodeGraph* graph = 0;
+    if (isGroup) {
+        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+    } else {
+        graph = _app->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    graph->selectNode(nodeUi, !clearPreviousSelection);
+}
+
+void
+GuiApp::setSelection(const std::list<Effect*>& nodes)
+{
+    if (appPTR->isBackground()) {
+        return;
+    }
+    std::list<boost::shared_ptr<NodeGui> > selection;
+    boost::shared_ptr<NodeCollection> collection ;
+    bool printWarn = false;
+    for (std::list<Effect*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getInternalNode()->getNodeGui());
+        if (!nodeUi) {
+            continue;
+        }
+        if (!collection) {
+            collection = (*it)->getInternalNode()->getGroup();
+        } else {
+            if ((*it)->getInternalNode()->getGroup() != collection) {
+                ///Group mismatch
+                printWarn = true;
+                continue;
+            }
+        }
+        selection.push_back(nodeUi);
+    }
+    if (printWarn) {
+        _app->appendToScriptEditor(QObject::tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString());
+    } else {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+        NodeGraph* graph = 0;
+        if (isGroup) {
+            graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+        } else {
+            graph = _app->getGui()->getNodeGraph();
+        }
+        assert(graph);
+        graph->setSelection(selection);
+    }
+    
+}
+
+void
+GuiApp::selectAllNodes(Group* group)
+{
+    if (appPTR->isBackground()) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    boost::shared_ptr<NodeCollection> collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>(collection.get());
+        }
+    }
+    if (isGroup) {
+        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+    } else {
+        graph = _app->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    graph->selectAllNodes(false);
+}
+
+void
+GuiApp::deselectNode(Effect* effect)
+{
+    if (!effect || appPTR->isBackground()) {
+        return;
+    }
+    
+    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    if (!collection) {
+        return;
+    }
+    
+    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    if (!nodeUi) {
+        return;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    NodeGraph* graph = 0;
+    if (isGroup) {
+        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+    } else {
+        graph = _app->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    graph->deselectNode(nodeUi);
+}
+
+void
+GuiApp::clearSelection(Group* group)
+{
+    if (appPTR->isBackground()) {
+        return;
+    }
+    
+    NodeGraph* graph = 0;
+    boost::shared_ptr<NodeCollection> collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>(collection.get());
+        }
+    }
+    if (isGroup) {
+        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+    } else {
+        graph = _app->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    graph->clearSelection();
+    
+}
+
 PyViewer*
 GuiApp::getViewer(const std::string& scriptName) const
 {

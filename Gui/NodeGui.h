@@ -249,6 +249,11 @@ public:
 
     /* @brief Is the node selected ? MT-Safe */
     bool getIsSelected() const;
+    
+    virtual bool isUserSelected() const OVERRIDE FINAL
+    {
+        return getIsSelected();
+    }
 
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
     Edge* firstAvailableEdge();

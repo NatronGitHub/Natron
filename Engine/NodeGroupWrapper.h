@@ -46,6 +46,11 @@ public:
     
     virtual ~Group();
     
+    boost::shared_ptr<NodeCollection> getInternalCollection() const
+    {
+        return _collection.lock();
+    }
+    
     /**
      * @brief Get a pointer to a node. The node is identified by its fully qualified name, e.g:
      * Group1.Blur1 if it belongs to the Group1, or just Blur1 if it belongs to the project's root.

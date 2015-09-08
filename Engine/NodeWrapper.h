@@ -311,6 +311,10 @@ public:
     void getColor(double* r,double *g, double* b) const;
     void setColor(double r, double g, double b);
     
+    /**
+     * @brief Returns true if the node is selected in the nodegraph
+     **/
+    bool isNodeSelected() const;
     
     /**
      * @brief Get the user page param. Note that user created params (with the function above) may only be added to user created pages,

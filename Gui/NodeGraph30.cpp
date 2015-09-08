@@ -357,6 +357,29 @@ NodeGraph::deleteSelection()
 } // deleteSelection
 
 void
+NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
+{
+    
+    
+    {
+        QMutexLocker k(&_imp->_nodesMutex);
+        for (NodeGuiList::iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+            if ((*it) == n) {
+                _imp->_selection.erase(it);
+            }
+        }
+    }
+    n->setUserSelected(false);
+    
+    //Stop magnification if active
+    if (_imp->_magnifiedNode == n && _imp->_magnifOn) {
+        _imp->_magnifOn = false;
+        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+    }
+    
+}
+
+void
 NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
                       bool addToSelection)
 {

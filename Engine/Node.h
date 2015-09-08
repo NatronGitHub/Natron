@@ -528,6 +528,8 @@ public:
     
     bool isSettingsPanelOpened() const;
     
+    bool isUserSelected() const;
+    
     bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
     /**
