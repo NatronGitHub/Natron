@@ -248,21 +248,23 @@ public:
     virtual void restoreClipPreferences() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     virtual Natron::StatusEnum beginSequenceRender(double first,
-                                               double last,
-                                               double step,
-                                               bool interactive,
-                                               const RenderScale & scale,
-                                               bool isSequentialRender,
-                                               bool isRenderResponseToUserInteraction,
-                                               int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                   double last,
+                                                   double step,
+                                                   bool interactive,
+                                                   const RenderScale & scale,
+                                                   bool isSequentialRender,
+                                                   bool isRenderResponseToUserInteraction,
+                                                   bool draftMode,
+                                                   int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::StatusEnum endSequenceRender(double first,
-                                             double last,
-                                             double step,
-                                             bool interactive,
-                                             const RenderScale & scale,
-                                             bool isSequentialRender,
-                                             bool isRenderResponseToUserInteraction,
-                                             int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                 double last,
+                                                 double step,
+                                                 bool interactive,
+                                                 const RenderScale & scale,
+                                                 bool isSequentialRender,
+                                                 bool isRenderResponseToUserInteraction,
+                                                 bool draftMode,
+                                                 int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void getPreferredDepthAndComponents(int inputNb, std::list<Natron::ImageComponents>* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;

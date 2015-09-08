@@ -3944,7 +3944,7 @@ EffectInstance::renderRoIInternal(double time,
     if (callBegin) {
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
-                                       isRenderMadeInResponseToUserInteraction, view) == eStatusFailed) {
+                                       isRenderMadeInResponseToUserInteraction, frameArgs.draftMode, view) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }
@@ -4053,6 +4053,7 @@ EffectInstance::renderRoIInternal(double time,
         if (endSequenceRender_public(time, time, time, false, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
+                                     frameArgs.draftMode,
                                      view) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
@@ -5750,6 +5751,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            const RenderScale & scale,
                                            bool isSequentialRender,
                                            bool isRenderResponseToUserInteraction,
+                                           bool draftMode,
                                            int view)
 {
     NON_RECURSIVE_ACTION();
@@ -5762,7 +5764,7 @@ EffectInstance::beginSequenceRender_public(double first,
     }
 
     return beginSequenceRender(first, last, step, interactive, scale,
-                               isSequentialRender, isRenderResponseToUserInteraction, view);
+                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
 }
 
 Natron::StatusEnum
@@ -5773,6 +5775,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          const RenderScale & scale,
                                          bool isSequentialRender,
                                          bool isRenderResponseToUserInteraction,
+                                         bool draftMode,
                                          int view)
 {
     NON_RECURSIVE_ACTION();
@@ -5782,7 +5785,7 @@ EffectInstance::endSequenceRender_public(double first,
         assert(_imp->beginEndRenderCount.localData() >= 0);
     }
     
-    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
 }
 
 bool

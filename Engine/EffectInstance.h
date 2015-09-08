@@ -1300,25 +1300,27 @@ protected:
     }
 
     virtual Natron::StatusEnum beginSequenceRender(double /*first*/,
-                                               double /*last*/,
-                                               double /*step*/,
-                                               bool /*interactive*/,
-                                               const RenderScale & /*scale*/,
-                                               bool /*isSequentialRender*/,
-                                               bool /*isRenderResponseToUserInteraction*/,
-                                               int /*view*/)
+                                                   double /*last*/,
+                                                   double /*step*/,
+                                                   bool /*interactive*/,
+                                                   const RenderScale & /*scale*/,
+                                                   bool /*isSequentialRender*/,
+                                                   bool /*isRenderResponseToUserInteraction*/,
+                                                   bool /*draftMode*/,
+                                                   int /*view*/)
     {
         return Natron::eStatusOK;
     }
 
     virtual Natron::StatusEnum endSequenceRender(double /*first*/,
-                                             double /*last*/,
-                                             double /*step*/,
-                                             bool /*interactive*/,
-                                             const RenderScale & /*scale*/,
-                                             bool /*isSequentialRender*/,
-                                             bool /*isRenderResponseToUserInteraction*/,
-                                             int /*view*/)
+                                                 double /*last*/,
+                                                 double /*step*/,
+                                                 bool /*interactive*/,
+                                                 const RenderScale & /*scale*/,
+                                                 bool /*isSequentialRender*/,
+                                                 bool /*isRenderResponseToUserInteraction*/,
+                                                 bool /*draftMode*/,
+                                                 int /*view*/)
     {
         return Natron::eStatusOK;
     }
@@ -1333,10 +1335,12 @@ public:
     Natron::StatusEnum beginSequenceRender_public(double first, double last,
                                               double step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                                  bool draftMode,
                                               int view);
     Natron::StatusEnum endSequenceRender_public(double first, double last,
                                             double step, bool interactive, const RenderScale & scale,
                                             bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                                bool draftMode,
                                             int view);
 
 

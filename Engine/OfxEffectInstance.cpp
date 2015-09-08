@@ -1946,6 +1946,7 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        const RenderScale & scale,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
+                                       bool draftMode,
                                        int view)
 {
     {
@@ -1974,7 +1975,7 @@ OfxEffectInstance::beginSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+        stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1992,6 +1993,7 @@ OfxEffectInstance::endSequenceRender(double first,
                                      const RenderScale & scale,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
+                                     bool draftMode,
                                      int view)
 {
     {
@@ -2019,7 +2021,7 @@ OfxEffectInstance::endSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, view);
+        stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
