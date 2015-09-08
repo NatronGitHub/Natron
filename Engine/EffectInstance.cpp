@@ -4295,6 +4295,9 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     // check the dimensions of all input and output images
+    const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
+    RectI dstBounds;
+    dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
     for (InputImagesMap::const_iterator it = rectToRender.imgs.begin();
          it != rectToRender.imgs.end();
          ++it) {
@@ -4303,10 +4306,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
             const RectD & srcRodCanonical = (*it2)->getRoD();
             RectI srcBounds;
             srcRodCanonical.toPixelEnclosing((*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio(), &srcBounds); // compute srcRod at level 0
-            const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
-            RectI dstBounds;
-            dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
-            
+
             if (!frameArgs.tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
