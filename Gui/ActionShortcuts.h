@@ -153,6 +153,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionConnectViewerToInput10 "connectViewerInput10"
 #define kShortcutDescActionConnectViewerToInput10 "Connect Viewer to Input 10"
 
+
 #define kShortcutIDActionShowPaneFullScreen "showPaneFullScreen"
 #define kShortcutDescActionShowPaneFullScreen "Show Pane Full Screen"
 
@@ -636,8 +637,10 @@ public:
     QString grouping; //< the grouping of the action, such as CurveEditor/
     QString actionID; //< the unique ID within the grouping
     QString description; //< the description that will be in the shortcut editor
-    Qt::KeyboardModifiers modifiers; //< the keyboard modifiers that must be held down during the action
-    Qt::KeyboardModifiers defaultModifiers; //< the default keyboard modifiers
+    
+    //There might be multiple combinations
+    std::list<Qt::KeyboardModifiers> modifiers; //< the keyboard modifiers that must be held down during the action
+    std::list<Qt::KeyboardModifiers> defaultModifiers; //< the default keyboard modifiers
 
     BoundAction()
         : editable(true)
@@ -740,14 +743,17 @@ class KeyBoundAction
 {
 public:
 
-    Qt::Key currentShortcut; //< the actual shortcut for the keybind
-    Qt::Key defaultShortcut; //< the default shortcut proposed by the dev team
+    //There might be multiple shortcuts
+    std::list<Qt::Key> currentShortcut; //< the actual shortcut for the keybind
+    std::list<Qt::Key> defaultShortcut; //< the default shortcut proposed by the dev team
+    
+    
     std::list<ActionWithShortcut*> actions; //< list of actions using this shortcut
 
     KeyBoundAction()
         : BoundAction()
-        , currentShortcut(Qt::Key_unknown)
-        , defaultShortcut(Qt::Key_unknown)
+        , currentShortcut()
+        , defaultShortcut()
     {
     }
 
@@ -758,7 +764,9 @@ public:
     void updateActionsShortcut()
     {
         for (std::list<ActionWithShortcut*>::iterator it = actions.begin(); it != actions.end(); ++it) {
-            (*it)->setShortcutWrapper( actionID, makeKeySequence(modifiers, currentShortcut) );
+            if (!modifiers.empty()) {
+                (*it)->setShortcutWrapper( actionID, makeKeySequence(modifiers.front(), currentShortcut.front()) );
+            }
         }
     }
 };

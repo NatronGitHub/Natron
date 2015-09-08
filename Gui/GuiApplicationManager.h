@@ -152,8 +152,7 @@ public:
      **/
     bool matchesMouseShortcut(const QString & group,const QString & actionID,const Qt::KeyboardModifiers & modifiers,int button) const;
 
-    QKeySequence getKeySequenceForAction(const QString & group,const QString & actionID) const;
-    bool getModifiersAndKeyForAction(const QString & group,const QString & actionID,Qt::KeyboardModifiers & modifiers,int & symbol) const;
+    std::list<QKeySequence> getKeySequenceForAction(const QString & group,const QString & actionID) const;
 
     /**
      * @brief Save shortcuts to QSettings

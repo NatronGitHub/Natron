@@ -35,11 +35,14 @@ ActionWithShortcut::ActionWithShortcut(const QString & group,
 , _group(group)
 , _shortcuts()
 {
-    QKeySequence seq = getKeybind(group, actionID);
-    _shortcuts.push_back(std::make_pair(actionID, seq));
+    std::list<QKeySequence> seq = getKeybind(group, actionID);
+    if (seq.empty()) {
+        seq.push_back(QKeySequence());
+    }
+    _shortcuts.push_back(std::make_pair(actionID, seq.front()));
     assert ( !group.isEmpty() && !actionID.isEmpty() );
     if (setShortcutOnAction) {
-        setShortcut(seq);
+        setShortcut(seq.front());
     }
     appPTR->addShortcutAction(group, actionID, this);
     setShortcutContext(Qt::WindowShortcut);
@@ -57,10 +60,13 @@ ActionWithShortcut::ActionWithShortcut(const QString & group,
 {
     QKeySequence seq0;
     for (int i = 0; i < actionIDs.size(); ++i) {
-        QKeySequence seq = getKeybind(group, actionIDs[i]);
-        _shortcuts.push_back(std::make_pair(actionIDs[i], seq));
+        std::list<QKeySequence> seq = getKeybind(group, actionIDs[i]);
+        if (seq.empty()) {
+            seq.push_back(QKeySequence());
+        }
+        _shortcuts.push_back(std::make_pair(actionIDs[i], seq.front()));
         if (i == 0) {
-            seq0 = seq;
+            seq0 = seq.front();
         }
         appPTR->addShortcutAction(group, actionIDs[i], this);
     }

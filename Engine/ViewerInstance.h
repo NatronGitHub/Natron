@@ -248,6 +248,11 @@ public:
     
     virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
+    ///Only callable on MT
+    void setActivateInputChangeRequestedFromViewer(bool fromViewer);
+    
+    bool isInputChangeRequestedFromViewer() const;
+    
 public Q_SLOTS:
     
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }

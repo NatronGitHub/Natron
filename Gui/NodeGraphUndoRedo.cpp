@@ -354,7 +354,7 @@ RemoveMultipleNodesCommand::redo()
                         ///set as active input the first non null input
                         for (U32 i = 0; i < inputs.size(); ++i) {
                             if (inputs[i]) {
-                                inspector->setActiveInputAndRefresh(i);
+                                inspector->setActiveInputAndRefresh(i, false);
                                 ///make sure we don't refresh it a second time
                                 std::list<ViewerInstance*>::iterator foundViewer =
                                     std::find( viewersToRefresh.begin(), viewersToRefresh.end(),

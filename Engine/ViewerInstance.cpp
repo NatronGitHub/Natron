@@ -2743,6 +2743,20 @@ ViewerInstance::getViewerCurrentView() const
 }
 
 void
+ViewerInstance::setActivateInputChangeRequestedFromViewer(bool fromViewer)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->activateInputChangedFromViewer = fromViewer;
+}
+
+bool
+ViewerInstance::isInputChangeRequestedFromViewer() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->activateInputChangedFromViewer;
+}
+
+void
 ViewerInstance::onInputChanged(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -2757,8 +2771,7 @@ ViewerInstance::onInputChanged(int inputNb)
                 _imp->activeInputs[1] = -1;
             }
         } else {
-            bool autoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
-            if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
+            if (_imp->activeInputs[0] == -1 || !_imp->activateInputChangedFromViewer) {
                 _imp->activeInputs[0] = inputNb;
             } else {
                 Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();

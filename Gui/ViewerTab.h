@@ -282,6 +282,8 @@ public:
     void zoomOut();
     
     void refresh(bool enableRenderStats);
+    
+    void connectToInput(int inputNb);
 
 public Q_SLOTS:
 

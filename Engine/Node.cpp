@@ -7222,8 +7222,10 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
 
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb)
+InspectorNode::setActiveInputAndRefresh(int inputNb,bool fromViewer)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
     if ( ( inputNb > (_maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }

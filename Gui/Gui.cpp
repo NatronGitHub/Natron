@@ -463,36 +463,39 @@ Gui::createMenuActions()
         connect( _imp->actionsOpenRecentFile[c], SIGNAL( triggered() ), this, SLOT( openRecentFile() ) );
     }
 
-    _imp->actionConnectInput1 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, this);
-    QObject::connect( _imp->actionConnectInput1, SIGNAL( triggered() ), this, SLOT( connectInput1() ) );
-
-    _imp->actionConnectInput2 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, this);
-    QObject::connect( _imp->actionConnectInput2, SIGNAL( triggered() ), this, SLOT( connectInput2() ) );
-
-    _imp->actionConnectInput3 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, this);
-    QObject::connect( _imp->actionConnectInput3, SIGNAL( triggered() ), this, SLOT( connectInput3() ) );
-
-    _imp->actionConnectInput4 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, this);
-    QObject::connect( _imp->actionConnectInput4, SIGNAL( triggered() ), this, SLOT( connectInput4() ) );
-
-    _imp->actionConnectInput5 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, this);
-    QObject::connect( _imp->actionConnectInput5, SIGNAL( triggered() ), this, SLOT( connectInput5() ) );
-
-
-    _imp->actionConnectInput6 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, this);
-    QObject::connect( _imp->actionConnectInput6, SIGNAL( triggered() ), this, SLOT( connectInput6() ) );
-
-    _imp->actionConnectInput7 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, this);
-    QObject::connect( _imp->actionConnectInput7, SIGNAL( triggered() ), this, SLOT( connectInput7() ) );
-
-    _imp->actionConnectInput8 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, this);
-    QObject::connect( _imp->actionConnectInput8, SIGNAL( triggered() ), this, SLOT( connectInput8() ) );
-
-    _imp->actionConnectInput9 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, this);
-
-    _imp->actionConnectInput10 = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, this);
-    QObject::connect( _imp->actionConnectInput9, SIGNAL( triggered() ), this, SLOT( connectInput9() ) );
-    QObject::connect( _imp->actionConnectInput10, SIGNAL( triggered() ), this, SLOT( connectInput10() ) );
+    const char* descs[10] = {
+        kShortcutDescActionConnectViewerToInput1,
+        kShortcutDescActionConnectViewerToInput2,
+        kShortcutDescActionConnectViewerToInput3,
+        kShortcutDescActionConnectViewerToInput4,
+        kShortcutDescActionConnectViewerToInput5,
+        kShortcutDescActionConnectViewerToInput6,
+        kShortcutDescActionConnectViewerToInput7,
+        kShortcutDescActionConnectViewerToInput8,
+        kShortcutDescActionConnectViewerToInput9,
+        kShortcutDescActionConnectViewerToInput10
+    };
+    
+    const char* ids[10] = {
+        kShortcutIDActionConnectViewerToInput1,
+        kShortcutIDActionConnectViewerToInput2,
+        kShortcutIDActionConnectViewerToInput3,
+        kShortcutIDActionConnectViewerToInput4,
+        kShortcutIDActionConnectViewerToInput5,
+        kShortcutIDActionConnectViewerToInput6,
+        kShortcutIDActionConnectViewerToInput7,
+        kShortcutIDActionConnectViewerToInput8,
+        kShortcutIDActionConnectViewerToInput9,
+        kShortcutIDActionConnectViewerToInput10
+    };
+    
+    
+    for (int i = 0; i < 10; ++i) {
+        _imp->actionConnectInput[i] = new ActionWithShortcut(kShortcutGroupGlobal, ids[i], descs[i], this);
+        _imp->actionConnectInput[i]->setData(i);
+        _imp->actionConnectInput[i]->setShortcutContext(Qt::WidgetShortcut);
+        QObject::connect( _imp->actionConnectInput[i], SIGNAL( triggered() ), this, SLOT( connectInput() ) );
+    }
 
     _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, this);
     QObject::connect( _imp->actionImportLayout, SIGNAL( triggered() ), this, SLOT( importLayout() ) );
@@ -551,16 +554,10 @@ Gui::createMenuActions()
     _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput1);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput2);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput3);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput4);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput5);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput6);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput7);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput8);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput9);
-    _imp->viewerInputsMenu->addAction(_imp->actionConnectInput10);
+    for (int i = 0; i < 10; ++i) {
+        _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
+    }
+
     _imp->menuDisplay->addSeparator();
     _imp->menuDisplay->addAction(_imp->actionFullScreen);
 

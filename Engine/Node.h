@@ -1214,7 +1214,7 @@ private:
 
 public:
 
-    void setActiveInputAndRefresh(int inputNb);
+    void setActiveInputAndRefresh(int inputNb, bool fromViewer);
 
 };
 

@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
  * To register an action without a keybind use Qt::NoModifier and (Qt::Key)0
  **/
 #define registerKeybind(group,id,description, modifiers,symbol) ( _imp->addKeybind(group,id,description, modifiers,symbol) )
+#define registerKeybind2(group,id,description, modifiers1,symbol1,modifiers2,symbol2) ( _imp->addKeybind(group,id,description, modifiers1,symbol1,modifiers2,symbol2) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
@@ -83,7 +84,7 @@ CLANG_DIAG_ON(uninitialized)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 4
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 5
 
 using namespace Natron;
 
@@ -378,13 +379,13 @@ GuiApplicationManager::exitApp()
 static bool
 matchesModifers(const Qt::KeyboardModifiers & lhs,
                 const Qt::KeyboardModifiers & rhs,
-                Qt::Key key)
+                Qt::Key /*key*/)
 {
     if (lhs == rhs) {
         return true;
     }
 
-    bool isDigit =
+    /*bool isDigit =
         key == Qt::Key_0 ||
         key == Qt::Key_1 ||
         key == Qt::Key_2 ||
@@ -398,7 +399,7 @@ matchesModifers(const Qt::KeyboardModifiers & lhs,
     // On some keyboards (e.g. French AZERTY), the number keys are shifted
     if ( ( lhs == (Qt::ShiftModifier | Qt::AltModifier) ) && (rhs == Qt::AltModifier) && isDigit ) {
         return true;
-    }
+    }*/
 
     return false;
 }
@@ -447,15 +448,20 @@ GuiApplicationManager::matchesKeybind(const QString & group,
     if (!keybind) {
         return false;
     }
-
+    
     // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
     Qt::KeyboardModifiers onlyCAS = modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
-
-    if ( matchesModifers(onlyCAS,keybind->modifiers,(Qt::Key)symbol) ) {
-        // modifiers are equal, now test symbol
-        return matchesKey( (Qt::Key)symbol, keybind->currentShortcut );
+    
+    assert(keybind->modifiers.size() == keybind->currentShortcut.size());
+    std::list<Qt::Key>::const_iterator kit = keybind->currentShortcut.begin();
+    
+    for (std::list<Qt::KeyboardModifiers>::const_iterator it = keybind->modifiers.begin(); it != keybind->modifiers.end(); ++it, ++kit) {
+        if ( matchesModifers(onlyCAS,*it,(Qt::Key)symbol) ) {
+            // modifiers are equal, now test symbol
+            return matchesKey( (Qt::Key)symbol, *kit );
+        }
     }
-
+    
     return false;
 }
 
@@ -500,12 +506,15 @@ GuiApplicationManager::matchesMouseShortcut(const QString & group,
         button = Qt::RightButton;
     }
 
-    if (onlyMCAS == mAction->modifiers) {
-        // modifiers are equal, now test symbol
-        if ( (Qt::MouseButton)button == mAction->button ) {
-            return true;
+    for (std::list<Qt::KeyboardModifiers>::const_iterator it = mAction->modifiers.begin(); it != mAction->modifiers.end(); ++it) {
+        if (onlyMCAS == *it) {
+            // modifiers are equal, now test symbol
+            if ( (Qt::MouseButton)button == mAction->button ) {
+                return true;
+            }
         }
     }
+    
 
     return false;
 }
@@ -520,11 +529,23 @@ GuiApplicationManager::saveShortcuts() const
         for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             const MouseAction* mAction = dynamic_cast<const MouseAction*>(it2->second);
             const KeyBoundAction* kAction = dynamic_cast<const KeyBoundAction*>(it2->second);
-            settings.setValue(it2->first + "_Modifiers", (int)it2->second->modifiers);
+
+            settings.setValue(it2->first+ "_nbShortcuts", QVariant((int)it2->second->modifiers.size()));
+            
+            int c = 0;
+            for (std::list<Qt::KeyboardModifiers>::const_iterator it3 = it2->second->modifiers.begin(); it3 != it2->second->modifiers.end(); ++it3, ++c) {
+                settings.setValue(it2->first + "_Modifiers" + QString::number(c), (int)*it3);
+            }
+            
             if (mAction) {
                 settings.setValue(it2->first + "_Button", (int)mAction->button);
             } else if (kAction) {
-                settings.setValue(it2->first + "_Symbol", (int)kAction->currentShortcut);
+                assert(it2->second->modifiers.size() == kAction->currentShortcut.size());
+                
+                c = 0;
+                for (std::list<Qt::Key>::const_iterator it3 = kAction->currentShortcut.begin() ; it3 != kAction->currentShortcut.end(); ++it3, ++c) {
+                    settings.setValue(it2->first + "_Symbol" + QString::number(c), (int)*it3);
+                }
             }
         }
         settings.endGroup();
@@ -557,29 +578,73 @@ GuiApplicationManager::loadShortcuts()
             MouseAction* mAction = dynamic_cast<MouseAction*>(it2->second);
             KeyBoundAction* kAction = dynamic_cast<KeyBoundAction*>(it2->second);
 
-            if ( settings.contains(it2->first + "_Modifiers") ) {
-                it2->second->modifiers = Qt::KeyboardModifiers( settings.value(it2->first + "_Modifiers").toInt() );
+            int nbShortcuts = 1;
+            bool nbShortcutsSet = false;
+            if (settings.contains(it2->first + "_nbShortcuts")) {
+                nbShortcuts = settings.value(it2->first + "_nbShortcuts").toInt();
+                nbShortcutsSet = true;
+            }
+            
+            bool hasNonNullKeybind = false;
+            
+            if (!nbShortcutsSet) {
+                it2->second->modifiers.clear();
+                if (kAction) {
+                    kAction->currentShortcut.clear();
+                    if (settings.contains(it2->first + "_Symbol") ) {
+                        
+                        Qt::Key key = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
+                        if (key != (Qt::Key)0) {
+                            kAction->currentShortcut.push_back(key);
+                            hasNonNullKeybind = true;
+                        }
+                    }
+                }
+                if ( hasNonNullKeybind && settings.contains(it2->first + "_Modifiers") ) {
+                    it2->second->modifiers.push_back(Qt::KeyboardModifiers( settings.value(it2->first + "_Modifiers").toInt() ));
+                }
+            } else {
+                
+                it2->second->modifiers.clear();
+                if (kAction) {
+                    kAction->currentShortcut.clear();
+                }
+
+                for (int i = 0; i < nbShortcuts; ++i) {
+                    QString idm = it2->first + "_Modifiers" + QString::number(i);
+                    
+                    if (kAction) {
+                        
+                        QString ids = it2->first + "_Symbol" + QString::number(i);
+                        if (settings.contains(ids) ) {
+                            Qt::Key key = (Qt::Key)settings.value(ids).toInt();
+                            if (key != (Qt::Key)0) {
+                                kAction->currentShortcut.push_back(key);
+                                hasNonNullKeybind = true;
+                            } else {
+                                continue;
+                            }
+                            
+                        }
+                    }
+                    if ( settings.contains(idm) ) {
+                        it2->second->modifiers.push_back(Qt::KeyboardModifiers(settings.value(idm).toInt()));
+                    }
+                }
             }
             if ( mAction && settings.contains(it2->first + "_Button") ) {
                 mAction->button = (Qt::MouseButton)settings.value(it2->first + "_Button").toInt();
             }
-            if ( kAction && settings.contains(it2->first + "_Symbol") ) {
-                
-                Qt::Key newShortcut = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
-                kAction->currentShortcut = newShortcut;
-                
-
-                //If this is a node shortcut, notify the Plugin object that it has a shortcut.
-                if ( (kAction->currentShortcut != (Qt::Key)0) &&
-                     it->first.startsWith(kShortcutGroupNodes) ) {
-                    const PluginsMap & allPlugins = getPluginsList();
-                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
-                    if (found != allPlugins.end()) {
-                        assert(found->second.size() > 0);
-                        (*found->second.rbegin())->setHasShortcut(true);
-                    }
+            //If this is a node shortcut, notify the Plugin object that it has a shortcut.
+            if (hasNonNullKeybind && it->first.startsWith(kShortcutGroupNodes)) {
+                const PluginsMap & allPlugins = getPluginsList();
+                PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
+                if (found != allPlugins.end()) {
+                    assert(found->second.size() > 0);
+                    (*found->second.rbegin())->setHasShortcut(true);
                 }
             }
+            
         }
         settings.endGroup();
     }
@@ -648,16 +713,26 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats, Qt::NoModifier, Qt::Key_F2);
 
 
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
+                    Qt::ShiftModifier, Qt::Key_1);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
+                     Qt::ShiftModifier, Qt::Key_2);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3,
+                     Qt::ShiftModifier, Qt::Key_3);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4,
+                     Qt::ShiftModifier, Qt::Key_4);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5,
+                     Qt::ShiftModifier, Qt::Key_5);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6,
+                     Qt::ShiftModifier, Qt::Key_6);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7,
+                     Qt::ShiftModifier, Qt::Key_7);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8,
+                     Qt::ShiftModifier, Qt::Key_8);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9,
+                     Qt::ShiftModifier, Qt::Key_9);
+    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0,
+                     Qt::ShiftModifier, Qt::Key_0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
@@ -666,8 +741,10 @@ GuiApplicationManager::populateShortcuts()
     
     
     ///Viewer
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus,
+                     Qt::ShiftModifier, Qt::Key_Plus);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus,
+                     Qt::ShiftModifier, Qt::Key_Minus);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
@@ -689,11 +766,16 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, kShortcutDescActionNewROI, Qt::AltModifier, Qt::Key_W);
     
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, kShortcutDescActionProxyEnabled, Qt::ControlModifier, Qt::Key_P);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, kShortcutDescActionProxyLevel8, Qt::AltModifier, Qt::Key_3);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1,
+                    Qt::AltModifier | Qt::ShiftModifier, Qt::Key_1);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2,
+                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_2);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, kShortcutDescActionProxyLevel8, Qt::AltModifier, Qt::Key_3,
+                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_3);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4,
+                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_4);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5,
+                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_5);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, kShortcutDescActionHideOverlays, Qt::NoModifier, Qt::Key_O);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, kShortcutDescActionHidePlayer, Qt::NoModifier, (Qt::Key)0);
@@ -704,7 +786,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, kShortcutDescActionHideInfobar, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1);
+    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1,
+                    Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_1);
     registerKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, Qt::NoModifier, Qt::Key_W);
     
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
@@ -830,10 +913,11 @@ GuiApplicationManager::populateShortcuts()
 } // populateShortcuts
 
 
-QKeySequence
+std::list<QKeySequence>
 GuiApplicationManager::getKeySequenceForAction(const QString & group,
                                                const QString & actionID) const
 {
+    std::list<QKeySequence> ret;
     AppShortcuts::const_iterator foundGroup = _imp->_actionShortcuts.find(group);
 
     if ( foundGroup != _imp->_actionShortcuts.end() ) {
@@ -841,36 +925,17 @@ GuiApplicationManager::getKeySequenceForAction(const QString & group,
         if ( found != foundGroup->second.end() ) {
             const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(found->second);
             if (ka) {
-                return makeKeySequence(found->second->modifiers, ka->currentShortcut);
+                assert(ka->modifiers.size() == ka->currentShortcut.size());
+                
+                std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
+                for (std::list<Qt::KeyboardModifiers>::const_iterator it = ka->modifiers.begin(); it != ka->modifiers.end(); ++it,++sit) {
+                    ret.push_back(makeKeySequence(*it, *sit));
+                }
             }
         }
     }
 
-    return QKeySequence();
-}
-
-bool
-GuiApplicationManager::getModifiersAndKeyForAction(const QString & group,
-                                                   const QString & actionID,
-                                                   Qt::KeyboardModifiers & modifiers,
-                                                   int & symbol) const
-{
-    AppShortcuts::const_iterator foundGroup = _imp->_actionShortcuts.find(group);
-
-    if ( foundGroup != _imp->_actionShortcuts.end() ) {
-        GroupShortcuts::const_iterator found = foundGroup->second.find(actionID);
-        if ( found != foundGroup->second.end() ) {
-            const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(found->second);
-            if (ka) {
-                modifiers = found->second->modifiers;
-                symbol = ka->currentShortcut;
-
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return ret;
 }
 
 const std::map<QString,std::map<QString,BoundAction*> > &
@@ -934,7 +999,7 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
                     PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
                     if (found != allPlugins.end()) {
                         assert(found->second.size() > 0);
-                        (*found->second.rbegin())->setHasShortcut(action->currentShortcut != (Qt::Key)0);
+                        (*found->second.rbegin())->setHasShortcut(!action->currentShortcut.empty());
                     }
                     break;
                 }

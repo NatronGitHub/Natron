@@ -56,6 +56,7 @@
 //#include "Engine/OutputSchedulerThread.h" // RenderEngine
 //#include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 //#include "Engine/TimeLine.h"
 //#include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
@@ -969,7 +970,7 @@ ViewerTab::onActiveInputsChanged()
         _imp->infoWidget[1]->show();
     }
     
-    bool autoWipe = appPTR->getCurrentSettings()->isAutoWipeEnabled();
+    bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
     
     /*if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
          && ( op != eViewerCompositingOperatorNone) ) {
@@ -984,6 +985,16 @@ ViewerTab::onActiveInputsChanged()
         setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
     }
     
+}
+
+void
+ViewerTab::connectToInput(int inputNb)
+{
+    InspectorNode* node = dynamic_cast<InspectorNode*>(getInternalNode()->getNode().get());
+    assert(node);
+    getInternalNode()->setActivateInputChangeRequestedFromViewer(true);
+    node->setActiveInputAndRefresh(inputNb, true);
+    getInternalNode()->setActivateInputChangeRequestedFromViewer(false);
 }
 
 void

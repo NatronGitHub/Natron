@@ -399,133 +399,27 @@ Gui::selectNode(boost::shared_ptr<NodeGui> node)
 }
 
 void
-Gui::connectInput1()
+Gui::connectInput(int inputNb)
 {
     NodeGraph* graph = 0;
-
+    
     if (_imp->_lastFocusedGraph) {
         graph = _imp->_lastFocusedGraph;
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    graph->connectCurrentViewerToSelection(0);
+    graph->connectCurrentViewerToSelection(inputNb);
 }
 
 void
-Gui::connectInput2()
+Gui::connectInput()
 {
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) {
+        return;
     }
-    graph->connectCurrentViewerToSelection(1);
-}
-
-void
-Gui::connectInput3()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(2);
-}
-
-void
-Gui::connectInput4()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(3);
-}
-
-void
-Gui::connectInput5()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(4);
-}
-
-void
-Gui::connectInput6()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(5);
-}
-
-void
-Gui::connectInput7()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(6);
-}
-
-void
-Gui::connectInput8()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(7);
-}
-
-void
-Gui::connectInput9()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(8);
-}
-
-void
-Gui::connectInput10()
-{
-    NodeGraph* graph = 0;
-
-    if (_imp->_lastFocusedGraph) {
-        graph = _imp->_lastFocusedGraph;
-    } else {
-        graph = _imp->_nodeGraphArea;
-    }
-    graph->connectCurrentViewerToSelection(9);
+    int inputNb = action->data().toInt();
+    connectInput(inputNb);
 }
 
 void

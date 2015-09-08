@@ -176,15 +176,12 @@ GuiApplicationManagerPrivate::createColorPickerCursor()
     _colorPickerCursor = new QCursor(pix);
 }
 
-
 void
-GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
-                                         const QString & id,
-                                         const QString & description,
-                                         const Qt::KeyboardModifiers & modifiers,
-                                         Qt::Key symbol)
+GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const QString & id,
+                        const QString & description,
+                        const std::list<Qt::KeyboardModifiers>& modifiersList,
+                        const std::list<Qt::Key>& symbolsList)
 {
-    
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
         GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
@@ -193,13 +190,21 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
         }
     }
     KeyBoundAction* kA = new KeyBoundAction;
-
+    
     kA->grouping = grouping;
     kA->description = description;
-    kA->defaultModifiers = modifiers;
-    kA->modifiers = modifiers;
-    kA->defaultShortcut = symbol;
-    kA->currentShortcut = symbol;
+    
+    assert(modifiersList.size() == symbolsList.size());
+    std::list<Qt::KeyboardModifiers>::const_iterator mit = modifiersList.begin();
+    for (std::list<Qt::Key>::const_iterator it = symbolsList.begin(); it != symbolsList.end(); ++it, ++mit) {
+        if ((*it) != (Qt::Key)0) {
+            kA->defaultModifiers.push_back(*mit);
+            kA->modifiers.push_back(*mit);
+            kA->defaultShortcut.push_back(*it);
+            kA->currentShortcut.push_back(*it);
+        }
+    }
+    
     kA->actionID = id;
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, kA) );
@@ -213,6 +218,36 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
         app->getGui()->addShortcut(kA);
     }
+}
+
+void
+GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString & id,
+                const QString & description,
+                const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
+                const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2)
+{
+    std::list<Qt::KeyboardModifiers> m;
+    m.push_back(modifiers1);
+    m.push_back(modifiers2);
+    std::list<Qt::Key> symbols;
+    symbols.push_back(symbol1);
+    symbols.push_back(symbol2);
+    addKeybindInternal(grouping, id, description, m, symbols);
+}
+
+void
+GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
+                                         const QString & id,
+                                         const QString & description,
+                                         const Qt::KeyboardModifiers & modifiers,
+                                         Qt::Key symbol)
+{
+    std::list<Qt::KeyboardModifiers> m;
+    m.push_back(modifiers);
+    std::list<Qt::Key> symbols;
+    symbols.push_back(symbol);
+    addKeybindInternal(grouping, id, description, m, symbols);
+    
 }
 
 
@@ -251,12 +286,12 @@ GuiApplicationManagerPrivate::addMouseShortcut(const QString & grouping,
 
     mA->grouping = grouping;
     mA->description = description;
-    mA->defaultModifiers = modifiers;
+    mA->defaultModifiers.push_back(modifiers);
     mA->actionID = id;
     if ( modifiers & (Qt::AltModifier | Qt::MetaModifier) ) {
         qDebug() << "Warning: mouse shortcut " << grouping << '/' << description << '(' << id << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
     }
-    mA->modifiers = modifiers;
+    mA->modifiers.push_back(modifiers);
     mA->button = button;
 
     ///Mouse shortcuts are not editable.
@@ -298,10 +333,10 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     KeyBoundAction* kA = new KeyBoundAction;
     kA->grouping = grouping;
     kA->description = description;
-    kA->defaultModifiers = modifiers;
-    kA->modifiers = modifiers;
-    kA->defaultShortcut = symbol;
-    kA->currentShortcut = symbol;
+    kA->defaultModifiers.push_back(modifiers);
+    kA->modifiers.push_back(modifiers);
+    kA->defaultShortcut.push_back(symbol);
+    kA->currentShortcut.push_back(symbol);
     if ( foundGroup != _actionShortcuts.end() ) {
         foundGroup->second.insert( std::make_pair(id, kA) );
     } else {

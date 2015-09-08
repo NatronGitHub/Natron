@@ -92,7 +92,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(),_imp->_selection.end(),gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
-        v->setActiveInputAndRefresh(inputNB);
+        v->setActiveInputAndRefresh(inputNB, false);
         gui->refreshEdges();
 
         return;

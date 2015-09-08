@@ -175,7 +175,7 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
 void
 Gui::progressStart(KnobHolder* effect,
                    const std::string &message,
-                   const std::string &messageid,
+                   const std::string &/*messageid*/,
                    bool canCancel)
 {
     if (!effect) {
@@ -478,6 +478,26 @@ Gui::keyPressEvent(QKeyEvent* e)
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         _imp->_nodeGraphArea->popFindDialog();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
+        connectInput(0);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
+        connectInput(1);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
+        connectInput(2);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
+        connectInput(3);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
+        connectInput(4);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
+        connectInput(5);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
+        connectInput(6);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
+        connectInput(7);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
+        connectInput(8);
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
+        connectInput(9);
     } else {
         QMainWindow::keyPressEvent(e);
     }

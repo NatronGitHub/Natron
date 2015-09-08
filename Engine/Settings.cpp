@@ -610,13 +610,7 @@ Settings::initializeKnobs()
     _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
-    _autoWipe = Natron::createKnob<KnobBool>(this, "Automatically enable wipe");
-    _autoWipe->setName("autoWipe");
-    _autoWipe->setHintToolTip("When checked, the wipe tool of all viewers will be automatic, that is, when changing "
-                              "an input of a viewer, it will be set to the input B of the viewer. When unchecked it will instead "
-                              "change the input A of the viewer, leaving the input B intact.");
-    _autoWipe->setAnimationEnabled(false);
-    _viewersTab->addKnob(_autoWipe);
+
     
     _autoProxyWhenScrubbingTimeline = Natron::createKnob<KnobBool>(this, "Automatically enable proxy when scrubbing the timeline");
     _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
@@ -1152,7 +1146,6 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
-    _autoWipe->setDefaultValue(false);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _enableProgressReport->setDefaultValue(false);
@@ -2686,11 +2679,6 @@ Settings::didSettingsExistOnStartup() const
     return _settingsExisted;
 }
 
-bool
-Settings::isAutoWipeEnabled() const
-{
-    return _autoWipe->getValue();
-}
 
 int
 Settings::getRenderScaleSupportPreference(const std::string& pluginID) const

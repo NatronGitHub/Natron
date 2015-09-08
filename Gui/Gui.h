@@ -617,16 +617,10 @@ public Q_SLOTS:
 
     void createNewViewer();
 
-    void connectInput1();
-    void connectInput2();
-    void connectInput3();
-    void connectInput4();
-    void connectInput5();
-    void connectInput6();
-    void connectInput7();
-    void connectInput8();
-    void connectInput9();
-    void connectInput10();
+    void connectInput();
+    
+    void connectInput(int inputNb);
+
 
     void showView0();
     void showView1();

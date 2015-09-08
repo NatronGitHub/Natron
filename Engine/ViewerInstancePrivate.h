@@ -205,6 +205,7 @@ public:
     , viewerMipMapLevel(0)
     , activeInputsMutex(QMutex::Recursive)
     , activeInputs()
+    , activateInputChangedFromViewer(false)
     , lastRenderedHashMutex()
     , lastRenderedHash(0)
     , lastRenderedHashValid(false)
@@ -450,6 +451,9 @@ public:
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     
+    ///Only accessed from MT
+    bool activateInputChangedFromViewer;
+    
     QMutex lastRenderedHashMutex;
     U64 lastRenderedHash;
     bool lastRenderedHashValid;
@@ -476,6 +480,7 @@ public:
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
     
     OnGoingRenders currentRenderAges[2];
+    
 };
 
 

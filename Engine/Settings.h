@@ -230,8 +230,6 @@ public:
      **/
     bool didSettingsExistOnStartup() const;
     
-    bool isAutoWipeEnabled() const;
-    
     /**
      * @brief Return whether the render scale support is set to its default value (0)  or deactivated (1)
      * for the given plug-in.
@@ -381,7 +379,6 @@ private:
     boost::shared_ptr<KnobInt> _checkerboardTileSize;
     boost::shared_ptr<KnobColor> _checkerboardColor1;
     boost::shared_ptr<KnobColor> _checkerboardColor2;
-    boost::shared_ptr<KnobBool> _autoWipe;
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
     boost::shared_ptr<KnobBool> _enableProgressReport;

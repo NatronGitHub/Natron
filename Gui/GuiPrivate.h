@@ -141,16 +141,7 @@ struct GuiPrivate
     ActionWithShortcut *renderAllWriters;
     ActionWithShortcut *renderSelectedNode;
     ActionWithShortcut *enableRenderStats;
-    ActionWithShortcut* actionConnectInput1;
-    ActionWithShortcut* actionConnectInput2;
-    ActionWithShortcut* actionConnectInput3;
-    ActionWithShortcut* actionConnectInput4;
-    ActionWithShortcut* actionConnectInput5;
-    ActionWithShortcut* actionConnectInput6;
-    ActionWithShortcut* actionConnectInput7;
-    ActionWithShortcut* actionConnectInput8;
-    ActionWithShortcut* actionConnectInput9;
-    ActionWithShortcut* actionConnectInput10;
+    ActionWithShortcut* actionConnectInput[10];
     ActionWithShortcut* actionImportLayout;
     ActionWithShortcut* actionExportLayout;
     ActionWithShortcut* actionRestoreDefaultLayout;

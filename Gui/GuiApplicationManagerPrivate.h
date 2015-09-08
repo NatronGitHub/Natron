@@ -106,6 +106,16 @@ struct GuiApplicationManagerPrivate
                     const QString & description,
                     const Qt::KeyboardModifiers & modifiers,Qt::Key symbol);
     
+    void addKeybind(const QString & grouping,const QString & id,
+                    const QString & description,
+                    const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
+                    const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2);
+    
+    void addKeybindInternal(const QString & grouping,const QString & id,
+                            const QString & description,
+                            const std::list<Qt::KeyboardModifiers>& modifiersList,
+                            const std::list<Qt::Key>& symbolsList);
+    
     void removeKeybind(const QString& grouping,const QString& id);
 
     void addMouseShortcut(const QString & grouping,const QString & id,
