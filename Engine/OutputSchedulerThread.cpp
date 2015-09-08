@@ -858,6 +858,7 @@ OutputSchedulerThread::startRender()
                                                                false,
                                                                scaleOne, true,
                                                                true,
+                                                               false,
                                                                _imp->outputEffect->getApp()->getMainView()) == eStatusFailed) {
                 l.unlock();
                 abortRendering(false);
@@ -906,6 +907,7 @@ OutputSchedulerThread::stopRender()
                                                            !appPTR->isBackground(),
                                                            scaleOne, true,
                                                            !appPTR->isBackground(),
+                                                                false,
                                                            _imp->outputEffect->getApp()->getMainView()));
            
         
