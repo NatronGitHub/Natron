@@ -234,15 +234,15 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
-    DopeSheet::ItemType nodeType = DopeSheet::ItemType(index.data(QT_ROLE_CONTEXT_TYPE).toInt());
+    Natron::DopeSheetItemType nodeType = Natron::DopeSheetItemType(index.data(QT_ROLE_CONTEXT_TYPE).toInt());
     int heightOffset = 0;
 
     switch (nodeType) {
-    case DopeSheet::ItemTypeReader:
-    case DopeSheet::ItemTypeRetime:
-    case DopeSheet::ItemTypeTimeOffset:
-    case DopeSheet::ItemTypeFrameRange:
-    case DopeSheet::ItemTypeGroup:
+    case Natron::eDopeSheetItemTypeReader:
+    case Natron::eDopeSheetItemTypeRetime:
+    case Natron::eDopeSheetItemTypeTimeOffset:
+    case Natron::eDopeSheetItemTypeFrameRange:
+    case Natron::eDopeSheetItemTypeGroup:
         heightOffset = 10;
         break;
     default:
@@ -353,11 +353,11 @@ void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
     boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
 
 
-    DopeSheet::ItemType nodeType = dsNode->getItemType();
+    Natron::DopeSheetItemType nodeType = dsNode->getItemType();
     QTreeWidgetItem *nodeItem = dsNode->getTreeItem();
 
     bool showNode;
-    if (nodeType == DopeSheet::ItemTypeCommon) {
+    if (nodeType == Natron::eDopeSheetItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
     } else {
         showNode = true;
@@ -726,7 +726,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 {
     QTreeWidgetItem *item = itemFromIndex(index);
 
-    bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot);
+    bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < Natron::eDopeSheetItemTypeKnobRoot);
     bool isTreeViewTopItem = !itemAbove(item);
     boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->findParentDSNode(item);
 
@@ -904,7 +904,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     for (int i = 0; i < treeItem->childCount(); ++i) {
         QTreeWidgetItem *child = treeItem->child(i);
 
-        if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < DopeSheet::ItemTypeKnobRoot) {
+        if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < Natron::eDopeSheetItemTypeKnobRoot) {
             toMove << child;
         }
     }

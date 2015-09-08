@@ -540,6 +540,22 @@ enum CurveChangeReason
      eCurveChangeReasonInternal
 };
     
+enum DopeSheetItemType
+{
+    eDopeSheetItemTypeCommon = 1001,
+    
+    // Range-based nodes
+    eDopeSheetItemTypeReader,
+    eDopeSheetItemTypeRetime,
+    eDopeSheetItemTypeTimeOffset,
+    eDopeSheetItemTypeFrameRange,
+    eDopeSheetItemTypeGroup,
+    
+    // Others
+    eDopeSheetItemTypeKnobRoot,
+    eDopeSheetItemTypeKnobDim
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

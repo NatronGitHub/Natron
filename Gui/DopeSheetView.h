@@ -151,6 +151,7 @@ protected:
     void mousePressEvent(QMouseEvent *e) OVERRIDE FINAL;
     void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
     void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseDoubleClickEvent(QMouseEvent *e) OVERRIDE FINAL;
 
     void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
 

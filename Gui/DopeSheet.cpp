@@ -98,7 +98,7 @@ bool nodeCanAnimate(const NodePtr &node)
 }
 
 QTreeWidgetItem *createKnobNameItem(const QString &text,
-                                    DopeSheet::ItemType itemType,
+                                    Natron::DopeSheetItemType itemType,
                                     int dimension,
                                     QTreeWidgetItem *parent)
 {
@@ -116,8 +116,8 @@ QTreeWidgetItem *createKnobNameItem(const QString &text,
 
     ret->setText(0, text);
 
-    if (itemType == DopeSheet::ItemTypeKnobRoot
-            || itemType == DopeSheet::ItemTypeKnobDim) {
+    if (itemType == Natron::eDopeSheetItemTypeKnobRoot
+            || itemType == Natron::eDopeSheetItemTypeKnobDim) {
         ret->setFlags(ret->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
     }
 
@@ -283,7 +283,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
-    DopeSheet::ItemType nodeType = DopeSheet::ItemTypeCommon;
+    Natron::DopeSheetItemType nodeType = Natron::eDopeSheetItemTypeCommon;
 
     NodePtr node = nodeGui->getNode();
     
@@ -300,23 +300,23 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
     if (pluginID == PLUGINID_OFX_READOIIO
             || pluginID == PLUGINID_OFX_READFFMPEG
             || pluginID == PLUGINID_OFX_READPFM) {
-        nodeType = DopeSheet::ItemTypeReader;
+        nodeType = Natron::eDopeSheetItemTypeReader;
     }
     else if (dynamic_cast<NodeGroup *>(effectInstance)) {
-        nodeType = DopeSheet::ItemTypeGroup;
+        nodeType = Natron::eDopeSheetItemTypeGroup;
     }
     else if (pluginID == PLUGINID_OFX_RETIME) {
-        nodeType = DopeSheet::ItemTypeRetime;
+        nodeType = Natron::eDopeSheetItemTypeRetime;
     }
     else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
-        nodeType = DopeSheet::ItemTypeTimeOffset;
+        nodeType = Natron::eDopeSheetItemTypeTimeOffset;
     }
     else if (pluginID == PLUGINID_OFX_FRAMERANGE) {
-        nodeType = DopeSheet::ItemTypeFrameRange;
+        nodeType = Natron::eDopeSheetItemTypeFrameRange;
     }
 
     // Discard specific nodes
-    if (nodeType == DopeSheet::ItemTypeCommon) {
+    if (nodeType == Natron::eDopeSheetItemTypeCommon) {
         if (dynamic_cast<GroupInput *>(effectInstance) ||
                 dynamic_cast<GroupOutput *>(effectInstance)) {
             return;
@@ -498,9 +498,9 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
 {
     std::vector<boost::shared_ptr<DSNode> > ret;
 
-    DopeSheet::ItemType nodeType = dsNode->getItemType();
+    Natron::DopeSheetItemType nodeType = dsNode->getItemType();
 
-    if (nodeType == DopeSheet::ItemTypeGroup) {
+    if (nodeType == Natron::eDopeSheetItemTypeGroup) {
         NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsNode->getInternalNode()->getLiveInstance());
         assert(nodeGroup);
 
@@ -784,8 +784,18 @@ void DopeSheet::pasteKeys()
 
         toPaste.push_back(key);
     }
+    if (!toPaste.empty()) {
+        _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, _imp->editor));
+    }
+}
 
-    _imp->pushUndoCommand(new DSPasteKeysCommand(toPaste, _imp->editor));
+void
+DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys)
+{
+    if (!keys.empty()) {
+        _imp->pushUndoCommand(new DSPasteKeysCommand(keys, _imp->editor));
+    }
+    
 }
 
 void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
@@ -840,7 +850,7 @@ SequenceTime DopeSheet::getCurrentFrame() const
     return _imp->timeline->currentFrame();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheet::ItemType itemType)
+boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, Natron::DopeSheetItemType itemType)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
@@ -1292,7 +1302,7 @@ public:
     /* attributes */
     DopeSheet *dopeSheetModel;
 
-    DopeSheet::ItemType nodeType;
+    Natron::DopeSheetItemType nodeType;
 
     boost::weak_ptr<NodeGui> nodeGui;
 
@@ -1341,7 +1351,7 @@ void DSNodePrivate::initGroupNode()
 }
 
 DSNode::DSNode(DopeSheet *model,
-               DopeSheet::ItemType itemType,
+               Natron::DopeSheetItemType itemType,
                const boost::shared_ptr<NodeGui> &nodeGui,
                QTreeWidgetItem *nameItem) :
     _imp(new DSNodePrivate)
@@ -1365,7 +1375,7 @@ DSNode::DSNode(DopeSheet *model,
 
         if (knob->getDimension() <= 1) {
             QTreeWidgetItem * nameItem = createKnobNameItem(knob->getDescription().c_str(),
-                                                            DopeSheet::ItemTypeKnobDim,
+                                                            Natron::eDopeSheetItemTypeKnobDim,
                                                             0,
                                                             _imp->nameItem);
 
@@ -1374,7 +1384,7 @@ DSNode::DSNode(DopeSheet *model,
         }
         else {
             QTreeWidgetItem *multiDimRootItem = createKnobNameItem(knob->getDescription().c_str(),
-                                                                   DopeSheet::ItemTypeKnobRoot,
+                                                                   Natron::eDopeSheetItemTypeKnobRoot,
                                                                    -1,
                                                                    _imp->nameItem);
 
@@ -1383,7 +1393,7 @@ DSNode::DSNode(DopeSheet *model,
 
             for (int i = 0; i < knob->getDimension(); ++i) {
                 QTreeWidgetItem *dimItem = createKnobNameItem(knob->getDimensionName(i).c_str(),
-                                                              DopeSheet::ItemTypeKnobDim,
+                                                              Natron::eDopeSheetItemTypeKnobDim,
                                                               i,
                                                               multiDimRootItem);
 
@@ -1404,7 +1414,7 @@ DSNode::DSNode(DopeSheet *model,
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
     // the group's clip rect
-    if (_imp->nodeType == DopeSheet::ItemTypeGroup) {
+    if (_imp->nodeType == Natron::eDopeSheetItemTypeGroup) {
         _imp->initGroupNode();
     }
 }
@@ -1457,27 +1467,27 @@ const DSTreeItemKnobMap& DSNode::getItemKnobMap() const
     return _imp->itemKnobMap;
 }
 
-DopeSheet::ItemType DSNode::getItemType() const
+Natron::DopeSheetItemType DSNode::getItemType() const
 {
     return _imp->nodeType;
 }
 
 bool DSNode::isTimeNode() const
 {
-    return (_imp->nodeType >= DopeSheet::ItemTypeRetime)
-            && (_imp->nodeType < DopeSheet::ItemTypeGroup);
+    return (_imp->nodeType >= Natron::eDopeSheetItemTypeRetime)
+            && (_imp->nodeType < Natron::eDopeSheetItemTypeGroup);
 }
 
 bool DSNode::isRangeDrawingEnabled() const
 {
-    return (_imp->nodeType >= DopeSheet::ItemTypeReader &&
-            _imp->nodeType <= DopeSheet::ItemTypeGroup);
+    return (_imp->nodeType >= Natron::eDopeSheetItemTypeReader &&
+            _imp->nodeType <= Natron::eDopeSheetItemTypeGroup);
 }
 
 bool DSNode::canContainOtherNodeContexts() const
 {
-    return (_imp->nodeType >= (DopeSheet::ItemTypeReader + 1)
-            && _imp->nodeType <= DopeSheet::ItemTypeGroup);
+    return (_imp->nodeType >= Natron::eDopeSheetItemTypeReader + 1
+            && _imp->nodeType <= Natron::eDopeSheetItemTypeGroup);
 }
 
 bool DSNode::containsNodeContext() const
@@ -1485,8 +1495,8 @@ bool DSNode::containsNodeContext() const
     for (int i = 0; i < _imp->nameItem->childCount(); ++i) {
         int childType = _imp->nameItem->child(i)->data(0, QT_ROLE_CONTEXT_TYPE).toInt();
 
-        if (childType != DopeSheet::ItemTypeKnobDim
-                && childType != DopeSheet::ItemTypeKnobRoot) {
+        if (childType != Natron::eDopeSheetItemTypeKnobDim
+                && childType != Natron::eDopeSheetItemTypeKnobRoot) {
             return true;
         }
 

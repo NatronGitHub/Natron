@@ -150,11 +150,11 @@ _model(model)
     setText(QObject::tr("Move selected keys"));
     std::set<boost::shared_ptr<Natron::Node> > nodesSet;
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        DopeSheet::ItemType type = (*it)->getItemType();
-        if (type != DopeSheet::ItemTypeReader &&
-            type != DopeSheet::ItemTypeGroup &&
-            type != DopeSheet::ItemTypeTimeOffset &&
-            type != DopeSheet::ItemTypeFrameRange) {
+        Natron::DopeSheetItemType type = (*it)->getItemType();
+        if (type != Natron::eDopeSheetItemTypeReader &&
+            type != Natron::eDopeSheetItemTypeGroup &&
+            type != Natron::eDopeSheetItemTypeTimeOffset &&
+            type != Natron::eDopeSheetItemTypeFrameRange) {
             //Note that Retime nodes cannot be moved
             continue;
         }
@@ -229,14 +229,14 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
     }
     ////////////Handle selected nodes
     for (std::vector<boost::shared_ptr<DSNode> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        DopeSheet::ItemType type = (*it)->getItemType();
-        if (type == DopeSheet::ItemTypeReader) {
+        Natron::DopeSheetItemType type = (*it)->getItemType();
+        if (type == Natron::eDopeSheetItemTypeReader) {
             moveReader((*it)->getInternalNode(), dt);
-        } else if (type == DopeSheet::ItemTypeFrameRange)  {
+        } else if (type == Natron::eDopeSheetItemTypeFrameRange)  {
             moveFrameRange((*it)->getInternalNode(), dt);
-        } else if (type == DopeSheet::ItemTypeTimeOffset) {
+        } else if (type == Natron::eDopeSheetItemTypeTimeOffset) {
             moveTimeOffset((*it)->getInternalNode(), dt);
-        } else if (type == DopeSheet::ItemTypeGroup) {
+        } else if (type == Natron::eDopeSheetItemTypeGroup) {
             moveGroupNode(_model, (*it)->getInternalNode(), dt);
         }
     }
@@ -860,13 +860,14 @@ void DSPasteKeysCommand::redo()
 void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
     for (std::vector<DopeSheetKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        DopeSheetKey key = (*it);
+        const DopeSheetKey& key = (*it);
 
         boost::shared_ptr<DSKnob> knobContext = key.context.lock();
         if (!knobContext) {
             continue;
         }
-
+        int dim = knobContext->getDimension();
+        
         boost::shared_ptr<KnobI> knob = knobContext->getInternalKnob();
         knob->beginChanges();
 
@@ -879,19 +880,27 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
-
-            if (isDouble) {
-                isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime), knobContext->getDimension());
-            } else if (isBool) {
-                isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime), knobContext->getDimension());
-            } else if (isInt) {
-                isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime), knobContext->getDimension());
-            } else if (isString) {
-                isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime), knobContext->getDimension());
+            
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                if (dim == -1 || i == dim) {
+                    if (isDouble) {
+                        isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime,i), i);
+                    } else if (isBool) {
+                        isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime,i), i);
+                    } else if (isInt) {
+                        isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime,i), i);
+                    } else if (isString) {
+                        isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime,i), i);
+                    }
+                }
             }
         }
         else {
-            knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,currentTime, knobContext->getDimension());
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                if (dim == -1 || i == dim) {
+                    knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,currentTime, i);
+                }
+            }
         }
 
         knob->endChanges();

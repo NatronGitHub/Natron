@@ -75,6 +75,7 @@ class Node;
 
 class DSKnob;
 class DSNode;
+class DopeSheet;
 
 typedef boost::shared_ptr<DSNode> DSNodePtr;
 typedef boost::shared_ptr<DSKnob> DSKnobPtr;
@@ -91,119 +92,6 @@ const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 3;
 bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);
 
 
-/**
- * @brief The DopeSheet class is the model part of the dope sheet editor.
- *
- * A DopeSheet is basically a bundle of "contexts". A context is a instance
- * of a class composed with a QTreeWidgetItem and a Natron data. Currently,
- * the class handles two types of contexts :
- *
- * - Node context : described by the DSNode class.
- * - Knob context : described by the DSKnob class.
- *
- * It provides several functions to find contexts and some of their datas.
- *
- *
- * --- User interactions ---
- *
- * The model handles each type of user interaction (that modify the model,
- * of course). For example, a specific function move the selected keyframes,
- * another move a reader...
- *
- * If you want to create a custom undoable modification, you must add a public
- * function that push a QUndoCommand-derived instance on the model's undo stack.
- */
-class DopeSheet: public QObject
-{
-    Q_OBJECT
-
-public:
-    enum ItemType
-    {
-        ItemTypeCommon = 1001,
-
-        // Range-based nodes
-        ItemTypeReader,
-        ItemTypeRetime,
-        ItemTypeTimeOffset,
-        ItemTypeFrameRange,
-        ItemTypeGroup,
-
-        // Others
-        ItemTypeKnobRoot,
-        ItemTypeKnobDim
-    };
-
-    DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline);
-    ~DopeSheet();
-
-    // Model specific
-    DSTreeItemNodeMap getItemNodeMap() const;
-
-    void addNode(boost::shared_ptr<NodeGui> nodeGui);
-    void removeNode(NodeGui *node);
-
-    boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
-    boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
-
-    boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
-    boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
-    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
-
-    boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
-
-    bool isPartOfGroup(DSNode *dsNode) const;
-    boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
-
-    std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
-
-    boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
-    Natron::Node *getNearestReader(DSNode *timeNode) const;
-
-    DopeSheetSelectionModel *getSelectionModel() const;
-    
-
-    // User interaction
-    void deleteSelectedKeyframes();
-
-    void moveSelectedKeysAndNodes(double dt);
-    void trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame);
-    void trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame);
-    
-    bool canSlipReader(const boost::shared_ptr<DSNode> &reader) const;
-    
-    void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
-    void copySelectedKeys();
-    void pasteKeys();
-    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
-    
-    void transformSelectedKeys(const Transform::Matrix3x3& transform);
-
-    // Undo/redo
-    void setUndoStackActive();
-
-    void emit_modelChanged();
-
-    // Other
-    SequenceTime getCurrentFrame() const;
-
-Q_SIGNALS:
-    void modelChanged();
-    void nodeAdded(DSNode *dsNode);
-    void nodeAboutToBeRemoved(DSNode *dsNode);
-    void nodeRemoved(DSNode *dsNode);
-    void keyframeSetOrRemoved(DSKnob *dsKnob);
-
-private: /* functions */
-    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, ItemType itemType);
-
-private Q_SLOTS:
-    void onNodeNameChanged(const QString &name);
-    void onKeyframeSetOrRemoved();
-
-private:
-    boost::scoped_ptr<DopeSheetPrivate> _imp;
-};
 
 
 /**
@@ -236,7 +124,7 @@ private:
  *
  * -- Item types --
  *
- * Remember, the DopeSheet::ItemType enum describes each possible type for a
+ * Remember, the Natron::DopeSheetItemType enum describes each possible type for a
  * context.
  *
  * A DSNode stores this type because the dope sheet editor treats some types
@@ -258,27 +146,27 @@ class DSNode
 {
 public:
     DSNode(DopeSheet *model,
-           DopeSheet::ItemType itemType,
+           Natron::DopeSheetItemType itemType,
            const boost::shared_ptr<NodeGui> &nodeGui,
            QTreeWidgetItem *nameItem);
     ~DSNode();
-
+    
     QTreeWidgetItem *getTreeItem() const;
-
+    
     boost::shared_ptr<NodeGui> getNodeGui() const;
     boost::shared_ptr<Natron::Node> getInternalNode() const;
-
+    
     const DSTreeItemKnobMap& getItemKnobMap() const;
-
-    DopeSheet::ItemType getItemType() const;
-
+    
+    Natron::DopeSheetItemType getItemType() const;
+    
     bool isTimeNode() const;
-
+    
     bool isRangeDrawingEnabled() const;
-
+    
     bool canContainOtherNodeContexts() const;
     bool containsNodeContext() const;
-
+    
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;
 };
@@ -349,16 +237,16 @@ public:
            QTreeWidgetItem *nameItem,
            KnobGui *knobGui);
     ~DSKnob();
-
+    
     QTreeWidgetItem *getTreeItem() const;
     QTreeWidgetItem *findDimTreeItem(int dimension) const;
-
+    
     KnobGui *getKnobGui() const;
     boost::shared_ptr<KnobI> getInternalKnob() const;
-
+    
     bool isMultiDimRoot() const;
     int getDimension() const;
-
+    
 private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
 };
@@ -371,20 +259,19 @@ private:
 struct DopeSheetKey
 {
     DopeSheetKey(const boost::shared_ptr<DSKnob> &knob, const KeyFrame& kf) :
-        context(knob),
-        key(kf)
+    context(knob),
+    key(kf)
     {
         boost::shared_ptr<DSKnob> knobContext = context.lock();
         assert(knobContext);
-
-        assert(knobContext->getDimension() != -1);
+        
     }
-
+    
     DopeSheetKey(const DopeSheetKey &other) :
-        context(other.context),
-        key(other.key)
+    context(other.context),
+    key(other.key)
     {}
-
+    
     friend bool operator==(const DopeSheetKey &key, const DopeSheetKey &other)
     {
         boost::shared_ptr<DSKnob> knobContext = key.context.lock();
@@ -392,40 +279,144 @@ struct DopeSheetKey
         if (!knobContext || !otherKnobContext) {
             return false;
         }
-
+        
         if (knobContext != otherKnobContext) {
             return false;
         }
-
+        
         if (key.key.getTime() != other.key.getTime()) {
             return false;
         }
-
+        
         if (knobContext->getTreeItem() != otherKnobContext->getTreeItem()) {
             return false;
         }
-
+        
         if (knobContext->getDimension() != otherKnobContext->getDimension()) {
             return false;
         }
-
+        
         return true;
     }
-
+    
     boost::shared_ptr<DSKnob> getContext() const
     {
         boost::shared_ptr<DSKnob> ret = context.lock();
         assert(ret);
-
+        
         return ret;
     }
-
+    
     boost::weak_ptr<DSKnob> context;
     KeyFrame key;
 };
 
 typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
+
+/**
+ * @brief The DopeSheet class is the model part of the dope sheet editor.
+ *
+ * A DopeSheet is basically a bundle of "contexts". A context is a instance
+ * of a class composed with a QTreeWidgetItem and a Natron data. Currently,
+ * the class handles two types of contexts :
+ *
+ * - Node context : described by the DSNode class.
+ * - Knob context : described by the DSKnob class.
+ *
+ * It provides several functions to find contexts and some of their datas.
+ *
+ *
+ * --- User interactions ---
+ *
+ * The model handles each type of user interaction (that modify the model,
+ * of course). For example, a specific function move the selected keyframes,
+ * another move a reader...
+ *
+ * If you want to create a custom undoable modification, you must add a public
+ * function that push a QUndoCommand-derived instance on the model's undo stack.
+ */
+class DopeSheet: public QObject
+{
+    Q_OBJECT
+
+public:
+    
+
+    DopeSheet(Gui *gui, DopeSheetEditor* editor, const boost::shared_ptr<TimeLine> &timeline);
+    ~DopeSheet();
+
+    // Model specific
+    DSTreeItemNodeMap getItemNodeMap() const;
+
+    void addNode(boost::shared_ptr<NodeGui> nodeGui);
+    void removeNode(NodeGui *node);
+
+    boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
+    boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
+
+    boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
+    boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
+    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
+
+    boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
+
+    bool isPartOfGroup(DSNode *dsNode) const;
+    boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
+
+    std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
+
+    boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
+    Natron::Node *getNearestReader(DSNode *timeNode) const;
+
+    DopeSheetSelectionModel *getSelectionModel() const;
+    
+
+    // User interaction
+    void deleteSelectedKeyframes();
+
+    void moveSelectedKeysAndNodes(double dt);
+    void trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame);
+    void trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame);
+    
+    bool canSlipReader(const boost::shared_ptr<DSNode> &reader) const;
+    
+    void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
+    void copySelectedKeys();
+    void pasteKeys();
+    
+    void pasteKeys(const std::vector<DopeSheetKey>& keys);
+    
+    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+    
+    void transformSelectedKeys(const Transform::Matrix3x3& transform);
+
+    // Undo/redo
+    void setUndoStackActive();
+
+    void emit_modelChanged();
+
+    // Other
+    SequenceTime getCurrentFrame() const;
+
+Q_SIGNALS:
+    void modelChanged();
+    void nodeAdded(DSNode *dsNode);
+    void nodeAboutToBeRemoved(DSNode *dsNode);
+    void nodeRemoved(DSNode *dsNode);
+    void keyframeSetOrRemoved(DSKnob *dsKnob);
+
+private: /* functions */
+    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, Natron::DopeSheetItemType itemType);
+
+private Q_SLOTS:
+    void onNodeNameChanged(const QString &name);
+    void onKeyframeSetOrRemoved();
+
+private:
+    boost::scoped_ptr<DopeSheetPrivate> _imp;
+};
+
 
 
 /**
