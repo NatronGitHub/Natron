@@ -23,6 +23,7 @@ Functions
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 *    def :meth:`render<NatronEngine.App.render>` (task)
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
+*    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 *    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
 *    def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
 *    def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
@@ -260,6 +261,18 @@ inform the user of various informations, warnings or errors.
 	the project is saved to *filename*.
 	
 	This function returns *True* if it saved successfully, *False* otherwise.
+	
+	
+
+.. method:: NatronEngine.App.saveTempProject(filename)
+
+	:param filename: :class:`str<NatronEngine.std::string>`
+	:rtype: :class:`bool<PySide.QtCore.bool
+	
+	Saves a copy of the project to the given *filename* without updating project properties
+	such as the project path, last save time etc...
+	This function returns *True* if it saved successfully, *False* otherwise.
+
 	
 .. method:: NatronEngine.App.loadProject(filename)
 

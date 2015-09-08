@@ -604,6 +604,51 @@ static PyObject* Sbk_AppFunc_saveProjectAs(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_AppFunc_saveTempProject(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: saveTempProject(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // saveTempProject(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_saveTempProject_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // saveTempProject(std::string)
+            bool cppResult = cppSelf->saveTempProject(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_saveTempProject_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.saveTempProject", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 {
     ::App* cppSelf = 0;
@@ -736,6 +781,7 @@ static PyMethodDef Sbk_App_methods[] = {
     {"resetProject", (PyCFunction)Sbk_AppFunc_resetProject, METH_NOARGS},
     {"saveProject", (PyCFunction)Sbk_AppFunc_saveProject, METH_O},
     {"saveProjectAs", (PyCFunction)Sbk_AppFunc_saveProjectAs, METH_O},
+    {"saveTempProject", (PyCFunction)Sbk_AppFunc_saveTempProject, METH_O},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},
     {"timelineGetTime", (PyCFunction)Sbk_AppFunc_timelineGetTime, METH_NOARGS},

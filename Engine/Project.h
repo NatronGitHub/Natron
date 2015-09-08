@@ -76,18 +76,24 @@ public:
      **/
     bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false);
 
+    
+    
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
      * @returns The actual filepath of the file saved
      **/
-    bool saveProject(const QString & path,const QString & name,bool autoSave, QString* newFilePath = 0);
-
+    bool saveProject(const QString & path,const QString & name, QString* newFilePath);
+    
+    
+    bool saveProject_imp(const QString & path,const QString & name,bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
+    
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
      * so it doesn't overwrite the project.
      **/
     void autoSave();
+    
 
     /**
      * @brief Same as autoSave() but the auto-save is run in a separate thread instead.
@@ -334,7 +340,7 @@ private:
     bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
+    QString saveProjectInternal(const QString & path,const QString & name,bool autosave, bool updateProjectProperties);
 
     
     

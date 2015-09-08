@@ -191,7 +191,7 @@ Project::loadProject(const QString & path,
         if (!loadProjectInternal(realPath,realName,isAutoSave,isUntitledAutosave,&mustSave)) {
             appPTR->showOfxLog();
         } else if (mustSave) {
-            saveProject(realPath, realName, false);
+            saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
@@ -362,11 +362,17 @@ Project::loadProjectInternal(const QString & path,
     return ret;
 }
     
+bool
+Project::saveProject(const QString & path,const QString & name, QString* newFilePath)
+{
+    return saveProject_imp(path, name, false, true, newFilePath);
+}
     
 bool
-Project::saveProject(const QString & path,
+Project::saveProject_imp(const QString & path,
                      const QString & name,
                      bool autoS,
+                     bool updateProjectProperties,
                      QString* newFilePath)
 {
     {
@@ -393,7 +399,7 @@ Project::saveProject(const QString & path,
             //We are saving, do not autosave.
             _imp->autoSaveTimer->stop();
             
-            ret = saveProjectInternal(path,name);
+            ret = saveProjectInternal(path,name, false, updateProjectProperties);
             
             ///We just saved, remove the last auto-save which is now obsolete
             removeLastAutosave();
@@ -401,10 +407,12 @@ Project::saveProject(const QString & path,
             //}
         } else {
             
-            ///Replace the last auto-save with a more recent one
-            removeLastAutosave();
+            if (updateProjectProperties) {
+                ///Replace the last auto-save with a more recent one
+                removeLastAutosave();
+            }
             
-            ret = saveProjectInternal(path,name,true);
+            ret = saveProjectInternal(path,name,true, updateProjectProperties);
         }
     } catch (const std::exception & e) {
         if (!autoS) {
@@ -448,7 +456,8 @@ fileCopy(const QString & source,
 QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
-                             bool autoSave)
+                             bool autoSave,
+                             bool updateProjectProperties)
 {
     
     bool isRenderSave = name.contains("RENDER_SAVE");
@@ -485,7 +494,8 @@ Project::saveProjectInternal(const QString & path,
             }
             
         }
-        {
+        
+        if (updateProjectProperties) {
             QMutexLocker l(&_imp->projectLock);
             _imp->lastAutoSaveFilePath = filePath;
         }
@@ -517,7 +527,7 @@ Project::saveProjectInternal(const QString & path,
     ///Fix file paths before saving.
     QString oldProjectPath(_imp->getProjectPath().c_str());
    
-    if (!autoSave) {
+    if (!autoSave && updateProjectProperties) {
         _imp->autoSetProjectDirectory(path);
         _imp->saveDate->setValue(timeStr.toStdString(), 0);
         _imp->lastAuthorName->setValue(generateGUIUserName(), 0);
@@ -536,7 +546,7 @@ Project::saveProjectInternal(const QString & path,
         }
     } catch (...) {
         ofile.close();
-        if (!autoSave) {
+        if (!autoSave && updateProjectProperties) {
             ///Reset the old project path in case of failure.
             _imp->autoSetProjectDirectory(oldProjectPath);
         }
@@ -551,10 +561,14 @@ Project::saveProjectInternal(const QString & path,
     while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
         ++nAttemps;
     }
+    
+    if (nAttemps >= 10) {
+        throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
+    }
 
     QFile::remove(tmpFilename);
     
-    if (!autoSave) {
+    if (!autoSave && updateProjectProperties) {
         
         QString lockFilePath = getLockAbsoluteFilePath();
         if (QFile::exists(lockFilePath)) {
@@ -572,13 +586,15 @@ Project::saveProjectInternal(const QString & path,
 
         //Create the lock file corresponding to the project
         createLockFile();
-    } else {
+    } else if (updateProjectProperties) {
         if (!isRenderSave) {
             QString projectName(_imp->getProjectFilename().c_str());
             Q_EMIT projectNameChanged(projectName + " (*)");
         }
     }
-    _imp->lastAutoSave = time;
+    if (updateProjectProperties) {
+        _imp->lastAutoSave = time;
+    }
 
     return filePath;
 } // saveProjectInternal
@@ -593,7 +609,7 @@ Project::autoSave()
     
     QString path(_imp->getProjectPath().c_str());
     QString name(_imp->getProjectFilename().c_str());
-    saveProject(path, name, true);
+    saveProjectInternal(path, name, true, true);
 }
 
 void

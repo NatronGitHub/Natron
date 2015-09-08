@@ -398,6 +398,7 @@ public:
     
     virtual bool isRenderStatsActionChecked() const { return false; }
     
+    bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
     virtual AppInstance* loadProject(const std::string& filename);

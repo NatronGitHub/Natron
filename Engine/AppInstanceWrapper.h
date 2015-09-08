@@ -100,6 +100,7 @@ public:
     
     bool saveProject(const std::string& filename);
     bool saveProjectAs(const std::string& filename);
+    bool saveTempProject(const std::string& filename);
     App* loadProject(const std::string& filename);
     
     ///Close the current project but keep the window

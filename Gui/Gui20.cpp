@@ -1019,7 +1019,7 @@ Gui::saveProject()
             return false;
         }
 
-        bool ret = project->saveProject(projectPath, projectName, false);
+        bool ret = project->saveProject(projectPath, projectName, 0);
 
         ///update the open recents
         if (!projectPath.endsWith('/')) {
@@ -1054,7 +1054,7 @@ Gui::saveProjectAs()
         }
         _imp->_lastSaveProjectOpenedDir = path.c_str();
         
-        bool ret = _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
+        bool ret = _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), 0);
 
         if (ret) {
             QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
@@ -1129,7 +1129,7 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    _imp->_appInstance->getProject()->saveProject(path, name, false);
+    _imp->_appInstance->getProject()->saveProject(path, name, 0);
 
     QString filename = path = name;
     updateRecentFiles(filename);

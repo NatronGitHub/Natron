@@ -1163,7 +1163,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
         //Take a snapshot of the graph at this time, this will be the version loaded by the process
         bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
         QString savePath;
-        getProject()->saveProject("","RENDER_SAVE.ntp",true,&savePath);
+        getProject()->saveProject_imp("","RENDER_SAVE.ntp",true, false,&savePath);
 
         for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
@@ -1378,13 +1378,22 @@ AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*no
 }
 
 bool
+AppInstance::saveTemp(const std::string& filename)
+{
+    std::string outFile = filename;
+    std::string path = SequenceParsing::removePath(outFile);
+    boost::shared_ptr<Natron::Project> project= getProject();
+    return project->saveProject_imp(path.c_str(), outFile.c_str(), false, false,0);
+}
+
+bool
 AppInstance::save(const std::string& filename)
 {
     boost::shared_ptr<Natron::Project> project= getProject();
     if (project->hasProjectBeenSavedByUser()) {
         QString projectName = project->getProjectName();
         QString projectPath = project->getProjectPath();
-        return project->saveProject(projectPath, projectName, false);
+        return project->saveProject(projectPath, projectName, 0);
     } else {
         return saveAs(filename);
     }
@@ -1395,7 +1404,7 @@ AppInstance::saveAs(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    return getProject()->saveProject(path.c_str(), outFile.c_str(), false);
+    return getProject()->saveProject(path.c_str(), outFile.c_str(), 0);
 }
 
 AppInstance*

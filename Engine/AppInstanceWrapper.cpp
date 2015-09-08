@@ -257,6 +257,12 @@ App::addFormat(const std::string& formatSpec)
 }
 
 bool
+App::saveTempProject(const std::string& filename)
+{
+    return _instance->saveTemp(filename);
+}
+
+bool
 App::saveProject(const std::string& filename)
 {
     return _instance->save(filename);
