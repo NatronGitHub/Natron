@@ -35,6 +35,7 @@
  */
 // ————————————————————————————————-
 
+// See https://gitlab.com/qtdevnet-wiki-mvc/qtdevnet-registereditorfiletype/tree/master
 
 #include "FileTypeMainWindow_win.h"
 
@@ -215,9 +216,9 @@ bool DocumentWindow::ddeInitiate(MSG* message, long* result)
         // make duplicates of the incoming atoms (really adding a reference)
         wchar_t atomName[_MAX_PATH];
         Q_ASSERT(::GlobalGetAtomNameW(m_appAtom, atomName, _MAX_PATH - 1) != 0);
-        Q_ASSERT(::GlobalAddAtomW(atomName)  m_appAtom);
+        Q_ASSERT(::GlobalAddAtomW(atomName) == m_appAtom);
         Q_ASSERT(::GlobalGetAtomNameW(m_systemTopicAtom, atomName, _MAX_PATH - 1) != 0);
-        Q_ASSERT(::GlobalAddAtomW(atomName)  m_systemTopicAtom);
+        Q_ASSERT(::GlobalAddAtomW(atomName) == m_systemTopicAtom);
         
         // send the WM_DDE_ACK (caller will delete duplicate atoms)
         ::SendMessage((HWND)message->wParam, WM_DDE_ACK, (WPARAM)winId(), MAKELPARAM(m_appAtom, m_systemTopicAtom));
