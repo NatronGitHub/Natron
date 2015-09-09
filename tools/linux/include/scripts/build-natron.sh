@@ -129,7 +129,7 @@ if [ "$PYV" == "3" ]; then
   PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=release ${SNAP} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1
@@ -140,17 +140,18 @@ else
   echo "CrashReporter missing!!! Something broken?"
 fi
 
-if [ "$NODEBUG" == "" ]; then
-  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug ../Project.pro || exit 1
-  make -j${MKJOBS} || exit 1
-  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1
-  cp Renderer/NatronRenderer $INSTALL_PATH/bin/NatronRenderer.debug || exit 1
-  if [ -f CrashReporter/NatronCrashReporter ]; then
-    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/NatronCrashReporter.debug || exit 1
-  else
-    echo "CrashReporter missing!!! Something broken?"
-  fi
-fi
+#For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
+#if [ "$NODEBUG" == "" ]; then
+#  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug ../Project.pro || exit 1
+#  make -j${MKJOBS} || exit 1
+#  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1
+#  cp Renderer/NatronRenderer $INSTALL_PATH/bin/NatronRenderer.debug || exit 1
+#  if [ -f CrashReporter/NatronCrashReporter ]; then
+#    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/NatronCrashReporter.debug || exit 1
+#  else
+#    echo "CrashReporter missing!!! Something broken?"
+#  fi
+#fi
 
 #Remove all git related stuff before installing color profiles
 (cd ../Gui/Resources/OpenColorIO-Configs ; find . -type d -name .git -exec rm -rf {} \;)

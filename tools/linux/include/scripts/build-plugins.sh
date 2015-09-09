@@ -110,7 +110,7 @@ fi
 MISC_V=$MISC_GIT_VERSION
 sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $CWD/commits-hash.sh || exit 1
 
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=release BITS=$BIT || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT || exit 1
 cp -a */Linux-$BIT-release/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-misc || exit 1
@@ -146,7 +146,7 @@ IO_V=$IO_GIT_VERSION
 sed -i "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_V}/" $CWD/commits-hash.sh || exit 1
 
 
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include ${FF_INC}" LDFLAGS="-L${INSTALL_PATH}/lib ${FF_LIB}" make CONFIG=release BITS=$BIT || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include ${FF_INC}" LDFLAGS="-L${INSTALL_PATH}/lib ${FF_LIB}" make CONFIG=relwithdebinfo BITS=$BIT || exit 1
 cp -a IO/Linux-$BIT-release/IO.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-io || exit 1
@@ -182,7 +182,7 @@ ARENA_V=$ARENA_GIT_VERSION
 sed -i "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" $CWD/commits-hash.sh || exit 1
 
 
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=release BITS=$BIT || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make USE_SVG=1 USE_PANGO=1 STATIC=1 CONFIG=relwithdebinfo BITS=$BIT || exit 1
 cp -a Bundle/Linux-$BIT-release/Arena.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-arena || exit 1
@@ -219,7 +219,7 @@ sed -i "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_V}/" $CWD/commits-hash.sh ||
 
 
 cd opencv2fx || exit 1
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=release BITS=$BIT || exit 1
+CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT || exit 1
 cp -a */Linux-$BIT-release/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-opencv || exit 1
