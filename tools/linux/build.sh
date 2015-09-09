@@ -37,8 +37,9 @@
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
 # SNAPSHOT=1 : Tag build as snapshot
 # TARSRC=1 : tar sources
+# NATRON_LICENSE=(GPL,COMMERCIAL)
 
-# USAGE: build2.sh "branch" noThreads
+# USAGE example: NATRON_LICENSE=GPL build2.sh workshop<branch> 8<noThreads>
 
 source $(pwd)/common.sh || exit 1
 
@@ -76,6 +77,11 @@ else
     JOBS=$DEFAULT_MKJOBS
 fi
 
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
+fi
+
 if [ "$NOCLEAN" != "1" ]; then
   rm -rf $INSTALL_PATH
 fi
@@ -102,6 +108,11 @@ fi
 REPO_DIR=$REPO_DIR_PREFIX$REPO_SUFFIX
 
 LOGS=$REPO_DIR/logs
+rm -rf $LOGS
+if [ ! -d $LOGS ]; then
+    mkdir -p $LOGS || exit 1
+fi
+
 FAIL=0
 
 if [ ! -f $(pwd)/commits-hash.sh ]; then
@@ -115,9 +126,7 @@ if [ ! -f $(pwd)/commits-hash.sh ]; then
     echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash.sh
 fi
 
-if [ ! -d $LOGS ]; then
-  mkdir -p $LOGS || exit 1
-fi
+
 if [ "$NOBUILD" != "1" ]; then
   if [ "$ONLY_PLUGINS" != "1" ]; then
     echo -n "Building Natron ... "
@@ -145,7 +154,7 @@ fi
 
 if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
   echo -n "Building Packages ... "
-  OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh $INC_PATH/scripts/build-installer.sh workshop >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+  SDK_LIC=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh $INC_PATH/scripts/build-installer.sh workshop >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
   if [ "$FAIL" != "1" ]; then
     echo OK
   else
@@ -159,20 +168,20 @@ if [ "$SYNC" == "1" ] && [ "$FAIL" != "1" ]; then
   echo "Syncing packages ... "
 
   if [ "$BRANCH" == "workshop" ]; then
-    LOCAL_REPO_BRANCH=snapshot
     ONLINE_REPO_BRANCH=snapshots
   else
-    LOCAL_REPO_BRANCH=release
     ONLINE_REPO_BRANCH=releases
   fi
-  LOCAL_REPO_DIR=$REPO_DIR_PREFIX$LOCAL_REPO_BRANCH
   BIT_SUFFIX=bit
   BIT_TAG=$BIT$BIT_SUFFIX
 
-  rsync -avz --progress --delete --verbose -e ssh  $LOCAL_REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
+  rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
 
-  rsync -avz --progress  --verbose -e ssh $LOCAL_REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
+  rsync -avz --progress  --verbose -e ssh $REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
 fi
+
+#Always upload logs, even upon failure
+rsync -avz --progress  --verbose -e ssh $LOGS $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/
 
 if [ "$FAIL" == "1" ]; then
   exit 1
