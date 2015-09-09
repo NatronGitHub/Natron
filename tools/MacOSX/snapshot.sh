@@ -17,15 +17,12 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-#script to be executed in the root of Natron repository
+#Usage:
+# cd Natron/tools/MacOSX
+# ./snapshot.sh
 
-PKGOS=OSX
-BIT=Universal
-CWD=`pwd`
-TMP=$CWD/.autobuild
-GIT_NATRON=https://github.com/MrKepzie/Natron.git
-GIT_IO=https://github.com/MrKepzie/openfx-io.git
-GIT_MISC=https://github.com/devernay/openfx-misc.git
+source $(pwd)/common.sh || exit 1
+
 
 if [ ! -d $TMP ];then
   mkdir -p $TMP || exit 1
@@ -35,7 +32,6 @@ fi
 if [ ! -d $TMP/Natron ];then
   cd $TMP || exit 1
   git clone $GIT_NATRON || exit 1
-  touch NATRON_WORKSHOP || exit 1
   cd Natron || exit 1
   git checkout workshop || exit 1
 fi
@@ -43,17 +39,38 @@ fi
 if [ ! -d $TMP/openfx-io ];then
   cd $TMP || exit 1
   git clone $GIT_IO || exit 1
-  touch IO_WORKSHOP || exit 1
 fi
 
 if [ ! -d $TMP/openfx-misc ];then
   cd $TMP || exit 1
   git clone $GIT_MISC || exit 1
-  touch MISC_WORKSHOP || exit 1
 fi
+
+if [ ! -d $TMP/openfx-arena ];then
+  cd $TMP || exit 1
+  git clone $GIT_ARENA || exit 1
+fi
+#if [ ! -d $TMP/openfx-opencv ]; then
+#  cd $TMP || exit 1
+#  git clone $GIT_OPENCV || exit 1
+#fi
+
+if [ ! -f $CWD/commits-hash.sh ]; then
+    touch $CWD/commits-hash.sh
+    echo "#!/bin/sh" >> $CWD/commits-hash.sh
+    echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash.sh
+    echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
+    echo "MISCPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
+    echo "ARENAPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
+    echo "CVPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
+    echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash.sh
+fi
+
 
 #infinite loop with 1min sleeps
 while true; do
+
+source $CWD/commits-hash.sh || exit 1
 
 FAIL=0
 
@@ -65,62 +82,65 @@ cd $TMP/Natron
 git fetch || FAIL=1
 git merge origin/workshop || FAIL=1
 GITV_NATRON=$(git log|head -1|awk '{print $2}')
-ORIG_NATRON=$(cat ../NATRON_WORKSHOP)
+ORIG_NATRON=$NATRON_DEVEL_GIT
 echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
 if [ "$GITV_NATRON" != "$ORIG_NATRON" ] && [ "$FAIL" != "1" ];then
  echo "Natron update needed"
  BUILD_NATRON=1
- echo $GITV_NATRON > ../NATRON_WORKSHOP | FAIL=1
 fi
 
 echo $FAIL
 
+if [ "$FAIL" != "1" ]; then
 cd $TMP/openfx-io
 git fetch || FAIL=1
 git merge origin/master || FAIL=1
 GITV_IO=$(git log|head -1|awk '{print $2}')
-ORIG_IO=$(cat ../IO_WORKSHOP)
+ORIG_IO=$IOPLUG_DEVEL_GIT
 echo "openfx-io $GITV_IO vs. $ORIG_IO"
 if [ "$GITV_IO" != "$ORIG_IO" ] && [ "$FAIL" != "1" ];then
  echo "openfx-io update needed"
  BUILD_IO=1
- echo $GITV_IO > ../IO_WORKSHOP | FAIL=1
+fi
 fi
 
 echo $FAIL
 
+if [ "$FAIL" != "1" ]; then
 cd $TMP/openfx-misc
 git fetch || FAIL=1
 git merge origin/master || FAIL=1
 GITV_MISC=$(git log|head -1|awk '{print $2}')
-ORIG_MISC=$(cat ../MISC_WORKSHOP)
+ORIG_MISC=$MISCPLUG_DEVEL_GIT
 echo "openfx-misc $GITV_MISC vs. $ORIG_MISC"
 if [ "$GITV_MISC" != "$ORIG_MISC" ] && [ "$FAIL" != "1" ];then
  echo "openfx-misc update needed"
  BUILD_MISC=1
- echo $GITV_MISC > ../MISC_WORKSHOP | FAIL=1
-fi
-
-echo $FAIL
-
-cd $CWD || exit 1
-if [ "$FAIL" != 1 ]; then
-if [ "$BUILD_NATRON" == "1" ] || [ "$BUILD_IO" == "1" ] || [ "$BUILD_MISC" == "1" ]; then
-  ./tools/packageOSX.sh  || FAIL=1
-  echo $FAIL
 fi
 fi
 
 if [ "$FAIL" != "1" ]; then
-  rm -rf build
-  rm -rf repo
-  mkdir repo
-  DMGNAME=Natron-snapshots-$GITV_NATRON.dmg 
-  mv Natron.dmg repo/$DMGNAME || FAIL=1 
-  if [ "$FAIL" != "1" ]; then
-    #rsync -avz -e ssh --delete repo kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots/$PKGOS$BIT
-    rsync -avz -e ssh repo/ mrkepzie@vps163799.ovh.net:../www/downloads.natron.fr/Mac/snapshots
-  fi
+cd $TMP/openfx-arena
+git fetch || FAIL=1
+git merge origin/master || FAIL=1
+ARENAV_MISC=$(git log|head -1|awk '{print $2}')
+ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
+echo "openfx-arena $ARENAV_MISC vs. $ORIG_ARENA"
+if [ "$ARENAV_MISC" != "$ORIG_ARENA" ] && [ "$FAIL" != "1" ];then
+echo "openfx-arena update needed"
+BUILD_ARENA=1
+fi
+fi
+
+
+echo $FAIL
+
+cd $CWD || FAIL=1
+if [ "$FAIL" != 1 ]; then
+if [ "$BUILD_NATRON" == "1" ] || [ "$BUILD_IO" == "1" ] || [ "$BUILD_MISC" == "1" ] || [ "$BUILD_ARENA" == "1" ]; then
+  CONFIG=relwithdebinfo BRANCH=workshop  MKJOBS=$MKJOBS UPLOAD=1 ./build.sh || FAIL=1
+  echo $FAIL
+fi
 fi
 
 echo "Idle"
