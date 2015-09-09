@@ -2518,7 +2518,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 if (useRGBACheckbox && (!foundEnabled[0] || !foundEnabled[1] || !foundEnabled[2] || !foundEnabled[3])) {
                     for (int i = 0; i < 4; ++i) {
                         foundEnabled[i] =  Natron::createKnob<KnobBool>(_imp->liveInstance.get(), channelLabels[i], 1, false);
-                        foundEnabled[i]->setName(channelLabels[i]);
+                        foundEnabled[i]->setName(channelNames[i]);
                         foundEnabled[i]->setAnimationEnabled(false);
                         foundEnabled[i]->setAddNewLine(i == 3);
                         foundEnabled[i]->setDefaultValue(pluginDefaultPref[i]);
