@@ -23,7 +23,7 @@ PKGOS=OSX
 BIT=Universal
 
 
-if [ !-f "$CWD/local.sh" ]; then
+if [ ! -f "$CWD/local.sh" ]; then
     echo "Please create local.sh, see README."
     exit 1
 fi
