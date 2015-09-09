@@ -7,7 +7,7 @@ source $(pwd)/common.sh || exit 1
 cd $CWD/build || exit 1
 
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
-if [ "BRANCH" == "workshop" ]; then
+if [ "$BRANCH" == "workshop" ]; then
     IO_BRANCH=master
     MISC_BRANCH=master
     ARENA_BRANCH=master
@@ -19,7 +19,7 @@ else
     CV_BRANCH=$CVPLUG_GIT_TAG
 fi
 
-if [ ! -d $PLUGINDIR ]; then
+if [ ! -d "$PLUGINDIR" ]; then
     echo "Error: plugin directory '$PLUGINDIR' does not exist"
     exit 1
 fi
@@ -35,7 +35,7 @@ IO_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX=clang++ BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
-mv IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR" || exit 1
+cp -r IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
 #Build openfx-misc
@@ -48,10 +48,10 @@ git submodule update -i --recursive || exit 1
 MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
-
-make CXX=clang++ BITS=$BITS HAVE_CIMG=1 CONFIG=$CONFIG -j${MKJOBS} || exit 1
-mv Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR" || exit 1
-mv CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR" || exit 1
+make -C Cimg CImg.h || exit 1
+make CXX=clang++ BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
+cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
+cp -r CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
 #Build openfx-arena
@@ -65,7 +65,7 @@ ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX=clang++ USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
-mv Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR" || exit 1
+cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
 
@@ -81,7 +81,7 @@ cd ..
 
 #cd opencv2fx || exit 1
 #make CXX=clang++ BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
-#cp -a */$OS-$BITS-*/*.ofx.bundle "$PLUGINDIR" || exit 1
+#cp -r */$OS-$BITS-*/*.ofx.bundle "$PLUGINDIR" || exit 1
 #cd ..
 
 

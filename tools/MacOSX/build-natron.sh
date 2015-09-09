@@ -57,8 +57,8 @@ fi
 APP=Natron.app
 
 qmake -r -spec unsupported/macx-clang CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
-make -j${MKJOBS} || exit
-macdeployqt ${APP}/Natron.app || exit
+make -j${MKJOBS} || exit 1
+macdeployqt App/${APP} || exit 1
 mv App/${APP}/Contents/PlugIns App/${APP}/Contents/Plugins || exit 1
 rm App/${APP}/Contents/Resources/qt.conf || exit 1
 
@@ -90,6 +90,7 @@ if otool -L App/${APP}/Contents/MacOS/NatronRenderer  |fgrep /opt/local; then
     exit 1
 fi
 
+rm -rf App/${APP}/Contents/Frameworks/Python.framework
 mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
 cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib  || exit 1
 cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
@@ -128,7 +129,7 @@ fi
 #Copy Pyside in the plugin dir
 mkdir -p  $PLUGINDIR/PySide
 
-QT_LIBS=QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtXml QtWebKit QtXmlPatterns
+QT_LIBS="QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtXml QtWebKit QtXmlPatterns"
 
 for lib in $QT_LIBS ;do
     cp /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/${lib}.so $PLUGINDIR/PySide/${lib}.so || exit 1
