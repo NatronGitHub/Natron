@@ -3291,7 +3291,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     
     
     ///No-one is allowed to connect to the other node
-    if (!input->canOthersConnectToThisNode()) {
+    if (!input || !input->canOthersConnectToThisNode()) {
         return eCanConnectInput_givenNodeNotConnectable;
     }
     
@@ -3312,6 +3312,39 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return eCanConnectInput_indexOutOfRange;
+    }
+    
+    if (!_imp->liveInstance->supportsMultiResolution()) {
+        //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+        //Check that the input has the same RoD that another input and that its rod is set to 0,0
+        RenderScale scale;
+        scale.x = scale.y = 1.;
+        RectD rod;
+        bool isProjectFormat;
+        Natron::StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
+        if (stat == eStatusFailed && !rod.isNull()) {
+            return eCanConnectInput_givenNodeNotConnectable;
+        }
+        if (rod.x1 != 0 || rod.y1 != 0) {
+            return eCanConnectInput_multiResNotSupported;
+        }
+        
+        
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            NodePtr inputNode = getInput(i);
+            if (inputNode) {
+                
+                RectD inputRod;
+                stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
+                if (stat == eStatusFailed && !rod.isNull()) {
+                    return eCanConnectInput_givenNodeNotConnectable;
+                }
+                if (inputRod != rod) {
+                    return eCanConnectInput_multiResNotSupported;
+                }
+                
+            }
+        }
     }
     
     {

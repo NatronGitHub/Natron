@@ -482,7 +482,8 @@ public:
         eCanConnectInput_groupHasNoOutput,
         eCanConnectInput_graphCycles,
         eCanConnectInput_differentPars,
-        eCanConnectInput_differentFPS
+        eCanConnectInput_differentFPS,
+        eCanConnectInput_multiResNotSupported,
     };
     /**
      * @brief Returns true if a connection is possible for the given input number of the current node 

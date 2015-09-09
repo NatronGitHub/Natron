@@ -48,6 +48,59 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 using namespace Natron;
 
+static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, const boost::shared_ptr<NodeGui>& inputNode, int inputNb)
+{
+    Natron::Node::CanConnectInputReturnValue linkRetCode = outputNode->getNode()->canConnectInput(inputNode->getNode(), inputNb);
+
+    if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
+        if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
+            
+            QString error = QString(QObject::tr("You cannot connect ") +  "%1" + QObject::tr(" to ") + "%2"  + QObject::tr(" because they don't have the same pixel aspect ratio (")
+                                    + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
+            .arg(outputNode->getNode()->getLabel().c_str())
+            .arg(inputNode->getNode()->getLabel().c_str())
+            .arg(outputNode->getNode()->getLiveInstance()->getPreferredAspectRatio())
+            .arg(inputNode->getNode()->getLiveInstance()->getPreferredAspectRatio());
+            Natron::errorDialog(QObject::tr("Different pixel aspect").toStdString(),
+                                error.toStdString());
+        } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
+            
+            QString error = QString(QObject::tr("You cannot connect ") +  "%1" + QObject::tr(" to ") + "%2"  + QObject::tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+            .arg(outputNode->getNode()->getLabel().c_str())
+            .arg(inputNode->getNode()->getLabel().c_str())
+            .arg(outputNode->getNode()->getLiveInstance()->getPreferredFrameRate())
+            .arg(inputNode->getNode()->getLiveInstance()->getPreferredFrameRate());
+            Natron::errorDialog(QObject::tr("Different frame rate").toStdString(),
+                                error.toStdString());
+            
+        } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+            QString error = QString(QObject::tr("You cannot connect ") + "%1 " + QObject::tr(" to ") + " %2 " + QObject::tr("because it is a group which does "
+                                                                                                 "not have an Output node."))
+            .arg(outputNode->getNode()->getLabel().c_str())
+            .arg(inputNode->getNode()->getLabel().c_str());
+            Natron::errorDialog(QObject::tr("Different frame rate").toStdString(),
+                                error.toStdString());
+            
+        } else if (linkRetCode == Natron::Node::eCanConnectInput_multiResNotSupported) {
+            QString error = QString(QObject::tr("You cannot connect ") + "%1" + QObject::tr(" to ") + "%2 " + QObject::tr("because multi-resolution is not supported on ") + "%1 "
+                                    + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
+                                         "multiple inputs with different image sizes.")).arg(outputNode->getNode()->getLabel().c_str())
+            .arg(inputNode->getNode()->getLabel().c_str());
+            Natron::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
+                                error.toStdString());;
+        }
+        return false;
+    }
+    
+    if (linkRetCode == Natron::Node::eCanConnectInput_ok && outputNode->getNode()->getLiveInstance()->isReader() &&
+        inputNode->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
+        Natron::warningDialog(QObject::tr("Reader input").toStdString(), QObject::tr("Connecting an input to a Reader node "
+                                                                   "is only useful when using the RunScript node "
+                                                                   "so that the Reader automatically reads an image "
+                                                                   "when the render of the RunScript is done.").toStdString());
+    }
+    return true;
+}
 
 void
 NodeGraph::mouseReleaseEvent(QMouseEvent* e)
@@ -86,49 +139,11 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 
                 if ( !_imp->_arrowSelected->isOutputEdge() ) {
                     
-                    Natron::Node::CanConnectInputReturnValue linkRetCode =
-                    nodeHoldingEdge->getNode()->canConnectInput(n->getNode(), _imp->_arrowSelected->getInputNumber());
-                    if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
-                        if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
-                            
-                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
-                                                    + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                            .arg(n->getNode()->getLabel().c_str())
-                            .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio())
-                            .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio());
-                            Natron::errorDialog(tr("Different pixel aspect").toStdString(),
-                                                error.toStdString());
-                        } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-
-                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
-                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                            .arg(n->getNode()->getLabel().c_str())
-                            .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
-                            .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
-                            Natron::errorDialog(tr("Different frame rate").toStdString(),
-                                                error.toStdString());
-
-                        } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
-                            QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
-                                                                                                                 "not have an Output node."))
-                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                            .arg(n->getNode()->getLabel().c_str());
-                            Natron::errorDialog(tr("Different frame rate").toStdString(),
-                                                error.toStdString());
-
-                        }
+                    bool ok = handleConnectionError(nodeHoldingEdge, n, _imp->_arrowSelected->getInputNumber());
+                                        _imp->_arrowSelected->stackBefore( n.get() );
+                    if (!ok) {
                         break;
                     }
-         
-                    if (linkRetCode == Natron::Node::eCanConnectInput_ok && nodeHoldingEdge->getNode()->getLiveInstance()->isReader() &&
-                        n->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
-                        Natron::warningDialog(tr("Reader input").toStdString(), tr("Connecting an input to a Reader node "
-                                                                                   "is only useful when using the RunScript node "
-                                                                                   "so that the Reader automatically reads an image "
-                                                                                   "when the render of the RunScript is done.").toStdString());
-                    }
-                    _imp->_arrowSelected->stackBefore( n.get() );
                     pushUndoCommand( new ConnectCommand(this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),n) );
                 } else {
                     ///Find the input edge of the node we just released the mouse over,
@@ -136,50 +151,11 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     int preferredInput = n->getNode()->getPreferredInputForConnection();
                     if (preferredInput != -1) {
                         
-                        Natron::Node::CanConnectInputReturnValue linkRetCode = n->getNode()->canConnectInput(nodeHoldingEdge->getNode(), preferredInput);
-                        if (linkRetCode != Natron::Node::eCanConnectInput_ok  && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
-                            
-                            if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
-                                
-                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
-                                                        + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                                .arg(n->getNode()->getLabel().c_str())
-                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                                .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio())
-                                .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio());
-                                Natron::errorDialog(tr("Different pixel aspect").toStdString(),
-                                                    error.toStdString());
-                            } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-
-                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
-                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                                .arg(n->getNode()->getLabel().c_str())
-                                .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
-                                .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
-                                Natron::errorDialog(tr("Different frame rate").toStdString(),
-                                                    error.toStdString());
-
-                            } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
-                                QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
-                                                                                                                     "not have an Output node."))
-                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
-                                .arg(n->getNode()->getLabel().c_str());
-                                Natron::errorDialog(tr("Different frame rate").toStdString(),
-                                                    error.toStdString());
-                                
-                            }
-
-
-                            
+                        bool ok = handleConnectionError(n, nodeHoldingEdge, preferredInput);
+                        if (!ok) {
                             break;
                         }
-                        if (linkRetCode == Natron::Node::eCanConnectInput_ok && n->getNode()->getLiveInstance()->isReader() &&
-                            nodeHoldingEdge->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
-                            Natron::warningDialog(tr("Reader input").toStdString(), tr("Connecting an input to a Reader node "
-                                                                                       "is only useful when using the RunScript node "
-                                                                                       "so that the Reader automatically reads an image "
-                                                                                       "when the render of the RunScript is done.").toStdString());
-                        }
+                       
                         Edge* foundInput = n->getInputArrow(preferredInput);
                         assert(foundInput);
                         pushUndoCommand( new ConnectCommand( this,foundInput,
@@ -350,7 +326,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 } // mouseReleaseEvent
 
 void
-NodeGraph::scrollViewIfNeeded(const QPointF& scenePos)
+NodeGraph::scrollViewIfNeeded(const QPointF& /*scenePos*/)
 {
 
     //Doesn't work for now

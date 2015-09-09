@@ -1216,7 +1216,8 @@ TabWidget::paintEvent(QPaintEvent* e)
 {
     
     QFrame::paintEvent(e);
-    
+#ifdef DEBUG
+    // We should draw something indicating that this pane is the default pane for new viewers if it has no tabs, maybe a pixmap or something
     bool mustDraw = false;
     {
         QMutexLocker k(&_imp->tabWidgetStateMutex);
@@ -1237,7 +1238,7 @@ TabWidget::paintEvent(QPaintEvent* e)
         pos.ry() -= (fm.height() / 2.);
         p.drawText(pos, text);
     }
-    
+#endif
 }
 
 void
