@@ -6,7 +6,7 @@ source $(pwd)/common.sh || exit 1
 
 cd $CWD/build || exit 1
 
-if [ "BRANCH" == "workshop"]; then
+if [ "$BRANCH" == "workshop" ]; then
     NATRON_BRANCH=$BRANCH
 else
     NATRON_BRANCH=$NATRON_GIT_TAG

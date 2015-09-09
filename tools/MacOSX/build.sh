@@ -51,8 +51,8 @@ fi
 #  echo "ffmpeg port should not be installed with the +gpl2 or +gpl3 variants, please reinstall it using 'sudo port install ffmpeg -gpl2 -gpl3'"
 #  exit 1
 #fi
-
-if pkg-config --cflags glew; then
+GLEW_CFLAGS=$(pkg-config --cflags glew)
+if [ ! -z "$GLEW_CFLAGS" ]; then
   true
 else
   echo "Error: missing pkg-config file for package glew"
@@ -92,7 +92,6 @@ if [ "$NO_CLEAN" != "1" ]; then
     rm -rf $CWD/build
 fi
 mkdir -p $CWD/build
-cd build || exit 1
 
 LOGS=$CWD/logs
 rm -rf $LOGS
