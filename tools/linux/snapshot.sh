@@ -176,7 +176,7 @@ BUILD_OPENCV=0
 cd $CWD || exit 1
 if [ "$FAIL" != "1" ]; then
   if [ "$BUILD_NATRON" == "1" ] || [ "$BUILD_IO" == "1" ] || [ "$BUILD_MISC" == "1" ] || [ "$BUILD_ARENA" == "1" ] || [ "$BUILD_OPENCV" == "1" ]; then
-      OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 SNAPSHOT=1 sh build.sh workshop $JOBS
+      NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 SNAPSHOT=1 sh build.sh workshop $JOBS
   fi
 fi
 
