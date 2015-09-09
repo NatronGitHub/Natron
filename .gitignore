@@ -212,3 +212,6 @@ pch
 *.pyc
 
 Renderer/NatronRenderer
+
+*tmp*
+*commits-hash.sh*
