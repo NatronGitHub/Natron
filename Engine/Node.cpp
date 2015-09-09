@@ -3329,6 +3329,15 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
             return eCanConnectInput_multiResNotSupported;
         }
         
+        RectD outputRod;
+        stat = getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
+        if (stat == eStatusFailed && !outputRod.isNull()) {
+            return eCanConnectInput_givenNodeNotConnectable;
+        }
+        
+        if (rod != outputRod) {
+            return eCanConnectInput_multiResNotSupported;
+        }
         
         for (int i = 0; i < getMaxInputCount(); ++i) {
             NodePtr inputNode = getInput(i);
@@ -3336,7 +3345,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
                 
                 RectD inputRod;
                 stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
-                if (stat == eStatusFailed && !rod.isNull()) {
+                if (stat == eStatusFailed && !inputRod.isNull()) {
                     return eCanConnectInput_givenNodeNotConnectable;
                 }
                 if (inputRod != rod) {

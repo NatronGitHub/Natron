@@ -84,7 +84,8 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
         } else if (linkRetCode == Natron::Node::eCanConnectInput_multiResNotSupported) {
             QString error = QString(QObject::tr("You cannot connect ") + "%1" + QObject::tr(" to ") + "%2 " + QObject::tr("because multi-resolution is not supported on ") + "%1 "
                                     + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
-                                         "multiple inputs with different image sizes.")).arg(outputNode->getNode()->getLabel().c_str())
+                                         "multiple inputs/outputs with different image sizes.\n"
+                                                  "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str());
             Natron::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
                                 error.toStdString());;
