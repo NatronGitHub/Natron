@@ -141,6 +141,8 @@ public:
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct frame
     virtual double getFrameRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void paramChangedByPlugin(OFX::Host::Param::Instance *param) OVERRIDE FINAL;
 
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct

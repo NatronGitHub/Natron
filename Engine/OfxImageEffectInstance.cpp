@@ -285,10 +285,9 @@ double
 OfxImageEffectInstance::getFrameRecursive() const
 {
     assert( getOfxEffectInstance() );
-    
-    ///Just return the timeline's current time since we're always on the main thread anyway, no render is going on...
-    return getOfxEffectInstance()->getApp()->getTimeLine()->currentFrame();
+    return getOfxEffectInstance()->getCurrentTime();
 }
+
 
 /// This is called whenever a param is changed by the plugin so that
 /// the recursive instanceChangedAction will be fed the correct
@@ -1157,4 +1156,16 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
         }
     }
     return ret;
+}
+
+
+void
+OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param*/)
+{
+    /*
+     Do nothing: this is handled by Natron internally already in OfxEffectInstance::knobChanged.
+     The reason for that is that the plug-in instanceChanged action may be called from a render thread if
+     e.g a plug-in decides to violate the spec and set a parameter value in the render action.
+     To prevent that, Natron already checks the current thread and calls the instanceChanged action in the appropriate thread.
+     */
 }
