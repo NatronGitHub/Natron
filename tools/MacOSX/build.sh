@@ -145,7 +145,7 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-if [ "$UPLOAD" != "1" ]; then
+if [ "$UPLOAD" == "1" ]; then
     if [ "$FAIL" != "1" ]; then
         echo "Uploading $CWD/build/Natron-${NATRON_V}.dmg..."
         echo
