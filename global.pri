@@ -36,18 +36,37 @@ log{
     DEFINES += NATRON_LOG
 }
 
+
+*g++* | *clang* {
+#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
+# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
+
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS += -O2 -g
+        QMAKE_CXXFLAGS -= -O3
+    }
+}
+
+win32-msvc* {
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS_RELEASE += -Zi
+        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
+    }
+}
+
 CONFIG(debug, debug|release){
     DEFINES *= DEBUG
 } else {
     DEFINES *= NDEBUG
 }
 
-*g++* | *clang* {
-    CONFIG(relwithdebinfo) {
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS += -O2 -g
-    }
-}
 
 CONFIG(noassertions) {
    DEFINES *= NDEBUG QT_NO_DEBUG
