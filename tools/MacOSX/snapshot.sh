@@ -19,7 +19,7 @@
 
 #Usage:
 # cd Natron/tools/MacOSX
-# ./snapshot.sh
+# MKJOBS=4 ./snapshot.sh
 
 source $(pwd)/common.sh || exit 1
 
@@ -138,7 +138,7 @@ echo $FAIL
 cd $CWD || FAIL=1
 if [ "$FAIL" != 1 ]; then
 if [ "$BUILD_NATRON" == "1" ] || [ "$BUILD_IO" == "1" ] || [ "$BUILD_MISC" == "1" ] || [ "$BUILD_ARENA" == "1" ]; then
-  CONFIG=relwithdebinfo BRANCH=workshop  MKJOBS=$MKJOBS UPLOAD=1 ./build.sh || FAIL=1
+  CONFIG=relwithdebinfo BRANCH=workshop MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
   echo $FAIL
 fi
 fi

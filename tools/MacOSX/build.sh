@@ -100,6 +100,8 @@ mkdir -p $LOGS || exit 1
 
 PLUGINDIR=$CWD/build/Natron/App/Natron.app/Contents/Plugins
 
+echo "Building Natron..."
+echo
 MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH PLUGINDIR=$PLUGINDIR ./build-natron.sh >& $LOGS/natron.MacOSX-Universal.$TAG.log || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
@@ -111,6 +113,8 @@ else
 fi
 
 if [ "$FAIL" != "1" ]; then
+    echo "Building plug-ins..."
+    echo
     PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH ./build-plugins.sh >& $LOGS/plugins.MacOSX-Universal.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
@@ -128,6 +132,8 @@ else
 fi
 
 if [ "$FAIL" != "1" ]; then
+    echo "Building installer..."
+    echo
     ./build-installer.sh >& $LOGS/installer.MacOSX-Universal.$TAG.log || FAIL=1
     mv $CWD/build/Natron.dmg $CWD/build/Natron-${NATRON_V}.dmg || FAIL=1
     if [ "$FAIL" != "1" ]; then
@@ -141,8 +147,12 @@ fi
 
 if [ "$UPLOAD" != "1" ]; then
     if [ "$FAIL" != "1" ]; then
+        echo "Uploading $CWD/build/Natron-${NATRON_V}.dmg..."
+        echo
         rsync -avz --progress -e ssh $CWD/build/Natron-${NATRON_V}.dmg $REPO_DEST/Mac/snapshots/ || exit 1
     fi
+    echo "Uploading logs..."
+    echo
     rsync -avz --progress -e ssh $LOGS $REPO_DEST/Mac/snapshots/ || exit 1
 fi
 
