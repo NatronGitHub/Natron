@@ -101,7 +101,7 @@ mkdir -p $LOGS || exit 1
 
 PLUGINDIR=$CWD/build/Natron/App/Natron.app/Contents/Plugins
 
-    MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH PLUGINDIR=$PLUGINDIR ./build-natron.sh >& $LOGS/natron.MacOSX-Universal.$TAG.log || FAIL=1
+MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH PLUGINDIR=$PLUGINDIR ./build-natron.sh >& $LOGS/natron.MacOSX-Universal.$TAG.log || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
     echo OK
