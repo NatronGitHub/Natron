@@ -153,7 +153,7 @@ if [ "$UPLOAD" == "1" ]; then
     fi
     echo "Uploading logs..."
     echo
-    rsync -avz --progress -e ssh $LOGS $REPO_DEST/Mac/snapshots/ || exit 1
+    rsync -avz --progress --delete -e ssh $LOGS $REPO_DEST/Mac/snapshots/ || exit 1
 fi
 
 
