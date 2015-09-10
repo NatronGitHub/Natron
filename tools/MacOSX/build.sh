@@ -127,8 +127,10 @@ fi
 
 if [ "$BRANCH" == "workshop" ]; then
     NATRON_V=$NATRON_DEVEL_GIT
+	UPLOAD_BRANCH=snapshots
 else
     NATRON_V=$NATRON_VERSION_NUMBER
+	UPLOAD_BRANCH=releases
 fi
 
 if [ "$FAIL" != "1" ]; then
@@ -149,11 +151,11 @@ if [ "$UPLOAD" == "1" ]; then
     if [ "$FAIL" != "1" ]; then
         echo "Uploading $CWD/build/Natron-${NATRON_V}.dmg..."
         echo
-        rsync -avz --progress -e ssh $CWD/build/Natron-${NATRON_V}.dmg $REPO_DEST/Mac/snapshots/ || exit 1
+        rsync -avz --progress -e ssh $CWD/build/Natron-${NATRON_V}.dmg $REPO_DEST/Mac/$UPLOAD_BRANCH/ || exit 1
     fi
     echo "Uploading logs..."
     echo
-    rsync -avz --progress --delete -e ssh $LOGS $REPO_DEST/Mac/snapshots/ || exit 1
+    rsync -avz --progress --delete -e ssh $LOGS/ $REPO_DEST/Mac/$UPLOAD_BRANCH/logs || exit 1
 fi
 
 
