@@ -3514,19 +3514,31 @@ AppManager::initPython(int argc,char* argv[])
     std::string err;
     bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
-    
+    if (!ok) {
+        throw std::runtime_error("Error while loading python module "NATRON_ENGINE_PYTHON_MODULE_NAME": " + err);
+    }
+
     ok = interpretPythonScript(std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
     assert(ok);
-    
+    if (!ok) {
+        throw std::runtime_error("Error while loading python module "NATRON_ENGINE_PYTHON_MODULE_NAME": " + err);
+    }
+
     if (!isBackground()) {
         
         ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_GUI_PYTHON_MODULE_NAME), &err, 0);
         assert(ok);
-        
+        if (!ok) {
+            throw std::runtime_error("Error while loading python module "NATRON_GUI_PYTHON_MODULE_NAME": " + err);
+        }
+
         ok = interpretPythonScript(std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".natron = " +
                                    std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".PyGuiApplication()\n" , &err, 0);
         assert(ok);
-        
+        if (!ok) {
+            throw std::runtime_error("Error while loading python module "NATRON_GUI_PYTHON_MODULE_NAME": " + err);
+        }
+
         //redirect stdout/stderr
         std::string script(
         "class StreamCatcher:\n"
@@ -3542,6 +3554,9 @@ AppManager::initPython(int argc,char* argv[])
         "sys.stderr = catchErr\n");
         ok = interpretPythonScript(script,&err,0);
         assert(ok);
+        if (!ok) {
+            throw std::runtime_error("Error while loading StreamCatcher: " + err);
+        }
     }
 }
 
