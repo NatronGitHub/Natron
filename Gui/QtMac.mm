@@ -26,7 +26,7 @@
 //- https://trac.macports.org/ticket/43283
 //- https://code.google.com/p/chromiumembedded/source/browse/trunk/cef3/include/cef_application_mac.h
 //- https://code.google.com/p/chromiumembedded/source/browse/trunk/cef3/tests/cefclient/cefclient_osr_widget_mac.mm?spec=svn1751&r=1751
-// Note that in the following declarations, only backingScaleFactor is necessarity,
+// Note that in the following declarations, only backingScaleFactor is necessary,
 // but we may need them in the future.
 
 // Forward declarations for APIs that are part of the 10.7 SDK. This will allow
