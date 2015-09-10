@@ -56,7 +56,12 @@ fi
 
 APP=Natron.app
 
-qmake -r -spec unsupported/macx-clang CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
+if [ "$COMPILER" = "clang" ]; then
+    SPEC=unsupported/macx-clang
+else
+    SPEC=macx-g++
+fi
+qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 macdeployqt App/${APP} || exit 1
 mv App/${APP}/Contents/PlugIns App/${APP}/Contents/Plugins || exit 1

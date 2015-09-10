@@ -49,7 +49,11 @@ MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make -C Cimg CImg.h || exit 1
-make CXX=clang++ BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
+if [ "$COMPILER" = "gcc ]; then
+    # build CImg with OpenMP support
+    make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
+fi
+make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
 cp -r CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..

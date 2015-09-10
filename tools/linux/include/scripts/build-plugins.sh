@@ -93,6 +93,7 @@ git clone $GIT_MISC || exit 1
 cd openfx-misc || exit 1
 git checkout ${MISC_BRANCH} || exit 1
 git submodule update -i --recursive || exit 1
+make -C CImg CImg.h || exit 1
 
 MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 
@@ -110,7 +111,9 @@ fi
 MISC_V=$MISC_GIT_VERSION
 sed -i "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_V}/" $CWD/commits-hash.sh || exit 1
 
-CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" make CONFIG=relwithdebinfo BITS=$BIT || exit 1
+# build CImg with OpenMP support
+make -C CImg CFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CONFIG=relwithdebinfo BITS=$BIT || exit 1
+make CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CONFIG=relwithdebinfo BITS=$BIT || exit 1
 cp -a */Linux-$BIT-*/*.ofx.bundle $INSTALL_PATH/Plugins/ || exit 1
 
 mkdir -p $INSTALL_PATH/docs/openfx-misc || exit 1

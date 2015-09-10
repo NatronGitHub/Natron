@@ -30,6 +30,11 @@ source $(pwd)/common.sh || exit 1
 
 # required macports ports (first ones are for Natron, then for OFX plugins)
 PORTS="boost qt4-mac glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside"
+if [ "$COMPILER" = "gcc" ]; then
+    PORTS="$PORTS gcc48"
+else
+    PORTS="$PORTS clang-3.4"
+fi
 
 PORTSOK=yes
 for p in $PORTS; do
@@ -45,6 +50,19 @@ done
 if [ "$PORTSOK" = "no" ]; then
   echo "At least one port from macports is missing. Please install them."
   exit 1
+fi
+
+if [ "$COMPILER" = "gcc" ]; then
+    if [ ! -x /opt/local/bin/gcc-mp -o ! -x /opt/local/bin/g++-mp ]; then
+	echo "The gcc-mp and g++-mp drivers are missing"
+	echo "Please execute the following:"
+	echo "git clone https://github.com/devernay/macportsGCCfixup.git"
+	echo "cd macportsGCCfixup"
+	echo "./configure"
+	echo "make"
+	echo "sudo make install"
+	exit 1
+    fi
 fi
 
 #if port installed ffmpeg |fgrep '(active)' |fgrep '+gpl' > /dev/null; then

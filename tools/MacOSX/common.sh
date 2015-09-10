@@ -53,3 +53,18 @@ if [ "$OS" = "Darwin" ]; then
         ;;
     esac;
 fi
+
+#COMPILER=clang
+COMPILER=gcc
+
+if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" ]; then
+    echo "Error: COMPILER must be gcc or clang"
+    exit 1
+fi
+if [ "$COMPILER" = "clang" ]; then
+    CC=clang-mp-3.4
+    CXX=clang++-mp-3.4
+else
+    CC=gcc-mp
+    CXX=g++-mp
+fi

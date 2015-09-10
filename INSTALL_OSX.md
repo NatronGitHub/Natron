@@ -32,8 +32,8 @@ You need an up to date macports version. Just download it and install it from <h
 	sudo port selfupdate
 	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
-	sudo port install py34-pyside
-	sudo ln -s python3.4-config /opt/local/bin/python3-config
+	sudo port install py27-pyside
+	sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -65,7 +65,7 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install qt expat cairo glew
-    brew install pyside --with-python3
+    brew install pyside
 
 To install the openfx-io and openfx-misc sets of plugin, you also need the following:
 
