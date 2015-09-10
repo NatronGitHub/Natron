@@ -35,6 +35,10 @@
 
 #include "Global/GlobalDefines.h"
 
+#ifdef __NATRON_WIN32__
+#include <ofxhUtilities.h> // for wideStringToString
+#endif
+
 #ifdef __NATRON_OSX__
 #include <CoreServices/CoreServices.h>
 #elif defined(__NATRON_WIN32__)
@@ -189,7 +193,7 @@ qSystemDirectory()
     }
 #ifdef UNICODE
 	std::wstring ws(fullPath.constData(), retLen);
-	std::string str((const char*)&ws[0], sizeof(wchar_t)/sizeof(char)*ws.size());
+	std::string str = OFX::wideStringToString(ws);
 #else
 	std::string str (fullPath.constData(), retLen);
 #endif

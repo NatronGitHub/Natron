@@ -32,6 +32,7 @@
 
 #ifdef WINDOWS
 #include <tchar.h>
+#include <ofxhUtilities.h> // for wideStringToString
 #endif
 
 #include "Global/MemoryInfo.h"
@@ -975,7 +976,7 @@ Settings::initializeKnobs()
 #ifdef UNICODE
     std::wstring basePath = std::wstring(OFX::Host::PluginCache::getStdOFXPluginPath(""));
 	basePath.append(std::wstring(__T(" and C:\\Program Files\\Common Files\\OFX\\Plugins")));
-    std::string searchPath((const char*)&basePath[0], sizeof(wchar_t)/sizeof(char)*basePath.size());
+    std::string searchPath = OFX::wideStringToString(basePath);
 #else
     std::string searchPath(OFX::Host::PluginCache::getStdOFXPluginPath("")  + std::string(" and C:\\Program Files\\Common Files\\OFX\\Plugins"));
 #endif
