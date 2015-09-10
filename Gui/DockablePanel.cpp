@@ -1023,7 +1023,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                     }
                 }
                 
-            } else {
+            } else if (isParentGroup) {
                 std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
                 assert(found != _imp->_knobs.end());
                 KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>(found->second);
@@ -1036,8 +1036,6 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                     }
                 }
             }
-            
-            
             
             std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
