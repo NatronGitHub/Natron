@@ -746,7 +746,11 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 
     QIcon icon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
-        icon.addFile( plugin->getIconPath() );
+        QPixmap pix(plugin->getIconPath());
+        if (pix.width() != NATRON_MEDIUM_BUTTON_ICON_SIZE || pix.height() != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+            pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        }
+        icon.addPixmap(pix);
     } else {
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {

@@ -2073,10 +2073,10 @@ UrlModel::setUrl(const QModelIndex &index,
         }
 
         // Make sure that we have at least 32x32 images
-        const QSize size = newIcon.actualSize( QSize(32,32) );
-        if (size.width() < 32) {
-            QPixmap smallPixmap = newIcon.pixmap( QSize(32, 32) );
-            newIcon.addPixmap( smallPixmap.scaledToWidth(32, Qt::SmoothTransformation) );
+        const QSize size = newIcon.actualSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+        if (size.width() != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+            QPixmap smallPixmap = newIcon.pixmap( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+            newIcon.addPixmap( smallPixmap.scaledToWidth(NATRON_MEDIUM_BUTTON_ICON_SIZE, Qt::SmoothTransformation) );
         }
 		newName = mapUrlToDisplayName(newName);
 
