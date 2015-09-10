@@ -100,6 +100,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/Utils.h"
 
+#ifdef __NATRON_WIN32__
+#include <ofxhUtilities.h> // for wideStringToString
+#endif
 #include "Global/QtCompat.h" // removeFileExtension
 
 #define FILE_DIALOG_DISABLE_ICONS
@@ -203,7 +206,7 @@ static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& p
 			//Replace \\ with /
 #ifdef UNICODE
             std::wstring wstr(szDeviceName);
-            std::string str((const char*)&wstr[0], sizeof(wchar_t)/sizeof(char)*wstr.size());
+            std::string str = OFX::wideStringToString(wstr);
             QString qDeviceName(str.c_str());
 #else
             QString qDeviceName(szDeviceName);

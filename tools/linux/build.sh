@@ -181,7 +181,7 @@ if [ "$SYNC" == "1" ] && [ "$FAIL" != "1" ]; then
 fi
 
 #Always upload logs, even upon failure
-rsync -avz --progress --delete --verbose -e ssh $LOGS $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/
+rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 
 if [ "$FAIL" == "1" ]; then
   exit 1

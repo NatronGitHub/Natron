@@ -22,6 +22,8 @@
 #
 
 #Usage snapshot.sh noThreads
+#Options:
+#NO_LOOP=1: Only build once and then exits.
 
 #Easier to debug
 set -x
@@ -100,8 +102,9 @@ fi
 #  git clone $GIT_OPENCV || exit 1
 #fi
 
-#while :
-#do
+FINISHED=0
+while [ "$FINISHED" == "0" ]
+do
 
 source $CWD/common.sh
 source $CWD/commits-hash.sh
@@ -180,7 +183,11 @@ if [ "$FAIL" != "1" ]; then
   fi
 fi
 
-#echo "Idle ..."
-#sleep 60
-#done
+if [ "$NO_LOOP" == "1" ]; then
+	FINISHED=1
+else
+	echo "Idle ..."
+	sleep 60
+fi
+done
 

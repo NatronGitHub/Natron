@@ -50,6 +50,10 @@
 #include <QFileInfo>
 #include <QDebug>
 
+#ifdef __NATRON_WIN32__
+#include <ofxhUtilities.h> // for wideStringToString
+#endif
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
@@ -78,7 +82,7 @@ static std::string getUserName()
     GetUserName(user_name, &user_name_size);
 #ifdef UNICODE
     std::wstring wUserName(user_name);
-    std::string sUserName((const char*)&wUserName[0], sizeof(wchar_t)/sizeof(char)*wUserName.size());
+    std::string sUserName = OFX::wideStringToString(wUserName);
     return sUserName;
 #else
     return std::string(user_name);

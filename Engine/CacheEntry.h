@@ -642,12 +642,12 @@ public:
             if (i >= hashKeyStr.size()) {
                 break;
             }
-            name.push_back(hashKeyStr[i].toAscii());
+            name.push_back(hashKeyStr[i].toLatin1());
         }
         name.append("/");
         int i = 2;
         while (i < hashKeyStr.size()) {
-            name.push_back(hashKeyStr[i].toAscii());
+            name.push_back(hashKeyStr[i].toLatin1());
             ++i;
         }
         

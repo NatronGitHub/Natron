@@ -57,6 +57,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 #include <ofxNatron.h>
 
+#ifdef __NATRON_WIN32__
+#include <ofxhUtilities.h> // for wideStringToString
+#endif
+
 #include "Global/Macros.h"
 //ofx host support
 #include <ofxhPluginAPICache.h>
@@ -550,7 +554,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 #if defined(WINDOWS)
 #ifdef UNICODE
     std::wstring wpath = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
-    std::string path((const char*)&wpath[0], sizeof(wchar_t)/sizeof(char)*wpath.size());
+    std::string path = OFX::wideStringToString(wpath);
 #else
     std::string path = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
 #endif
