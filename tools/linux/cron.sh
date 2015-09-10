@@ -44,5 +44,5 @@ echo $PID > /tmp/natron-cron.pid || exit 1
 # Build (if changes)
 scl enable devtoolset-2 - << \EOF
 cd /root/Natron/tools/linux
-bash snapshot.sh >/tmp/natron-build.log 2>&1
+NO_LOOP=1 bash snapshot.sh >/tmp/natron-build.log 2>&1
 EOF
