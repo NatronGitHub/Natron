@@ -289,7 +289,7 @@ Effect::setColor(double r, double g, double b)
 bool
 Effect::isNodeSelected() const
 {
-    _node->isUserSelected();
+    return _node->isUserSelected();
 }
 
 void
