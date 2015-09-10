@@ -41,6 +41,13 @@ win32-msvc* {
 	}
 }
 
+win32 {
+	DEFINES *= WIN32
+	CONFIG(64bit){
+		DEFINES *= WIN64
+	}
+}
+
 SOURCES += \
     ../libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     ../libs/OpenFX/HostSupport/src/ofxhClip.cpp \
