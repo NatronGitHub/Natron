@@ -22,15 +22,63 @@
 
 #include <AppKit/NSView.h>
 
-//See https://trac.macports.org/ticket/43283
-#if !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
-#import <Cocoa/Cocoa.h> 
-@interface NSScreen (LionAPI)
+//See:
+//- https://trac.macports.org/ticket/43283
+//- https://code.google.com/p/chromiumembedded/source/browse/trunk/cef3/include/cef_application_mac.h
+//- https://code.google.com/p/chromiumembedded/source/browse/trunk/cef3/tests/cefclient/cefclient_osr_widget_mac.mm?spec=svn1751&r=1751
+// Note that in the following declarations, only backingScaleFactor is necessarity,
+// but we may need them in the future.
+
+// Forward declarations for APIs that are part of the 10.7 SDK. This will allow
+// using them when building with the 10.6 SDK.
+#if !defined(MAC_OS_X_VERSION_10_7) || \
+    MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+#import <Cocoa/Cocoa.h>
+
+enum {
+  NSEventPhaseNone        = 0, // event not associated with a phase.
+  NSEventPhaseBegan       = 0x1 << 0,
+  NSEventPhaseStationary  = 0x1 << 1,
+  NSEventPhaseChanged     = 0x1 << 2,
+  NSEventPhaseEnded       = 0x1 << 3,
+  NSEventPhaseCancelled   = 0x1 << 4,
+};
+typedef NSUInteger NSEventPhase;
+
+@interface NSEvent (LionSDK)
++ (BOOL)isSwipeTrackingFromScrollEventsEnabled;
+
+- (NSEventPhase)phase;
+- (CGFloat)scrollingDeltaX;
+- (CGFloat)scrollingDeltaY;
+- (BOOL)isDirectionInvertedFromDevice;
+@end
+
+@interface NSScreen (LionSDK)
 - (CGFloat)backingScaleFactor;
 - (NSRect)convertRectToBacking:(NSRect)aRect;
 @end
 
-#endif // 10.7
+@interface NSWindow (LionSDK)
+- (CGFloat)backingScaleFactor;
+@end
+
+@interface NSView (NSOpenGLSurfaceResolutionLionAPI)
+- (void)setWantsBestResolutionOpenGLSurface:(BOOL)flag;
+@end
+
+@interface NSView (LionAPI)
+- (NSSize)convertSizeToBacking:(NSSize)aSize;
+- (NSRect)convertRectToBacking:(NSRect)aRect;
+- (NSRect)convertRectFromBacking:(NSRect)aRect;
+@end
+
+static NSString* const NSWindowDidChangeBackingPropertiesNotification =
+    @"NSWindowDidChangeBackingPropertiesNotification";
+static NSString* const NSBackingPropertyOldScaleFactorKey =
+    @"NSBackingPropertyOldScaleFactorKey";
+
+#endif  // MAC_OS_X_VERSION_10_7
 
 namespace Natron {
 bool 
