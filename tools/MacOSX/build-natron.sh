@@ -61,7 +61,7 @@ if [ "$COMPILER" = "clang" ]; then
 else
     SPEC=macx-g++
 fi
-qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
+qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 macdeployqt App/${APP} || exit 1
 mv App/${APP}/Contents/PlugIns App/${APP}/Contents/Plugins || exit 1
