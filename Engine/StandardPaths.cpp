@@ -606,40 +606,40 @@ StandardPaths::writableLocation(StandardLocationEnum type)
 #endif // ifdef __NATRON_OSX__
 
 #else // QT_VERSION >= 0x050000
-    QStandardPaths::StandardLocationEnum path;
+    QStandardPaths::StandardLocation path;
     switch (type) {
     case Natron::StandardPaths::eStandardLocationDesktop:
-        path = QStandardPaths::eStandardLocationDesktop;
+        path = QStandardPaths::DesktopLocation;
         break;
     case Natron::StandardPaths::eStandardLocationDocuments:
-        path = QStandardPaths::eStandardLocationDocuments;
+        path = QStandardPaths::DocumentsLocation;
         break;
     case Natron::StandardPaths::eStandardLocationFonts:
-        path = QStandardPaths::eStandardLocationFonts;
+        path = QStandardPaths::FontsLocation;
         break;
     case Natron::StandardPaths::eStandardLocationApplications:
-        path = QStandardPaths::eStandardLocationApplications;
+        path = QStandardPaths::ApplicationsLocation;
         break;
     case Natron::StandardPaths::eStandardLocationMusic:
-        path = QStandardPaths::eStandardLocationMusic;
+        path = QStandardPaths::MusicLocation;
         break;
     case Natron::StandardPaths::eStandardLocationMovies:
-        path = QStandardPaths::eStandardLocationMovies;
+        path = QStandardPaths::MoviesLocation;
         break;
     case Natron::StandardPaths::eStandardLocationPictures:
-        path = QStandardPaths::eStandardLocationPictures;
+        path = QStandardPaths::PicturesLocation;
         break;
     case Natron::StandardPaths::eStandardLocationTemp:
-        path = QStandardPaths::eStandardLocationTemp;
+        path = QStandardPaths::TempLocation;
         break;
     case Natron::StandardPaths::eStandardLocationHome:
-        path = QStandardPaths::eStandardLocationHome;
+        path = QStandardPaths::HomeLocation;
         break;
     case Natron::StandardPaths::eStandardLocationData:
-        path = QStandardPaths::eStandardLocationData;
+        path = QStandardPaths::DataLocation;
         break;
     case Natron::StandardPaths::eStandardLocationCache:
-        path = QStandardPaths::eStandardLocationCache;
+        path = QStandardPaths::CacheLocation;
         break;
     default:
         break;
