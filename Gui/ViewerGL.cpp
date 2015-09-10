@@ -2410,26 +2410,41 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (e->orientation() != Qt::Vertical) {
-        return QGLWidget::wheelEvent(e);
-    }
 
     if (!_imp->viewerTab) {
         return QGLWidget::wheelEvent(e);
     }
+
+    // delta=120 is a standard wheel mouse click, but mice may be more accurate
+    // - Apple Trackpad has an accuracy of delta=2
+    // - Apple Magic Mouse has an accuracy of delta=2
+    // - Apple Mighty Mouse has an accuracy of delta=28
+    // - Logitech Wheel Mouse has an accuracy of delta=120
+    // The Qt Unit is 8 deltas per degree.
+    // delta/2 gives a reasonable value in pixels (for panning, etc).
+
+    // frame seeking works both with horizontal and vertical wheel + control modifier
     if (modCASIsControl(e)) {
-        _imp->wheelDeltaSeekFrame += e->delta();
-        // 120 is a standard wheel mouse click, but mice may be more accurate (eg apple magic mouse)
-        if (_imp->wheelDeltaSeekFrame <= -120) {
-            _imp->wheelDeltaSeekFrame += 120;
+        const int delta_max = 28;
+        // threshold delta to the range -delta_max..delta_max
+        int delta = std::max(-delta_max, std::min(e->delta(), delta_max));
+        _imp->wheelDeltaSeekFrame += delta;
+        if (_imp->wheelDeltaSeekFrame <= -delta_max) {
+            _imp->wheelDeltaSeekFrame += delta_max;
             _imp->viewerTab->nextFrame();
-        } else if (_imp->wheelDeltaSeekFrame >= 120) {
-            _imp->wheelDeltaSeekFrame -= 120;
+        } else if (_imp->wheelDeltaSeekFrame >= delta_max) {
+            _imp->wheelDeltaSeekFrame -= delta_max;
             _imp->viewerTab->previousFrame();
         }
         return;
     }
-    
+
+    if (e->orientation() != Qt::Vertical) {
+        // we only handle vertical motion for zooming
+        return QGLWidget::wheelEvent(e);
+    }
+
+
     Gui* gui = _imp->viewerTab->getGui();
     if (!gui) {
         return QGLWidget::wheelEvent(e);
