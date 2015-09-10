@@ -73,10 +73,12 @@ typedef NSUInteger NSEventPhase;
 - (NSRect)convertRectFromBacking:(NSRect)aRect;
 @end
 
+#if 0
 static NSString* const NSWindowDidChangeBackingPropertiesNotification =
     @"NSWindowDidChangeBackingPropertiesNotification";
 static NSString* const NSBackingPropertyOldScaleFactorKey =
     @"NSBackingPropertyOldScaleFactorKey";
+#endif
 
 #endif  // MAC_OS_X_VERSION_10_7
 
