@@ -68,6 +68,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/BackDrop.h"
 #include "Engine/Cache.h"
+#include "Engine/CacheSerialization.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/Format.h"

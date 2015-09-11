@@ -201,6 +201,7 @@ HEADERS += \
     BlockingBackgroundRender.h \
     Cache.h \
     CacheEntry.h \
+    CacheSerialization.h \
     CoonsRegularization.h \
     Curve.h \
     CurveSerialization.h \
