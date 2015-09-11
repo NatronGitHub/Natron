@@ -946,7 +946,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     QFileInfo file(absoluteFileName.c_str());
     if (!file.exists()) {
-        return false;
+        return 0;
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
@@ -960,7 +960,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 
-                return false;
+                return guiApp;
             }
         }
     }
