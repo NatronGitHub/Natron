@@ -40,6 +40,7 @@
 
 #include <QAction>
 
+#include "Engine/CLArgs.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
