@@ -33,6 +33,15 @@ Build server installation
     sudo port install clang-3.4
     sudo port select --set clang mp-clang-3.4 (so that clang and clang++ point to that version)
 
+ * Install gcc-4.8 and the Apple GCC driver:
+
+    sudo port install gcc48 +universal
+    git clone https://github.com/devernay/macportsGCCfixup.git
+    cd macportsGCCfixup
+    ./configure
+    make
+    sudo make install
+
  * Install the following packages:
 
     sudo port install qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside
@@ -42,13 +51,11 @@ Build server installation
  
  * To enable snapshots:
     
-    cd Natron/tools/MacOSX
-    MKJOBS=4 ./snapshot.sh
+    env MKJOBS=4 Natron/tools/MacOSX/snapshot.sh
 
   * To do a single build, modify TAGS in the begining of common.sh and then call the following:
     
-    cd Natron/tools/MacOSX
-    CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 ./build.sh
+    env CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 Natron/tools/MacOSX/build.sh
     
 
 The server will now auto build from the workshop branch on changes.
