@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #Usage PLUGINDIR="..." MKJOBS=4 CONFIG=relwithdebinfo BRANCH=workshop ./build-plugins.sh
 
@@ -34,7 +34,7 @@ git submodule update -i --recursive || exit 1
 IO_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
-make CXX=clang++ BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
+make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
 cp -r IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
@@ -48,8 +48,8 @@ git submodule update -i --recursive || exit 1
 MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
-make -C Cimg CImg.h || exit 1
-if [ "$COMPILER" = "gcc ]; then
+make -C CImg CImg.h || exit 1
+if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
     make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
 fi
@@ -68,7 +68,7 @@ git submodule update -i --recursive || exit 1
 ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
-make CXX=clang++ USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
+make CXX="CXX" USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
@@ -84,7 +84,7 @@ cd ..
 #sed -i -e "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 #cd opencv2fx || exit 1
-#make CXX=clang++ BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
+#make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 #cp -r */$OS-$BITS-*/*.ofx.bundle "$PLUGINDIR" || exit 1
 #cd ..
 

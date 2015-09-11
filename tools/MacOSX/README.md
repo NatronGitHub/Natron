@@ -49,13 +49,15 @@ Build server installation
 
  * git clone https://github.com/MrKepzie/Natron 
  
- * To enable snapshots:
+ * To build a snapshot:
     
-    env MKJOBS=4 Natron/tools/MacOSX/snapshot.sh
+    cd Natron/tools/MacOSX
+    env MKJOBS=4 ./snapshot.sh
 
   * To do a single build, modify TAGS in the begining of common.sh and then call the following:
     
-    env CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 Natron/tools/MacOSX/build.sh
+    cd Natron/tools/MacOSX
+    env CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 ./build.sh
     
 
 The server will now auto build from the workshop branch on changes.

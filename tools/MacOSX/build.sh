@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
 # Copyright (C) 2015 INRIA and Alexandre Gauthier
@@ -38,18 +38,18 @@ fi
 
 PORTSOK=yes
 for p in $PORTS; do
- if port installed $p | fgrep "  $p @" > /dev/null; then
+    if port installed $p | fgrep "  $p @" > /dev/null; then
    #echo "port $p OK"
-   true
- else
-   echo "Error: port $p is missing"
-   PORTSOK=no
- fi
+	true
+    else
+	echo "Error: port $p is missing"
+	PORTSOK=no
+    fi
 done
 
 if [ "$PORTSOK" = "no" ]; then
-  echo "At least one port from macports is missing. Please install them."
-  exit 1
+    echo "At least one port from macports is missing. Please install them."
+    exit 1
 fi
 
 if [ "$COMPILER" = "gcc" ]; then
@@ -71,10 +71,10 @@ fi
 #fi
 GLEW_CFLAGS=$(pkg-config --cflags glew)
 if [ ! -z "$GLEW_CFLAGS" ]; then
-  true
+    true
 else
-  echo "Error: missing pkg-config file for package glew"
-  cat <<EOFF
+    echo "Error: missing pkg-config file for package glew"
+    cat <<EOFF
 To fix this, execute the following:
 sudo cat > /opt/local/lib/pkgconfig/glew.pc << EOF
 prefix=/opt/local
@@ -90,7 +90,7 @@ Libs: -L\${libdir} -lGLEW -framework OpenGL
 Requires:
 EOF
 EOFF
-  exit 1
+    exit 1
 fi
 
 if [ ! -f $CWD/commits-hash.sh ]; then
@@ -145,10 +145,10 @@ fi
 
 if [ "$BRANCH" == "workshop" ]; then
     NATRON_V=$NATRON_DEVEL_GIT
-	UPLOAD_BRANCH=snapshots
+    UPLOAD_BRANCH=snapshots
 else
     NATRON_V=$NATRON_VERSION_NUMBER
-	UPLOAD_BRANCH=releases
+    UPLOAD_BRANCH=releases
 fi
 
 if [ "$FAIL" != "1" ]; then
