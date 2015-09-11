@@ -1087,7 +1087,7 @@ public:
      **/
     virtual bool supportsMultiResolution() const
     {
-        return false;
+        return true;
     }
 
 
