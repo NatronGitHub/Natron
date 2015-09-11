@@ -409,7 +409,7 @@ CLANG_DIAG_ON(uninitialized)
 
 ///////////NODEGRAPH SHORTCUTS
 #define kShortcutIDActionGraphCreateReader "createReader"
-#define kShortcutDescActionGraphCreateReader "Create Teader"
+#define kShortcutDescActionGraphCreateReader "Create Reader"
 
 #define kShortcutIDActionGraphCreateWriter "createWriter"
 #define kShortcutDescActionGraphCreateWriter "Create Writer"
