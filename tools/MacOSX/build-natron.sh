@@ -123,6 +123,17 @@ if otool -L App/${APP}/Contents/MacOS/NatronCrashReporter  |fgrep /opt/local; th
     exit 1
 fi
 
+cp CrashReporterCLI/NatronRendererCrashReporter App/${APP}/Contents/MacOS
+bin=App/${APP}/Contents/MacOS/NatronRendererCrashReporter
+for f in QtNetwork QtCore; do
+install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+done
+
+if otool -L App/${APP}/Contents/MacOS/NatronRendererCrashReporter  |fgrep /opt/local; then
+    echo "Error: MacPorts libraries remaining in $bin, please check"
+    exit 1
+fi
+
 #go back to build directory
 cd ..
 

@@ -16,8 +16,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-TARGET = NatronCrashReporter
-QT       += core network gui
+TARGET = NatronRendererCrashReporter
+QT       += core network
 
 CONFIG += console
 CONFIG -= app_bundle
@@ -25,6 +25,8 @@ CONFIG += moc
 CONFIG += qt
 
 TEMPLATE = app
+
+DEFINES *= REPORTER_CLI_ONLY
 
 CONFIG(debug, debug|release){
     DEFINES *= DEBUG
@@ -69,14 +71,12 @@ unix:!mac {
 
 win32:Debug: DEFINES *= _DEBUG 
 
-SOURCES += \
-    CrashDialog.cpp \
-    main.cpp \
-    CallbacksManager.cpp
 
-HEADERS += \
-    CrashDialog.h \
-    CallbacksManager.h
+SOURCES += \
+        ..\CrashReporter\main.cpp \
+        ..\CrashReporter\CallbacksManager.cpp
+
+HEADERS += ..\CrashReporter\CallbacksManager.h
 
 BREAKPAD_PATH = ../google-breakpad/src
 INCLUDEPATH += $$BREAKPAD_PATH
@@ -156,8 +156,5 @@ win32 {
                 $$BREAKPAD_PATH/client/windows/crash_generation/minidump_generator.cc \
                 $$BREAKPAD_PATH/common/windows/guid_string.cc
 }
-
-RESOURCES += \
-    ../Gui/GuiResources.qrc
 
 INSTALLS += target

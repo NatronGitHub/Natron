@@ -38,7 +38,6 @@
 #include <QMessageBox>
 #include <QStyle>
 
-CallbacksManager* CallbacksManager::_instance = 0;
 
 class PlaceHolderTextEdit: public QTextEdit
 {
@@ -99,6 +98,7 @@ CrashDialog::CrashDialog(const QString &filePath)
 , _sendButton(0)
 , _dontSendButton(0)
 , _saveReportButton(0)
+, _pressedButton(0)
 {
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
@@ -192,6 +192,25 @@ CrashDialog::~CrashDialog()
 
 }
 
+bool
+CrashDialog::getDescription() const {
+    return _descEdit->toPlainText();
+}
+
+CrashDialog::UserChoice
+CrashDialog::getUserChoice() const {
+    if (_pressedButton == _sendButton) {
+        return eUserChoiceUpload;
+    } else if (_pressedButton == _dontSendButton) {
+        return eUserChoiceIgnore;
+    } else if (_pressedButton == _saveReportButton) {
+        return eUserChoiceSave;
+    } else {
+        return eUserChoiceIgnore;
+    }
+}
+
+
 void
 CrashDialog::onSendClicked()
 {
@@ -209,121 +228,56 @@ CrashDialog::onSendClicked()
                 return;
             }
         }
-
     }
+    _pressedButton = _sendButton;
+    accept();
 }
 
 void
 CrashDialog::onDontSendClicked()
 {
+    _pressedButton = _dontSendButton;
     reject();
 }
 
 void
 CrashDialog::onSaveClicked()
 {
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save report"),
-                                                    QString(),
-                                                    QString(),
-                                                    0,
-                                                    0);
-    if (!filename.isEmpty()) {
-        QFile::copy(_filePath, filename);
-        accept();
+    _pressedButton = _saveReportButton;
+
+    bool saveOk = false;
+    QString filename ;
+    while (!saveOk) {
+        filename = QFileDialog::getSaveFileName(this,
+                                                        tr("Save report"),
+                                                        QString(),
+                                                        QString(),
+                                                        0,
+                                                        0);
+        if (!filename.isEmpty()) {
+            saveOk = QFile::copy(_filePath, filename);
+
+        }
+
+        if (!saveOk) {
+            QMessageBox ques(QMessageBox::Question, tr("Invalid filename"), tr("The issue could not be saved to ") + filename +
+                                                                                tr("Would you like to continue anyway?")),
+                             QMessageBox::Yes | QMessageBox::No,
+                             this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+            ques.setDefaultButton(QMessageBox::No);
+            ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
+            if ( ques.exec() ) {
+                QMessageBox::StandardButton rep = ques.standardButton(ques.clickedButton());
+                if (rep == QMessageBox::Yes) {
+                    reject();
+                    return;
+                }
+            } else {
+                reject();
+                return;
+            }
+        }
     }
-}
+    accept();
 
-CallbacksManager::CallbacksManager()
-    : QObject()
-#ifdef DEBUG
-    , _dFileMutex()
-    , _dFile(0)
-#endif
-    , _outputPipe(0)
-{
-    _instance = this;
-    QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
-    
-#ifdef DEBUG
-    _dFile = new QFile("debug.txt");
-    _dFile->open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text);
-#endif
-}
-
-
-CallbacksManager::~CallbacksManager() {
-#ifdef DEBUG
-    delete _dFile;
-#endif
-    
-    delete _outputPipe;
-    _instance = 0;
-    
-}
-
-
-void
-CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    CrashDialog d(filePath);
-    if (d.exec()) {
-
-    } else {
-
-    }
-
-}
-
-void
-CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
-{
-    writeDebugMessage("Dump request received, file located at: " + filePath);
-    if (QFile::exists(filePath)) {
-
-        emit doDumpCallBackOnMainThread(filePath);
-        
-    } else {
-        writeDebugMessage("Dump file does not seem to exist...exiting crash reporter now.");
-    }
-}
-
-#ifdef DEBUG
-void
-CallbacksManager::writeDebugMessage(const QString& str)
-{
-    QMutexLocker k(&_dFileMutex);
-    QTextStream ts(_dFile);
-    ts << str << '\n';
-}
-#endif
-
-void
-CallbacksManager::onOutputPipeConnectionMade()
-{
-    writeDebugMessage("Output IPC pipe with Natron successfully connected.");
-    
-    //At this point we're sure that the server is created, so we notify Natron about it so it can create its ExceptionHandler
-    writeToOutputPipe("-i");
-}
-
-void
-CallbacksManager::writeToOutputPipe(const QString& str)
-{
-    assert(_outputPipe);
-    if (!_outputPipe) {
-        return;
-    }
-    _outputPipe->write( (str + '\n').toUtf8() );
-    _outputPipe->flush();
-}
-
-void
-CallbacksManager::initOuptutPipe(const QString& comPipeName)
-{
-    assert(!_outputPipe);
-    _outputPipe = new QLocalSocket;
-    QObject::connect( _outputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
-    _outputPipe->connectToServer(comPipeName,QLocalSocket::ReadWrite);
 }
