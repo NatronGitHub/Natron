@@ -73,10 +73,10 @@ win32:Debug: DEFINES *= _DEBUG
 
 
 SOURCES += \
-        ..\CrashReporter\main.cpp \
-        ..\CrashReporter\CallbacksManager.cpp
+        ../CrashReporter/main.cpp \
+        ../CrashReporter/CallbacksManager.cpp
 
-HEADERS += ..\CrashReporter\CallbacksManager.h
+HEADERS += ../CrashReporter/CallbacksManager.h
 
 BREAKPAD_PATH = ../google-breakpad/src
 INCLUDEPATH += $$BREAKPAD_PATH
