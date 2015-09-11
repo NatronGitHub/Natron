@@ -624,7 +624,7 @@ Project::autoSave()
     
     QString path(_imp->getProjectPath().c_str());
     QString name(_imp->getProjectFilename().c_str());
-    saveProjectInternal(path, name, true, true);
+    saveProject_imp(path,name, true, true, 0);
 }
 
 void
