@@ -25,9 +25,7 @@
 #include "CLArgs.h"
 
 #include <cstddef>
-#ifdef DEBUG
 #include <iostream>
-#endif
 #include <stdexcept>
 
 #include <QDebug>

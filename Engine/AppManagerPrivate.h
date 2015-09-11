@@ -26,11 +26,17 @@
 // ***** END PYTHON BLOCK *****
 
 #include <QtCore/QMutex>
+#include <QtCore/QString>
+#include <QtCore/QAtomicInt>
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+
+class QProcess;
+class QLocalServer;
+class QLocalSocket;
 
 #ifdef NATRON_USE_BREAKPAD
 namespace google_breakpad {

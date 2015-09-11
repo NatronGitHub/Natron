@@ -36,7 +36,11 @@
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <QDebug>
+#include <QtCore/QDebug>
+#include <QtCore/QProcess>
+#include <QtCore/QTemporaryFile>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
 
 #include "Global/QtCompat.h" // for removeRecursively
 
