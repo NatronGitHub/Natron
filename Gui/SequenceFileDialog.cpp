@@ -33,6 +33,9 @@
 #include <cassert>
 #include <locale>
 #include <algorithm>
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
@@ -68,12 +71,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QStandardPaths>
 #endif
-
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
 #include <QtConcurrentRun>
-
 #include <QtCore/QSettings>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
