@@ -39,6 +39,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
 #include <QtCore/QTemporaryFile>
+#include <QtCore/QCoreApplication>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
 

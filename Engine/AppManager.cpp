@@ -29,17 +29,10 @@
 #include <cstddef>
 #include <stdexcept>
 
-#include <QDebug>
-#include <QTextCodec>
-//#include <QProcess>
-#include <QAbstractSocket>
-#include <QCoreApplication>
-//#include <QLocalServer>
-//#include <QLocalSocket>
-//#include <QThread>
-//#include <QTemporaryFile>
-//#include <QThreadPool>
-//#include <QtCore/QAtomicInt>
+#include <QtCore/QDebug>
+#include <QtCore/QTextCodec>
+#include <QtCore/QCoreApplication>
+#include <QtNetwork/QAbstractSocket>
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
@@ -51,42 +44,22 @@
 #endif
 #endif
 
-//#include "Global/MemoryInfo.h"
-//#include "Global/GlobalDefines.h"
-//#include "Global/Enums.h"
-//#include "Global/GitVersion.h"
-
 #include "Engine/AppInstance.h"
 #include "Engine/BackDrop.h"
 #include "Engine/CLArgs.h"
-//#include "Engine/Cache.h"
-//#include "Engine/CacheSerialization.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
-//#include "Engine/Format.h"
-//#include "Engine/FrameEntry.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
-//#include "Engine/Image.h"
-//#include "Engine/Knob.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
-//#include "Engine/Node.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
-//#include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
-//#include "Engine/RectISerialization.h"
-//#include "Engine/RectDSerialization.h"
-//#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
-//#include "Engine/Settings.h"
-//#include "Engine/StandardPaths.h"
-//#include "Engine/Transform.h"
-//#include "Engine/Variant.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 
