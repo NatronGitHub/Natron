@@ -14,7 +14,9 @@ DerivedData
 Natron.xcodeproj
 NatronRenderer.xcodeproj
 NatronCrashReporter.xcodeproj
+BreakpadClient.xcodeproj
 CrashReporter/NatronCrashReporter
+NatronRendererCrashReporter.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
 LibMV.xcodeproj

@@ -45,8 +45,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/QtCompat.h" // removeFileExtension
 
-#include "Engine/AppManager.h"
+//#include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"
+#include "Engine/CLArgs.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"

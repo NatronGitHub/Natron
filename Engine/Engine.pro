@@ -74,8 +74,10 @@ SOURCES += \
     AppInstance.cpp \
     AppInstanceWrapper.cpp \
     AppManager.cpp \
+    AppManagerPrivate.cpp \
     BackDrop.cpp \
     BlockingBackgroundRender.cpp \
+    CLArgs.cpp \
     CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
@@ -197,8 +199,10 @@ HEADERS += \
     AppInstance.h \
     AppInstanceWrapper.h \
     AppManager.h \
+    AppManagerPrivate.h \
     BackDrop.h \
     BlockingBackgroundRender.h \
+    CLArgs.h \
     Cache.h \
     CacheEntry.h \
     CacheSerialization.h \
