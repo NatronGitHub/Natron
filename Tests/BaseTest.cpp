@@ -34,6 +34,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
+#include "Engine/CLArgs.h"
 using namespace Natron;
 
 static AppManager* g_manager = 0;
