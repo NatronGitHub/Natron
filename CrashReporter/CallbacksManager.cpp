@@ -26,14 +26,20 @@
 
 CallbacksManager* CallbacksManager::_instance = 0;
 
-
+#include <cassert>
 #include <QLocalSocket>
 
+#include <QThread>
+#ifndef REPORTER_CLI_ONLY
+#include <QApplication>
+#else
+#include <QCoreApplication>
+#endif
 #ifdef DEBUG
 #include <QTextStream>
-#include <QFile>
 #endif
 
+#include <QFile>
 
 #ifndef REPORTER_CLI_ONLY
 #include "CrashDialog.h"
@@ -116,6 +122,7 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
         break;
     case CrashDialog::eUserChoiceSave: // already handled in the dialog
     case CrashDialog::eUserChoiceIgnore:
+        break;
     }
 #endif
 

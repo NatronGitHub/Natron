@@ -192,8 +192,7 @@ CrashDialog::~CrashDialog()
 
 }
 
-bool
-CrashDialog::getDescription() const {
+QString CrashDialog::getDescription() const {
     return _descEdit->toPlainText();
 }
 
@@ -261,7 +260,7 @@ CrashDialog::onSaveClicked()
 
         if (!saveOk) {
             QMessageBox ques(QMessageBox::Question, tr("Invalid filename"), tr("The issue could not be saved to ") + filename +
-                                                                                tr("Would you like to continue anyway?")),
+                                                                                tr("Would you like to continue anyway?"),
                              QMessageBox::Yes | QMessageBox::No,
                              this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
             ques.setDefaultButton(QMessageBox::No);

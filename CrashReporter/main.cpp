@@ -134,11 +134,9 @@ main(int argc,
     bool autoUpload = false;
 
     if (!showUsage) {
-        manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + args[2] + " " + args[3]);
-
         if (args.size() == 5) {
             ///Optionnally on CLI only, --auto-upload can be given to upload crash reports instead of just saying where the dump is.
-            autoUpload = args[4];
+            autoUpload = args[4] == "--auto-upload";
         }
     }
 
@@ -149,6 +147,8 @@ main(int argc,
         manager.writeDebugMessage("Wrong number of arguments: " + app.applicationName() + "  <breakpad_pipe> <fd> <natron_init_com_pipe> [--auto-upload] ");
         return 1;
     }
+
+    manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + args[2] + " " + args[3]);
 
 
     QString dumpPath = QDir::tempPath();

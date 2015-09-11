@@ -46,7 +46,7 @@ public:
 
     virtual ~CrashDialog();
 
-    bool getDescription() const;
+    QString getDescription() const;
 
     UserChoice getUserChoice() const;
     

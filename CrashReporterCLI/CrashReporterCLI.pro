@@ -26,6 +26,30 @@ CONFIG += qt
 
 TEMPLATE = app
 
+*g++* | *clang* {
+#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
+# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
+# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
+
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS += -O2 -g
+        QMAKE_CXXFLAGS -= -O3
+    }
+}
+
+win32-msvc* {
+    CONFIG(relwithdebinfo) {
+        CONFIG += release
+        DEFINES *= NDEBUG
+        QMAKE_CXXFLAGS_RELEASE += -Zi
+        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
+    }
+}
+
 DEFINES *= REPORTER_CLI_ONLY
 
 CONFIG(debug, debug|release){
