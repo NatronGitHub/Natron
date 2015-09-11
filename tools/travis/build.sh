@@ -23,7 +23,7 @@ set -e
 set -x
 
 BREAKPAD=
-#BREAKPAD=breakpad # doesn't compile on linux yet
+#BREAKPAD=gbreakpad # doesn't compile on linux yet
 
 # enable testing locally or on forks without multi-os enabled
 if [[ "${TRAVIS_OS_NAME:-false}" == false ]]; then
