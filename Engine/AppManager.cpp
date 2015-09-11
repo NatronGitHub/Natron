@@ -33,6 +33,8 @@
 #include <QtCore/QTextCodec>
 #include <QtCore/QCoreApplication>
 #include <QtNetwork/QAbstractSocket>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
