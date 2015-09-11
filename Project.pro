@@ -23,13 +23,14 @@ CONFIG += ordered
 
 SUBDIRS += \
     HostSupport \
+    BreakpadClient \
     Engine \
     Gui \
     Renderer \
     Tests \
     App
 
-win32|mac|linux {SUBDIRS+=CrashReporter}
+win32|mac|linux {SUBDIRS+=CrashReporter CrashReporterCLI}
 
 OTHER_FILES += \
     Global/Enums.h \

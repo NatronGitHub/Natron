@@ -20,7 +20,7 @@
 #define CRASHDIALOG_H
 
 #include <QDialog>
-#include <QMutex>
+
 
 class QVBoxLayout;
 class QLabel;
@@ -29,7 +29,6 @@ class QGridLayout;
 class QPushButton;
 class QHBoxLayout;
 class QFrame;
-class QLocalSocket;
 class CrashDialog : public QDialog
 {
     
@@ -37,9 +36,19 @@ class CrashDialog : public QDialog
     
 public:
 
+    enum UserChoice {
+        eUserChoiceUpload,
+        eUserChoiceSave,
+        eUserChoiceIgnore
+    };
+
     CrashDialog(const QString& filePath);
 
     virtual ~CrashDialog();
+
+    QString getDescription() const;
+
+    UserChoice getUserChoice() const;
     
 public slots:
     
@@ -67,61 +76,11 @@ private:
     QPushButton* _sendButton;
     QPushButton* _dontSendButton;
     QPushButton* _saveReportButton;
+    QPushButton* _pressedButton;
     
 };
 
 
-#ifdef DEBUG
-class QTextStream;
-class QFile;
-#endif
 
-class CallbacksManager : public QObject
-{
-    Q_OBJECT
-
-public:
-
-    CallbacksManager();
-    ~CallbacksManager();
-
-    void s_emitDoCallBackOnMainThread(const QString& filePath);
-    
-    static CallbacksManager* instance()
-    {
-        return _instance;
-    }
-    
-#ifdef DEBUG
-    void writeDebugMessage(const QString& str);
-#else 
-    void writeDebugMessage(const QString& /*str*/) {}
-#endif
-
-    void initOuptutPipe(const QString& comPipeName);
-    
-    void writeToOutputPipe(const QString& str);
-    
-public slots:
-
-    void onDoDumpOnMainThread(const QString& filePath);
-    
-    void onOutputPipeConnectionMade();
-
-signals:
-
-    void doDumpCallBackOnMainThread(QString);
-
-private:
-
-    static CallbacksManager *_instance;
-    
-#ifdef DEBUG
-    QMutex _dFileMutex;
-    QFile* _dFile;
-#endif
-    
-    QLocalSocket* _outputPipe;
-};
 
 #endif // CRASHDIALOG_H

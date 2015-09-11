@@ -19,7 +19,12 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+
+#ifdef REPORTER_CLI_ONLY
+#include <QCoreApplication>
+#else
 #include <QApplication>
+#endif
 #include <QStringList>
 #include <QString>
 #include <QDir>
@@ -31,8 +36,8 @@
 #elif defined(Q_OS_WIN32)
 #include "client/windows/crash_generation/crash_generation_server.h"
 #endif
-#include "CrashDialog.h"
 
+#include "CallbacksManager.h"
 
 using namespace google_breakpad;
 
@@ -105,32 +110,47 @@ void OnClientDumpRequest(void* context,
 #endif
 
 
-static void printUsage(const char* programName)
-{
-    CallbacksManager::instance()->writeDebugMessage(QString(programName) + "  <breakpad_pipe> <fd> <natron_init_com_pipe>");
-}
 
 int
 main(int argc,
      char *argv[])
 {
 
+#ifdef REPORTER_CLI_ONLY
+    QCoreApplication app(argc,argv);
+#else
     QApplication app(argc,argv);
+#endif
 
-    CallbacksManager manager;
+    QStringList args = app.arguments();
+    assert(args.size() >= 4);
+    QString qPipeName = args[1];
 
+    bool showUsage = false;
     if (argc < 4) {
-        manager.writeDebugMessage("Wrong number of arguments.");
-        printUsage(app.applicationName().toStdString().c_str());
+        showUsage = true;
+    }
+
+    bool autoUpload = false;
+
+    if (!showUsage) {
+        if (args.size() == 5) {
+            ///Optionnally on CLI only, --auto-upload can be given to upload crash reports instead of just saying where the dump is.
+            autoUpload = args[4] == "--auto-upload";
+        }
+    }
+
+    CallbacksManager manager(autoUpload);
+
+
+    if (showUsage) {
+        manager.writeDebugMessage("Wrong number of arguments: " + app.applicationName() + "  <breakpad_pipe> <fd> <natron_init_com_pipe> [--auto-upload] ");
         return 1;
     }
 
-    QStringList args = app.arguments();
-    assert(args.size() == 4);
-    QString qPipeName = args[1];
-    
     manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + args[2] + " " + args[3]);
-    
+
+
     QString dumpPath = QDir::tempPath();
 #if defined(Q_OS_MAC)
     CrashGenerationServer breakpad_server(qPipeName.toStdString().c_str(),
