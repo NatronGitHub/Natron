@@ -43,6 +43,7 @@
 
 #include <boost/version.hpp>
 
+#include "Engine/CLArgs.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h" // floatToInt, LutManager
 #include "Engine/Node.h"

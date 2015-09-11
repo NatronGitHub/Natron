@@ -217,3 +217,5 @@ Renderer/NatronRenderer
 
 *tmp*
 *commits-hash.sh*
+
+CrashReporterCLI/NatronRendererCrashReporter

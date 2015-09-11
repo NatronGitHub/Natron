@@ -36,6 +36,8 @@
 
 #include <QCoreApplication>
 
+#include "Engine/CLArgs.h"
+
 #include "Gui/GuiApplicationManager.h"
 
 static void setShutDownSignal(int signalId);

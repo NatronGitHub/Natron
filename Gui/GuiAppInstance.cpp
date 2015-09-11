@@ -31,15 +31,7 @@
 #include <QCoreApplication>
 #include <fontconfig/fontconfig.h>
 
-#include "Gui/GuiApplicationManager.h"
-#include "Gui/Gui.h"
-#include "Gui/NodeGraph.h"
-#include "Gui/NodeGui.h"
-#include "Gui/MultiInstancePanel.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/SplashScreen.h"
-#include "Gui/ViewerGL.h"
-
+#include "Engine/CLArgs.h"
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
@@ -50,6 +42,16 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGui.h"
+#include "Gui/MultiInstancePanel.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/SplashScreen.h"
+#include "Gui/ViewerGL.h"
+
 using namespace Natron;
 
 struct GuiAppInstancePrivate
