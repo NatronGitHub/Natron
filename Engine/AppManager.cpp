@@ -101,6 +101,17 @@
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
+#include <boost/config.hpp>
+
+#if 1 // defined(__NATRON_OSX__) && BOOST_VERSION <= 105900
+// Required on OS X 10.6 Snow Leopard w/ boost 1.59.0, or else undefined symbols show up at run time.
+// dyld: lazy symbol binding failed: Symbol not found: __ZN5boost7archive23basic_binary_oprimitiveINS0_15binary_oarchiveEcSt11char_traitsIcEEC2ERSt15basic_streambufIcS4_Eb
+// These templates are explicitely instantiated in boost from libs/serialization/src/binary_iarchive.cpp and binary_oarchive.cpp,
+// but don't seem to be exported from boost, and are thus stripped by the -dead_strip linker option
+#include <boost/archive/impl/basic_binary_iprimitive.ipp>
+#include <boost/archive/impl/basic_binary_oprimitive.ipp>
+#endif
+
 #define NATRON_CACHE_VERSION 2
 
 
