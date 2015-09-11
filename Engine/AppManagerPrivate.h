@@ -29,11 +29,16 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
+#include "Engine/FrameEntry.h"
+#include "Engine/Image.h"
 
+#ifdef NATRON_USE_BREAKPAD
+namespace google_breakpad {
+    class ExceptionHandler;
+}
+#endif
 class ProcessInputChannel;
 namespace Natron {
-    class FrameEntry;
-    class Image;
     class OfxHost;
 }
 

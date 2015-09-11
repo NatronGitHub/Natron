@@ -29,49 +29,14 @@
 #include <string>
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
-// /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
-#include <QtCore/QObject>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
-#include <QtCore/QChar>
+CLANG_DIAG_ON(deprecated)
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/noncopyable.hpp>
+//#include <boost/noncopyable.hpp>
 #endif
-
-#include "Engine/Plugin.h"
-#include "Engine/KnobFactory.h"
-#include "Engine/ImageLocker.h"
-
-/*macro to get the unique pointer to the controler*/
-#define appPTR AppManager::instance()
-
-class QMutex;
-
-class AppInstance;
-class Format;
-class Settings;
-class KnobHolder;
-class NodeSerialization;
-class KnobSerialization;
-class RectI;
-namespace Natron {
-class OfxImageEffectInstance;
-class Node;
-class EffectInstance;
-class LibraryBinary;
-class ImageKey;
-class FrameKey;
-class Image;
-class ImageParams;
-class FrameParams;
-class FrameEntry;
-class Plugin;
-class CacheSignalEmitter;
-}
 
 struct CLArgsPrivate;
 class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor

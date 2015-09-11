@@ -29,73 +29,23 @@
 #include <sys/resource.h> // for getrlimit
 #endif
 
-#include <clocale>
 #include <cstddef>
+#include <cstdlib>
 #include <stdexcept>
 
+#include <boost/serialization/export.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
 #include <QDebug>
-#include <QTextCodec>
-#include <QProcess>
-#include <QAbstractSocket>
-#include <QCoreApplication>
-#include <QLocalServer>
-#include <QLocalSocket>
-#include <QThread>
-#include <QTemporaryFile>
-#include <QThreadPool>
-#include <QtCore/QAtomicInt>
 
-
-
-#ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_MAC)
-#include "client/mac/handler/exception_handler.h"
-#elif defined(Q_OS_LINUX)
-#include "client/linux/handler/exception_handler.h"
-#elif defined(Q_OS_WIN32)
-#include "client/windows/handler/exception_handler.h"
-#endif
-#endif
-
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
-#include "Global/GlobalDefines.h" // for removeRecursively
-#include "Global/Enums.h"
-#include "Global/GitVersion.h"
 
-
-#include "Engine/AppInstance.h"
-#include "Engine/BackDrop.h"
-#include "Engine/CLArgs.h"
-#include "Engine/Cache.h"
 #include "Engine/CacheSerialization.h"
-#include "Engine/DiskCacheNode.h"
-#include "Engine/Dot.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
-#include "Engine/GroupInput.h"
-#include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
-#include "Engine/Knob.h"
-#include "Engine/LibraryBinary.h"
-#include "Engine/Log.h"
-#include "Engine/Node.h"
-#include "Engine/OfxImageEffectInstance.h"
-#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/ProcessHandler.h"
-#include "Engine/Project.h"
-#include "Engine/RectISerialization.h"
-#include "Engine/RectDSerialization.h"
-#include "Engine/RotoContext.h"
-#include "Engine/RotoPaint.h"
-#include "Engine/RotoSmear.h"
-#include "Engine/Settings.h"
-#include "Engine/StandardPaths.h"
-#include "Engine/Transform.h"
-#include "Engine/Variant.h"
-#include "Engine/ViewerInstance.h"
+#include "Engine/ProcessHandler.h" // ProcessInputChannel
 
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
@@ -112,6 +62,7 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 
 #define NATRON_CACHE_VERSION 2
 
+using namespace Natron;
 
 AppManagerPrivate::AppManagerPrivate()
 : _appType(AppManager::eAppTypeBackground)
@@ -213,53 +164,6 @@ AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName
     _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
 }
 
-
-static void findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
-{
-    for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
-        if (*it == script) {
-            QFile file(path + *it);
-            if (file.open(QIODevice::ReadOnly)) {
-                QTextStream ts(&file);
-                QString content = ts.readAll();
-                PyRun_SimpleString(content.toStdString().c_str());
-
-                PyObject* mainModule = getMainModule();
-                std::string error;
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                
-                if (PyObject_HasAttrString(mainModule, "catchErr")) {
-                    errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
-                }
-                
-                PyErr_Print(); //make python print any errors
-                
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-                    error = PY3String_asString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-
-                if (!error.empty()) {
-                    QString message("Failed to load ");
-                    message.append(script);
-                    message.append(": ");
-                    message.append(error.c_str());
-                    appPTR->writeToOfxLog_mt_safe(message);
-                    std::cerr << message.toStdString() << std::endl;
-                }
-
-            }
-            break;
-        }
-    }
-}
 
 
 void
@@ -399,8 +303,8 @@ void saveCache(Natron::Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<FrameEntry>(_viewerCache.get());
-    saveCache<Image>(_diskCache.get());
+    saveCache<Natron::FrameEntry>(_viewerCache.get());
+    saveCache<Natron::Image>(_diskCache.get());
 } // saveCaches
 
 template <typename T>
