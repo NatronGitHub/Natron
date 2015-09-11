@@ -51,6 +51,8 @@
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
+#include "Engine/RectDSerialization.h"
+#include "Engine/RectISerialization.h"
 
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)

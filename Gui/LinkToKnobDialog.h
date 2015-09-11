@@ -37,7 +37,9 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(uninitialized)
 
 class QStringList;
 
