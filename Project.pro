@@ -25,8 +25,8 @@ SUBDIRS += \
     HostSupport \
     BreakpadClient \
     Engine \
-    Gui \
     Renderer \
+    Gui \
     Tests \
     App
 
