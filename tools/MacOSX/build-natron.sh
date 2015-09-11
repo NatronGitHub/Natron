@@ -64,6 +64,40 @@ fi
 qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 macdeployqt App/${APP} || exit 1
+
+#Copy and change exec_path of the whole Python framework with libraries
+rm -rf App/${APP}/Contents/Frameworks/Python.framework
+mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib  || exit 1
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
+ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib  || exit 1
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/*
+#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/__pycache__
+#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/*/__pycache__
+#FILES=$(ls -l opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib|awk '{print $9}')
+#for f in FILES; do
+#    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
+#    cp -r $f App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/$FILE || exit 1
+#done
+
+bin=App/${APP}/Contents/MacOS/Natron
+# macdeployqt doesn't deal correctly with libs in /opt/local/lib/libgcc : handle them manually
+if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+    for l in gcc_s.1 stdc++.6; do
+        lib=lib${l}.dylib
+	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
+        cp /opt/local/lib/libgcc/$lib App/${APP}/Contents/Frameworks/$lib
+    done
+fi
+for f in Python; do
+    install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/2.7/${f} @executable_path/../Frameworks/${f}.framework/Versions/2.7/${f} $bin
+done
+
+if otool -L App/${APP}/Contents/MacOS/Natron  |fgrep /opt/local; then
+    echo "Error: MacPorts libraries remaining in $bin, please check"
+    exit 1
+fi
+
 mv App/${APP}/Contents/PlugIns App/${APP}/Contents/Plugins || exit 1
 rm App/${APP}/Contents/Resources/qt.conf || exit 1
 
@@ -78,47 +112,44 @@ bin=App/${APP}/Contents/MacOS/NatronRenderer
 
 #Change @executable_path for NatronRenderer deps
 for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside-python2.7.1.2 shiboken-python2.7.1.2 intl.8; do
-lib=lib${l}.dylib
-install_name_tool -change /opt/local/lib/$lib @executable_path/../Frameworks/$lib $bin
+    lib=lib${l}.dylib
+    install_name_tool -change /opt/local/lib/$lib @executable_path/../Frameworks/$lib $bin
 done
 for f in QtNetwork QtCore; do
-install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+    install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
-
+if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+    for l in gcc_s.1 stdc++.6; do
+        lib=lib${l}.dylib
+	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
+    done
+fi
 #Copy and change exec_path of the whole Python framework with libraries
-
 for f in Python; do
-install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/2.7/${f} @executable_path/../Frameworks/${f}.framework/Versions/2.7/${f} $bin
+    install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/2.7/${f} @executable_path/../Frameworks/${f}.framework/Versions/2.7/${f} $bin
 done
-if otool -L App/${APP}/Contents/MacOS/NatronRenderer  |fgrep /opt/local; then
+
+if otool -L $bin |fgrep /opt/local; then
     echo "Error: MacPorts libraries remaining in $bin, please check"
     exit 1
 fi
 
-rm -rf App/${APP}/Contents/Frameworks/Python.framework
-mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib  || exit 1
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
-ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib  || exit 1
-rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/*
-#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/__pycache__
-#rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/*/__pycache__
-
-#FILES=$(ls -l opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib|awk '{print $9}')
-#for f in FILES; do
-#    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
-#    cp -r $f App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/$FILE || exit 1
-#done
 
 
 #Do the same for crash reporter
 cp CrashReporter/NatronCrashReporter App/${APP}/Contents/MacOS
 bin=App/${APP}/Contents/MacOS/NatronCrashReporter
 for f in QtGui QtNetwork QtCore; do
-install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+    install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
+if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+    for l in gcc_s.1 stdc++.6; do
+        lib=lib${l}.dylib
+	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
+    done
+fi
 
-if otool -L App/${APP}/Contents/MacOS/NatronCrashReporter  |fgrep /opt/local; then
+if otool -L $bin |fgrep /opt/local; then
     echo "Error: MacPorts libraries remaining in $bin, please check"
     exit 1
 fi
@@ -126,10 +157,16 @@ fi
 cp CrashReporterCLI/NatronRendererCrashReporter App/${APP}/Contents/MacOS
 bin=App/${APP}/Contents/MacOS/NatronRendererCrashReporter
 for f in QtNetwork QtCore; do
-install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+    install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
+if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+    for l in gcc_s.1 stdc++.6; do
+        lib=lib${l}.dylib
+	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
+    done
+fi
 
-if otool -L App/${APP}/Contents/MacOS/NatronRendererCrashReporter  |fgrep /opt/local; then
+if otool -L $bin |fgrep /opt/local; then
     echo "Error: MacPorts libraries remaining in $bin, please check"
     exit 1
 fi
