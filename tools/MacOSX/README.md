@@ -15,7 +15,7 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 * Install [MacPorts](https://www.macports.org/install.php) 
 
-* Add the following line to /opt/local/etc/macports/variants.conf:
+* Add the following line to /opt/local/etc/macports/variants.conf  (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
 -x11 +no_x11 +bash_completion +no_gnome +quartz +universal
 ```
@@ -26,15 +26,28 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 * Download and install the missing OS X SDK, following instructions at https://github.com/devernay/xcodelegacy
 
+* Check that you can compile a simple C++ program (Xcode 7 may fail here)
+  * Create the file `conftest.cpp` containing:
+```
+int main () { return 0; }
+```
+  * Compile it with
+```
+g++ -mmacosx-version-min=10.6 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk -Wl,-syslibroot,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk conftest.cpp -o conftest
+```
+
 * Install [MacPorts](https://www.macports.org/install.php) 
 
-* Add the following lines to `/opt/local/etc/macports/macports.conf`:
+* Add the following lines to `/opt/local/etc/macports/macports.conf` (you may use `sudo nano /opt/local/etc/macports/macports.conf`):
 ```
 macosx_deployment_target 10.6
+macosx_sdk_version 10.6
 sdkroot /Developer/SDKs/MacOSX10.6.sdk
+cxx_stdlib         libstdc++
+buildfromsource    always
 ```
 
-* Add the following line to `/opt/local/etc/macports/variants.conf`:
+* Add the following line to `/opt/local/etc/macports/variants.conf` (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
 -x11 +no_x11 +bash_completion +no_gnome +quartz +universal
 ```
@@ -45,7 +58,7 @@ sdkroot /Developer/SDKs/MacOSX10.6.sdk
 
 * Install [MacPorts](https://www.macports.org/install.php) 
 
-* Add the following line to /opt/local/etc/macports/variants.conf:
+* Add the following line to /opt/local/etc/macports/variants.conf  (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
 -x11 +no_x11 +bash_completion +no_gnome +quartz
 ```
@@ -54,7 +67,7 @@ sdkroot /Developer/SDKs/MacOSX10.6.sdk
 
 * Download Macports [dports-dev](http://downloads.natron.fr/Third_Party_Sources/dports-dev.zip)
 
-* Give read/execute permissions to the local repository:
+* Give read/execute permissions to the local repository (replace `USER_NAME` with your user name):
 ```
 chmod 755 /Users/USER_NAME/Development/dports-dev
 ```
@@ -89,9 +102,14 @@ make
 sudo make install
 ```
 
+* Use a clean `PATH` for the rest of the installation (especially if you also have [Homebrew](http://brew.sh/) in `/usr/local`or [Fink](http://www.finkproject.org/) in `/opt/fink`):
+```
+PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+```
+
 * Install the following packages:
 ```
-sudo port install qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside
+sudo port -v install qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside
 ```
 
 ##  Building Natron

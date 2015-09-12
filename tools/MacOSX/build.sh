@@ -93,8 +93,8 @@ EOFF
     exit 1
 fi
 
-if [ ! -f $CWD/commits-hash.sh ]; then
-    touch $CWD/commits-hash.sh
+if [ ! -f "$CWD/commits-hash.sh" ]; then
+    touch "$CWD/commits-hash.sh"
     echo "#!/bin/sh" >> $CWD/commits-hash.sh
     echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash.sh
     echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
@@ -107,39 +107,41 @@ fi
 source $CWD/commits-hash.sh || exit 1
 
 if [ "$NO_CLEAN" != "1" ]; then
-    rm -rf $CWD/build
+    rm -rf "$CWD/build"
 fi
-mkdir -p $CWD/build
+mkdir -p "$CWD/build"
 
-LOGS=$CWD/logs
-rm -rf $LOGS
-mkdir -p $LOGS || exit 1
+LOGDIR="$CWD/logs"
+rm -rf $LOGDIR
+mkdir -p $LOGDIR || exit 1
 
 
-PLUGINDIR=$CWD/build/Natron/App/Natron.app/Contents/Plugins
+PLUGINDIR="$CWD/build/Natron/App/Natron.app/Contents/Plugins"
+NATRONLOG="$LOGDIR/natron.MacOSX-Universal.$TAG.log"
 
 echo "Building Natron..."
 echo
-MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH PLUGINDIR=$PLUGINDIR ./build-natron.sh >& $LOGS/natron.MacOSX-Universal.$TAG.log || FAIL=1
+env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
     echo OK
 else
     echo ERROR
     sleep 2
-    cat $LOGS/natron.MacOSX-Universal.$TAG.log
+    cat "$NATRONLOG"
 fi
 
+PLUGINSLOG="$LOGDIR/plugins.MacOSX-Universal.$TAG.log"
 if [ "$FAIL" != "1" ]; then
     echo "Building plug-ins..."
     echo
-    PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH ./build-plugins.sh >& $LOGS/plugins.MacOSX-Universal.$TAG.log || FAIL=1
+    PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH ./build-plugins.sh >& "$PLUGINSLOG" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
         sleep 2
-        cat $LOGS/plugins.MacOSX-Universal.$TAG.log
+        cat "$PLUGINSLOG"
     fi
 fi
 
@@ -151,29 +153,38 @@ else
     UPLOAD_BRANCH=releases
 fi
 
+INSTALLERLOG="$LOGDIR/installer.MacOSX-Universal.$TAG.log"
 if [ "$FAIL" != "1" ]; then
     echo "Building installer..."
     echo
-    ./build-installer.sh >& $LOGS/installer.MacOSX-Universal.$TAG.log || FAIL=1
-    mv $CWD/build/Natron.dmg $CWD/build/Natron-${NATRON_V}.dmg || FAIL=1
+    ./build-installer.sh >& "$INSTALLERLOG" || FAIL=1
+    mv "$CWD/build/Natron.dmg" "$CWD/build/Natron-${NATRON_V}.dmg" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
         sleep 2
-        cat $LOGS/installer.MacOSX-Universal.$TAG.log
+        cat "$INSTALLERLOG"
     fi
 fi
 
+NATRONDMG="$CWD/build/Natron-${NATRON_V}.dmg"
+NATRONLOGNEW="$LOGDIR/Natron-${NATRON_V}.txt"
+PLUGINSLOGNEW="$LOGDIR/Natron-${NATRON_V}-plugins.txt"
+INSTALLERLOG="$LOGDIR/Natron-${NATRON_V}-installer.txt"
+mv "$NATRONLOG" "$NATRONLOGNEW"
+mv "$PLUGINSLOG" "$PLUGINSLOGNEW"
+mv "$INSTALLERLOG" "$INSTALLERLOGNEW"
+
 if [ "$UPLOAD" == "1" ]; then
     if [ "$FAIL" != "1" ]; then
-        echo "Uploading $CWD/build/Natron-${NATRON_V}.dmg..."
+        echo "Uploading $NATRONDMG ..."
         echo
-        rsync -avz --progress -e ssh $CWD/build/Natron-${NATRON_V}.dmg $REPO_DEST/Mac/$UPLOAD_BRANCH/ || exit 1
+        rsync -avz --progress -e ssh "$NATRONDMG" "$REPO_DEST/Mac/$UPLOAD_BRANCH/" || exit 1
     fi
     echo "Uploading logs..."
     echo
-    rsync -avz --progress --delete -e ssh $LOGS/ $REPO_DEST/Mac/$UPLOAD_BRANCH/logs || exit 1
+    rsync -avz --progress -e ssh "$LOGDIR/" "$REPO_DEST/Mac/$UPLOAD_BRANCH/logs" || exit 1
 fi
 
 
