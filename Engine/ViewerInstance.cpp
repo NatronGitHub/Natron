@@ -2197,7 +2197,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
             
             double r = 0.;
             double g = 0.;
-            double b = 0.:
+            double b = 0.;
             double a = 0.;
             
             if (nComps >= 4) {
