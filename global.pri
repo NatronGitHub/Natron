@@ -20,15 +20,15 @@ CONFIG += warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_SUPPORTS_OPENGLRENDER OFX_SUPPORTS_DIALOG
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 
-trace_ofx_actions{
+contains(CONFIG,trace_ofx_actions) {
     DEFINES += OFX_DEBUG_ACTIONS
 }
 
-trace_ofx_params{
+contains(CONFIG,trace_ofx_params) {
     DEFINES += OFX_DEBUG_PARAMETERS
 }
 
-trace_ofx_properties{
+contains(CONFIG,trace_ofx_properties) {
     DEFINES += OFX_DEBUG_PROPERTIES
 }
 
@@ -151,8 +151,8 @@ macx {
 win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-  DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
-
+  #DEFINES += _MBCS
+  DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES -= _UNICODE UNICODE
 }
 
