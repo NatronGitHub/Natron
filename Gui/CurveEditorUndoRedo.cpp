@@ -25,6 +25,8 @@
 #include "CurveEditorUndoRedo.h"
 
 #include <cmath>
+#include <stdexcept>
+
 #include <QDebug>
 
 #include "Global/GlobalDefines.h"
@@ -88,6 +90,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                 if (isParametric) {
                     Natron::StatusEnum st = isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
                     assert(st == Natron::eStatusOK);
+                    if (st != Natron::eStatusOK) {
+                        throw std::logic_error("addOrRemoveKeyframe");
+                    }
                 } else {
                     knob->removeAnimation(isKnobCurve->getDimension());
                 }

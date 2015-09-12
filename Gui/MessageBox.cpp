@@ -106,7 +106,7 @@ MessageBox::init(const QString & title,
     _imp->infoLabel = new Natron::Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
-    QStyle::StandardPixmap pixType;
+    QStyle::StandardPixmap pixType = QStyle::SP_MessageBoxCritical;
     switch (_imp->type) {
         case eMessageBoxTypeError:
             pixType = QStyle::SP_MessageBoxCritical;

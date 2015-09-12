@@ -403,7 +403,11 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else {
-        tracker->getButtonsBar()->hide();
+        QWidget* buttonsBar = tracker->getButtonsBar();
+        assert(buttonsBar);
+        if (buttonsBar) {
+            buttonsBar->hide();
+        }
     }
 }
 
@@ -435,12 +439,14 @@ ViewerTab::setTrackerInterface(NodeGui* n)
 
         assert(index >= 0);
         QWidget* buttonsBar = it->second->getButtonsBar();
-        _imp->mainLayout->insertWidget(index,buttonsBar);
-        
-        {
-            QMutexLocker l(&_imp->visibleToolbarsMutex);
-            if (_imp->topToolbarVisible) {
-                buttonsBar->show();
+        assert(buttonsBar);
+        if (buttonsBar) {
+            _imp->mainLayout->insertWidget(index,buttonsBar);
+            {
+                QMutexLocker l(&_imp->visibleToolbarsMutex);
+                if (_imp->topToolbarVisible) {
+                    buttonsBar->show();
+                }
             }
         }
 
@@ -471,11 +477,14 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
 
             int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
             assert(buttonsBarIndex >= 0);
-            QLayoutItem* buttonsBar = _imp->mainLayout->itemAt(buttonsBarIndex);
-            assert(buttonsBar);
-            _imp->mainLayout->removeItem(buttonsBar);
-            buttonsBar->widget()->hide();
-
+            if (buttonsBarIndex >= 0) {
+                QLayoutItem* buttonsBar = _imp->mainLayout->itemAt(buttonsBarIndex);
+                assert(buttonsBar);
+                if (buttonsBar) {
+                    _imp->mainLayout->removeItem(buttonsBar);
+                    buttonsBar->widget()->hide();
+                }
+            }
             if (!removeAndDontSetAnother) {
                 ///If theres another tracker node, set it as the current tracker interface
                 std::map<NodeGui*,TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
@@ -556,21 +565,26 @@ ViewerTab::setRotoInterface(NodeGui* n)
         if (_imp->currentTracker.second) {
             index = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
             assert(index != -1);
-            ++index;
+            if (index >= 0) {
+                ++index;
+            }
         } else {
             index = _imp->mainLayout->indexOf(_imp->viewerContainer);
         }
         assert(index >= 0);
-        QWidget* buttonsBar = it->second->getCurrentButtonsBar();
-        _imp->mainLayout->insertWidget(index,buttonsBar);
-        
-        {
-            QMutexLocker l(&_imp->visibleToolbarsMutex);
-            if (_imp->topToolbarVisible) {
-                buttonsBar->show();
+        if (index >= 0) {
+            QWidget* buttonsBar = it->second->getCurrentButtonsBar();
+            assert(buttonsBar);
+            if (buttonsBar) {
+                _imp->mainLayout->insertWidget(index,buttonsBar);
+                {
+                    QMutexLocker l(&_imp->visibleToolbarsMutex);
+                    if (_imp->topToolbarVisible) {
+                        buttonsBar->show();
+                    }
+                }
             }
         }
-
         QObject::connect( it->second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
         _imp->currentRoto.first = n;
         _imp->currentRoto.second = it->second;
@@ -656,20 +670,27 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         ///Remove the previous buttons bar
         QWidget* previousBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) ;
         assert(previousBar);
-        int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
-        assert(buttonsBarIndex >= 0);
-        _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
-        previousBar->hide();
-
+        if (previousBar) {
+            int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
+            assert(buttonsBarIndex >= 0);
+            if (buttonsBarIndex >= 0) {
+                _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
+            }
+            previousBar->hide();
+        }
 
         ///Set the new buttons bar
         int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
         assert(viewerIndex >= 0);
-        QWidget* currentBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole );
-        assert(currentBar);
-        _imp->mainLayout->insertWidget( viewerIndex, currentBar);
-        currentBar->show();
-        assert(_imp->mainLayout->itemAt(viewerIndex)->widget() == currentBar);
+        if (viewerIndex >= 0) {
+            QWidget* currentBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole );
+            assert(currentBar);
+            if (currentBar) {
+                _imp->mainLayout->insertWidget( viewerIndex, currentBar);
+                currentBar->show();
+                assert(_imp->mainLayout->itemAt(viewerIndex)->widget() == currentBar);
+            }
+        }
     }
 }
 

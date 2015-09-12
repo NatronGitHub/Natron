@@ -642,7 +642,7 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
                             double* y,
                             bool skipMasterOrRelative) const
 {
-    bool ret;
+    bool ret = false;
     KeyFrame k;
     Curve* xCurve = useGuiCurves ? _imp->guiCurveX.get() : _imp->curveX.get();
     Curve* yCurve = useGuiCurves ? _imp->guiCurveY.get() : _imp->curveY.get();
@@ -651,8 +651,10 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
         *x = k.getValue();
         ok = yCurve->getKeyFrameWithTime(time, &k);
         assert(ok);
-        *y = k.getValue();
-        ret = true;
+        if (ok) {
+            *y = k.getValue();
+            ret = true;
+        }
     } else {
         try {
             *x = xCurve->getValueAt(time);
@@ -766,7 +768,7 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
                                    bool skipMasterOrRelative) const
 {
     KeyFrame k;
-    bool ret;
+    bool ret = false;
 
     Curve* xCurve = useGuiCurves ? _imp->guiCurveLeftBezierX.get() : _imp->curveLeftBezierX.get();
     Curve* yCurve = useGuiCurves ? _imp->guiCurveLeftBezierY.get() : _imp->curveLeftBezierY.get();
@@ -775,8 +777,10 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
         *x = k.getValue();
         ok = yCurve->getKeyFrameWithTime(time, &k);
         assert(ok);
-        *y = k.getValue();
-        ret =  true;
+        if (ok) {
+            *y = k.getValue();
+            ret = true;
+        }
     } else {
         try {
             *x = xCurve->getValueAt(time);
@@ -792,7 +796,7 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
             }
         }
 
-        ret =  false;
+        ret = false;
     }
 
     if (!skipMasterOrRelative) {
@@ -824,7 +828,7 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
                                     bool skipMasterOrRelative) const
 {
     KeyFrame k;
-    bool ret;
+    bool ret = false;
     Curve* xCurve = useGuiCurves ? _imp->guiCurveRightBezierX.get() : _imp->curveRightBezierX.get();
     Curve* yCurve = useGuiCurves ? _imp->guiCurveRightBezierY.get() : _imp->curveRightBezierY.get();
     if ( xCurve->getKeyFrameWithTime(time, &k) ) {
@@ -832,8 +836,10 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
         *x = k.getValue();
         ok = yCurve->getKeyFrameWithTime(time, &k);
         assert(ok);
-        *y = k.getValue();
-        ret = true;
+        if (ok) {
+            *y = k.getValue();
+            ret = true;
+        }
     } else {
         try {
             *x = xCurve->getValueAt(time);
@@ -2244,7 +2250,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     bool ok = _imp->mergeNode = app->createNode(args);
     assert(ok);
-    
+    if (!ok) {
+        throw std::logic_error("RotoDrawableItem::createNodes");
+    }
     assert(_imp->mergeNode);
     
     if (type != eRotoStrokeTypeSolid) {
@@ -6642,6 +6650,9 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
             k.setValue(p.pos.y);
             bool aok = stroke->yCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
+            if (aok != addKeyFrameOk) {
+                throw std::logic_error("RotoStrokeItem::appendPoint");
+            }
         }
         
         {
@@ -6650,6 +6661,9 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
             k.setValue(p.pressure);
             bool aok = stroke->pressureCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
+            if (aok != addKeyFrameOk) {
+                throw std::logic_error("RotoStrokeItem::appendPoint");
+            }
         }
         // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
         // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.

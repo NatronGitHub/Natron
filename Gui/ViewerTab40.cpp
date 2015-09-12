@@ -365,7 +365,11 @@ ViewerTab::setTopToolbarVisible(bool visible)
         _imp->currentRoto.second->getCurrentButtonsBar()->setVisible(_imp->topToolbarVisible);
     }
     if (_imp->currentTracker.second) {
-        _imp->currentTracker.second->getButtonsBar()->setVisible(_imp->topToolbarVisible);
+        QWidget* buttonsBar = _imp->currentTracker.second->getButtonsBar();
+        assert(buttonsBar);
+        if (buttonsBar) {
+            buttonsBar->setVisible(_imp->topToolbarVisible);
+        }
     }
 }
 

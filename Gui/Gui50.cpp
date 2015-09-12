@@ -828,5 +828,6 @@ void
 Gui::ddeOpenFile(const QString& filePath)
 {
     openProject(filePath.toStdString());
+#pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
 }
 #endif

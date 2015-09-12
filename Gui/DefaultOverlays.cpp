@@ -172,7 +172,9 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
     QFontMetrics fm(font);
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
         
-        double pR,pG,pB;
+        float pR = 1.f;
+        float pG = 1.f;
+        float pB = 1.f;
         switch (it->state) {
         case ePositionInteractStateInactive:
             pR = (float)r; pG = (float)g; pB = (float)b; break;
