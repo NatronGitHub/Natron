@@ -11,7 +11,7 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 * Download and install MacOSX Snow Leopard 10.6 retail DVD.
 
-* Install Xcode 3.2.6 for Snow Leopard from developer.apple.com. Don't forget to also install the UNIX command-line utilities (this is an install option in Xcode 3).
+* Install [Xcode 3.2.6 for Snow Leopard](https://guide.macports.org/#installing.xcode.snowleopard). Don't forget to also install the UNIX command-line utilities (this is an install option in Xcode 3).
 
 * Install [MacPorts](https://www.macports.org/install.php) 
 
@@ -22,7 +22,7 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 ### Installing MacPorts on OS X 10.7+ for deployment on OS X 10.6 (universal)
 
-* Install the latest version of Xcode
+* Install the latest version of [Xcode](https://guide.macports.org/#installing.xcode)
 
 * Download and install the missing OS X SDK, following instructions at https://github.com/devernay/xcodelegacy
 
@@ -94,8 +94,13 @@ sudo make install
 sudo port install qt4-mac boost glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside
 ```
 
-* `git clone https://github.com/MrKepzie/Natron`
- 
+##  Building Natron
+
+* Get the build scripts from the Natron github repository:
+```
+git clone https://github.com/MrKepzie/Natron
+```
+
 * To build a snapshot:
 ```
 cd Natron/tools/MacOSX
