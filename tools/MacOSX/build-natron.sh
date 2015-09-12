@@ -86,6 +86,9 @@ if otool -L $bin |fgrep /opt/local/lib/libgcc; then
     for l in gcc_s.1 stdc++.6; do
         lib=lib${l}.dylib
 	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
+	for deplib in App/${APP}/Contents/Frameworks/*.dylib; do
+	    install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $deplib
+	done
         cp /opt/local/lib/libgcc/$lib App/${APP}/Contents/Frameworks/$lib
     done
 fi
@@ -118,7 +121,7 @@ done
 for f in QtNetwork QtCore; do
     install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
-if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+if otool -L $bin |fgrep /opt/local/lib/libgcc/; then
     for l in gcc_s.1 stdc++.6; do
         lib=lib${l}.dylib
 	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
@@ -142,7 +145,7 @@ bin=App/${APP}/Contents/MacOS/NatronCrashReporter
 for f in QtGui QtNetwork QtCore; do
     install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
-if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+if otool -L $bin |fgrep /opt/local/lib/libgcc/; then
     for l in gcc_s.1 stdc++.6; do
         lib=lib${l}.dylib
 	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
@@ -159,7 +162,7 @@ bin=App/${APP}/Contents/MacOS/NatronRendererCrashReporter
 for f in QtNetwork QtCore; do
     install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
-if otool -L $bin |fgrep /opt/local/lib/libgcc; then
+if otool -L $bin |fgrep /opt/local/lib/libgcc/; then
     for l in gcc_s.1 stdc++.6; do
         lib=lib${l}.dylib
 	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
