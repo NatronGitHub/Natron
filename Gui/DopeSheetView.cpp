@@ -26,6 +26,7 @@
 
 #include <algorithm> // min, max
 #include <limits>
+#include <stdexcept>
 
 // Qt includes
 #include <QApplication>
