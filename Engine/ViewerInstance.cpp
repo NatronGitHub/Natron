@@ -1738,7 +1738,10 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
         ///we fill the scan-line with all the pixels of the input image
         for (int x = rect.left(); x < rect.right(); ++x) {
             
-            double r,g,b,a;
+            double r = 0.;
+            double g = 0.;
+            double b = 0.;
+            double a = 0.;
             switch (nComps) {
                 case 4:
                     r = src_pixels[0];
@@ -1882,8 +1885,10 @@ scaleToTexture8bits_generic(const RectI& roi,
             
             while (index < (roi.x2 - roi.x1) && index >= 0) {
                 
-                double r,g,b;
-                int a;
+                double r = 0.;
+                double g = 0.;
+                double b = 0.;
+                int a = 0;
 
                 if (nComps >= 4) {
                     r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
@@ -2190,7 +2195,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
         for (int x = 0; x < roi.width();
              ++x) {
             
-            double r,g,b,a;
+            double r = 0.;
+            double g = 0.;
+            double b = 0.;
+            double a = 0.;
             
             if (nComps >= 4) {
                 r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;

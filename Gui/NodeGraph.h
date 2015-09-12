@@ -26,6 +26,13 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
@@ -33,11 +40,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
 
 #include "Engine/NodeGraphI.h"
 #include "Engine/ScriptObject.h"

@@ -34,9 +34,8 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
-#include <QtCore/QChar>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN) 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -44,12 +43,12 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ImageLocker.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
 class QMutex;
+class QChar;
 
 class AppInstance;
 class Format;

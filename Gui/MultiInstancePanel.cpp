@@ -1394,10 +1394,10 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
     int rc = _imp->model->rowCount();
     int cc = _imp->model->columnCount();
     for (int i = 0; i < rc; ++i) {
-        TableItem* item = _imp->view->itemAt(i, COL_ENABLED);
+        //TableItem* item = _imp->view->itemAt(i, COL_ENABLED);
         QWidget* w = _imp->view->cellWidget(i, COL_ENABLED);
         if (w == checkbox) {
-            assert(item);
+            //assert(item);
             assert( i < (int)_imp->instances.size() );
             Nodes::iterator it = _imp->instances.begin();
             std::advance(it, i);

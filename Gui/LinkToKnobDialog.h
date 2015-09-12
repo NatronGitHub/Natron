@@ -35,9 +35,13 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 class QStringList;
 

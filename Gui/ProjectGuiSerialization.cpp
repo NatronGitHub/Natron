@@ -163,7 +163,7 @@ void
 SplitterSerialization::initialize(Splitter* splitter)
 {
     sizes = splitter->serializeNatron().toStdString();
-    Natron::OrientationEnum nO;
+    Natron::OrientationEnum nO = Natron::eOrientationHorizontal;
     Qt::Orientation qO = splitter->orientation();
     switch (qO) {
     case Qt::Horizontal:

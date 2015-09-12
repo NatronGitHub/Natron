@@ -1091,10 +1091,9 @@ RotoGui::getButtonsBar(RotoGui::RotoRoleEnum role) const
             return _imp->brushButtonsBar;
         case eRotoRoleMergeBrush:
             return _imp->brushButtonsBar;
-        default:
-            assert(false);
-            break;
     }
+    assert(false);
+    return NULL;
 }
 
 GuiAppInstance*
@@ -1336,6 +1335,7 @@ RotoGui::getCurrentRole() const
         return eRotoRoleMergeBrush;
     }
     assert(false);
+    return eRotoRoleSelection;
 }
 
 void
@@ -3084,7 +3084,7 @@ RotoGui::penMotion(double time,
         double skewX = 0.,skewY = 0.;
         double tx = 0., ty = 0.;
         
-        TransformUndoCommand::TransformPointsSelectionEnum type;
+        TransformUndoCommand::TransformPointsSelectionEnum type = TransformUndoCommand::eTransformAllPoints;
         if (!modCASIsShift(e)) {
             type = TransformUndoCommand::eTransformAllPoints;
         } else {

@@ -865,7 +865,7 @@ TabWidget::splitInternal(bool autoSave,
     assert(parentIsSplitter || parentIsFloating);
 
     /*We need to know the position in the container layout of the old tab widget*/
-    int oldIndexInParentSplitter;
+    int oldIndexInParentSplitter = -1;
     QList<int> oldSizeInParentSplitter;
     if (parentIsSplitter) {
         oldIndexInParentSplitter = parentIsSplitter->indexOf(this);
@@ -1957,6 +1957,9 @@ TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const 
     _imp->gui->printAutoDeclaredVariable(script);
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("TabWidget::onTabScriptNameChanged: " + err);
+    }
 }
 
 void
@@ -1985,6 +1988,9 @@ TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
     gui->printAutoDeclaredVariable(script);
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("TabWidget::declareTabToPython: " + err);
+    }
 }
 
 void
@@ -2007,5 +2013,8 @@ TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
     gui->printAutoDeclaredVariable(script);
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("TabWidget::removeTabToPython: " + err);
+    }
 }
 

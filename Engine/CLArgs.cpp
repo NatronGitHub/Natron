@@ -24,72 +24,16 @@
 
 #include "CLArgs.h"
 
-#if defined(Q_OS_UNIX)
-#include <sys/time.h>     // for getrlimit on linux
-#include <sys/resource.h> // for getrlimit
-#endif
-
-#include <clocale>
 #include <cstddef>
+#include <iostream>
 #include <stdexcept>
 
 #include <QDebug>
-#include <QTextCodec>
-#include <QProcess>
-#include <QAbstractSocket>
-#include <QCoreApplication>
-#include <QLocalServer>
-#include <QLocalSocket>
-#include <QThread>
-#include <QTemporaryFile>
-#include <QThreadPool>
-#include <QtCore/QAtomicInt>
+#include <QFile>
 
-#include "Global/MemoryInfo.h"
-#include "Global/QtCompat.h" // for removeRecursively
-#include "Global/GlobalDefines.h" // for removeRecursively
-#include "Global/Enums.h"
 #include "Global/GitVersion.h"
 
-#include "Engine/AppInstance.h"
-#include "Engine/BackDrop.h"
-#include "Engine/Cache.h"
-#include "Engine/CacheSerialization.h"
-#include "Engine/DiskCacheNode.h"
-#include "Engine/Dot.h"
-#include "Engine/Format.h"
-#include "Engine/FrameEntry.h"
-#include "Engine/GroupInput.h"
-#include "Engine/GroupOutput.h"
-#include "Engine/Image.h"
-#include "Engine/Knob.h"
-#include "Engine/LibraryBinary.h"
-#include "Engine/Log.h"
-#include "Engine/Node.h"
-#include "Engine/OfxImageEffectInstance.h"
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/OfxHost.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/ProcessHandler.h"
-#include "Engine/Project.h"
-#include "Engine/RectISerialization.h"
-#include "Engine/RectDSerialization.h"
-#include "Engine/RotoContext.h"
-#include "Engine/RotoPaint.h"
-#include "Engine/RotoSmear.h"
-#include "Engine/Settings.h"
-#include "Engine/StandardPaths.h"
-#include "Engine/Transform.h"
-#include "Engine/Variant.h"
-#include "Engine/ViewerInstance.h"
-
-
-
-
-
-
-
-
+#include "Engine/AppManager.h"
 
 
 struct CLArgsPrivate

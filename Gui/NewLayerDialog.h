@@ -31,7 +31,10 @@
 
 #include "Global/Macros.h"
 
+CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(uninitialized)
+
 namespace Natron {
     class ImageComponents;
 }

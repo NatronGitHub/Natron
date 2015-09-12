@@ -24,16 +24,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_OFF(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-GCC_DIAG_ON(unused-parameter)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #define kNatronColorPlaneName "Color"
 #define kNatronBackwardMotionVectorsPlaneName "Backward"
 #define kNatronForwardMotionVectorsPlaneName "Forward"
@@ -106,10 +96,8 @@ public:
     static const ImageComponents& getDisparityRightComponents();
     static const ImageComponents& getXYComponents();
     
-    friend class boost::serialization::access;
-    
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/);
+    void serialize(Archive & ar, const unsigned int version);
     
 private:
     

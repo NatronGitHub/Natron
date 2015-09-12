@@ -28,6 +28,10 @@
 #include <cfloat> // DBL_MAX
 #include <climits> // INT_MAX
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -37,9 +41,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 
 
 class QStringList;

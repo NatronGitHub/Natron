@@ -32,6 +32,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
 class QVBoxLayout;
 class QTextBrowser;
 class Button;

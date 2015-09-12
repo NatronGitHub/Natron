@@ -494,7 +494,7 @@ public:
 
     void checkNumberOfNonFloatingPanes();
 
-    AppInstance* openProject(const std::string& filename);
+    AppInstance* openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
 
@@ -713,7 +713,7 @@ private:
 
     
 
-    AppInstance* openProjectInternal(const std::string & absoluteFileName);
+    AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
 
     void setupUi();
 

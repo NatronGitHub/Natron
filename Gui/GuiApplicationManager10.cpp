@@ -349,6 +349,7 @@ GuiApplicationManager::handleOpenFileRequest()
     assert(guiApp);
     if (guiApp) {
         guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+#pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
         _imp->_openFileRequest.clear();
     }
 }

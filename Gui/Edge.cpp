@@ -402,33 +402,35 @@ Edge::initLine()
         }
 
         assert(foundIntersection);
-        double distToCenter = std::sqrt( ( intersection.x() - dst.x() ) * ( intersection.x() - dst.x() ) +
-                                         ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
-        distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
+        if (foundIntersection) {
+            double distToCenter = std::sqrt( ( intersection.x() - dst.x() ) * ( intersection.x() - dst.x() ) +
+                                            ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
+            distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
 
-        srcpt = QPointF( dst.x() + (std::cos(_angle) * distToCenter * sc),
-                         dst.y() - (std::sin(_angle) * distToCenter * sc) );
-        setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
+            srcpt = QPointF( dst.x() + (std::cos(_angle) * distToCenter * sc),
+                            dst.y() - (std::sin(_angle) * distToCenter * sc) );
+            setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
-        if (_label) {
-            QFontMetrics fm(_label->font());
-            double cosinus = std::cos(_angle);
-            int yOffset = 0;
-            if (cosinus < 0) {
-                yOffset = -fm.width(_label->toPlainText());
-            } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
-                yOffset = +5;
-            } else {
-                yOffset = +10;
+            if (_label) {
+                QFontMetrics fm(_label->font());
+                double cosinus = std::cos(_angle);
+                int yOffset = 0;
+                if (cosinus < 0) {
+                    yOffset = -fm.width(_label->toPlainText());
+                } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
+                    yOffset = +5;
+                } else {
+                    yOffset = +10;
+                }
+
+                /*adjusting dst to show label at the middle of the line*/
+
+                QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
+
+                _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
             }
-
-            /*adjusting dst to show label at the middle of the line*/
-
-            QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
-
-            _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
         }
-    } 
+    }
 
 
     double length = std::max(EDGE_LENGTH_MIN, line().length());

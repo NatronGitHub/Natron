@@ -31,7 +31,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(uninitialized)
 
 class DockablePanel;
 class KnobGui;

@@ -931,7 +931,10 @@ Gui::openProject()
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
         
-        openProjectInternal(selectedFile);
+        AppInstance* app = openProjectInternal(selectedFile);
+        if (!app) {
+#pragma message WARN("CONTROL FLOW ERROR: what should be done here??????")
+        }
     }
 }
 
@@ -959,8 +962,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
             assert(guiApp);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
-
-                return guiApp;
+				return guiApp;
             }
         }
     }
