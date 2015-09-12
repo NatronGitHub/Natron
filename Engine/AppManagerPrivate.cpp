@@ -33,8 +33,12 @@
 #include <cstdlib>
 #include <stdexcept>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>

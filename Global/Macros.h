@@ -511,7 +511,10 @@ inline T ignore_result(T x)
 # define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF GCC_DIAG_OFF(unused-local-typedefs)
 # define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON GCC_DIAG_ON(unused-local-typedefs)
 #else
-#if __has_warning("-Wunused-local-typedefs") // both unused-local-typedefs and unused-local-typedef should be available
+#if __has_warning("-Wunused-local-typedef") // both unused-local-typedefs and unused-local-typedef should be available
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF CLANG_DIAG_OFF(unused-local-typedef)
+# define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON CLANG_DIAG_ON(unused-local-typedef)
+#elif __has_warning("-Wunused-local-typedefs")
 # define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF CLANG_DIAG_OFF(unused-local-typedefs)
 # define GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON CLANG_DIAG_ON(unused-local-typedefs)
 #else

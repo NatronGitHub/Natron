@@ -33,8 +33,6 @@ namespace Natron {
 class FrameKey
         : public KeyHelper<U64>
 {
-    friend class boost::serialization::access;
-
 public:
     FrameKey();
 
@@ -113,9 +111,10 @@ public:
     return _textureRect;
     }
 
-private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
+private:
     SequenceTime _time;
     U64 _treeVersion;
     double _gain;
