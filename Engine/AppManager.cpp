@@ -358,38 +358,51 @@ AppManager::loadInternal(const CLArgs& cl)
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
 
-    ///basically show a splashScreen
-    initGui();
+    ///basically show a splashScreen load fonts etc...
+    return initGui(cl);
 
 
+} // loadInternal
+
+
+bool
+AppManager::initGui(const CLArgs& cl)
+{
+    ///In background mode, directly call the rest of the loading code
+    return loadInternalAfterInitGui(cl);
+}
+
+bool
+AppManager::loadInternalAfterInitGui(const CLArgs& cl)
+{
     try {
         size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
         U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
         U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
-
+        
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
-
+        
         _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
         _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
         _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
     } catch (std::logic_error) {
         // ignore
     }
-
+    
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
-
+    
     setLoadingStatus( tr("Restoring user settings...") );
-
-
+    
+    
     ///Set host properties after restoring settings since it depends on the host name.
     try {
         _imp->ofxHost->setProperties();
     } catch (std::logic_error) {
         // ignore
     }
-
+    
     /*loading all plugins*/
     try {
         loadAllPlugins();
@@ -397,12 +410,12 @@ AppManager::loadInternal(const CLArgs& cl)
     } catch (std::logic_error) {
         // ignore
     }
-
+    
     if ( isBackground() && !cl.getIPCPipeName().isEmpty() ) {
         _imp->initProcessInputChannel(cl.getIPCPipeName());
     }
-
-
+    
+    
     if (cl.isInterpreterMode()) {
         _imp->_appType = eAppTypeInterpreter;
     } else if ( isBackground() ) {
@@ -418,7 +431,7 @@ AppManager::loadInternal(const CLArgs& cl)
     } else {
         _imp->_appType = eAppTypeGui;
     }
-
+    
     //Now that the locale is set, re-parse the command line arguments because the filenames might have non UTF-8 encodings
     CLArgs args;
     if (!cl.getFilename().isEmpty()) {
@@ -426,16 +439,16 @@ AppManager::loadInternal(const CLArgs& cl)
     } else{
         args = cl;
     }
-
+    
     AppInstance* mainInstance = newAppInstance(args);
     
     hideSplashScreen();
-
+    
     if (!mainInstance) {
         return false;
     } else {
         onLoadCompleted();
-
+        
         ///In background project auto-run the rendering is finished at this point, just exit the instance
         if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
@@ -451,10 +464,10 @@ AppManager::loadInternal(const CLArgs& cl)
                 // ignore
             }
         }
-
+        
         return true;
     }
-} // loadInternal
+}
 
 AppInstance*
 AppManager::newAppInstance(const CLArgs& cl)

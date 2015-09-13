@@ -484,9 +484,7 @@ Q_SIGNALS:
     
 protected:
 
-    virtual void initGui()
-    {
-    }
+    virtual bool initGui(const CLArgs& cl);
 
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
@@ -512,6 +510,8 @@ protected:
     virtual void clearLastRenderedTextures() {}
     
     virtual void initBuiltinPythonModules();
+    
+    bool loadInternalAfterInitGui(const CLArgs& cl);
 
 private:
 

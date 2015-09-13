@@ -29,7 +29,6 @@
 #include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
-#include <fontconfig/fontconfig.h>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -203,14 +202,13 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 void
 GuiAppInstance::load(const CLArgs& cl)
 {
-    appPTR->setLoadingStatus( tr("Updating fontconfig cache...") );
-    FcConfig *fcConfig = FcInitLoadConfig();
-    FcConfigBuildFonts(fcConfig);
 
-    appPTR->setLoadingStatus( tr("Creating user interface...") );
-
+    if (getAppID() == 0) {
+        appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
+    }
+    
     declareCurrentAppVariable_Python();
-
+    
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 

@@ -83,6 +83,8 @@ struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
     : public AppManager
 {
+    Q_OBJECT
+    
 public:
 
     GuiApplicationManager();
@@ -197,7 +199,11 @@ public Q_SLOTS:
 
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp() OVERRIDE FINAL;
+    
+    void onFontconfigCacheUpdateFinished();
 
+    void onFontconfigTimerTriggered();
+    
 private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
@@ -207,7 +213,7 @@ private:
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;
-    virtual void initGui() OVERRIDE FINAL;
+    virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
     virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
     virtual void initializeQApp(int &argc, char **argv)  OVERRIDE FINAL;

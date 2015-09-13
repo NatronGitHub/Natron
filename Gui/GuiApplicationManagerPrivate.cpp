@@ -26,6 +26,9 @@
 
 #include "Global/Macros.h"
 
+#include <fontconfig/fontconfig.h>
+
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
@@ -53,6 +56,10 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 , _fontSize(0)
 , _nodeCB()
 , pythonCommands()
+, startupArgs()
+, fontconfigUpdateWatcher()
+, updateSplashscreenTimer()
+, fontconfigMessageDots(3)
 {
 }
 
@@ -349,5 +356,12 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
         app->getGui()->addShortcut(kA);
     }
+}
+
+void
+GuiApplicationManagerPrivate::updateFontConfigCache()
+{
+    FcConfig *fcConfig = FcInitLoadConfig();
+    FcConfigBuildFonts(fcConfig);
 }
 

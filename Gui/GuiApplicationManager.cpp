@@ -38,6 +38,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+
+#include <QtConcurrentRun>
+
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
 
@@ -708,8 +711,8 @@ GuiApplicationManager::getColorPickerCursor() const
     return *(_imp->_colorPickerCursor);
 }
 
-void
-GuiApplicationManager::initGui()
+bool
+GuiApplicationManager::initGui(const CLArgs& args)
 {
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
 
@@ -783,10 +786,48 @@ GuiApplicationManager::initGui()
         systemFonts[i] = families[i].toStdString();
     }
     getCurrentSettings()->populateSystemFonts(settings,systemFonts);
-
-
+    
     _imp->createColorPickerCursor();
     _imp->_knobsClipBoard->isEmpty = true;
+    
+    ///Copy the args that will be used when fontconfig cache is updated
+    _imp->startupArgs = args;
+    
+    
+    _imp->fontconfigUpdateWatcher.reset(new QFutureWatcher<void>);
+    QObject::connect(_imp->fontconfigUpdateWatcher.get(), SIGNAL(finished()), this, SLOT(onFontconfigCacheUpdateFinished()));
+    setLoadingStatus( QObject::tr("Updating fontconfig cache...") );
+    
+    QObject::connect(&_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()));
+    _imp->updateSplashscreenTimer.start(1000);
+    
+    _imp->fontconfigUpdateWatcher->setFuture(QtConcurrent::run(_imp.get(),&GuiApplicationManagerPrivate::updateFontConfigCache));
+    
+    
+    
+    return exec();
+}
+
+void
+GuiApplicationManager::onFontconfigCacheUpdateFinished()
+{
+
+    _imp->updateSplashscreenTimer.stop();
+    
+    ///Ignore return value here, the user will have an error dialog if loading failed anyway.
+    (void)loadInternalAfterInitGui(_imp->startupArgs);
+}
+
+void
+GuiApplicationManager::onFontconfigTimerTriggered()
+{
+    _imp->fontconfigMessageDots = (_imp->fontconfigMessageDots + 1) % 3;
+    
+    QString message = tr("Updating fontconfig cache");
+    for (int i = 0; i < _imp->fontconfigMessageDots; ++i) {
+        message.append('.');
+    }
+    setLoadingStatus(message);
 }
 
 void

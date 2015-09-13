@@ -35,14 +35,18 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QFutureWatcher>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
+#include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Variant.h"
+#include "Engine/CLArgs.h"
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
@@ -92,6 +96,12 @@ struct GuiApplicationManagerPrivate
     
     std::list<PythonUserCommand> pythonCommands;
     
+    ///Used temporarily to store startup args while we load fonts
+    CLArgs startupArgs;
+    boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
+    QTimer updateSplashscreenTimer;
+    int fontconfigMessageDots;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 
     void createColorPickerCursor();
@@ -129,6 +139,8 @@ struct GuiApplicationManagerPrivate
                                                                      int major,
                                                                      int minor,
                                                                      bool isUserCreatable);
+    
+    void updateFontConfigCache();
 };
 
 #endif

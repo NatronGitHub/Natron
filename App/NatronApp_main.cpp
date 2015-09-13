@@ -72,12 +72,9 @@ main(int argc,
         GuiApplicationManager manager;
         
         // coverity[tainted_data]
-        bool loaded = manager.load(argc,argv,args);
-        if (!loaded) {
-            return 1;
-        }
-
-        return manager.exec();
+        return manager.load(argc,argv,args);
+        
+        //exec() is called within the GuiApplicationManager
     }
 } // main
 
