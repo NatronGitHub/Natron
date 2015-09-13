@@ -930,11 +930,8 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
-        
-        AppInstance* app = openProjectInternal(selectedFile);
-        if (!app) {
-#pragma message WARN("CONTROL FLOW ERROR: what should be done here??????")
-        }
+        //We don't need the ret value
+        (void)openProjectInternal(selectedFile);
     }
 }
 
@@ -949,7 +946,6 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     QFileInfo file(absoluteFileName.c_str());
     if (!file.exists()) {
-#pragma message WARN("CONTROL FLOW ERROR: NULL is returned: Is it an error?? Does it have to be signaled?")
         return NULL;
     }
     QString fileUnPathed = file.fileName();
@@ -964,8 +960,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 
-#pragma message WARN("CONTROL FLOW ERROR: why return NULL? Is it an error??")
-                return NULL;
+                return instance;
             }
         }
     }
