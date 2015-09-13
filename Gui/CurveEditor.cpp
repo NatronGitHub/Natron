@@ -25,6 +25,7 @@
 #include "CurveEditor.h"
 
 #include <utility>
+#include <stdexcept>
 
 #include <QApplication>
 #include <QHBoxLayout>

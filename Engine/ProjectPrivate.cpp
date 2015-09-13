@@ -24,11 +24,14 @@
 
 #include "ProjectPrivate.h"
 
-#include <QDebug>
-#include <QTimer>
-#include <QDateTime>
-#include <QFile>
-#include <QDir>
+#include <stdexcept>
+
+#include <QtCore/QDebug>
+#include <QtCore/QTimer>
+#include <QtCore/QDateTime>
+#include <QtCore/QFile>
+#include <QtCore/QDir>
+
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeSerialization.h"

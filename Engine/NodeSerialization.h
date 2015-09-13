@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <string>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

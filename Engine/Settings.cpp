@@ -24,11 +24,13 @@
 
 #include "Settings.h"
 
+#include <stdexcept>
+
 #include <QtCore/QDebug>
-#include <QDir>
-#include <QSettings>
-#include <QThreadPool>
-#include <QThread>
+#include <QtCore/QDir>
+#include <QtCore/QSettings>
+#include <QtCore/QThreadPool>
+#include <QtCore/QThread>
 
 #ifdef WINDOWS
 #include <tchar.h>

@@ -24,6 +24,8 @@
 
 #include "TabWidget.h"
 
+#include <stdexcept>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QLayout>

@@ -27,10 +27,12 @@
 #include <set>
 #include <locale>
 #include <cfloat>
-#include <QThreadPool>
-#include <QCoreApplication>
-#include <QTextStream>
 #include <algorithm> // min, max
+#include <stdexcept>
+
+#include <QtCore/QThreadPool>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTextStream>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"

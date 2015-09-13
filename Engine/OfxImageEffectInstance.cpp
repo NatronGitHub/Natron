@@ -39,6 +39,7 @@
 #include <ofxParametricParam.h>
 
 #include "ofxNatron.h"
+#include <ofxhUtilities.h> // for StatStr
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
@@ -1005,7 +1006,7 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
                              0,
                              &outArgs);
 #       ifdef OFX_DEBUG_ACTIONS
-    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()->"<<StatStr(st);
+    std::cout << "OFX: "<<(void*)this<<"->"<<kOfxImageEffectActionGetClipPreferences<<"()->"<<OFX::StatStr(st);
 #       endif
     
     if(st!=kOfxStatOK && st!=kOfxStatReplyDefault) {
