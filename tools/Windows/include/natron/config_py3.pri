@@ -1,0 +1,1 @@
+#On Msys2, config.pri should not be needed

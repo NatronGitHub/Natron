@@ -1,0 +1,12 @@
+--- opencolorio/src/core/Platform.h.orig	2013-12-28 00:59:03.030200000 +0400
++++ opencolorio/src/core/Platform.h	2013-12-28 01:00:20.687000000 +0400
+@@ -105,7 +105,9 @@
+ // missing functions on Windows
+ #ifdef WINDOWS
+ #define snprintf sprintf_s
++#ifndef __MINGW64_VERSION_MAJOR
+ #define strtok_r strtok_s
++#endif
+ typedef __int64 FilePos;
+ #define fseeko _fseeki64
+ #define ftello _ftelli64

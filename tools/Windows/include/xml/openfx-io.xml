@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>OpenFX IO Plugins</DisplayName>
+    <Description>A set of essential Readers/Writers plugins for Natron written using the OpenFX standard.</Description>
+    <Version>_VERSION_</Version>
+    <ReleaseDate>_DATE_</ReleaseDate>
+<RequiresAdminRights>true</RequiresAdminRights>
+    <Name>fr.inria.openfx.io</Name>
+	<Dependencies>fr.inria.natron</Dependencies>
+	<Licenses>
+		<License name="openfx-io" file="ofx-io-license.txt" />
+	</Licenses>
+    <SortingPriority>1234</SortingPriority>
+    <Default>script</Default>
+    <Script>installscript.qs</Script>
+</Package>

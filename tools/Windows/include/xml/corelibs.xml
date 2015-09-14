@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Natron Libraries</DisplayName>
+    <Description>Libraries needed by Natron.</Description>
+    <Version>_VERSION_</Version>
+    <ReleaseDate>_DATE_</ReleaseDate>
+<RequiresAdminRights>true</RequiresAdminRights>
+    <Name>fr.inria.natron.libs</Name>
+	<Licenses>
+		<License name="Natron Libs" file="3rdparty-license.txt" />
+	</Licenses>
+    <!--<SortingPriority>1234567</SortingPriority>-->
+    <Default>script</Default>
+    <Script>installscript.qs</Script>
+</Package>

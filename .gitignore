@@ -5,6 +5,7 @@
 *_resource.rc
 moc*.cpp
 *moc
+*MINGW-packages*
 build
 build32
 build64

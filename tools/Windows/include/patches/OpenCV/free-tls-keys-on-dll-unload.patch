@@ -1,0 +1,63 @@
+diff -Naur a/modules/core/src/alloc.cpp b/modules/core/src/alloc.cpp
+--- a/modules/core/src/alloc.cpp	2014-10-01 14:33:36.000000000 +0700
++++ b/modules/core/src/alloc.cpp	2014-10-02 23:40:21.133326500 +0700
+@@ -56,7 +56,7 @@
+ #if CV_USE_SYSTEM_MALLOC
+ 
+ #if defined WIN32 || defined _WIN32
+-void deleteThreadAllocData() {}
++void deleteThreadAllocData(unsigned long) {}
+ #endif
+ 
+ void* fastMalloc( size_t size )
+diff -Naur a/modules/core/src/precomp.hpp b/modules/core/src/precomp.hpp
+--- a/modules/core/src/precomp.hpp	2014-10-01 14:33:36.000000000 +0700
++++ b/modules/core/src/precomp.hpp	2014-10-02 23:40:21.133326500 +0700
+@@ -83,8 +83,8 @@
+ 
+ 
+ #if defined WIN32 || defined _WIN32
+-void deleteThreadAllocData();
+-void deleteThreadRNGData();
++void deleteThreadAllocData(unsigned long);
++void deleteThreadRNGData(unsigned long);
+ #endif
+ 
+ template<typename T1, typename T2=T1, typename T3=T1> struct OpAdd
+diff -Naur a/modules/core/src/rand.cpp b/modules/core/src/rand.cpp
+--- a/modules/core/src/rand.cpp	2014-10-01 14:33:36.000000000 +0700
++++ b/modules/core/src/rand.cpp	2014-10-02 23:40:21.133326500 +0700
+@@ -752,10 +752,15 @@
+ #endif
+ static DWORD tlsRNGKey = TLS_OUT_OF_INDEXES;
+ 
+- void deleteThreadRNGData()
+- {
+-     if( tlsRNGKey != TLS_OUT_OF_INDEXES )
+-         delete (RNG*)TlsGetValue( tlsRNGKey );
++void deleteThreadRNGData(unsigned long reason)
++{
++    if( tlsRNGKey != TLS_OUT_OF_INDEXES )
++        delete (RNG*)TlsGetValue( tlsRNGKey );
++    if( reason == DLL_PROCESS_DETACH && tlsRNGKey != TLS_OUT_OF_INDEXES )
++    {
++        TlsFree(tlsRNGKey);
++        tlsRNGKey = TLS_OUT_OF_INDEXES;
++    }
+ }
+ 
+ RNG& theRNG()
+diff -Naur a/modules/core/src/system.cpp b/modules/core/src/system.cpp
+--- a/modules/core/src/system.cpp	2014-10-01 14:33:36.000000000 +0700
++++ b/modules/core/src/system.cpp	2014-10-02 23:40:21.133326500 +0700
+@@ -1079,8 +1079,8 @@
+ {
+     if (fdwReason == DLL_THREAD_DETACH || fdwReason == DLL_PROCESS_DETACH)
+     {
+-        cv::deleteThreadAllocData();
+-        cv::deleteThreadRNGData();
++        cv::deleteThreadAllocData(fdwReason);
++        cv::deleteThreadRNGData(fdwReason);
+         cv::deleteThreadData();
+     }
+     return TRUE;
