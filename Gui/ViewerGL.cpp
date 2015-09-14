@@ -1976,7 +1976,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
     bool wasHovering = _imp->hs != eHoverStateNothing;
     
     bool cursorSet = false;
-    if ( (_imp->ms != eMouseStateDraggingImage) && !_imp->overlay) {
+    if ( (_imp->ms != eMouseStateDraggingImage) && _imp->overlay) {
         _imp->hs = eHoverStateNothing;
         if ( isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             setCursor( QCursor(Qt::SizeAllCursor) );
