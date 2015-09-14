@@ -423,6 +423,8 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
+    void dequeueConnexions();
+    
     bool getIsDeactivatingGroup() const;
     void setIsDeactivatingGroup(bool b);
     

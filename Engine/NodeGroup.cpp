@@ -492,7 +492,6 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
         assert(ok);
         if (input->getMaxInputCount() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
-            assert(ok);
         }
     }
     
@@ -500,8 +499,9 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
         return true;
     }
     
+    Node::CanConnectInputReturnValue ret = output->canConnectInput(input, inputNumber);
     
-    if ( !output->connectInput(input, inputNumber) ) {
+    if ( ret != Node::eCanConnectInput_ok || !output->connectInput(input, inputNumber) ) {
         return false;
     }
     
@@ -1250,14 +1250,19 @@ NodeGroup::getMaxInputCount() const
 std::string
 NodeGroup::getInputLabel(int inputNb) const
 {
-    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
-        return std::string();
-    }
-    
-    ///If the input name starts with "input" remove it, otherwise keep the full name
-    NodePtr input = _imp->inputs[inputNb].lock();
-    if (!input) {
-        return std::string();
+    NodePtr input;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+            return std::string();
+        }
+        
+        ///If the input name starts with "input" remove it, otherwise keep the full name
+        
+        input = _imp->inputs[inputNb].lock();
+        if (!input) {
+            return std::string();
+        }
     }
     QString inputName(input->getLabel_mt_safe().c_str());
     if (inputName.startsWith("input",Qt::CaseInsensitive)) {
@@ -1290,13 +1295,20 @@ NodeGroup::getCurrentView() const
 bool
 NodeGroup::isInputOptional(int inputNb) const
 {
-    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
-        return false;
-    }
+    NodePtr n;
     
-    NodePtr n = _imp->inputs[inputNb].lock();
-    if (!n) {
-        return false;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        
+        if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+            return false;
+        }
+        
+        
+        n = _imp->inputs[inputNb].lock();
+        if (!n) {
+            return false;
+        }
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
     assert(input);
@@ -1311,13 +1323,20 @@ bool
 NodeGroup::isInputMask(int inputNb) const
 {
     
-    if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
-        return false;
-    }
+    NodePtr n;
     
-    NodePtr n = _imp->inputs[inputNb].lock();
-    if (!n) {
-        return false;
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        
+        if (inputNb >= (int)_imp->inputs.size() || inputNb < 0) {
+            return false;
+        }
+        
+        
+        n = _imp->inputs[inputNb].lock();
+        if (!n) {
+            return false;
+        }
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
     assert(input);
@@ -1381,6 +1400,10 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
                 }
             }
         }
+        
+        ///Sync gui inputs/outputs
+        _imp->guiInputs = _imp->inputs;
+        _imp->guiOutputs = _imp->outputs;
     }
     
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1408,11 +1431,13 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
         GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
         if (isInput) {
             _imp->inputs.push_back(node);
+            _imp->guiInputs.push_back(node);
             thisNode->initializeInputs();
         }
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
         if (isOutput) {
             _imp->outputs.push_back(node);
+            _imp->guiOutputs.push_back(node);
         }
     }
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1445,6 +1470,14 @@ NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
     }
 }
 
+void
+NodeGroup::dequeueConnexions()
+{
+    QMutexLocker k(&_imp->nodesLock);
+    _imp->inputs = _imp->guiInputs;
+    _imp->outputs = _imp->guiOutputs;
+}
+
 boost::shared_ptr<Natron::Node>
 NodeGroup::getOutputNode(bool useGuiConnexions) const
 {
@@ -1455,6 +1488,8 @@ NodeGroup::getOutputNode(bool useGuiConnexions) const
     }
     return useGuiConnexions ? _imp->guiOutputs.front().lock() : _imp->outputs.front().lock();
 }
+
+
 
 boost::shared_ptr<Natron::Node>
 NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
@@ -2386,6 +2421,22 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
         double r,g,b;
         (*it)->getColor(&r,&g,&b);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setColor(" + NUM(r) + ", " + NUM(g) + ", " + NUM(b) +  ")");
+        
+        std::list<Natron::ImageComponents> userComps;
+        (*it)->getUserComponents(&userComps);
+        for (std::list<Natron::ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
+            
+            const std::vector<std::string>& channels = it2->getComponentsNames();
+            QString compStr("[");
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                compStr.append(ESC(channels[i]));
+                if (i < (channels.size() - 1)) {
+                    compStr.push_back(',');
+                }
+            }
+            compStr.push_back(']');
+            WRITE_INDENT(1); WRITE_STRING("lastNode.addUserPlane(" + ESC(it2->getLayerName()) + ", " + compStr +  ")");
+        }
         
         QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");

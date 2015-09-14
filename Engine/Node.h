@@ -490,6 +490,7 @@ public:
      * to the given input.
      **/
     Node::CanConnectInputReturnValue canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const;
+    
 
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.
@@ -1006,7 +1007,7 @@ public:
     
     bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
     
-    void addUserComponents(const Natron::ImageComponents& comps);
+    bool addUserComponents(const Natron::ImageComponents& comps);
     
     void getUserComponents(std::list<Natron::ImageComponents>* comps);
     

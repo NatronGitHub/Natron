@@ -122,7 +122,6 @@ public:
     void discardGuiPointer();
     void discardScenePointer();
 
-    void refreshAllEdges();
 
     /**
      * @brief Removes the given node from the nodegraph, using the undo/redo stack.

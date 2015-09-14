@@ -170,7 +170,9 @@ KnobGuiChoice::onItemNewSelected()
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         assert(effect);
         assert(effect->getNode());
-        effect->getNode()->addUserComponents(comps);
+        if (!effect->getNode()->addUserComponents(comps)) {
+            Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+        }
     }
 }
 

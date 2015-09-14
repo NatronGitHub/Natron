@@ -200,8 +200,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             
             int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                bool ok = proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal.get(),true);
-                assert(ok);
+                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal.get(),true);
             }
             
         } else {
@@ -258,9 +257,9 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                     int index = selectedNodeInternal->getPreferredInputForConnection();
                     
                     bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
-                    assert(ok);
-                    
-                    proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                    if (ok) {
+                        proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                    }
                     
                 }
             } // if (isSelectedViewer) {
@@ -317,8 +316,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             ///finally we connect the created node to the selected node
             int createdInput = createdNodeInternal->getPreferredInputForConnection();
             if (createdInput != -1) {
-                bool ok = proj->connectNodes(createdInput, selectedNodeInternal, createdNodeInternal.get());
-                assert(ok);
+                (void)proj->connectNodes(createdInput, selectedNodeInternal, createdNodeInternal.get());
             }
             
         } else {
@@ -369,9 +367,9 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 int index = createdNodeInternal->getPreferredInputForConnection();
                 
                 bool ok = proj->connectNodes(index, dotNode, createdNodeInternal.get(), true);
-                assert(ok);
-                
-                proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                if (ok) {
+                    proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                }
                 
             }
         }

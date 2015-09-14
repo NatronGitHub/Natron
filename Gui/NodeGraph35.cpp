@@ -204,16 +204,6 @@ NodeGraph::restoreFromTrash(NodeGui* node)
     }
 }
 
-void
-NodeGraph::refreshAllEdges()
-{
-    QMutexLocker l(&_imp->_nodesMutex);
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        (*it)->refreshEdges();
-    }
-}
-
 // grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
 static
 QString
