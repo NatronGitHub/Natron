@@ -501,7 +501,11 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
     
     Node::CanConnectInputReturnValue ret = output->canConnectInput(input, inputNumber);
     
-    if ( ret != Node::eCanConnectInput_ok || !output->connectInput(input, inputNumber) ) {
+    bool connectionOk = ret == Node::eCanConnectInput_ok ||
+    ret == Node::eCanConnectInput_differentFPS ||
+    ret == Node::eCanConnectInput_differentPars;
+    
+    if ( !connectionOk || !output->connectInput(input, inputNumber) ) {
         return false;
     }
     

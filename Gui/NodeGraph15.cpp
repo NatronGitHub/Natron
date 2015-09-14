@@ -55,24 +55,25 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
     if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
         if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
             
-            QString error = QString(QObject::tr("You cannot connect ") +  "%1" + QObject::tr(" to ") + "%2"  + QObject::tr(" because they don't have the same pixel aspect ratio (")
-                                    + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
+            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same pixel aspect ratio (")
+                                    + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
             .arg(outputNode->getNode()->getLiveInstance()->getPreferredAspectRatio())
             .arg(inputNode->getNode()->getLiveInstance()->getPreferredAspectRatio());
-            Natron::errorDialog(QObject::tr("Different pixel aspect").toStdString(),
+            Natron::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
                                 error.toStdString());
+            return true;
         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
             
-            QString error = QString(QObject::tr("You cannot connect ") +  "%1" + QObject::tr(" to ") + "%2"  + QObject::tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+            QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
             .arg(outputNode->getNode()->getLiveInstance()->getPreferredFrameRate())
             .arg(inputNode->getNode()->getLiveInstance()->getPreferredFrameRate());
-            Natron::errorDialog(QObject::tr("Different frame rate").toStdString(),
+            Natron::warningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
-            
+            return true;
         } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
             QString error = QString(QObject::tr("You cannot connect ") + "%1 " + QObject::tr(" to ") + " %2 " + QObject::tr("because it is a group which does "
                                                                                                  "not have an Output node."))
