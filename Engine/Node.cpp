@@ -6173,10 +6173,15 @@ Node::dequeueActions()
     
     if (_imp->liveInstance) {
         _imp->liveInstance->dequeueValuesSet();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+        if (isGroup) {
+            isGroup->dequeueConnexions();
+        }
     }
     if (_imp->rotoContext) {
         _imp->rotoContext->dequeueGuiActions();
     }
+
     
     std::set<int> inputChanges;
     {
