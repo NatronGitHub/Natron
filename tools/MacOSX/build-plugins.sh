@@ -68,7 +68,7 @@ git submodule update -i --recursive || exit 1
 ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
-make CXX="CXX" USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
+make CXX="$CXX" USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
