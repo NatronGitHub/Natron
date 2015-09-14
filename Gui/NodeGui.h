@@ -516,7 +516,7 @@ public Q_SLOTS:
     void onParentMultiInstancePositionChanged(int x,int y);
     
     void setOptionalInputsVisible(bool visible);
-
+    
 Q_SIGNALS:
 
     void positionChanged(int x,int y);
@@ -536,7 +536,8 @@ protected:
 
 private:
     
-
+    void setOptionalInputsVisibleInternal(bool visible);
+    
     void refreshPositionEnd(double x,double y);
 
     void setNameItemHtml(const QString & name,const QString & label);

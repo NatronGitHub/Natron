@@ -1400,6 +1400,7 @@ NodeGui::initializeInputs()
         }
 
     }
+    
 } // initializeInputs
 
 bool
@@ -1444,11 +1445,14 @@ void
 NodeGui::checkOptionalEdgesVisibility()
 {
     QPointF mousePos = mapFromScene(_graph->mapToScene(_graph->mapFromGlobal(QCursor::pos())));
-    if (contains(mousePos) || getIsSelected()) {
-        _optionalInputsVisible = true;
-    } else {
-        _optionalInputsVisible = false;
-    }
+    bool visible = contains(mousePos) || getIsSelected();
+    setOptionalInputsVisibleInternal(visible);
+}
+
+void
+NodeGui::setOptionalInputsVisibleInternal(bool visible)
+{
+    _optionalInputsVisible = visible;
     
     NodePtr node = getNode();
     bool isReader = node->getLiveInstance()->isReader();
@@ -1466,36 +1470,15 @@ NodeGui::checkOptionalEdgesVisibility()
             
         }
     }
-}
 
+}
 
 void
 NodeGui::setOptionalInputsVisible(bool visible)
 {
-    ///Don't do this for inspectors
-    NodePtr node = getNode();
-
-    //InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
-   
 
     if (visible != _optionalInputsVisible) {
-        _optionalInputsVisible = visible;
-        
-        bool isReader = node->getLiveInstance()->isReader();
-        for (U32 i = 0; i < _inputEdges.size() ; ++i) {
-            if (isReader || (node->getLiveInstance()->isInputOptional(i) &&
-                node->getLiveInstance()->isInputMask(i) &&
-                !_inputEdges[i]->isRotoEdge())) {
-                
-                bool nodeVisible = visible;
-                if (!visible && node->getRealInput(i) ) {
-                    nodeVisible = true;
-                }
-                
-                _inputEdges[i]->setVisible(nodeVisible);
-                
-            }
-        }
+        setOptionalInputsVisibleInternal(visible);
     }
 }
 
@@ -1647,6 +1630,8 @@ NodeGui::connectEdge(int edgeNumber)
     if (dynamic_cast<InspectorNode*>(node.get())) {
         initializeInputsForInspector();
     }
+    
+    checkOptionalEdgesVisibility();
 
     return true;
 
