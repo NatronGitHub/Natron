@@ -418,6 +418,9 @@ public Q_SLOTS:
     
     void onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
     
+    void nextLayer();
+    void previousLayer();
+    
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

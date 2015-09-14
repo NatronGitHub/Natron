@@ -2978,6 +2978,13 @@ ViewerGL::populateMenu()
     QObject::connect( centerWipe,SIGNAL( triggered() ),this,SLOT( centerWipe() ) );
     _imp->menu->addAction(centerWipe);
     
+    QAction* goToPrevLayer = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDPrevLayer, kShortcutDescPrevLayer, _imp->menu);
+    QObject::connect( goToPrevLayer,SIGNAL( triggered() ),_imp->viewerTab,SLOT( previousLayer() ) );
+    _imp->menu->addAction(goToPrevLayer);
+    QAction* goToNextLayer = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDNextLayer, kShortcutDescNextLayer, _imp->menu);
+    QObject::connect( goToNextLayer,SIGNAL( triggered() ),_imp->viewerTab,SLOT( nextLayer() ) );
+    _imp->menu->addAction(goToNextLayer);
+    
     Natron::Menu* showHideMenu = new Natron::Menu(tr("Show/Hide"),_imp->menu);
     //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());

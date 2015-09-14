@@ -291,6 +291,12 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDCenterWipe "centerWipe"
 #define kShortcutDescCenterWipe "Center Wipe on Mouse"
 
+#define kShortcutIDNextLayer "nextLayer"
+#define kShortcutDescNextLayer "Next Layer"
+
+#define kShortcutIDPrevLayer "prevLayer"
+#define kShortcutDescPrevLayer "Previous Layer"
+
 ///////////PLAYER SHORTCUTS
 
 #define kShortcutIDActionPlayerPrevious "prev"

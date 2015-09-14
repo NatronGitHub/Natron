@@ -448,6 +448,24 @@ ViewerTab::~ViewerTab()
 }
 
 void
+ViewerTab::nextLayer()
+{
+    int currentIndex = _imp->layerChoice->activeIndex();
+    int nChoices = _imp->layerChoice->count();
+    currentIndex = (currentIndex + 1) % nChoices;
+    _imp->layerChoice->setCurrentIndex(currentIndex);
+}
+
+void
+ViewerTab::previousLayer()
+{
+    int currentIndex = _imp->layerChoice->activeIndex();
+    int nChoices = _imp->layerChoice->count();
+    currentIndex = (currentIndex - 1) % nChoices;
+    _imp->layerChoice->setCurrentIndex(currentIndex);
+}
+
+void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
     Qt::KeyboardModifiers modifiers = e->modifiers();
@@ -607,6 +625,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         zoomIn();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {
         zoomOut();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDNextLayer, modifiers, key) ) {
+        nextLayer();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDPrevLayer, modifiers, key) ) {
+        previousLayer();
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
         connectToInput(0);
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
