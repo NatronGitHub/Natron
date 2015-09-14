@@ -342,6 +342,13 @@ Settings::initializeKnobs()
     _fontSize->setAnimationEnabled(false);
     _appearanceTab->addKnob(_fontSize);
     
+    _qssFile = Natron::createKnob<KnobFile>(this, "Stylesheet file (.qss)");
+    _qssFile->setName("stylesheetFile");
+    _qssFile->setHintToolTip("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
+                             "stylesheet. You can adapt the default stylesheet that can be found in your of distribution " NATRON_APPLICATION_NAME ".");
+    _qssFile->setAnimationEnabled(false);
+    _appearanceTab->addKnob(_qssFile);
+    
     _guiColors = Natron::createKnob<KnobGroup>(this, "GUI colors");
     _guiColors->setAsTab();
     _appearanceTab->addKnob(_guiColors);
@@ -1780,7 +1787,11 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _dopeSheetEditorScaleColor.get() ||
                 k == _dopeSheetEditorGridColor.get())) {
                     appPTR->reloadStylesheets();
+                  
                 }
+    else if (k == _qssFile.get()) {
+        appPTR->reloadStylesheets();
+    }
 } // onKnobValueChanged
 
 Natron::ImageBitDepthEnum
@@ -3042,4 +3053,10 @@ Settings::restoreDefaultAppearance()
     }
     _defaultAppearanceOutdated = false;
     appPTR->reloadStylesheets();
+}
+
+std::string
+Settings::getUserStyleSheetFilePath() const
+{
+    return _qssFile->getValue();
 }

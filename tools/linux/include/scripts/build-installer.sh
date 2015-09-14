@@ -247,10 +247,11 @@ strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
 
 # NATRON
 NATRON_PATH=$INSTALLER/packages/$NATRON_PKG
-mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin || exit 1
+mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin $NATRON_PATH/data/share || exit 1
 cat $XML/natron.xml | sed "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" > $NATRON_PATH/meta/package.xml || exit 1
 cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
+cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INSTALL_PATH/bin/Natron* $NATRON_PATH/data/bin/ || exit 1
 strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter 

@@ -196,7 +196,13 @@ Gui::loadStyleSheet()
         altStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
     }
 
-    QFile qss(":/Resources/Stylesheets/mainstyle.qss");
+    QFile qss;
+    std::string userQss = settings->getUserStyleSheetFilePath();
+    if (!userQss.empty()) {
+        qss.setFileName(userQss.c_str());
+    } else {
+        qss.setFileName(":/Resources/Stylesheets/mainstyle.qss");
+    }
 
     if ( qss.open(QIODevice::ReadOnly
                   | QIODevice::Text) ) {
@@ -213,6 +219,8 @@ Gui::loadStyleSheet()
                        .arg("rgb(0,0,0)") // %8: disabled editable text
                        .arg(eStr) // %9: expression background color
                        .arg(altStr) ); // %10 = altered text color
+    } else {
+        Natron::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
     }
 } // Gui::loadStyleSheet
 

@@ -110,6 +110,8 @@ cat > App/${APP}/Contents/Resources/qt.conf <<EOF
 Plugins = Plugins
 EOF
 
+cp Gui/Resources/Stylesheets/mainstyle.qss App/${APP}/Contents/Resources/ || exit 1
+
 cp Renderer/NatronRenderer App/${APP}/Contents/MacOS
 bin=App/${APP}/Contents/MacOS/NatronRenderer
 

@@ -304,6 +304,8 @@ public:
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
     
+    std::string getUserStyleSheetFilePath() const;
+    
 Q_SIGNALS:
     
     void settingChanged(KnobI* knob);
@@ -435,6 +437,7 @@ private:
     
     boost::shared_ptr<KnobChoice> _systemFontChoice;
     boost::shared_ptr<KnobInt> _fontSize;
+    boost::shared_ptr<KnobFile> _qssFile;
     
     boost::shared_ptr<KnobGroup> _guiColors;
     boost::shared_ptr<KnobColor> _sunkenColor;
