@@ -7179,15 +7179,19 @@ Node::refreshChannelSelectors(bool setValues)
     }
 }
 
-void
+bool
 Node::addUserComponents(const Natron::ImageComponents& comps)
 {
+    ///The node has node channel selector, don't allow adding a custom plane.
+    if (_imp->channelsSelectors.empty()) {
+        return false;
+    }
+    
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
         for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it != _imp->createdComponents.end(); ++it) {
             if (it->getLayerName() == comps.getLayerName()) {
-                Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
-                return;
+                return false;
             }
         }
         
@@ -7202,7 +7206,7 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
                                                           OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
                                                           true, true);
     }
-    
+    return true;
 }
 
 void

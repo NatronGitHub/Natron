@@ -589,3 +589,19 @@ Effect::setSubGraphEditable(bool editable)
         isGroup->setSubGraphEditable(editable);
     }
 }
+
+bool
+Effect::addUserPlane(const std::string& planeName, const std::vector<std::string>& channels)
+{
+    if (planeName.empty() ||
+        channels.size() < 1 ||
+        channels.size() > 4) {
+        return false;
+    }
+    std::string compsGlobal;
+    for (std::size_t i = 0; i < channels.size(); ++i) {
+        compsGlobal.append(channels[i]);
+    }
+    Natron::ImageComponents comp(planeName,compsGlobal,channels);
+    return _node->addUserComponents(comp);
+}

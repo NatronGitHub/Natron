@@ -2422,6 +2422,22 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
         (*it)->getColor(&r,&g,&b);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setColor(" + NUM(r) + ", " + NUM(g) + ", " + NUM(b) +  ")");
         
+        std::list<Natron::ImageComponents> userComps;
+        (*it)->getUserComponents(&userComps);
+        for (std::list<Natron::ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
+            
+            const std::vector<std::string>& channels = it2->getComponentsNames();
+            QString compStr("[");
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                compStr.append(ESC(channels[i]));
+                if (i < (channels.size() - 1)) {
+                    compStr.push_back(',');
+                }
+            }
+            compStr.push_back(']');
+            WRITE_INDENT(1); WRITE_STRING("lastNode.addUserPlane(" + ESC(it2->getLayerName()) + ", " + compStr +  ")");
+        }
+        
         QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
         WRITE_STATIC_LINE("");

@@ -21,6 +21,7 @@ GCC_DIAG_OFF(missing-field-initializers)
 #include <RectD.h>
 #include <RotoWrapper.h>
 #include <list>
+#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -38,6 +39,64 @@ EffectWrapper::~EffectWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_EffectFunc_addUserPlane(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "addUserPlane", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: addUserPlane(std::string,std::vector<std::string>)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // addUserPlane(std::string,std::vector<std::string>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_addUserPlane_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::vector<std::string > cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // addUserPlane(std::string,std::vector<std::string>)
+            bool cppResult = cppSelf->addUserPlane(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_EffectFunc_addUserPlane_TypeError:
+        const char* overloads[] = {"std::string, list", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.addUserPlane", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_EffectFunc_beginChanges(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1239,6 +1298,7 @@ static PyObject* Sbk_EffectFunc_setSubGraphEditable(PyObject* self, PyObject* py
 }
 
 static PyMethodDef Sbk_Effect_methods[] = {
+    {"addUserPlane", (PyCFunction)Sbk_EffectFunc_addUserPlane, METH_VARARGS},
     {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},

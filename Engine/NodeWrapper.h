@@ -339,6 +339,8 @@ public:
     static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
     
     void setSubGraphEditable(bool editable);
+    
+    bool addUserPlane(const std::string& planeName, const std::vector<std::string>& channels);
 };
 
 #endif // NODEWRAPPER_H

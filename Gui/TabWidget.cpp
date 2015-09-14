@@ -367,11 +367,11 @@ TabWidget::createMenu()
     //QFont f(appFont,appFontSize);
     //menu.setFont(f) ;
     QPixmap pixV,pixM,pixH,pixC,pixA;
-    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
-    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
-    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,&pixC);
-    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR,&pixA);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixV);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixH);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixM);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixC);
+    appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON_ANCHOR,NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixA);
     QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),&menu);
     QObject::connect( splitVerticallyAction, SIGNAL( triggered() ), this, SLOT( onSplitVertically() ) );
     menu.addAction(splitVerticallyAction);
