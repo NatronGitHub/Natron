@@ -345,7 +345,7 @@ Settings::initializeKnobs()
     _qssFile = Natron::createKnob<KnobFile>(this, "Stylesheet file (.qss)");
     _qssFile->setName("stylesheetFile");
     _qssFile->setHintToolTip("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
-                             "stylesheet. You can adapt the default stylesheet that can be found in your of distribution " NATRON_APPLICATION_NAME ".");
+                             "stylesheet. You can adapt the default stylesheet that can be found in your distribution of " NATRON_APPLICATION_NAME ".");
     _qssFile->setAnimationEnabled(false);
     _appearanceTab->addKnob(_qssFile);
     
