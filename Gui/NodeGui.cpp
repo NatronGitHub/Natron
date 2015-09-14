@@ -3319,6 +3319,8 @@ ExportGroupTemplateDialog::onOkClicked()
     if (pluginLabel.isEmpty()) {
         Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
+    } else {
+        pluginLabel = Natron::makeNameScriptFriendly(pluginLabel.toStdString()).c_str();
     }
 
     QString pluginID = _imp->idEdit->text();

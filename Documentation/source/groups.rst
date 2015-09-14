@@ -130,7 +130,9 @@ have an icon too.
 	:width: 400px
 	:align: center
 
-The *Label* is the name of the plug-in as it will appear in the user interface.
+The *Label* is the name of the plug-in as it will appear in the user interface. It should not
+contain spaces or non Python friendly characters as it is going to be used as variable names
+in several places.
 
 The *Grouping* is the tool-button under which the plug-in should appear. It accepts 
 sub-menus notation like this: "Inria/StereoGroups"
@@ -293,6 +295,39 @@ how to write scripts yourself.
 	Note that PyPlugs are **imported** by Natron which means that the script will not have access
 	to any external variable declared by Natron except the variables passed to the createInstance function
 	or the attributes of the modules imported.
+	
+.. _pyPlugHandWritten:
+Adding hand-written code (callbacks, etc...)
+--------------------------------------------
+
+It is common to add hand-written code to a PyPlug. When making changes to the PyPlug from
+the GUI of Natron, exporting it again will overwrite any change made to the python script
+of the PyPlug.
+In order to help development, all hand-written code can be written in a separate script
+with the **same** name of the original Python script but ending with *Ext.py*, e.g::
+
+	MyPyPlugExt.py 
+	
+This extension script can contain for example the definition of all callbacks used in the PyPlug.
+When calling the *createInstance(app,group)* function, the PyPlug will call right at the end
+of the function the *createInstanceExt(app,group)* function. You can define it in your 
+*extension script* if you want to apply extra steps to the creation of the group. For example
+you might want to actually set the callbacks on the group::
+
+	#This is in MyPyPlugExt.py
+
+	def paramChangedCallback(thisParam, thisNode, thisGroup, app, userEdited):
+    	print thisParam.getScriptName()
+
+	def createInstanceExt(app,group):
+		#Note that the callback belongs to the PyPlug to so we use it as prefix
+    	group.onParamChanged.set("MyPyPlug.paramChangedCallback")
+
+.. note::
+
+	Note that callbacks don't have to be registered with the extension module prefix but just
+	with the PyPlug's name prefix since the *"from ... import *"* statement is made to import
+	the extensions script.
 
 Starting Natron with a script in command line
 ----------------------------------------------

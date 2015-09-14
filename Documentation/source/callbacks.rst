@@ -24,7 +24,7 @@ Callback persistence
 
 If you want your callback to persist 2 runs of Natron; it is necessary that you define it
 in a script that is loaded by Natron, that is, either the **init.py** script (or **initGui.py** if you want it only available in GUI mode)
-or the script of a Python group plug-in.
+or the script of a Python group plug-in (or its extension script, see :ref:`here<pyPlugHandWritten>`).
 See :ref:`this section<startupScripts>` for more infos.
 
 Here is the list of the different callbacks:

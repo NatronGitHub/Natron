@@ -659,11 +659,15 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         ss << ", app" << appID << "." << containerFullySpecifiedName;
         ss << ")\n";
         std::string err;
-        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+        std::string output;
+        if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
             Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
             containerNode->destroyNode(false);
             return node;
         } else {
+            if (!output.empty()) {
+                appendToScriptEditor(output);
+            }
             node = containerNode;
         }
         if (requestedByLoad) {

@@ -82,7 +82,9 @@ Effect::canConnectInput(int inputNumber,const Effect* node) const
         return false;
     }
     Natron::Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
-    return ret == Natron::Node::eCanConnectInput_ok;
+    return ret == Natron::Node::eCanConnectInput_ok ||
+    ret == Natron::Node::eCanConnectInput_differentFPS ||
+    ret == Natron::Node::eCanConnectInput_differentPars;
 }
 
 bool
