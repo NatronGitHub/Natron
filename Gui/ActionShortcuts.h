@@ -288,6 +288,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDToggleWipe "toggleWipe"
 #define kShortcutDescToggleWipe "Toggle Wipe"
 
+#define kShortcutIDCenterWipe "centerWipe"
+#define kShortcutDescCenterWipe "Center Wipe on Mouse"
+
 ///////////PLAYER SHORTCUTS
 
 #define kShortcutIDActionPlayerPrevious "prev"

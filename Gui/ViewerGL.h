@@ -237,6 +237,8 @@ public Q_SLOTS:
     void toggleOverlays();
     
     void toggleWipe();
+    
+    void centerWipe();
 
     void onProjectFormatChanged(const Format & format);
     

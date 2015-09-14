@@ -109,6 +109,8 @@ Member functions description
 	.. note::
 		
 		A plane cannot contain more than 4 channels and must at least have 1 channel.
+		
+	This function returns *True* if the layer was added successfully, *False* otherwise.
 
 .. method:: NatronEngine.Effect.beginChanges()
 

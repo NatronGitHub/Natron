@@ -481,6 +481,20 @@ ViewerGL::toggleWipe()
     }
 }
 
+void
+ViewerGL::centerWipe()
+{
+    
+    QPoint pos = mapFromGlobal(QCursor::pos());
+    QPointF zoomPos = toZoomCoordinates(QPointF(pos.x(), pos.y()));
+    
+    {
+        QMutexLocker l(&_imp->wipeControlsMutex);
+        _imp->wipeCenter.rx() = zoomPos.x();
+        _imp->wipeCenter.ry() = zoomPos.y();
+    }
+    update();
+}
 
 void
 ViewerGL::drawOverlay(unsigned int mipMapLevel)
@@ -2877,6 +2891,8 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
         toggleOverlays();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
         toggleWipe();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, modifiers, key)) {
+        centerWipe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
         _imp->viewerTab->hideAllToolbars();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
@@ -2956,6 +2972,11 @@ ViewerGL::populateMenu()
     toggleWipe->setChecked(getViewerTab()->getCompositingOperator() != Natron::eViewerCompositingOperatorNone);
     QObject::connect( toggleWipe,SIGNAL( triggered() ),this,SLOT( toggleWipe() ) );
     _imp->menu->addAction(toggleWipe);
+    
+    
+    QAction* centerWipe = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDCenterWipe,kShortcutDescCenterWipe, _imp->menu);
+    QObject::connect( centerWipe,SIGNAL( triggered() ),this,SLOT( centerWipe() ) );
+    _imp->menu->addAction(centerWipe);
     
     Natron::Menu* showHideMenu = new Natron::Menu(tr("Show/Hide"),_imp->menu);
     //showHideMenu->setFont(QFont(appFont,appFontSize));
