@@ -66,6 +66,7 @@ CLANG_DIAG_ON(uninitialized)
  **/
 #define registerKeybind(group,id,description, modifiers,symbol) ( _imp->addKeybind(group,id,description, modifiers,symbol) )
 #define registerKeybind2(group,id,description, modifiers1,symbol1,modifiers2,symbol2) ( _imp->addKeybind(group,id,description, modifiers1,symbol1,modifiers2,symbol2) )
+#define registerKeybindWithMask(group,id,description,modifiers,symbol,modifiersMask) ( _imp->addKeybind(group,id,description, modifiers,symbol,modifiersMask) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
@@ -84,7 +85,7 @@ CLANG_DIAG_ON(uninitialized)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 5
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 6
 
 using namespace Natron;
 
@@ -380,29 +381,12 @@ GuiApplicationManager::exitApp()
 static bool
 matchesModifers(const Qt::KeyboardModifiers & lhs,
                 const Qt::KeyboardModifiers & rhs,
-                Qt::Key /*key*/)
+                const Qt::KeyboardModifiers& ignoreMask)
 {
-    if (lhs == rhs) {
-        return true;
-    }
-
-    /*bool isDigit =
-        key == Qt::Key_0 ||
-        key == Qt::Key_1 ||
-        key == Qt::Key_2 ||
-        key == Qt::Key_3 ||
-        key == Qt::Key_4 ||
-        key == Qt::Key_5 ||
-        key == Qt::Key_6 ||
-        key == Qt::Key_7 ||
-        key == Qt::Key_8 ||
-        key == Qt::Key_9;
-    // On some keyboards (e.g. French AZERTY), the number keys are shifted
-    if ( ( lhs == (Qt::ShiftModifier | Qt::AltModifier) ) && (rhs == Qt::AltModifier) && isDigit ) {
-        return true;
-    }*/
-
-    return false;
+    bool hasMask = ignoreMask != Qt::NoModifier;
+    
+    return (!hasMask && lhs == rhs) ||
+    (hasMask && (lhs & ~ignoreMask) == rhs);
 }
 
 static bool
@@ -456,10 +440,16 @@ GuiApplicationManager::matchesKeybind(const QString & group,
     assert(keybind->modifiers.size() == keybind->currentShortcut.size());
     std::list<Qt::Key>::const_iterator kit = keybind->currentShortcut.begin();
     
+    assert(keybind->modifiers.size() == keybind->ignoreMasks.size() || keybind->ignoreMasks.empty());
+    std::list<Qt::KeyboardModifiers>::const_iterator itMask = keybind->ignoreMasks.begin();
+    
     for (std::list<Qt::KeyboardModifiers>::const_iterator it = keybind->modifiers.begin(); it != keybind->modifiers.end(); ++it, ++kit) {
-        if ( matchesModifers(onlyCAS,*it,(Qt::Key)symbol) ) {
+        if ( matchesModifers(onlyCAS,*it, keybind->ignoreMasks.empty() ? Qt::NoModifier : *itMask) ) {
             // modifiers are equal, now test symbol
             return matchesKey( (Qt::Key)symbol, *kit );
+        }
+        if (!keybind->ignoreMasks.empty()) {
+            ++itMask;
         }
     }
     
@@ -716,26 +706,26 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats, Qt::NoModifier, Qt::Key_F2);
 
 
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
-                    Qt::ShiftModifier, Qt::Key_1);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
-                     Qt::ShiftModifier, Qt::Key_2);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3,
-                     Qt::ShiftModifier, Qt::Key_3);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4,
-                     Qt::ShiftModifier, Qt::Key_4);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5,
-                     Qt::ShiftModifier, Qt::Key_5);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6,
-                     Qt::ShiftModifier, Qt::Key_6);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7,
-                     Qt::ShiftModifier, Qt::Key_7);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8,
-                     Qt::ShiftModifier, Qt::Key_8);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9,
-                     Qt::ShiftModifier, Qt::Key_9);
-    registerKeybind2(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0,
-                     Qt::ShiftModifier, Qt::Key_0);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
+                    Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0,
+                     Qt::ShiftModifier);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
@@ -744,10 +734,10 @@ GuiApplicationManager::populateShortcuts()
     
     
     ///Viewer
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus,
-                     Qt::ShiftModifier, Qt::Key_Plus);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus,
-                     Qt::ShiftModifier, Qt::Key_Minus);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomIn, kShortcutDescActionZoomIn, Qt::NoModifier, Qt::Key_Plus,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomOut, kShortcutDescActionZoomOut, Qt::NoModifier, Qt::Key_Minus,
+                     Qt::ShiftModifier);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, kShortcutDescActionFitViewer, Qt::NoModifier, Qt::Key_F);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
@@ -769,16 +759,16 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, kShortcutDescActionNewROI, Qt::AltModifier, Qt::Key_W);
     
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, kShortcutDescActionProxyEnabled, Qt::ControlModifier, Qt::Key_P);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1,
-                    Qt::AltModifier | Qt::ShiftModifier, Qt::Key_1);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2,
-                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_2);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, kShortcutDescActionProxyLevel8, Qt::AltModifier, Qt::Key_3,
-                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_3);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4,
-                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_4);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5,
-                     Qt::AltModifier | Qt::ShiftModifier, Qt::Key_5);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, kShortcutDescActionProxyLevel2, Qt::AltModifier, Qt::Key_1,
+                    Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, kShortcutDescActionProxyLevel4, Qt::AltModifier, Qt::Key_2,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel8, kShortcutDescActionProxyLevel8, Qt::AltModifier, Qt::Key_3,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel16, kShortcutDescActionProxyLevel16, Qt::AltModifier, Qt::Key_4,
+                     Qt::ShiftModifier);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, kShortcutDescActionProxyLevel32, Qt::AltModifier, Qt::Key_5,
+                     Qt::ShiftModifier);
 
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, kShortcutDescActionHideOverlays, Qt::NoModifier, Qt::Key_O);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, kShortcutDescActionHidePlayer, Qt::NoModifier, (Qt::Key)0);
@@ -789,8 +779,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, kShortcutDescActionHideInfobar, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind2(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1,
-                    Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_1);
+    registerKeybindWithMask(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1,
+                    Qt::ShiftModifier);
     registerKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, Qt::NoModifier, Qt::Key_W);
     registerKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, kShortcutDescCenterWipe, Qt::ShiftModifier, Qt::Key_F);
     

@@ -185,9 +185,10 @@ GuiApplicationManagerPrivate::createColorPickerCursor()
 
 void
 GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const QString & id,
-                        const QString & description,
-                        const std::list<Qt::KeyboardModifiers>& modifiersList,
-                        const std::list<Qt::Key>& symbolsList)
+                                                const QString & description,
+                                                 const std::list<Qt::KeyboardModifiers>& modifiersList,
+                                                 const std::list<Qt::Key>& symbolsList,
+                                                 const std::list<Qt::KeyboardModifiers>& modifiersMasks)
 {
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -211,6 +212,9 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const 
             kA->currentShortcut.push_back(*it);
         }
     }
+    
+    assert(modifiersMasks.empty() || modifiersMasks.size() == modifiersList.size());
+    kA->ignoreMasks = modifiersMasks;
     
     kA->actionID = id;
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -239,7 +243,23 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString 
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol1);
     symbols.push_back(symbol2);
-    addKeybindInternal(grouping, id, description, m, symbols);
+    std::list<Qt::KeyboardModifiers> masks;
+    addKeybindInternal(grouping, id, description, m, symbols, masks);
+}
+
+void
+GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString & id,
+                const QString & description,
+                const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
+                const Qt::KeyboardModifiers & modifiersMask)
+{
+    std::list<Qt::KeyboardModifiers> m;
+    m.push_back(modifiers);
+    std::list<Qt::Key> symbols;
+    symbols.push_back(symbol);
+    std::list<Qt::KeyboardModifiers> masks;
+    masks.push_back(modifiersMask);
+    addKeybindInternal(grouping, id, description, m, symbols, masks);
 }
 
 void
@@ -253,7 +273,8 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     m.push_back(modifiers);
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol);
-    addKeybindInternal(grouping, id, description, m, symbols);
+    std::list<Qt::KeyboardModifiers> msks;
+    addKeybindInternal(grouping, id, description, m, symbols, msks);
     
 }
 

@@ -146,7 +146,10 @@ public:
      * @brief Returns true if the given keyboard symbol and modifiers match the given action.
      * The symbol parameter is to be casted to the Qt::Key enum
      **/
-    bool matchesKeybind(const QString & group,const QString & actionID,const Qt::KeyboardModifiers & modifiers,int symbol) const;
+    bool matchesKeybind(const QString & group,
+                        const QString & actionID,
+                        const Qt::KeyboardModifiers & modifiers,
+                        int symbol) const;
 
     /**
      * @brief Returns true if the given keyboard modifiers and the given mouse button match the given action.

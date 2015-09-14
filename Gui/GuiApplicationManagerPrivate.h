@@ -118,13 +118,19 @@ struct GuiApplicationManagerPrivate
     
     void addKeybind(const QString & grouping,const QString & id,
                     const QString & description,
+                    const Qt::KeyboardModifiers & modifiers,Qt::Key symbol,
+                    const Qt::KeyboardModifiers & modifiersMask);
+    
+    void addKeybind(const QString & grouping,const QString & id,
+                    const QString & description,
                     const Qt::KeyboardModifiers & modifiers1,Qt::Key symbol1,
                     const Qt::KeyboardModifiers & modifiers2,Qt::Key symbol2);
     
     void addKeybindInternal(const QString & grouping,const QString & id,
                             const QString & description,
                             const std::list<Qt::KeyboardModifiers>& modifiersList,
-                            const std::list<Qt::Key>& symbolsList);
+                            const std::list<Qt::Key>& symbolsList,
+                            const std::list<Qt::KeyboardModifiers>& modifiersMasks);
     
     void removeKeybind(const QString& grouping,const QString& id);
 
