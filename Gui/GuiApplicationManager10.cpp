@@ -589,27 +589,23 @@ GuiApplicationManager::loadShortcuts()
             bool hasNonNullKeybind = false;
             
             if (!nbShortcutsSet) {
-                it2->second->modifiers.clear();
+                
                 if (kAction) {
-                    kAction->currentShortcut.clear();
                     if (settings.contains(it2->first + "_Symbol") ) {
-                        
                         Qt::Key key = (Qt::Key)settings.value(it2->first + "_Symbol").toInt();
                         if (key != (Qt::Key)0) {
+                            kAction->currentShortcut.clear();
                             kAction->currentShortcut.push_back(key);
                             hasNonNullKeybind = true;
                         }
                     }
                 }
                 if ( hasNonNullKeybind && settings.contains(it2->first + "_Modifiers") ) {
+                    it2->second->modifiers.clear();
                     it2->second->modifiers.push_back(Qt::KeyboardModifiers( settings.value(it2->first + "_Modifiers").toInt() ));
                 }
             } else {
                 
-                it2->second->modifiers.clear();
-                if (kAction) {
-                    kAction->currentShortcut.clear();
-                }
 
                 for (int i = 0; i < nbShortcuts; ++i) {
                     QString idm = it2->first + "_Modifiers" + QString::number(i);
@@ -620,6 +616,9 @@ GuiApplicationManager::loadShortcuts()
                         if (settings.contains(ids) ) {
                             Qt::Key key = (Qt::Key)settings.value(ids).toInt();
                             if (key != (Qt::Key)0) {
+                                if (i == 0) {
+                                    kAction->currentShortcut.clear();
+                                }
                                 kAction->currentShortcut.push_back(key);
                                 hasNonNullKeybind = true;
                             } else {
@@ -629,6 +628,9 @@ GuiApplicationManager::loadShortcuts()
                         }
                     }
                     if ( settings.contains(idm) ) {
+                        if (i == 0) {
+                            it2->second->modifiers.clear();
+                        }
                         it2->second->modifiers.push_back(Qt::KeyboardModifiers(settings.value(idm).toInt()));
                     }
                 }
