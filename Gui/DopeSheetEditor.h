@@ -107,6 +107,9 @@ public Q_SLOTS:
     void toggleTripleSync(bool enabled);
 
 private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
 

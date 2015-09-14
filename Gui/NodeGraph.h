@@ -330,9 +330,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QWidget* parent);
+    EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent);
     
     virtual ~EditNodeNameDialog();
+    
+    QString getTypedName() const;
+    
+    boost::shared_ptr<NodeGui> getNode() const;
     
 private:
     

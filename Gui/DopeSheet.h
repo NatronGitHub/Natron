@@ -398,6 +398,8 @@ public:
 
     // Other
     SequenceTime getCurrentFrame() const;
+    
+    void renameSelectedNode();
 
 Q_SIGNALS:
     void modelChanged();
@@ -412,7 +414,8 @@ private: /* functions */
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);
     void onKeyframeSetOrRemoved();
-
+    void onNodeNameEditDialogFinished();
+    
 private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
 };

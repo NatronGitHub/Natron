@@ -3034,9 +3034,15 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 #else
        // in debug mode, check that the result of getRestToRender_trimap and getRestToRender is the same if the image
        // is not currently rendered concurrently
-            QMutexLocker k(&_imp->imagesBeingRenderedMutex);
-            EffectInstance::Implementation::IBRMap::const_iterator found = _imp->imagesBeingRendered.find(isPlaneCached);
-            if (found == _imp->imagesBeingRendered.end() || !found->second->refCount) {
+            EffectInstance::Implementation::IBRPtr ibr;
+            {
+                QMutexLocker k(&_imp->imagesBeingRenderedMutex);
+                EffectInstance::Implementation::IBRMap::const_iterator found = _imp->imagesBeingRendered.find(isPlaneCached);
+                if (found != _imp->imagesBeingRendered.end() && found->second->refCount) {
+                    ibr = found->second;
+                }
+            }
+            if (!ibr) {
                 
                 Image::ReadAccess racc(isPlaneCached.get());
                 isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);

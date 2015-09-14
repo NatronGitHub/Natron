@@ -288,7 +288,7 @@ NodeGraph::popRenameDialog(const QPoint& pos)
     
     QPoint realPos = pos;
     
-    EditNodeNameDialog* dialog = new EditNodeNameDialog(this,node,this);
+    EditNodeNameDialog* dialog = new EditNodeNameDialog(node,this);
     
     if (realPos.x() == 0 && realPos.y() == 0) {
         QPoint global = QCursor::pos();
@@ -545,20 +545,18 @@ struct EditNodeNameDialogPrivate
     
     LineEdit* field;
     boost::shared_ptr<NodeGui> node;
-    NodeGraph* graph;
     
-    EditNodeNameDialogPrivate(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node)
+    EditNodeNameDialogPrivate(const boost::shared_ptr<NodeGui>& node)
     : field(0)
     , node(node)
-    , graph(graph)
     {
         
     }
 };
 
-EditNodeNameDialog::EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QWidget* parent)
+EditNodeNameDialog::EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent)
 : QDialog(parent)
-, _imp(new EditNodeNameDialogPrivate(graph,node))
+, _imp(new EditNodeNameDialogPrivate(node))
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -591,9 +589,6 @@ void
 EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        QString newName = _imp->field->text();
-        QString oldName = QString(_imp->node->getNode()->getLabel().c_str());
-        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,oldName,newName));
         accept();
     } else if (e->key() == Qt::Key_Escape) {
         reject();
@@ -602,11 +597,30 @@ EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
     }
 }
 
+QString
+EditNodeNameDialog::getTypedName() const
+{
+    return _imp->field->text();
+}
+
+boost::shared_ptr<NodeGui>
+EditNodeNameDialog::getNode() const
+{
+    return _imp->node;
+}
+
 void
 NodeGraph::onNodeNameEditDialogFinished()
 {
     EditNodeNameDialog* dialog = qobject_cast<EditNodeNameDialog*>(sender());
     if (dialog) {
+        QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
+        if (code == QDialog::Accepted) {
+            QString newName = dialog->getTypedName();
+            QString oldName = QString(dialog->getNode()->getNode()->getLabel().c_str());
+            pushUndoCommand(new RenameNodeUndoRedoCommand(dialog->getNode(),oldName,newName));
+            
+        }
         dialog->deleteLater();
     }
 }

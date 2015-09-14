@@ -1101,7 +1101,8 @@ RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<Nod
 , _newName(newName)
 {
     assert(node);
-   
+    setText(QObject::tr("Rename node"));
+
 }
 
 RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
@@ -1114,14 +1115,12 @@ RenameNodeUndoRedoCommand::undo()
 {
     NodeGuiPtr node = _node.lock();
     node->setName(_oldName);
-    setText(QObject::tr("Rename node"));
 }
 
 void RenameNodeUndoRedoCommand::redo()
 {
     NodeGuiPtr node = _node.lock();
     node->setName(_newName);
-    setText(QObject::tr("Rename node"));
 }
 
 static void

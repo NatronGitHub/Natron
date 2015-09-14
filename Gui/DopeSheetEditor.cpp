@@ -28,7 +28,9 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QSplitter>
+#include <QKeyEvent>
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/DopeSheetView.h"
@@ -37,6 +39,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
+#include "Gui/GuiMacros.h"
 #include "Engine/TimeLine.h"
 
 ////////////////////////// DopeSheetEditor //////////////////////////
@@ -229,3 +232,15 @@ DopeSheetEditor::setTreeWidgetWidth(int width)
     _imp->splitter->setSizes(sizes);
     _imp->hierarchyView->setCanResizeOtherWidget(true);
 }
+
+void
+DopeSheetEditor::keyPressEvent(QKeyEvent* e)
+{
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+ 
+    if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key)) {
+        _imp->model->renameSelectedNode();
+    }
+}
+

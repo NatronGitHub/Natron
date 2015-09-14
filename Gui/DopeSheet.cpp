@@ -42,6 +42,7 @@
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
 #include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/DopeSheetView.h"
@@ -49,6 +50,8 @@
 #include "Gui/KnobGui.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraph.h"
+#include "Gui/NodeGraphUndoRedo.h"
 
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
@@ -773,6 +776,55 @@ void DopeSheet::copySelectedKeys()
 
         _imp->keyframesClipboard.push_back(*selectedKey);
     }
+}
+
+void
+DopeSheet::renameSelectedNode()
+{
+    DSKeyPtrList keys;
+    std::vector<boost::shared_ptr<DSNode> > selectedNodes;
+    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes);
+    if (selectedNodes.empty() || selectedNodes.size() > 1) {
+        Natron::errorDialog(tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString());
+        return;
+    }
+    
+    ;
+    
+
+    EditNodeNameDialog* dialog = new EditNodeNameDialog(selectedNodes.front()->getNodeGui(),_imp->editor);
+    
+    QPoint global = QCursor::pos();
+    QSize sizeH = dialog->sizeHint();
+    global.rx() -= sizeH.width() / 2;
+    global.ry() -= sizeH.height() / 2;
+    QPoint realPos = global;
+    
+    
+    
+    QObject::connect(dialog ,SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()));
+    QObject::connect(dialog ,SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()));
+    dialog->move( realPos.x(), realPos.y() );
+    dialog->raise();
+    dialog->show();
+
+}
+
+void
+DopeSheet::onNodeNameEditDialogFinished()
+{
+    EditNodeNameDialog* dialog = qobject_cast<EditNodeNameDialog*>(sender());
+    if (dialog) {
+        QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
+        if (code == QDialog::Accepted) {
+            QString newName = dialog->getTypedName();
+            QString oldName = QString(dialog->getNode()->getNode()->getLabel().c_str());
+            _imp->pushUndoCommand(new RenameNodeUndoRedoCommand(dialog->getNode(),oldName,newName));
+            
+        }
+        dialog->deleteLater();
+    }
+
 }
 
 void DopeSheet::pasteKeys()
