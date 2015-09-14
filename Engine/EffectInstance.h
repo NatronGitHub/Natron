@@ -669,6 +669,8 @@ public:
                                      bool forceGetClipPrefAction,
                                      bool recurse);
 
+    void refreshChannelSelectors_recursive();
+
 protected:
 
     void checkOFXClipPreferences_recursive(double time,

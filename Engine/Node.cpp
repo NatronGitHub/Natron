@@ -5200,6 +5200,7 @@ Node::onInputChanged(int inputNb)
         enabled->unblockValueChanges();
     }
     _imp->liveInstance->onInputChanged(inputNb);
+    _imp->liveInstance->refreshChannelSelectors_recursive();
     _imp->duringInputChangedAction = false;
 }
 
