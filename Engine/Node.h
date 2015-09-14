@@ -490,6 +490,7 @@ public:
      * to the given input.
      **/
     Node::CanConnectInputReturnValue canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const;
+    
 
     /** @brief Adds the node parent to the input inputNumber of the
      * node. Returns true if it succeeded, false otherwise.

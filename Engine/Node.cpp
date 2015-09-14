@@ -3284,6 +3284,50 @@ Node::isNodeUpstream(const Natron::Node* input,
     }
 }
 
+static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* output, const NodePtr& input)
+{
+    //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
+    //Check that the input has the same RoD that another input and that its rod is set to 0,0
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    RectD rod;
+    bool isProjectFormat;
+    Natron::StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
+    if (stat == eStatusFailed && !rod.isNull()) {
+        return Node::eCanConnectInput_givenNodeNotConnectable;
+    }
+    if (rod.x1 != 0 || rod.y1 != 0) {
+        return Node::eCanConnectInput_multiResNotSupported;
+    }
+    
+    RectD outputRod;
+    stat = output->getLiveInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
+    if (stat == eStatusFailed && !outputRod.isNull()) {
+        return Node::eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    if (rod != outputRod) {
+        return Node::eCanConnectInput_multiResNotSupported;
+    }
+    
+    for (int i = 0; i < output->getMaxInputCount(); ++i) {
+        NodePtr inputNode = output->getInput(i);
+        if (inputNode) {
+            
+            RectD inputRod;
+            stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
+            if (stat == eStatusFailed && !inputRod.isNull()) {
+                return Node::eCanConnectInput_givenNodeNotConnectable;
+            }
+            if (inputRod != rod) {
+                return Node::eCanConnectInput_multiResNotSupported;
+            }
+            
+        }
+    }
+    return Node::eCanConnectInput_ok;
+}
+
 Node::CanConnectInputReturnValue
 Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const
 {
@@ -3315,44 +3359,9 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     }
     
     if (!_imp->liveInstance->supportsMultiResolution()) {
-        //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
-        //Check that the input has the same RoD that another input and that its rod is set to 0,0
-        RenderScale scale;
-        scale.x = scale.y = 1.;
-        RectD rod;
-        bool isProjectFormat;
-        Natron::StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
-        if (stat == eStatusFailed && !rod.isNull()) {
-            return eCanConnectInput_givenNodeNotConnectable;
-        }
-        if (rod.x1 != 0 || rod.y1 != 0) {
-            return eCanConnectInput_multiResNotSupported;
-        }
-        
-        RectD outputRod;
-        stat = getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
-        if (stat == eStatusFailed && !outputRod.isNull()) {
-            return eCanConnectInput_givenNodeNotConnectable;
-        }
-        
-        if (rod != outputRod) {
-            return eCanConnectInput_multiResNotSupported;
-        }
-        
-        for (int i = 0; i < getMaxInputCount(); ++i) {
-            NodePtr inputNode = getInput(i);
-            if (inputNode) {
-                
-                RectD inputRod;
-                stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
-                if (stat == eStatusFailed && !inputRod.isNull()) {
-                    return eCanConnectInput_givenNodeNotConnectable;
-                }
-                if (inputRod != rod) {
-                    return eCanConnectInput_multiResNotSupported;
-                }
-                
-            }
+        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
+        if (ret != eCanConnectInput_ok) {
+            return ret;
         }
     }
     
@@ -3419,11 +3428,8 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
             (useGuiInputs && _imp->guiInputs[inputNumber])) {
             return false;
         }
-    }
-    
-    {
+        
         ///Set the input
-        QMutexLocker l(&_imp->inputsMutex);
         if (!useGuiInputs) {
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;

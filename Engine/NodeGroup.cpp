@@ -492,7 +492,6 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
         assert(ok);
         if (input->getMaxInputCount() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
-            assert(ok);
         }
     }
     
@@ -500,8 +499,9 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
         return true;
     }
     
+    Node::CanConnectInputReturnValue ret = output->canConnectInput(input, inputNumber);
     
-    if ( !output->connectInput(input, inputNumber) ) {
+    if ( ret != Node::eCanConnectInput_ok || !output->connectInput(input, inputNumber) ) {
         return false;
     }
     
