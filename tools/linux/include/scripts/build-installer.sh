@@ -254,7 +254,10 @@ cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INSTALL_PATH/bin/Natron* $NATRON_PATH/data/bin/ || exit 1
-strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter 
+strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer
+if [ -f "$NATRON_PATH/data/bin/NatronCrashReporter" ]; then
+    strip -s $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter
+fi
 
 #cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffmpeg $NATRON_PATH/data/bin/ || exit 1
 #cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffprobe $NATRON_PATH/data/bin/ || exit 1

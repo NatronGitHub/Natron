@@ -123,6 +123,8 @@ cd build || exit 1
 
 if [ "$BUILD_SNAPSHOT" == "1" ]; then
   SNAP="CONFIG+=snapshot"
+#else
+#CONFIG+=gbreakpad Enable when ready
 fi
 
 if [ "$PYV" == "3" ]; then

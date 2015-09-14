@@ -106,6 +106,8 @@ cd build || exit 1
 
 if [ "$BUILD_SNAPSHOT" == "1" ]; then
   SNAP="CONFIG+=snapshot"
+#else
+#SNAP="CONFIG+=gbreakpad" Enable when ready
 fi
 
 $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
@@ -116,8 +118,6 @@ cp Renderer/release/NatronRenderer.exe $INSTALL_PATH/bin/ || exit 1
 if [ -f CrashReporter/release/NatronCrashReporter.exe ]; then
   cp CrashReporter/release/NatronCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
   cp CrashReporterCLI/release/NatronRendererCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
-else
-  echo "CrashReporter missing!!! Something broken?"
 fi
 
 
