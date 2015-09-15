@@ -26,7 +26,7 @@
 
 #Usage: CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 # required macports ports (first ones are for Natron, then for OFX plugins)
 PORTS="boost qt4-mac glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside"
@@ -69,7 +69,7 @@ fi
 #  echo "ffmpeg port should not be installed with the +gpl2 or +gpl3 variants, please reinstall it using 'sudo port install ffmpeg -gpl2 -gpl3'"
 #  exit 1
 #fi
-GLEW_CFLAGS=$(pkg-config --cflags glew)
+GLEW_CFLAGS=`pkg-config --cflags glew`
 if [ ! -z "$GLEW_CFLAGS" ]; then
     true
 else
@@ -94,17 +94,18 @@ EOFF
 fi
 
 if [ ! -f "$CWD/commits-hash.sh" ]; then
-    touch "$CWD/commits-hash.sh"
-    echo "#!/bin/sh" >> $CWD/commits-hash.sh
-    echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "IOPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "MISCPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "ARENAPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "CVPLUG_DEVEL_GIT=#" >> $CWD/commits-hash.sh
-    echo "NATRON_VERSION_NUMBER=#" >> $CWD/commits-hash.sh
+    cat <<EOF > "$CWD/commits-hash.sh"
+#!/bin/sh
+NATRON_DEVEL_GIT=#
+IOPLUG_DEVEL_GIT=#
+MISCPLUG_DEVEL_GIT=#
+ARENAPLUG_DEVEL_GIT=#
+CVPLUG_DEVEL_GIT=#
+NATRON_VERSION_NUMBER=#
+EOF
 fi
 
-source $CWD/commits-hash.sh || exit 1
+source "$CWD/commits-hash.sh" || exit 1
 
 if [ "$NO_CLEAN" != "1" ]; then
     rm -rf "$CWD/build"

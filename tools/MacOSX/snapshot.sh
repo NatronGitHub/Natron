@@ -21,7 +21,7 @@
 # cd Natron/tools/MacOSX
 # MKJOBS=4 ./snapshot.sh
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 
 if [ ! -d $TMP ];then
@@ -81,7 +81,7 @@ while true; do
     cd $TMP/Natron
     git fetch || FAIL=1
     git merge origin/workshop || FAIL=1
-    GITV_NATRON=$(git log|head -1|awk '{print $2}')
+    GITV_NATRON=`git log|head -1|awk '{print $2}'`
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
     if [ "$GITV_NATRON" != "$ORIG_NATRON" ] && [ "$FAIL" != "1" ];then
@@ -95,7 +95,7 @@ while true; do
 	cd $TMP/openfx-io
 	git fetch || FAIL=1
 	git merge origin/master || FAIL=1
-	GITV_IO=$(git log|head -1|awk '{print $2}')
+	GITV_IO=`git log|head -1|awk '{print $2}'`
 	ORIG_IO=$IOPLUG_DEVEL_GIT
 	echo "openfx-io $GITV_IO vs. $ORIG_IO"
 	if [ "$GITV_IO" != "$ORIG_IO" ] && [ "$FAIL" != "1" ];then
@@ -110,7 +110,7 @@ while true; do
 	cd $TMP/openfx-misc
 	git fetch || FAIL=1
 	git merge origin/master || FAIL=1
-	GITV_MISC=$(git log|head -1|awk '{print $2}')
+	GITV_MISC=`git log|head -1|awk '{print $2}'`
 	ORIG_MISC=$MISCPLUG_DEVEL_GIT
 	echo "openfx-misc $GITV_MISC vs. $ORIG_MISC"
 	if [ "$GITV_MISC" != "$ORIG_MISC" ] && [ "$FAIL" != "1" ];then
@@ -123,7 +123,7 @@ while true; do
 	cd $TMP/openfx-arena
 	git fetch || FAIL=1
 	git merge origin/master || FAIL=1
-	ARENAV_MISC=$(git log|head -1|awk '{print $2}')
+	ARENAV_MISC=`git log|head -1|awk '{print $2}'`
 	ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
 	echo "openfx-arena $ARENAV_MISC vs. $ORIG_ARENA"
 	if [ "$ARENAV_MISC" != "$ORIG_ARENA" ] && [ "$FAIL" != "1" ];then

@@ -1,8 +1,25 @@
 #!/bin/sh
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2015 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
 
 #Usage PLUGINDIR="..." MKJOBS=4 CONFIG=relwithdebinfo BRANCH=workshop ./build-plugins.sh
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 cd $CWD/build || exit 1
 
@@ -31,7 +48,7 @@ git checkout "$IO_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
 
 #Always bump git commit, it is only used to version-stamp binaries
-IO_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
@@ -45,13 +62,13 @@ git checkout "$MISC_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
 
 #Always bump git commit, it is only used to version-stamp binaries
-MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make -C CImg CImg.h || exit 1
 if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
-    make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
+    make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
 fi
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
@@ -65,7 +82,7 @@ git checkout "$ARENA_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
 
 #Always bump git commit, it is only used to version-stamp binaries
-ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
@@ -95,7 +112,7 @@ fi
 #git submodule update -i --recursive || exit 1
 
 #Always bump git commit, it is only used to version-stamp binaries
-#CV_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+#CV_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 #sed -i -e "s/CVPLUG_DEVEL_GIT=.*/CVPLUG_DEVEL_GIT=${CV_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 #cd opencv2fx || exit 1

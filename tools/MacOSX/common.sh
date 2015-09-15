@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 CWD=`pwd`
 
@@ -37,7 +37,7 @@ fi
 
 # Keep existing tag, else make a new one
 if [ -z "$TAG" ]; then
-    TAG=$(date +%Y%m%d%H%M)
+    TAG=`date +%Y%m%d%H%M`
 fi
 
 OS=`uname -s`
