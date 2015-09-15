@@ -115,8 +115,8 @@ fi
 
 FAIL=0
 
-if [ ! -f ./commits-hash.sh ]; then
-    cat <<EOF > ./commits-hash.sh
+if [ ! -f "$CWD/commits-hash.sh" ]; then
+    cat <<EOF > "CWD/commits-hash.sh"
 #!/bin/sh
 NATRON_DEVEL_GIT=#
 IOPLUG_DEVEL_GIT=#
