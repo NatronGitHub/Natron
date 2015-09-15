@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QThread>
 #include <QCoreApplication>
 
+#include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Transform.h"

@@ -47,6 +47,7 @@
 #include <cairo/cairo.h>
 
 
+#include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -295,64 +296,8 @@
 
 class Bezier;
 
-struct BezierCPPrivate
-{
-    boost::weak_ptr<Bezier> holder;
-
-    ///the animation curves for the position in the 2D plane
-    boost::shared_ptr<Curve> curveX,curveY;
-    boost::shared_ptr<Curve> guiCurveX,guiCurveY;
-    double x,y; //< used when there is no keyframe
-    double guiX,guiY;
-    
-    ///the animation curves for the derivatives
-    ///They do not need to be protected as Curve is a thread-safe class.
-    boost::shared_ptr<Curve> curveLeftBezierX,curveRightBezierX,curveLeftBezierY,curveRightBezierY;
-    boost::shared_ptr<Curve> guiCurveLeftBezierX,guiCurveRightBezierX,guiCurveLeftBezierY,guiCurveRightBezierY;
-    
-    mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
-    double leftX,rightX,leftY,rightY; //< used when there is no keyframe
-    double guiLeftX,guiRightX,guiLeftY,guiRightY; //< used when there is no keyframe
-    mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
-    boost::shared_ptr<KnobDouble> masterTrack; //< is this point linked to a track ?
-    SequenceTime offsetTime; //< the time at which the offset must be computed
-
-    BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
-    : holder(curve)
-    , curveX(new Curve)
-    , curveY(new Curve)
-    , guiCurveX(new Curve)
-    , guiCurveY(new Curve)
-    , x(0)
-    , y(0)
-    , guiX(0)
-    , guiY(0)
-    , curveLeftBezierX(new Curve)
-    , curveRightBezierX(new Curve)
-    , curveLeftBezierY(new Curve)
-    , curveRightBezierY(new Curve)
-    , guiCurveLeftBezierX(new Curve)
-    , guiCurveRightBezierX(new Curve)
-    , guiCurveLeftBezierY(new Curve)
-    , guiCurveRightBezierY(new Curve)
-    , staticPositionMutex()
-    , leftX(0)
-    , rightX(0)
-    , leftY(0)
-    , rightY(0)
-    , guiLeftX(0)
-    , guiRightX(0)
-    , guiLeftY(0)
-    , guiRightY(0)
-    , masterMutex()
-    , masterTrack()
-    , offsetTime(0)
-    {
-    }
-};
 
 class BezierCP;
-typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
 
 
 struct BezierPrivate

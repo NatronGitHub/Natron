@@ -35,6 +35,7 @@
 #include <QtCore/QTextStream>
 
 #include "Engine/AppInstance.h"
+#include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"

@@ -78,6 +78,7 @@ SOURCES += \
     AppManager.cpp \
     AppManagerPrivate.cpp \
     BackDrop.cpp \
+    BezierCP.cpp \
     BlockingBackgroundRender.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
@@ -203,6 +204,9 @@ HEADERS += \
     AppManager.h \
     AppManagerPrivate.h \
     BackDrop.h \
+    BezierCP.h \
+    BezierCPPrivate.h \
+    BezierCPSerialization.h \
     BlockingBackgroundRender.h \
     CLArgs.h \
     Cache.h \
@@ -216,6 +220,7 @@ HEADERS += \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
+    FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
     FitCurve.h \

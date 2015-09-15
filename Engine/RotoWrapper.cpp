@@ -24,6 +24,7 @@
 
 #include "RotoWrapper.h"
 
+#include "Engine/BezierCP.h"
 #include "Engine/RotoContext.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"

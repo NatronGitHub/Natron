@@ -53,9 +53,12 @@
 #include <cfloat>
 #include <algorithm> // min, max
 
+//#include "Engine/Bezier.h"
+#include "Engine/BezierCP.h"
 #include "Engine/RotoContext.h"
-#include "Engine/RotoContextPrivate.h"
+//#include "Engine/RotoContextPrivate.h"
 #include "Engine/Interpolation.h"
+#include "Engine/RectD.h"
 #include "Engine/Transform.h"
 
 using namespace Natron;

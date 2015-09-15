@@ -67,6 +67,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/BezierCPSerialization.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Hash64.h"

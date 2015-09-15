@@ -32,6 +32,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/BezierCP.h"
+#include "Engine/FeatherPoint.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
