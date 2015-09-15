@@ -821,7 +821,7 @@ GuiApplicationManager::onFontconfigCacheUpdateFinished()
 void
 GuiApplicationManager::onFontconfigTimerTriggered()
 {
-    _imp->fontconfigMessageDots = (_imp->fontconfigMessageDots + 1) % 3;
+    _imp->fontconfigMessageDots = (_imp->fontconfigMessageDots + 1) % 4;
     
     QString message = tr("Updating fontconfig cache");
     for (int i = 0; i < _imp->fontconfigMessageDots; ++i) {
