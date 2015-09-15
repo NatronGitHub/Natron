@@ -70,9 +70,14 @@ macdeployqt App/${APP} || exit 1
 #Copy and change exec_path of the whole Python framework with libraries
 rm -rf App/${APP}/Contents/Frameworks/Python.framework
 mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib  || exit 1
-cp -r /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
-ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib  || exit 1
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib
+cp -pr /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7 App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib  || exit 1
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Resources
+cp -pr /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/Python
+cp -pr /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7  || exit 1
+ln -sf Versions/2.7/Python App/${APP}/Contents/Frameworks/Python.framework/Python  || exit 1
+
 rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/*
 #rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/__pycache__
 #rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/*/__pycache__
