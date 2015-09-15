@@ -90,13 +90,20 @@ rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.
 bin=App/${APP}/Contents/MacOS/Natron
 # macdeployqt doesn't deal correctly with libs in /opt/local/lib/libgcc : handle them manually
 if otool -L $bin |fgrep /opt/local/lib/libgcc; then
-    for l in gcc_s.1 stdc++.6; do
+    for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
 	install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $bin
 	for deplib in App/${APP}/Contents/Frameworks/*.dylib; do
 	    install_name_tool -change /opt/local/lib/libgcc/$lib @executable_path/../Frameworks/$lib $deplib
 	done
         cp /opt/local/lib/libgcc/$lib App/${APP}/Contents/Frameworks/$lib
+    done
+    # use gcc's libraries everywhere
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+	lib=lib${l}.dylib
+	for deplib in App/${APP}/Contents/Frameworks/*.framework/Versions/*/* App/${APP}/Contents/Frameworks/lib*.dylib; do
+            install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
+	done
     done
 fi
 for f in Python; do

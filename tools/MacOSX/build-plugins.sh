@@ -72,6 +72,20 @@ make CXX="$CXX" USE_PANGO=1 USE_SVG=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || e
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
+if [ "$COMPILER" = "gcc" ]; then
+    # use gcc's libraries everywhere
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+	lib=lib${l}.dylib
+	for plugin in "$PLUGINDIR"/*.ofx.bundle; do
+	    if [ -f "$plugin"/Contents/Libraries/"$lib" ]; then
+		rm -f "$plugin"/Contents/Libraries/"$lib"
+	    fi
+	    for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
+		install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
+	    done
+	done
+    done
+fi
 
 #Build openfx-opencv
 #git clone $GIT_OPENCV
