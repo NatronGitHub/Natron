@@ -2616,8 +2616,15 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
                 
-                return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
-                
+                /**
+                 * All images are directly rendered by the effect this effect is identity of. 
+                 * Some properties are not identity such as PAR so we copy it.
+                 **/
+                EffectInstance::RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
+                for (ImageList::iterator it = outputPlanes->begin(); it != outputPlanes->end(); ++it) {
+                    (*it)->setPixelAspectRatio(par);
+                }
+                return ret;
             } else {
                 assert(outputPlanes->empty());
             }

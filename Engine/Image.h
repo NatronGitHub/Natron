@@ -309,11 +309,11 @@ namespace Natron {
             return this->_bitDepth;
         }
         
-        double getPixelAspectRatio() const
-        {
-            return this->_par;
-        }
+        double getPixelAspectRatio() const;
         
+        
+        
+        void setPixelAspectRatio(double par);
         
         /**
          * @brief Same as getElementsCount(getComponents()) * getBounds().width()

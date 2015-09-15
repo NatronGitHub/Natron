@@ -216,6 +216,11 @@ public:
     double getPixelAspectRatio() const  {
         return _par;
     }
+    
+    void setPixelAspectRatio(double par)
+    {
+        _par = par;
+    }
 
     unsigned int getMipMapLevel() const {
         return _mipMapLevel;

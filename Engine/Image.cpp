@@ -1323,6 +1323,23 @@ Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
     return sizeOfTo < sizeOfFrom;
 }
 
+double
+Image::getPixelAspectRatio() const
+{
+    QMutexLocker k(&_entryLock);
+    return this->_par;
+}
+
+
+
+void
+Image::setPixelAspectRatio(double par)
+{
+    QMutexLocker k(&_entryLock);
+    this->_par = par;
+    _params->setPixelAspectRatio(par);
+}
+
 unsigned int
 Image::getRowElements() const
 {
