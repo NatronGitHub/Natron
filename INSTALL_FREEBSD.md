@@ -75,6 +75,12 @@ LIBS is the path to the libs
     EOF
     ----- end -----
 
+###Download OpenColorIO-Configs
+
+In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+Place it at the root of Natron repository.
+
 ### Build
 
 The <srcPath> must be absolute and <buildPath> must not be a subdir of <srcPath>

@@ -64,6 +64,8 @@ shiboken {
 }
 EOF
 
+#Copy OpenColorIO-Config in Natron root as the .pro expects them there to copy it to the application bundle
+cp -r $TMP/OpenColorIO-Configs . || exit 1
 
 # Add CONFIG+=snapshot to indicate the build is a snapshot
 if [ "$BRANCH" == "workshop" ]; then

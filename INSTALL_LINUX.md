@@ -63,6 +63,12 @@ On Ubuntu 12.04 LTS the package can be added with the following ppa:
 
 We're done here for libraries.
 
+###Download OpenColorIO-Configs
+
+In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+Place it at the root of Natron repository.
+
 ###Add the config.pri file
 
 You have to define the locations of some required libraries.

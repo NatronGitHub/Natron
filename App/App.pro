@@ -245,7 +245,7 @@ SOURCES += \
 
 INSTALLS += target
 
-Resources.files = $$PWD/../Gui/Resources/OpenColorIO-Configs
+Resources.files = $$PWD/../OpenColorIO-Configs
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
     Resources.path = Contents/Resources

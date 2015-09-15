@@ -1960,7 +1960,11 @@ AppManager::onOFXDialogOnMainThreadReceived(void* user_data)
     assert(QThread::currentThread() == qApp->thread());
     GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
     if (tls.lastEffectCallingMainEntry) {
+#ifdef OFX_SUPPORTS_DIALOG
         tls.lastEffectCallingMainEntry->dialog(user_data);
+#else
+        (void)user_data;
+#endif
     }
 }
 
