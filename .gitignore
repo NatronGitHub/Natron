@@ -220,3 +220,5 @@ Renderer/NatronRenderer
 *commits-hash.sh*
 
 CrashReporterCLI/NatronRendererCrashReporter
+*repo.sh*
+*local.sh*

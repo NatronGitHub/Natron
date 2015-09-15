@@ -17,8 +17,12 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 * Add the following line to /opt/local/etc/macports/variants.conf  (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
--x11 +no_x11 +bash_completion +no_gnome +quartz +universal
+-x11 +no_x11 +bash_completion +no_gnome +quartz +universal +llvm34 +ld64_236 +natron
 ```
+  * `-x11 +no_x11 +no_gnome` are here to avoid linking to X11 libraries
+  * `+llvm34` is to avoid ising llvm- 3.5 or greater, which require libc++
+  * `+ld64_236` is to use the last version of ld64 that supports libstdc++
+  * `+natron` is to build the Natro-specific version of ImageMagick 
 
 ### Installing MacPorts on OS X 10.7+ for deployment on OS X 10.6 (universal)
 
@@ -49,9 +53,13 @@ buildfromsource    always
 
 * Add the following line to `/opt/local/etc/macports/variants.conf` (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
--x11 +no_x11 +bash_completion +no_gnome +quartz +universal
+-x11 +no_x11 +bash_completion +no_gnome +quartz +universal +llvm34 +ld64_236 +natron
 ```
-
+  * `-x11 +no_x11 +no_gnome` are here to avoid linking to X11 libraries
+  * `+llvm34` is to avoid ising llvm 3.5 or greater, which require libc++
+  * `+ld64_236` is to use the last version of ld64 that supports libstdc++
+  * `+natron` is to build the Natro-specific version of ImageMagick 
+  
 ### Installing MacPorts on any version of OS X for deployment on the same OS X version
 
 * Install the latest version of Xcode
@@ -60,9 +68,11 @@ buildfromsource    always
 
 * Add the following line to /opt/local/etc/macports/variants.conf  (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
--x11 +no_x11 +bash_completion +no_gnome +quartz
+-x11 +no_x11 +bash_completion +no_gnome +quartz +natron
 ```
-
+  * `-x11 +no_x11 +no_gnome` are here to avoid linking to X11 libraries
+  * `+natron` is to build the Natro-specific version of ImageMagick
+  
 ##  Installing required packages
 
 * Download Macports [dports-dev](http://downloads.natron.fr/Third_Party_Sources/dports-dev.zip)
@@ -86,8 +96,13 @@ sudo port selfupdate
 cd /Users/USER_NAME/Development/dports-dev; portindex"
 ```
 
-* Install clang-3.4:
+* Install clang-3.4 (don't build the sample project, which is not required and builds using libc++):
 ```
+sudo port clean llvm-3.4
+sudo port patch llvm-3.4
+sudo rm -r /opt/local/var/macports/build/*/llvm-3.4/work/llvm-3.4.2.src/projects/sample
+sudo port install llvm-3.4
+sudo port install cctools +llvm34
 sudo port install clang-3.4
 sudo port select --set clang mp-clang-3.4 (so that clang and clang++ point to that version)
 ```
@@ -97,7 +112,9 @@ sudo port select --set clang mp-clang-3.4 (so that clang and clang++ point to th
 sudo port install gcc48 +universal
 git clone https://github.com/devernay/macportsGCCfixup.git
 cd macportsGCCfixup
-./configure
+mkdir build
+cd build
+cmake ..
 make
 sudo make install
 ```
