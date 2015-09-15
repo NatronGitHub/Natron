@@ -163,7 +163,7 @@ AppManager::load(int &argc,
         }
     }
 #elif defined(__NATRON_WIN32__)
-	if (qgetenv("FONTCONFIG_PATH").isNull()) {
+        if (qgetenv("FONTCONFIG_PATH").isNull()) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
         QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
         QString pathcfg = path + "/fonts.conf";
@@ -1096,7 +1096,7 @@ void
 AppManager::loadPythonGroups()
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+    return;
 #endif
     Natron::PythonGILLocker pgl;
     
@@ -1120,20 +1120,28 @@ AppManager::loadPythonGroups()
         
         bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
         assert(ok);
-        Q_UNUSED(ok);
+        if (!ok) {
+          throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+addToPythonPath+") failed!");
+        }
     }
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
     {
-        bool ok  = interpretPythonScript("import PySide.QtCore as QtCore", &err, 0);
+        std::string s = "import PySide.QtCore as QtCore";
+        bool ok  = interpretPythonScript(s, &err, 0);
         assert(ok);
-        Q_UNUSED(ok);
+        if (!ok) {
+            throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+s+") failed!");
+        }
     }
     
     if (!isBackground()) {
-        bool ok  = interpretPythonScript("import PySide.QtGui as QtGui", &err, 0);
+        std::string s = "import PySide.QtGui as QtGui";
+        bool ok  = interpretPythonScript(s, &err, 0);
         assert(ok);
-        Q_UNUSED(ok);
+        if (!ok) {
+            throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+s+") failed!");
+        }
     }
 
     
@@ -1178,7 +1186,9 @@ AppManager::loadPythonGroups()
             
             bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
             assert(ok);
-            Q_UNUSED(ok);
+            if (!ok) {
+                throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+addToPythonPath+") failed!");
+            }
         }
     }
     
@@ -2112,7 +2122,7 @@ void
 AppManager::initPython(int argc,char* argv[])
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+    return;
 #endif
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
@@ -2253,7 +2263,7 @@ void
 AppManager::tearDownPython()
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+        return;
 #endif
     ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     PyGILState_Ensure();
@@ -2317,9 +2327,12 @@ void
 AppManager::launchPythonInterpreter()
 {
     std::string err;
-    bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+    std::string s = "app = app1\n";
+    bool ok = Natron::interpretPythonScript(s, &err, 0);
     assert(ok);
-    Q_UNUSED(ok);
+    if (!ok) {
+        throw std::runtime_error("AppInstance::launchPythonInterpreter(): interpretPythonScript("+s+" failed!");
+    }
 
    // Natron::PythonGILLocker pgl;
     
@@ -2329,18 +2342,18 @@ AppManager::launchPythonInterpreter()
 int
 AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
-	for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
-		if (proj) {
-			QString path = proj->getProjectPath();
-			QString name = proj->getProjectName();
-			std::string existingProject = path.toStdString() + name.toStdString();
-			if (existingProject == projectFilePath) {
-				return it->first;
-			}
-		}
+                if (proj) {
+                        QString path = proj->getProjectPath();
+                        QString name = proj->getProjectName();
+                        std::string existingProject = path.toStdString() + name.toStdString();
+                        if (existingProject == projectFilePath) {
+                                return it->first;
+                        }
+                }
     }
-	return -1;
+        return -1;
 }
 
 void
@@ -2440,34 +2453,34 @@ AppManager::appendToNatronPath(const std::string& path)
 void
 AppManager::registerUNCPath(const QString& path, const QChar& driveLetter)
 {
-	assert(QThread::currentThread() == qApp->thread());
-	_imp->uncPathMapping[driveLetter] = path;
+        assert(QThread::currentThread() == qApp->thread());
+        _imp->uncPathMapping[driveLetter] = path;
 }
 
 QString
 AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 {
-	assert(QThread::currentThread() == qApp->thread());
-	if (uncPath.isEmpty()) {
-		return uncPath;
-	}
-	for (std::map<QChar,QString>::const_iterator it = _imp->uncPathMapping.begin(); it!= _imp->uncPathMapping.end(); ++it) {
-		int index = uncPath.indexOf(it->second);
-		if (index == 0) {
-			//We found the UNC mapping at the start of the path, replace it with a drive letter
-			QString ret = uncPath;
-			ret.remove(0,it->second.size());
-			QString drive;
-			drive.append(it->first);
-			drive.append(':');
-			if (!ret.isEmpty() && !ret.startsWith('/')) {
-				drive.append('/');
-			}
-			ret.prepend(drive);
-			return ret;
-		}
-	}
-	return uncPath;
+    assert(QThread::currentThread() == qApp->thread());
+    if (uncPath.isEmpty()) {
+        return uncPath;
+    }
+    for (std::map<QChar,QString>::const_iterator it = _imp->uncPathMapping.begin(); it!= _imp->uncPathMapping.end(); ++it) {
+        int index = uncPath.indexOf(it->second);
+        if (index == 0) {
+            //We found the UNC mapping at the start of the path, replace it with a drive letter
+            QString ret = uncPath;
+            ret.remove(0,it->second.size());
+            QString drive;
+            drive.append(it->first);
+            drive.append(':');
+            if (!ret.isEmpty() && !ret.startsWith('/')) {
+                drive.append('/');
+            }
+            ret.prepend(drive);
+            return ret;
+        }
+    }
+    return uncPath;
 }
 #endif
 
@@ -2647,7 +2660,7 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return true;
+    return true;
 #endif
     Natron::PythonGILLocker pgl;
     
@@ -2794,7 +2807,7 @@ getGroupInfos(const std::string& modulePath,
               unsigned int* version)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return false;
+    return false;
 #endif
     Natron::PythonGILLocker pgl;
     
@@ -2919,7 +2932,9 @@ getGroupInfos(const std::string& modulePath,
         
         bool ok = interpretPythonScript(deleteScript, &err, NULL);
         assert(ok);
-        Q_UNUSED(ok);
+        if (!ok) {
+          throw std::runtime_error("getGroupInfos(): interpretPythonScript("+deleteScript+" failed!");
+        }
         return true;
     }
 }
@@ -2961,7 +2976,7 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
     std::string output;
     bool ok = interpretPythonScript(script, error, &output);
     if (!ok) {
-        return;
+        throw std::runtime_error("getFunctionArguments(): interpretPythonScript("+script+" failed!");
     }
     PyObject* mainModule = getMainModule();
     PyObject* args_specObj = 0;

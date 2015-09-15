@@ -512,9 +512,16 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     std::string err;
     bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+addToPythonPath+" failed!");
+    }
 
-    ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+    std::string s = "app = app1\n";
+    ok = Natron::interpretPythonScript(s, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+s+" failed!");
+    }
     
     QFile f(file.absoluteFilePath());
     if (!f.open(QIODevice::ReadOnly)) {
@@ -1265,7 +1272,9 @@ AppInstance::declareCurrentAppVariable_Python()
     
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
-    Q_UNUSED(ok);
+    if (!ok) {
+        throw std::runtime_error("AppInstance::declareCurrentAppVariable_Python() failed!");
+    }
 
     if (appPTR->isBackground()) {
         std::string err;

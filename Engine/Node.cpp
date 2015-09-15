@@ -984,7 +984,9 @@ Node::declareRotoPythonField()
     }
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
-    Q_UNUSED(ok);
+    if (!ok) {
+        throw std::runtime_error("Node::declareRotoPythonField(): interpretPythonScript("+script+") failed!");
+    }
     _imp->rotoContext->declarePythonFields();
 }
 
@@ -6525,7 +6527,7 @@ void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+    return;
 #endif
     if (!_imp->isPartOfProject) {
         return;
@@ -6604,7 +6606,7 @@ void
 Node::declarePythonFields()
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+    return;
 #endif
     if (!_imp->isPartOfProject) {
         return;

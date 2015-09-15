@@ -1771,12 +1771,14 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     script = declarations + "\n" + script;
     ///This will register the listeners
     std::string error;
-    bool success = Natron::interpretPythonScript(script, &error,NULL);
+    bool ok = Natron::interpretPythonScript(script, &error,NULL);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
-    assert(success);
-    Q_UNUSED(success);
+    assert(ok);
+    if (!ok) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): interpretPythonScript("+script+") failed!");
+    }
 }
 
 
@@ -1904,7 +1906,7 @@ void
 KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
-	return;
+    return;
 #endif
     assert(dimension >= 0 && dimension < getDimension());
     

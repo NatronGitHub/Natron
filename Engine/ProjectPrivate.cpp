@@ -346,9 +346,12 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 std::string filePath = filename;
                 if (ret) {
                     filePath = PY3String_asString(ret);
-                    bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
+                    std::string script = "del ret\n";
+                    bool ok = Natron::interpretPythonScript(script, &err, 0);
                     assert(ok);
-                    Q_UNUSED(ok);
+                    if (!ok) {
+                        throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript("+script+") failed!");
+                    }
                 }
                 if (!output.empty()) {
                     _publicInterface->getApp()->appendToScriptEditor(output);
