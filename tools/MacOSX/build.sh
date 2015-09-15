@@ -115,6 +115,14 @@ LOGDIR="$CWD/logs"
 rm -rf $LOGDIR
 mkdir -p $LOGDIR || exit 1
 
+#If OpenColorIO-Configs do not exist, download them
+if [ ! -d "$TMP/OpenColorIO-Configs" ]; then
+    wget $GIT_OCIO_CONFIG_TAR -O $TMP/OpenColorIO-Configs.tar.gz || exit 1
+    tar xvf $TMP/OpenColorIO-Configs.tar.gz || exit 1
+    rm $TMP/OpenColorIO-Configs.tar.gz || exit 1
+    mv $TMP/OpenColorIO-Configs* $TMP/OpenColorIO-Configs || exit 1
+fi
+
 
 PLUGINDIR="$CWD/build/Natron/App/Natron.app/Contents/Plugins"
 NATRONLOG="$LOGDIR/Natron-$TAG.log"

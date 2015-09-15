@@ -70,6 +70,11 @@ Then this page has a complete answer on how to compile the dependencies:
 http://stackoverflow.com/questions/85622/how-to-compile-cairo-for-visual-c-2008-express-edition
 This will work successfully.
 
+###Download OpenColorIO-Configs
+
+In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+Place it at the root of Natron repository.
 
 
 ###Add the config.pri file

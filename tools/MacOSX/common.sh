@@ -17,6 +17,8 @@ GIT_MISC=https://github.com/devernay/openfx-misc.git
 GIT_OPENCV=https://github.com/devernay/openfx-opencv.git
 GIT_ARENA=https://github.com/olear/openfx-arena.git
 
+GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
+
 TMP=$CWD/tmp
 
 PKGOS=OSX

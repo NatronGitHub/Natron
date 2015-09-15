@@ -76,6 +76,12 @@ this in your .bash_profile):
 	
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
 	
+###Download OpenColorIO-Configs
+
+In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+Place it at the root of Natron repository.
+
 ## Add the config.pri file
 
 You have to define the locations of the required libraries.

@@ -40,6 +40,7 @@ PACKAGES=$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$AREN
 
 
 # bump number when OpenColorIO-Configs changes
+GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
 COLOR_PROFILES_VERSION=2.0
 
 

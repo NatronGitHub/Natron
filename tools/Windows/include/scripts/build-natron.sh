@@ -121,10 +121,15 @@ if [ -f CrashReporter/release/NatronCrashReporter.exe ]; then
 fi
 
 
-#Remove all git related stuff before installing color profiles
-(cd ../Gui/Resources/OpenColorIO-Configs ; find . -type d -name .git -exec rm -rf {} \;)
+#If OpenColorIO-Configs do not exist, download them
+if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
+    wget $GIT_OCIO_CONFIG_TAR -O $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
+    tar xvf $TMP_PATH/OpenColorIO-Configs.tar.gz || exit 1
+    rm $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
+    mv $SRC_PATH/OpenColorIO-Configs* $SRC_PATH/OpenColorIO-Configs || exit 1
+fi
 
-cp -a ../Gui/Resources/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1
+cp -a $TMP_PATH/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1
 mkdir -p $INSTALL_PATH/docs/natron || exit 1
 cp ../LICENSE.txt ../README* ../BUGS* ../CONTRI* ../Documentation/* $INSTALL_PATH/docs/natron/
 mkdir -p $INSTALL_PATH/share/stylesheets || exit 1
