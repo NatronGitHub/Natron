@@ -42,7 +42,7 @@ fi
 echo $PID > /tmp/natron-cron.pid || exit 1
 
 # Build (if changes)
-scl enable devtoolset-2 - << EOF
+scl enable devtoolset-3 - << EOF
 cd /root/Natron/tools/linux
 TAG=`date +%Y%m%d%H%M`
 NO_LOOP=1 bash snapshot.sh >/tmp/natron-build-$TAG.log 2>&1

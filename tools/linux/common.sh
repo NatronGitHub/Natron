@@ -162,10 +162,10 @@ XVID_TAR=xvidcore-1.3.4.tar.gz #GPL-only
 
 # GCC version
 #
-# Check for minimal required GCC version (4.8)
+# Check for minimal required GCC version (4.9)
 
 GCC_V=`gcc --version | awk '/gcc /{print $0;exit 0;}' | awk '{print $3}' | sed 's#\.# #g' | awk '{print $2}'`
-if [ "$GCC_V" -lt "8" ]; then
+if [ "$GCC_V" -lt "9" ]; then
   echo "Wrong GCC version. Run ${INC_PATH}/scripts/setup-gcc.sh"
   exit 1
 fi
