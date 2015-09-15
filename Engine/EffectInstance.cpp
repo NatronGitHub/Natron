@@ -1541,11 +1541,6 @@ EffectInstance::getImage(int inputNb,
     }
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
     
-    if (std::abs(inputImg->getPixelAspectRatio() - par) > 1e-6) {
-        qDebug() << "WARNING: " << getScriptName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
-        " but " << n->getScriptName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
-    }
-    
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it because it is really low def!
     if ( !dontUpscale  && renderFullScaleThenDownscale && inputImgMipMapLevel != 0 ) {
@@ -2616,8 +2611,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
                 
+
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
-                
+               
             } else {
                 assert(outputPlanes->empty());
             }

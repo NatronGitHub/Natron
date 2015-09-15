@@ -1323,6 +1323,13 @@ Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
     return sizeOfTo < sizeOfFrom;
 }
 
+double
+Image::getPixelAspectRatio() const
+{
+    return this->_par;
+}
+
+
 unsigned int
 Image::getRowElements() const
 {

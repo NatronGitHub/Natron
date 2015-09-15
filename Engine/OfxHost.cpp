@@ -227,8 +227,8 @@ Natron::OfxHost::setProperties()
     //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextWriter, 5 );
 
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 1);
+    _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 1);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );
     _properties.setIntProperty( kOfxParamHostPropSupportsStringAnimation, KnobString::canAnimateStatic() );

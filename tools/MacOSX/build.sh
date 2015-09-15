@@ -29,7 +29,7 @@
 source `pwd`/common.sh || exit 1
 
 # required macports ports (first ones are for Natron, then for OFX plugins)
-PORTS="boost qt4-mac glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside"
+PORTS="boost qt4-mac glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside wget"
 if [ "$COMPILER" = "gcc" ]; then
     PORTS="$PORTS gcc48"
 else
@@ -118,10 +118,10 @@ mkdir -p $LOGDIR || exit 1
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$TMP/OpenColorIO-Configs" ]; then
-    wget $GIT_OCIO_CONFIG_TAR -O $TMP/OpenColorIO-Configs.tar.gz || exit 1
-    tar xvf $TMP/OpenColorIO-Configs.tar.gz || exit 1
-    rm $TMP/OpenColorIO-Configs.tar.gz || exit 1
-    mv $TMP/OpenColorIO-Configs* $TMP/OpenColorIO-Configs || exit 1
+    wget $GIT_OCIO_CONFIG_TAR -O "$TMP/OpenColorIO-Configs.tar.gz" || exit 1
+    (cd "$TMP"; tar xf OpenColorIO-Configs.tar.gz) || exit 1
+    rm "$TMP/OpenColorIO-Configs.tar.gz" || exit 1
+    mv "$TMP/OpenColorIO-Configs"* "$TMP/OpenColorIO-Configs" || exit 1
 fi
 
 

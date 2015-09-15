@@ -309,10 +309,7 @@ namespace Natron {
             return this->_bitDepth;
         }
         
-        double getPixelAspectRatio() const
-        {
-            return this->_par;
-        }
+        double getPixelAspectRatio() const;
         
         
         /**
