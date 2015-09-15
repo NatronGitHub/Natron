@@ -222,3 +222,4 @@ Renderer/NatronRenderer
 CrashReporterCLI/NatronRendererCrashReporter
 *repo.sh*
 *local.sh*
+OpenColorIO-Configs
