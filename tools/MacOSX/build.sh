@@ -117,7 +117,7 @@ mkdir -p $LOGDIR || exit 1
 
 
 PLUGINDIR="$CWD/build/Natron/App/Natron.app/Contents/Plugins"
-NATRONLOG="$LOGDIR/natron.MacOSX-Universal.$TAG.log"
+NATRONLOG="$LOGDIR/Natron-$TAG.txt"
 
 echo "Building Natron..."
 echo
@@ -131,7 +131,7 @@ else
     cat "$NATRONLOG"
 fi
 
-PLUGINSLOG="$LOGDIR/plugins.MacOSX-Universal.$TAG.log"
+PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.txt"
 if [ "$FAIL" != "1" ]; then
     echo "Building plug-ins..."
     echo
@@ -153,12 +153,13 @@ else
     UPLOAD_BRANCH=releases
 fi
 
-INSTALLERLOG="$LOGDIR/installer.MacOSX-Universal.$TAG.log"
+INSTALLERLOG="$LOGDIR/Natron-$TAG-${NATRON_V}-installer.txt"
+NATRONDMG="$CWD/build/Natron-$TAG-${NATRON_V}.dmg"
 if [ "$FAIL" != "1" ]; then
     echo "Building installer..."
     echo
     ./build-installer.sh >& "$INSTALLERLOG" || FAIL=1
-    mv "$CWD/build/Natron.dmg" "$CWD/build/Natron-${NATRON_V}.dmg" || FAIL=1
+    mv "$CWD/build/Natron.dmg" "$NATRONDMG" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
@@ -168,13 +169,10 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-NATRONDMG="$CWD/build/Natron-${NATRON_V}.dmg"
-NATRONLOGNEW="$LOGDIR/Natron-${NATRON_V}.txt"
-PLUGINSLOGNEW="$LOGDIR/Natron-${NATRON_V}-plugins.txt"
-INSTALLERLOGNEW="$LOGDIR/Natron-${NATRON_V}-installer.txt"
+NATRONLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}.txt"
+PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}-plugins.txt"
 mv "$NATRONLOG" "$NATRONLOGNEW"
 mv "$PLUGINSLOG" "$PLUGINSLOGNEW"
-mv "$INSTALLERLOG" "$INSTALLERLOGNEW"
 
 if [ "$UPLOAD" == "1" ]; then
     if [ "$FAIL" != "1" ]; then
