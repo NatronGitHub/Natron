@@ -117,7 +117,7 @@ mkdir -p $LOGDIR || exit 1
 
 
 PLUGINDIR="$CWD/build/Natron/App/Natron.app/Contents/Plugins"
-NATRONLOG="$LOGDIR/Natron-$TAG.txt"
+NATRONLOG="$LOGDIR/Natron-$TAG.log"
 
 echo "Building Natron..."
 echo
@@ -131,7 +131,7 @@ else
     cat "$NATRONLOG"
 fi
 
-PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.txt"
+PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.log"
 if [ "$FAIL" != "1" ]; then
     echo "Building plug-ins..."
     echo
@@ -153,7 +153,7 @@ else
     UPLOAD_BRANCH=releases
 fi
 
-INSTALLERLOG="$LOGDIR/Natron-$TAG-${NATRON_V}-installer.txt"
+INSTALLERLOG="$LOGDIR/Natron-$TAG-${NATRON_V}-installer.log"
 NATRONDMG="$CWD/build/Natron-$TAG-${NATRON_V}.dmg"
 if [ "$FAIL" != "1" ]; then
     echo "Building installer..."
@@ -169,8 +169,8 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-NATRONLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}.txt"
-PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}-plugins.txt"
+NATRONLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}.log"
+PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}-plugins.log"
 mv "$NATRONLOG" "$NATRONLOGNEW"
 mv "$PLUGINSLOG" "$PLUGINSLOGNEW"
 

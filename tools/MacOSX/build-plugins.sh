@@ -79,6 +79,7 @@ if [ "$COMPILER" = "gcc" ]; then
 	for plugin in "$PLUGINDIR"/*.ofx.bundle; do
 	    if [ -f "$plugin"/Contents/Libraries/"$lib" ]; then
 		rm -f "$plugin"/Contents/Libraries/"$lib"
+		ln -s ../../../../Frameworks/"$lib" "$plugin"/Contents/Libraries/"$lib"
 	    fi
 	    for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
 		install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
