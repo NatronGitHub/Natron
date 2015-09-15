@@ -32,18 +32,19 @@
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 
-#include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
-#include "Engine/NodeSerialization.h"
-#include "Engine/TimeLine.h"
-#include "Engine/EffectInstance.h"
-#include "Engine/Project.h"
-#include "Engine/Node.h"
-#include "Engine/ProjectSerialization.h"
-#include "Engine/OfxEffectInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/ViewerInstance.h"
+#include "Engine/AppManager.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/Project.h"
+#include "Engine/ProjectSerialization.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
+#include "Engine/TimeLine.h"
+#include "Engine/ViewerInstance.h"
 
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)

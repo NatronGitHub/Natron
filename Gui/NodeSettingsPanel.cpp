@@ -36,6 +36,7 @@
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/RotoLayer.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"

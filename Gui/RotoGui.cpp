@@ -48,13 +48,17 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
+#include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoPoint.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 

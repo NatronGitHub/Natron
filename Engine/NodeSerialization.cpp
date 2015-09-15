@@ -28,7 +28,7 @@
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/RotoSerialization.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 

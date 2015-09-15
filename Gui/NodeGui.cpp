@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 

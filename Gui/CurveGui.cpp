@@ -32,6 +32,7 @@
 #include <QtCore/QCoreApplication>
 #include <QDebug>
 
+#include "Engine/Bezier.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoContext.h" // Bezier

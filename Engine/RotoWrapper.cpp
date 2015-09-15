@@ -24,11 +24,13 @@
 
 #include "RotoWrapper.h"
 
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
-#include "Engine/RotoContext.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
+#include "Engine/RotoLayer.h"
 
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)

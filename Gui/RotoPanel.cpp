@@ -46,12 +46,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Bezier.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h" // for getCompositingOperators
+#include "Engine/RotoLayer.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/Button.h"

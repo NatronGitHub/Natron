@@ -78,6 +78,7 @@ SOURCES += \
     AppManager.cpp \
     AppManagerPrivate.cpp \
     BackDrop.cpp \
+    Bezier.cpp \
     BezierCP.cpp \
     BlockingBackgroundRender.cpp \
     CLArgs.cpp \
@@ -144,9 +145,12 @@ SOURCES += \
     RectI.cpp \
     RenderStats.cpp \
     RotoContext.cpp \
+    RotoDrawableItem.cpp \
+    RotoItem.cpp \
+    RotoLayer.cpp \
     RotoPaint.cpp \
-    RotoSerialization.cpp  \
     RotoSmear.cpp \
+    RotoStrokeItem.cpp \
     RotoWrapper.cpp \
     ScriptObject.cpp \
     Settings.cpp \
@@ -204,6 +208,8 @@ HEADERS += \
     AppManager.h \
     AppManagerPrivate.h \
     BackDrop.h \
+    Bezier.h \
+    BezierSerialization.h \
     BezierCP.h \
     BezierCPPrivate.h \
     BezierCPSerialization.h \
@@ -295,9 +301,18 @@ HEADERS += \
     RenderStats.h \
     RotoContext.h \
     RotoContextPrivate.h \
+    RotoContextSerialization.h \
+    RotoDrawableItem.h \
+    RotoDrawableItemSerialization.h \
+    RotoLayer.h \
+    RotoLayerSerialization.h \
+    RotoItem.h \
+    RotoItemSerialization.h \
     RotoPaint.h \
-    RotoSerialization.h \
+    RotoPoint.h \
     RotoSmear.h \
+    RotoStrokeItem.h \
+    RotoStrokeItemSerialization.h \
     RotoWrapper.h \
     ScriptObject.h \
     Settings.h \

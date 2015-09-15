@@ -36,6 +36,7 @@
 #include <QDesktopWidget>
 
 #include "Engine/NodeSerialization.h"
+#include "Engine/RotoLayer.h"
 
 #include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"

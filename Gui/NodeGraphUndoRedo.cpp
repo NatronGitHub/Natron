@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 

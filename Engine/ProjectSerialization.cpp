@@ -24,9 +24,10 @@
 
 #include "ProjectSerialization.h"
 
-#include "Engine/TimeLine.h"
-#include "Engine/Project.h"
 #include "Engine/AppManager.h"
+#include "Engine/Project.h"
+#include "Engine/RotoLayer.h"
+#include "Engine/TimeLine.h"
 
 
 void

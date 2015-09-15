@@ -38,18 +38,20 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QThread>
 #include <QCoreApplication>
 
+#include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
-#include "Engine/KnobFile.h"
-#include "Engine/Transform.h"
-#include "Engine/AppInstance.h"
-#include "Engine/RotoContext.h"
-#include "Engine/Node.h"
-#include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/Image.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Format.h"
+#include "Engine/Image.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
+#include "Engine/TimeLine.h"
+#include "Engine/Transform.h"
+
 using namespace Natron;
 using std::make_pair;
 using std::pair;

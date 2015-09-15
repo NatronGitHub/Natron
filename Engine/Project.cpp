@@ -65,22 +65,23 @@
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
 
-#include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
 #include "Engine/BezierCPSerialization.h"
-#include "Engine/ProjectPrivate.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/Hash64.h"
-#include "Engine/Node.h"
-#include "Engine/ViewerInstance.h"
-#include "Engine/ProjectSerialization.h"
-#include "Engine/Settings.h"
-#include "Engine/KnobFile.h"
-#include "Engine/StandardPaths.h"
-#include "Engine/OutputSchedulerThread.h"
 #include "Engine/FormatSerialization.h"
-#include "Engine/RectISerialization.h"
+#include "Engine/Hash64.h"
+#include "Engine/KnobFile.h"
+#include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/ProjectPrivate.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/RectDSerialization.h"
+#include "Engine/RectISerialization.h"
+#include "Engine/RotoLayer.h"
+#include "Engine/Settings.h"
+#include "Engine/StandardPaths.h"
+#include "Engine/ViewerInstance.h"
 
 using std::cout; using std::endl;
 using std::make_pair;

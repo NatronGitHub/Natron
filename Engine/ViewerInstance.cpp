@@ -23,6 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "ViewerInstance.h"
+#include "ViewerInstancePrivate.h"
 
 #include <algorithm> // min, max
 
@@ -42,28 +43,28 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/MemoryInfo.h"
-#include "Engine/Node.h"
-#include "Engine/ImageInfo.h"
-#include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
-#include "Engine/MemoryFile.h"
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/ImageInfo.h"
-#include "Engine/TimeLine.h"
+#include "Engine/AppManager.h"
 #include "Engine/Cache.h"
+#include "Engine/Image.h"
+#include "Engine/ImageInfo.h"
+#include "Engine/ImageInfo.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
-#include "Engine/Settings.h"
-#include "Engine/Project.h"
+#include "Engine/MemoryFile.h"
+#include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OpenGLViewerI.h"
-#include "Engine/Image.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/Project.h"
+#include "Engine/RenderStats.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/RenderStats.h"
+#include "Engine/RotoStrokeItem.h"
+#include "Engine/Settings.h"
+#include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 
-#include "ViewerInstancePrivate.h"
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */

@@ -29,6 +29,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
+#include "Engine/RotoLayer.h"
 
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"

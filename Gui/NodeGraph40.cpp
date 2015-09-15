@@ -28,6 +28,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackDropGui.h"

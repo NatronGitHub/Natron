@@ -73,6 +73,9 @@ class NodeGui;
 
 #define SLIDER_MAX_RANGE 100000
 
+//Define this if you want the spinbox to clamp to the plugin defined range
+//#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
+
 struct KnobGuiPrivate;
 
 class KnobGui

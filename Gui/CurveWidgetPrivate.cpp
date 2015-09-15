@@ -31,9 +31,9 @@
 #include <QApplication>
 #include <QDebug>
 
+#include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Settings.h"
-#include "Engine/RotoContext.h" // Bezier
 #include "Engine/Image.h" // Natron::clamp
 
 #include "Gui/ActionShortcuts.h"

@@ -48,8 +48,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 
-//Define this if you want the spinbox to clamp to the plugin defined range
-//#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 
 // Qt
 class QString;

@@ -35,8 +35,8 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
+#include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/RotoContext.h" // Bezier
 #include "Engine/Transform.h" // Point3D
 
 using namespace Natron;

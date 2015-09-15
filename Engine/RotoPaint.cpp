@@ -31,6 +31,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoDrawableItem.h"
 #include "Engine/TimeLine.h"
 
 using namespace Natron;

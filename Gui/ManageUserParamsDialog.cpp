@@ -25,101 +25,29 @@
 #include "ManageUserParamsDialog.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-//#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-//#include <boost/scoped_ptr.hpp>
 #endif
 
-//#include <cfloat>
-//#include <iostream>
-//#include <fstream>
-//#include <QLayout>
-//#include <QAction>
-//#include <QApplication>
-//#include <QTabWidget>
-//#include <QStyle>
-//#include <QUndoStack>
-//#include <QGridLayout>
-//#include <QUndoCommand>
-//#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-//#include <QDebug>
-//#include <QToolTip>
-//#include <QHeaderView>
-//#include <QMutex>
 #include <QTreeWidget>
-//#include <QCheckBox>
 #include <QHeaderView>
-//#include <QColorDialog>
-//#include <QTimer>
-//GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-//// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-//#include <QPaintEvent>
-//GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-//#include <QPainter>
-//#include <QImage>
-//#include <QToolButton>
-//#include <QDialogButtonBox>
-//
-//#include <ofxNatron.h>
-//
-//GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-//GCC_DIAG_OFF(unused-parameter)
-//// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-//#include <boost/archive/xml_iarchive.hpp>
-//#include <boost/archive/xml_oarchive.hpp>
-//GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-//GCC_DIAG_ON(unused-parameter)
-//#include <boost/serialization/utility.hpp>
-//
-//#include "Engine/BackDrop.h"
-//#include "Engine/EffectInstance.h"
-//#include "Engine/Image.h"
+
 #include "Engine/Knob.h" // KnobI
 #include "Engine/KnobTypes.h" // KnobPage
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodePtr
-//#include "Engine/NodeSerialization.h"
-//#include "Engine/Plugin.h"
-//#include "Engine/Project.h"
-//#include "Engine/Settings.h"
-//
-//#include "Gui/ActionShortcuts.h"
+
 #include "Gui/AddKnobDialog.h"
 #include "Gui/Button.h"
-//#include "Gui/ClickableLabel.h"
-//#include "Gui/ComboBox.h"
-//#include "Gui/CurveEditorUndoRedo.h"
-//#include "Gui/CurveGui.h"
 #include "Gui/DockablePanel.h"
-//#include "Gui/DopeSheetEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
-//#include "Gui/GuiApplicationManager.h"
-//#include "Gui/GuiMacros.h"
-//#include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
-//#include "Gui/KnobGuiFactory.h"
-////#include "Gui/KnobGuiGroup.h"
-//#include "Gui/KnobUndoCommand.h"
-//#include "Gui/LineEdit.h"
-//#include "Gui/Menu.h"
-//#include "Gui/MultiInstancePanel.h"
-//#include "Gui/NodeCreationDialog.h"
-//#include "Gui/NodeGraph.h"
-//#include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PickKnobDialog.h"
-//#include "Gui/RightClickableWidget.h"
-//#include "Gui/RotoPanel.h"
-//#include "Gui/SpinBox.h"
-//#include "Gui/TabGroup.h"
-//#include "Gui/TabWidget.h"
 #include "Gui/Utils.h" // convertFromPlainText
-//#include "Gui/ViewerGL.h"
-//#include "Gui/ViewerTab.h"
 
 namespace {
 struct TreeItem

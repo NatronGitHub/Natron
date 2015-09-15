@@ -30,60 +30,26 @@
 
 #include <QtCore/QDebug>
 
-//#include <QApplication>
-//#include <QSlider>
-//#include <QComboBox>
-//#include <QHBoxLayout>
-//#include <QSpacerItem>
-//#include <QGridLayout>
-//#include <QGroupBox>
 #include <QVBoxLayout>
-//#include <QAbstractItemView>
 #include <QCheckBox>
-//#include <QTimer>
-//#include <QCoreApplication>
 #include <QToolBar>
-//GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-//// /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-//#include <QtGui/QKeyEvent>
-//GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-//#include <QtGui/QKeySequence>
-//#include <QTextDocument>
-//
-//#include <boost/weak_ptr.hpp>
-//
-//#include "Engine/Node.h"
-//#include "Engine/OutputSchedulerThread.h" // RenderEngine
-//#include "Engine/Project.h"
+
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
-//#include "Engine/TimeLine.h"
-//#include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
 
-//#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
-//#include "Gui/ClickableLabel.h"
-//#include "Gui/ComboBox.h"
-//#include "Gui/DopeSheet.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
-//#include "Gui/GuiApplicationManager.h" // appPTR
-//#include "Gui/GuiMacros.h"
 #include "Gui/InfoViewerWidget.h"
-//#include "Gui/Label.h"
 #include "Gui/MultiInstancePanel.h"
-//#include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
-//#include "Gui/QtEnumConvert.h"
 #include "Gui/RotoGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
-//#include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/TrackerGui.h"
-//#include "Gui/Utils.h"
 #include "Gui/ViewerGL.h"
 
 

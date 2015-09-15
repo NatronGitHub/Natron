@@ -41,17 +41,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 
-//#include "Engine/AppManager.h"
-//#include "Engine/CurveSerialization.h"
-//#include "Engine/KnobSerialization.h"
-
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
 #define BEZIER_CP_VERSION BEZIER_CP_FIX_BUG_CURVE_POINTER
 
-
-//BOOST_SERIALIZATION_SPLIT_MEMBER()
-// split member function serialize funcition into save/load
 template<class Archive>
 void
 BezierCP::serialize(Archive &ar,

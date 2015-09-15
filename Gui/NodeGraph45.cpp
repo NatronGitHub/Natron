@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 

@@ -30,6 +30,7 @@
 #include "Engine/Settings.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 

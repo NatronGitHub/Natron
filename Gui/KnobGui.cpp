@@ -30,7 +30,6 @@
 #include <boost/weak_ptr.hpp>
 
 #include "Gui/GuiDefines.h"
-//#include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
 using namespace Natron;
 

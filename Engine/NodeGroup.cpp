@@ -35,6 +35,7 @@
 #include <QtCore/QTextStream>
 
 #include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/GroupInput.h"
@@ -49,6 +50,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"

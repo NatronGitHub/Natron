@@ -32,16 +32,22 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/FeatherPoint.h"
-#include "Engine/RotoContext.h"
-#include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/Project.h"
 #include "Engine/Node.h"
-#include "Gui/RotoGui.h"
+#include "Engine/Project.h"
+#include "Engine/RotoContext.h"
+#include "Engine/RotoLayer.h"
+#include "Engine/RotoStrokeItem.h"
+#include "Engine/Transform.h"
+
 #include "Gui/GuiAppInstance.h"
+#include "Gui/RotoGui.h"
 #include "Gui/RotoPanel.h"
+
 
 
 using namespace Natron;

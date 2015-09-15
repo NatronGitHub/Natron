@@ -29,7 +29,7 @@
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/RotoContext.h"
+#include "Engine/RotoStrokeItem.h"
 
 using namespace Natron;
 

@@ -37,7 +37,6 @@
 
 #include "Engine/Knob.h" // KnobI
 #include "Engine/NodeGroupWrapper.h" // Goup
-//#include "Engine/ParameterWrapper.h"
 #include "Engine/RectD.h"
 
 namespace Natron {

@@ -42,7 +42,7 @@ GCC_DIAG_ON(sign-compare)
 #include <boost/serialization/version.hpp>
 #endif
 #include "Engine/KnobSerialization.h"
-#include "Engine/RotoSerialization.h"
+#include "Engine/RotoContextSerialization.h"
 #include "Engine/ImageParamsSerialization.h"
 #include "Engine/AppManager.h"
 
@@ -63,6 +63,8 @@ namespace Natron {
 class Node;
 }
 class AppInstance;
+
+
 class NodeSerialization
 {
 public:
