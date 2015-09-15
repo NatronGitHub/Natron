@@ -76,7 +76,7 @@ install:
         exit 0;
     fi
   - tools/travis/install_dependencies.sh
-  - curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar xf -
+  - curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar zxf -
   - mv OpenColorIO-Configs-Natron-v2.0 OpenColorIO-Configs
 
 # OSX build will timeout if we redirect its output
