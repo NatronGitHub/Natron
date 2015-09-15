@@ -62,7 +62,7 @@ PYV=2 # Python 2 or 3
 # Common values
 #
 
-CWD=$(pwd)
+CWD=`pwd`
 TMP_DIR=/tmp
 TMP_PATH=$CWD/tmp
 SRC_PATH=$CWD/src
@@ -71,10 +71,10 @@ INC_PATH=$CWD/include
 
 # Keep existing tag, else make a new one
 if [ -z "$TAG" ]; then
-  TAG=$(date +%Y%m%d%H%M)
+  TAG=`date +%Y%m%d%H%M`
 fi
 
-OS=$(uname -o)
+OS=`uname -o`
 REPO_DIR_PREFIX=$CWD/build_
 
 
@@ -163,7 +163,7 @@ XVID_TAR=xvidcore-1.3.4.tar.gz #GPL-only
 #
 # Check for minimal required GCC version (4.8)
 
-GCC_V=$(gcc --version | awk '/gcc /{print $0;exit 0;}' | awk '{print $3}' | sed 's#\.# #g' | awk '{print $2}')
+GCC_V=`gcc --version | awk '/gcc /{print $0;exit 0;}' | awk '{print $3}' | sed 's#\.# #g' | awk '{print $2}'`
 if [ "$GCC_V" -lt "8" ]; then
   echo "Wrong GCC version. Run ${INC_PATH}/scripts/setup-gcc.sh"
   exit 1
@@ -177,8 +177,8 @@ if [ ! -f /etc/redhat-release ]; then
   echo "Wrong distro, stupid :P"
   exit 1
 else
-  RHEL_MAJOR=$(cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1)
-  RHEL_MINOR=$(cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2)
+  RHEL_MAJOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1`
+  RHEL_MINOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2`
   if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
     echo "Wrong distro version, 6.4 only at the moment!"
     exit 1
@@ -190,9 +190,9 @@ fi
 # Default build flags
 
 if [ -z "$ARCH" ]; then
-  case "$( uname -m )" in
+  case `uname -m` in
     i?86) export ARCH=i686 ;;
-       *) export ARCH=$( uname -m ) ;;
+       *) export ARCH=`uname -m` ;;
   esac
 fi
 if [ "$ARCH" = "i686" ]; then

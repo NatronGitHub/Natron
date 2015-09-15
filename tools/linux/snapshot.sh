@@ -28,12 +28,12 @@
 #Easier to debug
 set -x
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-snapshot.pid ]; then
-  OLDPID=$(cat $TMP_DIR/natron-build-snapshot.pid)
-  PIDS=$(ps aux|awk '{print $2}')
+  OLDPID=`cat $TMP_DIR/natron-build-snapshot.pid`
+  PIDS=`ps aux|awk '{print $2}'`
   for i in $PIDS;do
     if [ "$i" == "$OLDPID" ]; then
       echo "already running ..."
@@ -44,7 +44,7 @@ fi
 echo $PID > $TMP_DIR/natron-build-snapshot.pid || exit 1
 
 
-CWD=$(pwd)
+CWD=`pwd`
 TMP=$CWD/.autobuild
 
 if [ ! -f $CWD/commits-hash.sh ]; then
@@ -116,7 +116,7 @@ BUILD_NATRON=0
 cd $TMP/Natron 
 git fetch --all || FAIL=1
 git merge origin/workshop || FAIL=1
-GITV_NATRON=$(git log|head -1|awk '{print $2}')
+GITV_NATRON=`git log|head -1|awk '{print $2}'`
 ORIG_NATRON=$NATRON_DEVEL_GIT
 echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
 if [ "$GITV_NATRON" != "$ORIG_NATRON" ] && [ "$FAIL" != "1" ]; then
@@ -128,7 +128,7 @@ if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-io
   git fetch --all || FAIL=1
   git merge origin/master || FAIL=1
-  GITV_IO=$(git log|head -1|awk '{print $2}')
+  GITV_IO=`git log|head -1|awk '{print $2}'`
   ORIG_IO=$IOPLUG_DEVEL_GIT
   echo "IO $GITV_IO vs. $ORIG_IO"
   if [ "$GITV_IO" != "$ORIG_IO" ] && [ "$FAIL" != "1" ]; then
@@ -141,7 +141,7 @@ if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-misc
   git fetch --all || FAIL=1
   git merge origin/master || FAIL=1
-  GITV_MISC=$(git log|head -1|awk '{print $2}')
+  GITV_MISC=`git log|head -1|awk '{print $2}'`
   ORIG_MISC=$MISCPLUG_DEVEL_GIT
   echo "Misc $GITV_MISC vs. $ORIG_MISC"
   if [ "$GITV_MISC" != "$ORIG_MISC" ] && [ "$FAIL" != "1" ]; then
@@ -154,7 +154,7 @@ if [ "$FAIL" != "1" ]; then
   cd $TMP/openfx-arena
   git fetch --all || FAIL=1
   git merge origin/master || FAIL=1
-  GITV_ARENA=$(git log|head -1|awk '{print $2}')
+  GITV_ARENA=`git log|head -1|awk '{print $2}'`
   ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
   echo "Arena $GITV_ARENA vs. $ORIG_ARENA"
   if [ "$GITV_ARENA" != "$ORIG_ARENA" ] && [ "$FAIL" != "1" ]; then
@@ -167,7 +167,7 @@ BUILD_OPENCV=0
 #  cd $TMP/openfx-opencv
 #  git fetch --all || FAIL=1
 #  git merge origin/master || FAIL=1
-#  GITV_CV=$(git log|head -1|awk '{print $2}')
+#  GITV_CV=`git log|head -1|awk '{print $2}'`
 #  ORIG_CV=$CVPLUG_DEVEL_GIT
 #  echo "CV $GITV_CV vs. $ORIG_CV"
 #  if [ "$GITV_CV" != "$ORIG_CV" ] && [ "$FAIL" != "1" ]; then
