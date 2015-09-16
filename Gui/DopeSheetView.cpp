@@ -728,7 +728,9 @@ void DopeSheetViewPrivate::generateKeyframeTextures()
     glEnable(GL_TEXTURE_2D);
     
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
-        kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (std::max(kfTexturesImages[i].width(), kfTexturesImages[i].height()) != KF_PIXMAP_SIZE) {
+            kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
         kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
         glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
         

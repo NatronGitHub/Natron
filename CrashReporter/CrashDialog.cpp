@@ -18,6 +18,7 @@
 
 #include "CrashDialog.h"
 
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 
@@ -131,7 +132,9 @@ CrashDialog::CrashDialog(const QString &filePath)
     _gridLayout = new QGridLayout(_mainFrame);
     
     QPixmap pix(":Resources/Images/natronIcon256_linux.png");
-    pix = pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    if (std::max(pix.width(), pix.height()) != 64) {
+        pix = pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
 
     _iconLabel = new QLabel(_mainFrame);
     _iconLabel->setPixmap(pix);

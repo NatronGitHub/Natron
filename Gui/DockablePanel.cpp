@@ -185,7 +185,10 @@ DockablePanel::DockablePanel(Gui* gui ,
                
                 QPixmap ic;
                 if (ic.load(iconFilePath.c_str())) {
-                    ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+                    int size = NATRON_MEDIUM_BUTTON_ICON_SIZE;
+                    if (std::max(ic.width(), ic.height()) != size) {
+                        ic = ic.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    }
                     _imp->_iconLabel->setPixmap(ic);
                 } else {
                     _imp->_iconLabel->hide();

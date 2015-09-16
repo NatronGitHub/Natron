@@ -477,8 +477,10 @@ void HierarchyViewPrivate::drawPluginIconArea(QPainter *p, boost::shared_ptr<DSN
         QPixmap pix;
 
         if (pix.load(iconFilePath.c_str())) {
-            pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
-                             Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            if (std::max(pix.width(), pix.height()) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+                pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
+                                 Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
 
             QRect areaRect = rowRect;
             areaRect.setWidth(pix.width() + 4);

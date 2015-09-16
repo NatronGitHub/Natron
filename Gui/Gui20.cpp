@@ -98,39 +98,40 @@ using namespace Natron;
 namespace {
 static void
 getPixmapForGrouping(QPixmap* pixmap,
+                     int size,
                      const QString & grouping)
 {
+    Natron::PixmapEnum e = Natron::NATRON_PIXMAP_OTHER_PLUGINS;
     if (grouping == PLUGIN_GROUP_COLOR) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_COLOR_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_COLOR_GROUPING;
     } else if (grouping == PLUGIN_GROUP_FILTER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_FILTER_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_FILTER_GROUPING;
     } else if (grouping == PLUGIN_GROUP_IMAGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_IO_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_IO_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TRANSFORM_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_TRANSFORM_GROUPING;
     } else if (grouping == PLUGIN_GROUP_DEEP) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_DEEP_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_DEEP_GROUPING;
     } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TIME) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TIME_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_TIME_GROUPING;
     } else if (grouping == PLUGIN_GROUP_PAINT) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_PAINT_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_PAINT_GROUPING;
     } else if (grouping == PLUGIN_GROUP_OTHER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MISC_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_MISC_GROUPING;
     } else if (grouping == PLUGIN_GROUP_KEYER) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_KEYER_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_KEYER_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_TOOLSETS_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_TOOLSETS_GROUPING;
     } else if (grouping == PLUGIN_GROUP_3D) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_3D_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_3D_GROUPING;
     } else if (grouping == PLUGIN_GROUP_CHANNEL) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_CHANNEL_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_CHANNEL_GROUPING;
     } else if (grouping == PLUGIN_GROUP_MERGE) {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GROUPING, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
-    } else {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_OTHER_PLUGINS, NATRON_LARGE_BUTTON_ICON_SIZE, pixmap);
+        e = Natron::NATRON_PIXMAP_MERGE_GROUPING;
     }
+    appPTR->getIcon(e, size, pixmap);
 }
 }
 
@@ -756,15 +757,15 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     QIcon icon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        if (pix.width() != NATRON_MEDIUM_BUTTON_ICON_SIZE || pix.height() != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
-            pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        if (std::max(pix.width(), pix.height()) != NATRON_TOOL_BUTTON_ICON_SIZE) {
+            pix = pix.scaled(NATRON_TOOL_BUTTON_ICON_SIZE, NATRON_TOOL_BUTTON_ICON_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         icon.addPixmap(pix);
     } else {
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {
             QPixmap pix;
-            getPixmapForGrouping( &pix, plugin->getLabel() );
+            getPixmapForGrouping( &pix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
             icon.addPixmap(pix);
         }
     }

@@ -589,7 +589,10 @@ NodeGui::createGui()
             _pluginIconFrame = new QGraphicsRectItem(this);
             _pluginIconFrame->setZValue(depth);
             _pluginIconFrame->setBrush(QColor(50,50,50));
-            pix = pix.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+            int size = NATRON_PLUGIN_ICON_SIZE;
+            if (std::max(pix.width(), pix.height()) != size) {
+                pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
             _pluginIcon->setPixmap(pix);
         }
     }
@@ -3602,7 +3605,10 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
-    p = p.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    int size = NATRON_PLUGIN_ICON_SIZE;
+    if (std::max(p.width(), p.height()) != size) {
+        p = p.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
 
     if (getSettingPanel()) {
         getSettingPanel()->setPluginIcon(p);
