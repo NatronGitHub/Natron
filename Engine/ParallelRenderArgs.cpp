@@ -40,7 +40,6 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             const RoIMap& inputRois,
                                                                             const std::map<int, Natron::EffectInstance*>& reroutesMap,
                                                                             bool useTransforms, // roi functor specific
-                                                                            const RectI* originalRenderWindow, // roi functor specific
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             const boost::shared_ptr<Natron::Node>& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
@@ -202,7 +201,6 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                                                    originalMipMapLevel,
                                                                                                    inputNode,
                                                                                                    treeRoot,
-                                                                                                   *originalRenderWindow,
                                                                                                    roi,
                                                                                                    *requests);
                                     
@@ -295,7 +293,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                                 unsigned originalMipMapLevel,
                                                                 const boost::shared_ptr<Natron::Node>& node,
                                                                 const boost::shared_ptr<Natron::Node>& treeRoot,
-                                                                const RectI& originalRenderWindow,
                                                                 const RectD& canonicalRenderWindow,
                                                                 FrameRequestMap& requests)
 {
@@ -398,7 +395,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                            originalMipMapLevel,
                                                            node,
                                                            treeRoot,
-                                                           originalRenderWindow,
                                                            canonicalRenderWindow,
                                                            requests);
                     return stat;
@@ -414,7 +410,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                        originalMipMapLevel,
                                                        inputEffectIdentity->getNode(),
                                                        treeRoot,
-                                                       originalRenderWindow,
                                                        canonicalRenderWindow,
                                                        requests);
                 return stat;
@@ -438,18 +433,10 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     } // if (foundFrameView != nodeRequest->frames.end()) {
     
     assert(fvRequest);
-    RectD realCanonicalRoI;
-    
-    if (node != treeRoot) {
-        realCanonicalRoI = canonicalRenderWindow;
-    } else {
-        originalRenderWindow.toCanonical(mappedLevel, par , fvRequest->globalData.rod, &realCanonicalRoI);
-    }
-    
     ///Compute the regions of interest in input for this RoI
     
     FrameViewPerRequestData fvPerRequestData;
-    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, realCanonicalRoI, view, &fvPerRequestData.inputsRoi);
+    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &fvPerRequestData.inputsRoi);
     
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
@@ -458,7 +445,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     
     
     ///Append the request
-    fvRequest->requests.push_back(std::make_pair(realCanonicalRoI, fvPerRequestData));
+    fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, fvPerRequestData));
     
     EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
                                                               node,
@@ -466,7 +453,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                               fvPerRequestData.inputsRoi,
                                                               fvRequest->globalData.reroutesMap,
                                                               useTransforms,
-                                                              &originalRenderWindow,
                                                               originalMipMapLevel,
                                                               treeRoot,
                                                               &requests,
@@ -485,7 +471,7 @@ Natron::StatusEnum
 EffectInstance::computeRequestPass(double time,
                                    int view,
                                    unsigned int mipMapLevel,
-                                   const RectI& renderWindow,
+                                   const RectD& renderWindow,
                                    const boost::shared_ptr<Natron::Node>& treeRoot,
                                    FrameRequestMap& request)
 {
@@ -497,7 +483,6 @@ EffectInstance::computeRequestPass(double time,
                                                    treeRoot,
                                                    treeRoot,
                                                    renderWindow,
-                                                   RectD(),
                                                    request);
     
     if (stat == eStatusFailed) {

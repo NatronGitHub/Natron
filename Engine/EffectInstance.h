@@ -596,7 +596,6 @@ public:
                                                    unsigned originalMipMapLevel,
                                                    const boost::shared_ptr<Natron::Node>& node,
                                                    const boost::shared_ptr<Natron::Node>& treeRoot,
-                                                   const RectI& originalRenderWindow,
                                                    const RectD& canonicalRenderWindow,
                                                    FrameRequestMap& requests);
 
@@ -608,7 +607,7 @@ public:
     static Natron::StatusEnum computeRequestPass(double time,
                                                  int view,
                                                  unsigned int mipMapLevel,
-                                                 const RectI& renderWindow,
+                                                 const RectD& renderWindow,
                                                  const boost::shared_ptr<Natron::Node>& treeRoot,
                                                  FrameRequestMap& request);
 
@@ -619,7 +618,6 @@ public:
                                                                        const RoIMap& inputRois,
                                                                        const std::map<int, Natron::EffectInstance*>& reroutesMap,
                                                                        bool useTransforms, // roi functor specific
-                                                                       const RectI* originalRenderWindow, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        const boost::shared_ptr<Natron::Node>& treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific

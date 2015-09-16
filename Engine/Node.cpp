@@ -4331,7 +4331,7 @@ Node::makePreviewImage(SequenceTime time,
     NodePtr thisNode = shared_from_this();
     
     FrameRequestMap request;
-    stat = EffectInstance::computeRequestPass(time, 0, mipMapLevel, renderWindow, thisNode, request);
+    stat = EffectInstance::computeRequestPass(time, 0, mipMapLevel, rod, thisNode, request);
     if (stat == eStatusFailed) {
         return false;
     }
