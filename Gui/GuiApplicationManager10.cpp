@@ -439,17 +439,12 @@ GuiApplicationManager::matchesKeybind(const QString & group,
     
     assert(keybind->modifiers.size() == keybind->currentShortcut.size());
     std::list<Qt::Key>::const_iterator kit = keybind->currentShortcut.begin();
-    
-    assert(keybind->modifiers.size() == keybind->ignoreMasks.size() || keybind->ignoreMasks.empty());
-    std::list<Qt::KeyboardModifiers>::const_iterator itMask = keybind->ignoreMasks.begin();
+
     
     for (std::list<Qt::KeyboardModifiers>::const_iterator it = keybind->modifiers.begin(); it != keybind->modifiers.end(); ++it, ++kit) {
-        if ( matchesModifers(onlyCAS,*it, keybind->ignoreMasks.empty() ? Qt::NoModifier : *itMask) ) {
+        if ( matchesModifers(onlyCAS,*it, keybind->ignoreMask) ) {
             // modifiers are equal, now test symbol
             return matchesKey( (Qt::Key)symbol, *kit );
-        }
-        if (!keybind->ignoreMasks.empty()) {
-            ++itMask;
         }
     }
     
