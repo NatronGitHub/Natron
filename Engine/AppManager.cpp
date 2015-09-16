@@ -2128,6 +2128,7 @@ AppManager::initPython(int argc,char* argv[])
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
 #endif
+    
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
@@ -2140,14 +2141,14 @@ AppManager::initPython(int argc,char* argv[])
         toPrepend.push_back(';');
     }
 #elif defined(__NATRON_OSX__)
-    toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/3.4/lib/python3.4");
+    toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING);
     toPrepend.append(':');
     toPrepend.append(binPath + "/../Plugins");
     if (!pathEmpty) {
         toPrepend.push_back(':');
     }
 #elif defined(__NATRON_LINUX__)
-    toPrepend.append(binPath + "/../lib/python3.4");
+    toPrepend.append(binPath + "/../lib/python" NATRON_PY_VERSION_STRING);
     toPrepend.append(':');
     toPrepend.append(binPath + "/../Plugins");
     if (!pathEmpty) {
@@ -2184,7 +2185,7 @@ AppManager::initPython(int argc,char* argv[])
 #elif defined(__NATRON_LINUX__)
     static const std::wstring pythonHome(Natron::s2ws("../lib"));
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome(Natron::s2ws("../Frameworks/Python.framework/Versions/3.4/lib"));
+    static const std::wstring pythonHome(Natron::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
@@ -2194,7 +2195,7 @@ AppManager::initPython(int argc,char* argv[])
 #elif defined(__NATRON_LINUX__)
     static const std::string pythonHome("../lib");
 #elif defined(__NATRON_OSX__)
-    static const std::string pythonHome("../Frameworks/Python.framework/Versions/3.4/lib");
+    static const std::string pythonHome("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib");
 #endif
     Py_SetPythonHome(const_cast<char*>(pythonHome.c_str()));
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import

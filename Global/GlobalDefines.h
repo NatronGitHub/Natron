@@ -133,9 +133,18 @@ typedef OfxRangeD RangeD;
 #define kDopeSheetEditorTransformKeysCommandCompressionID 21
 #define kDopeSheetEditorSlipReaderCommandCompressionID 23
 
+#define PY_VERSION_STRINGIZE_(major,minor) \
+# major "." # minor
+
+#define PY_VERSION_STRINGIZE(major,minor) \
+PY_VERSION_STRINGIZE_(major,minor)
+
 #if PY_MAJOR_VERSION == 2
 #define IS_PYTHON_2
 #endif
+
+#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION,PY_MINOR_VERSION)
+
 
 namespace Natron {
 /*Converts a std::string to wide string*/
