@@ -123,10 +123,10 @@ fi
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
-    wget $GIT_OCIO_CONFIG_TAR -O $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    tar xvf $TMP_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    rm $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    mv $SRC_PATH/OpenColorIO-Configs* $SRC_PATH/OpenColorIO-Configs || exit 1
+    wget $GIT_OCIO_CONFIG_TAR -O "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
+    (cd "$SRC_PATH"; tar xf OpenColorIO-Configs.tar.gz) || exit 1
+    rm "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
+    mv "$SRC_PATH/OpenColorIO-Configs"* "$SRC_PATH/OpenColorIO-Configs" || exit 1
 fi
 
 cp -a $TMP_PATH/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1
