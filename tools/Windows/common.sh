@@ -57,7 +57,7 @@ INSTALL64_PATH=/mingw64
 
 # Common values
 #
-
+TMP_DIR=/tmp
 TMP_PATH=$CWD/tmp
 SRC_PATH=$CWD/src
 INC_PATH=$CWD/include

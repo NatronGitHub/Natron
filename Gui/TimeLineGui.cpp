@@ -172,9 +172,9 @@ struct TimelineGuiPrivate
         const std::list<ViewerTab *> &viewers = gui->getViewersList();
 
         for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            ViewerTab *v = (*it);
-
-            v->centerOn(tlZoomCtx.left, zoomRight);
+            if ((*it) != viewerTab) {
+                (*it)->centerOn(tlZoomCtx.left, zoomRight);
+            }
         }
     }
 };

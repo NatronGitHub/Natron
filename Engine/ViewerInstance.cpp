@@ -1165,8 +1165,11 @@ ViewerInstance::renderViewer_internal(int view,
     if (useTLS) {
         tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
         
+        RectD canonicalRoi;
+        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.activeInputToRender->getPreferredAspectRatio(), inArgs.params->rod, &canonicalRoi);
+        
         FrameRequestMap request;
-        Natron::StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, roi, getNode(), request);
+        Natron::StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
         if (stat == eStatusFailed) {
             if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);

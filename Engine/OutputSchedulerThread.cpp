@@ -2060,7 +2060,7 @@ private:
                 rod.toPixelEnclosing(scale, par, &renderWindow);
                 
                 FrameRequestMap request;
-                stat = EffectInstance::computeRequestPass(time, i, mipMapLevel, renderWindow, outputNode, request);
+                stat = EffectInstance::computeRequestPass(time, i, mipMapLevel, rod, outputNode, request);
                 if (stat == eStatusFailed) {
                     break;
                 }
