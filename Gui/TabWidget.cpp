@@ -1490,7 +1490,8 @@ TabWidget::stopDragTab(const QPoint & globalPos)
         tryCloseFloatingPane();
     }
 
-    QWidget* draggedPanel = _imp->gui->stopDragPanel();
+    QSize draggedPanelSize;
+    QWidget* draggedPanel = _imp->gui->stopDragPanel(&draggedPanelSize);
     if (!draggedPanel) {
         return false;
     }
@@ -1567,6 +1568,7 @@ TabWidget::stopDragTab(const QPoint & globalPos)
         newTab->appendTab(draggedPanel,obj);
         floatingW->setWidget(newTab);
         floatingW->move(windowPos);
+        floatingW->resize(draggedPanelSize);
         _imp->gui->registerFloatingWindow(floatingW);
         _imp->gui->checkNumberOfNonFloatingPanes();
         

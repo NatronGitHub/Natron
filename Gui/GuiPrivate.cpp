@@ -233,6 +233,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _settingsGui(0)
 , _projectGui(0)
 , _currentlyDraggedPanel(0)
+, _currentlyDraggedPanelInitialSize()
 , _aboutWindow(0)
 , _progressBars()
 , openedPanels()

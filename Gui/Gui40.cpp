@@ -87,14 +87,18 @@ Gui::startDragPanel(QWidget* panel)
 {
     assert(!_imp->_currentlyDraggedPanel);
     _imp->_currentlyDraggedPanel = panel;
+    if (panel) {
+        _imp->_currentlyDraggedPanelInitialSize = panel->size();
+    }
 }
 
 QWidget*
-Gui::stopDragPanel()
+Gui::stopDragPanel(QSize* initialSize)
 {
     assert(_imp->_currentlyDraggedPanel);
     QWidget* ret = _imp->_currentlyDraggedPanel;
     _imp->_currentlyDraggedPanel = 0;
+    *initialSize = _imp->_currentlyDraggedPanelInitialSize;
 
     return ret;
 }
