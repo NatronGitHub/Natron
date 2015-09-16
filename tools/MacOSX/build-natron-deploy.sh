@@ -37,13 +37,13 @@ macdeployqt "${app}" || exit 1
 #Copy and change exec_path of the whole Python framework with libraries
 rm -rf "${app}/Contents/Frameworks/Python.framework"
 mkdir -p "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"
-rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib" || exit 1
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" || exit 1
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Resources"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}" || exit 1
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Resources" || exit 1
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}" || exit 1
+cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python" || exit 1
 chmod 755 "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python"
+install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python"
 ln -sf "Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Python" || exit 1
 
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/"*
@@ -64,11 +64,15 @@ fi
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
+        cp "${MACPORTS}/lib/libgcc/$lib" "${app}/Contents/Frameworks/$lib"
+	install_name_tool -id "@executable_path/../Frameworks/$lib" "${app}/Contents/Frameworks/$lib"
+    done
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+        lib=lib${l}.dylib
 	install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
 	for deplib in "${app}/Contents/Frameworks/"*.dylib; do
 	    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
 	done
-        cp "${MACPORTS}/lib/libgcc/$lib" "${app}/Contents/Frameworks/$lib"
     done
     # use gcc's libraries everywhere
     for l in gcc_s.1 gomp.1 stdc++.6; do
@@ -167,23 +171,17 @@ if [ -f "CrashReporterCLI/NatronRendererCrashReporter" ]; then
     fi
 fi
 
-PLUGINDIR="$app/Contents/Plugins"
-
-if [ ! -d "$PLUGINDIR" ]; then
-    echo "Error: plugin directory '$PLUGINDIR' does not exist"
-    exit 1
-fi
-
-#Copy Pyside in the plugin dir
-mkdir -p  "$PLUGINDIR/PySide"
+# install PySide in site-packages
+PYSIDE="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide"
+rm -rf "${app}/Contents/${PYSIDE}"
+cp -r "${MACPORTS}/Library/${PYSIDE}" "${app}/Contents/${PYSIDE}" || exit 1
 
 QT_LIBS="QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtXml QtWebKit QtXmlPatterns"
 
 for qtlib in $QT_LIBS ;do
-    bin="$PLUGINDIR/PySide/${qtlib}.so"
-    cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/${qtlib}.so" "$bin" || exit 1
-
-    for f in QT_LIBS; do
+    bin="${app}/Contents/${PYSIDE}/${qtlib}.so"
+    install_name_tool -id "@executable_path/../${PYSIDE}/${qtlib}.so" "$bin"
+    for f in $QT_LIBS; do
         install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
     done
 
@@ -199,6 +197,4 @@ for qtlib in $QT_LIBS ;do
 	done
     fi
 done
-cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/__init__.py" "$PLUGINDIR/PySide" || exit 1
-cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/_utils.py" "$PLUGINDIR/PySide"  || exit 1
 
