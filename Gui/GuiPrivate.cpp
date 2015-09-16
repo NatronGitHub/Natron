@@ -519,9 +519,10 @@ void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
     QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
-
+    button->setArrowType(Qt::NoArrow);
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
+    button->setFixedSize(QSize(NATRON_TOOL_BUTTON_SIZE,NATRON_TOOL_BUTTON_SIZE));
     button->setPopupMode(QToolButton::InstantPopup);
     button->setToolTip( Natron::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);

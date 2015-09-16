@@ -757,8 +757,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     QIcon icon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        if (std::max(pix.width(), pix.height()) != NATRON_TOOL_BUTTON_ICON_SIZE) {
-            pix = pix.scaled(NATRON_TOOL_BUTTON_ICON_SIZE, NATRON_TOOL_BUTTON_ICON_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (std::max(pix.width(), pix.height()) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+            pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         icon.addPixmap(pix);
     } else {
