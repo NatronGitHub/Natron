@@ -84,6 +84,7 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
@@ -275,8 +276,9 @@ unix {
 }
 
 *clang* {
-  QMAKE_CXXFLAGS += -ftemplate-depth-1024 -Wno-c++11-extensions
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CFLAGS_WARN_ON += -Wextra
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }

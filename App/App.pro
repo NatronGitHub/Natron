@@ -207,8 +207,9 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-INCLUDEPATH += $$PWD/../BreakpadClient
-DEPENDPATH += $$PWD/../BreakpadClient
+BREAKPAD_PATH = $$PWD/../google-breakpad/src
+INCLUDEPATH += $$BREAKPAD_PATH
+DEPENDPATH += $$BREAKPAD_PATH
 
 win32-msvc*{
         CONFIG(64bit) {

@@ -23,14 +23,13 @@ CONFIG += ordered
 
 SUBDIRS += \
     HostSupport \
-    BreakpadClient \
     Engine \
     Renderer \
     Gui \
     Tests \
     App
 
-breakpad {
+gbreakpad {
     SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 }
 
