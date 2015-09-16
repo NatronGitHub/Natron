@@ -29,28 +29,30 @@ if [ ! -d "$app" ]; then
 fi
 
 MACPORTS="/opt/local"
+PYVER="2.7"
+SBKVER="1.2"
 
 macdeployqt "${app}" || exit 1
 
 #Copy and change exec_path of the whole Python framework with libraries
 rm -rf "${app}/Contents/Frameworks/Python.framework"
-mkdir -p "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib"
-rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7" "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib" || exit 1
-rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Resources"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
-rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Python"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Python" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
-chmod 755 "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Python"
-ln -sf "Versions/2.7/Python" "${app}/Contents/Frameworks/Python.framework/Python" || exit 1
+mkdir -p "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"
+rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib" || exit 1
+rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Resources"
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}" || exit 1
+rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python"
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}" || exit 1
+chmod 755 "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/Python"
+ln -sf "Versions/${PYVER}/Python" "${app}/Contents/Frameworks/Python.framework/Python" || exit 1
 
-rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/"*
-#rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/__pycache__"
-#rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/*/__pycache__"
-#FILES=`ls -l "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib|awk" '{print $9}'`
+rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/"*
+#rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/__pycache__"
+#rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/*/__pycache__"
+#FILES=`ls -l "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib|awk" '{print $9}'`
 #for f in FILES; do
 #    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
-#    cp -r "$f" "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib/$FILE" || exit 1
+#    cp -r "$f" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/$FILE" || exit 1
 #done
 
 bin="${app}/Contents/MacOS/Natron"
@@ -77,7 +79,7 @@ if [ "$LIBGCC" = "1" ]; then
     done
 fi
 for f in Python; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/2.7/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/2.7/${f}" "$bin"
+    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$bin"
 done
 
 if otool -L "${app}/Contents/MacOS/Natron"  |fgrep "${MACPORTS}"; then
@@ -100,7 +102,7 @@ cp "Renderer/NatronRenderer" "${app}/Contents/MacOS"
 bin="${app}/Contents/MacOS/NatronRenderer"
 
 #Change @executable_path for NatronRenderer deps
-for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside-python2.7.1.2 shiboken-python2.7.1.2 intl.8; do
+for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER} intl.8; do
     lib=lib${l}.dylib
     install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$bin"
 done
@@ -116,7 +118,7 @@ fi
 
 #Copy and change exec_path of the whole Python framework with libraries
 for f in Python; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/2.7/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/2.7/${f}" "$bin"
+    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$bin"
 done
 
 if otool -L "$bin" |fgrep "${MACPORTS}"; then
@@ -179,13 +181,13 @@ QT_LIBS="QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScr
 
 for qtlib in $QT_LIBS ;do
     bin="$PLUGINDIR/PySide/${qtlib}.so"
-    cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/${qtlib}.so" "$bin" || exit 1
+    cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/${qtlib}.so" "$bin" || exit 1
 
     for f in QT_LIBS; do
         install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
     done
 
-    for l in  pyside-python2.7.1.2 shiboken-python2.7.1.2; do
+    for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
         dylib="lib${l}.dylib"
         install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$bin"
     done
@@ -197,6 +199,6 @@ for qtlib in $QT_LIBS ;do
 	done
     fi
 done
-cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/__init__.py" "$PLUGINDIR/PySide" || exit 1
-cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PySide/_utils.py" "$PLUGINDIR/PySide"  || exit 1
+cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/__init__.py" "$PLUGINDIR/PySide" || exit 1
+cp  "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/PySide/_utils.py" "$PLUGINDIR/PySide"  || exit 1
 
