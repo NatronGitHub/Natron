@@ -244,6 +244,14 @@ echo "" >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
 cat $INSTALL_PATH/docs/openfx-misc/LICENSE >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
 cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/ || exit 1
 strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
+CIMG_LIBS=$OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Libraries
+mkdir -p $CIMG_LIBS || exit 1
+
+OFX_CIMG_DEPENDS=$(ldd $OFX_MISC_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+for x in $OFX_CIMG_DEPENDS; do
+    cp -v $x $CIMG_LIBS/ || exit 1
+done
+strip -s $CIMG_LIBS/*
 
 # NATRON
 NATRON_PATH=$INSTALLER/packages/$NATRON_PKG
