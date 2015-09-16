@@ -113,6 +113,7 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , playbackMode(Natron::ePlaybackModeLoop)
 , frameRangeEdit(NULL)
 , canEditFrameRangeLabel(NULL)
+, tripleSyncButton(0)
 , canEditFpsBox(NULL)
 , canEditFpsLabel(NULL)
 , fpsLockedMutex()

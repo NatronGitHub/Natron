@@ -61,7 +61,6 @@ class TimeLine;
  */
 class DopeSheetEditor : public QWidget, public ScriptObject
 {
-    Q_OBJECT
 
 public:
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
@@ -94,17 +93,8 @@ public:
     DopeSheetView* getDopesheetView() const;
     
     void setTreeWidgetWidth(int width);
-
-public Q_SLOTS:
-    /**
-     * @brief If 'enabled' is true, enable the triple synchronization,
-     * otherwise disable it.
-     *
-     * The triple sync feature synchronize the timeline navigation
-     * between the dope sheet view, the Curve Editor and the opened
-     * viewers.
-     */
-    void toggleTripleSync(bool enabled);
+    
+    int getTreeWidgetWidth() const;
 
 private:
     

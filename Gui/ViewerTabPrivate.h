@@ -163,7 +163,8 @@ struct ViewerTabPrivate
     LineEdit* frameRangeEdit;
 
     ClickableLabel* canEditFrameRangeLabel;
-
+    Button* tripleSyncButton;
+    
     QCheckBox* canEditFpsBox;
     ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;

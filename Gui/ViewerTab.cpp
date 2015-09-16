@@ -631,7 +631,28 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
 
     _imp->playerLayout->addStretch();
+    
+    QPixmap tripleSyncUnlockPix,tripleSyncLockedPix;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncUnlockPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncLockedPix);
+    
+    QIcon tripleSyncIc;
+    tripleSyncIc.addPixmap(tripleSyncUnlockPix, QIcon::Normal, QIcon::Off);
+    tripleSyncIc.addPixmap(tripleSyncLockedPix, QIcon::Normal, QIcon::On);
+    _imp->tripleSyncButton = new Button(tripleSyncIc,"",_imp->playerButtonsContainer);
+    _imp->tripleSyncButton->setToolTip(Natron::convertFromPlainText(tr("When activated, timeline's frame-range will be synchronized with the Dope Sheet and the Curve Editor as well."),Qt::WhiteSpaceNormal));
+    _imp->tripleSyncButton->setCheckable(true);
+    _imp->tripleSyncButton->setChecked(false);
+    _imp->tripleSyncButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->tripleSyncButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    QObject:: connect(_imp->tripleSyncButton, SIGNAL(toggled(bool)),
+            this, SLOT(toggleTripleSync(bool)));
 
+    _imp->playerLayout->addWidget(_imp->tripleSyncButton);
+
+    
+    _imp->playerLayout->addStretch();
+    
     _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
     
     QString canEditFpsBoxTT = Natron::convertFromPlainText(tr("When unchecked, the frame rate will be automatically set by "
