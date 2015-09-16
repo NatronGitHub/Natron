@@ -72,6 +72,9 @@ while true; do
 
     source $CWD/commits-hash.sh || exit 1
 
+    #Sync all scripts except snapshot.sh in case modifs were made
+    git pull origin workshop
+
     FAIL=0
 
     BUILD_NATRON=0
