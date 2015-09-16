@@ -94,10 +94,9 @@ Gui::setupUi()
 
 
     _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
-    //_imp->_toolBox->setIconSize(QSize(NATRON_TOOL_BUTTON_SIZE,NATRON_TOOL_BUTTON_SIZE));
     _imp->_toolBox->setToolButtonStyle(Qt::ToolButtonIconOnly);
     _imp->_toolBox->setOrientation(Qt::Vertical);
-    _imp->_toolBox->setMaximumWidth(NATRON_TOOL_BUTTON_SIZE + NATRON_BUTTON_BORDER);
+    _imp->_toolBox->setMaximumWidth(NATRON_TOOL_BUTTON_SIZE);
 
     if (_imp->leftToolBarDisplayedOnHoverOnly) {
         _imp->refreshLeftToolBarVisibility( mapFromGlobal( QCursor::pos() ) );

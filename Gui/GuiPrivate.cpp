@@ -519,7 +519,8 @@ void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
     QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
-    button->setArrowType(Qt::NoArrow);
+    //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
+    //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setFixedSize(QSize(NATRON_TOOL_BUTTON_SIZE,NATRON_TOOL_BUTTON_SIZE));

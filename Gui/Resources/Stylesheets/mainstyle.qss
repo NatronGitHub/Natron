@@ -317,9 +317,6 @@ QToolButton:focus {
     border: 1px solid %1;
 }
 
-QToolButton::down-arrow{
-}
-
 RotoToolButton[isSelected="true"]
 {
     border: 1px solid %1;
