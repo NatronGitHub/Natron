@@ -130,7 +130,7 @@ if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
     mv "$SRC_PATH/OpenColorIO-Configs"* "$SRC_PATH/OpenColorIO-Configs" || exit 1
 fi
 
-cp -a $TMP_PATH/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1
+cp -a $SRC_PATH/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1
 mkdir -p $INSTALL_PATH/docs/natron || exit 1
 cp ../LICENSE.txt ../README* ../BUGS* ../CONTRI* ../Documentation/* $INSTALL_PATH/docs/natron/
 mkdir -p $INSTALL_PATH/share/stylesheets || exit 1
