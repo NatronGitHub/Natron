@@ -107,8 +107,8 @@ for plugin in "$PLUGINDIR"/*.ofx.bundle; do
 		install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
 	    done
 	done
-    done
-fi
+    fi
+done
 
 #Build openfx-opencv
 #git clone $GIT_OPENCV
