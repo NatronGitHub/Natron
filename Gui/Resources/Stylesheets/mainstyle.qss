@@ -466,6 +466,11 @@ QTabBar::tab {
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
 }
+
+QTabBar::tab#DockablePanelTabWidget {
+    min-width: 5ex;
+}
+
 QTabBar::tab:hover {
     background: %1;
 }

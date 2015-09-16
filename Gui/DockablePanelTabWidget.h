@@ -47,6 +47,11 @@ public:
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     
+    QTabBar* getTabBar() const
+    {
+        return tabBar();
+    }
+    
 private:
     
     virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;

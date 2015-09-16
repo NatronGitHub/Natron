@@ -426,11 +426,12 @@ DockablePanel::DockablePanel(Gui* gui ,
     if (useScrollAreasForTabs) {
         _imp->_tabWidget = new QTabWidget(_imp->_horizContainer);
     } else {
-        _imp->_tabWidget = new DockablePanelTabWidget(gui,this);
+        DockablePanelTabWidget* tabWidget = new DockablePanelTabWidget(gui,this);
+        _imp->_tabWidget = tabWidget;
+        tabWidget->getTabBar()->setObjectName("DockablePanelTabWidget");
     }
     _imp->_horizLayout->addWidget(_imp->_tabWidget);
     _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
-    _imp->_tabWidget->setObjectName("QTabWidget");
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
