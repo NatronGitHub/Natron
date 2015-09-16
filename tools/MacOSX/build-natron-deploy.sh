@@ -36,11 +36,11 @@ macdeployqt "${app}" || exit 1
 rm -rf "${app}/Contents/Frameworks/Python.framework"
 mkdir -p "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib"
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib"
-cp -pr "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7" "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib" || exit 1
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7" "${app}/Contents/Frameworks/Python.framework/Versions/2.7/lib" || exit 1
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Resources"
-cp -pr "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Resources" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
 rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Python"
-cp -pr "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Python" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/2.7/Python" "${app}/Contents/Frameworks/Python.framework/Versions/2.7" || exit 1
 chmod 755 "${app}/Contents/Frameworks/Python.framework/Versions/2.7/Python"
 ln -sf "Versions/2.7/Python" "${app}/Contents/Frameworks/Python.framework/Python" || exit 1
 
@@ -72,7 +72,7 @@ if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
 	lib="lib${l}.dylib"
 	for deplib in "${app}/Contents/Frameworks/"*.framework/Versions/*/* "${app}/Contents/Frameworks/"lib*.dylib; do
-            install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+            test -f "$deplib" && install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
 	done
     done
 fi
