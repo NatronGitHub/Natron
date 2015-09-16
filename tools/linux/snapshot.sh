@@ -109,6 +109,9 @@ do
 source $CWD/common.sh
 source $CWD/commits-hash.sh
 
+#Sync all scripts except snapshot.sh
+git pull origin workshop
+
 FAIL=0
 echo "Running ..."
 
