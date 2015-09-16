@@ -188,7 +188,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const 
                                                 const QString & description,
                                                  const std::list<Qt::KeyboardModifiers>& modifiersList,
                                                  const std::list<Qt::Key>& symbolsList,
-                                                 const std::list<Qt::KeyboardModifiers>& modifiersMasks)
+                                                 const Qt::KeyboardModifiers& modifiersMask)
 {
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -213,8 +213,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,const 
         }
     }
     
-    assert(modifiersMasks.empty() || modifiersMasks.size() == modifiersList.size());
-    kA->ignoreMasks = modifiersMasks;
+    kA->ignoreMask = modifiersMask;
     
     kA->actionID = id;
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -243,8 +242,7 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString 
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol1);
     symbols.push_back(symbol2);
-    std::list<Qt::KeyboardModifiers> masks;
-    addKeybindInternal(grouping, id, description, m, symbols, masks);
+    addKeybindInternal(grouping, id, description, m, symbols, Qt::NoModifier);
 }
 
 void
@@ -257,9 +255,7 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,const QString 
     m.push_back(modifiers);
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol);
-    std::list<Qt::KeyboardModifiers> masks;
-    masks.push_back(modifiersMask);
-    addKeybindInternal(grouping, id, description, m, symbols, masks);
+    addKeybindInternal(grouping, id, description, m, symbols, modifiersMask);
 }
 
 void
@@ -273,8 +269,7 @@ GuiApplicationManagerPrivate::addKeybind(const QString & grouping,
     m.push_back(modifiers);
     std::list<Qt::Key> symbols;
     symbols.push_back(symbol);
-    std::list<Qt::KeyboardModifiers> msks;
-    addKeybindInternal(grouping, id, description, m, symbols, msks);
+    addKeybindInternal(grouping, id, description, m, symbols, Qt::NoModifier);
     
 }
 

@@ -883,6 +883,15 @@ TimeLineGui::centerOn_tripleSync(SequenceTime left,
 }
 
 void
+TimeLineGui::getVisibleRange(SequenceTime* left, SequenceTime* right) const
+{
+    *left = _imp->tlZoomCtx.left;
+    double w = width();
+    double curveWidth = w / _imp->tlZoomCtx.zoomFactor;
+    *right = *left + curveWidth;
+}
+
+void
 TimeLineGui::centerOn(SequenceTime left,
                       SequenceTime right)
 {

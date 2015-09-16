@@ -139,8 +139,6 @@ cp Renderer/NatronRenderer $INSTALL_PATH/bin/ || exit 1
 if [ -f CrashReporter/NatronCrashReporter ]; then
   cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/ || exit 1
   cp CrashReporterCLI/NatronRendererCrashReporter $INSTALL_PATH/bin/ || exit 1
-else
-  echo "CrashReporter missing!!! Something broken?"
 fi
 
 #For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
@@ -158,10 +156,10 @@ fi
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
-    wget $GIT_OCIO_CONFIG_TAR -O $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    tar xvf $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    rm $SRC_PATH/OpenColorIO-Configs.tar.gz || exit 1
-    mv $SRC_PATH/OpenColorIO-Configs* $SRC_PATH/OpenColorIO-Configs || exit 1
+    wget $GIT_OCIO_CONFIG_TAR -O "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
+    (cd "$SRC_PATH"; tar xf OpenColorIO-Configs.tar.gz) || exit 1
+    rm "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
+    mv "$SRC_PATH/OpenColorIO-Configs"* "$SRC_PATH/OpenColorIO-Configs" || exit 1
 fi
 
 cp -a $SRC_PATH/OpenColorIO-Configs $INSTALL_PATH/share/ || exit 1

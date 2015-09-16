@@ -54,7 +54,6 @@ public:
     Gui *gui;
 
     QVBoxLayout *mainLayout;
-    QHBoxLayout *helpersLayout;
 
     DopeSheet *model;
 
@@ -62,19 +61,16 @@ public:
     HierarchyView *hierarchyView;
     DopeSheetView *dopeSheetView;
 
-    QPushButton *toggleTripleSyncBtn;
 };
 
 DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
     q_ptr(qq),
     gui(gui),
     mainLayout(0),
-    helpersLayout(0),
     model(0),
     splitter(0),
     hierarchyView(0),
-    dopeSheetView(0),
-    toggleTripleSyncBtn(0)
+    dopeSheetView(0)
 {}
 
 /**
@@ -93,26 +89,6 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->setSpacing(0);
 
-    _imp->helpersLayout = new QHBoxLayout();
-    _imp->helpersLayout->setContentsMargins(0, 0, 0, 0);
-
-    _imp->toggleTripleSyncBtn = new QPushButton(this);
-
-    QPixmap tripleSyncBtnPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncBtnPix);
-
-    _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
-    _imp->toggleTripleSyncBtn->setToolTip(tr("Toggle triple synchronization"));
-    _imp->toggleTripleSyncBtn->setCheckable(true);
-    _imp->toggleTripleSyncBtn->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->toggleTripleSyncBtn->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    
-    connect(_imp->toggleTripleSyncBtn, SIGNAL(toggled(bool)),
-            this, SLOT(toggleTripleSync(bool)));
-
-    _imp->helpersLayout->addWidget(_imp->toggleTripleSyncBtn);
-    _imp->helpersLayout->addStretch();
-
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
     _imp->splitter->setHandleWidth(1);
 
@@ -129,7 +105,6 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->splitter->setStretchFactor(1, 5);
 
     _imp->mainLayout->addWidget(_imp->splitter);
-    _imp->mainLayout->addLayout(_imp->helpersLayout);
 
     // Main model -> HierarchyView connections
     connect(_imp->model, SIGNAL(nodeAdded(DSNode *)),
@@ -186,25 +161,6 @@ void DopeSheetEditor::centerOn(double xMin, double xMax)
     _imp->dopeSheetView->centerOn(xMin, xMax);
 }
 
-void DopeSheetEditor::toggleTripleSync(bool enabled)
-{
-    Natron::PixmapEnum tripleSyncPixmapValue = (enabled)
-            ? Natron::NATRON_PIXMAP_LOCKED
-            : Natron::NATRON_PIXMAP_UNLOCKED;
-
-    QPixmap tripleSyncBtnPix;
-    appPTR->getIcon(tripleSyncPixmapValue, NATRON_MEDIUM_BUTTON_ICON_SIZE, &tripleSyncBtnPix);
-
-    _imp->toggleTripleSyncBtn->setIcon(QIcon(tripleSyncBtnPix));
-    _imp->toggleTripleSyncBtn->setDown(enabled);
-    _imp->gui->setTripleSyncEnabled(enabled);
-    if (enabled) {
-        QList<int> sizes = _imp->splitter->sizes();
-        assert(sizes.size() > 0);
-        _imp->gui->setCurveEditorTreeWidth(sizes[0]);
-    }
-}
-
 void
 DopeSheetEditor::refreshSelectionBboxAndRedrawView()
 {
@@ -231,6 +187,14 @@ DopeSheetEditor::setTreeWidgetWidth(int width)
     sizes << width << _imp->dopeSheetView->width();
     _imp->splitter->setSizes(sizes);
     _imp->hierarchyView->setCanResizeOtherWidget(true);
+}
+
+int
+DopeSheetEditor::getTreeWidgetWidth() const
+{
+    QList<int> sizes = _imp->splitter->sizes();
+    assert(sizes.size() > 0);
+    return sizes.front();
 }
 
 void

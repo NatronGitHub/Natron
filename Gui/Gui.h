@@ -358,7 +358,7 @@ public:
 
     void startDragPanel(QWidget* panel);
 
-    QWidget* stopDragPanel();
+    QWidget* stopDragPanel(QSize* initialSize);
 
     bool isDraggingPanel() const;
 

@@ -42,6 +42,9 @@
 
 #include "Gui/Button.h"
 #include "Gui/ChannelsComboBox.h"
+#include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
@@ -1135,4 +1138,25 @@ ViewerTab::onRenderStatsAvailable(int time, int view, double wallTime, const Ren
     if (dialog) {
         dialog->addStats(time, view, wallTime, stats);
     }
+}
+
+void
+ViewerTab::toggleTripleSync(bool toggled)
+{
+    
+    _imp->tripleSyncButton->setDown(toggled);
+    getGui()->setTripleSyncEnabled(toggled);
+    if (toggled) {
+        DopeSheetEditor* deditor = _imp->gui->getDopeSheetEditor();
+        CurveEditor* cEditor = _imp->gui->getCurveEditor();
+        //Sync curve editor and dopesheet tree width
+        cEditor->setTreeWidgetWidth(deditor->getTreeWidgetWidth());
+        
+        SequenceTime left,right;
+        _imp->timeLineGui->getVisibleRange(&left, &right);
+        _imp->gui->centerOpenedViewersOn(left, right);
+        deditor->centerOn(left, right);
+        cEditor->getCurveWidget()->centerOn(left, right);
+    }
+
 }

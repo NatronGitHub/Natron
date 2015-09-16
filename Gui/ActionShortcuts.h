@@ -650,10 +650,11 @@ public:
     //There might be multiple combinations
     std::list<Qt::KeyboardModifiers> modifiers; //< the keyboard modifiers that must be held down during the action
     std::list<Qt::KeyboardModifiers> defaultModifiers; //< the default keyboard modifiers
-    std::list<Qt::KeyboardModifiers> ignoreMasks; ///Mask of modifiers to ignore for this shortcut
+    Qt::KeyboardModifiers ignoreMask; ///Mask of modifiers to ignore for this shortcut
     
     BoundAction()
-        : editable(true)
+    : editable(true)
+    , ignoreMask(Qt::NoModifier)
     {
     }
 

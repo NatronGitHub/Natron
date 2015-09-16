@@ -119,6 +119,8 @@ public:
     void setFrameRangeEdited(bool edited);
 
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
+    
+    void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
 
 public Q_SLOTS:
     

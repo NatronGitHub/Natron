@@ -129,7 +129,7 @@ struct GuiApplicationManagerPrivate
                             const QString & description,
                             const std::list<Qt::KeyboardModifiers>& modifiersList,
                             const std::list<Qt::Key>& symbolsList,
-                            const std::list<Qt::KeyboardModifiers>& modifiersMasks);
+                            const Qt::KeyboardModifiers& modifiersMask);
     
     void removeKeybind(const QString& grouping,const QString& id);
 

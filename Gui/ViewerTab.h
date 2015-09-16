@@ -421,6 +421,8 @@ public Q_SLOTS:
     void nextLayer();
     void previousLayer();
     
+    void toggleTripleSync(bool toggled);
+    
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
