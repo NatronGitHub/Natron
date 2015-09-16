@@ -16,8 +16,10 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CRASHDIALOG_H
-#define CRASHDIALOG_H
+#ifndef _CrashReporter_CrashDialog_h_
+#define _CrashReporter_CrashDialog_h_
+
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -32,13 +34,12 @@ class QGridLayout;
 class QPushButton;
 class QHBoxLayout;
 class QFrame;
+
 class CrashDialog : public QDialog
-{
-    
+{    
     Q_OBJECT
     
 public:
-
     enum UserChoice {
         eUserChoiceUpload,
         eUserChoiceSave,
@@ -80,10 +81,6 @@ private:
     QPushButton* _dontSendButton;
     QPushButton* _saveReportButton;
     QPushButton* _pressedButton;
-    
 };
 
-
-
-
-#endif // CRASHDIALOG_H
+#endif // _CrashReporter_CrashDialog_h_

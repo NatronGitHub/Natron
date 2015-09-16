@@ -17,8 +17,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "CrashDialog.h"
+
 #include <iostream>
 #include <cassert>
+
 #include <QThread>
 #include <QTextStream>
 #include <QFile>
