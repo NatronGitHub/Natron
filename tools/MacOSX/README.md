@@ -59,6 +59,12 @@ buildfromsource    always
   * `+llvm34` is to avoid ising llvm 3.5 or greater, which require libc++
   * `+ld64_236` is to use the last version of ld64 that supports libstdc++
   * `+natron` is to build the Natro-specific version of ImageMagick 
+
+* Execute `sudo port selfupdate`
+
+* Also apply patches from http://trac.macports.org/ticket/41783, namely:
+  * http://trac.macports.org/raw-attachment/ticket/41783/portconfigure.tcl.3.diff (file is `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl`)
+  * http://trac.macports.org/attachment/ticket/41783/cmake-1.0.tcl.diff (file is `/opt/local/var/macports/sources/rsync.macports.org/release/tarballs/ports/_resources/port1.0/group/cmake-1.0.tcl`, patch may have to be applied after each `port selfupdate`)
   
 ### Installing MacPorts on any version of OS X for deployment on the same OS X version
 
@@ -96,7 +102,7 @@ sudo port selfupdate
 cd /Users/USER_NAME/Development/dports-dev; portindex"
 ```
 
-* Install clang-3.4 (don't build the sample project, which is not required and builds using libc++):
+* *Only if the target is OS X 10.6 or below* Install cctools and clang-3.4 (don't build the sample project, which is not required and builds using libc++):
 ```
 sudo port clean llvm-3.4
 sudo port patch llvm-3.4
@@ -107,8 +113,10 @@ sudo port install clang-3.4
 sudo port select --set clang mp-clang-3.4 (so that clang and clang++ point to that version)
 ```
 
-* Install gcc-4.8 and the Apple GCC driver:
+* Install gcc-4.8 and the Apple GCC driver (for building plugins with OpenMP support):
 ```
+sudo port deactivate libunwind-headers 
+sudo port install libgcc
 sudo port install gcc48 +universal
 git clone https://github.com/devernay/macportsGCCfixup.git
 cd macportsGCCfixup
