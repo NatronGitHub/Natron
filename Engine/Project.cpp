@@ -48,12 +48,19 @@
 // dyld: Symbol not found: __ZN5boost7archive17xml_oarchive_implINS0_12xml_oarchiveEEC2ERSoj
 // These templates are explicitely instantiated in boost from libs/serialization/src/basic_text_oprimitive.cpp and basic_text_iprimitive.cpp,
 // but don't seem to be exported from boost, and are thus stripped by the -dead_strip linker option
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/detail/archive_serializer_map.hpp>
+#include <boost/archive/impl/archive_serializer_map.ipp>
+#include <boost/archive/impl/basic_text_iarchive.ipp>
+#include <boost/archive/impl/basic_text_oarchive.ipp>
+#include <boost/archive/impl/text_iarchive_impl.ipp>
+#include <boost/archive/impl/text_oarchive_impl.ipp>
+#include <boost/archive/detail/auto_link_archive.hpp>
 #include <boost/archive/impl/basic_text_iprimitive.ipp>
 #include <boost/archive/impl/basic_text_oprimitive.ipp>
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/detail/archive_serializer_map.hpp>
 // explicitly instantiate for this type of xml stream
 #include <boost/archive/impl/archive_serializer_map.ipp>
 #include <boost/archive/impl/basic_xml_iarchive.ipp>
