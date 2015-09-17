@@ -43,7 +43,7 @@
 #endif
 
 
-#if defined(__NATRON_OSX__) && BOOST_VERSION <= 105900 && _ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_ <= 1060
+#if defined(__NATRON_OSX__) && BOOST_VERSION <= 105900 && defined(_ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_) && _ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_ <= 1060
 // Required on OS X 10.6 Snow Leopard w/ boost 1.59.0, or else undefined symbols show up at run time.
 // dyld: lazy symbol binding failed: Symbol not found: __ZN5boost7archive21basic_text_oprimitiveISoED2Ev
 // dyld: Symbol not found: __ZN5boost7archive17xml_oarchive_implINS0_12xml_oarchiveEEC2ERSoj

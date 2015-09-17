@@ -81,6 +81,16 @@ class KnobFile;
 class KnobOutputFile;
 
 
+EffectPointerThreadProperty_RAII::EffectPointerThreadProperty_RAII(EffectInstance* effect)
+{
+    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((QObject*)effect));
+}
+
+EffectPointerThreadProperty_RAII::~EffectPointerThreadProperty_RAII()
+{
+    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((void*)0));
+}
+
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
                                                     const boost::shared_ptr<Natron::Image> & img)

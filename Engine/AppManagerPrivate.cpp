@@ -62,7 +62,7 @@ GCC_DIAG_ON(unused-parameter)
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
-#if defined(__NATRON_OSX__) && BOOST_VERSION <= 105900 && _ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_ <= 1060
+#if defined(__NATRON_OSX__) && BOOST_VERSION <= 105900 && defined(_ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_) && _ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_ <= 1060
 // Required on OS X 10.6 Snow Leopard w/ boost 1.59.0, or else undefined symbols show up at run time.
 // dyld: lazy symbol binding failed: Symbol not found: __ZN5boost7archive23basic_binary_oprimitiveINS0_15binary_oarchiveEcSt11char_traitsIcEEC2ERSt15basic_streambufIcS4_Eb
 // These templates are explicitely instantiated in boost from libs/serialization/src/binary_iarchive.cpp and binary_oarchive.cpp,
