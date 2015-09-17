@@ -313,6 +313,16 @@ Q_SIGNALS:
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
+    
+    void initializeKnobsGeneral();
+    void initializeKnobsAppearance();
+    void initializeKnobsViewers();
+    void initializeKnobsNodeGraph();
+    void initializeKnobsCaching();
+    void initializeKnobsReaders();
+    void initializeKnobsWriters();
+    void initializeKnobsPlugins();
+    void initializeKnobsPython();
 
     void warnChangedKnobs(const std::vector<KnobI*>& knobs);
     

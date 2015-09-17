@@ -67,8 +67,15 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 // dyld: lazy symbol binding failed: Symbol not found: __ZN5boost7archive23basic_binary_oprimitiveINS0_15binary_oarchiveEcSt11char_traitsIcEEC2ERSt15basic_streambufIcS4_Eb
 // These templates are explicitely instantiated in boost from libs/serialization/src/binary_iarchive.cpp and binary_oarchive.cpp,
 // but don't seem to be exported from boost, and are thus stripped by the -dead_strip linker option
+#include <istream>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/detail/archive_serializer_map.hpp>
+#include <boost/archive/impl/archive_serializer_map.ipp>
 #include <boost/archive/impl/basic_binary_iprimitive.ipp>
 #include <boost/archive/impl/basic_binary_oprimitive.ipp>
+#include <boost/archive/impl/basic_binary_iarchive.ipp>
+#include <boost/archive/impl/basic_binary_oarchive.ipp>
 #endif
 
 #define NATRON_CACHE_VERSION 2

@@ -1194,7 +1194,7 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
         return kOfxBitDepthNone;
     default:
         assert(false);    //< shouldve been caught earlier
-        break;
+        throw std::logic_error("OfxClipInstance::natronsDepthToOfxDepth(): unknown depth");
     }
 }
 

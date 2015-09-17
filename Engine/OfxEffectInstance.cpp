@@ -2672,6 +2672,7 @@ OfxEffectInstance::purgeCaches()
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         
     }
+    Q_UNUSED(stat);
 }
 
 int

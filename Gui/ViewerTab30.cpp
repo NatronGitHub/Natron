@@ -812,6 +812,7 @@ ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
         comboIndex = 4;
         break;
     default:
+        throw std::logic_error("ViewerTab::setCompositingOperator(): unknown operator");
         break;
     }
     Natron::ViewerCompositingOperatorEnum oldOp;

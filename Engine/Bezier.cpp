@@ -1564,7 +1564,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             cp = cpParam;
         }
         
-        bool isOnKeyframe;
+        bool isOnKeyframe = false;
         Transform::Point3D left,right;
         left.z = right.z = 1;
         if (isLeft || moveBoth) {

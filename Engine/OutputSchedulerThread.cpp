@@ -1295,7 +1295,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         nbCurParallelRenders = getNRenderThreads();
     } // if (policy == eSchedulingPolicyFFA) {
     
-    double avgTimeSpent,timeRemaining,totalTimeSpent;
+    double avgTimeSpent = 0.;
+    double timeRemaining = 0.;
+    double totalTimeSpent = 0.;
     if (stats) {
         _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
         assert(nbCurParallelRenders > 0);

@@ -25,6 +25,8 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
+#include <stdexcept>
+
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -200,14 +202,26 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         int inputNb = outputNode->inputIndex( inputNode.get() );
         assert(inputNb != -1);
-        bool ok = _imp->_gui->getApp()->getProject()->disconnectNodes(inputNode.get(), outputNode.get());
-        assert(ok);
+        assert(_imp->_gui);
+        GuiAppInstance* guiApp = _imp->_gui->getApp();
+        assert(guiApp);
+        boost::shared_ptr<Natron::Project> project = guiApp->getProject();
+        assert(project);
+        bool ok = project->disconnectNodes(inputNode.get(), outputNode.get());
+        if (!ok) {
+            throw std::logic_error("disconnectNodes failed");
+        }
         
-        ok = _imp->_gui->getApp()->getProject()->connectNodes(0, inputNode, dotNode.get());
-        assert(ok);
-        
-        _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode.get());
-        
+        ok = project->connectNodes(0, inputNode, dotNode.get());
+        if (!ok) {
+            throw std::logic_error("connectNodes failed");
+        }
+
+        ok = project->connectNodes(inputNb,dotNode,outputNode.get());
+        if (!ok) {
+            throw std::logic_error("connectNodes failed");
+        }
+
         QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
 
         dotNodeGui->refreshPosition( pos.x(), pos.y() );

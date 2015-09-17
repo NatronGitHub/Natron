@@ -397,9 +397,13 @@ public:
     {
         if (rotoNode) {
             if (activeStroke) {
-                
-                bool ok = rotoNode->getLiveInstance()->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
+                Natron::EffectInstance* rotoLive = rotoNode->getLiveInstance();
+                assert(rotoLive);
+                bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
+                if (!ok) {
+                    throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
+                }
                 
                 std::list<std::pair<Natron::Point,double> > lastStrokePoints;
                 RectD wholeStrokeRod;

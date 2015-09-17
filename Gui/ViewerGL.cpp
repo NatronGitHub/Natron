@@ -1388,12 +1388,19 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
     if (updateOnlyRoi) {
         //Make sure the texture is allocated on the full portion
-        Texture::DataTypeEnum type;
-        if (bd == Natron::eImageBitDepthByte) {
-            type = Texture::eDataTypeByte;
-        } else if (bd == Natron::eImageBitDepthFloat) {
-            type = Texture::eDataTypeFloat;
-            //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+        Texture::DataTypeEnum type = Texture::eDataTypeNone;
+        switch (bd) {
+            case Natron::eImageBitDepthByte: {
+                type = Texture::eDataTypeByte;
+                break;
+            }
+            case Natron::eImageBitDepthFloat: {
+                type = Texture::eDataTypeFloat;
+                //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+                break;
+            }
+            default:
+                throw std::logic_error("ViewerGL::transferBufferFromRAMtoGPU(): unknown texture type");
         }
         if (_imp->displayTextures[textureIndex]->mustAllocTexture(region)) {
             ///Initialize with black and transparant

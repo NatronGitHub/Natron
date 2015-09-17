@@ -940,8 +940,10 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
-        //We don't need the ret value
-        (void)openProjectInternal(selectedFile);
+        AppInstance* app = openProjectInternal(selectedFile);
+        if (!app) {
+            throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + selectedFile);
+        }
     }
 }
 

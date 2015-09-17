@@ -102,6 +102,20 @@ getDefaultOcioConfigPaths()
 void
 Settings::initializeKnobs()
 {
+    initializeKnobsGeneral();
+    initializeKnobsAppearance();
+    initializeKnobsViewers();
+    initializeKnobsNodeGraph();
+    initializeKnobsCaching();
+    initializeKnobsReaders();
+    initializeKnobsWriters();
+    initializeKnobsPlugins();
+    initializeKnobsPython();
+}
+
+void
+Settings::initializeKnobsGeneral()
+{
     _generalTab = Natron::createKnob<KnobPage>(this, "General");
 
     _natronSettingsExist = Natron::createKnob<KnobBool>(this, "Existing settings");
@@ -320,7 +334,11 @@ Settings::initializeKnobs()
                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _hostName->setAnimationEnabled(false);
     _generalTab->addKnob(_hostName);
-    
+}
+
+void
+Settings::initializeKnobsAppearance()
+{
     //////////////APPEARANCE TAB/////////////////
     _appearanceTab = Natron::createKnob<KnobPage>(this, "Appearance");
     
@@ -566,7 +584,11 @@ Settings::initializeKnobs()
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioStartupCheck->setAnimationEnabled(false);
     ocioTab->addKnob(_ocioStartupCheck);
+}
 
+void
+Settings::initializeKnobsViewers()
+{
     _viewersTab = Natron::createKnob<KnobPage>(this, "Viewers");
 
     _texturesMode = Natron::createKnob<KnobChoice>(this, "Viewer textures bit depth");
@@ -654,6 +676,11 @@ Settings::initializeKnobs()
                                           "is unchecked.");
     _viewersTab->addKnob(_enableProgressReport);
     
+}
+
+void
+Settings::initializeKnobsNodeGraph()
+{
     /////////// Nodegraph tab
     _nodegraphTab = Natron::createKnob<KnobPage>(this, "Nodegraph");
     
@@ -849,7 +876,11 @@ Settings::initializeKnobs()
     _defaultDeepGroupColor->setSimplified(true);
     _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
     _nodegraphTab->addKnob(_defaultDeepGroupColor);
+}
 
+void
+Settings::initializeKnobsCaching()
+{
     /////////// Caching tab
     _cachingTab = Natron::createKnob<KnobPage>(this, "Caching");
 
@@ -959,17 +990,28 @@ Settings::initializeKnobs()
     
     _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
     _cachingTab->addKnob(_diskCachePath);
-    
+}
+
+void
+Settings::initializeKnobsReaders()
+{
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
 
     _readersTab = Natron::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_READERS);
     _readersTab->setName("readersTab");
+}
 
+void
+Settings::initializeKnobsWriters()
+{
     _writersTab = Natron::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_WRITERS);
     _writersTab->setName("writersTab");
+}
 
-    
+void
+Settings::initializeKnobsPlugins()
+{
     _pluginsTab = Natron::createKnob<KnobPage>(this, "Plug-ins");
     _pluginsTab->setName("plugins");
     
@@ -1029,8 +1071,11 @@ Settings::initializeKnobs()
                                                                   "if they have the same internal ID.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_preferBundledPlugins);
-    
-    
+}
+
+void
+Settings::initializeKnobsPython()
+{
     _pythonPage = Natron::createKnob<KnobPage>(this, "Python");
     
     

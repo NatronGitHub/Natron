@@ -65,7 +65,7 @@ using namespace Natron;
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpaceEnum colorspace;
+    Natron::ViewerColorSpaceEnum colorspace = Natron::eViewerColorSpaceSRGB;
 
     if (v == 0) {
         colorspace = Natron::eViewerColorSpaceLinear;
@@ -75,6 +75,7 @@ ViewerTab::onColorSpaceComboBoxChanged(int v)
         colorspace = Natron::eViewerColorSpaceRec709;
     } else {
         assert(false);
+        throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
     }
     _imp->viewer->setLut( (int)colorspace );
     _imp->viewerNode->onColorSpaceChanged(colorspace);

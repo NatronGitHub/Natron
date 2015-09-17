@@ -25,6 +25,7 @@
 #include "RotoPaint.h"
 
 #include <sstream>
+#include <stdexcept>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
@@ -339,7 +340,9 @@ RotoPaint::render(const RenderActionArgs& args)
         NodeList rotoPaintNodes;
         {
             bool ok = getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
-            assert(ok);
+            if (!ok) {
+                throw std::logic_error("RotoPaint::render(): getThreadLocalRotoPaintTreeNodes() failed");
+            }
         }
         
         const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();

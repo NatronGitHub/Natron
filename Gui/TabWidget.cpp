@@ -1861,6 +1861,9 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string err;
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("TabWidget::setObjectName_mt_safe(): interpretPythonScript("+script+") failed!");
+    }
 }
 
 QString

@@ -350,8 +350,12 @@ GuiApplicationManager::handleOpenFileRequest()
     assert(guiApp);
     if (guiApp) {
         ///Called when double-clicking a file from desktop
-        (void)guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+        std::string filename = _imp->_openFileRequest.toStdString();
+        AppInstance* app = guiApp->getGui()->openProject(filename);
         _imp->_openFileRequest.clear();
+        if (!app) {
+            throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + filename);
+        }
     }
 }
 

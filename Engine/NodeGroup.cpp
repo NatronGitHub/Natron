@@ -492,9 +492,14 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
     NodePtr existingInput = output->getRealInput(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput.get(), output);
-        assert(ok);
-        if (input->getMaxInputCount() > 0) {
+        if (!ok) {
+            throw std::runtime_error("NodeCollection::connectNodes() failed");
+        }
+        if (input && input->getMaxInputCount() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
+            if (!ok) {
+                throw std::runtime_error("NodeCollection::connectNodes() failed");
+            }
         }
     }
     

@@ -1371,7 +1371,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     
      // Use Rolle's theorem to check for degeneracy on the boundary.
     double M = 0;
-    double cut;
+    double cut = 0.;
     for (int i = 0; i < 4; ++i) {
         double sol[4];
         int o[4];
