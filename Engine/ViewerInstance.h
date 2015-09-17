@@ -28,7 +28,7 @@
 #include <string>
 
 #include "Global/Macros.h"
-#include "Engine/EffectInstance.h"
+#include "Engine/OutputEffectInstance.h"
 
 class ParallelRenderArgsSetter;
 class RenderingFlagSetter;
@@ -36,6 +36,7 @@ struct RequestedFrame;
 namespace Natron {
 class Image;
 class FrameEntry;
+class EffectInstance;
 namespace Color {
 class Lut;
 }

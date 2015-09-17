@@ -69,6 +69,8 @@
 #include <QtCore/QString>
 #include <QtCore/QLocale>
 
+#include "Global/GlobalDefines.h"
+
 inline uint64_t
 getSystemTotalRAM()
 {
