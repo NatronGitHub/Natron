@@ -55,6 +55,27 @@ rm -rf "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python
 #    cp -r "$f" "${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/$FILE" || exit 1
 #done
 
+# a few elements of Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload may load other libraries
+DYNLOAD="${app}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/lib-dynload"
+if [ ! -d "${DYNLOAD}" ]; then
+    echo "lib-dynload not present"
+    exit 1
+fi
+for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; done |sort|uniq |awk '{print $1}'`; do
+    if [ ! -f "$mplib" ]; then
+	echo "missing python lib-dynload depend $mplib"
+	exit 1
+    fi
+    lib=`echo $mplib | awk -F / '{print $NF}'`
+    if [ ! -f "${app}/Contents/Frameworks/${lib}" ]; then
+	cp "$mplib" "${app}/Contents/Frameworks/${lib}"
+    fi
+    for deplib in "${DYNLOAD}"/*.so; do
+	install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
+    done
+done
+
+
 bin="${app}/Contents/MacOS/Natron"
 # macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
 LIBGCC=0
