@@ -350,7 +350,13 @@ CurveGui::drawCurve(int curveIndex,
         
         double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
         double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
-        double textY = evaluate(false,textX);
+        double textY;
+        
+        try {
+            textY = evaluate(false,textX);
+        } catch (...) {
+            textY = evaluate(true,textX);
+        }
         
         _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
