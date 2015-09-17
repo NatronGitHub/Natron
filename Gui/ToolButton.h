@@ -57,7 +57,8 @@ public:
                 int major,
                 int minor,
                 const QString & label,
-                QIcon icon = QIcon() );
+               QIcon toolbuttonIcon = QIcon(),
+               QIcon menuIcon = QIcon());
 
     virtual ~ToolButton();
 
@@ -68,7 +69,8 @@ public:
     int getPluginMinor() const;
     
     const QString & getLabel() const;
-    const QIcon & getIcon() const;
+    const QIcon & getToolButtonIcon() const;
+    const QIcon & getMenuIcon() const;
 
     bool hasChildren() const;
 

@@ -754,20 +754,30 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         }
     }
 
-    QIcon icon;
+    QIcon toolButtonIcon,menuIcon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        int size = NATRON_MEDIUM_BUTTON_ICON_SIZE;
-        if (std::max(pix.width(), pix.height()) != size) {
-            pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        int menuSize = NATRON_MEDIUM_BUTTON_ICON_SIZE;
+        int toolButtonSize = !plugin->hasParent() ? NATRON_TOOL_BUTTON_ICON_SIZE : NATRON_MEDIUM_BUTTON_ICON_SIZE;
+        
+        QPixmap menuPix = pix,toolbuttonPix = pix;
+        if (std::max(menuPix.width(), menuPix.height()) != menuSize) {
+            menuPix = menuPix.scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
-        icon.addPixmap(pix);
+        if (std::max(toolbuttonPix.width(), toolbuttonPix.height()) != toolButtonSize) {
+            toolbuttonPix = toolbuttonPix.scaled(toolButtonSize, toolButtonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
+        menuIcon.addPixmap(menuPix);
+        toolButtonIcon.addPixmap(toolbuttonPix);
     } else {
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {
-            QPixmap pix;
-            getPixmapForGrouping( &pix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
-            icon.addPixmap(pix);
+            QPixmap toolbuttonPix,menuPix;
+            getPixmapForGrouping( &toolbuttonPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            toolButtonIcon.addPixmap(toolbuttonPix);
+            getPixmapForGrouping( &menuPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            menuIcon.addPixmap(menuPix);
+
         }
     }
     //if the tool-button has no children, this is a leaf, we must create an action
@@ -797,14 +807,14 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     }
     ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance, plugin, plugin->getID(), plugin->getMajorVersion(),
                                                    plugin->getMinorVersion(),
-                                                   plugin->getLabel(), icon);
+                                                   plugin->getLabel(), toolButtonIcon, menuIcon);
 
     if (isLeaf) {
         QString label = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
         assert(parentToolButton);
         QAction* action = new QAction(this);
         action->setText(label);
-        action->setIcon( pluginsToolButton->getIcon() );
+        action->setIcon( pluginsToolButton->getMenuIcon() );
         QObject::connect( action, SIGNAL( triggered() ), pluginsToolButton, SLOT( onTriggered() ) );
         pluginsToolButton->setAction(action);
     } else {

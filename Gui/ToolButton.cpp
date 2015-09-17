@@ -40,7 +40,7 @@ struct ToolButtonPrivate
     QString _id;
     int _major,_minor;
     QString _label;
-    QIcon _icon;
+    QIcon _toolbuttonIcon,_menuIcon;
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
@@ -52,13 +52,15 @@ struct ToolButtonPrivate
                       int major,
                       int minor,
                       const QString & label,
-                      QIcon icon)
+                      const QIcon& toolbuttonIcon,
+                      const QIcon& menuIcon)
         : _app(app)
           , _id(pluginID)
           , _major(major)
           , _minor(minor)
           , _label(label)
-          , _icon(icon)
+          , _toolbuttonIcon(toolbuttonIcon)
+          , _menuIcon(menuIcon)
           , _menu(NULL)
           , _children()
           , _action(NULL)
@@ -74,8 +76,9 @@ ToolButton::ToolButton(GuiAppInstance* app,
                        int major,
                        int minor,
                        const QString & label,
-                       QIcon icon)
-    : _imp( new ToolButtonPrivate(app,pluginToolButton,pluginID,major,minor,label,icon) )
+                       QIcon toolbuttonIcon,
+                       QIcon menuIcon)
+    : _imp( new ToolButtonPrivate(app,pluginToolButton,pluginID,major,minor,label,toolbuttonIcon, menuIcon) )
 {
 }
 
@@ -107,10 +110,17 @@ ToolButton::getLabel() const
     return _imp->_label;
 };
 const QIcon &
-ToolButton::getIcon() const
+ToolButton::getToolButtonIcon() const
 {
-    return _imp->_icon;
+    return _imp->_toolbuttonIcon;
 };
+
+const QIcon &
+ToolButton::getMenuIcon() const
+{
+    return _imp->_menuIcon;
+}
+
 bool
 ToolButton::hasChildren() const
 {

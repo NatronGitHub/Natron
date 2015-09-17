@@ -424,7 +424,7 @@ NodeGraph::showMenu(const QPoint & pos)
     
     std::list<ToolButton*> orederedToolButtons = _imp->_gui->getToolButtonsOrdered();
     for (std::list<ToolButton*>::iterator it = orederedToolButtons.begin(); it != orederedToolButtons.end(); ++it) {
-        (*it)->getMenu()->setIcon( (*it)->getIcon() );
+        (*it)->getMenu()->setIcon( (*it)->getMenuIcon() );
         _imp->_menu->addAction( (*it)->getMenu()->menuAction() );
     }
     
