@@ -757,7 +757,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     QIcon icon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        int size = NATRON_TOOL_BUTTON_ICON_SIZE;
+        int size = NATRON_MEDIUM_BUTTON_ICON_SIZE;
         if (std::max(pix.width(), pix.height()) != size) {
             pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
