@@ -88,6 +88,8 @@ SOURCES += \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
+    EffectInstancePrivate.cpp \
+    EffectInstanceRenderRoI.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
@@ -131,6 +133,7 @@ SOURCES += \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
+    OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
     ParameterWrapper.cpp \
     ParallelRenderArgs.cpp \
@@ -226,6 +229,7 @@ HEADERS += \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
+    EffectInstancePrivate.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
@@ -283,6 +287,7 @@ HEADERS += \
     OfxMemory.h \
     OfxParamInstance.h \
     OpenGLViewerI.h \
+    OutputEffectInstance.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
     ParameterWrapper.h \

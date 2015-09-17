@@ -28,8 +28,10 @@
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QDebug>
 CLANG_DIAG_ON(deprecated-register)
-#include "Engine/EffectInstance.h"
+
 #include "Engine/AppManager.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/OutputEffectInstance.h"
 #include "Engine/Settings.h"
 
 BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance* writer)

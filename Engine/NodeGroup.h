@@ -33,7 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/EffectInstance.h"
+#include "Engine/OutputEffectInstance.h"
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
@@ -48,7 +48,7 @@ typedef std::list<NodePtr> NodeList;
 
 namespace Natron {
 class Node;
-class OutputEffectInstance;
+class EffectInstance;
 }
 class TimeLine;
 class NodeGraphI;

@@ -113,11 +113,11 @@ sudo port install clang-3.4
 sudo port select --set clang mp-clang-3.4 (so that clang and clang++ point to that version)
 ```
 
-* Install gcc-4.8 and the Apple GCC driver (for building plugins with OpenMP support):
+* Install gcc-4.9 and the Apple GCC driver (for building plugins with OpenMP support):
 ```
 sudo port deactivate libunwind-headers 
 sudo port install libgcc
-sudo port install gcc48 +universal
+sudo port install gcc49 +universal
 git clone https://github.com/devernay/macportsGCCfixup.git
 cd macportsGCCfixup
 mkdir build

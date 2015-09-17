@@ -44,7 +44,7 @@ CLANG_DIAG_OFF(tautological-undefined-compare)
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
-#include "Engine/EffectInstance.h"
+#include "Engine/OutputEffectInstance.h"
 
 #ifdef DEBUG
 #include "Engine/ThreadStorage.h"

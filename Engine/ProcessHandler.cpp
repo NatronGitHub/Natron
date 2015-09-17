@@ -39,7 +39,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
-#include "Engine/EffectInstance.h"
+#include "Engine/OutputEffectInstance.h"
 
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString & projectPath,
