@@ -2128,6 +2128,8 @@ AppManager::initPython(int argc,char* argv[])
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
 #endif
+    //Disable user sites as they could conflict with Natron bundled packages.
+    qputenv("PYTHONNOUSERSITE","1");
     
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
