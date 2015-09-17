@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 #include <QtCore/QDebug>
 
