@@ -13,7 +13,6 @@
 			buildPhases = (
 			);
 			dependencies = (
-				1E8133041BA31D91006845CF /* PBXTargetDependency */,
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
@@ -30,7 +29,6 @@
 				1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */,
 				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
 				D7A1965E18B2257700F412DA /* PBXTargetDependency */,
-				1EE26C831B9D959C001EEE0B /* PBXTargetDependency */,
 			);
 			name = all;
 			productName = all;
@@ -77,7 +75,7 @@
 				1ECAC6371B95F44C0064869D /* ShellScript */,
 			);
 			dependencies = (
-				D7A1965C18B2256400F412DA /* PBXTargetDependency */,
+				1ED2BB2B1BAC3ABE00C2E4F9 /* PBXTargetDependency */,
 			);
 			name = NatronRenderer;
 			productName = NatronRenderer;
@@ -118,13 +116,6 @@
 			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 1E8132FA1BA31D6D006845CF;
-			remoteInfo = BreakpadClient;
-		};
-		1E8133031BA31D91006845CF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 79F5A65F5B69CA741078AAA0;
 			remoteInfo = BreakpadClient;
 		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
@@ -169,12 +160,12 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
-		1EE26C821B9D959C001EEE0B /* PBXContainerItemProxy */ = {
+		1ED2BB2A1BAC3ABE00C2E4F9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 1EE26C7B1B9D9553001EEE0B;
-			remoteInfo = NatronCrashReporter;
+			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
+			remoteInfo = libs;
 		};
 		ACCCA4B61A87A0C500A20E4A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -203,13 +194,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 0E116598542859DA9320C015;
 			remoteInfo = HostSupport;
-		};
-		D7A1965B18B2256400F412DA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1EADE5F418AA407500EF3180;
-			remoteInfo = Natron;
 		};
 		D7A1965D18B2257700F412DA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -512,11 +496,6 @@
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5D18AA91490045A477 /* PBXContainerItemProxy */;
 		};
-		1E8133041BA31D91006845CF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = BreakpadClient;
-			targetProxy = 1E8133031BA31D91006845CF /* PBXContainerItemProxy */;
-		};
 		1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1EADE5F418AA407500EF3180 /* Natron */;
@@ -527,20 +506,15 @@
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
 		};
-		1EE26C831B9D959C001EEE0B /* PBXTargetDependency */ = {
+		1ED2BB2B1BAC3ABE00C2E4F9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */;
-			targetProxy = 1EE26C821B9D959C001EEE0B /* PBXContainerItemProxy */;
+			target = 1E5F8F5118AA91330045A477 /* libs */;
+			targetProxy = 1ED2BB2A1BAC3ABE00C2E4F9 /* PBXContainerItemProxy */;
 		};
 		D7A1964818B2242E00F412DA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = HostSupport;
 			targetProxy = D7A1964718B2242E00F412DA /* PBXContainerItemProxy */;
-		};
-		D7A1965C18B2256400F412DA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1EADE5F418AA407500EF3180 /* Natron */;
-			targetProxy = D7A1965B18B2256400F412DA /* PBXContainerItemProxy */;
 		};
 		D7A1965E18B2257700F412DA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
