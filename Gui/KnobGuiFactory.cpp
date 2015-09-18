@@ -76,9 +76,9 @@ knobGuiFactoryEntry()
 {
     std::string stub;
     boost::scoped_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
-    std::map<std::string, void *> functions;
+    std::map<std::string, void(*)()> functions;
 
-    functions.insert( make_pair("BuildKnobGui", (void *)&KG::BuildKnobGui) );
+    functions.insert( make_pair("BuildKnobGui", (void(*)())&KG::BuildKnobGui) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(knob->typeName(), knobPlugin);

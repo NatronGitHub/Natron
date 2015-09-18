@@ -41,7 +41,7 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
 {
 }
 
-LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
+LibraryBinary::LibraryBinary(const std::map<std::string, void(*)()> &functions)
     : _type(LibraryBinary::eLibraryTypeBuiltin)
       , _library(0)
       , _valid(false)
@@ -49,7 +49,7 @@ LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
 #ifdef __NATRON_UNIX__
     _functions = functions;
 #else
-    for (std::map<std::string, void *>::const_iterator it = functions.begin();
+    for (std::map<std::string, void(*)()>::const_iterator it = functions.begin();
          it != functions.end();
          ++it) {
         _functions.insert( std::make_pair(it->first,(HINSTANCE)it->second) );
@@ -114,6 +114,19 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
     return true;
 }
 
+#if defined(__NATRON_UNIX__)
+// dlsym() is declared as returning void*, but it really returns void(*)()
+// and cast between pointer-to-object and pointer-to-function is only conditionally-supported.
+// Ref:
+// ISO/IEC 14882:2011
+// 5.2.10 Reinterpret cast [expr.reinterpret.cast]
+// 8 Converting a function pointer to an object pointer type or vice versa is conditionally-supported. The meaning of such a conversion is implementation-defined, except that if an implementation supports conversions in both directions, converting a prvalue of one type to the other type and back, possibly with different cvqualification, shall yield the original pointer value.
+namespace {
+typedef void(*value_type)();
+typedef value_type (*value_dlsym_t)(void *, const char *);
+}
+#endif
+
 bool
 LibraryBinary::loadFunctions(const std::vector<std::string> & funcNames)
 {
@@ -124,7 +137,7 @@ LibraryBinary::loadFunctions(const std::vector<std::string> & funcNames)
 #ifdef __NATRON_WIN32__
         value_type v = (value_type)GetProcAddress( _library,funcNames[i].c_str() );
 #elif defined(__NATRON_UNIX__)
-        value_type v = (value_type)dlsym( _library,funcNames[i].c_str() );
+        value_type v = ((value_dlsym_t)(dlsym))( _library, funcNames[i].c_str() );
 #endif
         if (!v) {
             std::cout << "Couldn't find function " << funcNames[i] << " in binary " << _binaryPath  << std::endl;

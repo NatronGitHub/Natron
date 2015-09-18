@@ -81,7 +81,7 @@ typedef struct _cairo_pattern cairo_pattern_t;
 
 class Curve;
 class Bezier;
-class RotoPoint;
+struct RotoPoint;
 class RotoItemSerialization;
 class BezierCP;
 

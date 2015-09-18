@@ -578,7 +578,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     }
     
     OfxPluginEntryPoint* interact =
-        (OfxPluginEntryPoint*)descriptor.getProperties().getPointerProperty(kOfxParamPropInteractV1);
+        (OfxPluginEntryPoint*)descriptor.getProperties().getFuncPointerProperty(kOfxParamPropInteractV1);
     if (interact) {
         OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
         assert(ptk);

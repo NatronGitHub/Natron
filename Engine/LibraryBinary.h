@@ -46,7 +46,7 @@ class LibraryBinary
 #ifdef __NATRON_WIN32__
     typedef HINSTANCE value_type;
 #elif defined(__NATRON_UNIX__)
-    typedef void* value_type;
+    typedef void(*value_type)();
 #endif
 
 public:
@@ -59,7 +59,7 @@ public:
 
     LibraryBinary(LibraryBinary::LibraryTypeEnum type);
 
-    LibraryBinary(const std::map<std::string,void*> & functions);
+    LibraryBinary(const std::map<std::string,void(*)()> & functions);
 
     LibraryBinary(const std::string & binaryPath);
 

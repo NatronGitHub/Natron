@@ -833,8 +833,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
 {
     {
         boost::shared_ptr<EffectInstance> node( BackDrop::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&BackDrop::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&BackDrop::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -849,8 +849,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&GroupOutput::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupOutput::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -865,8 +865,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&GroupInput::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupInput::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -881,8 +881,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&NodeGroup::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&NodeGroup::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -897,8 +897,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&Dot::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&Dot::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
 
@@ -913,8 +913,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&DiskCacheNode::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&DiskCacheNode::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -929,8 +929,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&RotoPaint::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoPaint::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -946,8 +946,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&RotoNode::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoNode::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
@@ -963,8 +963,8 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void*> functions;
-        functions.insert( std::make_pair("BuildEffect", (void*)&RotoSmear::BuildEffect) );
+        std::map<std::string,void(*)()> functions;
+        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoSmear::BuildEffect) );
         LibraryBinary *binary = new LibraryBinary(functions);
         assert(binary);
         
