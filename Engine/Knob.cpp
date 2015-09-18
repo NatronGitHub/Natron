@@ -1213,12 +1213,18 @@ KnobHelper::guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReas
 }
 
 boost::shared_ptr<Curve>
-KnobHelper::getGuiCurve(int dimension) const
+KnobHelper::getGuiCurve(int dimension,bool byPassMaster) const
 {
     if (!canAnimate()) {
         return boost::shared_ptr<Curve>();
     }
 
+    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    if (!byPassMaster && master.second) {
+        return master.second->getGuiCurve(master.first);
+    }
+
+    
     if (_imp->gui) {
         return _imp->gui->getCurve(dimension);
     } else {

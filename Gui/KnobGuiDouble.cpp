@@ -278,7 +278,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             }
         }
         
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getGuiValue(0),
+        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),
                                          ScaleSliderQWidget::eDataTypeDouble,getGui(), Natron::eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
@@ -303,9 +303,9 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_dimensionSwitchButton);
         
         bool showSlider = true;
-        double firstDimensionValue = knob->getGuiValue(0);
+        double firstDimensionValue = knob->getValue(0);
         for (int i = 0; i < dim ; ++i) {
-            if (knob->getGuiValue(i) != firstDimensionValue) {
+            if (knob->getValue(i) != firstDimensionValue) {
                 showSlider = false;
                 break;
             }
@@ -455,7 +455,7 @@ void
 KnobGuiDouble::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    double v = knob->getGuiValue(dimension);
+    double v = knob->getValue(dimension);
     valueAccordingToType(false, dimension, &v);
     
     if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
@@ -464,7 +464,7 @@ KnobGuiDouble::updateGUI(int dimension)
             if (i == dimension) {
                 continue;
             }
-            if (knob->getGuiValue(i) != v) {
+            if (knob->getValue(i) != v) {
                 expandAllDimensions();
             }
         }
@@ -567,14 +567,14 @@ KnobGuiDouble::sliderEditingEnd(double d)
         valueAccordingToType(true, 0, &d);
         std::list<double> oldValues,newValues;
         for (int i = 0; i < dims; ++i) {
-            oldValues.push_back(knob->getGuiValue(i));
+            oldValues.push_back(knob->getValue(i));
             newValues.push_back(d);
         }
         pushUndoCommand( new KnobUndoCommand<double>(this,oldValues,newValues,false) );
     } else {
         _spinBoxes[0].first->setValue(d);
         valueAccordingToType(true, 0, &d);
-        pushUndoCommand( new KnobUndoCommand<double>(this,knob->getGuiValue(0),d,0,false) );
+        pushUndoCommand( new KnobUndoCommand<double>(this,knob->getValue(0),d,0,false) );
     }
 
 }

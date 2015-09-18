@@ -477,7 +477,7 @@ public:
     /**
      * @brief Must return the curve used by the GUI of the parameter
      **/
-    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension,bool byPassMaster = false) const = 0;
 
     virtual double random(double time, unsigned int seed) const = 0;
     virtual double random(double min = 0.,double max = 1.) const = 0;
@@ -1340,7 +1340,7 @@ protected:
     
     void guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension, Natron::ValueChangedReasonEnum reason);
     
-    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const OVERRIDE FINAL;
+    virtual boost::shared_ptr<Curve> getGuiCurve(int dimension,bool byPassMaster = false) const OVERRIDE FINAL;
     
     void setGuiCurveHasChanged(int dimension,bool changed);
 
@@ -1410,12 +1410,6 @@ public:
      **/
     T getValue(int dimension = 0,bool clampToMinMax = true) const WARN_UNUSED_RETURN;
     
-    /**
-     * @brief Same as getValue() except that this value will return always the value that is displayed on the Gui. 
-     * whereas the actual value returned by getValue() might not have taken into account the recent modifications
-     * due to the node being rendering.
-     **/
-    T getGuiValue(int dimension = 0) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the value of the knob at the given time and for the given dimension.
@@ -1640,7 +1634,7 @@ public:
     T getValueFromMasterAt(double time, int dimension, KnobI* master) const;
     T getValueFromMaster(int dimension, KnobI* master, bool clamp) const;
     
-    bool getValueFromCurve(double time,int dimension, bool byPassMaster, bool clamp, T* ret) const;
+    bool getValueFromCurve(double time,int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret) const;
     
 protected:
     

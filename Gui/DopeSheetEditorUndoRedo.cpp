@@ -57,7 +57,7 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
     
@@ -65,7 +65,7 @@ void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -73,7 +73,7 @@ void moveFrameRange(const NodePtr& node, double dt)
 {
     Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kFrameRangeParamNameFrameRange).get());
     assert(frameRangeKnob);
-    frameRangeKnob->setValues(frameRangeKnob->getGuiValue(0) + dt, frameRangeKnob->getGuiValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
+    frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
 }
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
@@ -723,11 +723,11 @@ void DSSlipReaderCommand::slipReader(double dt)
     {
         KnobHelper::ValueChangedReturnCodeEnum r;
 
-        r = firstFrameKnob->setValue(firstFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = lastFrameKnob->setValue(lastFrameKnob->getGuiValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = timeOffsetKnob->setValue(timeOffsetKnob->getGuiValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
     }
     effectInstance->endChanges();

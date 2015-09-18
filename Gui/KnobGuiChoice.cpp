@@ -124,14 +124,14 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob.lock()->getGuiValue(0),i, 0, false, 0) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob.lock()->getValue(0),i, 0, false, 0) );
 }
 
 void
 KnobGuiChoice::onEntriesPopulated()
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    int activeIndex = knob->getGuiValue();
+    int activeIndex = knob->getValue();
 
     _comboBox->clear();
     _entries = knob->getEntries_mt_safe();
@@ -200,7 +200,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    _comboBox->setCurrentIndex_no_emit( _knob.lock()->getGuiValue(0) );
+    _comboBox->setCurrentIndex_no_emit( _knob.lock()->getValue(0) );
 }
 
 void

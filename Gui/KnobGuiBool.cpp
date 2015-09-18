@@ -134,7 +134,7 @@ void KnobGuiBool::removeSpecificGui()
 void
 KnobGuiBool::updateGUI(int /*dimension*/)
 {
-    _checkBox->setChecked( _knob.lock()->getGuiValue(0) );
+    _checkBox->setChecked( _knob.lock()->getValue(0) );
 }
 
 void
@@ -190,13 +190,13 @@ void
 KnobGuiBool::onLabelClicked(bool b)
 {
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getGuiValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getGuiValue(0),b, 0, false) );
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
 }
 
 void

@@ -588,21 +588,18 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
-    if (QThread::currentThread() == qApp->thread()) {
-        if (clamp ) {
-            T ret = getGuiValue(dimension);
-            return clampToMinMax(ret, dimension);
-        } else {
-            return getGuiValue(dimension);
-        }
+    bool useGuiValues = QThread::currentThread() == qApp->thread();
+    if (useGuiValues) {
+        //Never clamp when using gui values
+        clamp = false;
     }
-    
+ 
     assert(dimension < (int)_values.size() && dimension >= 0);
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
         double time = getCurrentTime();
-        if (getValueFromExpression(time,dimension,true,&ret)) {
+        if (getValueFromExpression(time,dimension,clamp,&ret)) {
             return ret;
         }
     }
@@ -618,46 +615,30 @@ Knob<T>::getValue(int dimension,bool clamp) const
     }
 
     QMutexLocker l(&_valueMutex);
-    if (clamp ) {
-        T ret = _values[dimension];
-        return clampToMinMax(ret,dimension);
+    if (useGuiValues) {
+        return _guiValues[dimension];
     } else {
-        return _values[dimension];
-    }
-}
-
-template <typename T>
-T Knob<T>::getGuiValue(int dimension) const
-{
-    assert(dimension >= 0 && dimension < (int)_guiValues.size());
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        T ret;
-        double time = getCurrentTime();
-        if (getValueFromExpression(time,dimension,true,&ret)) {
-            return ret;
+        if (clamp ) {
+            T ret = _values[dimension];
+            return clampToMinMax(ret,dimension);
+        } else {
+            return _values[dimension];
         }
     }
-    
-    if ( isAnimated(dimension) ) {
-        return getValueAtTime(getCurrentTime(), dimension, false);
-    }
-    
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return getValueFromMaster(master.first, master.second.get(), false);
-    }
-
-    /// Gui values are never clamped to min-max
-    QMutexLocker k(&_valueMutex);
-    return _guiValues[dimension];
 }
 
+
 template <typename T>
-bool Knob<T>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool clamp, T* ret) const
+bool Knob<T>::getValueFromCurve(double time, int dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret) const
 {
-    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
+    boost::shared_ptr<Curve> curve;
+    
+    if (useGuiCurve) {
+        curve = getGuiCurve(dimension,byPassMaster);
+    }
+    if (!curve) {
+        curve = getCurve(dimension,byPassMaster);
+    }
     if (curve && curve->getKeyFramesCount() > 0) {
         //getValueAt already clamps to the range for us
         *ret = (T)curve->getValueAt(time,clamp);
@@ -667,7 +648,7 @@ bool Knob<T>::getValueFromCurve(double time, int dimension, bool byPassMaster, b
 }
 
 template <>
-bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool /*clamp*/, std::string* ret) const
+bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool useGuiCurve, bool byPassMaster, bool /*clamp*/, std::string* ret) const
 {
     
     const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
@@ -679,7 +660,13 @@ bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool byPas
         }
     }
     assert(ret->empty());
-    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
+    boost::shared_ptr<Curve> curve;
+    if (useGuiCurve) {
+        curve = getGuiCurve(dimension,byPassMaster);
+    }
+    if (!curve) {
+        curve = getCurve(dimension,byPassMaster);
+    }
     if (curve && curve->getKeyFramesCount() > 0) {
         assert(isStringAnimated);
         isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), ret);
@@ -695,10 +682,12 @@ Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster
 {
     assert(dimension < (int)_values.size() && dimension >= 0);
     
+    bool useGuiValues = QThread::currentThread() == qApp->thread();
+    
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
-        if (getValueFromExpression(time,dimension,true,&ret)) {
+        if (getValueFromExpression(time,dimension,clamp,&ret)) {
             return ret;
         }
     }
@@ -710,7 +699,7 @@ Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster
     }
     
     T ret;
-    if (getValueFromCurve(time, dimension, byPassMaster, clamp, &ret)) {
+    if (getValueFromCurve(time, dimension, useGuiValues, byPassMaster, clamp, &ret)) {
         return ret;
     }
     

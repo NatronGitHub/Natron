@@ -665,9 +665,9 @@ void DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double n
     assert(originalFrameRangeKnob);
 
     
-    int firstFrame = firstFrameKnob->getGuiValue();
-    int lastFrame = lastFrameKnob->getGuiValue();
-    int originalFirstFrame = originalFrameRangeKnob->getGuiValue();
+    int firstFrame = firstFrameKnob->getValue();
+    int lastFrame = lastFrameKnob->getValue();
+    int originalFirstFrame = originalFrameRangeKnob->getValue();
     
     newFirstFrame = std::max((double)newFirstFrame, (double)originalFirstFrame);
     newFirstFrame = std::min((double)lastFrame, newFirstFrame);
@@ -690,9 +690,9 @@ void DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader, double 
     Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
     assert(originalFrameRangeKnob);
 
-    int firstFrame = firstFrameKnob->getGuiValue();
-    int lastFrame = lastFrameKnob->getGuiValue();
-    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
+    int firstFrame = firstFrameKnob->getValue();
+    int lastFrame = lastFrameKnob->getValue();
+    int originalLastFrame = originalFrameRangeKnob->getValue(1);
     
     newLastFrame = std::min((double)newLastFrame, (double)originalLastFrame);
     newLastFrame = std::max((double)firstFrame, newLastFrame);
@@ -719,10 +719,10 @@ DopeSheet::canSlipReader(const boost::shared_ptr<DSNode> &reader) const
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
     ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
     
-    int currentFirstFrame = firstFrameKnob->getGuiValue();
-    int currentLastFrame = lastFrameKnob->getGuiValue();
-    int originalFirstFrame = originalFrameRangeKnob->getGuiValue(0);
-    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
+    int currentFirstFrame = firstFrameKnob->getValue();
+    int currentLastFrame = lastFrameKnob->getValue();
+    int originalFirstFrame = originalFrameRangeKnob->getValue(0);
+    int originalLastFrame = originalFrameRangeKnob->getValue(1);
     
     if ((currentFirstFrame - originalFirstFrame) == 0 && (currentLastFrame - originalLastFrame) == 0) {
         return false;
@@ -744,10 +744,10 @@ void DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader, double dt)
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
     ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
 
-    int currentFirstFrame = firstFrameKnob->getGuiValue();
-    int currentLastFrame = lastFrameKnob->getGuiValue();
-    int originalFirstFrame = originalFrameRangeKnob->getGuiValue(0);
-    int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
+    int currentFirstFrame = firstFrameKnob->getValue();
+    int currentLastFrame = lastFrameKnob->getValue();
+    int originalFirstFrame = originalFrameRangeKnob->getValue(0);
+    int originalLastFrame = originalFrameRangeKnob->getValue(1);
     
     dt = std::min(dt, (double)(currentFirstFrame - originalFirstFrame));
     dt = std::max(dt, (double)(currentLastFrame - originalLastFrame));

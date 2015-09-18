@@ -215,7 +215,7 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 void
 KnobGuiGroup::updateGUI(int /*dimension*/)
 {
-    bool b = _knob.lock()->getGuiValue(0);
+    bool b = _knob.lock()->getValue(0);
 
     setChecked(b);
     if (_button) {

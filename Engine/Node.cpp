@@ -5509,7 +5509,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             Q_EMIT previewKnobToggled();
         }
     } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
-        Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getGuiValue() );
+        Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
         getApp()->redrawAllViewers();
     } else if ( what == _imp->nodeLabelKnob.lock().get() ) {
         Q_EMIT nodeExtraLabelChanged( _imp->nodeLabelKnob.lock()->getValue().c_str() );

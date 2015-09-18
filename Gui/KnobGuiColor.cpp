@@ -298,7 +298,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getGuiValue(0),
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0),
                                      ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
@@ -347,17 +347,17 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
     _dimensionSwitchButton->setCheckable(true);
     
-    double firstDimensionValue = knob->getGuiValue(0);
+    double firstDimensionValue = knob->getValue(0);
     if (_dimension > 1) {
-        if (knob->getGuiValue(1) != firstDimensionValue) {
+        if (knob->getValue(1) != firstDimensionValue) {
             enableAllDimensions = true;
         }
-        if (knob->getGuiValue(2) != firstDimensionValue) {
+        if (knob->getValue(2) != firstDimensionValue) {
             enableAllDimensions = true;
         }
     }
     if (_dimension > 3) {
-        if (knob->getGuiValue(3) != firstDimensionValue) {
+        if (knob->getValue(3) != firstDimensionValue) {
             enableAllDimensions = true;
         }
     }
@@ -365,7 +365,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     
     _dimensionSwitchButton->setChecked(enableAllDimensions);
     if (!enableAllDimensions) {
-        _rBox->setValue( knob->getGuiValue(0) );
+        _rBox->setValue( knob->getValue(0) );
     }
     onDimensionSwitchClicked();
     QObject::connect( _dimensionSwitchButton, SIGNAL( clicked() ), this, SLOT( onDimensionSwitchClicked() ) );
@@ -591,18 +591,18 @@ KnobGuiColor::updateGUI(int dimension)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     if (knob->isSimplified()) {
         double r = 0.,g = 0.,b = 0.,a = 1.;
-        r = knob->getGuiValue(0);
+        r = knob->getValue(0);
         if (_dimension > 1) {
-            g = knob->getGuiValue(1);
-            b = knob->getGuiValue(2);
+            g = knob->getValue(1);
+            b = knob->getValue(2);
             if (_dimension > 3) {
-                a = knob->getGuiValue(3);
+                a = knob->getValue(3);
             }
         }
         updateLabel(r, g, b, a);
     } else {
         assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
-        double value = knob->getGuiValue(dimension);
+        double value = knob->getValue(dimension);
         
         if (!knob->areAllDimensionsEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -610,7 +610,7 @@ KnobGuiColor::updateGUI(int dimension)
                 if (i == dimension) {
                     continue;
                 }
-                if (knob->getGuiValue(i) != value) {
+                if (knob->getValue(i) != value) {
                     expandAllDimensions();
                 }
             }
@@ -783,19 +783,19 @@ KnobGuiColor::showColorDialog()
     QColorDialog dialog( _rBox->parentWidget() );
 
     boost::shared_ptr<KnobColor> knob = _knob.lock();
-    double curR = knob->getGuiValue(0);
+    double curR = knob->getValue(0);
     _lastColor[0] = curR;
     double curG = curR;
     double curB = curR;
     double curA = 1.;
     if (_dimension > 1) {
-        curG = knob->getGuiValue(1);
+        curG = knob->getValue(1);
         _lastColor[1] =  curG;
-        curB = knob->getGuiValue(2);
+        curB = knob->getValue(2);
         _lastColor[2] = curB;
     }
     if (_dimension > 3) {
-        curA = knob->getGuiValue(3);
+        curA = knob->getValue(3);
         _lastColor[3] = curA;
     }
 

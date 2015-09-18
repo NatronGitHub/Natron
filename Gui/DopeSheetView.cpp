@@ -1098,9 +1098,9 @@ void DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) co
             Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameOriginalFrameRange).get());
             assert(originalFrameRangeKnob);
 
-            int originalFirstFrame = originalFrameRangeKnob->getGuiValue(0);
-            int originalLastFrame = originalFrameRangeKnob->getGuiValue(1);
-            int firstFrame = firstFrameKnob->getGuiValue();
+            int originalFirstFrame = originalFrameRangeKnob->getValue(0);
+            int originalLastFrame = originalFrameRangeKnob->getValue(1);
+            int firstFrame = firstFrameKnob->getValue();
             int lineBegin = range.first - (firstFrame - originalFirstFrame);
 
             int frameCount = originalLastFrame - originalFirstFrame + 1;
@@ -1813,9 +1813,9 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameLastFrame).get());
     assert(lastFrameKnob);
 
-    int startingTimeValue = startingTimeKnob->getGuiValue();
-    int firstFrameValue = firstFrameKnob->getGuiValue();
-    int lastFrameValue = lastFrameKnob->getGuiValue();
+    int startingTimeValue = startingTimeKnob->getValue();
+    int firstFrameValue = firstFrameKnob->getValue();
+    int lastFrameValue = lastFrameKnob->getValue();
 
     FrameRange range(startingTimeValue,
                      startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
@@ -1880,7 +1880,7 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
         Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
         assert(timeOffsetKnob);
 
-        int timeOffsetValue = timeOffsetKnob->getGuiValue();
+        int timeOffsetValue = timeOffsetKnob->getValue();
 
         range.first = nearestReaderRange.first + timeOffsetValue;
         range.second = nearestReaderRange.second + timeOffsetValue;
@@ -1897,8 +1897,8 @@ void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
     assert(frameRangeKnob);
 
     FrameRange range;
-    range.first = frameRangeKnob->getGuiValue(0);
-    range.second = frameRangeKnob->getGuiValue(1);
+    range.first = frameRangeKnob->getValue(0);
+    range.second = frameRangeKnob->getValue(1);
 
     nodeRanges[frameRange] = range;
 }
@@ -2060,7 +2060,7 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
-            double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getGuiValue() + 0.5);
+            double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
             model->trimReaderLeft(currentEditedReader, newFirstFrame);
         }
@@ -2073,7 +2073,7 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
-            double newLastFrame = std::floor(currentTime - timeOffsetKnob->getGuiValue() + 0.5);
+            double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
             model->trimReaderRight(currentEditedReader, newLastFrame);
         }
