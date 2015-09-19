@@ -59,11 +59,17 @@ mkdir -p $TMP_PATH || exit 1
 
 # Setup env
 export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig:$INSTALL_PATH/libdata/pkgconfig
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-export PATH=/usr/local/bin:$INSTALL_PATH/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export PYTHON_HOME=$INSTALL_PATH
+export LD_LIBRARY_PATH=$INSTALL_PATH/lib
+export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
+
+if [ "$ARCH" = "x86_64" ]; then
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+fi
 
 if [ "$PYV" == "3" ]; then
   export PYTHON_PATH=$INSTALL_PATH/lib/python3.4

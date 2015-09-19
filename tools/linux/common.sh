@@ -55,7 +55,6 @@ CORELIBS_VERSION=2.0.0
 # SDK
 #
 
-SDK_LIC=GPL #enable gpl features (ffmpeg)
 SDK_VERSION=CY2015
 SDK_PATH=/opt
 PYV=2 # Python 2 or 3
@@ -160,15 +159,18 @@ ORC_TAR=orc-0.4.23.tar.xz
 X264_TAR=x264-snapshot-20150725-2245.tar.bz2 #GPL-only
 XVID_TAR=xvidcore-1.3.4.tar.gz #GPL-only
 
-# GCC version
-#
-# Check for minimal required GCC version (4.9)
-
-GCC_V=`gcc --version | awk '/gcc /{print $0;exit 0;}' | awk '{print $3}' | sed 's#\.# #g' | awk '{print $2}'`
-if [ "$GCC_V" -lt "9" ]; then
-  echo "Wrong GCC version. Run ${INC_PATH}/scripts/setup-gcc.sh"
-  exit 1
-fi
+TC_GCC=4.8.5
+TC_MPC=1.0.1
+TC_MPFR=3.1.3
+TC_GMP=5.1.3
+TC_ISL=0.11.1
+TC_CLOOG=0.18.0
+GCC_TAR=gcc-$TC_GCC.tar.bz2
+MPC_TAR=mpc-$TC_MPC.tar.gz
+MPFR_TAR=mpfr-$TC_MPFR.tar.bz2
+GMP_TAR=gmp-$TC_GMP.tar.bz2
+ISL_TAR=isl-$TC_ISL.tar.bz2
+CLOOG_TAR=cloog-$TC_CLOOG.tar.gz
 
 # Linux version
 #

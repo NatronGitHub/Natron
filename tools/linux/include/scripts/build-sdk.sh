@@ -49,7 +49,7 @@ if [ -z "$MKJOBS" ]; then
 fi
 
 echo
-echo "Building Natron-$SDK_VERSION-$SDK using GCC 4.$GCC_V with $MKJOBS threads ..."
+echo "Building Natron-$SDK_VERSION-$SDK with $MKJOBS threads ..."
 echo
 sleep 2
 
@@ -80,28 +80,95 @@ if [ ! -h $INSTALL_PATH/lib64 ]; then
   ln -sf lib lib64 || exit 1
 fi
 
+# Install static qt4 for installer
+if [ ! -f $INSTALL_PATH/qt4-static/bin/qmake ]; then
+  cd $TMP_PATH || exit 1
+  QTIFW_CONF="-no-multimedia -no-gif -qt-libpng -no-opengl -no-libmng -no-libtiff -no-libjpeg -static -no-openssl -confirm-license -release -opensource -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -no-avx -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+
+  if [ ! -f $SRC_PATH/$QT4_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$QT4_TAR -O $SRC_PATH/$QT4_TAR || exit 1
+  fi
+  tar xvf $SRC_PATH/$QT4_TAR || exit 1
+  cd qt*4.8* || exit 1
+  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH/qt4-static $QTIFW_CONF || exit 1
+
+  # https://bugreports.qt-project.org/browse/QTBUG-5385
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib make -j${MKJOBS} || exit 1
+  make install || exit 1
+  cd .. || exit 1
+  rm -rf qt*4.8*
+fi
+
+# Install gcc
+if [ ! -f $INSTALL_PATH/gcc/bin/gcc ]; then
+  cd $TMP_PATH || exit 1
+  if [ ! -f $SRC_PATH/$GCC_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$GCC_TAR -O $SRC_PATH/$GCC_TAR || exit 1
+  fi
+  if [ ! -f $SRC_PATH/$MPC_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$MPC_TAR -O $SRC_PATH/$MPC_TAR || exit 1
+  fi
+  if [ ! -f $SRC_PATH/$MPFR_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$MPFR_TAR -O $SRC_PATH/$MPFR_TAR || exit 1
+  fi
+  if [ ! -f $SRC_PATH/$GMP_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$GMP_TAR -O $SRC_PATH/$GMP_TAR || exit 1
+  fi
+  if [ ! -f $SRC_PATH/$ISL_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$ISL_TAR -O $SRC_PATH/$ISL_TAR || exit 1
+  fi
+  if [ ! -f $SRC_PATH/$CLOOG_TAR ]; then
+    wget $THIRD_PARTY_SRC_URL/$CLOOG_TAR -O $SRC_PATH/$CLOOG_TAR || exit 1
+  fi
+  tar xvf $SRC_PATH/$GCC_TAR || exit 1
+  cd gcc-$TC_GCC || exit 1
+  tar xvf $SRC_PATH/$MPC_TAR || exit 1
+  mv mpc-$TC_MPC mpc || exit 1
+  tar xvf $SRC_PATH/$MPFR_TAR || exit 1
+  mv mpfr-$TC_MPFR mpfr || exit 1
+  tar xvf $SRC_PATH/$GMP_TAR || exit 1
+  mv gmp-$TC_GMP gmp || exit 1
+  tar xvf $SRC_PATH/$ISL_TAR || exit 1
+  mv isl-$TC_ISL isl || exit 1
+  tar xvf $SRC_PATH/$CLOOG_TAR || exit 1
+  mv cloog-$TC_CLOOG cloog || exit 1
+  ./configure --prefix=$INSTALL_PATH/gcc --enable-languages=c,c++ || exit 1
+  make -j$MKJOBS || exit 1
+  #make -k check || exit 1
+  make install || exit 1
+fi
+
+export LD_LIBRARY_PATH=$INSTALL_PATH/lib
+export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
+
+if [ "$ARCH" = "x86_64" ]; then
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+fi
+
 # Install yasm
-if [ ! -f /usr/local/bin/yasm ]; then
+if [ ! -f $INSTALL_PATH/bin/yasm ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$YASM_TAR ]; then
     wget $THIRD_PARTY_SRC_URL/$YASM_TAR -O $SRC_PATH/$YASM_TAR || exit 1
   fi
   tar xvf $SRC_PATH/$YASM_TAR || exit 1
   cd yasm* || exit 1
-  CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=/usr/local || exit 1
+  CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH || exit 1
   make -j${MKJOBS} || exit 1
   make install || exit 1
 fi
 
 # Install cmake
-if [ ! -f /usr/local/bin/cmake ]; then
+if [ ! -f $INSTALL_PATH/bin/cmake ]; then
   cd $TMP_PATH || exit 1
   if [ ! -f $SRC_PATH/$CMAKE_TAR ]; then
     wget $THIRD_PARTY_SRC_URL/$CMAKE_TAR -O $SRC_PATH/$CMAKE_TAR || exit 1
   fi
   tar xvf $SRC_PATH/$CMAKE_TAR || exit 1
   cd cmake* || exit 1
-  CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=/usr/local || exit 1
+  CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH || exit 1
   make -j${MKJOBS} || exit 1
   make install || exit 1
 fi
@@ -138,8 +205,8 @@ fi
 
 # Setup env
 export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-export PATH=/usr/local/bin:$INSTALL_PATH/bin:$PATH
+#export LD_LIBRARY_PATH=$INSTALL_PATH/lib
+#export PATH=$INSTALL_PATH/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export OPENJPEG_HOME=$INSTALL_PATH
@@ -519,7 +586,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/vpx.pc ]; then
   fi
   tar xvf $SRC_PATH/$VPX_TAR || exit 1
   cd libvpx-* || exit 1
-  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-vp8 --enable-vp9 --enable-runtime-cpu-detect --enable-postproc --enable-pic || exit 1
+  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-vp8 --enable-vp9 --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples || exit 1
   make -j${MKJOBS} || exit 1
   make install || exit 1
   mkdir -p $INSTALL_PATH/docs/libvpx || exit 1
@@ -753,20 +820,6 @@ if [ "$SSL_TAR" != "" ]; then
   cd openssl* || exit 1
   CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix=$INSTALL_PATH || exit 1
   make || exit 1
-  make install || exit 1
-fi
-
-# Install static qt4 for installer
-if [ ! -f $INSTALL_PATH/qt4-static/bin/qmake ]; then
-  cd $TMP_PATH || exit 1
-  QTIFW_CONF="-no-multimedia -no-gif -qt-libpng -no-opengl -no-libmng -no-libtiff -no-libjpeg -static -no-openssl -confirm-license -release -opensource -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
-
-  tar xvf $SRC_PATH/$QT4_TAR || exit 1
-  cd qt*4.8* || exit 1
-  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH/qt4-static $QTIFW_CONF || exit 1
-
-  # https://bugreports.qt-project.org/browse/QTBUG-5385
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib make -j${MKJOBS} || exit 1
   make install || exit 1
 fi
 

@@ -158,7 +158,7 @@ fi
 if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
   log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
   echo -n "Building Packages (log in $log)... "
-  SDK_LIC=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" workshop >& "$log" || FAIL=1
+  OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" workshop >& "$log" || FAIL=1
   if [ "$FAIL" != "1" ]; then
     echo OK
   else

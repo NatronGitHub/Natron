@@ -50,6 +50,13 @@ PKGOS=Linux-x86_${BIT}bit
 REPO_OS=Linux/$REPO_BRANCH/${BIT}bit/packages
 
 export LD_LIBRARY_PATH=$INSTALL_PATH/lib
+export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
+
+if [ "$ARCH" = "x86_64" ]; then
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+fi
 
 if [ -d $TMP_PATH ]; then
   rm -rf $TMP_PATH || exit 1
@@ -84,12 +91,12 @@ for x in $OFX_DEPENDS; do
   cp -v $x $IO_LIBS/ || exit 1
 done
 
-if [ "$SDK_LIC" != "GPL" ] && [ "$SDK_LIC" != "COMMERCIAL" ]; then
-echo "Please select a License with SDK_LIC=(GPL,COMMERCIAL)"
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
 exit 1
 fi
 
-if [ "$SDK_LIC" == "GPL" ]; then
+if [ "$NATRON_LICENSE" == "GPL" ]; then
   FFLIC=gpl
 else
   FFLIC=lgpl
@@ -99,6 +106,8 @@ OFX_LIB_DEP=$(ldd $IO_LIBS/*|grep opt | awk '{print $3}')
 for y in $OFX_LIB_DEP; do
   cp -v $y $IO_LIBS/ || exit 1
 done
+
+rm -f $IO_LIBS/{libgcc*,libstdc*}
 
 IO_LIC=$OFX_IO_PATH/meta/ofx-io-license.txt
 echo "" >>$IO_LIC || exit 1
@@ -110,7 +119,7 @@ cat $INSTALL_PATH/docs/boost/LICENSE_1_0.txt >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 echo "FFMPEG:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
-if [ "$SDK_LIC" == "GPL" ]; then
+if [ "$NATRON_LICENSE" == "GPL" ]; then
   cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
 else
   cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
@@ -221,7 +230,7 @@ echo "SPEEX:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 cat $INSTALL_PATH/docs/speex/COPYING >>$IO_LIC || exit 1
 
-if [ "$SDK_LIC" == "GPL" ]; then
+if [ "$NATRON_LICENSE" == "GPL" ]; then
   echo "" >>$IO_LIC || exit 1
   echo "X264:" >>$IO_LIC || exit 1
   echo "" >>$IO_LIC || exit 1
@@ -251,6 +260,7 @@ OFX_CIMG_DEPENDS=$(ldd $OFX_MISC_PATH/data/Plugins/*/*/*/*|grep opt | awk '{prin
 for x in $OFX_CIMG_DEPENDS; do
     cp -v $x $CIMG_LIBS/ || exit 1
 done
+rm -f $CIMG_LIBS/{libgcc*,libstdc*}
 strip -s $CIMG_LIBS/*
 
 # NATRON
@@ -267,6 +277,7 @@ if [ -f "$NATRON_PATH/data/bin/NatronCrashReporter" ]; then
     strip -s $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter
 fi
 
+# most (all) distros has ffmpeg in the repository
 #cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffmpeg $NATRON_PATH/data/bin/ || exit 1
 #cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffprobe $NATRON_PATH/data/bin/ || exit 1
 
@@ -377,7 +388,7 @@ for x in $OFX_ARENA_DEPENDS; do
   cp -v $x $ARENA_LIBS/ || exit 1
 done
 strip -s $ARENA_LIBS/*
-rm -rf $ARENA_LIBS/libcairo*
+rm -f $ARENA_LIBS/{libcairo*,libgcc*,libstdc*}
 
 # OFX CV
 #OFX_CV_VERSION=$TAG

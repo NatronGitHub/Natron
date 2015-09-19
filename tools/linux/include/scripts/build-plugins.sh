@@ -48,14 +48,25 @@ mkdir -p $TMP_PATH || exit 1
 
 # Setup env
 export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig:$INSTALL_PATH/libdata/pkgconfig
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-export PATH=/usr/local/bin:$INSTALL_PATH/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export OPENJPEG_HOME=$INSTALL_PATH
 export THIRD_PARTY_TOOLS_HOME=$INSTALL_PATH
+export LD_LIBRARY_PATH=$INSTALL_PATH/lib
+export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
 
-if [ "$SDK_LIC" == "GPL" ]; then
+if [ "$ARCH" = "x86_64" ]; then
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+fi
+
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
+fi
+
+if [ "$NATRON_LICENSE" = "GPL" ]; then
   export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-gpl/lib
   FF_INC="-I${INSTALL_PATH}/ffmpeg-gpl/include"
