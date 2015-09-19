@@ -1581,10 +1581,11 @@ static bool parseTokenFrom(int fromDim,
     } else {
         //try to find the tuple
         std::size_t it = endingParenthesis + 1;
-        while (str.at(it) == ' ' && it < str.size()) {
+        while (it < str.size() && str.at(it) == ' ') {
             ++it;
         }
         if (it < str.size() && str.at(it) == '[') {
+            ///we found a tuple
             std::size_t endingBracket = getMatchingParenthesisPosition(it, '[', ']',  str);
             if (endingBracket == std::string::npos) {
                 throw std::invalid_argument("Invalid expr");
@@ -1596,9 +1597,10 @@ static bool parseTokenFrom(int fromDim,
     
     
     //The get() function does not always returns a tuple
-    if (params.empty() && dimensionParamPos == -1) {
+    if (params.empty() && (dimensionParamPos == -1)) {
         params.push_back("-1");
         ++dimensionParamPos;
+        
     }
     
     if (dimensionParamPos < 0 || (int)params.size() <= dimensionParamPos) {
@@ -1769,7 +1771,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
         return;
     }
     
-    if (!extractAllOcurrences(expressionCopy, "get", true, 0, dimension,&script)) {
+    if (!extractAllOcurrences(expressionCopy, "get", true, -1, dimension,&script)) {
         return;
     }
     
