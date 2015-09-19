@@ -309,7 +309,7 @@ RotoSmear::render(const RenderActionArgs& args)
             visiblePortion.push_back(*it);
         }
         
-        
+        bool didPaint = false;
         double distToNext = 0.;
 
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
@@ -348,6 +348,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 prev = *it;
                 ++it;
                 renderSmearDot(stroke,prev.first,it->first,prev.second,it->second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps, plane->second);
+                didPaint = true;
                 renderPoint = *it;
                 prev = renderPoint;
                 ++it;
@@ -410,21 +411,21 @@ RotoSmear::render(const RenderActionArgs& args)
                 prevPoint.x = prev.first.x + vx * v.x;
                 prevPoint.y = prev.first.y + vy * v.y;
                 renderSmearDot(stroke,prevPoint,renderPoint.first,renderPoint.second,renderPoint.second,brushSize,plane->second->getBitDepth(),mipmapLevel, nComps,plane->second);
-                
+                didPaint = true;
                 prev = renderPoint;
                 cur = renderPoint;
                 distToNext = 0;
                 
-            }
+            } // while (it!=visiblePortion.end()) {
 
-        }
+        } // for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
         
-        if (duringPainting) {
+        if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);
             _imp->lastTickPoint = prev;
             _imp->lastDistToNext = distToNext;
             _imp->lastCur = cur;
         }
-    }
+    } // for (std::list<std::list<std::pair<Natron::Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
     return Natron::eStatusOK;
 }

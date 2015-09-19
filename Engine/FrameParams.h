@@ -89,7 +89,10 @@ public:
     void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
     {
         for (std::list<boost::weak_ptr<Natron::Image> >::const_iterator it = _tiles.begin(); it != _tiles.end(); ++it) {
-            ret->push_back(it->lock());
+            boost::shared_ptr<Natron::Image> img = it->lock();
+            if (img) {
+                ret->push_back(img);
+            }
         }
     }
     
