@@ -3849,6 +3849,10 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMap
         *ret = _imp->lastRenderedTiles[textureIndex][mipMapLevel];
     }
     
+    if (!ret->empty()) {
+        return;
+    }
+    
     //Find an image at higher scale
     if (mipMapLevel > 0) {
         for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
@@ -3856,6 +3860,10 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMap
                 *ret =  _imp->lastRenderedTiles[textureIndex][i];
             }
         }
+    }
+    
+    if (!ret->empty()) {
+        return;
     }
     
     //Find an image at lower scale

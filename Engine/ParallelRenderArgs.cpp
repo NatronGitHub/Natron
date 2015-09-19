@@ -335,6 +335,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     NodeFrameViewRequestData::iterator foundFrameView = nodeRequest->frames.find(frameView);
     
     double par = effect->getPreferredAspectRatio();
+    ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
 
     
     if (foundFrameView != nodeRequest->frames.end()) {
@@ -365,7 +366,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         RectI pixelRod;
         fvRequest->globalData.rod.toPixelEnclosing(mappedLevel, par, &pixelRod);
         
-        ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
         
         if (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) {
             identity = true;
@@ -379,45 +379,6 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
             }
         }
         
-        if (identity) {
-            if (fvRequest->globalData.identityInputNb == -1) {
-                return eStatusOK;
-            } else if (fvRequest->globalData.identityInputNb == -2) {
-                assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
-                // be safe in release mode otherwise we hit an infinite recursion
-                if (fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant) {
-                    
-                    fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
-                    
-                    StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                           fvRequest->globalData.inputIdentityTime,
-                                                           view,
-                                                           originalMipMapLevel,
-                                                           node,
-                                                           treeRoot,
-                                                           canonicalRenderWindow,
-                                                           requests);
-                    return stat;
-                }
-            }
-            
-            Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
-            if (inputEffectIdentity) {
-                fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
-                StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                       fvRequest->globalData.inputIdentityTime,
-                                                       view,
-                                                       originalMipMapLevel,
-                                                       inputEffectIdentity->getNode(),
-                                                       treeRoot,
-                                                       canonicalRenderWindow,
-                                                       requests);
-                return stat;
-            }
-            
-            //Identity but no input
-            return eStatusFailed;
-        }
         
         ///Concatenate transforms if needed
         if (useTransforms) {
@@ -433,6 +394,50 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     } // if (foundFrameView != nodeRequest->frames.end()) {
     
     assert(fvRequest);
+    
+    
+     if (fvRequest->globalData.identityInputNb == -2) {
+        assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
+        // be safe in release mode otherwise we hit an infinite recursion
+        if (fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant) {
+            
+            fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
+            
+            StatusEnum stat = getInputsRoIsFunctor(useTransforms,
+                                                   fvRequest->globalData.inputIdentityTime,
+                                                   view,
+                                                   originalMipMapLevel,
+                                                   node,
+                                                   treeRoot,
+                                                   canonicalRenderWindow,
+                                                   requests);
+            return stat;
+        }
+        //Should fail on the assert above
+        return eStatusFailed;
+        
+    } else if (fvRequest->globalData.identityInputNb != -1) {
+        
+        Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+        if (inputEffectIdentity) {
+            fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
+            StatusEnum stat = getInputsRoIsFunctor(useTransforms,
+                                                   fvRequest->globalData.inputIdentityTime,
+                                                   view,
+                                                   originalMipMapLevel,
+                                                   inputEffectIdentity->getNode(),
+                                                   treeRoot,
+                                                   canonicalRenderWindow,
+                                                   requests);
+            return stat;
+        }
+        
+        //Identity but no input
+        return eStatusFailed;
+    } else {
+        return eStatusOK;
+    }
+    
     ///Compute the regions of interest in input for this RoI
     
     FrameViewPerRequestData fvPerRequestData;
