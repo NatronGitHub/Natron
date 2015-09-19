@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef IMAGEKEY_H
-#define IMAGEKEY_H
+#ifndef CACHEENTRYHOLDER_H
+#define CACHEENTRYHOLDER_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,52 +25,35 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/KeyHelper.h"
+#include <string>
 
-namespace Natron {
-class ImageKey
-        :  public KeyHelper<U64>
-{
+/**
+ * @brief Public interface for all elements that can own something in the cache
+ **/
+class CacheEntryHolder {
+
+    
 public:
 
-    U64 _nodeHashKey;
-    bool _frameVaryingOrAnimated;
-    double _time;
-    int _view;
-    double _pixelAspect;
-    bool _draftMode;
-
-    ImageKey();
-
-    ImageKey(const CacheEntryHolder* holder,
-             U64 nodeHashKey,
-             bool frameVaryingOrAnimated,
-             double time,
-             int view,
-             double pixelAspect,
-             bool draftMode);
-
-    void fillHash(Hash64* hash) const;
-
-    U64 getTreeVersion() const
+    CacheEntryHolder()
     {
-        return _nodeHashKey;
+    
     }
 
-    bool operator==(const ImageKey & other) const;
-
-    double getTime() const
+    virtual ~CacheEntryHolder()
     {
-        return _time;
+
     }
     
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
+    
+    /**
+     * @brief Should return a unique way of identifying an entity that can own entries in the cache.
+     * E.g: projectName.nodeFullyQualifiedName
+     **/
+    virtual std::string getCacheID() const = 0;
+    
 };
 
 
 
-
-}
-
-#endif // IMAGEKEY_H
+#endif // CACHEENTRYHOLDER_H

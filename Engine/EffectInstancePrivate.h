@@ -184,10 +184,6 @@ struct EffectInstance::Implementation
     ///to make sure these images aren't cleared from the cache.
     ThreadStorage< InputImagesMap > inputImages;
 
-
-    QMutex lastRenderArgsMutex; //< protects lastImage & lastRenderHash
-    U64 lastRenderHash;  //< the last hash given to render
-    ImageList lastPlanesRendered; //< the last image planes rendered
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 

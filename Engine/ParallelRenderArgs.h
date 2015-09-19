@@ -98,9 +98,6 @@ struct ParallelRenderArgs
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
     boost::shared_ptr<NodeFrameRequest> request;
     
-    ///The age of the roto attached to this node
-    U64 rotoAge;
-    
     ///> 0 if the args were set for the current thread
     int validArgs;
     
@@ -158,7 +155,6 @@ struct ParallelRenderArgs
     , view(0)
     , nodeHash(0)
     , request()
-    , rotoAge(0)
     , validArgs(0)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)

@@ -50,6 +50,7 @@ CLANG_DIAG_ON(deprecated)
 class QMutex;
 class QChar;
 
+class CacheEntryHolder;
 class AppInstance;
 class Format;
 class Settings;
@@ -235,9 +236,11 @@ public:
      * @brief Given the following tree version, removes all images from the node cache with a matching
      * tree version. This is useful to wipe the cache for one particular node.
      **/
-    void  removeAllImagesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
-    void  removeAllImagesFromDiskCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
-    void  removeAllTexturesFromCacheWithMatchingKey(bool useTreeVersion, U64 treeVersion);
+    void  removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
+    void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
+    void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
+    
+    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;

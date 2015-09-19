@@ -42,6 +42,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Engine/Hash64.h"
+#include "Engine/CacheEntryHolder.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
 #include <SequenceParsing.h> // for removePath
@@ -387,6 +388,12 @@ public:
      **/
     virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
                                            int time,size_t size) const = 0;
+    
+    /**
+     * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
+     * @param removeAll If true, remove even entries that match the nodeHash
+     **/
+    virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string& holderID, U64 nodeHash, bool removeAll) = 0;
     
     
 #ifdef DEBUG

@@ -46,7 +46,8 @@ FrameKey::FrameKey()
     _scale.x = _scale.y = 0.;
 }
 
-FrameKey::FrameKey(SequenceTime time,
+FrameKey::FrameKey(const CacheEntryHolder* holder,
+                   SequenceTime time,
                    U64 treeVersion,
                    double gain,
                    double gamma,
@@ -61,7 +62,7 @@ FrameKey::FrameKey(SequenceTime time,
                    const std::string& alphaChannelFullName,
                    bool useShaders,
                    bool draftMode)
-: KeyHelper<U64>()
+: KeyHelper<U64>(holder)
 , _time(time)
 , _treeVersion(treeVersion)
 , _gain(gain)

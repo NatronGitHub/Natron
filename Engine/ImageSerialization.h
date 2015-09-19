@@ -33,25 +33,34 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/version.hpp>
 GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
-namespace boost {
-namespace serialization {
+
+#define IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID 2
+#define IMAGE_KEY_SERIALIZATION_VERSION IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID
+
+
 template<class Archive>
 void
-serialize(Archive & ar,
-          Natron::ImageKey & k,
-          const unsigned int /*version*/ )
+Natron::ImageKey::serialize(Archive & ar,
+          const unsigned int version)
 {
-    ar & boost::serialization::make_nvp("NodeHashKey",k._nodeHashKey);
-    ar & boost::serialization::make_nvp("FrameVarying",k._frameVaryingOrAnimated);
-    ar & boost::serialization::make_nvp("Time",k._time);
-    ar & boost::serialization::make_nvp("View",k._view);
-    ar & boost::serialization::make_nvp("PixelAspect",k._pixelAspect);
-    ar & boost::serialization::make_nvp("Draft",k._draftMode);
+    if (version >= IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID) {
+        ar & boost::serialization::make_nvp("HolderID",_holderID);
+    }
+    ar & boost::serialization::make_nvp("NodeHashKey",_nodeHashKey);
+    ar & boost::serialization::make_nvp("FrameVarying",_frameVaryingOrAnimated);
+    ar & boost::serialization::make_nvp("Time",_time);
+    ar & boost::serialization::make_nvp("View",_view);
+    ar & boost::serialization::make_nvp("PixelAspect",_pixelAspect);
+    ar & boost::serialization::make_nvp("Draft",_draftMode);
+
 }
-}
-}
+
+BOOST_CLASS_VERSION(Natron::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
+
 
 #endif // IMAGESERIALIZATION_H

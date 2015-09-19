@@ -447,7 +447,7 @@ public:
                 nodeHash = viewerInput->getHashValue();
             }
             
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, viewerInput->getRotoAge(), renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,  renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -962,7 +962,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     int lookups = outArgs->draftModeEnabled ? 2 : 1;
     
     for (int lookup = 0; lookup < lookups; ++lookup) {
-        outArgs->key.reset(new FrameKey(time,
+        outArgs->key.reset(new FrameKey(getNode().get(),
+                                        time,
                                         viewerHash,
                                         outArgs->params->gain,
                                         outArgs->params->gamma,
@@ -1021,22 +1022,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 cachedFrameParams = outArgs->params->cachedFrame->getParams();
             }
             
-            ///The user changed a parameter or the tree, just clear the cache
-            ///it has no point keeping the cache because we will never find these entries again.
-            U64 lastRenderHash;
-            bool lastRenderedHashValid;
-            {
-                QMutexLocker l(&_imp->lastRenderedHashMutex);
-                lastRenderHash = _imp->lastRenderedHash;
-                lastRenderedHashValid = _imp->lastRenderedHashValid;
-            }
-            if ( lastRenderedHashValid && (lastRenderHash != viewerHash) ) {
-                appPTR->removeAllTexturesFromCacheWithMatchingKey(true, lastRenderHash);
-                {
-                    QMutexLocker l(&_imp->lastRenderedHashMutex);
-                    _imp->lastRenderedHashValid = false;
-                }
-            }
         }
         
         if (!isCached) {
@@ -1073,12 +1058,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             
             outArgs->params->ramBuffer = outArgs->params->cachedFrame->data();
             
-            {
-                QMutexLocker l(&_imp->lastRenderedHashMutex);
-                _imp->lastRenderedHash = viewerHash;
-                _imp->lastRenderedHashValid = true;
-            }
-            
             if (stats && stats->isInDepthProfilingEnabled()) {
                 stats->addCacheInfosForNode(getNode(), false, false);
             }
@@ -1105,7 +1084,7 @@ Natron::StatusEnum
 ViewerInstance::renderViewer_internal(int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      U64 viewerHash,
+                                      U64 /*viewerHash*/,
                                       bool canAbort,
                                       boost::shared_ptr<Natron::Node> rotoPaintNode,
                                       bool useTLS,
@@ -1299,11 +1278,6 @@ ViewerInstance::renderViewer_internal(int view,
         /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
         inArgs.params->ramBuffer = inArgs.params->cachedFrame->data();
         
-        {
-            QMutexLocker l(&_imp->lastRenderedHashMutex);
-            _imp->lastRenderedHashValid = true;
-            _imp->lastRenderedHash = viewerHash;
-        }
     }
     assert(inArgs.params->ramBuffer);
     
@@ -2454,7 +2428,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         ImageList tiles;
         Natron::ImageBitDepthEnum depth;
         if (params->cachedFrame) {
-            depth = (Natron::ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
             if (!params->tiles.empty()) {
                 tiles = params->tiles;
             } else {
@@ -2464,6 +2437,11 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
             assert(!params->tiles.empty());
             tiles = params->tiles;
             depth = tiles.front()->getBitDepth();
+        }
+        if (!tiles.empty()) {
+            depth = tiles.front()->getBitDepth();
+        } else {
+            depth = (Natron::ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
         }
         
         uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,

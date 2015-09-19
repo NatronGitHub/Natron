@@ -206,9 +206,6 @@ public:
     , activeInputsMutex(QMutex::Recursive)
     , activeInputs()
     , activateInputChangedFromViewer(false)
-    , lastRenderedHashMutex()
-    , lastRenderedHash(0)
-    , lastRenderedHashValid(false)
     , gammaLookupMutex()
     , gammaLookup()
     , lastRotoPaintTickParamsMutex()
@@ -453,10 +450,6 @@ public:
     
     ///Only accessed from MT
     bool activateInputChangedFromViewer;
-    
-    QMutex lastRenderedHashMutex;
-    U64 lastRenderedHash;
-    bool lastRenderedHashValid;
     
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;

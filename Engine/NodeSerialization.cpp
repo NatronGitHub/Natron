@@ -97,6 +97,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         _nodeLabel = n->getLabel_mt_safe();
         
         _nodeScriptName = n->getScriptName_mt_safe();
+        
+        _cacheID = n->getCacheID();
 
         _pluginID = n->getPluginID();
         

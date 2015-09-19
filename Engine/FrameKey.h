@@ -36,7 +36,8 @@ class FrameKey
 public:
     FrameKey();
 
-    FrameKey(SequenceTime time,
+    FrameKey(const CacheEntryHolder* holder,
+             SequenceTime time,
              U64 treeVersion,
              double gain,
              double gamma,

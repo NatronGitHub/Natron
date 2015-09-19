@@ -38,14 +38,15 @@ ImageKey::ImageKey()
 {
 }
 
-ImageKey::ImageKey(U64 nodeHashKey,
+ImageKey::ImageKey(const CacheEntryHolder* holder,
+                   U64 nodeHashKey,
                    bool frameVaryingOrAnimated,
                    double time,
                    //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
                    int view,
                    double pixelAspect,
                    bool draftMode)
-: KeyHelper<U64>()
+: KeyHelper<U64>(holder)
 , _nodeHashKey(nodeHashKey)
 , _frameVaryingOrAnimated(frameVaryingOrAnimated)
 , _time(time)

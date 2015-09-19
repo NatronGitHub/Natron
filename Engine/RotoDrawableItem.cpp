@@ -373,7 +373,13 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
 }
 
-
+std::string
+RotoDrawableItem::getCacheID() const
+{
+    assert(_imp->mergeNode);
+    //The cache iD is the one of the internal merge node + RotoDrawableItem
+    return _imp->mergeNode->getCacheID() + ".RotoDrawableItem";
+}
 
 void
 RotoDrawableItem::disconnectNodes()

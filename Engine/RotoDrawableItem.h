@@ -39,6 +39,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
+#include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
 
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -101,6 +102,7 @@ struct Matrix3x3;
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
+    , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -231,6 +233,7 @@ public:
     void activateNodes();
     void disconnectNodes();
 
+    virtual std::string getCacheID() const OVERRIDE FINAL;
     
 Q_SIGNALS:
 

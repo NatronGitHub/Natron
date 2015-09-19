@@ -37,7 +37,8 @@
 #define FRAME_KEY_CHANGES_BITDEPTH_ENUM 5
 #define FRAME_KEY_HANDLE_FP_CORRECTLY 6
 #define FRAME_KEY_INTRODUCES_DRAFT 7
-#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_DRAFT
+#define FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID 8
+#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID
 
 template<class Archive>
 void
@@ -78,6 +79,10 @@ Natron::FrameKey::serialize(Archive & ar,
         ar & boost::serialization::make_nvp("Draft", _draftMode);
     } else {
         _draftMode = false;
+    }
+    
+    if (version >= FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID) {
+        ar & boost::serialization::make_nvp("HolderID",_holderID);
     }
 }
 

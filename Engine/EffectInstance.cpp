@@ -167,7 +167,6 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          bool isSequential,
                                          bool canAbort,
                                          U64 nodeHash,
-                                         U64 rotoAge,
                                          U64 renderAge,
                                          const boost::shared_ptr<Natron::Node> & treeRoot,
                                          const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
@@ -195,7 +194,6 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     } else {
         args.nodeHash = nodeHash;
     }
-    args.rotoAge = rotoAge;
     args.canAbort = canAbort;
     args.renderAge = renderAge;
     args.treeRoot = treeRoot;
@@ -293,6 +291,7 @@ EffectInstance::getHash() const
 
     return n->getHashValue();
 }
+
 
 U64
 EffectInstance::getRenderHash() const
@@ -448,7 +447,6 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 const RenderScale & scale,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
-                                                U64* rotoAge_p,
                                                 bool* isIdentity_p,
                                                 double* identityTime,
                                                 int* identityInputNb_p,
@@ -475,7 +473,6 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
     ///Try to compensate for the mistake
 
     *nodeHash_p = getHash();
-    *rotoAge_p = getNode()->getRotoAge();
     *duringPaintStroke_p = getNode()->isDuringPaintStrokeCreation();
     const U64 & nodeHash = *nodeHash_p;
 
@@ -624,7 +621,6 @@ EffectInstance::getImage(int inputNb,
     int inputNbIdentity;
     double inputIdentityTime;
     U64 nodeHash;
-    U64 rotoAge;
     bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     /// re-computing of the same image many many times
@@ -641,7 +637,7 @@ EffectInstance::getImage(int inputNb,
     bool roiWasInRequestPass = false;
 
     if ( !_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData() ) {
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
             return ImagePtr();
         }
     } else {
@@ -649,7 +645,7 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
 
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
                 return ImagePtr();
             }
         } else {
@@ -672,7 +668,6 @@ EffectInstance::getImage(int inputNb,
             inputIdentityTime = renderArgs._identityTime;
             inputNbIdentity = renderArgs._identityInputNb;
             nodeHash = frameRenderArgs.nodeHash;
-            rotoAge = frameRenderArgs.rotoAge;
             duringPaintStroke = frameRenderArgs.isDuringPaintStrokeCreation;
         }
     }
@@ -750,7 +745,7 @@ EffectInstance::getImage(int inputNb,
             if (duringPaintStroke) {
                 inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, prefComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getNode()->updateStrokeImage(inputImg);
@@ -3936,10 +3931,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 void
 EffectInstance::clearLastRenderedImage()
 {
-    {
-        QMutexLocker l(&_imp->lastRenderArgsMutex);
-        _imp->lastPlanesRendered.clear();
-    }
+    
 }
 
 void

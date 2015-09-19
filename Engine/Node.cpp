@@ -191,6 +191,7 @@ struct Node::Implementation
     , inputLabels()
     , scriptName()
     , label()
+    , cacheID()
     , deactivatedState()
     , activatedMutex()
     , activated(true)
@@ -355,6 +356,12 @@ struct Node::Implementation
     std::vector<std::string> inputLabels; // inputs name
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
+    
+    ///The cacheID is the first script name that was given to a node
+    ///it is then used in the cache to identify images that belong to this node
+    ///In order for the cache to be persistent, the cacheID is serialized with the node
+    ///and 2 nodes cannot have the same cacheID.
+    std::string cacheID;
     
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
@@ -584,10 +591,16 @@ Node::load(const std::string & parentMultiInstanceName,
     bool isFileDialogPreviewReader = fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
-    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setScriptName_no_error_check(serialization.getNodeScriptName());
-        setLabel(serialization.getNodeLabel());
-        nameSet = true;
+    if (!serialization.isNull()) {
+        {
+            QMutexLocker k(&_imp->nameMutex);
+            _imp->cacheID = serialization.getCacheID();
+        }
+        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
+            setScriptName_no_error_check(serialization.getNodeScriptName());
+            setLabel(serialization.getNodeLabel());
+            nameSet = true;
+        }
     }
 
     
@@ -1064,6 +1077,14 @@ Node::getHashValue() const
     return _imp->hash.value();
 }
 
+std::string
+Node::getCacheID() const
+{
+    QMutexLocker k(&_imp->nameMutex);
+    return _imp->cacheID;
+}
+
+
 void
 Node::computeHashInternal(std::list<Natron::Node*>& marked)
 {
@@ -1079,8 +1100,11 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         qDebug() << "Node::computeHash(): inputs not initialized";
     }
     
+    U64 oldHash,newHash;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
+        
+        oldHash = _imp->hash.value();
         
         ///reset the hash value
         _imp->hash.reset();
@@ -1144,10 +1168,20 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         _imp->hash.append(creationTime);
         
         _imp->hash.computeHash();
+        
+        newHash = _imp->hash.value();
+        
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     marked.push_back(this);
     
+    if (oldHash != newHash) {
+        /*
+         * We changed the node hash. That means all cache entries for this node with a different hash
+         * are impossible to re-create again. Just discard them all. This is done in a separate thread.
+         */
+        removeAllImagesFromCacheWithMatchingIDAndDifferentKey(newHash);
+    }
     
     bool isRotoPaint = _imp->liveInstance->isRotoPaintNode();
     
@@ -1190,6 +1224,24 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         }
     }
 
+}
+
+void
+Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
+{
+    appPTR->removeAllImagesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
+    appPTR->removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
+    if (isViewer) {
+        //Also remove from viewer cache
+        appPTR->removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
+    }
+}
+
+void
+Node::removeAllImagesFromCache()
+{
+    appPTR->removeAllCacheEntriesForHolder(this);
 }
 
 void
@@ -1864,7 +1916,9 @@ Node::removeReferences(bool ensureThreadsFinished)
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
-    appPTR->removeAllImagesFromCacheWithMatchingKey(true,  getHashValue() );
+    
+    removeAllImagesFromCache();
+    
     deleteNodeVariableToPython(getFullyQualifiedName());
     
     int maxInputs = getMaxInputCount();
@@ -2173,11 +2227,27 @@ Node::setNameInternal(const std::string& name)
         collection->setNodeName(name,false, false, &newName);
     }
     
+    bool mustSetCacheID;
     {
         QMutexLocker l(&_imp->nameMutex);
         _imp->scriptName = newName;
+        mustSetCacheID = _imp->cacheID.empty();
         ///Set the label at the same time
         _imp->label = newName;
+    }
+    if (mustSetCacheID) {
+        std::string baseName = newName;
+        std::string cacheID = baseName;
+        int i = 1;
+        while (getApp()->getProject()->isCacheIDAlreadyTaken(cacheID)) {
+            std::stringstream ss;
+            ss << baseName;
+            ss << i;
+            cacheID = ss.str();
+            ++i;
+        }
+        QMutexLocker l(&_imp->nameMutex);
+        _imp->cacheID = cacheID;
     }
     
     if (collection) {

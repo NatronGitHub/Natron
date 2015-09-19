@@ -25,7 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <string>
 #include "Engine/Hash64.h"
+#include "Engine/CacheEntryHolder.h"
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
  * of 1 or more parameters that represent a "unique" element in the cache.
@@ -55,10 +57,19 @@ public:
      * @brief Constructs an empty key. This constructor is used by boost::serialization.
      **/
     KeyHelper()
-        : _hashComputed(false), _hash()
+        : _hashComputed(false), _hash(), _holderID()
     {
     }
 
+    KeyHelper(const CacheEntryHolder* holder)
+    : _hashComputed(false), _hash(), _holderID()
+    {
+        if (holder) {
+            _holderID = holder->getCacheID();
+        }
+    }
+
+    
     /**
      * @brief Constructs a key from an already existing hash key.
      **/
@@ -69,7 +80,7 @@ public:
      * constructor above but takes in parameter another key.
      **/
     KeyHelper(const KeyHelper & other)
-        : _hashComputed(true), _hash( other.getHash() )
+        : _hashComputed(true), _hash( other.getHash() ), _holderID( other.getCacheHolderID() )
     {
     }
 
@@ -91,6 +102,12 @@ public:
     {
         _hashComputed = false;
     }
+    
+    const std::string& getCacheHolderID() const
+    {
+        return _holderID;
+    }
+
 
 protected:
 
@@ -111,6 +128,11 @@ private:
 
     mutable bool _hashComputed;
     mutable hash_type _hash;
+    
+public:
+    
+    std::string _holderID;
+
 };
 
 

@@ -2335,8 +2335,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                   const RectI& /*roi*/,
-                                  U64 rotoAge,
-                                  U64 nodeHash,
                                   const Natron::ImageComponents& components,
                                   SequenceTime time,
                                   int view,
@@ -2349,14 +2347,13 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
     ImagePtr image;// = stroke->getStrokeTimePreview();
 
-    ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
-    ///the output image of the roto node and the mask image.
+    ///compute an enhanced hash different from the one of the merge node of the item in order to differentiate within the cache
+    ///the output image of the node and the mask image.
     Hash64 hash;
-    hash.append(nodeHash);
-    hash.append(rotoAge);
+    hash.append(stroke->getMergeNode()->getLiveInstance()->getRenderHash());
     hash.computeHash();
     
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view, false);
+    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false);
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);

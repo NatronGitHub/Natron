@@ -235,9 +235,21 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    if (!getGui() || getGui()->isGUIFrozen()) {
+    if (!getGui()) {
         return;
     }
+    if (getGui()->isGUIFrozen()) {
+        if (_imp->_cacheSizeText->isVisible()) {
+            _imp->_cacheSizeText->hide();
+        }
+        return;
+    } else {
+        if (!_imp->_cacheSizeText->isVisible()) {
+            _imp->_cacheSizeText->show();
+        }
+
+    }
+    
     QString oldText = _imp->_cacheSizeText->toPlainText();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);

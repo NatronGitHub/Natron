@@ -220,6 +220,7 @@ HEADERS += \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
+    CacheEntryHolder.h \
     CacheSerialization.h \
     CoonsRegularization.h \
     Curve.h \

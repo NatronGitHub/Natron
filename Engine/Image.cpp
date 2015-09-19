@@ -634,7 +634,7 @@ Image::Image(const ImageComponents& components,
     , _useBitmap(useBitmap)
 {
     
-    setCacheEntry(makeKey(0,false,0,0, false),
+    setCacheEntry(makeKey(0,0,false,0,0, false),
                   boost::shared_ptr<ImageParams>( new ImageParams( mipMapLevel,
                                                                    regionOfDefinition,
                                                                    par,
@@ -690,13 +690,14 @@ Image::setBitmapDirtyZone(const RectI& zone)
 }
 
 ImageKey  
-Image::makeKey(U64 nodeHashKey,
+Image::makeKey(const CacheEntryHolder* holder,
+               U64 nodeHashKey,
                bool frameVaryingOrAnimated,
                double time,
                int view,
                bool draftMode)
 {
-    return ImageKey(nodeHashKey,frameVaryingOrAnimated,time,view, 1., draftMode);
+    return ImageKey(holder,nodeHashKey,frameVaryingOrAnimated,time,view, 1., draftMode);
 }
 
 boost::shared_ptr<ImageParams>

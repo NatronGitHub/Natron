@@ -601,7 +601,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated);
-    Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view, frameRenderArgs.draftMode);
+    Natron::ImageKey key = Natron::Image::makeKey(getNode().get(),nodeHash, isFrameVaryingOrAnimated, args.time, args.view, frameRenderArgs.draftMode);
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
 
@@ -1231,37 +1231,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 #endif
 
         if (hasSomethingToRender) {
-            {
-                ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
-                ///just remove the old image from the cache to recycle memory.
-                ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
-                ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
-                ///in the cache since the ViewerCache already has it ready.
-
-
-                ///Note that if 2 threads concurrently are rendering the same frame with 2 different keys, this would not
-                ///interfere with the cache system for the other thread because if another thread uses this image, the
-                ///attempt to remove it from the cache will fail because of use_count > 1
-                bool isLastPlanesEmpty;
-                U64 lastRenderHash;
-                {
-                    QMutexLocker l(&_imp->lastRenderArgsMutex);
-                    isLastPlanesEmpty = _imp->lastPlanesRendered.empty();
-                    lastRenderHash = _imp->lastRenderHash;
-                }
-                if ( !isLastPlanesEmpty && (lastRenderHash != nodeHash) ) {
-                    ///once we got it remove it from the cache
-                    if (!useDiskCacheNode) {
-                        appPTR->removeAllImagesFromCacheWithMatchingKey(true, lastRenderHash);
-                    } else {
-                        appPTR->removeAllImagesFromDiskCacheWithMatchingKey(true, lastRenderHash);
-                    }
-                    {
-                        QMutexLocker l(&_imp->lastRenderArgsMutex);
-                        _imp->lastPlanesRendered.clear();
-                    }
-                }
-            }
+            
 
 
             // eRenderSafetyInstanceSafe means that there is at most one render per instance
@@ -1357,7 +1327,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         if (isDuringPaintStroke) {
             //We know the image will never be used ever again
-            appPTR->removeAllImagesFromCacheWithMatchingKey(true, nodeHash);
+            getNode()->removeAllImagesFromCache();
         }
 
         return eRenderRoIRetCodeAborted;
@@ -1459,12 +1429,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///// Termination, update last rendered planes
     assert( !outputPlanes->empty() );
-    {
-        ///flag that this is the last planes we rendered
-        QMutexLocker l(&_imp->lastRenderArgsMutex);
-        _imp->lastRenderHash = nodeHash;
-        _imp->lastPlanesRendered = *outputPlanes;
-    }
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

@@ -228,6 +228,7 @@ public:
         return _node.lock();
     }
 
+
     /**
      * @brief Returns the "real" hash of the node synchronized with the gui state
      **/
@@ -569,7 +570,6 @@ public:
                                   bool isSequential,
                                   bool canAbort,
                                   U64 nodeHash,
-                                  U64 rotoAge,
                                   U64 renderAge,
                                   const boost::shared_ptr<Natron::Node> & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
@@ -1680,7 +1680,6 @@ private:
                                          const RenderScale & scale,
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
-                                         U64* rotoAge_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
                                          int* identityInputNb_p,

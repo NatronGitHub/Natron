@@ -219,8 +219,6 @@ public:
    
     boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const RectI& roi,
-                                                          U64 rotoAge,
-                                                          U64 nodeHash,
                                                           const Natron::ImageComponents& components,
                                                           SequenceTime time,
                                                           int view,

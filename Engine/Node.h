@@ -44,6 +44,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/CacheEntryHolder.h"
+
 
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
 #define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
@@ -84,6 +86,7 @@ class LibraryBinary;
 
 class Node
     : public QObject, public boost::enable_shared_from_this<Natron::Node>
+    , public CacheEntryHolder
 {
     Q_OBJECT
 
@@ -201,6 +204,7 @@ public:
      **/
     U64 getHashValue() const;
 
+    virtual std::string getCacheID() const OVERRIDE FINAL;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -1016,6 +1020,9 @@ public:
     void removeParameterFromPython(const std::string& parameterName);
 
     double getHostMixingValue(int time) const;
+    
+    void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
+    void removeAllImagesFromCache();
     
 private:
     

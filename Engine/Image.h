@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/RectD.h"
 #include "Engine/OutputSchedulerThread.h"
 
+class CacheEntryHolder;
 
 namespace Natron {
 
@@ -197,7 +198,8 @@ namespace Natron {
 
         virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
 
-        static ImageKey makeKey(U64 nodeHashKey,
+        static ImageKey makeKey(const CacheEntryHolder* holder,
+                                U64 nodeHashKey,
                                 bool frameVaryingOrAnimated,
                                 double time,
                                 int view,
