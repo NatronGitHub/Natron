@@ -27,8 +27,7 @@ include(../config.pri)
 # disable warnings, since this is an external library
 QMAKE_CFLAGS_WARN_ON=-Wno-deprecated
 QMAKE_CXXFLAGS_WARN_ON=-Wno-deprecated
-QMAKE_CXXFLAGS -= -pedantic
-  
+
 win32-msvc* {
 	CONFIG(64bit) {
 		QMAKE_LFLAGS += /MACHINE:X64

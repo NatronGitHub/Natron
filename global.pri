@@ -272,11 +272,11 @@ unix {
   # redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
-  QMAKE_CXXFLAGS += -ftemplate-depth-1024 -pedantic
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
 }
 
 *clang* {
-  QMAKE_CXXFLAGS += -ftemplate-depth-1024 -pedantic
+  QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CFLAGS_WARN_ON += -Wextra
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   c++11 {
