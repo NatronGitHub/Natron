@@ -27,11 +27,8 @@ SUBDIRS += \
     Renderer \
     Gui \
     Tests \
-    App
-
-gbreakpad {
-    SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
-}
+    App \
+    BreakpadClient CrashReporter CrashReporterCLI
 
 OTHER_FILES += \
     Global/Enums.h \

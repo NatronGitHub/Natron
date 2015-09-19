@@ -27,6 +27,8 @@ CONFIG += qt
 
 TEMPLATE = app
 
+gbreakpad {
+
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
 # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
@@ -142,3 +144,5 @@ win32-msvc*{
 }
 
 INSTALLS += target
+
+}

@@ -28,6 +28,8 @@ TEMPLATE = app
 
 INCLUDEPATH += $$PWD/..
 
+gbreakpad {
+
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
 # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
@@ -146,3 +148,5 @@ RESOURCES += \
     ../Gui/GuiResources.qrc
 
 INSTALLS += target
+
+}
