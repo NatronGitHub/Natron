@@ -88,7 +88,9 @@ class Node
     : public QObject, public boost::enable_shared_from_this<Natron::Node>
     , public CacheEntryHolder
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
