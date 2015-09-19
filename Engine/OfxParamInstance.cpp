@@ -2865,7 +2865,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,
 
     knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault),0);
 
-    _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getFuncPointerProperty(kOfxParamPropCustomInterpCallbackV1);
+    _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_customParamInterpolationV1Entry) {
         knob->setCustomInterpolation( _customParamInterpolationV1Entry, (void*)getHandle() );
     }
@@ -3057,7 +3057,7 @@ OfxParametricInstance::onCurvesDefaultInitialized()
 void
 OfxParametricInstance::initializeInteract(OverlaySupport* widget)
 {
-    OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getFuncPointerProperty(kOfxParamPropParametricInteractBackground);
+    OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 
     if (interactEntryPoint) {
         _overlayInteract = new Natron::OfxOverlayInteract( ( *_effect->effectInstance() ),8,true );
