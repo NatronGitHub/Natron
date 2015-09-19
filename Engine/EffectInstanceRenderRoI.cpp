@@ -300,7 +300,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
        we don't want to cache the full-scale image because it will be low res. Instead in that case we cache the downscaled image
      */
     bool useImageAsOutput;
-    RectI roi;
+    RectI roi,upscaledRoi;
 
     if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
         //We cache 'image', hence the RoI should be expressed in its coordinates
@@ -308,11 +308,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         RectD canonicalRoI;
         args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
         canonicalRoI.toPixelEnclosing(0, par, &roi);
+        upscaledRoi = roi;
         useImageAsOutput = true;
     } else {
         //In that case the plug-in either supports render scale or doesn't support render scale but uses downscaled inputs
         //renderRoIInternal should check the bitmap of downscaledImage and not 'image'!
         roi = args.roi;
+        if (!renderFullScaleThenDownscale) {
+            upscaledRoi = roi;
+        } else {
+            RectD canonicalRoI;
+            args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+            canonicalRoI.toPixelEnclosing(0, par, &upscaledRoi);
+        }
         useImageAsOutput = false;
     }
 
@@ -580,7 +588,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
         ///just allocate the roi
-        upscaledImageBoundsNc.intersect(roi, &upscaledImageBoundsNc);
+        upscaledImageBoundsNc.intersect(upscaledRoi, &upscaledImageBoundsNc);
         downscaledImageBoundsNc.intersect(args.roi, &downscaledImageBoundsNc);
 #endif
     } else {

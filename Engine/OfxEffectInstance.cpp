@@ -1378,31 +1378,30 @@ OfxEffectInstance::restoreClipPreferences()
     RenderScale s;
     s.x = s.y = 1.;
     
+    ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+    if (supportsRenderScaleMaybe() == eSupportsMaybe) {
+        OfxRectD rod;
+        OfxPointD scaleOne;
+        scaleOne.x = scaleOne.y = 1.;
+        OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
+        if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+            OfxPointD scale;
+            scale.x = 0.5;
+            scale.y = 0.5;
+            rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                setSupportsRenderScaleMaybe(eSupportsYes);
+            } else {
+                setSupportsRenderScaleMaybe(eSupportsNo);
+            }
+        }
+        
+    }
+
+    
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if ( _effect->areAllNonOptionalClipsConnected() ) {
-        
-        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
-        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
-            OfxRectD rod;
-            OfxPointD scaleOne;
-            scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
-            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                OfxPointD scale;
-                scale.x = 0.5;
-                scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
-                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                    setSupportsRenderScaleMaybe(eSupportsYes);
-                } else {
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                }
-            }
-            
-        }
-
-        
         checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, false);
     }
 }
@@ -1473,43 +1472,68 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                 stat = _effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
             }
         }
-        if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
+        if (supportsRS == eSupportsMaybe) {
+            OfxRectD tmpRod;
             if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                // we got at least one success with RS != 1
-                setSupportsRenderScaleMaybe(eSupportsYes);
-            } else if (stat == kOfxStatFailed) {
-                // maybe the effect does not support renderscale
-                // try again with scale one
-                OfxPointD scaleOne;
-                scaleOne.x = scaleOne.y = 1.;
-                
-                {
-                    SET_CAN_SET_VALUE(false);
+                if (!scaleIsOne) {
+                    // we got at least one success with RS != 1
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    //try with scale != 1
+                    // maybe the effect does not support renderscale
+                    // try again with scale one
+                    OfxPointD halfScale;
+                    halfScale.x = halfScale.y = .5;
                     
-                    if (getRecursionLevel() > 1) {
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
+                    {
+                        SET_CAN_SET_VALUE(false);
+                        
+                        if (getRecursionLevel() > 1) {
+                            stat = _effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
+                        } else {
+                            ///Take the preferences lock so that it cannot be modified throughout the action.
+                            QReadLocker preferencesLocker(_preferencesLock);
+                            stat = _effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
+                        }
+                    }
+                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
+                        setSupportsRenderScaleMaybe(eSupportsYes);
                     } else {
-                        ///Take the preferences lock so that it cannot be modified throughout the action.
-                        QReadLocker preferencesLocker(_preferencesLock);
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
+                        setSupportsRenderScaleMaybe(eSupportsNo);
+                    }
+                }
+            } else if (stat == kOfxStatFailed) {
+                
+                if (scaleIsOne) {
+                    //scale one failed, we can't say anything
+                     return eStatusFailed;
+                } else {
+                    // maybe the effect does not support renderscale
+                    // try again with scale one
+                    OfxPointD scaleOne;
+                    scaleOne.x = scaleOne.y = 1.;
+                    
+                    {
+                        SET_CAN_SET_VALUE(false);
+                        
+                        if (getRecursionLevel() > 1) {
+                            stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
+                        } else {
+                            ///Take the preferences lock so that it cannot be modified throughout the action.
+                            QReadLocker preferencesLocker(_preferencesLock);
+                            stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
+                        }
+                    }
+                    
+                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
+                        // we got success with scale = 1, which means it doesn't support renderscale after all
+                        setSupportsRenderScaleMaybe(eSupportsNo);
+                    } else {
+                        // if both actions failed, we can't say anything
+                        return eStatusFailed;
                     }
                 }
                 
-                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                    // we got success with scale = 1, which means it doesn't support renderscale after all
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                } else {
-                    // if both actions failed, we can't say anything
-                    return eStatusFailed;
-                }
-                
-                /// This code is not needed since getRegionOfDefinitionAction in HostSupport does it for us
-                /// plus it is horribly slow (don't know why)
-//                if (stat == kOfxStatReplyDefault) {
-//                    calcDefaultRegionOfDefinition(hash,time,view,scaleOne, rod);
-//
-//                    return eStatusReplyDefault;
-//                }
             }
         }
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
