@@ -40,6 +40,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+#include "Global/MemoryInfo.h"
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/BackDrop.h"
@@ -404,6 +406,7 @@ struct Node::Implementation
     boost::weak_ptr<KnobString> infoDisclaimer;
     std::vector< boost::weak_ptr<KnobString> > inputFormats;
     boost::weak_ptr<KnobString> outputFormat;
+    boost::weak_ptr<KnobString> cacheMemInfo;
     boost::weak_ptr<KnobButton> refreshInfoButton;
     
     boost::weak_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported;
@@ -2333,6 +2336,19 @@ Node::isActivated() const
 }
 
 std::string
+Node::makeCacheInfo() const
+{
+    std::size_t ram,disk;
+    appPTR->getMemoryStatsForCacheEntryHolder(this, &ram, &disk);
+    QString ramSizeStr = printAsRAM((U64)ram);
+    QString diskSizeStr = printAsRAM((U64)disk);
+    
+    std::stringstream ss;
+    ss << "<b><font color=\"green\">Cache Occupancy:</font></b> RAM: " << ramSizeStr.toStdString() << " / Disk: " << diskSizeStr.toStdString();
+    return ss.str();
+}
+
+std::string
 Node::makeInfoForInput(int inputNumber) const
 {
     const Natron::Node* inputNode = 0;
@@ -2781,6 +2797,17 @@ Node::initializeKnobs(int renderScaleSupportPref)
             outputFormat->setAsLabel();
             infoPage->addKnob(outputFormat);
             _imp->outputFormat = outputFormat;
+            
+            std::string cacheInfoLabel("Cache Occupancy");
+            boost::shared_ptr<KnobString> cacheOccupancy = Natron::createKnob<KnobString>(_imp->liveInstance.get(), cacheInfoLabel, 1, false);
+            cacheOccupancy->setName(cacheInfoLabel + "Info");
+            cacheOccupancy->setAnimationEnabled(false);
+            cacheOccupancy->setIsPersistant(false);
+            cacheOccupancy->setEvaluateOnChange(false);
+            cacheOccupancy->hideDescription();
+            cacheOccupancy->setAsLabel();
+            infoPage->addKnob(cacheOccupancy);
+            _imp->cacheMemInfo = cacheOccupancy;
             
             boost::shared_ptr<KnobButton> refreshInfoButton = Natron::createKnob<KnobButton>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
             refreshInfoButton->setName("refreshButton");
@@ -5620,6 +5647,8 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         _imp->outputFormat.lock()->setValue(outputInfo, 0);
+        std::string cacheInfo = makeCacheInfo();
+        _imp->cacheMemInfo.lock()->setValue(cacheInfo, 0);
  
     }
     

@@ -417,6 +417,10 @@ public:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
     
+    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+                                           std::size_t* ramOccupied,
+                                           std::size_t* diskOccupied) const;
+    
 public Q_SLOTS:
     
     void onNewCrashReporterConnectionPending();

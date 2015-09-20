@@ -1155,7 +1155,7 @@ private:
     
     void declareRotoPythonField();
 
-    
+    std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
     
     void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);

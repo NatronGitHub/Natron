@@ -1240,6 +1240,46 @@ public:
     {
         _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
     }
+    
+    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+                                      std::size_t* ramOccupied,
+                                      std::size_t* diskOccupied) const
+    {
+        *ramOccupied = 0;
+        *diskOccupied= 0;
+        
+        std::string holderID = holder->getCacheID();
+        
+        QMutexLocker locker(&_lock);
+        
+        for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+            if ( !entries.empty() ) {
+                
+                const EntryTypePtr & front = entries.front();
+                
+                if (front->getKey().getCacheHolderID() == holderID) {
+                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        *ramOccupied += (*it)->size();
+                    }
+                }
+            }
+        }
+        
+        for (CacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
+            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+            if ( !entries.empty() ) {
+                
+                const EntryTypePtr & front = entries.front();
+                
+                if (front->getKey().getCacheHolderID() == holderID) {
+                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        *diskOccupied += (*it)->size();
+                    }
+                }
+            }
+        }
+    }
 
 private:
 

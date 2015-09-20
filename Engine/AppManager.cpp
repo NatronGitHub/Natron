@@ -56,6 +56,7 @@
 #include "Engine/GroupOutput.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
+#include "Engine/Node.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
@@ -1499,6 +1500,37 @@ void
 AppManager::removeFromViewerCache(U64 hash)
 {
     _imp->_viewerCache->removeEntry(hash);
+}
+
+void
+AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
+                                       std::size_t* ramOccupied,
+                                       std::size_t* diskOccupied) const
+{
+    assert(holder);
+    
+    *ramOccupied = 0;
+    *diskOccupied = 0;
+    
+    std::size_t viewerCacheMem = 0;
+    std::size_t viewerCacheDisk = 0;
+    std::size_t diskCacheMem = 0;
+    std::size_t diskCacheDisk = 0;
+    std::size_t nodeCacheMem = 0;
+    std::size_t nodeCacheDisk = 0;
+    
+    const Natron::Node* isNode = dynamic_cast<const Natron::Node*>(holder);
+    if (isNode) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isNode->getLiveInstance());
+        if (isViewer) {
+            _imp->_viewerCache->getMemoryStatsForCacheEntryHolder(holder, &viewerCacheMem, &viewerCacheDisk);
+        }
+    }
+    _imp->_diskCache->getMemoryStatsForCacheEntryHolder(holder, &diskCacheMem, &diskCacheDisk);
+    _imp->_nodeCache->getMemoryStatsForCacheEntryHolder(holder, &nodeCacheMem, &nodeCacheDisk);
+    
+    *ramOccupied = diskCacheMem + viewerCacheMem + nodeCacheMem;
+    *diskOccupied = diskCacheDisk + viewerCacheDisk + nodeCacheDisk;
 }
 
 void
