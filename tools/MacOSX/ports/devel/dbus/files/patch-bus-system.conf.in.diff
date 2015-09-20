@@ -1,0 +1,12 @@
+--- bus/system.conf.in.orig	2011-06-04 12:51:37.000000000 -0700
++++ bus/system.conf.in	2011-06-04 12:57:12.000000000 -0700
+@@ -26,9 +26,6 @@
+   <!-- This is a setuid helper that is used to launch system services -->
+   <servicehelper>@DBUS_LIBEXECDIR@/dbus-daemon-launch-helper</servicehelper>
+ 
+-  <!-- Write a pid file -->
+-  <pidfile>@DBUS_SYSTEM_PID_FILE@</pidfile>
+-
+   <!-- Enable logging to syslog -->
+   <syslog/>
+ 

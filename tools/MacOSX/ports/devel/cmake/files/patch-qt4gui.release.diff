@@ -1,0 +1,129 @@
+--- Source/QtDialog/CMakeLists.txt.orig
++++ Source/QtDialog/CMakeLists.txt
+@@ -14,58 +14,6 @@
+ if(POLICY CMP0020)
+   cmake_policy(SET CMP0020 NEW) # Drop when CMake >= 2.8.11 required
+ endif()
+-find_package(Qt5Widgets QUIET)
+-if (Qt5Widgets_FOUND)
+-  include_directories(${Qt5Widgets_INCLUDE_DIRS})
+-  add_definitions(${Qt5Widgets_DEFINITONS})
+-  macro(qt4_wrap_ui)
+-    qt5_wrap_ui(${ARGN})
+-  endmacro()
+-  macro(qt4_wrap_cpp)
+-    qt5_wrap_cpp(${ARGN})
+-  endmacro()
+-  macro(qt4_add_resources)
+-    qt5_add_resources(${ARGN})
+-  endmacro()
+-  set(CMake_QT_LIBRARIES ${Qt5Widgets_LIBRARIES})
+-  set(QT_QTMAIN_LIBRARY ${Qt5Core_QTMAIN_LIBRARIES})
+-
+-  # Remove this when the minimum version of Qt is 4.6.
+-  add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0)
+-
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+-
+-  # We need to install Cocoa platform plugin and add qt.conf for Qt5 on Mac.
+-  # FIXME: This should be part of Qt5 CMake scripts, but unfortunatelly
+-  # Qt5 Mac support is missing there.
+-  if(APPLE)
+-    macro(install_qt5_plugin _qt_plugin_name _qt_plugins_var)
+-      get_target_property(_qt_plugin_path "${_qt_plugin_name}" LOCATION)
+-      if(EXISTS "${_qt_plugin_path}")
+-        get_filename_component(_qt_plugin_file "${_qt_plugin_path}" NAME)
+-        get_filename_component(_qt_plugin_type "${_qt_plugin_path}" PATH)
+-        get_filename_component(_qt_plugin_type "${_qt_plugin_type}" NAME)
+-        set(_qt_plugin_dest "PlugIns/${_qt_plugin_type}")
+-        install(FILES "${_qt_plugin_path}"
+-          DESTINATION "${_qt_plugin_dest}")
+-        set(${_qt_plugins_var}
+-          "${${_qt_plugins_var}};\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_qt_plugin_dest}/${_qt_plugin_file}")
+-      else()
+-        message(FATAL_ERROR "QT plugin ${_qt_plugin_name} not found")
+-      endif()
+-    endmacro()
+-    install_qt5_plugin("Qt5::QCocoaIntegrationPlugin" QT_PLUGINS)
+-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/qt.conf"
+-      "[Paths]\nPlugins = PlugIns\n")
+-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/qt.conf"
+-      DESTINATION "${CMAKE_INSTALL_PREFIX}/Resources")
+-  endif()
+-
+-  if(WIN32 AND TARGET Qt5::Core)
+-    get_property(_Qt5_Core_LOCATION TARGET Qt5::Core PROPERTY LOCATION)
+-    get_filename_component(Qt_BIN_DIR "${_Qt5_Core_LOCATION}" PATH)
+-  endif()
+-else()
+   set(QT_MIN_VERSION "4.4.0")
+   find_package(Qt4 REQUIRED)
+   if(NOT QT4_FOUND)
+@@ -83,7 +31,6 @@
+       set(Qt_BIN_DIR ${_Qt_BIN_DIR})
+     endif()
+   endif()
+-endif()
+ 
+ set(SRCS
+   AddCacheEntry.cxx
+@@ -121,7 +68,7 @@
+ if(WIN32)
+   set(SRCS ${SRCS} CMakeSetup.rc)
+ endif()
+-if(APPLE)
++if(APPLEBUNDLE)
+   set(SRCS ${SRCS} CMakeSetup.icns)
+   set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
+   set_source_files_properties(CMakeSetup.icns PROPERTIES
+@@ -137,13 +84,13 @@
+ 
+ set(CMAKE_INCLUDE_CURRENT_DIR ON)
+ 
+-add_executable(cmake-gui WIN32 MACOSX_BUNDLE ${SRCS})
++add_executable(cmake-gui WIN32 ${SRCS})
+ target_link_libraries(cmake-gui CMakeLib ${QT_QTMAIN_LIBRARY} ${CMake_QT_LIBRARIES})
+ if(Qt_BIN_DIR)
+   set_property(TARGET cmake-gui PROPERTY Qt_BIN_DIR ${Qt_BIN_DIR})
+ endif()
+ 
+-if(APPLE)
++if(APPLEBUNDLE)
+   file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
+     LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
+ 
+@@ -181,16 +128,16 @@
+   install(FILES cmakecache.xml DESTINATION share/mime/packages )
+ endif()
+ 
+-if(APPLE)
++if(APPLEBUNDLE)
+   install(CODE "execute_process(COMMAND ln -s \"../MacOS/CMake\" cmake-gui
+                 WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin)")
+ endif()
+ 
+-if(APPLE OR WIN32)
++if(APPLEBUNDLE OR WIN32)
+   # install rules for including 3rd party libs such as Qt
+   # if a system Qt is used (e.g. installed in /usr/lib/), it will not be included in the installation
+   set(fixup_exe "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/cmake-gui${CMAKE_EXECUTABLE_SUFFIX}")
+-  if(APPLE)
++  if(APPLEBUNDLE)
+     set(fixup_exe "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/MacOS/CMake")
+   endif()
+   install(CODE "
+--- CMakeLists.txt.orig
++++ CMakeLists.txt
+@@ -550,12 +550,6 @@
+       set(CMAKE_BUNDLE_VERSION
+         "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
+       set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")
+-      # make sure CMAKE_INSTALL_PREFIX ends in /
+-      if(NOT CMAKE_INSTALL_PREFIX MATCHES "/$")
+-        set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
+-      endif()
+-      set(CMAKE_INSTALL_PREFIX
+-        "${CMAKE_INSTALL_PREFIX}CMake.app/Contents")
+     endif()
+ 
+     set(QT_NEED_RPATH FALSE)

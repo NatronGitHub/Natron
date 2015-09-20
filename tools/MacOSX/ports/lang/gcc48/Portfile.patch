@@ -1,0 +1,10 @@
+--- Portfile.orig	2015-09-16 22:23:45.000000000 +0200
++++ Portfile	2015-09-16 22:24:14.000000000 +0200
+@@ -65,6 +65,7 @@
+ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
+                     --libdir=${prefix}/lib/${name} \
+                     --includedir=${prefix}/include/${name} \
++                    --with-sysroot=${configure.sdkroot} \
+                     --infodir=${prefix}/share/info \
+                     --mandir=${prefix}/share/man \
+                     --datarootdir=${prefix}/share/gcc-${major} \

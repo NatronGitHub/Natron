@@ -1,0 +1,32 @@
+# $Id: Portfile 96950 2012-08-22 18:21:16Z blair@macports.org $
+
+PortSystem 1.0
+                
+name            ilmbase
+version         2.2.0
+categories      graphics
+license         BSD
+maintainers     blair
+description     OpenEXR ILM Base libraries
+long_description \
+    OpenEXR is a high dynamic-range (HDR) image file format developed \
+    by Industrial Light & Magic for use in computer imaging applications.
+homepage        http://www.openexr.com/
+platforms       darwin
+master_sites    http://savannah.nongnu.org/download/openexr
+
+checksums           sha1    70d864bc704f276942cb10479f2cb98646ce6ad4 \
+                    rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3
+
+depends_build   port:gsed
+
+configure.args  --mandir=${prefix}/share/man \
+                --infodir=${prefix}/share/info \
+                --disable-dependency-tracking
+
+test.run        yes
+test.target     check
+
+livecheck.type  regex
+livecheck.url   ${homepage}downloads.html
+livecheck.regex $name-(\\d+(?:\\.\\d+)*)

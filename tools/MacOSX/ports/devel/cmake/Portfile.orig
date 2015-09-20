@@ -1,0 +1,280 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 140195 2015-09-11 16:54:52Z michaelld@macports.org $
+
+PortSystem          1.0
+PortGroup           muniversal 1.0
+
+name                cmake
+
+categories          devel
+license             BSD
+installs_libs       no
+maintainers         michaelld css
+description         Cross-platform make
+set base_long_description \
+    "An extensible, open-source system that manages the build \
+    process in an operating system and compiler independent manner. \
+    Unlike many cross-platform systems, CMake is designed to be \
+    used in conjunction with the native build environment."
+homepage            http://www.cmake.org/
+platforms           darwin freebsd
+
+dist_subdir         cmake
+
+subport cmake-devel {}
+
+set branch          3.3
+
+if {${subport} eq ${name}} {
+
+    # release
+
+    version         ${branch}.1
+    checksums       rmd160 39f63aef3c9ba9711f736fd8e51972429ceca527 \
+                    sha256 cd65022c6a0707f1c7112f99e9c981677fdd5518f7ddfa0f778d4cee7113e3d6
+
+    long_description ${base_long_description} \
+        The ${subport} release port is updated roughly every few months.
+   
+    conflicts       cmake-devel
+
+    master_sites    http://www.cmake.org/files/v${branch}/
+
+    patchfiles-append patch-Modules-noArchCheck.release.diff
+
+    livecheck.type  regex
+    livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
+    livecheck.url   [lindex $master_sites 0]
+
+} else {
+
+    # devel
+    version         20150910
+    set dist_branch 3.3
+    set dist_date   20150910
+    set dist_hash   ge6cc5
+    checksums       rmd160 e654dfeef16bfe34276d7bd52653d03b47bad128 \
+                    sha256 ad4710b212dd851418f45f9783395e74ca31774e3235961db5ac8743fd3320e0
+
+    master_sites    http://www.cmake.org/files/dev/
+    distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
+    conflicts       cmake
+
+    long_description ${base_long_description} \
+        The ${subport} port is updated roughly every week.
+
+    patchfiles-append patch-Modules-noArchCheck.devel.diff
+
+    livecheck.type  regex
+    livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
+    livecheck.version ${distname}
+    livecheck.url   http://www.cmake.org/files/dev/
+
+}
+
+depends_lib-append  port:curl \
+                    port:expat \
+                    port:zlib \
+                    port:bzip2 \
+                    port:libarchive
+
+# CMake 3.2 changed dependency requirements to include jsoncpp.
+# jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
+# use its internal jsoncpp until a better solution comes about.
+
+patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
+                    patch-Modules-FindFreetype.cmake.diff \
+                    patch-Modules-FindQt4.cmake.diff \
+                    patch-Modules-Platform-Darwin.cmake.diff \
+                    patch-Modules-Platform-Darwin-Initialize.cmake.diff
+
+configure.env-append \
+                    CMAKE_PREFIX_PATH=${prefix} \
+                    CMAKE_INCLUDE_PATH=${prefix}/include/ncurses \
+                    CMAKE_LIBRARY_PATH=${prefix}/lib
+
+platform darwin {
+    configure.env-append \
+                    CMAKE_OSX_DEPLOYMENT_TARGET="${macosx_deployment_target}"
+
+    if {${configure.sdkroot} != ""} {
+        configure.env-append CMAKE_OSX_SYSROOT="${configure.sdkroot}"
+    } else {
+        configure.env-append CMAKE_OSX_SYSROOT="/"
+    }
+}
+
+configure.args      --docdir=share/doc/cmake \
+                    --parallel=${build.jobs} \
+                    --init=${worksrcpath}/macports.cmake \
+                    --system-libs \
+                    --no-system-jsoncpp
+
+configure.universal_args
+configure.post_args
+
+# CMake's configure script doesn't recognize `--host`.
+array set merger_host {i386 {} x86_64 {} ppc {} ppc64 {}}
+
+# Leopard's Rosetta has some difficulties configuring the ppc slice
+platform darwin 9 {
+    global universal_archs_supported
+    if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
+        supported_archs i386 x86_64
+    } elseif {${build_arch} eq "ppc" || ${build_arch} eq "ppc64"} {
+        supported_archs ppc ppc64
+    }
+    set universal_archs_supported ${supported_archs}
+}
+
+platform darwin {
+    # TODO: Figure out why using libc++ fails on Lion and fix the bootstrap
+    #       script to honor CMAKE_OSX_SYSROOT and CMAKE_OSX_DEPLOYMENT_TARGET.
+    #       Since nothing links against cmake and cmake is just using the STL,
+    #       we're safe to force libstdc++
+    #
+    #       https://www.cmake.org/Bug/view.php?id=15039&nbn=16
+    if {${os.major} < 12} {
+        configure.cxx_stdlib libstdc++
+    }
+}
+
+build.post_args VERBOSE=ON
+
+post-patch {
+    # copy cmake init file, ready to be patched below
+    copy ${filespath}/macports.cmake ${worksrcpath}
+
+    # patch PREFIX
+    reinplace "s|__PREFIX__|${prefix}|g" ${worksrcpath}/macports.cmake
+    reinplace "s|__PREFIX__|${prefix}|g" ${worksrcpath}/Modules/CMakeFindFrameworks.cmake
+
+    # patch Python Version; doing this is OK even when +docs is not
+    # used, because the PYTHON_EXECUTABLE is used only when building
+    # docs -- so, when not building docs its setting makes no difference.
+
+    if {[variant_isset python27]} {
+        set PYTHON_VERSION_WITH_DOT "2.7"
+    } else {
+        set PYTHON_VERSION_WITH_DOT "3.4"
+    }
+    reinplace "s|__PYTHON_VERSION_WITH_DOT__|${PYTHON_VERSION_WITH_DOT}|g" ${worksrcpath}/macports.cmake
+}
+
+post-destroot {
+    xinstall -d -m 0755 ${destroot}${prefix}/share/emacs/site-lisp
+    xinstall -m 0644 ${worksrcpath}/Auxiliary/cmake-mode.el \
+        ${destroot}${prefix}/share/emacs/site-lisp
+    foreach type {syntax indent} {
+        xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+        xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
+            ${destroot}${prefix}/share/vim/vimfiles/${type}
+    }
+    if ([variant_isset gui]) {
+        set app CMake
+        xinstall -d ${destroot}${applications_dir}/${app}.app/Contents/MacOS \
+            ${destroot}${applications_dir}/${app}.app/Contents/Resources
+        xinstall -m 644 ${filespath}/Info.plist.in ${destroot}${applications_dir}/${app}.app/Contents/Info.plist
+        reinplace "s|@VERSION@|${version}|g" ${destroot}${applications_dir}/${app}.app/Contents/Info.plist
+        reinplace "s|@PREFIX@|${prefix}|g" ${destroot}${applications_dir}/${app}.app/Contents/Info.plist
+        ln -s ${prefix}/bin/cmake-gui ${destroot}${applications_dir}/${app}.app/Contents/MacOS/cmake-gui
+        xinstall -m 644 ${worksrcpath}/Source/QtDialog/CMakeSetup.icns ${destroot}${applications_dir}/${app}.app/Contents/Resources/CMakeSetup.icns
+    }
+}
+
+variant gui description {Build Qt-based cmake-gui} {
+    configure.args-append --qt-gui
+
+    # when building the GUI with Qt, CMake uses C++11. So, make sure
+    # the compiler used is c++11 compliant.
+    
+    if {${configure.cxx_stdlib} eq "libstdc++"} {
+
+        # *clang* when using libstdc++ do not seem to support C++11;
+        # C++11 support seems to need GCC 4.7+ when using libstdc++;
+        # could use C++0x support on GCC4.[56], but just ignore it since
+        # there are newer compilers already in place as defaults.
+
+        # Blacklist GCC compilers not supporting C++11 and all CLANG.
+        # This is probably not necessary, but it's good practice.
+
+        compiler.blacklist-append *clang* {*gcc-3*} {*gcc-4.[0-6]}
+
+        # and whitelist those we do want to use. wish there were a better way.
+        # these will be used in the order provided.
+
+        compiler.whitelist macports-gcc-4.9 macports-gcc-4.8 macports-gcc-4.7
+
+    } else {
+
+        # using libc++;
+        # Blacklist Clang not supporting C++11 in some form and all GCC.
+        # Just use the cxx11 PortGroup for this specific case.
+
+        PortGroup cxx11 1.0
+
+    }
+}
+
+variant qt4 conflicts qt5 requires gui description {Build Qt GUI using Qt4} {
+    PortGroup qt4 1.0
+    if {${subport} eq ${name}} {
+        patchfiles-append patch-qt4gui.release.diff
+    } else {
+        patchfiles-append patch-qt4gui.devel.diff
+    }
+    configure.args-append --qt-qmake=${qt_qmake_cmd}
+}
+
+variant qt5 conflicts qt4 requires gui description {Build Qt GUI using Qt5} {
+    PortGroup qt5 1.0
+    if {${subport} eq ${name}} {
+        patchfiles-append patch-qt5gui.release.diff
+    } else {
+        patchfiles-append patch-qt5gui.devel.diff
+    }
+    configure.args-append --qt-qmake=${qt_qmake_cmd}
+}
+
+if {[variant_isset gui]} {
+    if {![variant_isset qt4] && ![variant_isset qt5]} {
+        default_variants +qt4
+    }
+
+    if {![variant_isset qt4] && ![variant_isset qt5]} {
+        ui_error "\n\nYou must select either the +qt4 or +qt5 variant when using variant +gui.\n"
+        return -code error "Invalid variant selection"
+    }
+} else {
+    configure.args-append --no-qt-gui
+}
+
+variant docs description {Build documentation: HTML and manpages} {
+    configure.args-append \
+        --mandir=share/man \
+        --sphinx-man \
+        --sphinx-html
+}
+
+variant python27 conflicts python34 requires docs description {Build documentation using Sphinx from Python 2.7} {
+    depends_build-append port:py27-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-2.7
+}
+
+variant python34 conflicts python27 requires docs description {Build documentation using Sphinx from Python 3.4} {
+    depends_build-append port:py34-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-3.4
+}
+
+if {[variant_isset docs]} {
+    if {![variant_isset python27] && ![variant_isset python34]} {
+        default_variants +python27
+    }
+
+    if {![variant_isset python27] && ![variant_isset python34]} {
+        ui_error "\n\nYou must select either the +python27 or +python34 variant when using variant +docs.\n"
+        return -code error "Invalid variant selection"
+    }
+}

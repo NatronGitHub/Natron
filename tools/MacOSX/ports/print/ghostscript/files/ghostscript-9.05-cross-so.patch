@@ -1,0 +1,11 @@
+diff -Naur ghostscript-9.05.orig/base/cross.mak ghostscript-9.05/base/cross.mak
+--- base/cross.mak.orig	2012-02-13 13:10:36.000000000 -0500
++++ base/cross.mak	2012-02-13 13:10:48.000000000 -0500
+@@ -1,5 +1,7 @@
+ 
+ cross_prepare:
+ 	make obj/aux/echogs obj/aux/genconf obj/aux/genarch CFLAGS=
++	mkdir -p soobj/aux
++	cp -f obj/aux/echogs obj/aux/genconf obj/aux/genarch soobj/aux
+ 	cp -f $(ARCH)-arch.h $(GLGEN)/arch.h
+ 	touch $(GLGEN)/arch.h obj/aux/*

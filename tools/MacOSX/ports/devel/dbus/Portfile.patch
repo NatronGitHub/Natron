@@ -1,0 +1,12 @@
+--- Portfile.orig	2015-09-12 15:21:53.000000000 +0200
++++ Portfile	2015-09-12 13:36:02.000000000 +0200
+@@ -31,7 +31,8 @@
+                 patch-dbus-dbus-sysdeps-unix.c.diff
+ 
+ # See #43203
+-if { ${os.major} < 11 } {
++#if { ${os.major} < 11 } {
++if {[vercmp ${macosx_sdk_version} 10.7] < 0} {
+     patchfiles-append patch-bus-dir-watch-kqueue.c.diff
+ }
+ 

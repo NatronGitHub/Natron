@@ -1,0 +1,114 @@
+# -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
+# $Id: Portfile 139291 2015-08-11 04:20:39Z ionic@macports.org $
+
+PortSystem      1.0
+PortGroup       muniversal 1.0
+
+name            gnutls
+version         3.3.17.1
+set branch      [join [lrange [split ${version} .] 0 1] .]
+categories      devel security
+# yes, some of the libs are GPL only
+license         LGPL-2.1+ GPL-3+
+maintainers     gmail.com:mschamschula openmaintainer
+description     GNU Transport Layer Security Library
+homepage        http://www.gnutls.org/
+platforms       darwin
+
+long_description \
+    GnuTLS is a portable ANSI C based library which implements the TLS 1.2, \
+    TLS 1.1, TLS 1.0, SSL 3.0, and Datagram TLS protocols. The library does \
+    not include any patented algorithms \
+    and is available under the GNU Lesser General Public License (LGPL).
+
+master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
+                http://archive.hmug.org/src/gnutls/
+
+checksums       rmd160  923cf31bae49816e4357dfeb99d30c75f3100ce7 \
+                sha256  b40f158030a92f450a07b20300a3996710ca19800848d9f6fd62493170c5bbb4
+
+use_xz          yes
+
+depends_build   port:gettext \
+                port:pkgconfig
+
+depends_lib     port:gmp \
+                port:libidn \
+                port:libtasn1 \
+                port:p11-kit \
+                port:nettle \
+                path:share/curl/curl-ca-bundle.crt:curl-ca-bundle \
+                port:zlib
+
+post-patch {
+    # Remove comments which confuse at least Leopard's assembler.
+    reinplace {/^#/d} {*}[glob ${worksrcpath}/lib/accelerated/x86/macosx/*.s]
+}
+
+# use autoreconf to update glibtool to correctly handle -std
+use_autoreconf  yes
+autoreconf.args -fvi
+
+configure.args  --disable-guile \
+                --disable-silent-rules \
+                --disable-libdane \
+                --enable-local-libopts \
+                --with-p11-kit \
+                --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
+                --with-default-trust-store-file="${prefix}/share/curl/curl-ca-bundle.crt"
+
+variant dane description {Build libdane using unbound libraries} {
+    depends_lib-append      port:unbound
+    configure.args-append   --with-unbound-root-key-file="${prefix}/var/run/unbound/root.key"
+    configure.args-delete   --disable-libdane
+}
+
+# as of r120660 (#43881) unbound installs its root key file at ${prefix}/var/run/unbound/root.key
+# the following may be superfluous
+
+if {[variant_isset dane] && ![file exists ${prefix}/var/run/unbound/root.key]} {
+    notes "
+***
+*** WARNING:
+***
+*** The DNSSEC root key file in ${prefix}/var/run/unbound/root.key was not found.
+*** This file is needed for the verification of DNSSEC responses.
+*** Use the command: sudo unbound-anchor -a \"${prefix}/var/run/unbound/root.key\"
+*** to generate or update it.
+***
+"
+}
+
+if {[variant_isset universal]} {
+    set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
+    set merger_host(i386) i686-apple-${os.platform}${os.major}
+    set merger_host(ppc) ppc-apple-${os.platform}${os.major}
+    set merger_host(ppc64) ppc64-apple-${os.platform}${os.major}
+    set merger_configure_args(x86_64) "--build=${build_arch}-apple-${os.platform}${os.major} --host=x86_64-apple-${os.platform}${os.major}"
+    set merger_configure_args(i386)   "--build=${build_arch}-apple-${os.platform}${os.major} --host=i686-apple-${os.platform}${os.major}"
+    set merger_configure_args(ppc)    "--build=${build_arch}-apple-${os.platform}${os.major} --host=ppc-apple-${os.platform}${os.major}"
+    set merger_configure_args(ppc64)  "--build=${build_arch}-apple-${os.platform}${os.major} --host=ppc64-apple-${os.platform}${os.major}"
+} elseif {${build_arch} eq "i386"} {
+    configure.args-append \
+        --host=i686-apple-${os.platform}${os.major} \
+        --build=i686-apple-${os.platform}${os.major}
+} elseif {${build_arch} eq "x86_64" || ${build_arch} eq "ppc64" || ${build_arch} eq "ppc"} {
+    configure.args-append \
+        --host=${build_arch}-apple-${os.platform}${os.major} \
+        --build=${build_arch}-apple-${os.platform}${os.major}
+}
+
+test.run        yes
+test.target     check
+
+post-destroot {
+    move ${destroot}${prefix}/bin/certtool ${destroot}${prefix}/bin/gnutls-certtool
+}
+
+platform darwin 8 {
+    depends_build-append   port:texinfo
+}
+
+livecheck.type  regex
+livecheck.url   [lindex ${master_sites} 0]
+livecheck.regex "${name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"

@@ -1,0 +1,37 @@
+--- src/film.cpp.orig	2009-10-31 13:57:18.000000000 +0100
++++ src/film.cpp	2009-10-31 13:57:43.000000000 +0100
+@@ -18,7 +18,7 @@
+ #include "film.h"
+ #include "graph.h"
+ extern "C" {
+-#include <ffmpeg/swscale.h>
++#include <libswscale/swscale.h>
+ }
+ #define DEBUG
+ 
+--- include/film.h.orig	2009-10-31 13:56:19.000000000 +0100
++++ include/film.h	2009-10-31 13:56:56.000000000 +0100
+@@ -18,8 +18,8 @@
+ 
+ extern "C" {
+ 
+-#include <ffmpeg/avcodec.h>
+-#include <ffmpeg/avformat.h>
++#include <libavcodec/avcodec.h>
++#include <libavformat/avformat.h>
+ 
+ }
+ 
+--- include/image.h.orig	2009-10-31 14:00:33.000000000 +0100
++++ include/image.h	2009-10-31 14:00:49.000000000 +0100
+@@ -16,8 +16,8 @@
+ #include <stdlib.h>
+ 
+ extern "C" {
+-#include <ffmpeg/avcodec.h>
+-#include <ffmpeg/avformat.h>
++#include <libavcodec/avcodec.h>
++#include <libavformat/avformat.h>
+ }
+ 
+ #include <string.h>

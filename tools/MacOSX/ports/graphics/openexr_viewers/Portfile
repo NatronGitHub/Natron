@@ -1,0 +1,39 @@
+# $Id: Portfile 75257 2011-01-19 06:23:12Z ryandesign@macports.org $
+
+PortSystem 1.0
+
+name		openexr_viewers
+version		1.0.2
+revision	2
+categories	graphics
+maintainers	openmaintainer
+use_parallel_build	yes
+description	OpenEXR Viewers (only exrdisplay is available for now)
+long_description   \
+	OpenEXR is a high dynamic-range (HDR) image file format developed \
+	by Industrial Light & Magic for use in computer imaging applications.
+homepage	http://www.openexr.org
+platforms	darwin
+master_sites	http://savannah.nongnu.org/download/openexr
+checksums           md5     5d4c74ebcaf942267b0353e4c53f8b9e \
+                    sha1    a95c63ce076a4a3ea900731e5e5f98d54c9dd546 \
+                    rmd160  4e738e2623e382b5106cf4e4e462fc4fa18d280f
+
+# Force 32-bit (#21054)
+#supported_archs i386 ppc
+#universal_variant no
+
+depends_lib	port:openexr port:fltk
+
+patchfiles	patch-configure
+
+use_autoreconf	yes
+
+configure.args	--mandir=${prefix}/share/man \
+		--infodir=${prefix}/share/info
+
+variant fltkdevel description {Use development version of FLTK} {
+    depends_lib-delete      port:fltk
+    depends_lib-append      port:fltk-devel
+}
+

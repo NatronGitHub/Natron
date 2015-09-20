@@ -1,0 +1,11 @@
+--- Portfile.orig	2015-08-26 15:56:05.000000000 +0200
++++ Portfile	2015-08-26 15:56:11.000000000 +0200
+@@ -2,7 +2,7 @@
+ # $Id: Portfile 139508 2015-08-19 14:12:40Z michaelld@macports.org $
+ 
+ PortSystem          1.0
+-PortGroup           muniversal 1.0
++universal_variant no
+ 
+ name                cmake
+ 

@@ -1,0 +1,73 @@
+--- Portfile.orig	2015-08-26 15:50:58.000000000 +0200
++++ Portfile	2015-08-27 16:02:34.000000000 +0200
+@@ -130,6 +130,7 @@
+                     --disable-indev=jack \
+                     --disable-outdev=xv \
+                     --disable-vda \
++                    --disable-xlib \
+                     --mandir=${prefix}/share/man \
+                     --enable-shared --enable-pthreads \
+                     --cc=${configure.cc}
+@@ -163,6 +164,17 @@
+ # configure isn't autoconf and they do use a dep cache
+ #
+ 
++post-configure {
++    if {[variant_isset universal]} {
++        # fix *.pc for universal build (i386 version may miss these extra bits on Leopard)
++        foreach arch ${universal_archs_to_use} {
++            foreach fixfile [exec find ${worksrcpath}-${arch} -name "*.pc"] {
++                reinplace -E {s|Libs.private: -l|Libs.private: -framework QTKit -framework Foundation -framework QuartzCore -l|g} ${fixfile}
++            }
++        }
++    }
++}
++
+ post-destroot {
+     file mkdir ${destroot}${prefix}/share/doc/ffmpeg
+     file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
+@@ -187,6 +199,15 @@
+ configure.universal_args-delete --disable-dependency-tracking
+ 
+ if {[variant_isset universal]} {
++    # the following is inspired by the icu Portfile
++    # if we can't run executables for the target arch, mark it as a cross-compile
++    foreach arch ${configure.universal_archs} {
++        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64")) 
++            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
++            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
++            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
++        }
++    }
+     foreach arch ${configure.universal_archs} {
+         set merger_host($arch) ""
+         lappend merger_configure_args($arch) --arch=${arch}
+@@ -212,11 +233,15 @@
+ #
+     depends_lib-append      port:xorg-libxcb \
+                             port:xorg-libXext \
++                            port:xorg-libX11 \
+                             port:xorg-libXfixes
+ 
+     configure.args-delete   --disable-libxcb \
+                             --disable-libxcb-shm \
+                             --disable-libxcb-xfixes \
++                            --disable-xlib \
++
++    configure.args-append   --enable-xlib
+ }
+ 
+ default_variants +x11
+@@ -279,6 +304,12 @@
+                             port:samba3
+ 
+     license                 GPL-3+
++
++    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)
++    if {[variant_isset universal]} {
++        depends_lib-delete    port:samba3
++        configure.args-delete --enable-libsmbclient
++    }
+ }
+ 
+ # the build server uses the default variants, and we want distributable binaries

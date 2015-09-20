@@ -1,0 +1,12 @@
+--- Portfile.orig	2015-09-20 16:57:44.000000000 +0200
++++ Portfile	2015-09-20 16:57:44.000000000 +0200
+@@ -25,7 +25,8 @@
+                    sha1 d5b1c499f429aa91c466193b4e8ea94a84019e37 \
+                    rmd160 4ed99bea403cbe72d05cfca25694b31209922f9f
+ 
+-patchfiles         config_Makefile.darwin.patch
++patchfiles         config_Makefile.darwin.patch \
++                   src_glewinfo_before_10_7.patch
+ 
+ post-patch {
+     reinplace "s:/usr/X11R6:${prefix}:g" ${worksrcpath}/config/Makefile.darwin

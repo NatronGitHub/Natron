@@ -1,0 +1,15 @@
+# Avoid the following error: when building on OS X < 10.7:
+# src/glewinfo.c: In function ‘glewCreateContext’:
+# src/glewinfo.c:11855: error: ‘kCGLPFAOpenGLProfile’ undeclared (first use in this function)
+
+--- src/glewinfo.c.orig	2015-08-28 14:11:35.000000000 +0200
++++ src/glewinfo.c	2015-08-28 14:12:22.000000000 +0200
+@@ -11847,7 +11847,7 @@
+   i = 0;
+   contextAttrs[i++] = kCGLPFAAccelerated; /* No software rendering */
+ 
+-  #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
++  #if defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+   if (params->profile & GL_CONTEXT_CORE_PROFILE_BIT)
+   {
+     if (params->major==3 && params->minor>=2)

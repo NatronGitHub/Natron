@@ -1,0 +1,23 @@
+--- Portfile.orig	2015-06-11 01:25:22.000000000 -0700
++++ Portfile	2015-06-11 01:25:32.000000000 -0700
+@@ -82,13 +82,17 @@
+ if {[variant_isset universal]} {
+     set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
+     set merger_host(i386) i686-apple-${os.platform}${os.major}
+-    set merger_configure_args(x86_64) --build=x86_64-apple-${os.platform}${os.major}
+-    set merger_configure_args(i386) --build=i686-apple-${os.platform}${os.major}
++    set merger_host(ppc) ppc-apple-${os.platform}${os.major}
++    set merger_host(ppc64) ppc64-apple-${os.platform}${os.major}
++    set merger_configure_args(x86_64) "--build=${build_arch}-apple-${os.platform}${os.major} --host=x86_64-apple-${os.platform}${os.major}"
++    set merger_configure_args(i386)   "--build=${build_arch}-apple-${os.platform}${os.major} --host=i686-apple-${os.platform}${os.major}"
++    set merger_configure_args(ppc)    "--build=${build_arch}-apple-${os.platform}${os.major} --host=ppc-apple-${os.platform}${os.major}"
++    set merger_configure_args(ppc64)  "--build=${build_arch}-apple-${os.platform}${os.major} --host=ppc64-apple-${os.platform}${os.major}"
+ } elseif {${build_arch} eq "i386"} {
+     configure.args-append \
+         --host=i686-apple-${os.platform}${os.major} \
+         --build=i686-apple-${os.platform}${os.major}
+-} elseif {${build_arch} eq "x86_64"} {
++} elseif {${build_arch} eq "x86_64" || ${build_arch} eq "ppc64" || ${build_arch} eq "ppc"} {
+     configure.args-append \
+         --host=${build_arch}-apple-${os.platform}${os.major} \
+         --build=${build_arch}-apple-${os.platform}${os.major}

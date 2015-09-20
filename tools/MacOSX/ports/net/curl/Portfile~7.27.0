@@ -1,0 +1,182 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 96487 2012-08-12 08:03:30Z ryandesign@macports.org $
+
+PortSystem                  1.0
+PortGroup                   muniversal 1.0
+PortGroup                   archcheck 1.0
+
+name                        curl
+# keep the version in sync with the curl-ca-bundle port
+version                     7.27.0
+revision                    1
+categories                  net www
+maintainers                 ryandesign
+license                     curl
+homepage                    http://curl.haxx.se/
+platforms                   darwin freebsd
+use_bzip2                   yes
+use_parallel_build          yes
+
+description                 Tool for transferring files with URL syntax
+
+long_description            curl is a client to get documents/files from servers, \
+                            using any of the supported protocols. The command is \
+                            designed to work without user interaction or any kind \
+                            of interactivity.
+
+# keep the master_sites in sync with the curl-ca-bundle port
+master_sites                http://curl.haxx.se/download/ \
+                            ftp://ftp.sunet.se/pub/www/utilities/curl/ \
+                            http://www.execve.net/curl/
+
+checksums                   rmd160  b9ce785cae06911577b5654bb32f55fd2e6b712a \
+                            sha256  aba5582135c28470b46084da9747470c1c680485fc91f9f0d3f7928df8169398
+
+patchfiles                  patch-curl.h.diff \
+                            patch-curl-config.in.diff
+
+configure.args              --enable-ipv6 \
+                            --without-gnutls \
+                            --without-gssapi \
+                            --without-librtmp \
+                            --without-libssh2 \
+                            --without-nss \
+                            --without-polarssl \
+                            --without-spnego \
+                            --without-ssl \
+                            --disable-ares \
+                            --disable-ldap \
+                            --disable-ldaps \
+                            --with-libidn \
+                            --with-zlib=${prefix}
+
+configure.env               PKG_CONFIG_PATH=${prefix}
+
+depends_build               port:pkgconfig
+
+depends_lib                 port:zlib \
+                            port:libidn
+
+archcheck.files             lib/libz.dylib \
+                            lib/libidn.dylib
+
+test.run                    yes
+test.target                 test-full
+
+post-configure {
+    if {[variant_isset universal]} {
+        set dirs {}
+        foreach arch ${universal_archs_to_use} {
+            lappend dirs ${worksrcpath}-${arch}
+        }
+    } else {
+        set dirs ${worksrcpath}
+    }
+    foreach dir ${dirs} {
+        reinplace -E {s|-arch [a-z0-9_]+||g} \
+            ${dir}/curl-config \
+            ${dir}/libcurl.pc
+        reinplace -E {s/ '(host_alias|--host)=[^']+'//g} ${dir}/curl-config
+	reinplace -E {s/-lssl -lcrypto -lssl -lcrypto/-lssl -lcrypto/g} ${dir}/curl-config ${dir}/libcurl.pc
+        reinplace -E {s|-L/opt/local/lib -L/opt/local/lib  -L/opt/local/lib -L/opt/local/lib|-L/opt/local/lib|g} ${dir}/curl-config ${dir}/libcurl.pc
+        reinplace -E {s|-L/opt/local/lib  -L/opt/local/lib|-L/opt/local/lib|g} ${dir}/curl-config ${dir}/libcurl.pc
+    }
+}
+
+global merger_dont_diff merger_configure_env
+set merger_dont_diff "${prefix}/include/curl/curlbuild.h"
+
+post-destroot {
+    set docdir ${prefix}/share/doc/${name}
+    xinstall -d ${destroot}${docdir}/html/libcurl ${destroot}${docdir}/pdf/libcurl \
+        ${destroot}${prefix}/share/aclocal
+    xinstall -m 0644 -W ${worksrcpath} \
+        CHANGES \
+        COPYING \
+        README \
+        RELEASE-NOTES \
+        ${destroot}${docdir}
+    xinstall -m 0644 -W ${worksrcpath}/docs \
+        BUGS \
+        CONTRIBUTE \
+        FAQ \
+        FEATURES \
+        HISTORY \
+        INTERNALS \
+        KNOWN_BUGS \
+        MANUAL \
+        RESOURCES \
+        THANKS \
+        TODO \
+        TheArtOfHttpScripting \
+        VERSIONS \
+        ${destroot}${docdir}
+    xinstall -m 0644 ${worksrcpath}/docs/libcurl/libcurl.m4 \
+        ${destroot}${prefix}/share/aclocal/
+    eval xinstall -m 0644 [glob ${worksrcpath}/docs/*.html] ${destroot}${docdir}/html
+    eval xinstall -m 0644 [glob ${worksrcpath}/docs/libcurl/*.html] ${destroot}${docdir}/html/libcurl
+    eval xinstall -m 0644 [glob ${worksrcpath}/docs/*.pdf] ${destroot}${docdir}/pdf
+    eval xinstall -m 0644 [glob ${worksrcpath}/docs/libcurl/*.pdf] ${destroot}${docdir}/pdf/libcurl
+}
+
+if {![variant_isset gnutls]} {
+    default_variants +ssl
+}
+
+variant ssl description {Allow secure connections using OpenSSL} {
+    depends_lib-append      port:openssl \
+                            port:curl-ca-bundle
+    archcheck.files-append  lib/libssl.dylib
+    configure.args-delete   --without-ssl
+    configure.args-append   --with-ssl \
+                            --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+}
+
+variant ares description {Add support for resolving names asynchronously} {
+    depends_lib-append      port:c-ares
+    archcheck.files-append  lib/libcares.dylib
+    configure.args-delete   --disable-ares
+    configure.args-append   --enable-ares
+}
+
+variant spnego description {Enable SPNEGO authentication support} {
+    # kind of broken?
+    depends_lib-append      port:fbopenssl
+    archcheck.files-append  lib/libfbopenssl.dylib
+    configure.args-delete   --without-spnego
+    configure.args-append   --with-spnego=${prefix}
+}
+
+variant gnutls conflicts ssl description {Allow secure connections using GNU TLS} {
+    depends_lib-append      port:gnutls
+    archcheck.files-append  lib/libgnutls.dylib
+    configure.args-delete   --without-gnutls
+    configure.args-append   --with-gnutls
+}
+
+variant gss description {Support the Generic Security Service API} {
+    # This needs to use the system's Kerberos, not MacPorts' gss or kerberos5.
+    conflicts-append        gss kerberos5
+    configure.args-delete   --without-gssapi
+    configure.args-append   --with-gssapi
+}
+
+variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
+    depends_lib-append      port:openldap
+    archcheck.files-append  lib/libldap.dylib
+    configure.args-delete   --disable-ldap \
+                            --disable-ldaps
+    configure.args-append   --enable-ldap \
+                            --enable-ldaps
+}
+
+variant sftp_scp description {Add SFTP/SCP support via libssh2} {
+    depends_lib-append      port:libssh2
+    archcheck.files-append  lib/libssh2.dylib
+    configure.args-delete   --without-libssh2
+    configure.args-append   --with-libssh2
+}
+
+livecheck.type              regex
+livecheck.url               [lindex ${master_sites} 0]
+livecheck.regex             ${name}-(\[0-9.\]+)${extract.suffix}
