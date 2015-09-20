@@ -4213,7 +4213,7 @@ EffectInstance::abortAnyEvaluation()
         if (isViewer) {
             isViewer->markAllOnRendersAsAborted();
         }
-        (*it)->getRenderEngine()->abortRendering(true,true);
+        (*it)->getRenderEngine()->abortRendering(true,false);
     }
 }
 
