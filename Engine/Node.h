@@ -228,8 +228,7 @@ public:
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
 
-    /*Returns in writers the list of all the writers connected to this node*/
-    void hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) const;
+    void hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -342,6 +341,8 @@ public:
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
     boost::shared_ptr<Node> getRealInput(int index) const;
+    
+    boost::shared_ptr<Node> getRealGuiInput(int index) const;
     
 private:
     

@@ -4203,12 +4203,17 @@ EffectInstance::abortAnyEvaluation()
     ///Just change the hash
     NodePtr node = getNode();
 
+    
     assert(node);
     node->incrementKnobsAge();
-    std::list<ViewerInstance*> viewers;
-    node->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->markAllOnRendersAsAborted();
+    std::list<Natron::OutputEffectInstance*> outputNodes;
+    node->hasOutputNodesConnected(&outputNodes);
+    for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
+        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
+        if (isViewer) {
+            isViewer->markAllOnRendersAsAborted();
+        }
+        (*it)->getRenderEngine()->abortRendering(true,true);
     }
 }
 

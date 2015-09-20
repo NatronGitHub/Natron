@@ -1843,8 +1843,7 @@ Node::abortAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
     
     if (isOutput) {
-        isOutput->abortAnyEvaluation();
-        isOutput->getRenderEngine()->abortRendering(true);
+        isOutput->getRenderEngine()->abortRendering(false,true);
     }
     _imp->abortPreview();
 }
@@ -3002,7 +3001,7 @@ Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
 }
 
 void
-Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) const
+Node::hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers) const
 {
     Natron::OutputEffectInstance* thisWriter = dynamic_cast<Natron::OutputEffectInstance*>(_imp->liveInstance.get());
     
@@ -3012,17 +3011,12 @@ Node::hasWritersConnected(std::list<Natron::OutputEffectInstance* >* writers) co
             writers->push_back(thisWriter);
         }
     } else {
-        if ( QThread::currentThread() == qApp->thread() ) {
-            for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                assert(*it);
-                (*it)->hasWritersConnected(writers);
-            }
-        } else {
-            QMutexLocker l(&_imp->outputsMutex);
-            for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                assert(*it);
-                (*it)->hasWritersConnected(writers);
-            }
+        std::list<Node*> outputs;
+        getOutputsWithGroupRedirection(outputs);
+        
+        for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            assert(*it);
+            (*it)->hasOutputNodesConnected(writers);
         }
     }
 }
@@ -3136,6 +3130,12 @@ Node::getRealInput(int index) const
 {
     return getInputInternal(false, false, index);
 
+}
+
+boost::shared_ptr<Node>
+Node::getRealGuiInput(int index) const
+{
+    return getInputInternal(true, false, index);
 }
 
 int
@@ -4013,9 +4013,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         bool hasOnlyOneInputConnected = false;
         
         ///No need to lock guiInputs is only written to by the mainthread
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
             
-            if (_imp->inputs[i]) {
+            if (_imp->guiInputs[i]) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalInput == -1) {
                         firstNonOptionalInput = i;
@@ -4024,7 +4024,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                         hasOnlyOneInputConnected = false;
                     }
                 } else if (!firstOptionalInput) {
-                    firstOptionalInput = _imp->inputs[i];
+                    firstOptionalInput = _imp->guiInputs[i];
                     if (hasOnlyOneInputConnected) {
                         hasOnlyOneInputConnected = false;
                     } else {
@@ -4036,7 +4036,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getRealInput(firstNonOptionalInput);
+                inputToConnectTo = getRealGuiInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }
@@ -4051,9 +4051,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
     ///then don't remove it from outputs of the inputs
     if (hideGui || !_imp->isMultiInstance) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i]) {
-                _imp->inputs[i]->disconnectOutput(false,this);
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+            if (_imp->guiInputs[i]) {
+                _imp->guiInputs[i]->disconnectOutput(false,this);
             }
         }
     }
@@ -4064,7 +4064,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     std::list<Node*> outputsQueueCopy;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        outputsQueueCopy = _imp->outputs;
+        outputsQueueCopy = _imp->guiOutputs;
     }
     
     
@@ -6282,7 +6282,17 @@ Node::dequeueActions()
     }
     
     for (std::set<int>::iterator it = inputChanges.begin(); it!=inputChanges.end(); ++it) {
-        inputChanged(*it);
+        onInputChanged(*it);
+    }
+    
+    if (!inputChanges.empty()) {
+        std::list<ViewerInstance* > viewers;
+        hasViewersConnected(&viewers);
+        for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+             it != viewers.end();
+             ++it) {
+            (*it)->renderCurrentFrame(true);
+        }
     }
     
     {

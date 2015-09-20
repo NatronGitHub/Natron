@@ -211,6 +211,11 @@ public:
      * This is not appropriate to call this function from a writer.
      **/
     void renderFromCurrentFrame(bool enableRenderStats, RenderDirectionEnum forward);
+    
+    /**
+     * @brief Whether the playback can be automatically restarted by a single render request
+     **/
+    bool isPlaybackAutoRestartEnabled() const;
 
     
     /**
@@ -239,7 +244,7 @@ public:
     
     void doAbortRenderingOnMainThread (bool blocking)
     {
-        Q_EMIT s_abortRenderingOnMainThread(blocking);
+        Q_EMIT s_abortRenderingOnMainThread(false,blocking);
     }
     
     
@@ -306,7 +311,7 @@ public Q_SLOTS:
      * explicitly waits for all threads in the thread-pool to be done.
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
-    void abortRendering(bool blocking);
+    void abortRendering(bool autoRestart, bool blocking);
     
     void onExecuteCallbackOnMainThread(QString callback);
     
@@ -314,7 +319,7 @@ Q_SIGNALS:
     
     void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
-    void s_abortRenderingOnMainThread(bool blocking);
+    void s_abortRenderingOnMainThread(bool userRequested,bool blocking);
     
     void s_executeCallbackOnMainThread(QString);
     
@@ -710,8 +715,8 @@ public Q_SLOTS:
     /**
      * @brief Aborts the internal scheduler and returns true if it was working.
      **/
-    bool abortRendering(bool blocking);
-    void abortRendering_Blocking() { abortRendering(true); }
+    bool abortRendering(bool enableAutoRestartPlayback, bool blocking);
+    void abortRendering_Blocking() { abortRendering(true,true); }
 
     
 Q_SIGNALS:

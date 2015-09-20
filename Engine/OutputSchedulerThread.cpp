@@ -167,6 +167,9 @@ struct OutputSchedulerThreadPrivate
     
     int abortRequested; // true when the user wants to stop the engine, e.g: the user disconnected the viewer
     bool isAbortRequestBlocking;
+    
+    bool canAutoRestartPlayback;
+    
     QWaitCondition abortedRequestedCondition;
     QMutex abortedRequestedMutex; // protects abortRequested
     
@@ -244,6 +247,7 @@ struct OutputSchedulerThreadPrivate
     , startRequestsMutex()
     , abortRequested(0)
     , isAbortRequestBlocking(false)
+    , canAutoRestartPlayback(false)
     , abortedRequestedCondition()
     , abortedRequestedMutex()
     , abortFlag(false)
@@ -460,7 +464,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
-    QObject::connect(this, SIGNAL(s_abortRenderingOnMainThread(bool)), this, SLOT(abortRendering(bool)));
+    QObject::connect(this, SIGNAL(s_abortRenderingOnMainThread(bool,bool)), this, SLOT(abortRendering(bool,bool)));
     
     QObject::connect(this, SIGNAL(s_executeCallbackOnMainThread(QString)), this, SLOT(onExecuteCallbackOnMainThread(QString)));
     
@@ -861,7 +865,7 @@ OutputSchedulerThread::startRender()
                                                                false,
                                                                _imp->outputEffect->getApp()->getMainView()) == eStatusFailed) {
                 l.unlock();
-                abortRendering(false);
+                abortRendering(false,false);
                 return;
             }
         }
@@ -1453,10 +1457,14 @@ OutputSchedulerThread::doProcessFrameMainThread(const BufferedFrames& frames,boo
 }
 
 void
-OutputSchedulerThread::abortRendering(bool blocking)
+OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
 {
     
     if ( !isRunning() || !isWorking() ) {
+        QMutexLocker l(&_imp->abortedRequestedMutex);
+        
+        ///Never allow playback auto-restart when it is not activated explicitly by the user
+        _imp->canAutoRestartPlayback = false;
         return;
     }
 
@@ -1469,6 +1477,7 @@ OutputSchedulerThread::abortRendering(bool blocking)
         ///in stopRender(), we ensure the former by taking the abortBeingProcessedMutex lock
         QMutexLocker l(&_imp->abortedRequestedMutex);
         _imp->abortBeingProcessed = false;
+        _imp->canAutoRestartPlayback = autoRestart;
         _imp->isAbortRequestBlocking = blocking;
         
         ///We make sure the render-thread doesn't wait for the main-thread to process a frame
@@ -1535,7 +1544,7 @@ OutputSchedulerThread::quitThread()
         return;
     }
     
-    abortRendering(true);
+    abortRendering(false,true);
     
     
     if (QThread::currentThread() == qApp->thread()) {
@@ -1623,6 +1632,13 @@ OutputSchedulerThread::renderFrameRange(bool enableRenderStats, int firstFrame,i
     
     renderInternal();
     
+}
+
+bool
+OutputSchedulerThread::isPlaybackAutoRestartEnabled() const
+{
+    QMutexLocker k(&_imp->abortedRequestedMutex);
+    return _imp->canAutoRestartPlayback;
 }
 
 void
@@ -2653,10 +2669,15 @@ RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
     
     
     ///If the scheduler is already doing playback, continue it
-    if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
-        _imp->scheduler->abortRendering(false);
-        _imp->scheduler->renderFromCurrentFrame(enableRenderStats,  _imp->scheduler->getDirectionRequestedToRender() );
-        return;
+    if ( _imp->scheduler ) {
+        if (_imp->scheduler->isWorking()) {
+            _imp->scheduler->abortRendering(true,false);
+            _imp->scheduler->renderFromCurrentFrame(enableRenderStats,  _imp->scheduler->getDirectionRequestedToRender() );
+            return;
+        } else if (_imp->scheduler->isPlaybackAutoRestartEnabled()) {
+            _imp->scheduler->renderFromCurrentFrame(enableRenderStats,  _imp->scheduler->getDirectionRequestedToRender() );
+            return;
+        }
     }
     
     
@@ -2738,7 +2759,7 @@ RenderEngine::isDoingSequentialRender() const
 }
 
 bool
-RenderEngine::abortRendering(bool blocking)
+RenderEngine::abortRendering(bool enableAutoRestartPlayback, bool blocking)
 {
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_imp->output);
     if (viewer) {
@@ -2746,7 +2767,7 @@ RenderEngine::abortRendering(bool blocking)
         
     }
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
-        _imp->scheduler->abortRendering(blocking);
+        _imp->scheduler->abortRendering(enableAutoRestartPlayback, blocking);
         return true;
     }
     

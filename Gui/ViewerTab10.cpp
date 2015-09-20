@@ -218,6 +218,18 @@ ViewerTab::updateZoomComboBox(int value)
     _imp->zoomCombobox->setCurrentText_no_emit(str);
 }
 
+void
+ViewerTab::toggleStartForward()
+{
+    startPause( !_imp->play_Forward_Button->isDown() );
+}
+
+void
+ViewerTab::toggleStartBackward()
+{
+    startBackward( !_imp->play_Backward_Button->isDown() );
+}
+
 /*In case they're several viewer around, we need to reset the dag and tell it
    explicitly we want to use this viewer and not another one.*/
 void
@@ -251,7 +263,7 @@ ViewerTab::abortRendering()
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
             if (viewer) {
-                viewer->getRenderEngine()->abortRendering(true);
+                viewer->getRenderEngine()->abortRendering(false,true);
             }
         }
     }
@@ -570,11 +582,11 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
-        startBackward( !_imp->play_Backward_Button->isDown() );
+        toggleStartBackward();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
         abortRendering();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
-        startPause( !_imp->play_Forward_Button->isDown() );
+        toggleStartForward();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
         nextFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
