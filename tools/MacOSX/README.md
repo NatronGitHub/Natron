@@ -17,11 +17,10 @@ The first step is to install MacPorts. If you want to distribute an universal bi
 
 * Add the following line to /opt/local/etc/macports/variants.conf  (you may use `sudo nano /opt/local/etc/macports/variants.conf`):
 ```
--x11 +no_x11 +bash_completion +no_gnome +quartz +universal +llvm34 +ld64_236 +natron
+-x11 +no_x11 +bash_completion +no_gnome +quartz +universal +llvm34 +natron
 ```
   * `-x11 +no_x11 +no_gnome` are here to avoid linking to X11 libraries
   * `+llvm34` is to avoid ising llvm- 3.5 or greater, which require libc++
-  * `+ld64_236` is to use the last version of ld64 that supports libstdc++
   * `+natron` is to build the Natro-specific version of ImageMagick 
 
 ### Installing MacPorts on OS X 10.7+ for deployment on OS X 10.6 (universal)
@@ -81,16 +80,14 @@ buildfromsource    always
   
 ##  Installing required packages
 
-* Download Macports [dports-dev](http://downloads.natron.fr/Third_Party_Sources/dports-dev.zip)
-
 * Give read/execute permissions to the local repository (replace `USER_NAME` with your user name):
 ```
-chmod 755 /Users/USER_NAME/Development/dports-dev
+chmod 755 file:///Users/USER_NAME/Development/Natron/tools/MacOSX/ports
 ```
 
-* Check that the user "nobody" can read this directory by typing the following command in a Terminal: `sudo -u nobody ls /Users/USER_NAME/Development/dports-dev`. If it fails, then try again after having given execution permissions on your home directory using the following command: `chmod o+x /Users/USER_NAME`. If this still fails, then something is really wrong.
+* Check that the user "nobody" can read this directory by typing the following command in a Terminal: `sudo -u nobody ls /Users/USER_NAME/Development/Natron/tools/MacOSX/ports`. If it fails, then try again after having given execution permissions on your home directory using the following command: `chmod o+x /Users/USER_NAME`. If this still fails, then something is really wrong.
 
-* Edit the sources.conf file for MacPorts, for example using the nano editor: `sudo nano /opt/local/etc/macports/sources.conf`, insert at the beginning of the file the configuration for a local repository (read the comments in the file), by inserting the line `file:///Users/USER_NAME/Development/dports-dev` (without quotes, and yes there are *three* - 3 - slashes). Save and exit (if you're using nano, this means typing ctrl-X, Y and return).
+* Edit the sources.conf file for MacPorts, for example using the nano editor: `sudo nano /opt/local/etc/macports/sources.conf`, insert at the beginning of the file the configuration for a local repository (read the comments in the file), by inserting the line `file:///Users/USER_NAME/Development/Natron/tools/MacOSX/ports` (without quotes, and yes there are *three* - 3 - slashes). Save and exit (if you're using nano, this means typing ctrl-X, Y and return).
 
 * Update MacPorts:
 ```
@@ -99,7 +96,7 @@ sudo port selfupdate
 
 * Recreate the index in the local repository: (no need to be root for this)
 ```
-cd /Users/USER_NAME/Development/dports-dev; portindex"
+cd /Users/USER_NAME/Development/Natron/tools/MacOSX/ports; portindex"
 ```
 
 * *Only if the target is OS X 10.6 or below* Install cctools and clang-3.4 (don't build the sample project, which is not required and builds using libc++):
