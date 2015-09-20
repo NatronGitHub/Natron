@@ -450,6 +450,18 @@ Gui::keyPressEvent(QKeyEvent* e)
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->toggleStartForward();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->toggleStartBackward();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->abortRendering();
+        }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->nextFrame();

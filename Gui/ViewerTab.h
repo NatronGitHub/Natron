@@ -289,6 +289,9 @@ public Q_SLOTS:
 
     void onZoomComboboxCurrentIndexChanged(int index);
     
+    void toggleStartForward();
+    void toggleStartBackward();
+    
     void startPause(bool);
     void abortRendering();
     void startBackward(bool);
