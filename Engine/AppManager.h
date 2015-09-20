@@ -253,8 +253,6 @@ public:
 
     void abortAnyProcessing();
 
-    bool hasAbortAnyProcessingBeenCalled() const;
-
     virtual void setLoadingStatus(const QString & str);
 
   
@@ -441,6 +439,8 @@ public Q_SLOTS:
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
+    
+    void wipeAndCreateDiskCacheStructure();
 
     void onNodeMemoryRegistered(qint64 mem);
 

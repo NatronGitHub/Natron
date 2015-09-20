@@ -51,6 +51,7 @@ class KnobPage;
 class KnobDouble;
 class KnobInt;
 class KnobBool;
+class KnobButton;
 class KnobGroup;
 class KnobChoice;
 class KnobPath;
@@ -384,6 +385,7 @@ private:
     boost::shared_ptr<KnobInt> _maxViewerDiskCacheGB;
     boost::shared_ptr<KnobInt> _maxDiskCacheNodeGB;
     boost::shared_ptr<KnobPath> _diskCachePath;
+    boost::shared_ptr<KnobButton> _wipeDiskCache;
     
     boost::shared_ptr<KnobPage> _viewersTab;
     boost::shared_ptr<KnobChoice> _texturesMode;

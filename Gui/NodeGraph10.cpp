@@ -171,6 +171,17 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     } else if (selectedBendPoint) {
         _imp->setNodesBendPointsVisible(false);
         
+        ///Now connect the node to the edge input
+        boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
+        assert(inputNode);
+        ///disconnect previous connection
+        boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
+        assert(outputNode);
+        int inputNb = outputNode->inputIndex( inputNode.get() );
+        if (inputNb == -1) {
+            return;
+        }
+        
         CreateNodeArgs args(PLUGINID_NATRON_DOT,
                             std::string(),
                             -1,
@@ -193,15 +204,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         std::list<boost::shared_ptr<NodeGui> > nodesList;
         nodesList.push_back(dotNodeGui);
         
-        ///Now connect the node to the edge input
-        boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
-        assert(inputNode);
-        ///disconnect previous connection
-        boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
-        assert(outputNode);
+       
         
-        int inputNb = outputNode->inputIndex( inputNode.get() );
-        assert(inputNb != -1);
+        
         assert(_imp->_gui);
         GuiAppInstance* guiApp = _imp->_gui->getApp();
         assert(guiApp);

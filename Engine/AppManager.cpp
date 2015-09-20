@@ -32,6 +32,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QTextCodec>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QSettings>
 #include <QtNetwork/QAbstractSocket>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
@@ -390,8 +391,23 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         // ignore
     }
     
+    int oldCacheVersion = 0;
+    {
+        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+        
+        if (settings.contains(kNatronCacheVersionSettingsKey)) {
+            oldCacheVersion = settings.value(kNatronCacheVersionSettingsKey).toInt();
+        }
+        settings.setValue(kNatronCacheVersionSettingsKey, NATRON_CACHE_VERSION);
+    }
+    
     setLoadingStatus( tr("Restoring the image cache...") );
-    _imp->restoreCaches();
+    
+    if (oldCacheVersion != NATRON_CACHE_VERSION) {
+        wipeAndCreateDiskCacheStructure();
+    } else {
+        _imp->restoreCaches();
+    }
     
     setLoadingStatus( tr("Restoring user settings...") );
     
@@ -587,6 +603,21 @@ AppManager::clearAllCaches()
     Project::clearAutoSavesDir();
 }
 
+void
+AppManager::wipeAndCreateDiskCacheStructure()
+{
+    //Should be called on the main-thread because potentially can interact with rendering
+    assert(QThread::currentThread() == qApp->thread());
+    
+    abortAnyProcessing();
+    
+    clearAllCaches();
+    
+    assert(_imp->_diskCache);
+    _imp->cleanUpCacheDiskStructure(_imp->_diskCache->getCachePath());
+    assert(_imp->_viewerCache);
+    _imp->cleanUpCacheDiskStructure(_imp->_viewerCache->getCachePath());
+}
 
 
 AppInstance*
@@ -608,21 +639,10 @@ AppManager::isLoaded() const
 }
 
 
-bool
-AppManager::hasAbortAnyProcessingBeenCalled() const
-{
-    QMutexLocker l(&_imp->_wasAbortCalledMutex);
-
-    return _imp->_wasAbortAnyProcessingCalled;
-}
-
 void
 AppManager::abortAnyProcessing()
 {
-    {
-        QMutexLocker l(&_imp->_wasAbortCalledMutex);
-        _imp->_wasAbortAnyProcessingCalled = true;
-    }
+ 
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         
         it->second.app->getProject()->quitAnyProcessingForAllNodes();

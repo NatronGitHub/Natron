@@ -990,6 +990,12 @@ Settings::initializeKnobsCaching()
     
     _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
     _cachingTab->addKnob(_diskCachePath);
+    
+    _wipeDiskCache = Natron::createKnob<KnobButton>(this, "Wipe Disk Cache");
+    _wipeDiskCache->setHintToolTip("Cleans-up all caches, deleting all folders that may contain cached data. "
+                                   "This is provided in case " NATRON_APPLICATION_NAME " lost track of cached images "
+                                   "for some reason.");
+    _cachingTab->addKnob(_wipeDiskCache);
 }
 
 void
@@ -1760,6 +1766,8 @@ Settings::onKnobValueChanged(KnobI* k,
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
         appPTR->setDiskCacheLocation(_diskCachePath->getValue().c_str());
+    } else if ( k == _wipeDiskCache.get() ) {
+        appPTR->wipeAndCreateDiskCacheStructure();
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);

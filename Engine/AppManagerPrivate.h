@@ -49,8 +49,6 @@ namespace Natron {
 }
 
 
-#define NATRON_CACHE_VERSION 2
-//#define NATRON_USE_BREAKPAD
 
 struct AppManagerPrivate
 {
@@ -74,8 +72,6 @@ struct AppManagerPrivate
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
     QString _binaryPath; //< the path to the application's binary
-    mutable QMutex _wasAbortCalledMutex;
-    bool _wasAbortAnyProcessingCalled; // < has abortAnyProcessing() called at least once ?
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex _ofxLogMutex;
     QString _ofxLog;

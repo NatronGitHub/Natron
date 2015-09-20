@@ -100,7 +100,6 @@ AppManagerPrivate::AppManagerPrivate()
 ,_backgroundIPC(0)
 ,_loaded(false)
 ,_binaryPath()
-,_wasAbortAnyProcessingCalled(false)
 ,_nodesGlobalMemoryUse(0)
 ,_ofxLogMutex()
 ,_ofxLog()
@@ -379,45 +378,7 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
 void
 AppManagerPrivate::restoreCaches()
 {
-    //    {
-    //        if ( checkForCacheDiskStructure( _nodeCache->getCachePath() ) ) {
-    //            std::ifstream ifile;
-    //            std::string settingsFilePath = _nodeCache->getRestoreFilePath();
-    //            try {
-    //                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    //                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
-    //            } catch (const std::ifstream::failure & e) {
-    //                qDebug() << "Failed to open the cache restoration file:" << e.what();
-    //
-    //                return;
-    //            }
-    //
-    //            if ( !ifile.good() ) {
-    //                qDebug() << "Failed to cache file for restoration:" <<  settingsFilePath.c_str();
-    //                ifile.close();
-    //
-    //                return;
-    //            }
-    //
-    //            Natron::Cache<Image>::CacheTOC tableOfContents;
-    //            try {
-    //                boost::archive::binary_iarchive iArchive(ifile);
-    //                iArchive >> tableOfContents;
-    //            } catch (const std::exception & e) {
-    //                qDebug() << e.what();
-    //                ifile.close();
-    //
-    //                return;
-    //            }
-    //
-    //            ifile.close();
-    //
-    //            QFile restoreFile( settingsFilePath.c_str() );
-    //            restoreFile.remove();
-    //
-    //            _nodeCache->restore(tableOfContents);
-    //        }
-    //    }
+    
     if (!appPTR->isBackground()) {
         restoreCache<FrameEntry>(this, _viewerCache.get());
         restoreCache<Image>(this, _diskCache.get());

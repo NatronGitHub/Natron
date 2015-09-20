@@ -1843,6 +1843,7 @@ Node::abortAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
     
     if (isOutput) {
+        isOutput->abortAnyEvaluation();
         isOutput->getRenderEngine()->abortRendering(true);
     }
     _imp->abortPreview();
@@ -6271,6 +6272,7 @@ Node::dequeueActions()
         for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
             if (_imp->inputs[i] != _imp->guiInputs[i]) {
                 inputChanges.insert(i);
+                _imp->inputs[i] = _imp->guiInputs[i];
             }
         }
     }

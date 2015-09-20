@@ -106,6 +106,10 @@ typedef OfxRangeD RangeD;
 
 #define kBgProcessServerCreatedShort "--bg_server_created"
 
+//Increment this to wipe all disk cache structure and ensure that the user has a clean cache when starting the next version of Natron
+#define NATRON_CACHE_VERSION 3
+#define kNatronCacheVersionSettingsKey "NatronCacheVersionSettingsKey"
+
 
 #define kNodeGraphObjectName "nodeGraph"
 #define kCurveEditorObjectName "curveEditor"
