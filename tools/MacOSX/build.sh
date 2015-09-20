@@ -27,7 +27,7 @@
 #Usage: CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
 
 source `pwd`/common.sh || exit 1
-
+(cd ports; portindex)
 # required macports ports (first ones are for Natron, then for OFX plugins)
 PORTS="boost qt4-mac glew cairo expat jpeg openexr ffmpeg openjpeg15 freetype lcms ImageMagick lcms2 libraw opencolorio openimageio flex bison openexr seexpr fontconfig py27-shiboken py27-pyside wget"
 if [ "$COMPILER" = "gcc" ]; then
