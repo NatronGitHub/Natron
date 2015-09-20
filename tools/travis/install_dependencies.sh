@@ -162,6 +162,11 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
+	# let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
+	hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
+	if [ "$hdf5lib" -a ! -f "$hdf5lib" ]; then
+	    ln -s libhdf5.dylib "$hdf5lib"
+	fi
     fi
 
     PATH=/usr/local/bin:"$PATH"
