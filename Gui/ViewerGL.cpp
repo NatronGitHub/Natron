@@ -2565,8 +2565,15 @@ ViewerGL::fitImageToFormat()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     // size in Canonical = Zoom coordinates !
-    double h = _imp->projectFormat.height();
-    double w = _imp->projectFormat.width() * _imp->projectFormat.getPixelAspectRatio();
+    double w,h;
+    const RectD& tex0RoD = _imp->currentViewerInfo[0].getRoD();
+    if (!tex0RoD.isNull() && !tex0RoD.isInfinite()) {
+        w = tex0RoD.width();
+        h = tex0RoD.height();
+    } else {
+        h = _imp->projectFormat.height();
+        w = _imp->projectFormat.width() * _imp->projectFormat.getPixelAspectRatio();
+    }
 
     assert(h > 0. && w > 0.);
 
