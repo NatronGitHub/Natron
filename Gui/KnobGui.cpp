@@ -751,6 +751,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         effect->getNode()->declarePythonFields();
         
         boost::shared_ptr<NodeCollection> collec;
+        
         if (isEffect) {
             collec = isEffect->getNode()->getGroup();
         }

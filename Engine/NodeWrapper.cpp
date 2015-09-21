@@ -106,7 +106,7 @@ Effect::disconnectInput(int inputNumber)
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    boost::shared_ptr<Natron::Node> node = _node->getInput(inputNumber);
+    boost::shared_ptr<Natron::Node> node = _node->getRealInput(inputNumber);
     if (node) {
         return new Effect(node);
     }
