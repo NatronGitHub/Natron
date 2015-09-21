@@ -48,14 +48,20 @@ CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 git submodule update --init --recursive
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-    if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug $BREAKPAD"; else qmake -r -spec unsupported/linux-clang CONFIG+="debug $BREAKPAD"; fi
+    if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
+        qmake -r CONFIG+="$BREAKPAD";
+    elif [ "$CC" = "gcc"]; then
+        qmake -r CONFIG+="nopch coverage debug $BREAKPAD"; # pch config disables precompiled headers
+    else
+        qmake -r -spec unsupported/linux-clang CONFIG+="nopch debug $BREAKPAD";
+    fi
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
-	# compiling Natron overrides the 3GB limit on travis if building parallel
-        make -k; # -k: continue building even if compiler is killed because of the 3GB limit
+        # compiling Natron overrides the 3GB limit on travis if building parallel
+        make;# -k; # -k: continue building even if compiler is killed because of the 3GB limit
     else
         export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
-	make $J;
+        make $J;
     fi
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     

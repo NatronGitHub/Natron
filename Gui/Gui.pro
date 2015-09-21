@@ -24,6 +24,8 @@ CONFIG += boost glew opengl qt cairo python shiboken pyside
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
+include(../global.pri)
+include(../config.pri)
 
 precompile_header {
   # Use Precompiled headers (PCH)
@@ -31,9 +33,6 @@ precompile_header {
   PRECOMPILED_DIR = pch
   PRECOMPILED_HEADER = pch.h
 }
-
-include(../global.pri)
-include(../config.pri)
 
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX

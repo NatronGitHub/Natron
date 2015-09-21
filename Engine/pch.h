@@ -75,9 +75,9 @@ CLANG_DIAG_ON(unused-private-field);
 ///opt/local/include/OpenEXR/half.h:471:2: warning: 'register' storage class specifier is deprecated [-Wdeprecated-register]
 //        register int e = (x.i >> 23) & 0x000001ff;
 //        ^~~~~~~~~
-CLANG_DIAG_OFF(deprecated-register);
-#include <OpenEXR/half.h>
-CLANG_DIAG_ON(deprecated-register);
+//CLANG_DIAG_OFF(deprecated-register);
+//#include <OpenEXR/half.h>
+//CLANG_DIAG_ON(deprecated-register);
 
 #endif // __clang__
 
@@ -97,6 +97,11 @@ CLANG_DIAG_ON(deprecated-register);
 #endif
 
 #include <QtCore>
+
+#include "EffectInstance.h"
+#include "Engine/Node.h"
+#include "Engine/Knob.h"
+#include "Engine/Cache.h"
 
 #endif // __cplusplus
 
