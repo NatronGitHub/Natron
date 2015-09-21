@@ -146,6 +146,8 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
     std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
+    
+    mutable QMutex projectClosingMutex;
     bool projectClosing;
     
     ProjectPrivate(Natron::Project* project);

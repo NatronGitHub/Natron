@@ -627,7 +627,7 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( appPTR->isBackground() || !appPTR->isLoaded() || _imp->projectClosing ) {
+    if ( appPTR->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
         return;
     }
     {
@@ -1436,8 +1436,10 @@ void
 Project::reset(bool aboutToQuit)
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    _imp->projectClosing = true;
+    {
+        QMutexLocker k(&_imp->projectClosingMutex);
+        _imp->projectClosing = true;
+    }
 
     _imp->runOnProjectCloseCallback();
     
@@ -1486,7 +1488,10 @@ Project::reset(bool aboutToQuit)
         endChanges(true);
     }
     
-    _imp->projectClosing = false;
+    {
+        QMutexLocker k(&_imp->projectClosingMutex);
+        _imp->projectClosing = false;
+    }
 }
     
     bool
@@ -2006,7 +2011,7 @@ Project::getOnNodeDeleteCB() const
 bool
 Project::isProjectClosing() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker k(&_imp->projectClosingMutex);
     return _imp->projectClosing;
 }
     
