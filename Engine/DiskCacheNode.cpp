@@ -235,7 +235,9 @@ DiskCacheNode::render(const RenderActionArgs& args)
         RectI roiPixel;
         
         ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, &roiPixel);
-        
+        if (!srcImg) {
+            return eStatusFailed;
+        }
         if (srcImg->getMipMapLevel() != output.second->getMipMapLevel()) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
