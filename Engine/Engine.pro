@@ -30,6 +30,10 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 include(../global.pri)
 include(../config.pri)
 
+log {
+    DEFINES += NATRON_LOG
+}
+
 precompile_header {
   #message("Using precompiled header")
   # Use Precompiled headers (PCH)

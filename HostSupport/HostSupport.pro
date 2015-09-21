@@ -25,6 +25,18 @@ CONFIG -= qt
 include(../global.pri)
 include(../config.pri)
 
+contains(CONFIG,trace_ofx_actions) {
+    DEFINES += OFX_DEBUG_ACTIONS
+}
+
+contains(CONFIG,trace_ofx_params) {
+    DEFINES += OFX_DEBUG_PARAMETERS
+}
+
+contains(CONFIG,trace_ofx_properties) {
+    DEFINES += OFX_DEBUG_PROPERTIES
+}
+
 precompile_header {
   #message("Using precompiled header")
   # Use Precompiled headers (PCH)
