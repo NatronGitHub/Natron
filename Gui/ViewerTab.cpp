@@ -215,8 +215,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->clipToProjectFormatButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clipToProjectFormatButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->clipToProjectFormatButton->setCheckable(true);
-    _imp->clipToProjectFormatButton->setChecked(true);
-    _imp->clipToProjectFormatButton->setDown(true);
+    _imp->clipToProjectFormatButton->setChecked(false);
+    _imp->clipToProjectFormatButton->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->clipToProjectFormatButton);
 
     _imp->enableViewerRoI = new Button(_imp->firstSettingsRow);

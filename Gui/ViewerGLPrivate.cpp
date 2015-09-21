@@ -116,7 +116,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , buildUserRoIOnNextPress(false)
 , draggedUserRoI()
 , zoomCtx() // protected by mutex
-, clipToDisplayWindow(true) // protected by mutex
+, clipToDisplayWindow(false) // protected by mutex
 , wipeControlsMutex()
 , mixAmount(1.) // protected by mutex
 , wipeAngle(M_PI_2) // protected by mutex
