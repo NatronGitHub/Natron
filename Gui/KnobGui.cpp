@@ -750,7 +750,11 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     if (linkExpression) {
         effect->getNode()->declarePythonFields();
         
-        boost::shared_ptr<NodeCollection> collec = isEffect ? isEffect->getNode()->getGroup() : 0;
+        boost::shared_ptr<NodeCollection> collec;
+        
+        if (isEffect) {
+            collec = isEffect->getNode()->getGroup();
+        }
         NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
         
         std::stringstream ss;
