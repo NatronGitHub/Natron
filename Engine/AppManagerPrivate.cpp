@@ -78,8 +78,6 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 #include <boost/archive/impl/basic_binary_oarchive.ipp>
 #endif
 
-#define NATRON_CACHE_VERSION 2
-
 using namespace Natron;
 
 AppManagerPrivate::AppManagerPrivate()
