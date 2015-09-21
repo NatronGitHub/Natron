@@ -1339,7 +1339,13 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         if (!cb.empty()) {  
             std::vector<std::string> args;
             std::string error;
-            Natron::getFunctionArguments(cb, &error, &args);
+            try {
+                Natron::getFunctionArguments(cb, &error, &args);
+            } catch (const std::exception& e) {
+                _imp->outputEffect->getApp()->appendToScriptEditor(std::string("Failed to run onFrameRendered callback: ")
+                                                                 + e.what());
+                return;
+            }
             if (!error.empty()) {
                 _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + error);
                 return;
@@ -1989,7 +1995,13 @@ private:
         if (!cb.empty()) {
             std::vector<std::string> args;
             std::string error;
-            Natron::getFunctionArguments(cb, &error, &args);
+            try {
+                Natron::getFunctionArguments(cb, &error, &args);
+            } catch (const std::exception& e) {
+                _imp->output->getApp()->appendToScriptEditor(std::string("Failed to run beforeFrameRendered callback: ")
+                                                                 + e.what());
+                return;
+            }
             if (!error.empty()) {
                 _imp->output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
                 return;
@@ -2304,7 +2316,13 @@ DefaultScheduler::aboutToStartRender()
     if (!cb.empty()) {
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(cb, &error, &args);
+        try {
+            Natron::getFunctionArguments(cb, &error, &args);
+        } catch (const std::exception& e) {
+            _effect->getApp()->appendToScriptEditor(std::string("Failed to run beforeRender callback: ")
+                                                             + e.what());
+            return;
+        }
         if (!error.empty()) {
             _effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + error);
             return;
@@ -2344,7 +2362,13 @@ DefaultScheduler::onRenderStopped(bool aborted)
         
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(cb, &error, &args);
+        try {
+            Natron::getFunctionArguments(cb, &error, &args);
+        } catch (const std::exception& e) {
+            _effect->getApp()->appendToScriptEditor(std::string("Failed to run afterRender callback: ")
+                                                             + e.what());
+            return;
+        }
         if (!error.empty()) {
             _effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + error);
             return;

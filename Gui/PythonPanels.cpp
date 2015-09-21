@@ -102,7 +102,13 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(callback, &error, &args);
+        try {
+            Natron::getFunctionArguments(callback, &error, &args);
+        } catch (const std::exception& e) {
+            getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
+                                                             + e.what());
+            return;
+        }
         if (!error.empty()) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
             return;

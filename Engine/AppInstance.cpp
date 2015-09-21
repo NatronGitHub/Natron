@@ -1335,7 +1335,13 @@ AppInstance::execOnProjectCreatedCallback()
     
     std::vector<std::string> args;
     std::string error;
-    Natron::getFunctionArguments(cb, &error, &args);
+    try {
+        Natron::getFunctionArguments(cb, &error, &args);
+    } catch (const std::exception& e) {
+        appendToScriptEditor(std::string("Failed to run onProjectCreated callback: ")
+                                                         + e.what());
+        return;
+    }
     if (!error.empty()) {
         appendToScriptEditor("Failed to run onProjectCreated callback: " + error);
         return;

@@ -301,7 +301,13 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
         
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(onProjectSave, &error, &args);
+        try {
+            Natron::getFunctionArguments(onProjectSave, &error, &args);
+        } catch (const std::exception& e) {
+            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectSave callback: ")
+                                                             + e.what());
+            return filename;
+        }
         if (!error.empty()) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + error);
             return filename;
@@ -374,7 +380,13 @@ ProjectPrivate::runOnProjectCloseCallback()
         
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(onProjectClose, &error, &args);
+        try {
+            Natron::getFunctionArguments(onProjectClose, &error, &args);
+        } catch (const std::exception& e) {
+            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectClose callback: ")
+                                                             + e.what());
+            return;
+        }
         if (!error.empty()) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + error);
             return;
@@ -418,7 +430,13 @@ ProjectPrivate::runOnProjectLoadCallback()
         
         std::vector<std::string> args;
         std::string error;
-        Natron::getFunctionArguments(cb, &error, &args);
+        try {
+            Natron::getFunctionArguments(cb, &error, &args);
+        } catch (const std::exception& e) {
+            _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectLoaded callback: ")
+                                                             + e.what());
+            return;
+        }
         if (!error.empty()) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + error);
             return;

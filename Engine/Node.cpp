@@ -6833,7 +6833,13 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,bool user
 {
     std::vector<std::string> args;
     std::string error;
-    Natron::getFunctionArguments(cb, &error, &args);
+    try {
+        Natron::getFunctionArguments(cb, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onNodeCreated callback: ")
+                                                         + e.what());
+        return;
+    }
     if (!error.empty()) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
         return;
@@ -6876,7 +6882,13 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 {
     std::vector<std::string> args;
     std::string error;
-    Natron::getFunctionArguments(cb, &error, &args);
+    try {
+        Natron::getFunctionArguments(cb, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onNodeDeletion callback: ")
+                                                         + e.what());
+        return;
+    }
     if (!error.empty()) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + error);
         return;
@@ -7014,7 +7026,13 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
 {
     std::vector<std::string> args;
     std::string error;
-    Natron::getFunctionArguments(cb, &error, &args);
+    try {
+        Natron::getFunctionArguments(cb, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onInputChanged callback: ")
+                                                         + e.what());
+        return;
+    }
     if (!error.empty()) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + error);
         return;

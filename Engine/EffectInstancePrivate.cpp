@@ -361,8 +361,13 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     if ( !k || (k->getName() == "onParamChanged") ) {
         return;
     }
-
-    Natron::getFunctionArguments(callback, &error, &args);
+    try {
+        Natron::getFunctionArguments(callback, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
+                                                         + e.what());
+        return;
+    }
     if ( !error.empty() ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
 
