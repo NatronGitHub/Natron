@@ -434,12 +434,9 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
         //Identity but no input
         return eStatusFailed;
-    } else {
-        return eStatusOK;
     }
     
     ///Compute the regions of interest in input for this RoI
-#pragma message WARN("BUG: this code cannot be reached") 
     FrameViewPerRequestData fvPerRequestData;
     effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &fvPerRequestData.inputsRoi);
     
