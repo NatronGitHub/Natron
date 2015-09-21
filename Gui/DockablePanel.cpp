@@ -431,7 +431,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         tabWidget->getTabBar()->setObjectName("DockablePanelTabWidget");
     }
     _imp->_horizLayout->addWidget(_imp->_tabWidget);
-    _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
+    _imp->_tabWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
