@@ -733,16 +733,19 @@ static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect:
         return 0;
     }
     
-    const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClips();
+    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
     int nInputs = 0;
-    for (std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-        if (!it->second->isOutput()) {
-            
-            if (!it->second->isOptional()) {
-                return 0;
+    bool firstInput = true;
+    for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
+        if (!(*it)->isOutput()) {
+            if (!(*it)->isOptional()) {
+                if (!firstInput) {                    // allow one non-optional input
+                    return 0;
+                }
             } else {
                 ++nInputs;
             }
+            firstInput = false;
         }
     }
     if (nInputs > 4) {
