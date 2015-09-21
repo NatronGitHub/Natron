@@ -596,7 +596,7 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
         std::list<BezierCPs> regularizedSecond;
         Natron::regularize(firstPart, time, &regularizedFirst);
         Natron::regularize(secondPart, time, &regularizedSecond);
-        ret->insert(ret->begin(),regularizedFirst.begin(),regularizedSecond.end());
+        ret->insert(ret->begin(),regularizedFirst.begin(),regularizedFirst.end());
         ret->insert(ret->end(), regularizedSecond.begin(), regularizedSecond.end());
         return true;
     }
