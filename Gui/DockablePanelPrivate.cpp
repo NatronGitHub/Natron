@@ -24,6 +24,13 @@
 
 #include "DockablePanelPrivate.h"
 
+#include <vector>
+#include <utility>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 #include <QGridLayout>
 #include <QUndoStack>
 #include <QDebug>
@@ -60,7 +67,9 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
         }
     }
     assert(idx != -1);
-
+    if (idx < 0) {
+        return;
+    }
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
     boost::shared_ptr<KnobI> parent = ref->getParentKnob();

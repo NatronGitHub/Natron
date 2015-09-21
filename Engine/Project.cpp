@@ -1714,8 +1714,8 @@ Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>
         
         size_t endValuePos = encoded.find(endValueTag,i);
         assert(endValuePos != std::string::npos && endValuePos < encoded.size());
-        
-        while (i < endValuePos) {
+
+        while (endValuePos != std::string::npos && endValuePos < encoded.size() && i < endValuePos) {
             value.push_back(encoded.at(i));
             ++i;
         }

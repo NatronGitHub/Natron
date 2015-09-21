@@ -158,7 +158,9 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
             }
         }
         assert( upper != keys.end() && upper != keys.begin() );
-
+        if (upper == keys.end() || upper == keys.begin()) {
+            return std::make_pair(KeyFrame(0.,0.),false);
+        }
         KeyFrameSet::const_iterator lower = upper;
         --lower;
 

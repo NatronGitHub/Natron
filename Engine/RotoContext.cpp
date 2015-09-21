@@ -3225,6 +3225,9 @@ RotoContextPrivate::renderInternalShape(double time,
     
     BezierCPs::const_iterator point = cps.begin();
     assert(point != cps.end());
+    if (point == cps.end()) {
+        return;
+    }
     BezierCPs::const_iterator nextPoint = point;
     if (nextPoint != cps.end()) {
         ++nextPoint;

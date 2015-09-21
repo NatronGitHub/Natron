@@ -42,7 +42,9 @@ KnobGui::onCreateMasterOnGroupActionTriggered()
     boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     assert(isCollecGroup);
-    createDuplicateOnNode(isCollecGroup,true);
+    if (isCollecGroup) {
+        createDuplicateOnNode(isCollecGroup, true);
+    }
 }
 
 void

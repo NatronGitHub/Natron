@@ -223,8 +223,8 @@ KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) co
         
         size_t endValuePos = raw.find(endValueTag,i);
         assert(endValuePos != std::string::npos && endValuePos < raw.size());
-        
-        while (i < endValuePos) {
+
+        while (endValuePos != std::string::npos && endValuePos < raw.size() && i < endValuePos) {
             value.push_back(raw.at(i));
             ++i;
         }

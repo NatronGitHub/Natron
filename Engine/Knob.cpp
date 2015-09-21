@@ -3274,6 +3274,9 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
         }
     }
     assert(foundIndex != -1);
+    if (foundIndex < 0) {
+        return;
+    }
     for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
         if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == knob->getParentKnob())) {
             boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];

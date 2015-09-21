@@ -679,6 +679,12 @@ smoothTangent(bool useGuiCurves,
             }
             ++index;
         } // for(it)
+        if ( prev == cps.end() ) {
+            prev = cps.begin();
+        }
+        if ( next == cps.end() ) {
+            next = cps.begin();
+        }
 
         assert(index < cpCount);
         Q_UNUSED(cpCount);

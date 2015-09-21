@@ -1649,7 +1649,9 @@ RotoGui::drawOverlays(double time,
                             prevCp = cps.begin();
                         }
                         assert(itF != featherPts.end()); // because cps.size() == featherPts.size()
-
+                        if (itF == featherPts.end()) {
+                            break;
+                        }
                         double x,y;
                         Transform::Point3D p,pF;
                         (*it2)->getPositionAtTime(true, time, &p.x, &p.y);
@@ -4020,6 +4022,9 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
                 nextF = fps.begin();
             }
             assert(itF != fps.end()); // because cps.size() == fps.size()
+            if (itF == fps.end()) {
+                itF = fps.begin();
+            }
 
             Transform::Point3D controlPoint,featherPoint;
             controlPoint.z = featherPoint.z = 1;
