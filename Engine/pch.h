@@ -98,7 +98,8 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include <QtCore>
 
-#include "EffectInstance.h"
+#include "HostSupport/pch.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Knob.h"
 #include "Engine/Cache.h"
