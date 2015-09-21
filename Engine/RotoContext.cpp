@@ -2732,7 +2732,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
             std::vector<std::pair<double,double> > opacityStops;
             getRenderDotParams(alpha, brushSizePixel, brushHardness, brushSpacing, it->second, pressureAffectsOpacity, pressureAffectsSize, pressureAffectsHardness, &internalDotRadius, &externalDotRadius, &spacing, &opacityStops);
             renderDot(cr, dotPatterns, it->first, internalDotRadius, externalDotRadius, it->second, doBuildup, opacityStops, alpha);
-            return 0;
+            continue;
         }
         
         std::list<std::pair<Point,double> >::iterator next = it;
