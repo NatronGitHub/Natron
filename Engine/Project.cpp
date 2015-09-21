@@ -43,36 +43,6 @@
 #endif
 
 
-#if defined(__NATRON_OSX__) && BOOST_VERSION <= 105900 && defined(_ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_) && _ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED_ <= 1060
-// Required on OS X 10.6 Snow Leopard w/ boost 1.59.0, or else undefined symbols show up at run time.
-// dyld: lazy symbol binding failed: Symbol not found: __ZN5boost7archive21basic_text_oprimitiveISoED2Ev
-// dyld: Symbol not found: __ZN5boost7archive17xml_oarchive_implINS0_12xml_oarchiveEEC2ERSoj
-// These templates are explicitely instantiated in boost from libs/serialization/src/basic_text_oprimitive.cpp and basic_text_iprimitive.cpp,
-// but don't seem to be exported from boost, and are thus stripped by the -dead_strip linker option
-#include <istream>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-// explicitly instantiate for this type of xml stream
-#include <boost/archive/detail/archive_serializer_map.hpp>
-#include <boost/archive/detail/auto_link_archive.hpp>
-#include <boost/archive/impl/archive_serializer_map.ipp>
-#include <boost/archive/impl/basic_text_iarchive.ipp>
-#include <boost/archive/impl/basic_text_oarchive.ipp>
-#include <boost/archive/impl/text_iarchive_impl.ipp>
-#include <boost/archive/impl/text_oarchive_impl.ipp>
-#include <boost/archive/detail/auto_link_archive.hpp>
-#include <boost/archive/impl/basic_text_iprimitive.ipp>
-#include <boost/archive/impl/basic_text_oprimitive.ipp>
-
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// explicitly instantiate for this type of xml stream
-#include <boost/archive/impl/basic_xml_iarchive.ipp>
-#include <boost/archive/impl/xml_iarchive_impl.ipp>
-#include <boost/archive/impl/basic_xml_oarchive.ipp>
-#include <boost/archive/impl/xml_oarchive_impl.ipp>
-#endif
-
 #include <QtConcurrentRun>
 #include <QCoreApplication>
 #include <QTimer>
