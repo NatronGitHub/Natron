@@ -78,7 +78,8 @@ ViewerTab::drawOverlays(double time,
         _imp->app->isClosing() ||
         isFileDialogViewer() ||
         !_imp->gui ||
-        (_imp->gui->isGUIFrozen() && !_imp->app->getIsUserPainting())) {
+        (_imp->gui->isGUIFrozen() && !_imp->app->getIsUserPainting()) ||
+        _imp->app->isShowingDialog()) {
         return;
     }
     
