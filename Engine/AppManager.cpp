@@ -229,7 +229,6 @@ AppManager::~AppManager()
         // ignore errors
     }
 
-    _instance = 0;
 
     ///Caches may have launched some threads to delete images, wait for them to be done
     QThreadPool::globalInstance()->waitForDone();
@@ -250,6 +249,8 @@ AppManager::~AppManager()
     }
 #endif
     
+    _instance = 0;
+
     if (qApp) {
         delete qApp;
     }

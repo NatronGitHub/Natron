@@ -1232,6 +1232,10 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
 void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 {
+    boost::shared_ptr<Project> proj = getApp()->getProject();
+    if (proj->isProjectClosing() || proj->isLoadingProject()) {
+        return;
+    }
     appPTR->removeAllImagesFromCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
     appPTR->removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(this, nodeHashKey);
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
@@ -1244,6 +1248,10 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 void
 Node::removeAllImagesFromCache()
 {
+    boost::shared_ptr<Project> proj = getApp()->getProject();
+    if (proj->isProjectClosing() || proj->isLoadingProject()) {
+        return;
+    }
     appPTR->removeAllCacheEntriesForHolder(this);
 }
 
@@ -1921,6 +1929,7 @@ Node::removeReferences(bool ensureThreadsFinished)
     }
     
     removeAllImagesFromCache();
+    
     
     deleteNodeVariableToPython(getFullyQualifiedName());
     
