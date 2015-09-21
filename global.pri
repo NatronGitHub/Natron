@@ -124,7 +124,7 @@ macx {
 }
 
 # CONFIG+=nopch disables precompiled headers
-!nopch:macx|!universal {
+!nopch:!macx|!universal {
   # precompiled headers don't work with multiple archs
   CONFIG += precompile_header
 }
