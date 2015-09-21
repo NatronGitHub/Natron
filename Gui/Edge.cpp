@@ -47,6 +47,10 @@
 #endif
 
 #define EDGE_LENGTH_MIN 0.1
+#define ARROW_OFFSET 3 // offset of the arrow tip from the object border
+#define ARROW_SIZE_CONNECTED 14
+#define ARROW_SIZE_DISCONNECTED 10
+#define ARROW_HEAD_ANGLE ((2*M_PI)/15) // 24 degrees opening angle is a nice thin arrow
 
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
@@ -439,23 +443,32 @@ Edge::initLine()
     ///This is the angle the edge forms with the X axis
     qreal a = std::acos(line().dx() / length);
 
-    if (line().dy() >= 0) {
+    if (line().dy() < 0) {
         a = 2 * M_PI - a;
     }
-    
-    QPointF arrowIntersect = foundDstIntersection ? dstIntersection : dst;
+
+    if (foundDstIntersection) {
+
+    }
+
+    QPointF arrowIntersect;
+    if (foundDstIntersection) {
+        arrowIntersect = dstIntersection + QPointF(std::cos(a) * ARROW_OFFSET * sc,
+                                                   std::sin(a) * ARROW_OFFSET * sc);
+    } else {
+        arrowIntersect = dst;
+    }
 
     qreal arrowSize;
     if (source && dest) {
-        arrowSize = 10. * sc;
+        arrowSize = ARROW_SIZE_CONNECTED * sc;
     } else {
-        arrowSize = 7. * sc;
+        arrowSize = ARROW_SIZE_DISCONNECTED * sc;
     }
-    double headAngle = 3. * M_PI_4;
-    QPointF arrowP1 = arrowIntersect + QPointF(std::sin(a + headAngle) * arrowSize,
-                                            std::cos(a + headAngle) * arrowSize);
-    QPointF arrowP2 = arrowIntersect + QPointF(std::sin(a + M_PI - headAngle) * arrowSize,
-                                            std::cos(a + M_PI - headAngle) * arrowSize);
+    QPointF arrowP1 = arrowIntersect + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
+                                               std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
+    QPointF arrowP2 = arrowIntersect + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
+                                               std::sin(a - ARROW_HEAD_ANGLE/2) * arrowSize);
 
     _arrowHead.clear();
     _arrowHead << arrowIntersect << arrowP1 << arrowP2;
@@ -636,7 +649,9 @@ Edge::paint(QPainter *painter,
     QPainterPath headPath;
     headPath.addPolygon(_arrowHead);
     headPath.closeSubpath();
+    myPen.setColor(color);
     painter->fillPath(headPath, color);
+    painter->strokePath(headPath, myPen); // also draw the outline, or arrows are too small
 
     if (_paintBendPoint) {
         QRectF arcRect(_middlePoint.x() - 5,_middlePoint.y() - 5,10,10);
