@@ -7325,7 +7325,7 @@ bool
 Node::addUserComponents(const Natron::ImageComponents& comps)
 {
     ///The node has node channel selector, don't allow adding a custom plane.
-    if (_imp->channelsSelectors.empty()) {
+    if (_imp->channelsSelectors.empty() && !getKnobByName(kNatronOfxParamOutputChannels)) {
         return false;
     }
     
