@@ -669,11 +669,16 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     } else if ( pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || str.startsWith(" Monsters ") ) {
         out.push_back("Monsters");
 
-    } else if (pluginIdentifier == "uk.co.thefoundry.keylight.keylight") {
+    } else if ((pluginIdentifier == "uk.co.thefoundry.keylight.keylight") ||
+               (pluginIdentifier == "jp.co.ise.imagica:PrimattePlugin")) {
         s = PLUGIN_GROUP_KEYER;
 
-    } else if (pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") {
+    } else if ((pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") ||
+               pluginIdentifier.startsWith("com.rubbermonkey:FilmConvert")) {
         s = PLUGIN_GROUP_FILTER;
+
+    } else if (pluginIdentifier.startsWith("com.NewBlue.Titler")) {
+        s = PLUGIN_GROUP_PAINT;
 
     } else if ( (pluginIdentifier == "tuttle.avreader") ||
                (pluginIdentifier == "tuttle.avwriter") ||
