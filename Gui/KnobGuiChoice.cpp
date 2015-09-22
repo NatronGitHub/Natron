@@ -181,8 +181,8 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
                                        bool hasExpr)
 {
     _comboBox->setAnimation(3);
-    bool isSlaved = _knob.lock()->isSlave(0);
-    _comboBox->setReadOnly(hasExpr || isSlaved);
+    bool isEnabled = _knob.lock()->isEnabled(0);
+    _comboBox->setEnabled_natron(!hasExpr && isEnabled);
 }
 
 void
@@ -243,7 +243,7 @@ void
 KnobGuiChoice::setEnabled()
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
 
     _comboBox->setEnabled_natron(b);
 }
@@ -252,7 +252,7 @@ void
 KnobGuiChoice::setReadOnly(bool readOnly,
                             int /*dimension*/)
 {
-    _comboBox->setReadOnly(readOnly);
+    _comboBox->setEnabled_natron(!readOnly);
 }
 
 void

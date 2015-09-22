@@ -824,7 +824,7 @@ RotoContext::load(const RotoContextSerialization & obj)
     _imp->rippleEdit = obj._rippleEdit;
 
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        it->lock()->setAllDimensionsEnabled(false);
+        it->lock()->setDefaultAllDimensionsEnabled(false);
     }
 
     assert(_imp->layers.size() == 1);

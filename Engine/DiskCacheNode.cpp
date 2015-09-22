@@ -99,7 +99,7 @@ DiskCacheNode::initializeKnobs()
     firstFrame->setEvaluateOnChange(false);
     firstFrame->setAddNewLine(false);
     firstFrame->setDefaultValue(1);
-    firstFrame->setSecret(true);
+    firstFrame->setSecretByDefault(true);
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
     
@@ -109,7 +109,7 @@ DiskCacheNode::initializeKnobs()
     lastFrame->disableSlider();
     lastFrame->setEvaluateOnChange(false);
     lastFrame->setDefaultValue(100);
-    lastFrame->setSecret(true);
+    lastFrame->setSecretByDefault(true);
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
     

@@ -75,6 +75,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/AnimationButton.h"
 #include "Gui/ComboBox.h"
+#include "Gui/ClickableLabel.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
@@ -84,7 +85,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
-#include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/LinkToKnobDialog.h"
 #include "Gui/Menu.h"
@@ -118,7 +118,7 @@ struct KnobGuiPrivate
     std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
     QGridLayout* containerLayout;
     QWidget* field;
-    Natron::Label* descriptionLabel;
+    Natron::ClickableLabel* descriptionLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 

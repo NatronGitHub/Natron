@@ -262,7 +262,7 @@ KnobGui::onPasteValuesActionTriggered()
 }
 
 void
-KnobGui::onKnobSlavedChanged(int dimension,
+KnobGui::onKnobSlavedChanged(int /*dimension*/,
                              bool b)
 {
     if (b) {
@@ -270,7 +270,6 @@ KnobGui::onKnobSlavedChanged(int dimension,
     } else {
         Q_EMIT keyFrameSet();
     }
-    setReadOnly_(b, dimension);
 }
 
 void
@@ -398,15 +397,14 @@ KnobGui::setReadOnly_(bool readOnly,
     if (!_imp->customInteract) {
         setReadOnly(readOnly, dimension);
     }
-
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
-//    bool hasDimensionEnabled = false;
-//    for (int i = 0; i < getKnob()->getDimension(); ++i) {
-//        if (getKnob()->isEnabled(i)) {
-//            hasDimensionEnabled = true;
-//        }
-//    }
-//    _descriptionLabel->setEnabled(hasDimensionEnabled);
+    bool hasDimensionEnabled = false;
+    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+        if (getKnob()->isEnabled(i)) {
+            hasDimensionEnabled = true;
+        }
+    }
+    _imp->descriptionLabel->setReadOnly(!hasDimensionEnabled);
 }
 
 bool

@@ -156,6 +156,8 @@ public:
      **/
     virtual void fitImageToFormat() OVERRIDE FINAL;
 
+    void fitImageToFormat(bool useProjectFormat);
+    
     /**
      *@brief Turns on the overlays on the viewer.
      **/

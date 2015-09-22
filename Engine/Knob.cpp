@@ -241,8 +241,10 @@ struct KnobHelperPrivate
     bool addSeparator;
     int itemSpacing;
     boost::weak_ptr<KnobI> parentKnob;
-    bool IsSecret;
-    std::vector<bool> enabled;
+    
+    mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
+    bool IsSecret,defaultIsSecret;
+    std::vector<bool> enabled,defaultEnabled;
     bool CanUndo;
     
     QMutex evaluateOnChangeMutex;
@@ -324,8 +326,11 @@ struct KnobHelperPrivate
     , addSeparator(false)
     , itemSpacing(0)
     , parentKnob()
+    , stateMutex()
     , IsSecret(false)
+    , defaultIsSecret(false)
     , enabled(dimension_)
+    , defaultEnabled(dimension_)
     , CanUndo(true)
     , evaluateOnChangeMutex()
     , evaluateOnChange(true)
@@ -367,6 +372,7 @@ struct KnobHelperPrivate
         expressions.resize(dimension);
         hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
+            defaultEnabled[i] = enabled[i] = true;
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
             mustClearExprResults[i] = false;
@@ -1385,27 +1391,75 @@ void
 KnobHelper::setEnabled(int dimension,
                        bool b)
 {
-    _imp->enabled[dimension] = b;
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->enabled[dimension] = b;
+    }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
     }
+}
+
+void
+KnobHelper::setDefaultEnabled(int dimension,bool b)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->defaultEnabled[dimension] = b;
+    }
+    setEnabled(dimension, b);
 }
 
 void
 KnobHelper::setAllDimensionsEnabled(bool b)
 {
-    for (U32 i = 0; i < _imp->enabled.size(); ++i) {
-        _imp->enabled[i] = b;
+    bool changed = false;
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        for (U32 i = 0; i < _imp->enabled.size(); ++i) {
+            if (b != _imp->enabled[i]) {
+                _imp->enabled[i] = b;
+                changed = true;
+            }
+        }
     }
-    if (_signalSlotHandler) {
+    if (changed && _signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
     }
 }
 
 void
+KnobHelper::setDefaultAllDimensionsEnabled(bool b)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        for (U32 i = 0; i < _imp->enabled.size(); ++i) {
+            _imp->defaultEnabled[i] = b;
+        }
+    }
+    setAllDimensionsEnabled(b);
+}
+
+void
+KnobHelper::setSecretByDefault(bool b)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->defaultIsSecret = b;
+    }
+    setSecret(b);
+}
+
+void
 KnobHelper::setSecret(bool b)
 {
-    _imp->IsSecret = b;
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        if (_imp->IsSecret == b) {
+            return;
+        }
+        _imp->IsSecret = b;
+    }
     
     ///the knob was revealed , refresh its gui to the current time
     if ( !b && _imp->holder && _imp->holder->getApp() ) {
@@ -1597,11 +1651,13 @@ static bool parseTokenFrom(int fromDim,
     
     
     //The get() function does not always returns a tuple
-    if (params.empty() && (dimensionParamPos == -1)) {
+    if (params.empty()) {
         params.push_back("-1");
-        ++dimensionParamPos;
-        
     }
+    if (dimensionParamPos == -1) {
+        ++dimensionParamPos;
+    }
+    
     
     if (dimensionParamPos < 0 || (int)params.size() <= dimensionParamPos) {
         throw std::invalid_argument("Invalid expr");
@@ -2209,7 +2265,15 @@ boost::shared_ptr<KnobI> KnobHelper::getParentKnob() const
 bool
 KnobHelper::getIsSecret() const
 {
+    QMutexLocker k(&_imp->stateMutex);
     return _imp->IsSecret;
+}
+
+bool
+KnobHelper::getDefaultIsSecret() const
+{
+    QMutexLocker k(&_imp->stateMutex);
+    return _imp->defaultIsSecret;
 }
 
 void
@@ -2225,7 +2289,17 @@ KnobHelper::isEnabled(int dimension) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
     
+    QMutexLocker k(&_imp->stateMutex);
     return _imp->enabled[dimension];
+}
+
+bool
+KnobHelper::isDefaultEnabled(int dimension) const
+{
+    assert( 0 <= dimension && dimension < getDimension() );
+    
+    QMutexLocker k(&_imp->stateMutex);
+    return _imp->defaultEnabled[dimension];
 }
 
 void
@@ -2446,7 +2520,7 @@ KnobHelper::slaveTo(int dimension,
     }
     
     bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
-    
+    setEnabled(dimension, false);
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == Natron::eValueChangedReasonPluginEdited) {
@@ -2981,6 +3055,19 @@ KnobHelper::hasModifications() const
         }
     }
     return false;
+}
+
+bool
+KnobHelper::hasModificationsForSerialization() const
+{
+    bool enabledChanged = false;
+    for (int i = 0; i < getDimension(); ++i) {
+        if (isEnabled(i) != isDefaultEnabled(i)) {
+            enabledChanged = true;
+        }
+    }
+    return hasModifications() ||
+    getIsSecret() != getDefaultIsSecret() || enabledChanged;
 }
 
 bool

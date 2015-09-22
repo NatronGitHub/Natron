@@ -558,8 +558,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     }
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
-    knob->setSecret( descriptor.getSecret() );
-    knob->setAllDimensionsEnabled( descriptor.getEnabled() );
+    knob->setSecretByDefault( descriptor.getSecret() );
+    knob->setDefaultAllDimensionsEnabled( descriptor.getEnabled() );
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );

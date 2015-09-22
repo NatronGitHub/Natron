@@ -615,7 +615,6 @@ KnobGuiInt::reflectExpressionState(int dimension,
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
 
-    bool isSlaved = knob->isSlave(dimension);
     if (hasExpr) {
         _spinBoxes[dimension].first->setAnimation(3);
         _spinBoxes[dimension].first->setReadOnly(true);
@@ -626,10 +625,10 @@ KnobGuiInt::reflectExpressionState(int dimension,
         Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
-        _spinBoxes[dimension].first->setReadOnly(!isEnabled || isSlaved);
+        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
         if (_slider) {
             bool isEnabled0 = knob->isEnabled(0);
-            _slider->setReadOnly(!isEnabled0 || isSlaved);
+            _slider->setReadOnly(!isEnabled0);
         }
     }
 }

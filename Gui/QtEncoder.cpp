@@ -152,11 +152,11 @@ QtWriter::initializeKnobs()
 
     _firstFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
     _firstFrameKnob->setAnimationEnabled(false);
-    _firstFrameKnob->setSecret(true);
+    _firstFrameKnob->setSecretByDefault(true);
 
     _lastFrameKnob = getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
     _lastFrameKnob->setAnimationEnabled(false);
-    _lastFrameKnob->setSecret(true);
+    _lastFrameKnob->setSecretByDefault(true);
 
     _renderKnob = getNode()->createKnob<KnobButton>( QObject::tr("Render").toStdString() );
     _renderKnob->setAsRenderButton();

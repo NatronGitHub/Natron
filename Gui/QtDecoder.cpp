@@ -160,7 +160,7 @@ QtReader::initializeKnobs()
     _timeOffset = getNode()->createKnob<KnobInt>( QObject::tr("Time offset").toStdString() );
     _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue(0,0);
-    _timeOffset->setSecret(true);
+    _timeOffset->setSecretByDefault(true);
 } // initializeKnobs
 
 void

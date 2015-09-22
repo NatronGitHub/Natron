@@ -356,7 +356,7 @@ KnobGuiFile::setEnabled()
     bool enabled = getKnob()->isEnabled(0);
 
     _openFileButton->setEnabled(enabled);
-    _lineEdit->setEnabled(enabled);
+    _lineEdit->setReadOnly(!enabled);
 }
 
 void
@@ -447,10 +447,10 @@ KnobGuiFile::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum 
 void
 KnobGuiFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
-    bool isSlaved = _knob.lock()->isSlave(0);
+    bool isEnabled = _knob.lock()->isEnabled(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr || isSlaved);
-    _openFileButton->setEnabled(!hasExpr && !isSlaved);
+    _lineEdit->setReadOnly(hasExpr || !isEnabled);
+    _openFileButton->setEnabled(!hasExpr || isEnabled);
 }
 
 void
@@ -601,7 +601,7 @@ KnobGuiOutputFile::setEnabled()
     bool enabled = getKnob()->isEnabled(0);
 
     _openFileButton->setEnabled(enabled);
-    _lineEdit->setEnabled(enabled);
+    _lineEdit->setReadOnly(!enabled);
 }
 
 void
@@ -687,10 +687,10 @@ KnobGuiOutputFile::onSimplifyTriggered()
 void
 KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
-    bool isSlaved = _knob.lock()->isSlave(0);
+    bool isEnabled = _knob.lock()->isEnabled(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr || isSlaved);
-    _openFileButton->setEnabled(!hasExpr && !isSlaved);
+    _lineEdit->setReadOnly(hasExpr || !isEnabled);
+    _openFileButton->setEnabled(!hasExpr || isEnabled);
 }
 
 
@@ -1126,7 +1126,7 @@ KnobGuiPath::setEnabled()
         _addPathButton->setEnabled(enabled);
         _removePathButton->setEnabled(enabled);
     } else {
-        _lineEdit->setEnabled(enabled);
+        _lineEdit->setReadOnly(!enabled);
         _openFileButton->setEnabled(enabled);
     }
 }
@@ -1307,10 +1307,10 @@ KnobGuiPath::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
     boost::shared_ptr<KnobPath> knob = _knob.lock();
     if (!knob->isMultiPath()) {
-        bool isSlaved = knob->isSlave(0);
+        bool isEnabled = _knob.lock()->isEnabled(0);
         _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly(hasExpr || isSlaved);
-        _openFileButton->setEnabled(!hasExpr && !isSlaved);
+        _lineEdit->setReadOnly(hasExpr || !isEnabled);
+        _openFileButton->setEnabled(!hasExpr || isEnabled);
     }
 }
 

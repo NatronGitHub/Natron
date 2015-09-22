@@ -736,23 +736,23 @@ void
 KnobGuiColor::reflectExpressionState(int dimension,
                                       bool hasExpr)
 {
-    bool isSlaved = _knob.lock()->isSlave(dimension);
+    bool isEnabled = _knob.lock()->isEnabled(dimension);
     switch (dimension) {
         case 0:
             _rBox->setAnimation(3);
-            _rBox->setReadOnly(hasExpr || isSlaved);
+            _rBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 1:
             _gBox->setAnimation(3);
-            _gBox->setReadOnly(hasExpr || isSlaved);
+            _gBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 2:
             _bBox->setAnimation(3);
-            _bBox->setReadOnly(hasExpr || isSlaved);
+            _bBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 3:
             _aBox->setAnimation(3);
-            _aBox->setReadOnly(hasExpr || isSlaved);
+            _aBox->setReadOnly(hasExpr || !isEnabled);
             break;
         default:
             break;

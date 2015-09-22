@@ -75,7 +75,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             if (!knobs[i]->isUserKnob() &&
                 knobs[i]->getIsPersistant() &&
                 !isGroup && !isPage && !isButton
-                && knobs[i]->hasModifications()) {
+                && knobs[i]->hasModificationsForSerialization()) {
                 
                 ///For choice do a deepclone because we need entries
                 //bool doCopyKnobs = isChoice ? true : copyKnobs;
