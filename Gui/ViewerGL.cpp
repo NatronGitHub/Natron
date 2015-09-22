@@ -2562,12 +2562,18 @@ ViewerGL::zoomSlot(int v)
 void
 ViewerGL::fitImageToFormat()
 {
+    fitImageToFormat(false);
+}
+
+void
+ViewerGL::fitImageToFormat(bool useProjectFormat)
+{
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     // size in Canonical = Zoom coordinates !
     double w,h;
     const RectD& tex0RoD = _imp->currentViewerInfo[0].getRoD();
-    if (!tex0RoD.isNull() && !tex0RoD.isInfinite()) {
+    if (!tex0RoD.isNull() && !tex0RoD.isInfinite() && !useProjectFormat) {
         w = tex0RoD.width();
         h = tex0RoD.height();
     } else {
@@ -2750,7 +2756,7 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     if ( !loadingProject && triggerRender) {
-        fitImageToFormat();
+        fitImageToFormat(true);
     }
     
     
