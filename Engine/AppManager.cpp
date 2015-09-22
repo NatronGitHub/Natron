@@ -2199,6 +2199,7 @@ AppManager::initPython(int argc,char* argv[])
 #endif
     //Disable user sites as they could conflict with Natron bundled packages.
     qputenv("PYTHONNOUSERSITE","1");
+    ++Py_NoUserSiteDirectory;
     
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
@@ -2239,6 +2240,7 @@ AppManager::initPython(int argc,char* argv[])
         _imp->args[i] = strdup(argv[i]); // free'd in ~AppManagerPrivate()
 #endif
     }
+    
  
     Py_SetProgramName(_imp->args[0]);
 
@@ -2247,7 +2249,6 @@ AppManager::initPython(int argc,char* argv[])
     initBuiltinPythonModules();
     //Py_NoSiteFlag = 1; 
     Py_Initialize();
-    
     // pythonHome must be const, so that the c_str() pointer is never invalidated
     
 #ifndef IS_PYTHON_2
