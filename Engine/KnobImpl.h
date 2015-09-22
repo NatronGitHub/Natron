@@ -1932,6 +1932,8 @@ Knob<T>::resetToDefaultValue(int dimension)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
     }
+    setSecret(getDefaultIsSecret());
+    setEnabled(dimension, isDefaultEnabled(dimension));
 }
 
 // If *all* the following conditions hold:
@@ -1979,6 +1981,9 @@ Knob<double>::resetToDefaultValue(int dimension)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
     }
+    setSecret(getDefaultIsSecret());
+    setEnabled(dimension, isDefaultEnabled(dimension));
+
 }
 
 template<>

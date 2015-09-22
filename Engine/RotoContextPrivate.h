@@ -1501,7 +1501,7 @@ struct RotoContextPrivate
         opacityKnob->setDisplayMinimum(0.);
         opacityKnob->setDisplayMaximum(1.);
         opacityKnob->setDefaultValue(ROTO_DEFAULT_OPACITY);
-        opacityKnob->setAllDimensionsEnabled(false);
+        opacityKnob->setDefaultAllDimensionsEnabled(false);
         opacityKnob->setIsPersistant(false);
         generalPage->addKnob(opacityKnob);
         knobs.push_back(opacityKnob);
@@ -1513,7 +1513,7 @@ struct RotoContextPrivate
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
-        ck->setAllDimensionsEnabled(false);
+        ck->setDefaultAllDimensionsEnabled(false);
         generalPage->addKnob(ck);
         ck->setIsPersistant(false);
         knobs.push_back(ck);
@@ -1524,7 +1524,7 @@ struct RotoContextPrivate
         lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
         lifeTimeKnob->setAddNewLine(false);
         lifeTimeKnob->setIsPersistant(false);
-        lifeTimeKnob->setAllDimensionsEnabled(false);
+        lifeTimeKnob->setDefaultAllDimensionsEnabled(false);
         lifeTimeKnob->setAnimationEnabled(false);
         {
             std::vector<std::string> choices,helps;
@@ -1546,8 +1546,8 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobInt> lifeTimeFrameKnob = Natron::createKnob<KnobInt>(effect, kRotoDrawableItemLifeTimeFrameParamLabel, 1, false);
         lifeTimeFrameKnob->setHintToolTip(kRotoDrawableItemLifeTimeFrameParamHint);
         lifeTimeFrameKnob->setName(kRotoDrawableItemLifeTimeFrameParam);
-        lifeTimeFrameKnob->setSecret(!isPaintNode);
-        lifeTimeFrameKnob->setAllDimensionsEnabled(false);
+        lifeTimeFrameKnob->setSecretByDefault(!isPaintNode);
+        lifeTimeFrameKnob->setDefaultAllDimensionsEnabled(false);
         lifeTimeFrameKnob->setAddNewLine(false);
         lifeTimeFrameKnob->setAnimationEnabled(false);
         generalPage->addKnob(lifeTimeFrameKnob);
@@ -1558,9 +1558,9 @@ struct RotoContextPrivate
         activatedKnob->setHintToolTip(kRotoActivatedHint);
         activatedKnob->setName(kRotoActivatedParam);
         activatedKnob->setAddNewLine(true);
-        activatedKnob->setSecret(isPaintNode);
+        activatedKnob->setSecretByDefault(isPaintNode);
         activatedKnob->setDefaultValue(true);
-        activatedKnob->setAllDimensionsEnabled(false);
+        activatedKnob->setDefaultAllDimensionsEnabled(false);
         generalPage->addKnob(activatedKnob);
         activatedKnob->setIsPersistant(false);
         knobs.push_back(activatedKnob);
@@ -1571,7 +1571,7 @@ struct RotoContextPrivate
         invertedKnob->setHintToolTip(kRotoInvertedHint);
         invertedKnob->setName(kRotoInvertedParam);
         invertedKnob->setDefaultValue(false);
-        invertedKnob->setAllDimensionsEnabled(false);
+        invertedKnob->setDefaultAllDimensionsEnabled(false);
         invertedKnob->setIsPersistant(false);
         generalPage->addKnob(invertedKnob);
         knobs.push_back(invertedKnob);
@@ -1586,7 +1586,7 @@ struct RotoContextPrivate
         featherKnob->setDisplayMinimum(-100);
         featherKnob->setDisplayMaximum(100);
         featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
-        featherKnob->setAllDimensionsEnabled(false);
+        featherKnob->setDefaultAllDimensionsEnabled(false);
         featherKnob->setIsPersistant(false);
         shapePage->addKnob(featherKnob);
         knobs.push_back(featherKnob);
@@ -1601,7 +1601,7 @@ struct RotoContextPrivate
         featherFallOffKnob->setDisplayMinimum(0.2);
         featherFallOffKnob->setDisplayMaximum(5.);
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
-        featherFallOffKnob->setAllDimensionsEnabled(false);
+        featherFallOffKnob->setDefaultAllDimensionsEnabled(false);
         featherFallOffKnob->setIsPersistant(false);
         shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
@@ -1624,7 +1624,7 @@ struct RotoContextPrivate
                 }
                 sourceType->populateChoices(choices);
             }
-            sourceType->setAllDimensionsEnabled(false);
+            sourceType->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(sourceType);
             knobs.push_back(sourceType);
             cloneKnobs.push_back(sourceType);
@@ -1633,7 +1633,7 @@ struct RotoContextPrivate
             boost::shared_ptr<KnobDouble> translate = Natron::createKnob<KnobDouble>(effect, kRotoBrushTranslateParamLabel, 2, false);
             translate->setName(kRotoBrushTranslateParam);
             translate->setHintToolTip(kRotoBrushTranslateParamHint);
-            translate->setAllDimensionsEnabled(false);
+            translate->setDefaultAllDimensionsEnabled(false);
             translate->setIncrement(10);
             clonePage->addKnob(translate);
             knobs.push_back(translate);
@@ -1643,7 +1643,7 @@ struct RotoContextPrivate
             boost::shared_ptr<KnobDouble> rotate = Natron::createKnob<KnobDouble>(effect, kRotoBrushRotateParamLabel, 1, false);
             rotate->setName(kRotoBrushRotateParam);
             rotate->setHintToolTip(kRotoBrushRotateParamHint);
-            rotate->setAllDimensionsEnabled(false);
+            rotate->setDefaultAllDimensionsEnabled(false);
             rotate->setDisplayMinimum(-180);
             rotate->setDisplayMaximum(180);
             clonePage->addKnob(rotate);
@@ -1661,7 +1661,7 @@ struct RotoContextPrivate
             scale->setDisplayMaximum(10,0);
             scale->setDisplayMaximum(10,1);
             scale->setAddNewLine(false);
-            scale->setAllDimensionsEnabled(false);
+            scale->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(scale);
             cloneKnobs.push_back(scale);
             knobs.push_back(scale);
@@ -1671,7 +1671,7 @@ struct RotoContextPrivate
             scaleUniform->setName(kRotoBrushScaleUniformParam);
             scaleUniform->setHintToolTip(kRotoBrushScaleUniformParamHint);
             scaleUniform->setDefaultValue(true);
-            scaleUniform->setAllDimensionsEnabled(false);
+            scaleUniform->setDefaultAllDimensionsEnabled(false);
             scaleUniform->setAnimationEnabled(false);
             clonePage->addKnob(scaleUniform);
             cloneKnobs.push_back(scaleUniform);
@@ -1681,7 +1681,7 @@ struct RotoContextPrivate
             boost::shared_ptr<KnobDouble> skewX = Natron::createKnob<KnobDouble>(effect, kRotoBrushSkewXParamLabel, 1, false);
             skewX->setName(kRotoBrushSkewXParam);
             skewX->setHintToolTip(kRotoBrushSkewXParamHint);
-            skewX->setAllDimensionsEnabled(false);
+            skewX->setDefaultAllDimensionsEnabled(false);
             skewX->setDisplayMinimum(-1,0);
             skewX->setDisplayMaximum(1,0);
             cloneKnobs.push_back(skewX);
@@ -1692,7 +1692,7 @@ struct RotoContextPrivate
             boost::shared_ptr<KnobDouble> skewY = Natron::createKnob<KnobDouble>(effect, kRotoBrushSkewYParamLabel, 1, false);
             skewY->setName(kRotoBrushSkewYParam);
             skewY->setHintToolTip(kRotoBrushSkewYParamHint);
-            skewY->setAllDimensionsEnabled(false);
+            skewY->setDefaultAllDimensionsEnabled(false);
             skewY->setDisplayMinimum(-1,0);
             skewY->setDisplayMaximum(1,0);
             clonePage->addKnob(skewY);
@@ -1710,7 +1710,7 @@ struct RotoContextPrivate
                 choices.push_back("YX");
                 skewOrder->populateChoices(choices);
             }
-            skewOrder->setAllDimensionsEnabled(false);
+            skewOrder->setDefaultAllDimensionsEnabled(false);
             skewOrder->setAnimationEnabled(false);
             clonePage->addKnob(skewOrder);
             cloneKnobs.push_back(skewOrder);
@@ -1720,7 +1720,7 @@ struct RotoContextPrivate
             boost::shared_ptr<KnobDouble> center = Natron::createKnob<KnobDouble>(effect, kRotoBrushCenterParamLabel, 2, false);
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip(kRotoBrushCenterParamHint);
-            center->setAllDimensionsEnabled(false);
+            center->setDefaultAllDimensionsEnabled(false);
             center->setAnimationEnabled(false);
             double defCenter[2] = {.5,.5};
             center->setDefaultValuesNormalized(2, defCenter);
@@ -1756,7 +1756,7 @@ struct RotoContextPrivate
                 filter->populateChoices(choices);
             }
             filter->setDefaultValue(2);
-            filter->setAllDimensionsEnabled(false);
+            filter->setDefaultAllDimensionsEnabled(false);
             filter->setAddNewLine(false);
             clonePage->addKnob(filter);
             cloneKnobs.push_back(filter);
@@ -1767,7 +1767,7 @@ struct RotoContextPrivate
             blackOutside->setName(kRotoBrushBlackOutsideParam);
             blackOutside->setHintToolTip(kRotoBrushBlackOutsideParamHint);
             blackOutside->setDefaultValue(true);
-            blackOutside->setAllDimensionsEnabled(false);
+            blackOutside->setDefaultAllDimensionsEnabled(false);
             clonePage->addKnob(blackOutside);
             knobs.push_back(blackOutside);
             cloneKnobs.push_back(blackOutside);
@@ -1778,7 +1778,7 @@ struct RotoContextPrivate
             timeOffset->setHintToolTip(kRotoBrushTimeOffsetParamHint);
             timeOffset->setDisplayMinimum(-100);
             timeOffset->setDisplayMaximum(100);
-            timeOffset->setAllDimensionsEnabled(false);
+            timeOffset->setDefaultAllDimensionsEnabled(false);
             timeOffset->setIsPersistant(false);
             timeOffset->setAddNewLine(false);
             clonePage->addKnob(timeOffset);
@@ -1795,7 +1795,7 @@ struct RotoContextPrivate
                 modes.push_back("Absolute");
                 timeOffsetMode->populateChoices(modes);
             }
-            timeOffsetMode->setAllDimensionsEnabled(false);
+            timeOffsetMode->setDefaultAllDimensionsEnabled(false);
             timeOffsetMode->setIsPersistant(false);
             clonePage->addKnob(timeOffsetMode);
             knobs.push_back(timeOffsetMode);
@@ -1808,7 +1808,7 @@ struct RotoContextPrivate
             brushSize->setDefaultValue(25);
             brushSize->setMinimum(1.);
             brushSize->setMaximum(1000);
-            brushSize->setAllDimensionsEnabled(false);
+            brushSize->setDefaultAllDimensionsEnabled(false);
             brushSize->setIsPersistant(false);
             strokePage->addKnob(brushSize);
             knobs.push_back(brushSize);
@@ -1821,7 +1821,7 @@ struct RotoContextPrivate
             brushSpacing->setDefaultValue(0.1);
             brushSpacing->setMinimum(0.);
             brushSpacing->setMaximum(1.);
-            brushSpacing->setAllDimensionsEnabled(false);
+            brushSpacing->setDefaultAllDimensionsEnabled(false);
             brushSpacing->setIsPersistant(false);
             strokePage->addKnob(brushSpacing);
             knobs.push_back(brushSpacing);
@@ -1834,7 +1834,7 @@ struct RotoContextPrivate
             brushHardness->setDefaultValue(0.2);
             brushHardness->setMinimum(0.);
             brushHardness->setMaximum(1.);
-            brushHardness->setAllDimensionsEnabled(false);
+            brushHardness->setDefaultAllDimensionsEnabled(false);
             brushHardness->setIsPersistant(false);
             strokePage->addKnob(brushHardness);
             knobs.push_back(brushHardness);
@@ -1847,7 +1847,7 @@ struct RotoContextPrivate
             effectStrength->setDefaultValue(15);
             effectStrength->setMinimum(0.);
             effectStrength->setMaximum(100.);
-            effectStrength->setAllDimensionsEnabled(false);
+            effectStrength->setDefaultAllDimensionsEnabled(false);
             effectStrength->setIsPersistant(false);
             strokePage->addKnob(effectStrength);
             knobs.push_back(effectStrength);
@@ -1859,7 +1859,7 @@ struct RotoContextPrivate
             pressureLabel->setHintToolTip(kRotoBrushPressureLabelParamHint);
             pressureLabel->setAsLabel();
             pressureLabel->setAnimationEnabled(false);
-            pressureLabel->setAllDimensionsEnabled(false);
+            pressureLabel->setDefaultAllDimensionsEnabled(false);
             strokePage->addKnob(pressureLabel);
             knobs.push_back(pressureLabel);
             strokeKnobs.push_back(pressureLabel);
@@ -1871,7 +1871,7 @@ struct RotoContextPrivate
             pressureOpacity->setAnimationEnabled(false);
             pressureOpacity->setDefaultValue(true);
             pressureOpacity->setAddNewLine(false);
-            pressureOpacity->setAllDimensionsEnabled(false);
+            pressureOpacity->setDefaultAllDimensionsEnabled(false);
             pressureOpacity->setIsPersistant(false);
             strokePage->addKnob(pressureOpacity);
             knobs.push_back(pressureOpacity);
@@ -1884,7 +1884,7 @@ struct RotoContextPrivate
             pressureSize->setAnimationEnabled(false);
             pressureSize->setDefaultValue(false);
             pressureSize->setAddNewLine(false);
-            pressureSize->setAllDimensionsEnabled(false);
+            pressureSize->setDefaultAllDimensionsEnabled(false);
             pressureSize->setIsPersistant(false);
             knobs.push_back(pressureSize);
             strokeKnobs.push_back(pressureSize);
@@ -1897,7 +1897,7 @@ struct RotoContextPrivate
             pressureHardness->setAnimationEnabled(false);
             pressureHardness->setDefaultValue(false);
             pressureHardness->setAddNewLine(true);
-            pressureHardness->setAllDimensionsEnabled(false);
+            pressureHardness->setDefaultAllDimensionsEnabled(false);
             pressureHardness->setIsPersistant(false);
             knobs.push_back(pressureHardness);
             strokeKnobs.push_back(pressureHardness);
@@ -1910,7 +1910,7 @@ struct RotoContextPrivate
             buildUp->setAnimationEnabled(false);
             buildUp->setDefaultValue(false);
             buildUp->setAddNewLine(true);
-            buildUp->setAllDimensionsEnabled(false);
+            buildUp->setDefaultAllDimensionsEnabled(false);
             buildUp->setIsPersistant(false);
             knobs.push_back(buildUp);
             strokeKnobs.push_back(buildUp);
@@ -1928,7 +1928,7 @@ struct RotoContextPrivate
             maxs.push_back(1);
             maxs.push_back(1);
             visiblePortion->setMinimumsAndMaximums(mins, maxs);
-            visiblePortion->setAllDimensionsEnabled(false);
+            visiblePortion->setDefaultAllDimensionsEnabled(false);
             visiblePortion->setIsPersistant(false);
             strokePage->addKnob(visiblePortion);
             visiblePortion->setDimensionName(0, "start");
@@ -1941,7 +1941,7 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> translate = Natron::createKnob<KnobDouble>(effect, kRotoDrawableItemTranslateParamLabel, 2, false);
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip(kRotoDrawableItemTranslateParamHint);
-        translate->setAllDimensionsEnabled(false);
+        translate->setDefaultAllDimensionsEnabled(false);
         translate->setIncrement(10);
         transformPage->addKnob(translate);
         knobs.push_back(translate);
@@ -1950,7 +1950,7 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> rotate = Natron::createKnob<KnobDouble>(effect, kRotoDrawableItemRotateParamLabel, 1, false);
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip(kRotoDrawableItemRotateParamHint);
-        rotate->setAllDimensionsEnabled(false);
+        rotate->setDefaultAllDimensionsEnabled(false);
         rotate->setDisplayMinimum(-180);
         rotate->setDisplayMaximum(180);
         transformPage->addKnob(rotate);
@@ -1967,7 +1967,7 @@ struct RotoContextPrivate
         scale->setDisplayMaximum(10,0);
         scale->setDisplayMaximum(10,1);
         scale->setAddNewLine(false);
-        scale->setAllDimensionsEnabled(false);
+        scale->setDefaultAllDimensionsEnabled(false);
         transformPage->addKnob(scale);
         knobs.push_back(scale);
         scaleKnob = scale;
@@ -1976,7 +1976,7 @@ struct RotoContextPrivate
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip(kRotoDrawableItemScaleUniformParamHint);
         scaleUniform->setDefaultValue(true);
-        scaleUniform->setAllDimensionsEnabled(false);
+        scaleUniform->setDefaultAllDimensionsEnabled(false);
         scaleUniform->setAnimationEnabled(false);
         transformPage->addKnob(scaleUniform);
         knobs.push_back(scaleUniform);
@@ -1985,7 +1985,7 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> skewX = Natron::createKnob<KnobDouble>(effect, kRotoDrawableItemSkewXParamLabel, 1, false);
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip(kRotoDrawableItemSkewXParamHint);
-        skewX->setAllDimensionsEnabled(false);
+        skewX->setDefaultAllDimensionsEnabled(false);
         skewX->setDisplayMinimum(-1,0);
         skewX->setDisplayMaximum(1,0);
         transformPage->addKnob(skewX);
@@ -1995,7 +1995,7 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> skewY = Natron::createKnob<KnobDouble>(effect, kRotoDrawableItemSkewYParamLabel, 1, false);
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip(kRotoDrawableItemSkewYParamHint);
-        skewY->setAllDimensionsEnabled(false);
+        skewY->setDefaultAllDimensionsEnabled(false);
         skewY->setDisplayMinimum(-1,0);
         skewY->setDisplayMaximum(1,0);
         transformPage->addKnob(skewY);
@@ -2012,7 +2012,7 @@ struct RotoContextPrivate
             choices.push_back("YX");
             skewOrder->populateChoices(choices);
         }
-        skewOrder->setAllDimensionsEnabled(false);
+        skewOrder->setDefaultAllDimensionsEnabled(false);
         skewOrder->setAnimationEnabled(false);
         transformPage->addKnob(skewOrder);
         knobs.push_back(skewOrder);
@@ -2021,7 +2021,7 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> center = Natron::createKnob<KnobDouble>(effect, kRotoDrawableItemCenterParamLabel, 2, false);
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
-        center->setAllDimensionsEnabled(false);
+        center->setDefaultAllDimensionsEnabled(false);
         center->setAnimationEnabled(false);
         double defCenter[2] = {.5,.5};
         center->setDefaultValuesNormalized(2, defCenter);

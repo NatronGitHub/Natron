@@ -121,7 +121,7 @@ Settings::initializeKnobsGeneral()
     _natronSettingsExist = Natron::createKnob<KnobBool>(this, "Existing settings");
     _natronSettingsExist->setAnimationEnabled(false);
     _natronSettingsExist->setName("existingSettings");
-    _natronSettingsExist->setSecret(true);
+    _natronSettingsExist->setSecretByDefault(true);
     _generalTab->addKnob(_natronSettingsExist);
     
 
@@ -345,7 +345,7 @@ Settings::initializeKnobsAppearance()
     _defaultAppearanceVersion = Natron::createKnob<KnobInt>(this, "Appearance version");
     _defaultAppearanceVersion->setName("appearanceVersion");
     _defaultAppearanceVersion->setAnimationEnabled(false);
-    _defaultAppearanceVersion->setSecret(true);
+    _defaultAppearanceVersion->setSecretByDefault(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
     
     _systemFontChoice = Natron::createKnob<KnobChoice>(this, "Font");
@@ -568,7 +568,7 @@ Settings::initializeKnobsAppearance()
 
     _customOcioConfigFile = Natron::createKnob<KnobFile>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setName("ocioCustomConfigFile");
-    _customOcioConfigFile->setAllDimensionsEnabled(false);
+    _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
     _customOcioConfigFile->setAnimationEnabled(false);
     _customOcioConfigFile->setHintToolTip("OpenColorIO configuration file (*.ocio) to use when \"" NATRON_CUSTOM_OCIO_CONFIG_NAME "\" "
                                                                                                                                   "is selected as the OpenColorIO config.");

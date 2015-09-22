@@ -397,6 +397,7 @@ public:
      **/
     virtual bool hasModifications() const = 0;
     virtual bool hasModifications(int dimension) const = 0;
+    virtual bool hasModificationsForSerialization() const = 0;
     virtual void computeHasModifications() = 0;
 
     /**
@@ -760,26 +761,31 @@ public:
      * @brief Enables/disables user interaction with the given dimension.
      **/
     virtual void setEnabled(int dimension,bool b) = 0;
+    virtual void setDefaultEnabled(int dimension,bool b) = 0;
 
     /**
      * @brief Is the dimension enabled ?
      **/
     virtual bool isEnabled(int dimension) const = 0;
+    virtual bool isDefaultEnabled(int dimension) const = 0;
 
     /**
      * @brief Convenience function, same as calling setEnabled(int,bool) for all dimensions.
      **/
     virtual void setAllDimensionsEnabled(bool b) = 0;
+    virtual void setDefaultAllDimensionsEnabled(bool b) = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
      **/
     virtual void setSecret(bool b) = 0;
+    virtual void setSecretByDefault(bool b) = 0;
 
     /**
      * @brief Is the knob visible to the user ?
      **/
     virtual bool getIsSecret() const = 0;
+    virtual bool getDefaultIsSecret() const = 0;
 
     /**
      * @biref This is called to notify the gui that the knob shouldn't be editable.
@@ -1178,10 +1184,15 @@ public:
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
     virtual void setEnabled(int dimension,bool b) OVERRIDE FINAL;
+    virtual void setDefaultEnabled(int dimension,bool b) OVERRIDE FINAL;
     virtual bool isEnabled(int dimension) const OVERRIDE FINAL;
+    virtual bool isDefaultEnabled(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsEnabled(bool b) OVERRIDE FINAL;
+    virtual void setDefaultAllDimensionsEnabled(bool b) OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
+    virtual void setSecretByDefault(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
     virtual void setName(const std::string & name) OVERRIDE FINAL;
@@ -1218,7 +1229,7 @@ public:
     
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+    virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
     
 

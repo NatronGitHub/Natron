@@ -2541,7 +2541,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     sel.channel = channel;
                     
                     boost::shared_ptr<KnobString> channelName = Natron::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
-                    channelName->setSecret(true);
+                    channelName->setSecretByDefault(true);
                     channelName->setEvaluateOnChange(false);
                     sel.channelName = channelName;
                     _imp->maskSelectors[i] = sel;
@@ -2698,7 +2698,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                                                   "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
                                                                                   "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString());
             if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
-                useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+                useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
             }
             _imp->nodeSettingsPage.lock()->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
             _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
@@ -2930,7 +2930,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     }
     
     boost::shared_ptr<KnobString> layerName = Natron::createKnob<KnobString>(liveInstance.get(), inputName + "_layer_name", 1, false);
-    layerName->setSecret(true);
+    layerName->setSecretByDefault(true);
     layerName->setAnimationEnabled(false);
     layerName->setEvaluateOnChange(false);
     //layerName->setAddNewLine(!sel.useRGBASelectors);
