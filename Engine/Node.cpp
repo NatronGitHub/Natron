@@ -4437,6 +4437,9 @@ Node::makePreviewImage(SequenceTime time,
     
     NodePtr thisNode = shared_from_this();
     
+    RenderingFlagSetter flagIsRendering(this);
+
+    
     FrameRequestMap request;
     stat = EffectInstance::computeRequestPass(time, 0, mipMapLevel, rod, thisNode, request);
     if (stat == eStatusFailed) {
@@ -4462,7 +4465,6 @@ Node::makePreviewImage(SequenceTime time,
     
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(ImageComponents::getRGBComponents());
-    RenderingFlagSetter flagIsRendering(this);
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
