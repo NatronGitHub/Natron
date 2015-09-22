@@ -49,10 +49,10 @@ if [ "$OS" = "Darwin" ]; then
     case "$macosx" in
         [1-8])
             BITS=32
-        ;;
+            ;;
         9|10)
             BITS=Universal
-        ;;
+            ;;
     esac;
 fi
 

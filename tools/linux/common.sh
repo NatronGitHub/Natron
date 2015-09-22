@@ -71,7 +71,7 @@ INC_PATH=$CWD/include
 
 # Keep existing tag, else make a new one
 if [ -z "$TAG" ]; then
-  TAG=`date +%Y%m%d%H%M`
+    TAG=`date +%Y%m%d%H%M`
 fi
 
 OS=`uname -o`
@@ -81,10 +81,10 @@ REPO_DIR_PREFIX=$CWD/build_
 # Repo settings
 #
 if [ -f $CWD/repo.sh ]; then
-  source $CWD/repo.sh
+    source $CWD/repo.sh
 else
-  REPO_DEST=localhost
-  REPO_URL=http://localhost
+    REPO_DEST=localhost
+    REPO_URL=http://localhost
 fi
 
 #Dist repo is expected to be layout as such:
@@ -177,15 +177,15 @@ CLOOG_TAR=cloog-$TC_CLOOG.tar.gz
 # Check distro and version. CentOS/RHEL 6.4 only!
 
 if [ ! -f /etc/redhat-release ]; then
-  echo "Wrong distro, stupid :P"
-  exit 1
-else
-  RHEL_MAJOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1`
-  RHEL_MINOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2`
-  if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-    echo "Wrong distro version, 6.4 only at the moment!"
+    echo "Wrong distro, stupid :P"
     exit 1
-  fi
+else
+    RHEL_MAJOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f1`
+    RHEL_MINOR=`cat /etc/redhat-release | cut -d" " -f3 | cut -d "." -f2`
+    if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
+        echo "Wrong distro version, 6.4 only at the moment!"
+        exit 1
+    fi
 fi
 
 # Arch
@@ -193,19 +193,19 @@ fi
 # Default build flags
 
 if [ -z "$ARCH" ]; then
-  case `uname -m` in
-    i?86) export ARCH=i686 ;;
-       *) export ARCH=`uname -m` ;;
-  esac
+    case `uname -m` in
+        i?86) export ARCH=i686 ;;
+        *) export ARCH=`uname -m` ;;
+    esac
 fi
 if [ "$ARCH" = "i686" ]; then
-  BF="-O2 -march=i686 -mtune=i686"
-  BIT=32
+    BF="-O2 -march=i686 -mtune=i686"
+    BIT=32
 elif [ "$ARCH" = "x86_64" ]; then
-  BF="-O2 -fPIC"
-  BIT=64
+    BF="-O2 -fPIC"
+    BIT=64
 else
-  BF="-O2"
+    BF="-O2"
 fi
 
 # Threads

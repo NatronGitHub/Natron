@@ -63,15 +63,15 @@ if [ ! -d "${DYNLOAD}" ]; then
 fi
 for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; done |sort|uniq |awk '{print $1}'`; do
     if [ ! -f "$mplib" ]; then
-	echo "missing python lib-dynload depend $mplib"
-	exit 1
+        echo "missing python lib-dynload depend $mplib"
+        exit 1
     fi
     lib=`echo $mplib | awk -F / '{print $NF}'`
     if [ ! -f "${app}/Contents/Frameworks/${lib}" ]; then
-	cp "$mplib" "${app}/Contents/Frameworks/${lib}"
+        cp "$mplib" "${app}/Contents/Frameworks/${lib}"
     fi
     for deplib in "${DYNLOAD}"/*.so; do
-	install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
+        install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
     done
 done
 
@@ -86,21 +86,21 @@ if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
         cp "${MACPORTS}/lib/libgcc/$lib" "${app}/Contents/Frameworks/$lib"
-	install_name_tool -id "@executable_path/../Frameworks/$lib" "${app}/Contents/Frameworks/$lib"
+        install_name_tool -id "@executable_path/../Frameworks/$lib" "${app}/Contents/Frameworks/$lib"
     done
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
-	install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
-	for deplib in "${app}/Contents/Frameworks/"*.dylib; do
-	    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
-	done
+        install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
+        for deplib in "${app}/Contents/Frameworks/"*.dylib; do
+            install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+        done
     done
     # use gcc's libraries everywhere
     for l in gcc_s.1 gomp.1 stdc++.6; do
-	lib="lib${l}.dylib"
-	for deplib in "${app}/Contents/Frameworks/"*.framework/Versions/*/* "${app}/Contents/Frameworks/"lib*.dylib; do
+        lib="lib${l}.dylib"
+        for deplib in "${app}/Contents/Frameworks/"*.framework/Versions/*/* "${app}/Contents/Frameworks/"lib*.dylib; do
             test -f "$deplib" && install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
-	done
+        done
     done
 fi
 for f in Python; do
@@ -137,7 +137,7 @@ done
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 stdc++.6; do
         lib=lib${l}.dylib
-	install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
+        install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
     done
 fi
 
@@ -158,18 +158,18 @@ if [ -f "CrashReporter/NatronCrashReporter" ]; then
     bin="${app}/Contents/MacOS/NatronCrashReporter"
     cp "CrashReporter/NatronCrashReporter" "$bin"
     for f in QtGui QtNetwork QtCore; do
-	install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
+        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
     done
     if [ "$LIBGCC" = "1" ]; then
-	for l in gcc_s.1 gomp.1 stdc++.6; do
+        for l in gcc_s.1 gomp.1 stdc++.6; do
             lib="lib${l}.dylib"
-	    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
-	done
+            install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
+        done
     fi
 
     if otool -L "$bin" |fgrep "${MACPORTS}"; then
-	echo "Error: MacPorts libraries remaining in $bin, please check"
-	exit 1
+        echo "Error: MacPorts libraries remaining in $bin, please check"
+        exit 1
     fi
 fi
 
@@ -177,18 +177,18 @@ if [ -f "CrashReporterCLI/NatronRendererCrashReporter" ]; then
     bin="${app}/Contents/MacOS/NatronRendererCrashReporter"
     cp "CrashReporterCLI/NatronRendererCrashReporter" "$bin"
     for f in QtNetwork QtCore; do
-	install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
+        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$bin"
     done
     if [ "$LIBGCC" = "1" ]; then
-	for l in gcc_s.1 gomp.1 stdc++.6; do
+        for l in gcc_s.1 gomp.1 stdc++.6; do
             lib=lib${l}.dylib
-	    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
-	done
+            install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$bin"
+        done
     fi
 
     if otool -L "$bin" |fgrep "${MACPORTS}"; then
-	echo "Error: MacPorts libraries remaining in $bin, please check"
-	exit 1
+        echo "Error: MacPorts libraries remaining in $bin, please check"
+        exit 1
     fi
 fi
 
@@ -212,10 +212,10 @@ for qtlib in $QT_LIBS ;do
     done
     # use gcc's libraries everywhere
     if [ "$LIBGCC" = "1" ]; then
-	for l in gcc_s.1 gomp.1 stdc++.6; do
-	    lib="lib${l}.dylib"
-	    install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$bin"
-	done
+        for l in gcc_s.1 gomp.1 stdc++.6; do
+            lib="lib${l}.dylib"
+            install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$bin"
+        done
     fi
-done
+    done
 

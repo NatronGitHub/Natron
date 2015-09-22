@@ -39,11 +39,11 @@ fi
 PORTSOK=yes
 for p in $PORTS; do
     if port installed $p | fgrep "  $p @" > /dev/null; then
-   #echo "port $p OK"
-	true
+        #echo "port $p OK"
+        true
     else
-	echo "Error: port $p is missing"
-	PORTSOK=no
+        echo "Error: port $p is missing"
+        PORTSOK=no
     fi
 done
 
@@ -54,14 +54,14 @@ fi
 
 if [ "$COMPILER" = "gcc" ]; then
     if [ ! -x /opt/local/bin/gcc-mp -o ! -x /opt/local/bin/g++-mp ]; then
-	echo "The gcc-mp and g++-mp drivers are missing"
-	echo "Please execute the following:"
-	echo "git clone https://github.com/devernay/macportsGCCfixup.git"
-	echo "cd macportsGCCfixup"
-	echo "./configure"
-	echo "make"
-	echo "sudo make install"
-	exit 1
+        echo "The gcc-mp and g++-mp drivers are missing"
+        echo "Please execute the following:"
+        echo "git clone https://github.com/devernay/macportsGCCfixup.git"
+        echo "cd macportsGCCfixup"
+        echo "./configure"
+        echo "make"
+        echo "sudo make install"
+        exit 1
     fi
 fi
 

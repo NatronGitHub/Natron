@@ -74,8 +74,8 @@ cp -r $TMP/OpenColorIO-Configs . || exit 1
 # Add CONFIG+=snapshot to indicate the build is a snapshot
 if [ "$BRANCH" = "workshop" ]; then
     QMAKEEXTRAFLAGS=CONFIG+=snapshot
-#else
-#    QMAKEEXTRAFLAGS=CONFIG+=gbreakpad Enable when ready
+    #else
+    #    QMAKEEXTRAFLAGS=CONFIG+=gbreakpad Enable when ready
 fi
 
 

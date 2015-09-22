@@ -88,51 +88,51 @@ while true; do
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
     if [ "$GITV_NATRON" != "$ORIG_NATRON" -a "$FAIL" != "1" ];then
-	echo "Natron update needed"
-	BUILD_NATRON=1
+        echo "Natron update needed"
+        BUILD_NATRON=1
     fi
 
     echo $FAIL
 
     if [ "$FAIL" != "1" ]; then
-	cd $TMP/openfx-io
-	git fetch || FAIL=1
-	git merge origin/master || FAIL=1
-	GITV_IO=`git log|head -1|awk '{print $2}'`
-	ORIG_IO=$IOPLUG_DEVEL_GIT
-	echo "openfx-io $GITV_IO vs. $ORIG_IO"
-	if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ];then
-	    echo "openfx-io update needed"
-	    BUILD_IO=1
-	fi
+        cd $TMP/openfx-io
+        git fetch || FAIL=1
+        git merge origin/master || FAIL=1
+        GITV_IO=`git log|head -1|awk '{print $2}'`
+        ORIG_IO=$IOPLUG_DEVEL_GIT
+        echo "openfx-io $GITV_IO vs. $ORIG_IO"
+        if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ];then
+            echo "openfx-io update needed"
+            BUILD_IO=1
+        fi
     fi
 
     echo $FAIL
 
     if [ "$FAIL" != "1" ]; then
-	cd $TMP/openfx-misc
-	git fetch || FAIL=1
-	git merge origin/master || FAIL=1
-	GITV_MISC=`git log|head -1|awk '{print $2}'`
-	ORIG_MISC=$MISCPLUG_DEVEL_GIT
-	echo "openfx-misc $GITV_MISC vs. $ORIG_MISC"
-	if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ];then
-	    echo "openfx-misc update needed"
-	    BUILD_MISC=1
-	fi
+        cd $TMP/openfx-misc
+        git fetch || FAIL=1
+        git merge origin/master || FAIL=1
+        GITV_MISC=`git log|head -1|awk '{print $2}'`
+        ORIG_MISC=$MISCPLUG_DEVEL_GIT
+        echo "openfx-misc $GITV_MISC vs. $ORIG_MISC"
+        if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ];then
+            echo "openfx-misc update needed"
+            BUILD_MISC=1
+        fi
     fi
 
     if [ "$FAIL" != "1" ]; then
-	cd $TMP/openfx-arena
-	git fetch || FAIL=1
-	git merge origin/master || FAIL=1
-	ARENAV_MISC=`git log|head -1|awk '{print $2}'`
-	ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
-	echo "openfx-arena $ARENAV_MISC vs. $ORIG_ARENA"
-	if [ "$ARENAV_MISC" != "$ORIG_ARENA" -a "$FAIL" != "1" ];then
-	    echo "openfx-arena update needed"
-	    BUILD_ARENA=1
-	fi
+        cd $TMP/openfx-arena
+        git fetch || FAIL=1
+        git merge origin/master || FAIL=1
+        ARENAV_MISC=`git log|head -1|awk '{print $2}'`
+        ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
+        echo "openfx-arena $ARENAV_MISC vs. $ORIG_ARENA"
+        if [ "$ARENAV_MISC" != "$ORIG_ARENA" -a "$FAIL" != "1" ];then
+            echo "openfx-arena update needed"
+            BUILD_ARENA=1
+        fi
     fi
 
 
@@ -140,10 +140,10 @@ while true; do
 
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
-	if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
-	    env CONFIG=relwithdebinfo BRANCH=workshop MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
-	    echo $FAIL
-	fi
+        if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
+            env CONFIG=relwithdebinfo BRANCH=workshop MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
+            echo $FAIL
+        fi
     fi
 
     echo "Idle"

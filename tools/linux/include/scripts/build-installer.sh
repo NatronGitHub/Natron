@@ -26,23 +26,23 @@ source $(pwd)/commits-hash.sh || exit 1
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-installer.pid ]; then
-  OLDPID=$(cat $TMP_DIR/natron-build-installer.pid)
-  PIDS=$(ps aux|awk '{print $2}')
-  for i in $PIDS;do
-    if [ "$i" = "$OLDPID" ]; then
-      echo "already running ..."
-      exit 1
-    fi
-  done
+    OLDPID=$(cat $TMP_DIR/natron-build-installer.pid)
+    PIDS=$(ps aux|awk '{print $2}')
+    for i in $PIDS;do
+        if [ "$i" = "$OLDPID" ]; then
+            echo "already running ..."
+            exit 1
+        fi
+    done
 fi
 echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
 if [ "$1" = "workshop" ]; then
-  NATRON_VERSION=$NATRON_DEVEL_GIT
-  REPO_BRANCH=snapshots
+    NATRON_VERSION=$NATRON_DEVEL_GIT
+    REPO_BRANCH=snapshots
 else
-  NATRON_VERSION=$NATRON_VERSION_NUMBER
-  REPO_BRANCH=releases
+    NATRON_VERSION=$NATRON_VERSION_NUMBER
+    REPO_BRANCH=releases
 fi
 
 DATE=$(date +%Y-%m-%d)
@@ -53,13 +53,13 @@ export LD_LIBRARY_PATH=$INSTALL_PATH/lib
 export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
 
 if [ "$ARCH" = "x86_64" ]; then
-  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
 else
-  export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
 fi
 
 if [ -d $TMP_PATH ]; then
-  rm -rf $TMP_PATH || exit 1
+    rm -rf $TMP_PATH || exit 1
 fi
 mkdir -p $TMP_PATH || exit 1
 
@@ -88,23 +88,23 @@ mkdir -p $IO_LIBS || exit 1
 
 OFX_DEPENDS=$(ldd $INSTALLER/packages/*/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
 for x in $OFX_DEPENDS; do
-  cp -v $x $IO_LIBS/ || exit 1
+    cp -v $x $IO_LIBS/ || exit 1
 done
 
 if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-exit 1
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
 fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-  FFLIC=gpl
+    FFLIC=gpl
 else
-  FFLIC=lgpl
+    FFLIC=lgpl
 fi
 cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavformat.so.56,libavcodec.so.56,libswscale.so.3,libavutil.so.54,libswresample.so.1} $IO_LIBS/ || exit 1
 OFX_LIB_DEP=$(ldd $IO_LIBS/*|grep opt | awk '{print $3}')
 for y in $OFX_LIB_DEP; do
-  cp -v $y $IO_LIBS/ || exit 1
+    cp -v $y $IO_LIBS/ || exit 1
 done
 
 rm -f $IO_LIBS/{libgcc*,libstdc*}
@@ -120,9 +120,9 @@ echo "" >>$IO_LIC || exit 1
 echo "FFMPEG:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-  cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
+    cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
 else
-  cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
+    cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
 fi
 
 echo "" >>$IO_LIC || exit 1
@@ -231,15 +231,15 @@ echo "" >>$IO_LIC || exit 1
 cat $INSTALL_PATH/docs/speex/COPYING >>$IO_LIC || exit 1
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-  echo "" >>$IO_LIC || exit 1
-  echo "X264:" >>$IO_LIC || exit 1
-  echo "" >>$IO_LIC || exit 1
-  cat $INSTALL_PATH/docs/x264/COPYING >>$IO_LIC || exit 1
+    echo "" >>$IO_LIC || exit 1
+    echo "X264:" >>$IO_LIC || exit 1
+    echo "" >>$IO_LIC || exit 1
+    cat $INSTALL_PATH/docs/x264/COPYING >>$IO_LIC || exit 1
 
-  echo "" >>$IO_LIC || exit 1
-  echo "XVID:" >>$IO_LIC || exit 1
-  echo "" >>$IO_LIC || exit 1
-  cat $INSTALL_PATH/docs/xvidcore/LICENSE >>$IO_LIC || exit 1
+    echo "" >>$IO_LIC || exit 1
+    echo "XVID:" >>$IO_LIC || exit 1
+    echo "" >>$IO_LIC || exit 1
+    cat $INSTALL_PATH/docs/xvidcore/LICENSE >>$IO_LIC || exit 1
 fi
 
 # OFX MISC
@@ -308,18 +308,18 @@ cp $INSTALL_PATH/share/pixmaps/natronIcon256_linux.png $CLIBS_PATH/data/share/pi
 cp -a $INSTALL_PATH/plugins/* $CLIBS_PATH/data/bin/ || exit 1
 CORE_DEPENDS=$(ldd $NATRON_PATH/data/bin/*|grep opt | awk '{print $3}')
 for i in $CORE_DEPENDS; do
-  cp -v $i $CLIBS_PATH/data/lib/ || exit 1
+    cp -v $i $CLIBS_PATH/data/lib/ || exit 1
 done
 LIB_DEPENDS=$(ldd $CLIBS_PATH/data/lib/*|grep opt | awk '{print $3}')
 for y in $LIB_DEPENDS; do
-  cp -v $y $CLIBS_PATH/data/lib/ || exit 1
+    cp -v $y $CLIBS_PATH/data/lib/ || exit 1
 done
 PLUG_DEPENDS=$(ldd $CLIBS_PATH/data/bin/*/*|grep opt | awk '{print $3}')
 for z in $PLUG_DEPENDS; do
-  cp -v $z $CLIBS_PATH/data/lib/ || exit 1
+    cp -v $z $CLIBS_PATH/data/lib/ || exit 1
 done
 if [ -f $INC_PATH/misc/compat${BIT}.tgz ]; then
-  tar xvf $INC_PATH/misc/compat${BIT}.tgz -C $CLIBS_PATH/data/lib/ || exit 1
+    tar xvf $INC_PATH/misc/compat${BIT}.tgz -C $CLIBS_PATH/data/lib/ || exit 1
 fi
 
 # TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
@@ -337,9 +337,9 @@ cat $INSTALL_PATH/docs/qt/*LGPL* >> $CORE_DOC/meta/3rdparty-license.txt
 cat $INSTALL_PATH/docs/tiff/COPYRIGHT >> $CORE_DOC/meta/3rdparty-license.txt
 
 if [ "$PYV" = "3" ]; then
-  cat $INSTALL_PATH/docs/python3/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
+    cat $INSTALL_PATH/docs/python3/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
 else
-  cat $INSTALL_PATH/docs/python2/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
+    cat $INSTALL_PATH/docs/python2/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
 fi
 cat $INSTALL_PATH/docs/pyside/* >> $CORE_DOC/meta/3rdparty-license.txt
 cat $INSTALL_PATH/docs/shibroken/* >> $CORE_DOC/meta/3rdparty-license.txt 
@@ -347,20 +347,20 @@ cat $INSTALL_PATH/docs/shibroken/* >> $CORE_DOC/meta/3rdparty-license.txt
 #Copy Python distrib
 mkdir -p $CLIBS_PATH/data/Plugins || exit 1
 if [ "$PYV" = "3" ]; then
-  cp -a $INSTALL_PATH/lib/python3.4 $CLIBS_PATH/data/lib/ || exit 1
-  mv $CLIBS_PATH/data/lib/python3.4/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
-  (cd $CLIBS_PATH/data/lib/python3.4/site-packages; ln -sf ../../../Plugins/PySide . )
-  rm -rf $CLIBS_PATH/data/lib/python3.4/{test,config-3.4m} || exit 1
+    cp -a $INSTALL_PATH/lib/python3.4 $CLIBS_PATH/data/lib/ || exit 1
+    mv $CLIBS_PATH/data/lib/python3.4/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
+    (cd $CLIBS_PATH/data/lib/python3.4/site-packages; ln -sf ../../../Plugins/PySide . )
+    rm -rf $CLIBS_PATH/data/lib/python3.4/{test,config-3.4m} || exit 1
 else
-  cp -a $INSTALL_PATH/lib/python2.7 $CLIBS_PATH/data/lib/ || exit 1
-  mv $CLIBS_PATH/data/lib/python2.7/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
-  (cd $CLIBS_PATH/data/lib/python2.7/site-packages; ln -sf ../../../Plugins/PySide . )
-  rm -rf $CLIBS_PATH/data/lib/python2.7/{test,config} || exit 1
+    cp -a $INSTALL_PATH/lib/python2.7 $CLIBS_PATH/data/lib/ || exit 1
+    mv $CLIBS_PATH/data/lib/python2.7/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
+    (cd $CLIBS_PATH/data/lib/python2.7/site-packages; ln -sf ../../../Plugins/PySide . )
+    rm -rf $CLIBS_PATH/data/lib/python2.7/{test,config} || exit 1
 fi
 #rm -f $CLIBS_PATH/data/Plugins/PySide/{QtDeclarative,QtHelp,QtScript,QtScriptTools,QtSql,QtTest,QtUiTools,QtXmlPatterns}.so || exit 1
 PY_DEPENDS=$(ldd $CLIBS_PATH/data/Plugins/PySide/*|grep opt | awk '{print $3}')
 for y in $PY_DEPENDS; do
-  cp -v $y $CLIBS_PATH/data/lib/ || exit 1
+    cp -v $y $CLIBS_PATH/data/lib/ || exit 1
 done
 (cd $CLIBS_PATH ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 strip -s $CLIBS_PATH/data/Plugins/PySide/* $CLIBS_PATH/data/lib/python*/* $CLIBS_PATH/data/lib/python*/*/*
@@ -385,7 +385,7 @@ ARENA_LIBS=$OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Libraries
 mkdir -p $ARENA_LIBS || exit 1
 OFX_ARENA_DEPENDS=$(ldd $OFX_ARENA_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
 for x in $OFX_ARENA_DEPENDS; do
-  cp -v $x $ARENA_LIBS/ || exit 1
+    cp -v $x $ARENA_LIBS/ || exit 1
 done
 strip -s $ARENA_LIBS/*
 rm -f $ARENA_LIBS/{libcairo*,libgcc*,libstdc*}
@@ -421,33 +421,33 @@ chown root:root -R $INSTALLER/*
 
 # Build repo and package
 if [ "$NO_INSTALLER" != "1" ]; then
-  if [ "$1" = "workshop" ]; then
-    ONLINE_TAG=snapshot
-  else
-    ONLINE_TAG=release
-  fi
+    if [ "$1" = "workshop" ]; then
+        ONLINE_TAG=snapshot
+    else
+        ONLINE_TAG=release
+    fi
 
-  ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
-  BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
+    ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
+    BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
 
-  REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
-  rm -rf $REPO_DIR/packages $REPO_DIR/installers
+    REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
+    rm -rf $REPO_DIR/packages $REPO_DIR/installers
 
-  mkdir -p $REPO_DIR/packages || exit 1
+    mkdir -p $REPO_DIR/packages || exit 1
 
-  $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
+    $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
 
-  mkdir -p $REPO_DIR/installers || exit 1
+    mkdir -p $REPO_DIR/installers || exit 1
 
-  if [ "$OFFLINE" != "0" ]; then
-    $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
-    cd $REPO_DIR/installers || exit 1
-    tar cvvzf $BUNDLED_INSTALL.tgz $BUNDLED_INSTALL || exit 1
-    ln -sf $BUNDLED_INSTALL.tgz Natron-latest-$PKGOS-$ONLINE_TAG.tgz || exit 1
-  fi
+    if [ "$OFFLINE" != "0" ]; then
+        $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
+        cd $REPO_DIR/installers || exit 1
+        tar cvvzf $BUNDLED_INSTALL.tgz $BUNDLED_INSTALL || exit 1
+        ln -sf $BUNDLED_INSTALL.tgz Natron-latest-$PKGOS-$ONLINE_TAG.tgz || exit 1
+    fi
 
-  $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
-  tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
+    $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
+    tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
 fi
 
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL

@@ -105,20 +105,20 @@ cd ..
 for plugin in "$PLUGINDIR"/*.ofx.bundle; do
     cd "$plugin/Contents/Libraries"
     for lib in lib*.dylib; do
-	if [ -f "../../../../Frameworks/$lib" ]; then
-	    rm "$lib"
-	else
-	    mv "$lib" "../../../../Frameworks/$lib"
-	fi
-	ln -sf "../../../../Frameworks/$lib" "$lib"
+        if [ -f "../../../../Frameworks/$lib" ]; then
+            rm "$lib"
+        else
+            mv "$lib" "../../../../Frameworks/$lib"
+        fi
+        ln -sf "../../../../Frameworks/$lib" "$lib"
     done
     if [ "$COMPILER" = "gcc" ]; then # use gcc's libraries everywhere
-	for l in gcc_s.1 gomp.1 stdc++.6; do
-	    lib=lib${l}.dylib
-	    for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
-		install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
-	    done
-	done
+        for l in gcc_s.1 gomp.1 stdc++.6; do
+            lib=lib${l}.dylib
+            for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
+                install_name_tool -change /usr/lib/$lib @executable_path/../Frameworks/$lib $deplib
+            done
+        done
     fi
 done
 

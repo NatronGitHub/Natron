@@ -10,10 +10,10 @@ if [ -f $TMP_DIR/natron-build-plugins.pid ]; then
     OLDPID=$(cat $TMP_DIR/natron-build-plugins.pid)
     PIDS=$(ps aux|awk '{print $2}')
     for i in $PIDS;do
-	if [ "$i" = "$OLDPID" ]; then
-	    echo "already running ..."
-	    exit 1
-	fi
+        if [ "$i" = "$OLDPID" ]; then
+            echo "already running ..."
+            exit 1
+        fi
     done
 fi
 echo $PID > $TMP_DIR/natron-build-plugins.pid || exit 1
@@ -32,11 +32,11 @@ fi
 
 if [ ! -d $INSTALL_PATH ]; then
     if [ -f $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz ]; then
-	echo "Found binary SDK, extracting ..."
-	tar xvJf $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz -C $SDK_PATH/ || exit 1
+        echo "Found binary SDK, extracting ..."
+        tar xvJf $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz -C $SDK_PATH/ || exit 1
     else
-	echo "Need to build SDK ..."
-	MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
+        echo "Need to build SDK ..."
+        MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
     fi
 fi
 
@@ -105,8 +105,8 @@ if [ "$BUILD_MISC" = "1" ]; then
     git checkout ${MISC_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$MISC_BRANCH" = "master" ]; then
-	# the snapshots are always built with the latest version of submodules
-	git submodule foreach git pull origin master
+        # the snapshots are always built with the latest version of submodules
+        git submodule foreach git pull origin master
     fi
     make -C CImg CImg.h || exit 1
 
@@ -114,12 +114,12 @@ if [ "$BUILD_MISC" = "1" ]; then
 
     # mksrc
     if [ "$MKSRC" = "1" ]; then
-	cd .. || exit 1
-	cp -a openfx-misc openfx-misc-$MISC_GIT_VERSION || exit 1
-	(cd openfx-misc-$MISC_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
-	tar cvvJf $SRC_PATH/openfx-misc-$MISC_GIT_VERSION.tar.xz openfx-misc-$MISC_GIT_VERSION || exit 1
-	rm -rf openfx-misc-$MISC_GIT_VERSION || exit 1
-	cd openfx-misc || exit 1
+        cd .. || exit 1
+        cp -a openfx-misc openfx-misc-$MISC_GIT_VERSION || exit 1
+        (cd openfx-misc-$MISC_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+        tar cvvJf $SRC_PATH/openfx-misc-$MISC_GIT_VERSION.tar.xz openfx-misc-$MISC_GIT_VERSION || exit 1
+        rm -rf openfx-misc-$MISC_GIT_VERSION || exit 1
+        cd openfx-misc || exit 1
     fi
 
     #Always bump git commit, it is only used to version-stamp binaries
@@ -148,20 +148,20 @@ if [ "$BUILD_IO" = "1" ]; then
     git checkout ${IO_RANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$IO_BRANCH" = "master" ]; then
-	# the snapshots are always built with the latest version of submodules
-	git submodule foreach git pull origin master
+        # the snapshots are always built with the latest version of submodules
+        git submodule foreach git pull origin master
     fi
 
     IO_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 
     # mksrc
     if [ "$MKSRC" = "1" ]; then
-	cd .. || exit 1
-	cp -a openfx-io openfx-io-$IO_GIT_VERSION || exit 1
-	(cd openfx-io-$IO_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
-	tar cvvJf $SRC_PATH/openfx-io-$IO_GIT_VERSION.tar.xz openfx-io-$IO_GIT_VERSION || exit 1
-	rm -rf openfx-io-$IO_GIT_VERSION || exit 1
-	cd openfx-io || exit 1
+        cd .. || exit 1
+        cp -a openfx-io openfx-io-$IO_GIT_VERSION || exit 1
+        (cd openfx-io-$IO_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+        tar cvvJf $SRC_PATH/openfx-io-$IO_GIT_VERSION.tar.xz openfx-io-$IO_GIT_VERSION || exit 1
+        rm -rf openfx-io-$IO_GIT_VERSION || exit 1
+        cd openfx-io || exit 1
     fi
 
     #Always bump git commit, it is only used to version-stamp binaries
@@ -188,20 +188,20 @@ if [ "$BUILD_ARENA" = "1" ]; then
     git checkout ${ARENA_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$ARENA_BRANCH" = "master" ]; then
-	# the snapshots are always built with the latest version of submodules
-	git submodule foreach git pull origin master
+        # the snapshots are always built with the latest version of submodules
+        git submodule foreach git pull origin master
     fi
 
     ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 
     # mksrc
     if [ "$MKSRC" = "1" ]; then
-	cd .. || exit 1
-	cp -a openfx-arena openfx-arena-$ARENA_GIT_VERSION || exit 1
-	(cd openfx-arena-$ARENA_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
-	tar cvvJf $SRC_PATH/openfx-arena-$ARENA_GIT_VERSION.tar.xz openfx-arena-$ARENA_GIT_VERSION || exit 1
-	rm -rf openfx-arena-$ARENA_GIT_VERSION || exit 1
-	cd openfx-arena || exit 1
+        cd .. || exit 1
+        cp -a openfx-arena openfx-arena-$ARENA_GIT_VERSION || exit 1
+        (cd openfx-arena-$ARENA_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+        tar cvvJf $SRC_PATH/openfx-arena-$ARENA_GIT_VERSION.tar.xz openfx-arena-$ARENA_GIT_VERSION || exit 1
+        rm -rf openfx-arena-$ARENA_GIT_VERSION || exit 1
+        cd openfx-arena || exit 1
     fi
 
     #Always bump git commit, it is only used to version-stamp binaries
@@ -228,20 +228,20 @@ if [ "$BUILD_CV" = "1" ]; then
     git checkout ${CV_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$CV_BRANCH" = "master" ]; then
-	# the snapshots are always built with the latest version of submodules
-	git submodule foreach git pull origin master
+        # the snapshots are always built with the latest version of submodules
+        git submodule foreach git pull origin master
     fi
 
     CV_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 
     # mksrc
     if [ "$MKSRC" = "1" ]; then
-	cd .. || exit 1
-	cp -a openfx-opencv openfx-opencv-$CV_GIT_VERSION || exit 1
-	(cd openfx-opencv-$CV_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
-	tar cvvJf $SRC_PATH/openfx-opencv-$CV_GIT_VERSION.tar.xz openfx-opencv-$CV_GIT_VERSION || exit 1
-	rm -rf openfx-opencv-$CV_GIT_VERSION || exit 1
-	cd openfx-opencv || exit 1
+        cd .. || exit 1
+        cp -a openfx-opencv openfx-opencv-$CV_GIT_VERSION || exit 1
+        (cd openfx-opencv-$CV_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
+        tar cvvJf $SRC_PATH/openfx-opencv-$CV_GIT_VERSION.tar.xz openfx-opencv-$CV_GIT_VERSION || exit 1
+        rm -rf openfx-opencv-$CV_GIT_VERSION || exit 1
+        cd openfx-opencv || exit 1
     fi
 
     #Always bump git commit, it is only used to version-stamp binaries
