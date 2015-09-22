@@ -57,6 +57,10 @@ public:
     
     void setAltered(bool a);
     
+protected:
+    
+    void refreshStyle();
+    
 private:
     
     bool altered;

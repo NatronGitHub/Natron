@@ -55,10 +55,18 @@ Label::getAltered() const
 }
 
 void
-Label::setAltered(bool a)
+Label::refreshStyle()
 {
-    altered = a;
     style()->unpolish(this);
     style()->polish(this);
     repaint();
+}
+
+void
+Label::setAltered(bool a)
+{
+    if (this->altered != a) {
+        altered = a;
+        refreshStyle();
+    }
 }

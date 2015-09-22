@@ -54,6 +54,7 @@ class QHBoxLayout; //used by KnobGui
 class QGridLayout;
 class QMenu;
 namespace Natron {
+class ClickableLabel;
 class Label;
 class EffectInstance;
 }
@@ -128,7 +129,7 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   Natron::Label* label,
+                   Natron::ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);

@@ -30,6 +30,7 @@
 #include <boost/weak_ptr.hpp>
 
 #include "Gui/GuiDefines.h"
+#include "Gui/ClickableLabel.h"
 
 using namespace Natron;
 
@@ -142,7 +143,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 void
 KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   Natron::Label* label,
+                   Natron::ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -192,9 +193,6 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         reflectExpressionState(i,!exp.empty());
         if (exp.empty()) {
             onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
-        }
-        if (knob->isSlave(i)) {
-            setReadOnly_(true, i);
         }
     }
 }

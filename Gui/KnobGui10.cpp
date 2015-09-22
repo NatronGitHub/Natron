@@ -681,7 +681,7 @@ KnobGui::setEnabledSlot()
     }
     boost::shared_ptr<KnobI> knob = getKnob();
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setEnabled( knob->isEnabled(0) );
+        _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
     }
     if ( knob->getHolder()->getApp() ) {
         for (int i = 0; i < knob->getDimension(); ++i) {

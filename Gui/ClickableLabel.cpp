@@ -86,36 +86,36 @@ ClickableLabel::setText_overload(const QString & str)
 void
 ClickableLabel::setReadOnly(bool readOnly)
 {
-    this->readOnly = readOnly;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
+    if (this->readOnly != readOnly) {
+        this->readOnly = readOnly;
+        refreshStyle();
+    }
 }
 
 void
 ClickableLabel::setAnimation(int i)
 {
-    animation = i;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
+    if (this->animation != i) {
+        animation = i;
+        refreshStyle();
+    }
 }
 
 void
 ClickableLabel::setDirty(bool b)
 {
-    dirty = b;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
+    if (this->dirty != b) {
+        dirty = b;
+        refreshStyle();
+    }
 }
 
 void
 ClickableLabel::setSunken(bool s)
 {
-    sunkenStyle = s;
-    style()->unpolish(this);
-    style()->polish(this);
-    repaint();
+    if (this->sunkenStyle != s) {
+        sunkenStyle = s;
+        refreshStyle();
+    }
 }
 

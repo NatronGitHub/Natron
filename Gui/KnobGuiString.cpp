@@ -1057,13 +1057,13 @@ void
 KnobGuiString::reflectExpressionState(int /*dimension*/,
                                        bool hasExpr)
 {
-    bool isSlaved = _knob.lock()->isSlave(0);
+    bool isEnabled = _knob.lock()->isEnabled(0);
     if (_textEdit) {
         _textEdit->setAnimation(3);
-        _textEdit->setReadOnly(hasExpr || isSlaved);
+        _textEdit->setReadOnly(hasExpr || !isEnabled);
     } else if (_lineEdit) {
         _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly(hasExpr || isSlaved);
+        _lineEdit->setReadOnly(hasExpr || !isEnabled);
     }
 }
 

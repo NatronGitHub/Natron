@@ -244,9 +244,9 @@ void
 KnobGuiBool::reflectExpressionState(int /*dimension*/,
                                      bool hasExpr)
 {
-    bool isSlaved = _knob.lock()->isSlave(0);
+    bool isEnabled = _knob.lock()->isEnabled(0);
     _checkBox->setAnimation(3);
-    _checkBox->setReadOnly(hasExpr || isSlaved);
+    _checkBox->setReadOnly(hasExpr || !isEnabled);
 }
 
 void

@@ -2518,7 +2518,7 @@ KnobHelper::slaveTo(int dimension,
     }
     
     bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
-    
+    setEnabled(dimension, false);
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == Natron::eValueChangedReasonPluginEdited) {

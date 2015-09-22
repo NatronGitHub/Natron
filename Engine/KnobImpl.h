@@ -1377,6 +1377,7 @@ Knob<T>::unSlave(int dimension,
 
     resetMaster(dimension);
     bool hasChanged = false;
+    setEnabled(dimension, true);
     if (copyState) {
         ///clone the master
         hasChanged |= cloneAndCheckIfChanged( master.second.get() );
@@ -1450,7 +1451,7 @@ Knob<std::string>::unSlave(int dimension,
                             SLOT(onMasterAnimationRemoved(int)) );
     }
     resetMaster(dimension);
-
+    setEnabled(dimension, true);
     _signalSlotHandler->s_valueChanged(dimension,reason);
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( this,master.second.get(),dimension,false );
