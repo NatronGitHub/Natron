@@ -815,8 +815,12 @@ AppManager::onAllPluginsLoaded()
     //Make sure there is no duplicates with the same label
     const PluginsMap& plugins = getPluginsList();
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+    
         assert(!it->second.empty());
         PluginMajorsOrdered::iterator first = it->second.begin();
+        if (!(*first)->getIsUserCreatable() || (*first)->getIsForInternalUseOnly()) {
+            continue;
+        }
         
         QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*first)->getPluginLabel());
         
@@ -826,6 +830,10 @@ AppManager::onAllPluginsLoaded()
                 continue;
             }
             PluginMajorsOrdered::iterator other = it2->second.begin();
+            if (!(*other)->getIsUserCreatable() || (*other)->getIsForInternalUseOnly()) {
+                continue;
+            }
+            
             QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
                 QString otherGrouping = (*other)->getGrouping().join("/");
