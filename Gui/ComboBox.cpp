@@ -677,7 +677,7 @@ ComboBox::setCurrentText_internal(const QString & text)
     }
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
-
+        update();
         return index;
     }
     updateLabel();

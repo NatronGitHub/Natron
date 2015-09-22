@@ -297,6 +297,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDPrevLayer "prevLayer"
 #define kShortcutDescPrevLayer "Previous Layer"
 
+#define kShortcutIDSwitchInputAAndB "switchAB"
+#define kShortcutDescSwitchInputAAndB "Switch Input A and B"
+
 ///////////PLAYER SHORTCUTS
 
 #define kShortcutIDActionPlayerPrevious "prev"

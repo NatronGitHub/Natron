@@ -2765,16 +2765,16 @@ ViewerInstance::onInputChanged(int inputNb)
                 _imp->activeInputs[1] = -1;
             }
         } else {
-            if (_imp->activeInputs[0] == -1 || !_imp->activateInputChangedFromViewer) {
-                _imp->activeInputs[0] = inputNb;
-            } else {
+            if (_imp->activeInputs[0] != -1 && _imp->activateInputChangedFromViewer) {
                 Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == Natron::eViewerCompositingOperatorNone) {
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
                     op = Natron::eViewerCompositingOperatorWipe;
-                } else {
-                    _imp->activeInputs[1] = inputNb;
                 }
+                _imp->activeInputs[1] = inputNb;
+                
+            } else {
+                _imp->activeInputs[0] = inputNb;
             }
         }
     }

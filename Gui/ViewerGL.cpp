@@ -3005,6 +3005,10 @@ ViewerGL::populateMenu()
     QObject::connect( goToNextLayer,SIGNAL( triggered() ),_imp->viewerTab,SLOT( nextLayer() ) );
     _imp->menu->addAction(goToNextLayer);
     
+    QAction* switchAB = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, kShortcutDescSwitchInputAAndB, _imp->menu);
+    QObject::connect( switchAB,SIGNAL( triggered() ),_imp->viewerTab,SLOT( switchInputAAndB() ) );
+    _imp->menu->addAction(switchAB);
+    
     Natron::Menu* showHideMenu = new Natron::Menu(tr("Show/Hide"),_imp->menu);
     //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());

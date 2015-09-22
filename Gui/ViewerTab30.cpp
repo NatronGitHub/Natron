@@ -873,6 +873,27 @@ ViewerTab::setInputB(int index)
     _imp->viewerNode->renderCurrentFrame(true);
 }
 
+void
+ViewerTab::switchInputAAndB()
+{
+    QString aIndex = _imp->firstInputImage->getCurrentIndexText();
+    QString bIndex = _imp->secondInputImage->getCurrentIndexText();
+    _imp->firstInputImage->setCurrentText_no_emit(bIndex);
+    _imp->secondInputImage->setCurrentText_no_emit(aIndex);
+    
+    int inputAIndex = -1,inputBIndex = -1;
+    for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
+        if (it->second.name == aIndex) {
+            inputAIndex = it->first;
+        } else if (it->second.name == bIndex) {
+            inputBIndex = it->first;
+        }
+    }
+    _imp->viewerNode->setInputA(inputBIndex);
+    _imp->viewerNode->setInputB(inputAIndex);
+    _imp->viewerNode->renderCurrentFrame(true);
+}
+
 ///Called when the user change the combobox choice
 void
 ViewerTab::onFirstInputNameChanged(const QString & text)

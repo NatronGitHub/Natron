@@ -785,6 +785,7 @@ GuiApplicationManager::populateShortcuts()
     
     registerKeybind(kShortcutGroupViewer, kShortcutIDNextLayer, kShortcutDescNextLayer, Qt::NoModifier, Qt::Key_PageDown);
     registerKeybind(kShortcutGroupViewer, kShortcutIDPrevLayer, kShortcutDescPrevLayer, Qt::NoModifier, Qt::Key_PageUp);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, kShortcutDescSwitchInputAAndB, Qt::NoModifier, Qt::Key_Return);
     
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);

@@ -343,6 +343,8 @@ public Q_SLOTS:
 
     void onSecondInputNameChanged(const QString & text);
     
+    void switchInputAAndB();
+    
     void setInputA(int index);
     
     void setInputB(int index);
