@@ -33,7 +33,7 @@ if [ -f /tmp/natron-cron.pid ]; then
   OLDPID=`cat /tmp/natron-cron.pid`
   PIDS=`ps aux|awk '{print $2}'`
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi

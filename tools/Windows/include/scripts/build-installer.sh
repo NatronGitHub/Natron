@@ -11,7 +11,7 @@ if [ -f $TMP_DIR/natron-build-installer.pid ]; then
   OLDPID=$(cat $TMP_DIR/natron-build-installer.pid)
   PIDS=$(ps aux|awk '{print $2}')
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -19,7 +19,7 @@ if [ -f $TMP_DIR/natron-build-installer.pid ]; then
 fi
 echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
-if [ "$1" == "32" ]; then
+if [ "$1" = "32" ]; then
 	BIT=32
 	INSTALL_PATH=$INSTALL32_PATH
 else
@@ -31,14 +31,14 @@ if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
 	echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
 	exit 1
 fi
-if [ "$NATRON_LICENSE" == "GPL" ]; then
+if [ "$NATRON_LICENSE" = "GPL" ]; then
 	FFMPEG_BIN_PATH=$INSTALL_PATH/ffmpeg-GPL
-elif [ "$NATRON_LICENSE" == "COMMERCIAL" ]; then
+elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
 	FFMPEG_BIN_PATH=$INSTALL_PATH/ffmpeg-LGPL
 fi
 
 
-if [ "$2" == "workshop" ]; then
+if [ "$2" = "workshop" ]; then
   NATRON_VERSION=$NATRON_DEVEL_GIT
   REPO_BRANCH=snapshots
   APP_INSTALL_SUFFIX=INRIA/Natron-snapshots
@@ -68,7 +68,7 @@ cat $INC_PATH/config/config.xml | sed "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_
 cp $INC_PATH/config/*.png $INSTALLER/config/ || exit 1
 
 # OFX IO
-if [ "$BUNDLE_IO" == "1" ]; then 	
+if [ "$BUNDLE_IO" = "1" ]; then 	
 	IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
 	OFX_IO_VERSION=$TAG
 	OFX_IO_PATH=$INSTALLER/packages/$IOPLUG_PKG
@@ -87,7 +87,7 @@ if [ "$BUNDLE_IO" == "1" ]; then
 fi
 
 # OFX MISC
-if [ "$BUNDLE_MISC" == "1" ]; then 
+if [ "$BUNDLE_MISC" = "1" ]; then 
 	CIMG_DLL="LIBGOMP-1.DLL"
 	OFX_MISC_VERSION=$TAG
 	OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
@@ -148,7 +148,7 @@ cp -a $INSTALL_PATH/etc/fonts/* $CLIBS_PATH/data/Resources/etc/fonts || exit 1
 cp -a $INSTALL_PATH/share/qt4/plugins/* $CLIBS_PATH/data/bin/ || exit 1
 rm -f $CLIBS_PATH/data/bin/*/*d4.dll
 NATRON_DLL="LIBEAY32.DLL SSLEAY32.DLL LIBGIF-7.DLL LIBSQLITE3-0.DLL LIBJPEG-8.DLL LIBMNG-2.DLL LIBTIFF-5.DLL LIBFFI-6.DLL LIBICONV-2.DLL LIBINTL-8.DLL GLEW32.DLL LIBGLIB-2.0-0.DLL LIBWINPTHREAD-1.DLL LIBSTDC++-6.DLL LIBBOOST_SERIALIZATION-MT.DLL LIBCAIRO-2.DLL LIBFREETYPE-6.DLL LIBBZ2-1.DLL LIBHARFBUZZ-0.DLL LIBPIXMAN-1-0.DLL LIBPNG16-16.DLL ZLIB1.DLL LIBEXPAT-1.DLL LIBFONTCONFIG-1.DLL LIBPYSIDE-PYTHON2.7.DLL LIBPYTHON2.7.DLL QTCORE4.DLL QTGUI4.DLL QTNETWORK4.DLL QTOPENGL4.DLL LIBSHIBOKEN-PYTHON2.7.DLL"
-if [ "$BIT" == "32" ]; then
+if [ "$BIT" = "32" ]; then
 	GCC_DLL="LIBGCC_S_DW2-1.DLL"
 else
 	GCC_DLL="LIBGCC_S_SEH-1.DLL"
@@ -187,7 +187,7 @@ cat $CWD/include/natron/3rdparty.txt >> $CORE_DOC/meta/3rdparty-license.txt || e
 
 #Copy Python distrib
 mkdir -p $CLIBS_PATH/data/Plugins || exit 1
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   cp -a $INSTALL_PATH/lib/python3.4 $CLIBS_PATH/data/lib/ || exit 1
   mv $CLIBS_PATH/data/lib/python3.4/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
   rm -rf $CLIBS_PATH/data/lib/python3.4/{test,config-3.4m} || exit 1
@@ -203,7 +203,7 @@ strip -s $CLIBS_PATH/data/lib/python*/*
 strip -s $CLIBS_PATH/data/lib/python*/*/*
 
 # OFX ARENA
-if [ "$BUNDLE_ARENA" == "1" ]; then 
+if [ "$BUNDLE_ARENA" = "1" ]; then 
 	ARENA_DLL="LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
 	OFX_ARENA_VERSION=$TAG
 	OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
@@ -227,7 +227,7 @@ fi
 #cat $INSTALL_PATH/docs/lcms/COPYING >>$OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
 
 # OFX CV
-if [ "$BUNDLE_CV" == "1" ]; then 
+if [ "$BUNDLE_CV" = "1" ]; then 
 	CV_DLL="LIBOPENCV_CORE2411.DLL LIBOPENCV_IMGPROC2411.DLL LIBOPENCV_PHOTO2411.DLL"
 	SEGMENT_DLL="LIBLZMA-5.DLL LIBOPENCV_FLANN2411.DLL LIBJASPER-1.DLL LIBOPENCV_CALIB3D2411.DLL LIBOPENCV_FEATURES2D2411.DLL LIBOPENCV_HIGHGUI2411.DLL LIBOPENCV_ML2411.DLL LIBOPENCV_VIDEO2411.DLL LIBOPENCV_LEGACY2411.DLL"
 	OFX_CV_VERSION=$TAG
@@ -252,7 +252,7 @@ fi
 
 # manifests
 
-if [ "$BUNDLE_MISC" == "1" ]; then 
+if [ "$BUNDLE_MISC" = "1" ]; then 
 	CIMG_MANIFEST=$OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Contents/Win$BIT/manifest
 	echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $CIMG_MANIFEST
 	echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $CIMG_MANIFEST
@@ -266,7 +266,7 @@ if [ "$BUNDLE_MISC" == "1" ]; then
 	mt -manifest manifest -outputresource:"CImg.ofx;2"
 fi
 
-if [ "$BUNDLE_IO" == "1" ]; then 
+if [ "$BUNDLE_IO" = "1" ]; then 
 	IO_MANIFEST=$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/manifest
 	echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $IO_MANIFEST
 	echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $IO_MANIFEST
@@ -281,7 +281,7 @@ if [ "$BUNDLE_IO" == "1" ]; then
 	mt -manifest manifest -outputresource:"IO.ofx;2"
 fi
 
-if [ "$BUNDLE_ARENA" == "1" ]; then 
+if [ "$BUNDLE_ARENA" = "1" ]; then 
 	ARENA_MANIFEST=$OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT/manifest
 	
 	echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $ARENA_MANIFEST
@@ -296,7 +296,7 @@ if [ "$BUNDLE_ARENA" == "1" ]; then
 	mt -manifest manifest -outputresource:"Arena.ofx;2"
 fi
 
-if [ "$BUNDLE_CV" == "1" ]; then 
+if [ "$BUNDLE_CV" = "1" ]; then 
 	INPAINT_MANIFEST=$OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Contents/Win$BIT/manifest
 	echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $INPAINT_MANIFEST
 	echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $INPAINT_MANIFEST
@@ -330,7 +330,7 @@ fi
 
 # Build repo and package
 if [ "$NO_INSTALLER" != "1" ]; then
-  if [ "$2" == "workshop" ]; then
+  if [ "$2" = "workshop" ]; then
     ONLINE_TAG=snapshot
   else
     ONLINE_TAG=release

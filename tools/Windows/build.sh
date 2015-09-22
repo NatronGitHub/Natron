@@ -28,7 +28,7 @@ if [ -f $TMP_DIR/natron-build.pid ]; then
   OLDPID=$(cat $TMP_DIR/natron-build.pid)
   PIDS=$(ps aux|awk '{print $2}')
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -36,25 +36,25 @@ if [ -f $TMP_DIR/natron-build.pid ]; then
 fi
 echo $PID > $TMP_DIR/natron-build.pid || exit 1
 
-if [ "$OS" == "Msys" ]; then
+if [ "$OS" = "Msys" ]; then
   PKGOS=Windows
 else
   echo "Windows-Msys2-only!"
   exit 1
 fi
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+if [ "$NATRON_LICENSE" != "GPL" -a "$NATRON_LICENSE" != "COMMERCIAL" ]; then
 	echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
 	exit 1
 fi
 
-if [ "$1" == "32" ]; then
+if [ "$1" = "32" ]; then
 	BIT=32
 else
 	BIT=64
 fi
 
-if [ "$2" == "workshop" ]; then
+if [ "$2" = "workshop" ]; then
     BRANCH=$2
     REPO_SUFFIX=snapshot
 else
@@ -71,7 +71,7 @@ fi
 if [ "$NOCLEAN" != "1" ]; then
   rm -rf $INSTALL_PATH
 fi
-if [ "$REBUILD_SDK" == "1" ]; then
+if [ "$REBUILD_SDK" = "1" ]; then
   rm -f $SRC_PATH/Natron*SDK.tar.xz
 fi
 
@@ -126,7 +126,7 @@ if [ "$NOBUILD" != "1" ]; then
       cat $LOGS/natron.$PKGOS$BIT.$TAG.log
     fi
   fi
-  if [ "$FAIL" != "1" ] && [ "$ONLY_NATRON" != "1" ]; then
+  if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
     echo -n "Building Plugins ... "
     NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT workshop >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
@@ -139,7 +139,7 @@ if [ "$NOBUILD" != "1" ]; then
   fi
 fi
 
-if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
+if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
   echo -n "Building Packages ... "
   NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT workshop	>& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
   if [ "$FAIL" != "1" ]; then
@@ -151,8 +151,8 @@ if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
   fi 
 fi
 
-if [ "$SYNC" == "1" ]; then
-	if [ "$BRANCH" == "workshop" ]; then
+if [ "$SYNC" = "1" ]; then
+	if [ "$BRANCH" = "workshop" ]; then
 		ONLINE_REPO_BRANCH=snapshots
 	else
 		ONLINE_REPO_BRANCH=releases
@@ -170,7 +170,7 @@ fi
 
 
 
-if [ "$FAIL" == "1" ]; then
+if [ "$FAIL" = "1" ]; then
   exit 1
 else
   exit 0

@@ -87,7 +87,7 @@ while true; do
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
-    if [ "$GITV_NATRON" != "$ORIG_NATRON" ] && [ "$FAIL" != "1" ];then
+    if [ "$GITV_NATRON" != "$ORIG_NATRON" -a "$FAIL" != "1" ];then
 	echo "Natron update needed"
 	BUILD_NATRON=1
     fi
@@ -101,7 +101,7 @@ while true; do
 	GITV_IO=`git log|head -1|awk '{print $2}'`
 	ORIG_IO=$IOPLUG_DEVEL_GIT
 	echo "openfx-io $GITV_IO vs. $ORIG_IO"
-	if [ "$GITV_IO" != "$ORIG_IO" ] && [ "$FAIL" != "1" ];then
+	if [ "$GITV_IO" != "$ORIG_IO" -a "$FAIL" != "1" ];then
 	    echo "openfx-io update needed"
 	    BUILD_IO=1
 	fi
@@ -116,7 +116,7 @@ while true; do
 	GITV_MISC=`git log|head -1|awk '{print $2}'`
 	ORIG_MISC=$MISCPLUG_DEVEL_GIT
 	echo "openfx-misc $GITV_MISC vs. $ORIG_MISC"
-	if [ "$GITV_MISC" != "$ORIG_MISC" ] && [ "$FAIL" != "1" ];then
+	if [ "$GITV_MISC" != "$ORIG_MISC" -a "$FAIL" != "1" ];then
 	    echo "openfx-misc update needed"
 	    BUILD_MISC=1
 	fi
@@ -129,7 +129,7 @@ while true; do
 	ARENAV_MISC=`git log|head -1|awk '{print $2}'`
 	ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
 	echo "openfx-arena $ARENAV_MISC vs. $ORIG_ARENA"
-	if [ "$ARENAV_MISC" != "$ORIG_ARENA" ] && [ "$FAIL" != "1" ];then
+	if [ "$ARENAV_MISC" != "$ORIG_ARENA" -a "$FAIL" != "1" ];then
 	    echo "openfx-arena update needed"
 	    BUILD_ARENA=1
 	fi
@@ -140,7 +140,7 @@ while true; do
 
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
-	if [ "$BUILD_NATRON" == "1" ] || [ "$BUILD_IO" == "1" ] || [ "$BUILD_MISC" == "1" ] || [ "$BUILD_ARENA" == "1" ]; then
+	if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
 	    env CONFIG=relwithdebinfo BRANCH=workshop MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
 	    echo $FAIL
 	fi

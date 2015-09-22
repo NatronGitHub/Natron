@@ -32,7 +32,7 @@ if [ -f $TMP_DIR/natron-build-sdk.pid ]; then
   OLDPID=$(cat $TMP_DIR/natron-build-sdk.pid)
   PIDS=$(ps aux|awk '{print $2}')
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -364,7 +364,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
 fi
 
 # Install magick
-if [ "$REBUILD_MAGICK" == "1" ]; then
+if [ "$REBUILD_MAGICK" = "1" ]; then
   rm -rf $INSTALL_PATH/include/ImageMagick-6/ $INSTALL_PATH/lib/libMagick* $INSTALL_PATH/share/ImageMagick-6/ $INSTALL_PATH/lib/pkgconfig/{Image,Magick}*
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
@@ -389,7 +389,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/glew.pc ]; then
   fi
   tar xvf $SRC_PATH/$GLEW_TAR || exit 1
   cd glew-* || exit 1
-  if [ "$ARCH" == "i686" ]; then
+  if [ "$ARCH" = "i686" ]; then
     make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -march=i686 -mtune=i686' includedir=/usr/include GLEW_DEST= libdir=/usr/lib bindir=/usr/bin || exit 1
   else
     make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -m64 -fPIC -mtune=generic' includedir=/usr/include GLEW_DEST= libdir=/usr/lib64 bindir=/usr/bin || exit 1
@@ -448,7 +448,7 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.so ]; then
 fi
 
 # Install oiio
-if [ "$REBUILD_OIIO" == "1" ]; then
+if [ "$REBUILD_OIIO" = "1" ]; then
   rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage*
 fi
 if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
@@ -687,7 +687,7 @@ fi
 LGPL_SETTINGS="--enable-avresample --enable-libmp3lame --enable-libvorbis --enable-libopus --enable-libtheora --enable-libschroedinger --enable-libopenjpeg --enable-libmodplug --enable-libvpx --enable-libspeex --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-indev=jack --disable-outdev=xv --disable-vda --disable-xlib"
 GPL_SETTINGS="${LGPL_SETTINGS} --enable-gpl --enable-libx264 --enable-libxvid --enable-version3"
 
-if [ "$REBUILD_FFMPEG" == "1" ]; then
+if [ "$REBUILD_FFMPEG" = "1" ]; then
   rm -rf $INSTALL_PATH/ffmpeg-*
 fi
 if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
@@ -710,7 +710,7 @@ fi
 # Install qt
 if [ ! -f $INSTALL_PATH/bin/qmake ]; then
   cd $TMP_PATH || exit 1
-  if [ "$1" == "qt5" ]; then
+  if [ "$1" = "qt5" ]; then
     QT_TAR=$QT5_TAR
     QT_CONF="-no-openssl -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
   else
@@ -736,7 +736,7 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
 fi
 
 # pysetup
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   export PYTHON_PATH=$INSTALL_PATH/lib/python3.4
   export PYTHON_INCLUDE=$INSTALL_PATH/include/python3.4
   PY_EXE=$INSTALL_PATH/bin/python3

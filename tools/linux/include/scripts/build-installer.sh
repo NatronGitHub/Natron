@@ -29,7 +29,7 @@ if [ -f $TMP_DIR/natron-build-installer.pid ]; then
   OLDPID=$(cat $TMP_DIR/natron-build-installer.pid)
   PIDS=$(ps aux|awk '{print $2}')
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -37,7 +37,7 @@ if [ -f $TMP_DIR/natron-build-installer.pid ]; then
 fi
 echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
-if [ "$1" == "workshop" ]; then
+if [ "$1" = "workshop" ]; then
   NATRON_VERSION=$NATRON_DEVEL_GIT
   REPO_BRANCH=snapshots
 else
@@ -96,7 +96,7 @@ echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
 exit 1
 fi
 
-if [ "$NATRON_LICENSE" == "GPL" ]; then
+if [ "$NATRON_LICENSE" = "GPL" ]; then
   FFLIC=gpl
 else
   FFLIC=lgpl
@@ -119,7 +119,7 @@ cat $INSTALL_PATH/docs/boost/LICENSE_1_0.txt >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 echo "FFMPEG:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
-if [ "$NATRON_LICENSE" == "GPL" ]; then
+if [ "$NATRON_LICENSE" = "GPL" ]; then
   cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
 else
   cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
@@ -230,7 +230,7 @@ echo "SPEEX:" >>$IO_LIC || exit 1
 echo "" >>$IO_LIC || exit 1
 cat $INSTALL_PATH/docs/speex/COPYING >>$IO_LIC || exit 1
 
-if [ "$NATRON_LICENSE" == "GPL" ]; then
+if [ "$NATRON_LICENSE" = "GPL" ]; then
   echo "" >>$IO_LIC || exit 1
   echo "X264:" >>$IO_LIC || exit 1
   echo "" >>$IO_LIC || exit 1
@@ -336,7 +336,7 @@ cat $INSTALL_PATH/docs/png/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt
 cat $INSTALL_PATH/docs/qt/*LGPL* >> $CORE_DOC/meta/3rdparty-license.txt
 cat $INSTALL_PATH/docs/tiff/COPYRIGHT >> $CORE_DOC/meta/3rdparty-license.txt
 
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   cat $INSTALL_PATH/docs/python3/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
 else
   cat $INSTALL_PATH/docs/python2/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
@@ -346,7 +346,7 @@ cat $INSTALL_PATH/docs/shibroken/* >> $CORE_DOC/meta/3rdparty-license.txt
 
 #Copy Python distrib
 mkdir -p $CLIBS_PATH/data/Plugins || exit 1
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   cp -a $INSTALL_PATH/lib/python3.4 $CLIBS_PATH/data/lib/ || exit 1
   mv $CLIBS_PATH/data/lib/python3.4/site-packages/PySide $CLIBS_PATH/data/Plugins/ || exit 1
   (cd $CLIBS_PATH/data/lib/python3.4/site-packages; ln -sf ../../../Plugins/PySide . )
@@ -421,7 +421,7 @@ chown root:root -R $INSTALLER/*
 
 # Build repo and package
 if [ "$NO_INSTALLER" != "1" ]; then
-  if [ "$1" == "workshop" ]; then
+  if [ "$1" = "workshop" ]; then
     ONLINE_TAG=snapshot
   else
     ONLINE_TAG=release

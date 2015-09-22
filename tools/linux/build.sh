@@ -48,7 +48,7 @@ if [ -f $TMP_DIR/natron-build.pid ]; then
   OLDPID=`cat $TMP_DIR/natron-build.pid`
   PIDS=`ps aux|awk '{print $2}'`
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -56,14 +56,14 @@ if [ -f $TMP_DIR/natron-build.pid ]; then
 fi
 echo $PID > $TMP_DIR/natron-build.pid || exit 1
 
-if [ "$OS" == "GNU/Linux" ]; then
+if [ "$OS" = "GNU/Linux" ]; then
   PKGOS=Linux
 else
   echo "Linux-only!"
   exit 1
 fi
 
-if [ "$1" == "workshop" ]; then
+if [ "$1" = "workshop" ]; then
     BRANCH=$1
     REPO_SUFFIX=snapshot
 else
@@ -77,7 +77,7 @@ else
     JOBS=$DEFAULT_MKJOBS
 fi
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+if [ "$NATRON_LICENSE" != "GPL" -a "$NATRON_LICENSE" != "COMMERCIAL" ]; then
     echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
     exit 1
 fi
@@ -85,7 +85,7 @@ fi
 if [ "$NOCLEAN" != "1" ]; then
   rm -rf $INSTALL_PATH
 fi
-if [ "$REBUILD_SDK" == "1" ]; then
+if [ "$REBUILD_SDK" = "1" ]; then
   rm -f "$SRC_PATH"/Natron*SDK.tar.xz
 fi
 
@@ -141,7 +141,7 @@ if [ "$NOBUILD" != "1" ]; then
       cat "$log"
     fi
   fi
-  if [ "$FAIL" != "1" ] && [ "$ONLY_NATRON" != "1" ]; then
+  if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
     log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
     echo -n "Building Plugins (log in $log)..."
     MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" workshop >& "$log" || FAIL=1
@@ -155,7 +155,7 @@ if [ "$NOBUILD" != "1" ]; then
   fi
 fi
 
-if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
+if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
   log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
   echo -n "Building Packages (log in $log)... "
   OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" workshop >& "$log" || FAIL=1
@@ -168,7 +168,7 @@ if [ "$NOPKG" != "1" ] && [ "$FAIL" != "1" ]; then
   fi 
 fi
 
-if [ "$BRANCH" == "workshop" ]; then
+if [ "$BRANCH" = "workshop" ]; then
     ONLINE_REPO_BRANCH=snapshots
 else
     ONLINE_REPO_BRANCH=releases
@@ -177,7 +177,7 @@ fi
 BIT_SUFFIX=bit
 BIT_TAG="$BIT$BIT_SUFFIX"
 
-if [ "$SYNC" == "1" ] && [ "$FAIL" != "1" ]; then
+if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
   echo "Syncing packages ... "
   rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
@@ -187,7 +187,7 @@ fi
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
 
-if [ "$FAIL" == "1" ]; then
+if [ "$FAIL" = "1" ]; then
   exit 1
 else
   exit 0

@@ -23,7 +23,7 @@ source `pwd`/common.sh || exit 1
 
 cd "$CWD/build" || exit 1
 
-if [ "$BRANCH" == "workshop" ]; then
+if [ "$BRANCH" = "workshop" ]; then
     NATRON_BRANCH=$BRANCH
 else
     NATRON_BRANCH=$NATRON_GIT_TAG
@@ -33,6 +33,10 @@ git clone $GIT_NATRON
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git submodule update -i --recursive || exit 1
+if [ "$BRANCH" = "workshop" ]; then
+    # the snapshots are always built with the latest version of submodules
+    git submodule foreach git pull origin master
+fi
 
 #Always bump NATRON_DEVEL_GIT, it is only used to version-stamp binaries
 NATRON_REL_V=`git log|head -1|awk '{print $2}'`
@@ -68,7 +72,7 @@ EOF
 cp -r $TMP/OpenColorIO-Configs . || exit 1
 
 # Add CONFIG+=snapshot to indicate the build is a snapshot
-if [ "$BRANCH" == "workshop" ]; then
+if [ "$BRANCH" = "workshop" ]; then
     QMAKEEXTRAFLAGS=CONFIG+=snapshot
 #else
 #    QMAKEEXTRAFLAGS=CONFIG+=gbreakpad Enable when ready

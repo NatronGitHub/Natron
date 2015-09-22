@@ -28,7 +28,7 @@ if [ -f $TMP_DIR/natron-build-app.pid ]; then
   OLDPID=$(cat $TMP_DIR/natron-build-app.pid)
   PIDS=$(ps aux|awk '{print $2}')
   for i in $PIDS;do
-    if [ "$i" == "$OLDPID" ]; then
+    if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
       exit 1
     fi
@@ -71,7 +71,7 @@ else
   export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
 fi
 
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   export PYTHON_PATH=$INSTALL_PATH/lib/python3.4
   export PYTHON_INCLUDE=$INSTALL_PATH/include/python3.4
 else
@@ -87,11 +87,15 @@ cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
+if [ "$NATRON_BRANCH" = "workshop" ]; then
+    # the snapshots are always built with the latest version of submodules
+    git submodule foreach git pull origin master
+fi
 
 REL_GIT_VERSION=$(git log|head -1|awk '{print $2}')
 
 # mksrc
-if [ "$MKSRC" == "1" ]; then
+if [ "$MKSRC" = "1" ]; then
   cd .. || exit 1
   cp -a Natron Natron-$REL_GIT_VERSION || exit 1
   (cd Naton-$REL_GIT_VERSION;find . -type d -name .git -exec rm -rf {} \;)
@@ -117,7 +121,7 @@ sleep 2
 
 cat $INC_PATH/natron/GitVersion.h | sed "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#" > Global/GitVersion.h || exit 1
 
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   cat $INC_PATH/natron/config_py3.pri > config.pri || exit 1
 else
   cat $INC_PATH/natron/config.pri > config.pri || exit 1
@@ -127,13 +131,13 @@ rm -rf build
 mkdir build || exit 1
 cd build || exit 1
 
-if [ "$BUILD_SNAPSHOT" == "1" ]; then
+if [ "$BUILD_SNAPSHOT" = "1" ]; then
   SNAP="CONFIG+=snapshot"
 #else
 #CONFIG+=gbreakpad Enable when ready
 fi
 
-if [ "$PYV" == "3" ]; then
+if [ "$PYV" = "3" ]; then
   PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
@@ -148,7 +152,7 @@ if [ -f CrashReporter/NatronCrashReporter ]; then
 fi
 
 #For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
-#if [ "$NODEBUG" == "" ]; then
+#if [ -z "$NODEBUG" ]; then
 #  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug ../Project.pro || exit 1
 #  make -j${MKJOBS} || exit 1
 #  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1

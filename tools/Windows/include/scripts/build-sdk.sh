@@ -9,14 +9,14 @@
 source $(pwd)/common.sh || exit 1
 
 
-if [ "$1" == "32" ]; then
+if [ "$1" = "32" ]; then
     BIT=32
     INSTALL_PATH=$INSTALL32_PATH
 	PKG_PREFIX=$PKG_PREFIX32
 	FFMPEG_MXE_BIN_GPL=$FFMPEG_MXE_BIN_32_GPL_TAR
 	FFMPEG_MXE_BIN_LGPL=$FFMPEG_MXE_BIN_32_LGPL_TAR
 	INSTALLER_BIN_TAR=$INSTALLER32_BIN_TAR
-elif [ "$1" == "64" ]; then
+elif [ "$1" = "64" ]; then
     BIT=64
     INSTALL_PATH=$INSTALL64_PATH
 	PKG_PREFIX=$PKG_PREFIX64
@@ -74,7 +74,7 @@ export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 
 
 # Install magick
-if [ "$REBUILD_MAGICK" == "1" ]; then
+if [ "$REBUILD_MAGICK" = "1" ]; then
   rm -rf $INSTALL_PATH/include/ImageMagick-6/ $INSTALL_PATH/lib/libMagick* $INSTALL_PATH/share/ImageMagick-6/ $INSTALL_PATH/lib/pkgconfig/{Image,Magick}*
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
@@ -93,7 +93,7 @@ fi
 
 
 # Install ocio
-if [ "$REBUILD_OCIO" == "1" ]; then
+if [ "$REBUILD_OCIO" = "1" ]; then
   rm -rf $INSTALL_PATH/lib/libOpenColorIO* rm -rf $INSTALL_PATH/share/ocio* $INSTALL_PATH/include/OpenColorIO*
 fi
 if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.a ]; then
@@ -118,7 +118,7 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.a ]; then
 fi
 
 # Install oiio
-if [ "$REBUILD_OIIO" == "1" ]; then
+if [ "$REBUILD_OIIO" = "1" ]; then
   rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/OpenImage*
 fi
 if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
@@ -190,7 +190,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside-py2.pc ]; then
 fi
 
 # Install SeExpr
-if [ "$REBUILD_SEEXPR" == "1" ]; then
+if [ "$REBUILD_SEEXPR" = "1" ]; then
   rm -rf $INSTALL_PATH/lib/libSeExpr* $INSTALL_PATH/include/SeExpr*
 fi
 if [ ! -f $INSTALL_PATH/lib/libSeExpr.a ]; then
@@ -222,10 +222,10 @@ fi
 
 FFMPEG_VERSIONS="GPL LGPL"
 for V in $FFMPEG_VERSIONS; do
-	if [ ! -f "${INSTALL_PATH}/ffmpeg-${V}/bin/ffmpeg.exe" ] || [ "$DOWNLOAD_FFMPEG_BIN" == "1" ]; then
+	if [ ! -f "${INSTALL_PATH}/ffmpeg-${V}/bin/ffmpeg.exe" ] || [ "$DOWNLOAD_FFMPEG_BIN" = "1" ]; then
 		cd $SRC_PATH
 	
-		if [ "$V" == "GPL" ]; then
+		if [ "$V" = "GPL" ]; then
 			FFMPEG_TAR=$FFMPEG_MXE_BIN_GPL
 		else 
 			FFMPEG_TAR=$FFMPEG_MXE_BIN_LGPL
@@ -244,7 +244,7 @@ done
 
 #Make sure we have mt.exe for embedding manifests
 
-if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" == "1" ]; then
+if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" = "1" ]; then
 	cd $SRC_PATH
 	wget $THIRD_PARTY_BIN_URL/$INSTALLER_BIN_TAR -O $SRC_PATH/$INSTALLER_BIN_TAR || exit 1
 	unzip $CWD/src/$INSTALLER_BIN_TAR || exit 1

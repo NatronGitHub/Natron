@@ -154,7 +154,7 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-if [ "$BRANCH" == "workshop" ]; then
+if [ "$BRANCH" = "workshop" ]; then
     NATRON_V=$NATRON_DEVEL_GIT
     UPLOAD_BRANCH=snapshots
 else
@@ -183,7 +183,7 @@ PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}-plugins.log"
 mv "$NATRONLOG" "$NATRONLOGNEW"
 mv "$PLUGINSLOG" "$PLUGINSLOGNEW"
 
-if [ "$UPLOAD" == "1" ]; then
+if [ "$UPLOAD" = "1" ]; then
     if [ "$FAIL" != "1" ]; then
         echo "Uploading $NATRONDMG ..."
         echo
