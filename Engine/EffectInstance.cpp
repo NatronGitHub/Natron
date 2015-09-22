@@ -1024,17 +1024,35 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
 } // ifInfiniteApplyHeuristic
 
 void
-EffectInstance::getRegionsOfInterest(double /*time*/,
-                                     const RenderScale & /*scale*/,
+EffectInstance::getRegionsOfInterest(double time,
+                                     const RenderScale & scale,
                                      const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                     int /*view*/,
+                                     int view,
                                      RoIMap* ret)
 {
+    bool tilesSupported = supportsTiles();
     for (int i = 0; i < getMaxInputCount(); ++i) {
         Natron::EffectInstance* input = getInput(i);
         if (input) {
-            ret->insert( std::make_pair(input, renderWindow) );
+            if (tilesSupported) {
+                ret->insert( std::make_pair(input, renderWindow) );
+            } else {
+                //Tiles not supported: get the RoD as RoI
+                RectD rod;
+                bool isPF;
+                RenderScale inpScale;
+                if (input->supportsRenderScale()) {
+                    inpScale.x = inpScale.y = scale.x;
+                } else {
+                    inpScale.x = inpScale.y = 1.;
+                }
+                Natron::StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(), time, inpScale, view, &rod, &isPF);
+                if (stat == eStatusFailed) {
+                    return;
+                }
+                ret->insert( std::make_pair(input, rod) );
+            }
         }
     }
 }
