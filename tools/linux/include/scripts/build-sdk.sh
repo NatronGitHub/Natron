@@ -25,12 +25,12 @@
 #TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
 #UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build-sdk.pid ]; then
-    OLDPID=$(cat $TMP_DIR/natron-build-sdk.pid)
-    PIDS=$(ps aux|awk '{print $2}')
+if [ -f "$TMP_DIR/natron-build-sdk.pid" ]; then
+    OLDPID=`cat "$TMP_DIR/natron-build-sdk.pid"`
+    PIDS=`ps aux|awk '{print $2}'`
     for i in $PIDS;do
         if [ "$i" = "$OLDPID" ]; then
             echo "already running ..."
@@ -54,177 +54,179 @@ echo
 sleep 2
 
 if [ ! -z "$REBUILD" ]; then
-    if [ -d $INSTALL_PATH ]; then
-        rm -rf $INSTALL_PATH || exit 1
+    if [ -d "$INSTALL_PATH" ]; then
+        rm -rf "$INSTALL_PATH" || exit 1
     fi
 else
     echo "Rebuilding ..."
 fi
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d "$TMP_PATH" ]; then
+    rm -rf "$TMP_PATH" || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
-if [ ! -d $SRC_PATH ]; then
-    mkdir -p $SRC_PATH || exit 1
+mkdir -p "$TMP_PATH" || exit 1
+if [ ! -d "$SRC_PATH" ]; then
+    mkdir -p "$SRC_PATH" || exit 1
 fi
 
 # check for dirs
-if [ ! -d $INSTALL_PATH ]; then
-    mkdir -p $INSTALL_PATH || exit 1
+if [ ! -d "$INSTALL_PATH" ]; then
+    mkdir -p "$INSTALL_PATH" || exit 1
 fi
-if [ ! -h $INSTALL_PATH/lib64 ]; then
-    if [ ! -d $INSTALL_PATH/lib ]; then
-        mkdir -p $INSTALL_PATH/lib || exit 1
+if [ ! -h "$INSTALL_PATH/lib64" ]; then
+    if [ ! -d "$INSTALL_PATH/lib" ]; then
+        mkdir -p "$INSTALL_PATH/lib" || exit 1
     fi
-    cd $INSTALL_PATH || exit 1
+    cd "$INSTALL_PATH" || exit 1
     ln -sf lib lib64 || exit 1
 fi
 
 # Install static qt4 for installer
-if [ ! -f $INSTALL_PATH/qt4-static/bin/qmake ]; then
-    cd $TMP_PATH || exit 1
+if [ ! -f "$INSTALL_PATH/qt4-static/bin/qmake" ]; then
+    cd "$TMP_PATH" || exit 1
     QTIFW_CONF="-no-multimedia -no-gif -qt-libpng -no-opengl -no-libmng -no-libtiff -no-libjpeg -static -no-openssl -confirm-license -release -opensource -nomake demos -nomake docs -nomake examples -no-gtkstyle -no-webkit -no-avx -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
 
-    if [ ! -f $SRC_PATH/$QT4_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$QT4_TAR -O $SRC_PATH/$QT4_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$QT4_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$QT4_TAR" -O "$SRC_PATH/$QT4_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$QT4_TAR || exit 1
+    tar xvf "$SRC_PATH/$QT4_TAR" || exit 1
     cd qt*4.8* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH/qt4-static $QTIFW_CONF || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH/qt4-static $QTIFW_CONF || exit 1
 
     # https://bugreports.qt-project.org/browse/QTBUG-5385
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib make -j${MKJOBS} || exit 1
+    env LD_LIBRARY_PATH="$LD_LIBRARY_PATH":`pwd`/lib make -j${MKJOBS} || exit 1
     make install || exit 1
     cd .. || exit 1
     rm -rf qt*4.8*
 fi
 
 # Install gcc
-if [ ! -f $INSTALL_PATH/gcc/bin/gcc ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$GCC_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$GCC_TAR -O $SRC_PATH/$GCC_TAR || exit 1
+if [ ! -f "$INSTALL_PATH/gcc/bin/gcc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GCC_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$GCC_TAR" -O "$SRC_PATH/$GCC_TAR" || exit 1
     fi
-    if [ ! -f $SRC_PATH/$MPC_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$MPC_TAR -O $SRC_PATH/$MPC_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$MPC_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$MPC_TAR" -O "$SRC_PATH/$MPC_TAR" || exit 1
     fi
-    if [ ! -f $SRC_PATH/$MPFR_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$MPFR_TAR -O $SRC_PATH/$MPFR_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$MPFR_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$MPFR_TAR" -O "$SRC_PATH/$MPFR_TAR" || exit 1
     fi
-    if [ ! -f $SRC_PATH/$GMP_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$GMP_TAR -O $SRC_PATH/$GMP_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$GMP_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$GMP_TAR" -O "$SRC_PATH/$GMP_TAR" || exit 1
     fi
-    if [ ! -f $SRC_PATH/$ISL_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$ISL_TAR -O $SRC_PATH/$ISL_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$ISL_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$ISL_TAR" -O "$SRC_PATH/$ISL_TAR" || exit 1
     fi
     if [ ! -f $SRC_PATH/$CLOOG_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$CLOOG_TAR -O $SRC_PATH/$CLOOG_TAR || exit 1
+        wget "$THIRD_PARTY_SRC_URL/$CLOOG_TAR" -O "$SRC_PATH/$CLOOG_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$GCC_TAR || exit 1
-    cd gcc-$TC_GCC || exit 1
-    tar xvf $SRC_PATH/$MPC_TAR || exit 1
-    mv mpc-$TC_MPC mpc || exit 1
-    tar xvf $SRC_PATH/$MPFR_TAR || exit 1
-    mv mpfr-$TC_MPFR mpfr || exit 1
-    tar xvf $SRC_PATH/$GMP_TAR || exit 1
-    mv gmp-$TC_GMP gmp || exit 1
-    tar xvf $SRC_PATH/$ISL_TAR || exit 1
-    mv isl-$TC_ISL isl || exit 1
-    tar xvf $SRC_PATH/$CLOOG_TAR || exit 1
-    mv cloog-$TC_CLOOG cloog || exit 1
-    ./configure --prefix=$INSTALL_PATH/gcc --enable-languages=c,c++ || exit 1
+    tar xvf "$SRC_PATH/$GCC_TAR" || exit 1
+    cd "gcc-$TC_GCC" || exit 1
+    tar xvf "$SRC_PATH/$MPC_TAR" || exit 1
+    mv "mpc-$TC_MPC" mpc || exit 1
+    tar xvf "$SRC_PATH/$MPFR_TAR" || exit 1
+    mv "mpfr-$TC_MPFR" mpfr || exit 1
+    tar xvf "$SRC_PATH/$GMP_TAR" || exit 1
+    mv "gmp-$TC_GMP" gmp || exit 1
+    tar xvf "$SRC_PATH/$ISL_TAR" || exit 1
+    mv "isl-$TC_ISL" isl || exit 1
+    tar xvf "$SRC_PATH/$CLOOG_TAR" || exit 1
+    mv "cloog-$TC_CLOOG" cloog || exit 1
+    ./configure --prefix="$INSTALL_PATH/gcc" --enable-languages=c,c++ || exit 1
     make -j$MKJOBS || exit 1
     #make -k check || exit 1
     make install || exit 1
 fi
 
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
+export LD_LIBRARY_PATH="$INSTALL_PATH/lib"
+export PATH="$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH"
 
 if [ "$ARCH" = "x86_64" ]; then
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH"
 else
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH"
 fi
+export LD_LIBRARY_PATH
 
 # Install yasm
-if [ ! -f $INSTALL_PATH/bin/yasm ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$YASM_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$YASM_TAR -O $SRC_PATH/$YASM_TAR || exit 1
+if [ ! -f "$INSTALL_PATH/bin/yasm" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$YASM_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$YASM_TAR" -O "$SRC_PATH/$YASM_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$YASM_TAR || exit 1
+    tar xvf "$SRC_PATH/$YASM_TAR" || exit 1
     cd yasm* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH || exit 1
+    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
 
 # Install cmake
-if [ ! -f $INSTALL_PATH/bin/cmake ]; then
+if [ ! -f "$INSTALL_PATH/bin/cmake" ]; then
     cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$CMAKE_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$CMAKE_TAR -O $SRC_PATH/$CMAKE_TAR || exit 1
+    if [ ! -f "$SRC_PATH/$CMAKE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CMAKE_TAR" -O "$SRC_PATH/$CMAKE_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$CMAKE_TAR || exit 1
+    tar xvf "$SRC_PATH/$CMAKE_TAR" || exit 1
     cd cmake* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH || exit 1
+    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
 
 # Install Python2
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/python2.pc ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$PY2_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$PY2_TAR -O $SRC_PATH/$PY2_TAR || exit 1
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python2.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$PY2_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$PY2_TAR" -O "$SRC_PATH/$PY2_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$PY2_TAR || exit 1
+    tar xvf "$SRC_PATH/$PY2_TAR" || exit 1
     cd Python-2* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --enable-shared || exit 1
+    ./configure --prefix="$INSTALL_PATH" --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/python2 || exit 1
-    cp LICENSE $INSTALL_PATH/docs/python2/ || exit 1
+    mkdir -p "$INSTALL_PATH/docs/python2" || exit 1
+    cp LICENSE "$INSTALL_PATH/docs/python2/" || exit 1
 fi
 
 # Install Python3
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/python3.pc ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$PY3_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$PY3_TAR -O $SRC_PATH/$PY3_TAR || exit 1
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python3.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$PY3_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$PY3_TAR" -O "$SRC_PATH/$PY3_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$PY3_TAR || exit 1
+    tar xvf "$SRC_PATH/$PY3_TAR" || exit 1
     cd Python-3* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --enable-shared || exit 1
+    ./configure --prefix=$INSTALL_PATH --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/python3 || exit 1
-    cp LICENSE $INSTALL_PATH/docs/python3/ || exit 1
+    mkdir -p "$INSTALL_PATH/docs/python3" || exit 1
+    cp LICENSE "$INSTALL_PATH/docs/python3/" || exit 1
 fi
 
 # Setup env
-export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig
-#export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-#export PATH=$INSTALL_PATH/bin:$PATH
-export QTDIR=$INSTALL_PATH
-export BOOST_ROOT=$INSTALL_PATH
-export OPENJPEG_HOME=$INSTALL_PATH
-export THIRD_PARTY_TOOLS_HOME=$INSTALL_PATH
-export PYTHON_HOME=$INSTALL_PATH
-export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
-export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
+PKG_CONFIG_PATH="$INSTALL_PATH/lib/pkgconfig"
+#LD_LIBRARY_PATH="$INSTALL_PATH/lib"
+#PATH="$INSTALL_PATH/bin:$PATH"
+QTDIR="$INSTALL_PATH"
+BOOST_ROOT="$INSTALL_PATH"
+OPENJPEG_HOME="$INSTALL_PATH"
+THIRD_PARTY_TOOLS_HOME="$INSTALL_PATH"
+PYTHON_HOME="$INSTALL_PATH"
+PYTHON_PATH="$INSTALL_PATH/lib/python2.7"
+PYTHON_INCLUDE="$INSTALL_PATH/include/python2.7"
+export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Install boost
-if [ ! -f $INSTALL_PATH/lib/libboost_atomic.so ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$BOOST_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$BOOST_TAR -O $SRC_PATH/$BOOST_TAR || exit 1
+if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$BOOST_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$BOOST_TAR" -O "$SRC_PATH/$BOOST_TAR" || exit 1
     fi
-    tar xvf $SRC_PATH/$BOOST_TAR || exit 1
+    tar xvf "$SRC_PATH/$BOOST_TAR" || exit 1
     cd boost_* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./bootstrap.sh || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -j${MKJOBS} --disable-icu || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./bootstrap.sh || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -j${MKJOBS} --disable-icu || exit 1
     ./b2 install --prefix=$INSTALL_PATH || exit 1
     mkdir -p $INSTALL_PATH/docs/boost || exit 1
     cp LICENSE_1_0.txt $INSTALL_PATH/docs/boost/ || exit 1
@@ -238,7 +240,7 @@ if [ ! -f $INSTALL_PATH/lib/libjpeg.a ]; then
     fi
     tar xvf $SRC_PATH/$JPG_TAR || exit 1
     cd jpeg-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/jpeg || exit 1
@@ -253,7 +255,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/libpng.pc ]; then
     fi
     tar xvf $SRC_PATH/$PNG_TAR || exit 1
     cd libpng* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/png || exit 1
@@ -268,7 +270,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/libtiff-4.pc ]; then
     fi
     tar xvf $SRC_PATH/$TIF_TAR || exit 1
     cd tiff-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/tiff || exit 1
@@ -283,7 +285,7 @@ if [ ! -f $INSTALL_PATH/lib/libjasper.a ]; then
     fi
     unzip $SRC_PATH/$JASP_TAR || exit 1
     cd jasper* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/jasper || exit 1
@@ -298,7 +300,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/lcms2.pc ]; then
     fi
     tar xvf $SRC_PATH/$LCMS_TAR || exit 1
     cd lcms2-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/lcms || exit 1
@@ -314,7 +316,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/libopenjpeg.pc ]; then
     tar xvf $SRC_PATH/$OJPG_TAR || exit 1
     cd openjpeg-* || exit 1
     ./bootstrap.sh || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/openjpeg || exit 1
@@ -330,7 +332,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/libraw.pc ]; then
     tar xvf $SRC_PATH/$LIBRAW_TAR || exit 1
     cd LibRaw* || exit 1
     mkdir build && cd build
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release || exit 1
     make -j${MKJOBS} || exit 1
     make install
     mkdir -p $INSTALL_PATH/docs/libraw || exit 1
@@ -345,7 +347,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$ILM_TAR || exit 1
     cd ilmbase-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/openexr || exit 1
@@ -357,7 +359,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$EXR_TAR || exit 1
     cd openexr-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     cp LIC* COP* README AUTH* CONT* $INSTALL_PATH/docs/openexr/
@@ -374,7 +376,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     fi
     tar xvf $SRC_PATH/$MAGICK_TAR || exit 1
     cd ImageMagick-6.8.* || exit 1
-    CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --without-lcms --with-lcms2 --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --enable-static --disable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
+    env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --without-lcms --with-lcms2 --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --enable-static --disable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/imagemagick || exit 1
@@ -406,7 +408,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/pixman-1.pc ]; then
     fi
     tar xvf $SRC_PATH/$PIX_TAR || exit 1
     cd pixman-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/pixman || exit 1
@@ -421,7 +423,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/cairo.pc ]; then
     fi
     tar xvf $SRC_PATH/$CAIRO_TAR || exit 1
     cd cairo-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include -I${INSTALL_PATH}/include/pixman-1" LDFLAGS="-L${INSTALL_PATH}/lib -lpixman-1" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include -I${INSTALL_PATH}/include/pixman-1" LDFLAGS="-L${INSTALL_PATH}/lib -lpixman-1" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/cairo || exit 1
@@ -438,8 +440,8 @@ if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.so ]; then
     cd OpenColorIO-* || exit 1
     mkdir build || exit 1
     cd build || exit 1
-    #CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DUSE_EXTERNAL_LCMS=ON -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_TINYXML=OFF -DUSE_EXTERNAL_YAML=OFF -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF || exit 1
+    #env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DUSE_EXTERNAL_LCMS=ON -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_TINYXML=OFF -DUSE_EXTERNAL_YAML=OFF -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF || exit 1
     # dont work, wtf! #-DUSE_EXTERNAL_LCMS=ON || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
@@ -460,7 +462,7 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
     cd oiio-Release-* || exit 1
     mkdir build || exit 1
     cd build || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DUSE_OPENJPEG:BOOL=FALSE  -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=0 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE .. || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" CXXFLAGS="-fPIC" cmake -DUSE_OPENCV:BOOL=FALSE -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DUSE_OPENJPEG:BOOL=FALSE  -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=0 -DUSE_LIB_RAW=1 -DLIBRAW_PATH=$INSTALL_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include -DUSE_FFMPEG:BOOL=FALSE .. || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/oiio || exit 1
@@ -478,7 +480,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/eigen3.pc ]; then
     rm -rf build
     mkdir build || exit 1
     cd build || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/eigen || exit 1
@@ -496,7 +498,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/opencv.pc ]; then
     cd opencv* || exit 1
     mkdir build || exit 1
     cd build || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CMAKE_INCLUDE_PATH=$INSTALL_PATH/include CMAKE_LIBRARY_PATH=$INSTALL_PATH/lib CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake -DWITH_GTK=OFF -DWITH_GSTREAMER=OFF -DWITH_FFMPEG=OFF -DWITH_OPENEXR=OFF -DWITH_OPENCL=OFF -DWITH_OPENGL=ON -DBUILD_WITH_DEBUG_INFO=OFF -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_SSE3=OFF .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CMAKE_INCLUDE_PATH=$INSTALL_PATH/include CMAKE_LIBRARY_PATH=$INSTALL_PATH/lib CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake -DWITH_GTK=OFF -DWITH_GSTREAMER=OFF -DWITH_FFMPEG=OFF -DWITH_OPENEXR=OFF -DWITH_OPENCL=OFF -DWITH_OPENGL=ON -DBUILD_WITH_DEBUG_INFO=OFF -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_SSE3=OFF .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/opencv || exit 1
@@ -511,7 +513,7 @@ if [ ! -f $INSTALL_PATH/lib/libmp3lame.so ]; then
     fi
     tar xvf $SRC_PATH/$LAME_TAR || exit 1
     cd lame-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/lame || exit 1
@@ -526,7 +528,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/ogg.pc ]; then
     fi
     tar xvf $SRC_PATH/$OGG_TAR || exit 1
     cd libogg-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/libogg || exit 1
@@ -541,7 +543,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/vorbis.pc ]; then
     fi
     tar xvf $SRC_PATH/$VORBIS_TAR || exit 1
     cd libvorbis-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/libvorbis || exit 1
@@ -556,7 +558,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/theora.pc ]; then
     fi
     tar xvf $SRC_PATH/$THEORA_TAR || exit 1
     cd libtheora-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/libtheora || exit 1
@@ -571,7 +573,7 @@ if [ ! -f $INSTALL_PATH/lib/libmodplug.so ]; then
     fi
     tar xvf $SRC_PATH/$MODPLUG_TAR || exit 1
     cd libmodplug-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/libmodplug || exit 1
@@ -586,7 +588,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/vpx.pc ]; then
     fi
     tar xvf $SRC_PATH/$VPX_TAR || exit 1
     cd libvpx-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-vp8 --enable-vp9 --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-vp8 --enable-vp9 --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/libvpx || exit 1
@@ -601,7 +603,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/speex.pc ]; then
     fi
     tar xvf $SRC_PATH/$SPEEX_TAR || exit 1
     cd speex-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/speex || exit 1
@@ -616,7 +618,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/opus.pc ]; then
     fi
     tar xvf $SRC_PATH/$OPUS_TAR || exit 1
     cd opus-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-custom-modes || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-custom-modes || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/opus || exit 1
@@ -631,7 +633,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/orc-0.4.pc ]; then
     fi
     tar xvf $SRC_PATH/$ORC_TAR || exit 1
     cd orc-* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/orc || exit 1
@@ -646,7 +648,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/schroedinger-1.0.pc ]; then
     fi
     tar xvf $SRC_PATH/$DIRAC_TAR || exit 1
     cd schro* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/dirac || exit 1
@@ -661,7 +663,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/x264.pc ]; then
     fi
     tar xvf $SRC_PATH/$X264_TAR || exit 1
     cd x264* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-pic --bit-depth=10 || exit 1
+    ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static --enable-pic --bit-depth=10  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/x264 || exit 1
@@ -676,7 +678,7 @@ if [ ! -f $INSTALL_PATH/lib/libxvidcore.so.4.3 ]; then
     fi
     tar xvf $SRC_PATH/$XVID_TAR || exit 1
     cd xvidcore/build/generic || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/xvidcore || exit 1
@@ -697,11 +699,11 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
     fi
     tar xvf $SRC_PATH/$FFMPEG_TAR || exit 1
     cd ffmpeg-2* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS || exit 1
+    ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     make distclean
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS || exit 1
+    ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/ffmpeg || exit 1
     cp COPYING* CREDITS $INSTALL_PATH/docs/ffmpeg/
@@ -723,11 +725,11 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
     fi
     tar xvf $SRC_PATH/$QT_TAR || exit 1
     cd qt* || exit 1
-    QT_SRC=$(pwd)/src
-    CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF -shared || exit 1
+    QT_SRC=`pwd`/src
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure -prefix $INSTALL_PATH $QT_CONF -shared || exit 1
 
     # https://bugreports.qt-project.org/browse/QTBUG-5385
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/lib make -j${MKJOBS} || exit  1
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH":`pwd`/lib make -j${MKJOBS} || exit  1
 
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/qt || exit 1
@@ -818,7 +820,7 @@ if [ "$SSL_TAR" != "" ]; then
     fi
     tar xvf $SRC_PATH/$SSL_TAR || exit 1
     cd openssl* || exit 1
-    CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix=$INSTALL_PATH || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix=$INSTALL_PATH || exit 1
     make || exit 1
     make install || exit 1
 fi
@@ -837,12 +839,12 @@ fi
 
 if [ ! -z "$TAR_SDK" ]; then
     # Done, make a tarball
-    cd $INSTALL_PATH/.. || exit 1
-    tar cvvJf $SRC_PATH/Natron-$SDK_VERSION-$SDK.tar.xz Natron-$SDK_VERSION || exit 1
+    cd "$INSTALL_PATH/.." || exit 1
+    tar cvvJf "$SRC_PATH/Natron-$SDK_VERSION-$SDK.tar.xz" "Natron-$SDK_VERSION" || exit 1
     echo "SDK available at $SRC_PATH/Natron-$SDK_VERSION-$SDK.tar.xz"
 
     if [ ! -z "$UPLOAD_SDK" ]; then
-        rsync -avz --progress --verbose -e ssh $SRC_PATH/Natron-$SDK_VERSION-$SDK.tar.xz $BINARIES_URL || exit 1
+        rsync -avz --progress --verbose -e ssh "$SRC_PATH/Natron-$SDK_VERSION-$SDK.tar.xz" "$BINARIES_URL" || exit 1
     fi
 
 fi

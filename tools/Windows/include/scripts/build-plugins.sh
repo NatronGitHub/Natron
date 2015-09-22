@@ -3,7 +3,7 @@
 # Build Natron Plugins for Windows
 #
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 
 if [ "$1" = "32" ]; then
@@ -22,8 +22,8 @@ fi
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-plugins.pid ]; then
-  OLDPID=$(cat $TMP_DIR/natron-build-plugins.pid)
-  PIDS=$(ps aux|awk '{print $2}')
+  OLDPID=`cat $TMP_DIR/natron-build-plugins.pid`
+  PIDS=`ps aux|awk '{print $2}'`
   for i in $PIDS;do
     if [ "$i" = "$OLDPID" ]; then
       echo "already running ..."
@@ -105,7 +105,7 @@ if [ "$MISC_BRANCH" = "master" ]; then
     git submodule foreach git pull origin master
 fi
 
-MISC_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
 # mksrc
 if [ "$MKSRC" = "1" ]; then
@@ -147,7 +147,7 @@ if [ "$IO_BRANCH" = "master" ]; then
     git submodule foreach git pull origin master
 fi
 
-IO_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
 # mksrc
 if [ "$MKSRC" = "1" ]; then
@@ -188,7 +188,7 @@ if [ "$ARENA_BRANCH" = "master" ]; then
     git submodule foreach git pull origin master
 fi
 
-ARENA_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
 # mksrc
 if [ "$MKSRC" = "1" ]; then
@@ -229,7 +229,7 @@ if [ "$CV_BRANCH" = "master" ]; then
     git submodule foreach git pull origin master
 fi
 
-CV_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+CV_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
 # mksrc
 if [ "$MKSRC" = "1" ]; then

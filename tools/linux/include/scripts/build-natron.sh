@@ -21,12 +21,12 @@
 # Build Natron for Linux
 #
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-app.pid ]; then
-    OLDPID=$(cat $TMP_DIR/natron-build-app.pid)
-    PIDS=$(ps aux|awk '{print $2}')
+    OLDPID=`cat $TMP_DIR/natron-build-app.pid`
+    PIDS=`ps aux|awk '{print $2}'`
     for i in $PIDS;do
         if [ "$i" = "$OLDPID" ]; then
             echo "already running ..."
@@ -48,7 +48,7 @@ if [ ! -d $INSTALL_PATH ]; then
         tar xvJf $SRC_PATH/Natron-$SDK_VERSION-Linux-$ARCH-SDK.tar.xz -C $SDK_PATH/ || exit 1
     else
         echo "Need to build SDK ..."
-        MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
+        env MKJOBS=$MKJOBS TAR_SDK=1 sh $INC_PATH/scripts/build-sdk.sh || exit 1
     fi
 fi
 
@@ -92,7 +92,7 @@ if [ "$NATRON_BRANCH" = "workshop" ]; then
     git submodule foreach git pull origin master
 fi
 
-REL_GIT_VERSION=$(git log|head -1|awk '{print $2}')
+REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
 # mksrc
 if [ "$MKSRC" = "1" ]; then
@@ -109,9 +109,9 @@ NATRON_REL_V=$REL_GIT_VERSION
 
 sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" $CWD/commits-hash.sh || exit 1
 
-NATRON_MAJOR=$(grep "define NATRON_VERSION_MAJOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}')
-NATRON_MINOR=$(grep "define NATRON_VERSION_MINOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}')
-NATRON_REVISION=$(grep "define NATRON_VERSION_REVISION" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}')
+NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
 sed -i "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" $CWD/commits-hash.sh || exit 1
 
 echo
@@ -141,7 +141,7 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1

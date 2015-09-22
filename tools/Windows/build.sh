@@ -21,12 +21,12 @@
 # NATRON_LICENSE=(GPL,COMMERCIAL): When GPL, GPL binaries are bundled with Natron
 # USAGE: NATRON_LICENSE=<license> build.sh BIT "branch" noThreads
 
-source $(pwd)/common.sh || exit 1
+source `pwd`/common.sh || exit 1
 
 PID=$$
 if [ -f $TMP_DIR/natron-build.pid ]; then
-    OLDPID=$(cat $TMP_DIR/natron-build.pid)
-    PIDS=$(ps aux|awk '{print $2}')
+    OLDPID=`cat $TMP_DIR/natron-build.pid`
+    PIDS=`ps aux|awk '{print $2}'`
     for i in $PIDS;do
         if [ "$i" = "$OLDPID" ]; then
             echo "already running ..."
@@ -102,7 +102,7 @@ fi
 
 FAIL=0
 
-if [ ! -f $(pwd)/commits-hash.sh ]; then
+if [ ! -f `pwd`/commits-hash.sh ]; then
     touch $CWD/commits-hash.sh
     echo "#!/bin/sh" >> $CWD/commits-hash.sh
     echo "NATRON_DEVEL_GIT=#" >> $CWD/commits-hash.sh
@@ -117,7 +117,7 @@ fi
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         echo -n "Building Natron ... "
-        NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh $INC_PATH/scripts/build-natron.sh $BIT workshop >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh $INC_PATH/scripts/build-natron.sh $BIT workshop >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -128,7 +128,7 @@ if [ "$NOBUILD" != "1" ]; then
     fi
     if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
         echo -n "Building Plugins ... "
-        NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT workshop >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT workshop >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -141,7 +141,7 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     echo -n "Building Packages ... "
-    NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT workshop   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT workshop   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else

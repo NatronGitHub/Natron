@@ -49,14 +49,15 @@ DATE=$(date +%Y-%m-%d)
 PKGOS=Linux-x86_${BIT}bit
 REPO_OS=Linux/$REPO_BRANCH/${BIT}bit/packages
 
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib
-export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
+LD_LIBRARY_PATH=$INSTALL_PATH/lib
+PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$PATH
 
 if [ "$ARCH" = "x86_64" ]; then
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$LD_LIBRARY_PATH
 else
-    export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
 fi
+export LD_LIBRARY_PATH
 
 if [ -d $TMP_PATH ]; then
     rm -rf $TMP_PATH || exit 1

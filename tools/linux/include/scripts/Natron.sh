@@ -18,13 +18,15 @@ if [ "$1" = "-update" -a -x "$DIR/NatronSetup" ]; then
 fi
 
 if [ "$1" = "-portable" ]; then
-    #export XDG_CACHE_HOME=/tmp
-    export XDG_DATA_HOME=$DIR
-    export XDG_CONFIG_HOME=$DIR
+    #XDG_CACHE_HOME=/tmp
+    XDG_DATA_HOME=$DIR
+    XDG_CONFIG_HOME=$DIR
+    export XDG_DATA_HOME XDG_CONFIG_HOME
 fi
 
 if [ "$1" = "-debug" ]; then
-    export SEGFAULT_SIGNALS="all"
+    SEGFAULT_SIGNALS="all"
+    export SEGFAULT_SIGNALS
     catchsegv "$DIR/bin/Natron.debug" -style fusion "$@"
 else
     "$DIR/bin/Natron" -style fusion "$@"

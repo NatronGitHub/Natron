@@ -3,13 +3,13 @@
 # Build packages and installer for Windows
 #
 
-source $(pwd)/common.sh || exit 1
-source $(pwd)/commits-hash.sh || exit 1
+source `pwd`/common.sh || exit 1
+source `pwd`/commits-hash.sh || exit 1
 
 PID=$$
 if [ -f $TMP_DIR/natron-build-installer.pid ]; then
-    OLDPID=$(cat $TMP_DIR/natron-build-installer.pid)
-    PIDS=$(ps aux|awk '{print $2}')
+    OLDPID=`cat $TMP_DIR/natron-build-installer.pid`
+    PIDS=`ps aux|awk '{print $2}'`
     for i in $PIDS;do
         if [ "$i" = "$OLDPID" ]; then
             echo "already running ..."
@@ -48,9 +48,9 @@ else
     APP_INSTALL_SUFFIX=INRIA/Natron-$NATRON_VERSION
 fi
 
-DATE=$(date +%Y-%m-%d)
-PKGOS=Windows-x86_${BIT}bit
-REPO_OS=Windows/$REPO_BRANCH/${BIT}bit/packages
+DATE=`date +%Y-%m-%d`
+PKGOS="Windows-x86_${BIT}bit"
+REPO_OS="Windows/$REPO_BRANCH/${BIT}bit/packages"
 
 
 if [ -d $TMP_PATH ]; then
@@ -59,30 +59,30 @@ fi
 mkdir -p $TMP_PATH || exit 1
 
 # SETUP
-INSTALLER=$TMP_PATH/Natron-installer
-XML=$INC_PATH/xml
-QS=$INC_PATH/qs
+INSTALLER="$TMP_PATH/Natron-installer"
+XML="$INC_PATH/xml"
+QS="$INC_PATH/qs"
 
-mkdir -p $INSTALLER/config $INSTALLER/packages || exit 1
-cat $INC_PATH/config/config.xml | sed "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" > $INSTALLER/config/config.xml || exit 1
-cp $INC_PATH/config/*.png $INSTALLER/config/ || exit 1
+mkdir -p "$INSTALLER/config" "$INSTALLER/packages" || exit 1
+cat "$INC_PATH/config/config.xml" | sed -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" > "$INSTALLER/config/config.xml" || exit 1
+cp "$INC_PATH/config/"*.png "$INSTALLER/config/" || exit 1
 
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then         
     IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
-    OFX_IO_VERSION=$TAG
-    OFX_IO_PATH=$INSTALLER/packages/$IOPLUG_PKG
-    mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins || exit 1
-    cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
-    cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
-    cat $INSTALL_PATH/docs/openfx-io/VERSION > $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
-    echo "" >> $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
-    cat $INSTALL_PATH/docs/openfx-io/LICENSE >> $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
-    cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/ || exit 1
+    OFX_IO_VERSION="$TAG"
+    OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
+    mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins" || exit 1
+    cat "$XML/openfx-io.xml" | sed -e "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > "$OFX_IO_PATH/meta/package.xml" || exit 1
+    cat "$QS/openfx-io.qs" > "$OFX_IO_PATH/meta/installscript.qs" || exit 1
+    cat "$INSTALL_PATH/docs/openfx-io/VERSION" > "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    echo "" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    cat "$INSTALL_PATH/docs/openfx-io/LICENSE" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    cp -a "$INSTALL_PATH/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/" || exit 1
     for depend in $IO_DLL; do
-        cp $INSTALL_PATH/bin/$depend $OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
-    cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} $OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/ || exit 1
+    cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
 fi
 
