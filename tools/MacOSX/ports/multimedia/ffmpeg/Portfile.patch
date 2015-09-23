@@ -1,14 +1,42 @@
---- Portfile.orig	2015-08-26 15:50:58.000000000 +0200
-+++ Portfile	2015-08-27 16:02:34.000000000 +0200
-@@ -130,6 +130,7 @@
+--- Portfile.orig	2015-09-23 13:58:52.000000000 +0200
++++ Portfile	2015-09-23 16:46:52.000000000 +0200
+@@ -88,6 +88,7 @@
+ build.cmd           ${prefix}/bin/gmake
+ build.env-append    V=1
+ 
++patchfiles ffmpeg_videotoolbox.patch
+ #
+ # enable auto configure of asm optimizations
+ # requires Xcode 3.1 or better on Leopard
+@@ -130,9 +131,11 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
 +                    --disable-xlib \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
-                     --cc=${configure.cc}
-@@ -163,6 +164,17 @@
+-                    --cc=${configure.cc}
++                    --cc=${configure.cc} \
++                    --cxx=${configure.cxx}
+ 
+ # disable asm on Tiger
+ # libblueray doesn't build on Tiger so disable for now (#39442)
+@@ -152,8 +155,12 @@
+     }
+ 
+     # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
+-    if {${os.major} < 12} {
+-        configure.args-append --disable-indev=avfoundation
++    #if {${os.major} < 12} {
++    #    configure.args-append --disable-indev=avfoundation
++    #}
++    # Video Toolbox was also introduced in 10.8
++    if {[vercmp ${macosx_sdk_version} 10.8] < 0} {
++        configure.args-append --disable-indev=avfoundation --disable-videotoolbox
+     }
+ }
+ 
+@@ -163,6 +170,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -26,7 +54,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -187,6 +199,15 @@
+@@ -187,6 +205,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -42,7 +70,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -212,11 +233,15 @@
+@@ -212,11 +239,55 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -55,10 +83,50 @@
 +                            --disable-xlib \
 +
 +    configure.args-append   --enable-xlib
++}
++
++variant natron conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++
++    depends_lib-delete \
++                    port:libiconv \
++                    port:libass \
++                    port:libbluray \
++                    port:gnutls \
++                    port:fontconfig \
++                    port:freetype \
++                    port:fribidi \
++                    port:libsdl
++
++    configure.args-delete \
++                    --enable-libass \
++                    --enable-libbluray \
++                    --enable-gnutls \
++                    --enable-fontconfig \
++                    --enable-libfreetype \
++                    --enable-libfribidi \
++                    --cc=${configure.cc} \
++                    --cxx=${configure.cxx}
++
++    #configure.compiler macports-clang-3.4
++    configure.compiler macports-gcc-4.8
++
++    configure.args-append \
++                    --disable-libass \
++                    --disable-libbluray \
++                    --disable-gnutls \
++                    --disable-fontconfig \
++                    --disable-libfreetype \
++                    --disable-libfribidi \
++                    --disable-sdl \
++                    --disable-securetransport \
++                    --disable-iconv \
++                    --cc=${configure.cc} \
++                    --cxx=${configure.cxx}
++
  }
  
  default_variants +x11
-@@ -279,6 +304,12 @@
+@@ -279,6 +350,12 @@
                              port:samba3
  
      license                 GPL-3+

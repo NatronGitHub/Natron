@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 140195 2015-09-11 16:54:52Z michaelld@macports.org $
+# $Id: Portfile 140354 2015-09-18 15:43:03Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -29,9 +29,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.1
-    checksums       rmd160 39f63aef3c9ba9711f736fd8e51972429ceca527 \
-                    sha256 cd65022c6a0707f1c7112f99e9c981677fdd5518f7ddfa0f778d4cee7113e3d6
+    version         ${branch}.2
+    checksums       rmd160 c7d3b8895e2e143b7e1019477764370535917dca \
+                    sha256 e75a178d6ebf182b048ebfe6e0657c49f0dc109779170bad7ffcb17463f2fc22
 
     long_description ${base_long_description} \
         The ${subport} release port is updated roughly every few months.
@@ -49,12 +49,12 @@ if {${subport} eq ${name}} {
 } else {
 
     # devel
-    version         20150910
+    version         20150915
     set dist_branch 3.3
-    set dist_date   20150910
-    set dist_hash   ge6cc5
-    checksums       rmd160 e654dfeef16bfe34276d7bd52653d03b47bad128 \
-                    sha256 ad4710b212dd851418f45f9783395e74ca31774e3235961db5ac8743fd3320e0
+    set dist_date   20150915
+    set dist_hash   gb937b1
+    checksums       rmd160 0d5cbd338f2864e9c0183c02316be6780a017ab1 \
+                    sha256 d052408256c15e2a423d182e884b84b4700132cdf788f595400c15d5349f13e4
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
