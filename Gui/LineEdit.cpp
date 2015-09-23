@@ -144,7 +144,11 @@ void
 LineEdit::keyPressEvent(QKeyEvent* e)
 {
     QLineEdit::keyPressEvent(e);
-    if (e->matches(QKeySequence::Paste)) {
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+        ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
+        e->accept();
+        return;
+    } else if (e->matches(QKeySequence::Paste)) {
         Q_EMIT textPasted();
     }
 }

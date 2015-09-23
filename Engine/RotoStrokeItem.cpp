@@ -271,6 +271,13 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     }
 }
 
+bool
+RotoStrokeItem::isEmpty() const
+{
+    QMutexLocker k(&itemMutex);
+    return _imp->strokes.empty();
+}
+
 void
 RotoStrokeItem::setStrokeFinished()
 {
