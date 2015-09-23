@@ -938,10 +938,12 @@ DockablePanel::floatPanel()
     }
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
+        QSize curSize = size();
         _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
         QObject::connect( _imp->_floatingWidget,SIGNAL( closed() ),this,SLOT( closePanel() ) );
         _imp->_container->removeWidget(this);
         _imp->_floatingWidget->setWidget(this);
+        _imp->_floatingWidget->resize(curSize);
         _imp->_gui->registerFloatingWindow(_imp->_floatingWidget);
     } else {
         assert(_imp->_floatingWidget);
