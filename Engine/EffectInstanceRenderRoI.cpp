@@ -1317,6 +1317,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               byPassCache,
                                               outputDepth,
                                               outputClipPrefComps,
+                                              neededComps,
                                               processChannels);
         } // if (hasSomethingToRender) {
 
@@ -1478,6 +1479,7 @@ EffectInstance::renderRoIInternal(double time,
                                   bool byPassCache,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                  const ComponentsNeededMap & compsNeeded,
                                   bool* processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1611,6 +1613,7 @@ EffectInstance::renderRoIInternal(double time,
             tiledArgs.outputClipPrefsComps = outputClipPrefsComps;
             tiledArgs.processChannels = processChannels;
             tiledArgs.planes = planesToRender;
+            tiledArgs.compsNeeded = compsNeeded;
 
 
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
@@ -1653,7 +1656,7 @@ EffectInstance::renderRoIInternal(double time,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) ) {
                     renderStatus = functorRet;

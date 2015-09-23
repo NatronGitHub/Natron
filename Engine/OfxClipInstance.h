@@ -231,7 +231,7 @@ public:
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
     
-    static Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
     static std::string natronsPlaneToOfxPlane(const Natron::ImageComponents& plane);
     static std::string natronsComponentsToOfxComponents(const Natron::ImageComponents& comp);
     static std::list<Natron::ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
@@ -295,15 +295,14 @@ private:
     void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     
-    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
-                                                    const std::string& plane,
-                                                    bool usingReroute,
-                                                    int rerouteInputNb,
-                                                    Natron::EffectInstance* node,
-                                                    const boost::shared_ptr<Transform::Matrix3x3>& transform);
-    
-    
-    
+    OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, int view, const OfxRectD *optionalBounds,
+                                                    const std::string* ofxPlane);
+
+    OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
+
+    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, int view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+
+
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     double _aspectRatio;
