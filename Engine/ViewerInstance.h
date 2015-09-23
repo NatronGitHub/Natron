@@ -238,6 +238,8 @@ public:
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
+    virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
+    
     void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
     
     struct ViewerInstancePrivate;
@@ -285,6 +287,8 @@ Q_SIGNALS:
     void activeInputsChanged();
     
     void clipPreferencesChanged();
+    
+    void availableComponentsChanged();
 
     void disconnectTextureRequest(int index);
     

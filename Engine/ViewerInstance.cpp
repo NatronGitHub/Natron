@@ -2799,6 +2799,12 @@ ViewerInstance::checkOFXClipPreferences(double /*time*/,
 }
 
 void
+ViewerInstance::onChannelsSelectorRefreshed()
+{
+    Q_EMIT availableComponentsChanged();
+}
+
+void
 ViewerInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);

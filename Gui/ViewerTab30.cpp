@@ -1008,6 +1008,13 @@ ViewerTab::connectToInput(int inputNb)
 }
 
 void
+ViewerTab::onAvailableComponentsChanged()
+{
+    refreshLayerAndAlphaChannelComboBox();
+
+}
+
+void
 ViewerTab::onClipPreferencesChanged()
 {
     //Try to set auto-fps if it is enabled
@@ -1029,5 +1036,4 @@ ViewerTab::onClipPreferencesChanged()
         }
         onSpinboxFpsChanged(_imp->fpsBox->value());
     }
-    refreshLayerAndAlphaChannelComboBox();
 }

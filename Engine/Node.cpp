@@ -7332,7 +7332,11 @@ Node::refreshChannelSelectors(bool setValues)
             }
         }
     }
-}
+    
+    //Notify the effect channels have changed (the viewer needs this)
+    _imp->liveInstance->onChannelsSelectorRefreshed();
+    
+} // Node::refreshChannelSelectors(bool setValues)
 
 bool
 Node::addUserComponents(const Natron::ImageComponents& comps)

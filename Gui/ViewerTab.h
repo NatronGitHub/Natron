@@ -398,6 +398,8 @@ public Q_SLOTS:
     
     void onClipPreferencesChanged();
     
+    void onAvailableComponentsChanged();
+    
     void onInternalNodeLabelChanged(const QString& name);
     void onInternalNodeScriptNameChanged(const QString& name);
     

@@ -675,6 +675,9 @@ public:
 
     void refreshChannelSelectors_recursive();
 
+    virtual void onChannelsSelectorRefreshed() {}
+
+
 protected:
 
     void checkOFXClipPreferences_recursive(double time,
@@ -689,6 +692,7 @@ protected:
                                          bool /*forceGetClipPrefAction*/)
     {
     }
+
 
 public:
 
