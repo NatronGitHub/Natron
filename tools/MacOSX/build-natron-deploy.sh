@@ -29,6 +29,8 @@ if [ ! -d "$package" ]; then
 fi
 
 MACPORTS="/opt/local"
+HOMEBREW="/brew2/local"
+LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
 
