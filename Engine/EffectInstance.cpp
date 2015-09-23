@@ -3738,7 +3738,11 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             EffectInstance* input = getInput(i);
-            if (input) {
+            bool isRotoInput = isInputRotoBrush(i);
+            if (isRotoInput) {
+                ///Copy for the roto input the output needed comps
+                comps->insert(std::make_pair(i, comps->at(-1)));
+            } else if (input) {
                 std::vector<ImageComponents> compVec;
                 bool inputProcChannels[4];
                 ImageComponents layer;
