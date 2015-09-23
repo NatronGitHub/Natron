@@ -1435,12 +1435,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied && it->second.downscaleImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
 
                 if (useAlpha0ForRGBToRGBAConversion) {
-                    it->second.downscaleImage->convertToFormatAlpha0( bounds,
+                    it->second.downscaleImage->convertToFormatAlpha0( roi,
                                                                       getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
                                                                       getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                       -1, false, unPremultIfNeeded, tmp.get() );
                 } else {
-                    it->second.downscaleImage->convertToFormat( bounds,
+                    it->second.downscaleImage->convertToFormat( roi,
                                                                 getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
                                                                 getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                                                 -1, false, unPremultIfNeeded, tmp.get() );
