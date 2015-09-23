@@ -205,6 +205,7 @@ unix {
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
          LIBS += -ldl
+         #QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          cairo:     PKGCONFIG += cairo
      }
@@ -231,6 +232,7 @@ unix {
      pyside:   PKGCONFIG += pyside
      # The following hack also works with Homebrew if pyside is installed with option --with-python3
      macx {
+       QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
        shiboken {
          PKGCONFIG -= shiboken
          PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
