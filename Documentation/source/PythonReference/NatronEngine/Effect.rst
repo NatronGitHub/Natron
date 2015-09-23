@@ -314,8 +314,8 @@ should NOT be used.
 
 .. method:: NatronEngine.Effect.getRegionOfDefinition(time,view)
 
-	:param time: :class:`int`
-	:param view: :class:`view`
+	:param time: :class:`float<PySide.QtCore.float>`
+	:param view: :class:`int<PySide.QtCore.int>`
 	:rtype: :class:`RectD<NatronEngine.RectD>`
 	
 Returns the bounding box of the image produced by this effect in canonical coordinates. 

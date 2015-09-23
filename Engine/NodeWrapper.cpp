@@ -563,7 +563,7 @@ Effect::getRotoContext() const
 }
 
 RectD
-Effect::getRegionOfDefinition(int time,int view) const
+Effect::getRegionOfDefinition(double time,int view) const
 {
     RectD rod;
     if (!_node || !_node->getLiveInstance()) {

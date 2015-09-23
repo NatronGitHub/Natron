@@ -333,7 +333,7 @@ public:
      **/
     Roto* getRotoContext() const;
     
-    RectD getRegionOfDefinition(int time,int view) const;
+    RectD getRegionOfDefinition(double time,int view) const;
     
     static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
     

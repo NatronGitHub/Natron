@@ -806,11 +806,11 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
 
 
     // Overloaded function decisor
-    // 0: getRegionOfDefinition(int,int)const
+    // 0: getRegionOfDefinition(double,int)const
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // getRegionOfDefinition(int,int)const
+        overloadId = 0; // getRegionOfDefinition(double,int)const
     }
 
     // Function signature not found.
@@ -818,13 +818,13 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getRegionOfDefinition(int,int)const
+            // getRegionOfDefinition(double,int)const
             RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
         }
@@ -837,7 +837,7 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
     return pyResult;
 
     Sbk_EffectFunc_getRegionOfDefinition_TypeError:
-        const char* overloads[] = {"int, int", 0};
+        const char* overloads[] = {"float, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.getRegionOfDefinition", overloads);
         return 0;
 }
