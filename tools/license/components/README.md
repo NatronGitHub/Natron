@@ -11,17 +11,28 @@ Natron binaries include components from the following libraries:
 * openfx-arena (GPLv2) https://github.com/olear/openfx-arena
 * TinyXML http://www.sourceforge.net/projects/tinyxml (used by OpenColorIO)
 * Pango (used by openfx-arena via ImageMagick)
-* FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by openfx-arena, ImageMagick and OpenImageIO)
+* FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by Cairo, openfx-arena, ImageMagick and OpenImageIO)
 * fontconfig (Modified BSD) http://www.freedesktop.org/wiki/Software/fontconfig/ (used by openfx-arena and ImageMagick)
 * FFmpeg (LGPL 2.1) https://www.ffmpeg.org/legal.html (used by openfx-io)
 * SeExpr (modified Apache 2.0) http://www.disneyanimation.com/technology/seexpr.html (used by openfx-io)
-* OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io and OpenImageIO) 
-* OpenColorIO (Modified BSD) http://opencolorio.org/License.html (used by openfx-io) 
+* OpenColorIO (Modified BSD) http://opencolorio.org/License.html (used by openfx-io and OpenImageIO) 
 * OpenImageIO (Modified BSD) https://openimageio.org (used by openfx-io) 
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx)
-* RSVG (GPLv2) https://developer.gnome.org/rsvg/stable/licence.html (used by openfx-arena via ImageMagick)
+* librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg (used by openfx-arena via ImageMagick)
 * ImageMagick (Apache 2.0 with attribution clause) http://www.imagemagick.org/script/license.php (used by openfx-arena)
-
+* OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io via OpenImageIO) 
+* libtiff (Modified BSD) http://www.remotesensing.org/libtiff (used by openfx-io via OpenImageIO)
+* libpng (libpng License) http://www.libpng.org (used by openfx-io via OpenImageIO)
+* libjpeg (Modified BSD) http://ijg.org (used by openfx-io via OpenImageIO)
+* openjpeg (2-clauses BSD) http://www.openjpeg.org (used by openfx-io via OpenImageIO) 
+* webp (Modified BSD) https://developers.google.com/speed/webp (used by openfx-io via OpenImageIO) 
+* HDF5 (Modified BSD) https://www.hdfgroup.org/HDF5 (used by openfx-io via OpenImageIO)
+* Field3D (Modified BSD) https://github.com/imageworks/Field3D (used by openfx-io via OpenImageIO)
+* GIFLIB (X Consortium-like licence) http://giflib.sourceforge.net (used by openfx-io via OpenImageIO)
+* LibRaw (LGPL 2.1 or CDDL 1.0 license) http://www.libraw.org (used by openfx-io via OpenImageIO)
+* x264 (GPLv2) http://www.videolan.org/developers/x264.html (used by openfx-io via FFmpeg)
+* libxml (used by openfx-arena via ImageMagick via librsvg)
+* pixman (used by Cairo)
 
 libass.5.dylib
 libbluray.1.dylib
@@ -34,7 +45,6 @@ libenca.0.dylib
 libffi.6.dylib
 libfribidi.0.dylib
 libgdk_pixbuf-2.0.0.dylib
-libgif.4.dylib
 libgio-2.0.0.dylib
 libglib-2.0.0.dylib
 libgmodule-2.0.0.dylib
@@ -52,7 +62,6 @@ libicui18n.55.dylib
 libicuuc.55.dylib
 libintl.8.dylib
 libjasper.1.dylib
-libjpeg.9.dylib
 liblcms.1.dylib
 liblcms2.2.dylib
 liblzma.5.dylib
@@ -62,15 +71,11 @@ libmp3lame.0.dylib
 libncurses.6.dylib
 libnettle.6.dylib
 libogg.0.dylib
-libopenjpeg.1.dylib
 libopus.0.dylib
 liborc-0.4.0.dylib
 libp11-kit.0.dylib
 libpanel.6.dylib
-libpixman-1.0.dylib
-libpng16.16.dylib
 libpyside-python2.7.1.2.dylib
-libraw_r.10.dylib
 libschroedinger-1.0.0.dylib
 libshiboken-python2.7.1.2.dylib
 libspeex.1.dylib
@@ -79,11 +84,6 @@ libssl.1.0.0.dylib
 libtasn1.6.dylib
 libtheoradec.1.dylib
 libtheoraenc.1.dylib
-libtiff.5.dylib
-libtinyxml.dylib
 libvorbis.0.dylib
 libvorbisenc.2.dylib
-libwebp.5.dylib
-libx264.142.dylib
-libxml2.2.dylib
 libz.1.dylib
