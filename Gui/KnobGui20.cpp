@@ -404,7 +404,9 @@ KnobGui::setReadOnly_(bool readOnly,
             hasDimensionEnabled = true;
         }
     }
-    _imp->descriptionLabel->setReadOnly(!hasDimensionEnabled);
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setReadOnly(!hasDimensionEnabled);
+    }
 }
 
 bool

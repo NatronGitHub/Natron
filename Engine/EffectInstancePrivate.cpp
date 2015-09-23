@@ -539,36 +539,6 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
 
 #endif // if NATRON_ENABLE_TRIMAP
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
-                                                                   const RoIMap & roiMap,
-                                                                   const RectD & rod,
-                                                                   const RectI & renderWindow,
-                                                                   double time,
-                                                                   int view,
-                                                                   bool isIdentity,
-                                                                   double identityTime,
-                                                                   int inputNbIdentity,
-                                                                   const std::map<Natron::ImageComponents, PlaneToRender> & outputPlanes,
-                                                                   double firstFrame,
-                                                                   double lastFrame)
-    : localData( &dst->localData() )
-    , _dst(dst)
-{
-    assert(_dst);
-
-    localData->_rod = rod;
-    localData->_renderWindowPixel = renderWindow;
-    localData->_time = time;
-    localData->_view = view;
-    localData->_isIdentity = isIdentity;
-    localData->_identityTime = identityTime;
-    localData->_identityInputNb = inputNbIdentity;
-    localData->_outputPlanes = outputPlanes;
-    localData->_regionOfInterestResults = roiMap;
-    localData->_firstFrame = firstFrame;
-    localData->_lastFrame = lastFrame;
-    localData->_validArgs = true;
-}
 
 
 EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst)
@@ -614,7 +584,8 @@ EffectInstance::Implementation::ScopedRenderArgs::setArgs_firstPass(const RectD 
                                                                     int view,
                                                                     bool isIdentity,
                                                                     double identityTime,
-                                                                    int inputNbIdentity)
+                                                                    int inputNbIdentity,
+                                                                    const EffectInstance::ComponentsNeededMap & compsNeeded)
 {
     localData->_rod = rod;
     localData->_renderWindowPixel = renderWindow;
@@ -623,6 +594,7 @@ EffectInstance::Implementation::ScopedRenderArgs::setArgs_firstPass(const RectD 
     localData->_isIdentity = isIdentity;
     localData->_identityTime = identityTime;
     localData->_identityInputNb = inputNbIdentity;
+    localData->_compsNeeded = compsNeeded;
     localData->_validArgs = true;
 }
 

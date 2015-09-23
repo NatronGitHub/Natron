@@ -323,6 +323,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         useImageAsOutput = false;
     }
+    
+    
+    ///Determine needed planes
+    ComponentsNeededMap neededComps;
+    bool processAllComponentsRequested;
+    bool processChannels[4];
+    ComponentsNeededMap::iterator foundOutputNeededComps;
+    
+    {
+        SequenceTime ptTime;
+        int ptView;
+        boost::shared_ptr<Natron::Node> ptInput;
+        getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
+        
+        foundOutputNeededComps = neededComps.find(-1);
+        if ( foundOutputNeededComps == neededComps.end() ) {
+            return eRenderRoIRetCodeOk;
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
@@ -406,7 +425,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
-
+                
+                
+                ///Use the user selected requested components
+                ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
+                if (foundCompsNeeded != neededComps.end()) {
+                    inputArgs.components.clear();
+                    for (std::size_t i = 0; i < foundCompsNeeded->second.size(); ++i) {
+                        if (foundCompsNeeded->second[i].getNumComponents() != 0) {
+                            inputArgs.components.push_back(foundCompsNeeded->second[i]);
+                        }
+                    }
+                }
+                
+                
+                
+                
 
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
             } else {
@@ -426,43 +460,28 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     //Available planes/components is view agnostic
     getComponentsAvailable(args.time, &componentsAvailables);
 
-    ComponentsNeededMap neededComps;
-    bool processAllComponentsRequested;
-    bool processChannels[4];
-    ComponentsNeededMap::iterator foundOutputNeededComps;
-
-    {
-        SequenceTime ptTime;
-        int ptView;
-        boost::shared_ptr<Natron::Node> ptInput;
-        getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
-
-        foundOutputNeededComps = neededComps.find(-1);
-        if ( foundOutputNeededComps == neededComps.end() ) {
-            return eRenderRoIRetCodeOk;
-        }
-
-        if (processAllComponentsRequested) {
-            std::vector<ImageComponents> compVec;
-            for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-                bool found = false;
-                for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
-                    if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
-                        compVec.push_back(*it2);
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    compVec.push_back(*it);
+    
+    if (processAllComponentsRequested) {
+        std::vector<ImageComponents> compVec;
+        for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+            bool found = false;
+            for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
+                if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
+                    compVec.push_back(*it2);
+                    found = true;
+                    break;
                 }
             }
-            for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
-                it->second = compVec;
+            if (!found) {
+                compVec.push_back(*it);
             }
-            //neededComps[-1] = compVec;
         }
+        for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
+            it->second = compVec;
+        }
+        //neededComps[-1] = compVec;
     }
+    
     const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
 
     /*
@@ -506,6 +525,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         NodePtr node = it->second.lock();
         if (node) {
             RenderRoIArgs inArgs = args;
+            inArgs.preComputedRoD.clear();
             inArgs.components.clear();
             inArgs.components.push_back(it->first);
             ImageList inputPlanes;
@@ -1297,6 +1317,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               byPassCache,
                                               outputDepth,
                                               outputClipPrefComps,
+                                              neededComps,
                                               processChannels);
         } // if (hasSomethingToRender) {
 
@@ -1458,6 +1479,7 @@ EffectInstance::renderRoIInternal(double time,
                                   bool byPassCache,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                  const ComponentsNeededMap & compsNeeded,
                                   bool* processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1591,6 +1613,7 @@ EffectInstance::renderRoIInternal(double time,
             tiledArgs.outputClipPrefsComps = outputClipPrefsComps;
             tiledArgs.processChannels = processChannels;
             tiledArgs.planes = planesToRender;
+            tiledArgs.compsNeeded = compsNeeded;
 
 
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
@@ -1633,7 +1656,7 @@ EffectInstance::renderRoIInternal(double time,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) ) {
                     renderStatus = functorRet;

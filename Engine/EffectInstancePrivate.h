@@ -157,6 +157,7 @@ struct EffectInstance::RenderArgs
 
     //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
     ImageComponents _outputPlaneBeingRendered;
+    EffectInstance::ComponentsNeededMap  _compsNeeded;
     double _firstFrame, _lastFrame;
 
     RenderArgs();
@@ -273,18 +274,6 @@ struct EffectInstance::Implementation
 
 public:
 
-        ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
-                         const RoIMap & roiMap,
-                         const RectD & rod,
-                         const RectI & renderWindow,
-                         double time,
-                         int view,
-                         bool isIdentity,
-                         double identityTime,
-                         int inputNbIdentity,
-                         const std::map<ImageComponents, PlaneToRender> & outputPlanes,
-                         double firstFrame,
-                         double lastFrame);
 
         ScopedRenderArgs(ThreadStorage<RenderArgs>* dst);
 
@@ -305,7 +294,8 @@ public:
                                int view,
                                bool isIdentity,
                                double identityTime,
-                               int inputNbIdentity);
+                               int inputNbIdentity,
+                               const EffectInstance::ComponentsNeededMap & compsNeeded);
 
         void setArgs_secondPass(const RoIMap & roiMap,
                                 int firstFrame,

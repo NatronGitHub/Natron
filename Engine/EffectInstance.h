@@ -1193,19 +1193,6 @@ public:
     virtual void restoreClipPreferences();
 
     /**
-     * @brief Returns the current frame this effect is rendering depending
-     * on the state of the renderer. If it is not actively rendering this
-     * node then returns the timeline current time, otherwise the ongoing render
-     * current frame is returned. This function uses thread storage to determine
-     * exactly what writer is actively calling this function.
-     *
-     * WARNING: This is MUCH MORE expensive than calling getApp()->getTimeLine()->currentFrame()
-     * so use with caution when you know you're on a render thread and during an action.
-     **/
-    int getThreadLocalRenderTime() const;
-
-
-    /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
      * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
      * This function is here to update the last render args thread storage.
@@ -1284,6 +1271,8 @@ public:
     bool getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, PlaneToRender >*  planes,
                                       Natron::ImageComponents* planeBeingRendered,
                                       RectI* renderWindow) const;
+
+    bool getThreadLocalNeedeComponents(EffectInstance::ComponentsNeededMap* neededComps) const;
 
     /**
      * @brief Called when the associated node's hash has changed.
@@ -1651,6 +1640,7 @@ private:
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                          const ComponentsNeededMap & compsNeeded,
                                           bool* processChannels);
 
 
@@ -1748,6 +1738,7 @@ private:
         int view;
         double par;
         Natron::ImageBitDepthEnum outputClipPrefDepth;
+        ComponentsNeededMap  compsNeeded;
         std::list<Natron::ImageComponents> outputClipPrefsComps;
         bool byPassCache;
         bool* processChannels;
@@ -1776,6 +1767,7 @@ private:
                                                   bool byPassCache,
                                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                                  const ComponentsNeededMap & compsNeeded,
                                                   bool* processChannels,
                                                   ImagePlanesToRender & planes);
 

@@ -1665,6 +1665,7 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs & args,
                                  args.byPassCache,
                                  args.outputClipPrefDepth,
                                  args.outputClipPrefsComps,
+                                 args.compsNeeded,
                                  args.processChannels,
                                  args.planes);
 }
@@ -1690,6 +1691,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       bool byPassCache,
                                       Natron::ImageBitDepthEnum outputClipPrefDepth,
                                       const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                      const ComponentsNeededMap & compsNeeded,
                                       bool* processChannels,
                                       ImagePlanesToRender & planes) // when MT, planes is a copy so there's is no data race
 {
@@ -1824,7 +1826,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                  view,
                                  false, //< if we reached here the node is not an identity!
                                  0.,
-                                 -1);
+                                 -1,
+                                 compsNeeded);
 
 
     ///The scoped args will maintain the args set for this thread during the
@@ -3735,7 +3738,11 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             EffectInstance* input = getInput(i);
-            if (input) {
+            bool isRotoInput = isInputRotoBrush(i);
+            if (isRotoInput) {
+                ///Copy for the roto input the output needed comps
+                comps->insert(std::make_pair(i, comps->at(-1)));
+            } else if (input) {
                 std::vector<ImageComponents> compVec;
                 bool inputProcChannels[4];
                 ImageComponents layer;
@@ -3802,25 +3809,6 @@ EffectInstance::onKnobValueChanged(KnobI* /*k*/,
 {
 }
 
-int
-EffectInstance::getThreadLocalRenderTime() const
-{
-    if ( _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            return args._time;
-        }
-    }
-
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.time;
-        }
-    }
-
-    return getApp()->getTimeLine()->currentFrame();
-}
 
 bool
 EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, PlaneToRender> *outputPlanes,
@@ -3839,6 +3827,21 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, P
         }
     }
 
+    return false;
+}
+
+bool
+EffectInstance::getThreadLocalNeedeComponents(EffectInstance::ComponentsNeededMap* neededComps) const
+{
+    if ( _imp->renderArgs.hasLocalData() ) {
+        const RenderArgs & args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            assert( !args._outputPlanes.empty() );
+            *neededComps = args._compsNeeded;
+            return true;
+        }
+    }
+    
     return false;
 }
 
@@ -4238,7 +4241,21 @@ EffectInstance::abortAnyEvaluation()
 double
 EffectInstance::getCurrentTime() const
 {
-    return getThreadLocalRenderTime();
+    if ( _imp->renderArgs.hasLocalData() ) {
+        const RenderArgs & args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            return args._time;
+        }
+    }
+    
+    if ( _imp->frameRenderArgs.hasLocalData() ) {
+        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.time;
+        }
+    }
+    
+    return getApp()->getTimeLine()->currentFrame();
 }
 
 int
