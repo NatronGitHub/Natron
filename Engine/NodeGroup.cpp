@@ -2611,9 +2611,12 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     exportGroupInternal(1, this, "group", ts);
     
     ///Import user hand-written code
-    WRITE_INDENT(1);WRITE_STRING("extModule = sys.modules[" + ESC(extModule) + "]");
+    WRITE_INDENT(1);WRITE_STATIC_LINE("try:");
+    WRITE_INDENT(2);WRITE_STRING("extModule = sys.modules[" + ESC(extModule) + "]");
+    WRITE_INDENT(1);WRITE_STATIC_LINE("except KeyError:");
+    WRITE_INDENT(2);WRITE_STATIC_LINE("extModule = None");
     
-    QString testAttr = QString("if hasattr(extModule ,\"createInstanceExt\") and hasattr(extModule.createInstanceExt,\"__call__\"):").arg(extModule);
+    QString testAttr("if extModule is not None and hasattr(extModule ,\"createInstanceExt\") and hasattr(extModule.createInstanceExt,\"__call__\"):");
     WRITE_INDENT(1);WRITE_STRING(testAttr);
     WRITE_INDENT(2);WRITE_STRING("extModule.createInstanceExt(app,group)");
 }
