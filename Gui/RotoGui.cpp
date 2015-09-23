@@ -1064,6 +1064,8 @@ RotoGui::RotoGui(NodeGui* node,
     QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
     QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
     QObject::connect( _imp->context.get(), SIGNAL( breakMultiStroke() ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect (_imp->viewerTab->getGui()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
+                      SLOT(onTimelineTimeChanged()));;
     restoreSelectionFromContext();
 }
 
@@ -3308,6 +3310,22 @@ RotoGui::penUp(double /*time*/,
 }
 
 void
+RotoGui::onTimelineTimeChanged()
+{
+    if (_imp->selectedTool == eRotoToolBlur ||
+        _imp->selectedTool == eRotoToolBurn ||
+        _imp->selectedTool == eRotoToolDodge ||
+        _imp->selectedTool == eRotoToolClone ||
+        _imp->selectedTool == eRotoToolEraserBrush ||
+        _imp->selectedTool == eRotoToolSolidBrush ||
+        _imp->selectedTool == eRotoToolReveal ||
+        _imp->selectedTool == eRotoToolSmear ||
+        _imp->selectedTool == eRotoToolSharpen) {
+        _imp->makeStroke(true, RotoPoint());
+    }
+}
+
+void
 RotoGui::onBreakMultiStrokeTriggered()
 {
     _imp->makeStroke(true, RotoPoint());
@@ -3361,6 +3379,14 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     }
     
     if (prepareForLater || !rotoData->strokeBeingPaint) {
+        
+        if (rotoData->strokeBeingPaint &&
+            rotoData->strokeBeingPaint->getBrushType() == strokeType &&
+            rotoData->strokeBeingPaint->isEmpty()) {
+            ///We already have a fresh stroke prepared for that type
+            return;
+        }
+            
         std::string name = context->generateUniqueName(itemName);
         rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
         rotoData->strokeBeingPaint->createNodes(false);

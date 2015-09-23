@@ -1183,9 +1183,11 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>&
         return;
     }
 
+    bool hasChanged = false;
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneGuiCurves[i]) {
+            hasChanged = true;
             boost::shared_ptr<Curve> curve = getCurve(i);
             assert(curve);
             boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(i);
@@ -1196,7 +1198,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>&
             modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonUserEdited));
         }
     }
-    if (_imp->holder) {
+    if (hasChanged && _imp->holder) {
         _imp->holder->updateHasAnimation();
     }
 }

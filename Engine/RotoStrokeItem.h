@@ -115,6 +115,8 @@ public:
     
     Natron::RotoStrokeType getBrushType() const;
     
+    bool isEmpty() const;
+    
     /**
      * @brief Appends to the paint stroke the raw points list.
      * @returns True if the number of points is > 1
