@@ -366,7 +366,6 @@ static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& ro
 class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
 {
     NodePtr rotoNode;
-    NodeList rotoPaintNodes;
     NodePtr viewerNode;
     NodePtr viewerInputNode;
 public:
@@ -384,46 +383,15 @@ public:
                                    const TimeLine* timeline,
                                    bool isAnalysis,
                                    const NodePtr& rotoPaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                    const NodePtr& viewerInput,
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
     : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
-    , rotoPaintNodes()
     , viewerNode(treeRoot)
     , viewerInputNode()
     {
-        if (rotoNode) {
-            if (activeStroke) {
-                Natron::EffectInstance* rotoLive = rotoNode->getLiveInstance();
-                assert(rotoLive);
-                bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
-                assert(ok);
-                if (!ok) {
-                    throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
-                }
-                
-                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
-                RectD wholeStrokeRod;
-                RectD lastStrokeBbox;
-                int lastAge,newAge;
-                NodePtr mergeNode = activeStroke->getMergeNode();
-                lastAge = mergeNode->getStrokeImageAge();
-                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge)) {
-                   
-                    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                        if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox);
-                        }
-                    }
-                    updateLastStrokeDataRecursively(viewerNode.get(), rotoPaintNode, lastStrokeBbox, false);
-                } else {
-                    rotoNode.reset();
-                }
-            }
-        }
         
         ///There can be a case where the viewer input tree does not belong to the project, for example
         ///for the File Dialog preview.
@@ -454,9 +422,6 @@ public:
     virtual ~ViewerParallelRenderArgsSetter()
     {
         if (rotoNode) {
-            for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-            }
             updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
         }
         if (viewerInputNode) {
@@ -523,6 +488,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             continue;
         }*/
         
+       
+        
         ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
                                            time,
                                            view,
@@ -536,13 +503,43 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            getTimeline().get(),
                                            false,
                                            rotoPaintNode,
-                                           activeStroke,
                                            NodePtr(),
                                            false,
                                            false,
                                            stats);
         
-        
+        NodeList rotoPaintNodes;
+        if (rotoPaintNode) {
+            if (activeStroke) {
+                Natron::EffectInstance* rotoLive = rotoPaintNode->getLiveInstance();
+                assert(rotoLive);
+                bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
+                assert(ok);
+                if (!ok) {
+                    throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
+                }
+                
+                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+                RectD wholeStrokeRod;
+                RectD lastStrokeBbox;
+                int lastAge,newAge;
+                NodePtr mergeNode = activeStroke->getMergeNode();
+                lastAge = mergeNode->getStrokeImageAge();
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge)) {
+                    
+                    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                        if ((*it)->getAttachedRotoItem() == activeStroke) {
+                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox);
+                        }
+                    }
+                    updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
+                } else {
+                    ///The drawing is already up to date: all changes have been taken into account for this event
+                    args[i].reset();
+                    return eStatusReplyDefault;
+                }
+            }
+        }
 
         status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
         
@@ -1173,7 +1170,6 @@ ViewerInstance::renderViewer_internal(int view,
                                                            getTimeline().get(),
                                                            false,
                                                            rotoPaintNode,
-                                                           boost::shared_ptr<RotoStrokeItem>(),
                                                            inArgs.activeInputToRender->getNode(),
                                                            inArgs.draftModeEnabled,
                                                            tilingProgressReportPrefEnabled,

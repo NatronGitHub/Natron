@@ -645,13 +645,14 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
     std::advance(xIt, lastAge);
     std::advance(yIt, lastAge);
     std::advance(pIt, lastAge);
-    
     *newAge = (int)xCurve.size() - 1;
     
-    for (; xIt != xCurve.end(); ++xIt,++yIt,++pIt) {
-        realX.insert(*xIt);
-        realY.insert(*yIt);
-        realP.insert(*pIt);
+    if (lastAge != (int)(xCurve.size() -1)) {
+        for (; xIt != xCurve.end(); ++xIt,++yIt,++pIt) {
+            realX.insert(*xIt);
+            realY.insert(*yIt);
+            realP.insert(*pIt);
+        }
     }
     
     if (realX.empty()) {
