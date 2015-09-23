@@ -205,7 +205,7 @@ unix {
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
          LIBS += -ldl
-         #QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
+         QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          cairo:     PKGCONFIG += cairo
      }
