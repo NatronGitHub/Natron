@@ -2371,7 +2371,7 @@ Node::makeInfoForInput(int inputNumber) const
     }
 
     if (!inputNode) {
-        return inputName + ": disconnected";
+        return "";
     }
     
     std::list<Natron::ImageComponents> comps;
@@ -2790,6 +2790,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 inputInfo->setAnimationEnabled(false);
                 inputInfo->setIsPersistant(false);
                 inputInfo->setEvaluateOnChange(false);
+                inputInfo->setSecretByDefault(true);
                 inputInfo->hideDescription();
                 inputInfo->setAsLabel();
                 _imp->inputFormats.push_back(inputInfo);
@@ -5652,8 +5653,18 @@ Node::onEffectKnobValueChanged(KnobI* what,
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
-            if (i < (int)_imp->inputFormats.size() && _imp->inputFormats[i].lock()) {
-                _imp->inputFormats[i].lock()->setValue(inputInfo, 0);
+            boost::shared_ptr<KnobString> strKnob = _imp->inputFormats[i].lock();
+            if (i < (int)_imp->inputFormats.size() && strKnob) {
+                if (inputInfo.empty()) {
+                    if (!strKnob->getIsSecret()) {
+                        strKnob->setSecret(true);
+                    }
+                } else {
+                    if (strKnob->getIsSecret()) {
+                        strKnob->setSecret(false);
+                    }
+                    strKnob->setValue(inputInfo, 0);
+                }
             }
         }
         std::string outputInfo = makeInfoForInput(-1);
