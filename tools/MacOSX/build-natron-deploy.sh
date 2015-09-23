@@ -44,28 +44,28 @@ if [ ! -x "$binary" ]; then
 fi
 
 #Copy and change exec_path of the whole Python framework with libraries
-rm -rf "$pkgdir/Python.framework"
-mkdir -p "$pkgdir/Python.framework/Versions/${PYVER}/lib"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "$pkgdir/Python.framework/Versions/${PYVER}/lib/python${PYVER}" || exit 1
-rm -rf "$pkgdir/Python.framework/Versions/${PYVER}/Resources"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "$pkgdir/Python.framework/Versions/${PYVER}/Resources" || exit 1
-rm -rf "$pkgdir/Python.framework/Versions/${PYVER}/Python"
-cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkgdir/Python.framework/Versions/${PYVER}/Python" || exit 1
-chmod 755 "$pkgdir/Python.framework/Versions/${PYVER}/Python"
-install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkgdir/Python.framework/Versions/${PYVER}/Python"
-ln -sf "Versions/${PYVER}/Python" "$pkgdir/Python.framework/Python" || exit 1
+rm -rf "$pkglib/Python.framework"
+mkdir -p "$pkglib/Python.framework/Versions/${PYVER}/lib"
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}" || exit 1
+rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Resources"
+cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "$pkglib/Python.framework/Versions/${PYVER}/Resources" || exit 1
+rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Python"
+cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python" || exit 1
+chmod 755 "$pkglib/Python.framework/Versions/${PYVER}/Python"
+install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
+ln -sf "Versions/${PYVER}/Python" "$pkglib/Python.framework/Python" || exit 1
 
-rm -rf "$pkgdir/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/"*
-#rm -rf "$pkgdir/Python.framework/Versions/${PYVER}/lib/python${PYVER}/__pycache__"
-#rm -rf "$pkgdir/Python.framework/Versions/${PYVER}/lib/python${PYVER}/*/__pycache__"
+rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/"*
+#rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/__pycache__"
+#rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/*/__pycache__"
 #FILES=`ls -l "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib|awk" '{print $9}'`
 #for f in FILES; do
 #    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
-#    cp -r "$f" "$pkgdir/Python.framework/Versions/${PYVER}/lib/$FILE" || exit 1
+#    cp -r "$f" "$pkglib/Python.framework/Versions/${PYVER}/lib/$FILE" || exit 1
 #done
 
 # a few elements of Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload may load other libraries
-DYNLOAD="$pkgdir/Python.framework/Versions/${PYVER}/lib/python${PYVER}/lib-dynload"
+DYNLOAD="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/lib-dynload"
 if [ ! -d "${DYNLOAD}" ]; then
     echo "lib-dynload not present"
     exit 1
@@ -76,8 +76,8 @@ for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; 
         exit 1
     fi
     lib=`echo $mplib | awk -F / '{print $NF}'`
-    if [ ! -f "$pkgdir/${lib}" ]; then
-        cp "$mplib" "$pkgdir/${lib}"
+    if [ ! -f "$pkglib/${lib}" ]; then
+        cp "$mplib" "$pkglib/${lib}"
     fi
     for deplib in "${DYNLOAD}"/*.so; do
         install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
@@ -93,20 +93,20 @@ fi
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
-        cp "${MACPORTS}/lib/libgcc/$lib" "$pkgdir/$lib"
-        install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkgdir/$lib"
+        cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
+        install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     done
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
         install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-        for deplib in "$pkgdir/"*.dylib; do
+        for deplib in "$pkglib/"*.dylib; do
             install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
         done
     done
     # use gcc's libraries everywhere
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib="lib${l}.dylib"
-        for deplib in "$pkgdir/"*.framework/Versions/*/* "$pkgdir/"lib*.dylib; do
+        for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
             test -f "$deplib" && install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
         done
     done
