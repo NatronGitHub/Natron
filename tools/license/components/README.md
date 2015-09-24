@@ -1,6 +1,10 @@
 Natron binaries include components from the following libraries:
 
+## Main components
+
 * Python (Modified BSD) https://www.python.org/download/releases/2.7/license/
+* PySide (LGPL 2.1) https://wiki.qt.io/About_PySide
+* libshiboken (LGPL 2.1) https://github.com/qtproject/pyside-shiboken
 * Qt (LGPL 2.1 with Qt LGPL Exception) http://doc.qt.io/qt-4.8/lgpl.html
 * GLEW (Modified BSD) http://glew.sourceforge.net/credits.html
 * Boost (Boost Software License) http://www.boost.org/users/license.html
@@ -9,13 +13,16 @@ Natron binaries include components from the following libraries:
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc
 * openfx-arena (GPLv2) https://github.com/olear/openfx-arena
-* TinyXML http://www.sourceforge.net/projects/tinyxml (used by OpenColorIO)
-* Pango (used by openfx-arena via ImageMagick)
-* FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by Cairo, openfx-arena, ImageMagick and OpenImageIO)
-* fontconfig (Modified BSD) http://www.freedesktop.org/wiki/Software/fontconfig/ (used by openfx-arena and ImageMagick)
+
+## Dependencies
+
+* TinyXML (libpng/zlib license) http://www.sourceforge.net/projects/tinyxml (used by openfx-io via OpenColorIO)
+* Pango (LGPL 2.1) http://www.pango.org/ (used by openfx-arena via ImageMagick)
+* FreeType (Modified BSD) http://git.savannah.gnu.org/cgit/freetype/freetype2.git/plain/docs/FTL.TXT (used by Natron, openfx-io and openfx-arena via Cairo, ImageMagick and OpenImageIO)
+* fontconfig (Modified BSD) http://www.freedesktop.org/wiki/Software/fontconfig/ (used by openfx-arena via ImageMagick)
 * FFmpeg (LGPL 2.1) https://www.ffmpeg.org/legal.html (used by openfx-io)
 * SeExpr (modified Apache 2.0) http://www.disneyanimation.com/technology/seexpr.html (used by openfx-io)
-* OpenColorIO (Modified BSD) http://opencolorio.org/License.html (used by openfx-io and OpenImageIO) 
+* OpenColorIO (Modified BSD) http://opencolorio.org/License.html (used by openfx-io via OpenImageIO) 
 * OpenImageIO (Modified BSD) https://openimageio.org (used by openfx-io) 
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx)
 * librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg (used by openfx-arena via ImageMagick)
@@ -31,42 +38,34 @@ Natron binaries include components from the following libraries:
 * GIFLIB (X Consortium-like licence) http://giflib.sourceforge.net (used by openfx-io via OpenImageIO)
 * LibRaw (LGPL 2.1 or CDDL 1.0 license) http://www.libraw.org (used by openfx-io via OpenImageIO)
 * x264 (GPLv2) http://www.videolan.org/developers/x264.html (used by openfx-io via FFmpeg)
-* bzip2 (Modified BSD) http://www.bzip.org (used by FreeType and FFmpeg) 
+* bzip2 (Modified BSD) http://www.bzip.org (used by Natron, openfx-io and openfx-arena via FreeType and FFmpeg) 
 * libxml (MIT) http://www.xmlsoft.org/(used by openfx-arena via ImageMagick via librsvg)
-* Pixman (MIT) http://www.pixman.org/ (used by Cairo)
+* Pixman (MIT) http://www.pixman.org/ (used by Natron via Cairo)
 * libmng (libpng/zlib License) http://www.libpng.org/pub/mng/ (used by Qt)
-* zlib (libpng/zlib License) http://www.zlib.net/ (used by OpenEXR, OpenImageIO, FFmpeg, Cairo, Freetype, libcrypto, libgio, libmng, libpng, OpenSSL, libtiff, libxml)
-* OpenSSL (Apache 1.0 and 4-clause BSD) http://www.openssl.org (used by Qt and Python)
+* OpenSSL (Apache 1.0 or 4-clause BSD) http://www.openssl.org (used by Qt and Python)
 * gdk_pixbuf (LGPL 2.1) https://developer.gnome.org/gdk-pixbuf/stable/ (used by openfx-arena via librsvg)
-* Little CMS (MIT) http://www.littlecms.com/ (used by libmng and LibRaw)
-* JasPer (MIT) http://www.ece.uvic.ca/~frodo/jasper/ (used by LibRaw)
-* libcroco (LGPL 2.1) https://github.com/GNOME/libcroco (used by librsvg)
-* GLib (LGPL 2.1) http://www.gtk.org (used by libcroco, harfbuzz, Pango, librsvg)
+* Little CMS (MIT) http://www.littlecms.com/ (used by Qt and openfx-io via libmng and LibRaw)
+* JasPer (MIT) http://www.ece.uvic.ca/~frodo/jasper/ (used by openfx-io via LibRaw)
+* libcroco (LGPL 2.1) https://github.com/GNOME/libcroco (used by openfx-arena via librsvg)
+* GLib (LGPL 2.1) http://www.gtk.org (used by openfx-arena via libcroco, harfbuzz, Pango, librsvg)
 * Berkeley DB (AGPLv3) http://www.oracle.com/us/products/database/berkeley-db (used by Python)
-* HarfBuzz (MIT) http://www.freedesktop.org/wiki/Software/HarfBuzz/ (used by Qt and Pango)
-
-libedit.0.dylib
-libffi.6.dylib
-libgraphite2.3.dylib
-libiconv.2.dylib
-libicudata.55.dylib
-libicui18n.55.dylib
-libicuuc.55.dylib
-libintl.8.dylib
-liblzma.5.dylib
-libmodplug.1.dylib
-libmp3lame.0.dylib
-libncurses.6.dylib
-libogg.0.dylib
-libopus.0.dylib
-liborc-0.4.0.dylib
-libpanel.6.dylib
-libpyside-python2.7.1.2.dylib
-libschroedinger-1.0.0.dylib
-libshiboken-python2.7.1.2.dylib
-libspeex.1.dylib
-libsqlite3.0.dylib
-libtheoradec.1.dylib
-libtheoraenc.1.dylib
-libvorbis.0.dylib
-libvorbisenc.2.dylib
+* HarfBuzz (MIT) http://www.freedesktop.org/wiki/Software/HarfBuzz/ (used by Qt and openfx-arena via Pango)
+* libedit (BSD) http://thrysoee.dk/editline/ (used by Python)
+* libffi (MIT) https://sourceware.org/libffi/ (used Python and openfx-arena via GLib)
+* ICU (MIT) http://www.icu-project.org/ (used by Boost)
+* Graphite (LGPL 2.1) http://graphite.sil.org (used by openfx-arena via HarfBuzz)
+* liblzma (Public Domain) http://tukaani.org/xz/ (used by openfx-io and openfx-arena via FFmpeg and libxml)
+* libogg (3-clause BSD) https://xiph.org/ogg/ (used by openfx-io via FFmpeg)
+* libvorbis (3-clause BSD) https://xiph.org/vorbis/ (used by openfx-io via FFmpeg)
+* libtheora (3-clause BSD) http://www.theora.org/ (used by openfx-io via FFmpeg)
+* libspeex (3-clause BSD) http://www.speex.org/ (used by openfx-io via FFmpeg)
+* libopus (3-clause BSD) http://opus-codec.org/ (used by openfx-io via FFmpeg)
+* zlib (libpng/zlib License) http://www.zlib.net/
+* libiconv (LGPL 2.1) https://www.gnu.org/software/libiconv/
+* libintl (LGPL 2.1) https://www.gnu.org/software/gettext/
+* ncurses (LGPL 2.1) https://www.gnu.org/software/ncurses/
+* libmodplug (Public Domain) http://modplug-xmms.sourceforge.net/ (used by openfx-io via FFmpeg)
+* libmp3lame (LGPL 2.1) http://lame.sourceforge.net/ (used by openfx-io via FFmpeg)
+* orc (BSD) http://code.entropywave.com/orc/ (used by openfx-io via FFmpeg and schroedinger)
+* Schroedinger (MIT) http://diracvideo.org/ (used by openfx-io via FFmpeg)
+* SQLite (Public Domain) https://www.sqlite.org/ (used by Python)
