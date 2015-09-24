@@ -34,6 +34,8 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QNetworkReply>
 CLANG_DIAG_ON(deprecated-register)
 
+class QTimer;
+
 /**
    Usage:
    Load Pixmap from URL
@@ -61,7 +63,8 @@ class FileDownloader
     Q_OBJECT
 
 public:
-    explicit FileDownloader(QUrl imageUrl,
+    explicit FileDownloader(const QUrl &imageUrl,
+                            bool useNetworkCache,
                             QObject *parent = 0);
 
     virtual ~FileDownloader();
@@ -78,12 +81,15 @@ Q_SIGNALS:
 public Q_SLOTS:
 
     void fileDownloaded(QNetworkReply* pReply);
-
+    void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void onTimerTimeout();
+    
 private:
 
     QNetworkReply* m_reply;
     QNetworkAccessManager m_WebCtrl;
     QByteArray m_DownloadedData;
+    QTimer* m_timer;
 };
 
 #endif // FILEDOWNLOADER_H

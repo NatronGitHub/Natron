@@ -155,7 +155,7 @@ AppInstance::isCreatingNode() const
 void
 AppInstance::checkForNewVersion() const
 {
-    FileDownloader* downloader = new FileDownloader( QUrl(NATRON_LAST_VERSION_URL) );
+    FileDownloader* downloader = new FileDownloader( QUrl(NATRON_LAST_VERSION_URL), false );
     QObject::connect( downloader, SIGNAL( downloaded() ), this, SLOT( newVersionCheckDownloaded() ) );
     QObject::connect( downloader, SIGNAL( error() ), this, SLOT( newVersionCheckError() ) );
 

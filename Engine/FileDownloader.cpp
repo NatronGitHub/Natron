@@ -23,23 +23,44 @@
 // ***** END PYTHON BLOCK *****
 
 #include "FileDownloader.h"
+#include <cassert>
+#include <QTimer>
+#include <QAbstractNetworkCache>
 
+#define NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS 5000
 
-FileDownloader::FileDownloader(QUrl imageUrl,
+FileDownloader::FileDownloader(const QUrl& imageUrl,
+                               bool useNetworkCache,
                                QObject *parent)
     : QObject(parent)
-      , m_reply(0)
+    , m_reply(0)
+    , m_timer(0)
 {
+    m_timer = new QTimer();
+    m_timer->setInterval(NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS);
+    QObject::connect(m_timer, SIGNAL(timeout()), this, SLOT(onTimerTimeout()));
+    
     connect( &m_WebCtrl, SIGNAL( finished(QNetworkReply*) ),
              SLOT( fileDownloaded(QNetworkReply*) ) );
-
+    
     QNetworkRequest request(imageUrl);
+    if (!useNetworkCache) {
+        request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork);
+    }
+    
     m_reply = m_WebCtrl.get(request);
+    m_timer->start();
     QObject::connect( m_reply,SIGNAL( error(QNetworkReply::NetworkError) ),this,SIGNAL( error() ) );
+    QObject::connect( m_reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(onDownloadProgress(qint64, qint64)));
+    
 }
 
 FileDownloader::~FileDownloader()
 {
+    delete m_timer;
+    if (m_reply) {
+        m_reply->deleteLater();
+    }
 }
 
 QNetworkReply*
@@ -49,11 +70,25 @@ FileDownloader::getReply() const
 }
 
 void
+FileDownloader::onTimerTimeout()
+{
+    if (m_reply) {
+        m_reply->abort();
+    }
+}
+
+void
+FileDownloader::onDownloadProgress(qint64 /*bytesReceived*/, qint64 /*bytesTotal*/)
+{
+    assert(m_timer);
+    m_timer->stop();
+    m_timer->start();
+}
+
+void
 FileDownloader::fileDownloaded(QNetworkReply* pReply)
 {
     m_DownloadedData = pReply->readAll();
-    //Q_EMIT a signal
-    pReply->deleteLater();
     Q_EMIT downloaded();
 }
 
