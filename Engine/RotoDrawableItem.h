@@ -249,7 +249,6 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     
-    void onRotoOutputChannelsChanged();
     void onRotoKnobChanged(int,int);
     
 protected:

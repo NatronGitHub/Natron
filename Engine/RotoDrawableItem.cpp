@@ -166,13 +166,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
-    boost::shared_ptr<KnobI> outputChansKnob = context->getNode()->getKnobByName(kOutputChannelsKnobName);
-    assert(outputChansKnob);
-    QObject::connect(outputChansKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoOutputChannelsChanged()));
+    boost::shared_ptr<Natron::Node> node = context->getNode();
+  
     
-    
-    AppInstance* app = context->getNode()->getApp();
-    QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
+    AppInstance* app = node->getApp();
+    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
     fixedNamePrefix.append('_');
     fixedNamePrefix.append(getScriptName().c_str());
     fixedNamePrefix.append('_');
@@ -306,7 +304,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
                 
                 //Connect this rotopaint node as a mask
-                ok = _imp->mergeNode->connectInput(context->getNode(), i);
+                ok = _imp->mergeNode->connectInput(node, i);
                 assert(ok);
                 break;
             }
@@ -365,7 +363,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     
-    onRotoOutputChannelsChanged();
     
     if (connectNodes) {
         refreshNodesConnections();
@@ -426,70 +423,6 @@ RotoDrawableItem::activateNodes()
     }
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->activate(std::list< Node* >(),false,false);
-    }
-}
-
-
-void
-RotoDrawableItem::onRotoOutputChannelsChanged()
-{
-    
-    boost::shared_ptr<KnobI> outputChansKnob = getContext()->getNode()->getKnobByName(kOutputChannelsKnobName);
-    assert(outputChansKnob);
-    KnobChoice* outputChannels = dynamic_cast<KnobChoice*>(outputChansKnob.get());
-    assert(outputChannels);
-    
-    int outputchans_i = outputChannels->getValue();
-    std::string rotopaintOutputChannels;
-    std::vector<std::string> rotoPaintchannelEntries = outputChannels->getEntries_mt_safe();
-    if (outputchans_i  < (int)rotoPaintchannelEntries.size()) {
-        rotopaintOutputChannels = rotoPaintchannelEntries[outputchans_i];
-    }
-    if (rotopaintOutputChannels.empty()) {
-        return;
-    }
-    
-    std::list<Node*> nodes;
-    if (_imp->mergeNode) {
-        nodes.push_back(_imp->mergeNode.get());
-    }
-    if (_imp->effectNode) {
-        nodes.push_back(_imp->effectNode.get());
-    }
-    if (_imp->timeOffsetNode) {
-        nodes.push_back(_imp->timeOffsetNode.get());
-    }
-    if (_imp->frameHoldNode) {
-        nodes.push_back(_imp->frameHoldNode.get());
-    }
-    for (std::list<Node*>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        
-        std::list<KnobI*> knobs;
-        boost::shared_ptr<KnobI> channelsKnob = (*it)->getKnobByName(kOutputChannelsKnobName);
-        if (channelsKnob) {
-            knobs.push_back(channelsKnob.get());
-        }
-        boost::shared_ptr<KnobI> aChans = (*it)->getKnobByName("A_channels");
-        if (aChans) {
-            knobs.push_back(aChans.get());
-        }
-        boost::shared_ptr<KnobI> bChans = (*it)->getKnobByName("B_channels");
-        if (bChans) {
-            knobs.push_back(bChans.get());
-        }
-        for (std::list<KnobI*>::iterator it = knobs.begin(); it!=knobs.end();++it) {
-            KnobChoice* nodeChannels = dynamic_cast<KnobChoice*>(*it);
-            if (nodeChannels) {
-                std::vector<std::string> entries = nodeChannels->getEntries_mt_safe();
-                for (std::size_t i = 0; i < entries.size(); ++i) {
-                    if (entries[i] == rotopaintOutputChannels) {
-                        nodeChannels->setValue(i, 0);
-                        break;
-                    }
-                }
-                
-            }
-        }
     }
 }
 
@@ -777,23 +710,32 @@ RotoDrawableItem::refreshNodesConnections()
         type = eRotoStrokeTypeSolid;
     }
     
-    if (_imp->effectNode && type != eRotoStrokeTypeEraser) {
+    if (_imp->effectNode &&
+        type != eRotoStrokeTypeEraser) {
         
+        /*
+         Tree for this effect goes like this:
+                  Effect - <Optional Time Node>------- Reveal input (Reveal/Clone) or Upstream Node otherwise
+                /
+         Merge
+                \--------------------------------------Upstream Node
+         
+         */
         
-        boost::shared_ptr<Natron::Node> mergeInput;
+        boost::shared_ptr<Natron::Node> effectInput;
         if (!_imp->timeOffsetNode) {
-            mergeInput = _imp->effectNode;
+            effectInput = _imp->effectNode;
         } else {
             double timeOffsetMode_i = _imp->timeOffsetMode->getValue();
             if (timeOffsetMode_i == 0) {
                 //relative
-                mergeInput = _imp->timeOffsetNode;
+                effectInput = _imp->timeOffsetNode;
             } else {
-                mergeInput = _imp->frameHoldNode;
+                effectInput = _imp->frameHoldNode;
             }
-            if (_imp->effectNode->getInput(0) != mergeInput) {
+            if (_imp->effectNode->getInput(0) != effectInput) {
                 _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(mergeInput, 0);
+                _imp->effectNode->connectInputBase(effectInput, 0);
                 connectionChanged = true;
             }
         }
@@ -819,8 +761,7 @@ RotoDrawableItem::refreshNodesConnections()
         boost::shared_ptr<Node> revealInput;
         bool shouldUseUpstreamForReveal = true;
         if ((type == eRotoStrokeTypeReveal ||
-             type == eRotoStrokeTypeClone ||
-             type == eRotoStrokeTypeEraser) && reveal_i > 0) {
+             type == eRotoStrokeTypeClone) && reveal_i > 0) {
             shouldUseUpstreamForReveal = false;
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
@@ -832,21 +773,35 @@ RotoDrawableItem::refreshNodesConnections()
         }
         
         if (revealInput) {
-            if (mergeInput->getInput(0) != revealInput) {
-                mergeInput->disconnectInput(0);
-                mergeInput->connectInputBase(revealInput, 0);
+            if (effectInput->getInput(0) != revealInput) {
+                effectInput->disconnectInput(0);
+                effectInput->connectInputBase(revealInput, 0);
                 connectionChanged = true;
             }
         } else {
-            if (mergeInput->getInput(0)) {
-                mergeInput->disconnectInput(0);
+            if (effectInput->getInput(0)) {
+                effectInput->disconnectInput(0);
                 connectionChanged = true;
             }
             
         }
     } else {
+        assert(type == eRotoStrokeTypeEraser ||
+               type == eRotoStrokeTypeDodge ||
+               type == eRotoStrokeTypeBurn);
+        
         
         if (type == eRotoStrokeTypeEraser) {
+            
+            /*
+             Tree for this effect goes like this:
+                    Constant or RotoPaint bg input
+                    /
+             Merge
+                    \--------------------Upstream Node
+             
+             */
+
             
             boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
             if (_imp->mergeNode->getInput(1) != eraserInput) {
@@ -866,30 +821,17 @@ RotoDrawableItem::refreshNodesConnections()
                 connectionChanged = true;
             }
             
-        } else if (type == eRotoStrokeTypeReveal) {
+        }  else if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
             
-            int reveal_i = _imp->sourceColor->getValue();
-            
-            boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-            
-            if (_imp->mergeNode->getInput(1) != revealInput) {
-                _imp->mergeNode->disconnectInput(1);
-                if (revealInput) {
-                    _imp->mergeNode->connectInputBase(revealInput, 1); // A
-                }
-                connectionChanged = true;
-            }
-            
-            
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-                connectionChanged = true;
-            }
-            
-        } else if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
+            /*
+             Tree for this effect goes like this:
+                            Upstream Node
+                            /
+             Merge (Dodge/Burn)
+                            \Upstream Node
+             
+             */
+
             
             if (_imp->mergeNode->getInput(1) != upstreamNode) {
                 _imp->mergeNode->disconnectInput(1);
@@ -912,7 +854,8 @@ RotoDrawableItem::refreshNodesConnections()
             //unhandled case
             assert(false);
         }
-    }
+    } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
+    
     if (connectionChanged && (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal)) {
         resetCloneTransformCenter();
     }

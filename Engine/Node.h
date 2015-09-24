@@ -70,6 +70,7 @@ class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
 class OverlaySupport;
+class KnobChoice;
 class KnobDouble;
 class NodeGuiI;
 class RotoContext;
@@ -1011,6 +1012,8 @@ public:
     void refreshChannelSelectors(bool setValues);
     
     bool getProcessChannel(int channelIndex) const;
+    
+    boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
     
     bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
     

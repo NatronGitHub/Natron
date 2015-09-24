@@ -2575,23 +2575,26 @@ Node::initializeKnobs(int renderScaleSupportPref)
             
             if (useChannels) {
                 
-                
-                //There are a A and B inputs and the plug-in is not multi-planar, propose 2 layer selectors for the inputs.
-                for (int i = 0; i < inputsCount; ++i) {
-                    if (!hasMaskChannelSelector[i]) {
-                        _imp->createChannelSelector(i,inputLabels[i], false, mainPage);
-                    }
+                bool useSelectors = !dynamic_cast<RotoPaint*>(_imp->liveInstance.get());
+                if (useSelectors) {
                     
+                    //There are a A and B inputs and the plug-in is not multi-planar, propose 2 layer selectors for the inputs.
+                    for (int i = 0; i < inputsCount; ++i) {
+                        if (!hasMaskChannelSelector[i]) {
+                            _imp->createChannelSelector(i,inputLabels[i], false, mainPage);
+                        }
+                        
+                    }
+                    _imp->createChannelSelector(-1, "Output", true, mainPage);
                 }
-                _imp->createChannelSelector(-1, "Output", true, mainPage);
-                
-                //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
-                std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
-                std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
-                std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
-                
-                
-                bool pluginDefaultPref[4];
+                    
+                    //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
+                    std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
+                    std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
+                    std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
+                    
+                    
+                    bool pluginDefaultPref[4];
                 bool useRGBACheckbox = _imp->liveInstance->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
                 boost::shared_ptr<KnobBool> foundEnabled[4];
                 for (int i = 0; i < 4; ++i) {
@@ -7101,6 +7104,16 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
         }
     }
 
+}
+
+boost::shared_ptr<KnobChoice>
+Node::getChannelSelectorKnob(int inputNb) const
+{
+    std::map<int,ChannelSelector>::const_iterator found = _imp->channelsSelectors.find(inputNb);
+    if (found == _imp->channelsSelectors.end()) {
+        return boost::shared_ptr<KnobChoice>();
+    }
+    return found->second.layer.lock();
 }
 
 void
