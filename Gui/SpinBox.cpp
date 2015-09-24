@@ -667,9 +667,17 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             _imp->valueWhenEnteringFocus = value();
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
+            if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+                ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
+                e->accept();
+            }
         }
     } else {
         QLineEdit::keyPressEvent(e);
+        if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+            ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
+            e->accept();
+        }
     }
 }
 

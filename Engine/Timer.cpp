@@ -277,7 +277,8 @@ TimeLapse::getTimeSinceCreation() const
 
 }
 
-TimeLapseReporter::TimeLapseReporter()
+TimeLapseReporter::TimeLapseReporter(const std::string& message)
+: message(message)
 {
     gettimeofday(&prev, 0);
 }
@@ -289,5 +290,5 @@ TimeLapseReporter::~TimeLapseReporter()
     
     double dt =  now.tv_sec  - prev.tv_sec +
     (now.tv_usec - prev.tv_usec) * 1e-6f;
-    std::cout << dt << std::endl;
+    std::cout << message << ' ' << dt << std::endl;
 }

@@ -143,9 +143,11 @@ public:
 class TimeLapseReporter
 {
     timeval prev;
+    std::string message;
+    
 public:
     
-    TimeLapseReporter();
+    TimeLapseReporter(const std::string& message);
     
     ~TimeLapseReporter();
 };
