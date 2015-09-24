@@ -32,6 +32,9 @@ CLANG_DIAG_OFF(deprecated)
 #include <QTabWidget>
 #include <QFile>
 #include <QTextCodec>
+#include <QItemSelectionModel>
+#include <QHeaderView>
+#include <QDir>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
@@ -40,6 +43,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
 #include "Gui/Utils.h"
+#include "Gui/TableModelView.h"
+
+#define THIRD_PARTY_LICENSE_DIR_PATH ":"
 
 AboutWindow::AboutWindow(Gui* gui,
                          QWidget* parent)
@@ -192,7 +198,99 @@ AboutWindow::AboutWindow(Gui* gui,
         _licenseText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ) );
     }
     _tabWidget->addTab( _licenseText, QObject::tr("License") );
+    
+    QWidget* thirdPartyContainer = new QWidget(_tabWidget);
+    QVBoxLayout* thidPartyLayout = new QVBoxLayout(thirdPartyContainer);
+    
+    _view = new TableView(thirdPartyContainer);
+    _model = new TableModel(0,0,_view);
+    _view->setTableModel(_model);
+    
+    QItemSelectionModel *selectionModel = _view->selectionModel();
+    _view->setColumnCount(1);
+    
+    _view->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _view->setUniformRowHeights(true);
+    _view->setSelectionMode(QAbstractItemView::SingleSelection);
+    _view->header()->close();
+#if QT_VERSION < 0x050000
+    _view->header()->setResizeMode(QHeaderView::ResizeToContents);
+#else
+    _view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#endif
+    _view->header()->setStretchLastSection(true);
+    thidPartyLayout->addWidget(_view);
+    
+    _thirdPartyBrowser = new QTextBrowser(thirdPartyContainer);
+    _thirdPartyBrowser->setOpenExternalLinks(false);
+    thidPartyLayout->addWidget(_thirdPartyBrowser);
+  
+    
+    QString thirdPartyLicenseDir(THIRD_PARTY_LICENSE_DIR_PATH);
+    QDir thirdPartyDir(thirdPartyLicenseDir);
 
+    QStringList rowsTmp;
+    {
+        QStringList rows = thirdPartyDir.entryList(QDir::NoDotAndDotDot | QDir::Files);
+        for (int i = 0; i < rows.size(); ++i) {
+            if (!rows[i].startsWith("LICENSE")) {
+                continue;
+            }
+            if (rows[i] == "LICENSE-README.md") {
+                rowsTmp.prepend(rows[i]);
+            } else {
+                rowsTmp.push_back(rows[i]);
+            }
+            
+        }
+    }
+    _view->setRowCount(rowsTmp.size());
+    
+    TableItem* readmeIndex = 0;
+    for (int i = 0; i < rowsTmp.size(); ++i) {
+        if (!rowsTmp[i].startsWith("LICENSE")) {
+            continue;
+        }
+        TableItem* item = new TableItem;
+        item->setText(rowsTmp[i]);
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        _view->setItem(i, 0, item);
+        if (rowsTmp[i] == "LICENSE-README.md") {
+            readmeIndex = item;
+        }
+    }
+
+    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this,
+                     SLOT( onSelectionChanged(QItemSelection,QItemSelection) ) );
+    if (readmeIndex) {
+        readmeIndex->setSelected(true);
+    }
+    _tabWidget->addTab(thirdPartyContainer, "Third-Party components");
+}
+
+void
+AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
+                        const QItemSelection & /*oldSelection*/)
+{
+    QModelIndexList indexes = newSelection.indexes();
+    assert(indexes.size() <= 1);
+    if (indexes.empty()) {
+        _thirdPartyBrowser->clear();
+    } else {
+        TableItem* item = _view->item(indexes.front().row(), 0);
+        assert(item);
+        if (!item) {
+            return;
+        }
+        QString fileName(THIRD_PARTY_LICENSE_DIR_PATH);
+        fileName += '/';
+        fileName += item->text();
+        QFile file(fileName);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QString content = QTextCodec::codecForName("UTF-8")->toUnicode(file.readAll());
+            _thirdPartyBrowser->setText(content);
+        }
+    }
 }
 
 void

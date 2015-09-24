@@ -40,6 +40,10 @@ class QVBoxLayout;
 class QHBoxLayout;
 class Button;
 class Gui;
+class TableModel;
+class TableView;
+class QItemSelection;
+
 namespace Natron {
     class Label;
 }
@@ -47,6 +51,8 @@ namespace Natron {
 class AboutWindow
     : public QDialog
 {
+    Q_OBJECT
+    
     QVBoxLayout* _mainLayout;
     Natron::Label* _iconLabel;
     QTabWidget* _tabWidget;
@@ -55,10 +61,13 @@ class AboutWindow
     QTextBrowser* _teamText;
     QTextBrowser* _licenseText;
     QTextBrowser* _changelogText;
+    QTextBrowser* _thirdPartyBrowser;
     QWidget* _buttonContainer;
     QHBoxLayout* _buttonLayout;
     Button* _closeButton;
     Gui* _gui;
+    TableModel* _model;
+    TableView* _view;
 
 public:
 
@@ -70,6 +79,11 @@ public:
     virtual ~AboutWindow()
     {
     }
+    
+public Q_SLOTS:
+    
+    void onSelectionChanged(const QItemSelection & newSelection,
+                            const QItemSelection & oldSelection);
 };
 
 #endif // ABOUTWINDOW_H
