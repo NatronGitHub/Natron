@@ -320,6 +320,7 @@ public Q_SLOTS:
     
     void onResetCloneTransformClicked();
     
+    
 private:
     
 
