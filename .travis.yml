@@ -36,8 +36,8 @@ addons:
     # ubuntu-toolchain-r/test contains recent versions of gcc
     - ubuntu-toolchain-r-test
     packages:
-    - gcc-4.8
-    - g++-4.8
+    - gcc-4.9
+    - g++-4.9
     - libqt4-dev
     - libglew-dev
     - libboost-serialization-dev

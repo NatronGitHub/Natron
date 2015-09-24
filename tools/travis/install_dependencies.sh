@@ -35,7 +35,8 @@ fi
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     TEST_CC=gcc
     lsb_release -a
-
+    GCC_VERSION=4.9
+    
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     # we use the irie/boost ppa for that purpose
@@ -43,7 +44,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update; sudo apt-get install gcc-4.8 g++-4.8; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90; fi
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update; sudo apt-get install gcc-${GCC_VERSION} g++-${GCC_VERSION}; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
 
     if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
     ## Python 3.4
