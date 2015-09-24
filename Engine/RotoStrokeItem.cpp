@@ -381,9 +381,11 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
         QMutexLocker k(&itemMutex);
         if (_imp->finished) {
             _imp->finished = false;
-            if (newStroke) {
-                setNodesThreadSafetyForRotopainting();
-            }
+            
+        }
+        
+        if (newStroke) {
+            setNodesThreadSafetyForRotopainting();
         }
         
         if (_imp->strokeDotPatterns.empty()) {
@@ -646,7 +648,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
     std::advance(yIt, lastAge);
     std::advance(pIt, lastAge);
     *newAge = (int)xCurve.size() - 1;
-    
+
     if (lastAge != (int)(xCurve.size() -1)) {
         for (; xIt != xCurve.end(); ++xIt,++yIt,++pIt) {
             realX.insert(*xIt);
