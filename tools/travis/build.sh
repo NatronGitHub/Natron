@@ -50,7 +50,7 @@ git submodule update --init --recursive
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD";
-    elif [ "$CC" = "gcc"]; then
+    elif [ "$CC" = "gcc" ]; then
         qmake -r CONFIG+="nopch coverage debug $BREAKPAD"; # pch config disables precompiled headers
     else
         qmake -r -spec unsupported/linux-clang CONFIG+="nopch debug $BREAKPAD";
