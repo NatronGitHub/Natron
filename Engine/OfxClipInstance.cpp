@@ -810,6 +810,17 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         EffectInstance::ComponentsNeededMap::iterator found = neededComps.find(inputnb);
         if (found != neededComps.end()) {
             comp = found->second.front();
+        } else {
+            ///We are in analysis or the effect does not have any input
+            bool processChannels[4];
+            bool isAll;
+            bool hasUserComps = _nodeInstance->getNode()->getUserComponents(inputnb, processChannels, &isAll,&comp);
+            if (!hasUserComps) {
+                //There's no selector...fallback on the basic components indicated on the clip
+                std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
+                assert(comps.size() == 1);
+                comp = comps.front();
+            }
         }
 
     } else {
