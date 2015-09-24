@@ -342,6 +342,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             return eRenderRoIRetCodeOk;
         }
     }
+    if (processAllComponentsRequested) {
+        std::vector<ImageComponents> compVec;
+        for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+            bool found = false;
+            
+            //Change all needed comps in output to the requested components
+            for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
+                if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
+                    compVec.push_back(*it2);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                compVec.push_back(*it);
+            }
+        }
+        for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
+            it->second = compVec;
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
@@ -459,28 +480,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     //Available planes/components is view agnostic
     getComponentsAvailable(args.time, &componentsAvailables);
-
-    
-    if (processAllComponentsRequested) {
-        std::vector<ImageComponents> compVec;
-        for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-            bool found = false;
-            for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
-                if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
-                    compVec.push_back(*it2);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                compVec.push_back(*it);
-            }
-        }
-        for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
-            it->second = compVec;
-        }
-        //neededComps[-1] = compVec;
-    }
     
     const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
 

@@ -2930,6 +2930,10 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     layer->populateChoices(baseLayers);
     if (isOutput && liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
         layer->setDefaultValue(0);
+        //Hide all other input selectors if choice is All in output
+        for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it!=channelsSelectors.end(); ++it) {
+            it->second.layer.lock()->setSecret(true);
+        }
     } else {
         layer->setDefaultValue(1);
     }
@@ -5318,9 +5322,17 @@ Node::onInputChanged(int inputNb)
     }
     std::map<int,ChannelSelector>::iterator foundChan = _imp->channelsSelectors.find(inputNb);
     if ( foundChan != _imp->channelsSelectors.end() ) {
+        std::map<int,ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
+        bool outputIsAll = false;
+        if (foundOuptut != _imp->channelsSelectors.end()) {
+            boost::shared_ptr<KnobChoice> outputChoice = foundOuptut->second.layer.lock();
+            if (outputChoice) {
+                outputIsAll = outputChoice->getActiveEntryText_mt_safe() == "All";
+            }
+        }
         boost::shared_ptr<KnobChoice> chanChoice = foundChan->second.layer.lock();
         if (chanChoice) {
-            chanChoice->setSecret(!inp.get());
+            chanChoice->setSecret(!inp.get() || outputIsAll);
         }
     }
     _imp->liveInstance->onInputChanged(inputNb);
@@ -5780,6 +5792,25 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     int curLayer_i = layerKnob->getValue();
     assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
     selector.layerName.lock()->setValue(entries[curLayer_i], 0);
+    
+    if (inputNb == -1) {
+        bool isAll = entries[curLayer_i] == "All";
+        if (isAll) {
+            ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
+            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
+                if (it->first >= 0) {
+                    it->second.layer.lock()->setSecret(true);
+                }
+            }
+        } else {
+            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
+                if (it->first >= 0) {
+                    it->second.layer.lock()->setSecret(false);
+                }
+            }
+
+        }
+    }
     {
         ///Clip preferences have changed 
         RenderScale s;
