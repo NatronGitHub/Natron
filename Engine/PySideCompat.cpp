@@ -56,6 +56,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/GlobalFunctionsWrapper.h"
+
 // A QSharedPointer is used with a deletion function to invalidate a pointer
 // when the property value is cleared. This should be a QSharedPointer with
 // a void* pointer, but that isn't allowed

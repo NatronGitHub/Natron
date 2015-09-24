@@ -133,9 +133,9 @@ optimizeRectsToRender(Natron::EffectInstance* self,
 
         bool nonIdentityRectSet = false;
         for (std::size_t i = 0; i < splits.size(); ++i) {
-            double identityInputTime;
-            int identityInputNb;
-            bool identity;
+            double identityInputTime = 0.;
+            int identityInputNb = -1;
+            bool identity = false;
 
             if ( !splits[i].intersects(inputsRoDIntersection) ) {
                 identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);

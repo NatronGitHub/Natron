@@ -617,9 +617,9 @@ EffectInstance::getImage(int inputNb,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     RectD rod;
-    bool isIdentity;
-    int inputNbIdentity;
-    double inputIdentityTime;
+    bool isIdentity = false;
+    int inputNbIdentity = -1;
+    double inputIdentityTime = 0.;
     U64 nodeHash;
     bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to

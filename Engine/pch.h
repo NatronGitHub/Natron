@@ -98,7 +98,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif // MAC_OS_X_VERSION_10_9
 #endif
 
+#include "Global/Macros.h"
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <QtCore>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "HostSupport/pch.h"
 #include "Engine/EffectInstance.h"

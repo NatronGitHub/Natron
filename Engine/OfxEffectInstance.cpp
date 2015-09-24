@@ -2290,6 +2290,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             OfxStatus redrawstat = _overlayInteract->redraw();
             assert(redrawstat == kOfxStatOK || redrawstat == kOfxStatReplyDefault);
+            Q_UNUSED(redrawstat);
         }
 
         if (stat == kOfxStatOK) {

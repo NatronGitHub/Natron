@@ -360,6 +360,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
         
         ///Check identity
+        fvRequest->globalData.identityInputNb = -1;
         fvRequest->globalData.inputIdentityTime = 0.;
         
         bool identity;

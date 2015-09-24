@@ -4,6 +4,7 @@
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
+GCC_DIAG_OFF(missing-declarations)
 #include <shiboken.h> // produces many warnings
 #include <algorithm>
 #include <pyside.h>
