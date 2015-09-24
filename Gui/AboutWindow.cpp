@@ -233,7 +233,7 @@ AboutWindow::AboutWindow(Gui* gui,
     {
         QStringList rows = thirdPartyDir.entryList(QDir::NoDotAndDotDot | QDir::Files);
         for (int i = 0; i < rows.size(); ++i) {
-            if (!rows[i].startsWith("LICENSE")) {
+            if (!rows[i].startsWith("LICENSE-")) {
                 continue;
             }
             if (rows[i] == "LICENSE-README.md") {
