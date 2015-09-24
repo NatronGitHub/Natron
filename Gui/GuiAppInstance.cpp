@@ -84,6 +84,7 @@ struct GuiAppInstancePrivate
     
     mutable QMutex userIsPaintingMutex;
     boost::shared_ptr<Natron::Node> userIsPainting;
+    bool turboAlreadyActiveBeforePainting;
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -100,6 +101,7 @@ struct GuiAppInstancePrivate
     , overlayRedrawRequests(0)
     , userIsPaintingMutex()
     , userIsPainting()
+    , turboAlreadyActiveBeforePainting(false)
     {
     }
 
@@ -1081,11 +1083,17 @@ GuiAppInstance::isDraftRenderEnabled() const
 void
 GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
 {
+    bool wasTurboActive;
     {
         QMutexLocker k(&_imp->userIsPaintingMutex);
         _imp->userIsPainting = rotopaintNode;
+        if (rotopaintNode) {
+            _imp->turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        }
+        wasTurboActive = _imp->turboAlreadyActiveBeforePainting;
     }
-    _imp->_gui->onFreezeUIButtonClicked(rotopaintNode.get() != 0);
+    bool isPainting = rotopaintNode.get() != 0;
+    _imp->_gui->onFreezeUIButtonClicked(isPainting || wasTurboActive);
 }
 
 boost::shared_ptr<Natron::Node>
