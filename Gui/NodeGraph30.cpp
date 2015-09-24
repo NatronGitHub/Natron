@@ -363,10 +363,9 @@ NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
     
     {
         QMutexLocker k(&_imp->_nodesMutex);
-        for (NodeGuiList::iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
-            if ((*it) == n) {
-                _imp->_selection.erase(it);
-            }
+        NodeGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
+        if (it != _imp->_selection.end()) {
+            _imp->_selection.erase(it);
         }
     }
     n->setUserSelected(false);
