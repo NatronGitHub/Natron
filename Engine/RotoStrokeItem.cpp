@@ -244,8 +244,9 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         
         pressure = std::max(pressure,pressureAffectsSize ? std::max(press1, press2) : 1.);
         
-        for (double t = 0.; t <= 1.; t += incr) {
-            
+
+        for (int i = 0; i < nbPointsPerSegment; ++i) {
+            double t = incr * i;
             Point p;
             p.x = Bezier::bezierEval(x1, x1pr, x2pl, x2, t);
             p.y = Bezier::bezierEval(y1, y1pr, y2pl, y2, t);
@@ -262,6 +263,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             p.y /= pot;
             points->push_back(std::make_pair(p, pi));
         }
+       
     } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
     if (bbox) {
         bbox->x1 -= halfBrushSize * pressure;
