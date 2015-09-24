@@ -1442,6 +1442,16 @@ Image::halveRoIForDepth(const RectI & roi,
             const int sum = sumW * sumH;
             assert(0 < sum && sum <= 4);
 
+            if (sum == 0) {// never happens
+                for (int k = 0; k < nComponents; ++k) {
+                    dstPixStart[k] = 0;
+                }
+                if (copyBitMap) {
+                    dstBmPixStart[0] = 0;
+                }
+                continue;
+            }
+
             for (int k = 0; k < nComponents; ++k) {
                 ///a b
                 ///c d

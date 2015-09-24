@@ -448,7 +448,7 @@ ViewerTab::~ViewerTab()
             graph = _imp->gui->getNodeGraph();
         }
         assert(graph);
-        if ( _imp->app && !_imp->app->isClosing() && (graph->getLastSelectedViewer() == this) ) {
+        if ( _imp->app && !_imp->app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
     }

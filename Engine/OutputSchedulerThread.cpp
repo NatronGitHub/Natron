@@ -1305,7 +1305,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     if (stats) {
         _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
         assert(nbCurParallelRenders > 0);
-        timeRemaining = (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders;
+        timeRemaining = nbCurParallelRenders ? (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders : 0;
     }
     
     if (isBackground) {

@@ -2422,7 +2422,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     if (doUpdate) {
         
         ImageList tiles;
-        Natron::ImageBitDepthEnum depth;
         if (params->cachedFrame) {
             if (!params->tiles.empty()) {
                 tiles = params->tiles;
@@ -2432,8 +2431,9 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         } else {
             assert(!params->tiles.empty());
             tiles = params->tiles;
-            depth = tiles.front()->getBitDepth();
         }
+
+        Natron::ImageBitDepthEnum depth;
         if (!tiles.empty()) {
             depth = tiles.front()->getBitDepth();
         } else {

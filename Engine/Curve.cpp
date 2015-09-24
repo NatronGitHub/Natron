@@ -1338,6 +1338,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
            key->getInterpolation() != Natron::eKeyframeTypeNone &&
            key->getInterpolation() != Natron::eKeyframeTypeBroken &&
            key->getInterpolation() != Natron::eKeyframeTypeFree);
+    if (key == _imp->keyFrames.end()) {
+        throw std::logic_error("Curve::refreshDerivatives");
+    }
     Natron::autoComputeDerivatives(prevType,
                                    key->getInterpolation(),
                                    nextType,

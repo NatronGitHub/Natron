@@ -1701,7 +1701,9 @@ Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>
         assert(i < encoded.size());
         size_t endNamePos = encoded.find(endNameTag,i);
         assert(endNamePos != std::string::npos && endNamePos < encoded.size());
-        
+        if (endNamePos == std::string::npos || endNamePos >= encoded.size()) {
+            throw std::logic_error("Project::makeEnvMap()");
+        }
         std::string name,value;
         while (i < endNamePos) {
             name.push_back(encoded[i]);
