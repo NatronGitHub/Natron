@@ -126,10 +126,10 @@ public:
     // that request.
 
     /// @see OfxDialogSuiteV1.RequestDialog()
-    virtual OfxStatus requestDialog(void* user_data) OVERRIDE;
+    virtual OfxStatus requestDialog(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs, void* instanceData) OVERRIDE;
 
     /// @see OfxDialogSuiteV1.NotifyRedrawPending()
-    virtual OfxStatus notifyRedrawPending() OVERRIDE;
+    virtual OfxStatus notifyRedrawPending(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs) OVERRIDE;
 #endif
 #ifdef OFX_SUPPORTS_OPENGLRENDER
     /// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()

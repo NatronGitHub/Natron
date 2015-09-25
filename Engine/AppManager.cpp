@@ -2014,27 +2014,36 @@ AppManager::setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bo
 }
 
 void
-AppManager::requestOFXDIalogOnMainThread(void* user_data)
+AppManager::requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData)
 {
     if (QThread::currentThread() == qApp->thread()) {
-        onOFXDialogOnMainThreadReceived(user_data);
+        onOFXDialogOnMainThreadReceived(instance, instanceData);
     } else {
-        Q_EMIT s_requestOFXDialogOnMainThread(user_data);
+        Q_EMIT s_requestOFXDialogOnMainThread(instance, instanceData);
     }
 }
 
 void
-AppManager::onOFXDialogOnMainThreadReceived(void* user_data)
+AppManager::onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData)
 {
     assert(QThread::currentThread() == qApp->thread());
-    GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
-    if (tls.lastEffectCallingMainEntry) {
-#ifdef OFX_SUPPORTS_DIALOG
-        tls.lastEffectCallingMainEntry->dialog(user_data);
-#else
-        (void)user_data;
+    if (instance == NULL) {
+        // instance may be NULL if using OfxDialogSuiteV1
+        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
+        instance = tls.lastEffectCallingMainEntry;
+    } else {
+#ifdef DEBUG
+        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
+        assert(instance == tls.lastEffectCallingMainEntry);
 #endif
     }
+#ifdef OFX_SUPPORTS_DIALOG
+    if (instance) {
+        instance->dialog(instanceData);
+    }
+#else
+    Q_UNUSED(instanceData);
+#endif
 }
 
 std::list<std::string>

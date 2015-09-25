@@ -476,18 +476,18 @@ public Q_SLOTS:
     
     GlobalOFXTLS& getCurrentThreadTLS();
     
-    void requestOFXDIalogOnMainThread(void* user_data);
+    void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 public Q_SLOTS:
     
-    void onOFXDialogOnMainThreadReceived(void* user_data);
+    void onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
     
-    void s_requestOFXDialogOnMainThread(void* user_data);
+    void s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 protected:
 

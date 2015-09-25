@@ -1317,16 +1317,21 @@ Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 // dialog
 /// @see OfxDialogSuiteV1.RequestDialog()
 OfxStatus
-Natron::OfxHost::requestDialog(void* user_data)
+Natron::OfxHost::requestDialog(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs, void* instanceData)
 {
-    appPTR->requestOFXDIalogOnMainThread(user_data);
+    Q_UNUSED(inArgs);
+    OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
+    Natron::OfxImageEffectInstance *effectInstance = dynamic_cast<Natron::OfxImageEffectInstance*>(effectBase);
+    appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
     return kOfxStatOK;
 }
 
 /// @see OfxDialogSuiteV1.NotifyRedrawPending()
 OfxStatus
-Natron::OfxHost::notifyRedrawPending()
+Natron::OfxHost::notifyRedrawPending(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs)
 {
+    Q_UNUSED(instance);
+    Q_UNUSED(inArgs);
     return kOfxStatReplyDefault;
 }
 
