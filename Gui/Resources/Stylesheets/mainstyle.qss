@@ -457,12 +457,18 @@ QSplitter::handle::vertical {
     height: 3px;
 }
 
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
+QTabBar {
+    tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */
+    background-color: %4; /* color of the background over non-selected tabs, and to the sides of the tab when there is only one */
+}
+
 QTabBar::tab {
-    color: %5;
-    background: %4;
+    color: %5; /* color of the text on all tabs */
+    background-color: %4; /* the background of non-selected tabs */
     border: 1px solid ;
-    border-bottom-color: %2;
-    min-width: 18ex;
+    border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
+    min-width: 8ex;
     padding: 2px;
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
@@ -476,19 +482,17 @@ QTabBar::tab:hover {
     background: %1;
 }
 QTabBar::tab:selected {
-    background: %2;
+    background: %2; /* the background of the selected tab */
     border-bottom-style:none;
     border-color: %1;
 }
 
 QTabBar::tab:selected:focus {
-    border-color: %1;
+    /*border-color: %1; */ /* color of the selected tabs when they have focus (i.e. only in the properties panels) - same as QTabBar::tab:selected.border-color */
 }
 
 QTabBar::tab:!selected {
-    margin-top: 0px; /* make non-selected tabs look smaller */
-    margin-left: 0px;
-    margin-right: 0px;
+    margin-top: 2px; /* make non-selected tabs look smaller */
 }
 
 /* make use of negative margins for overlapping tabs */
