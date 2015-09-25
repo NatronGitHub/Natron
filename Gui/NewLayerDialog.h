@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_NewLayerDialog_h_
-#define _Gui_NewLayerDialog_h_
+#ifndef Gui_NewLayerDialog_h
+#define Gui_NewLayerDialog_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -60,4 +60,4 @@ private:
     boost::scoped_ptr<NewLayerDialogPrivate> _imp;
 };
 
-#endif // _Gui_NewLayerDialog_h_
+#endif // Gui_NewLayerDialog_h

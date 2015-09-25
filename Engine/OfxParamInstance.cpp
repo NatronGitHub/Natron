@@ -3069,9 +3069,7 @@ OfxParametricInstance::initializeInteract(OverlaySupport* widget)
 
 OfxParametricInstance::~OfxParametricInstance()
 {
-    if (_overlayInteract) {
-        delete _overlayInteract;
-    }
+    delete _overlayInteract;
 }
 
 boost::shared_ptr<KnobI> OfxParametricInstance::getKnob() const

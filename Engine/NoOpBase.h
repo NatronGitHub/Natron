@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_NoOpBase_h_
-#define _Engine_NoOpBase_h_
+#ifndef Engine_NoOpBase_h
+#define Engine_NoOpBase_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -115,4 +115,4 @@ private:
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
-#endif // _Engine_NoOpBase_h_
+#endif // Engine_NoOpBase_h

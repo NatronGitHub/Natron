@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_NodeGraphPrivate_h_
-#define _Gui_NodeGraphPrivate_h_
+#ifndef Gui_NodeGraphPrivate_h
+#define Gui_NodeGraphPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -275,4 +275,4 @@ struct NodeGraphPrivate
     
 };
 
-#endif // _Gui_NodeGraphPrivate_h_
+#endif // Gui_NodeGraphPrivate_h

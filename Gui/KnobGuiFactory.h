@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_KNOBGUIFACTORY_H_
-#define NATRON_GUI_KNOBGUIFACTORY_H_
+#ifndef NATRON_GUI_KNOBGUIFACTORY_H
+#define NATRON_GUI_KNOBGUIFACTORY_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -64,4 +64,4 @@ private:
 };
 
 
-#endif // NATRON_GUI_KNOBGUIFACTORY_H_
+#endif // NATRON_GUI_KNOBGUIFACTORY_H

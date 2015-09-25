@@ -439,10 +439,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
-    if (_overlayInteract) {
-        delete _overlayInteract;
-    }
-
+    delete _overlayInteract;
     delete _effect;
     delete _renderSafetyLock;
     delete _preferencesLock;

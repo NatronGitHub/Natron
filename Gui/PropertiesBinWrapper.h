@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_PropertiesBinWrapper_h_
-#define _Gui_PropertiesBinWrapper_h_
+#ifndef Gui_PropertiesBinWrapper_h
+#define Gui_PropertiesBinWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -41,4 +41,4 @@ public:
     }
 };
 
-#endif // _Gui_PropertiesBinWrapper_h_
+#endif // Gui_PropertiesBinWrapper_h

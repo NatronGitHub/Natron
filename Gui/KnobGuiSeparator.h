@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_KnobGuiSeparator_h_
-#define _Gui_KnobGuiSeparator_h_
+#ifndef Gui_KnobGuiSeparator_h
+#define Gui_KnobGuiSeparator_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -143,4 +143,4 @@ private:
     boost::weak_ptr<KnobSeparator> _knob;
 };
 
-#endif // _Gui_KnobGuiSeparator_h_
+#endif // Gui_KnobGuiSeparator_h

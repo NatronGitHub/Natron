@@ -307,7 +307,6 @@ void KnobGuiString::removeSpecificGui()
     delete _lineEdit;
     delete _label;
     delete _container;
-
 }
 
 void

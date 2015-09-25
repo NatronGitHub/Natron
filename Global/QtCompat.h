@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
-#ifndef NATRON_GLOBAL_QTCOMPAT_H_
-#define NATRON_GLOBAL_QTCOMPAT_H_
+#ifndef NATRON_GLOBAL_QTCOMPAT_H
+#define NATRON_GLOBAL_QTCOMPAT_H
 
 
 #if QT_VERSION < 0x050000
@@ -82,4 +82,4 @@ inline QUrl toLocalFileUrlFixed(const QUrl& url) { return url; }
 
 } // namespace Natron
 
-#endif // NATRON_GLOBAL_QTCOMPAT_H_
+#endif // NATRON_GLOBAL_QTCOMPAT_H

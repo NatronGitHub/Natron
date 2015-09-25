@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_KnobGuiDouble_h_
-#define _Gui_KnobGuiDouble_h_
+#ifndef Gui_KnobGuiDouble_h
+#define Gui_KnobGuiDouble_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -166,4 +166,4 @@ private:
     Button *_dimensionSwitchButton;
     boost::weak_ptr<KnobDouble> _knob;
 };
-#endif // _Gui_KnobGuiDouble_h_
+#endif // Gui_KnobGuiDouble_h

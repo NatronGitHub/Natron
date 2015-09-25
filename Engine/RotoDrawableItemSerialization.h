@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RotoDrawableItemSerialization_h_
-#define _Engine_RotoDrawableItemSerialization_h_
+#ifndef Engine_RotoDrawableItemSerialization_h
+#define Engine_RotoDrawableItemSerialization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -157,4 +157,4 @@ BOOST_CLASS_VERSION(RotoDrawableItemSerialization,ROTO_DRAWABLE_ITEM_VERSION)
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
 
 
-#endif // _Engine_RotoDrawableItemSerialization_h_
+#endif // Engine_RotoDrawableItemSerialization_h

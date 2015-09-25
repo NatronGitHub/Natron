@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_LINEEDIT_H_
-#define NATRON_GUI_LINEEDIT_H_
+#ifndef NATRON_GUI_LINEEDIT_H
+#define NATRON_GUI_LINEEDIT_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -107,4 +107,4 @@ private:
 };
 
 
-#endif // ifndef NATRON_GUI_LINEEDIT_H_
+#endif // ifndef NATRON_GUI_LINEEDIT_H

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_BezierCPPrivate_h_
-#define _Engine_BezierCPPrivate_h_
+#ifndef Engine_BezierCPPrivate_h
+#define Engine_BezierCPPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -94,4 +94,4 @@ struct BezierCPPrivate
     }
 };
 
-#endif // _Engine_BezierCPPrivate_h_
+#endif // Engine_BezierCPPrivate_h_

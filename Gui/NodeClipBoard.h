@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_NodeClipBoard_h_
-#define _Gui_NodeClipBoard_h_
+#ifndef Gui_NodeClipBoard_h
+#define Gui_NodeClipBoard_h
 
 
 // ***** BEGIN PYTHON BLOCK *****
@@ -53,4 +53,4 @@ struct NodeClipBoard
     }
 };
 
-#endif // _Gui_NodeClipBoard_h_
+#endif // Gui_NodeClipBoard_h

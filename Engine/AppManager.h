@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_AppManager_h_
-#define _Engine_AppManager_h_
+#ifndef Engine_AppManager_h
+#define Engine_AppManager_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -688,5 +688,5 @@ public:
 } // namespace Natron
 
 
-#endif // _Engine_AppManager_h_
+#endif // Engine_AppManager_h
 

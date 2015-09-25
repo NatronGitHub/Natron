@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_KNOB_H_
-#define NATRON_ENGINE_KNOB_H_
+#ifndef NATRON_ENGINE_KNOB_H
+#define NATRON_ENGINE_KNOB_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -2269,4 +2269,4 @@ boost::shared_ptr<K> KnobHolder::createKnob(const std::string &description,
     return Natron::createKnob<K>(this, description,dimension);
 }
 
-#endif // NATRON_ENGINE_KNOB_H_
+#endif // NATRON_ENGINE_KNOB_H

@@ -2436,10 +2436,8 @@ NodeGui::deleteReferences()
         _outputEdge = NULL;
     }
 
-    if (_settingsPanel) {
-        delete _settingsPanel;
-        _settingsPanel = NULL;
-    }
+    delete _settingsPanel;
+    _settingsPanel = NULL;
 }
 
 QSize

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_VariantSerialization_h_
-#define _Engine_VariantSerialization_h_
+#ifndef Engine_VariantSerialization_h
+#define Engine_VariantSerialization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -155,4 +155,4 @@ Variant::serialize(Archive &ar,
     boost::serialization::split_member(ar, *this, file_version);
 }
 
-#endif // _Engine_VariantSerialization_h_
+#endif // Engine_VariantSerialization_h

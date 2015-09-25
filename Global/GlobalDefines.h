@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
-#define NATRON_GLOBAL_GLOBALDEFINES_H_
+#ifndef NATRON_GLOBAL_GLOBALDEFINES_H
+#define NATRON_GLOBAL_GLOBALDEFINES_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -190,4 +190,4 @@ s2ws(const std::string & s)
 }
 }
 
-#endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
+#endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CURVESERIALIZATION_H_
-#define NATRON_ENGINE_CURVESERIALIZATION_H_
+#ifndef NATRON_ENGINE_CURVESERIALIZATION_H
+#define NATRON_ENGINE_CURVESERIALIZATION_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -65,4 +65,4 @@ Curve::serialize(Archive & ar,
     ar & boost::serialization::make_nvp("KeyFrameSet",_imp->keyFrames);
 }
 
-#endif // NATRON_ENGINE_CURVESERIALIZATION_H_
+#endif // NATRON_ENGINE_CURVESERIALIZATION_H

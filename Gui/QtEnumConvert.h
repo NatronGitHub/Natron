@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_QtEnumConvert_h_
-#define _Gui_QtEnumConvert_h_
+#ifndef Gui_QtEnumConvert_h
+#define Gui_QtEnumConvert_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -52,4 +52,4 @@ public:
 
 //namespace Natron
 
-#endif // _Gui_QtEnumConvert_h_
+#endif // Gui_QtEnumConvert_h

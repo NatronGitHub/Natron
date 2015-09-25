@@ -218,10 +218,7 @@ AppManager::~AppManager()
         delete f;
     }
 
-
-    if (_imp->_backgroundIPC) {
-        delete _imp->_backgroundIPC;
-    }
+    delete _imp->_backgroundIPC;
 
     try {
         _imp->saveCaches();
@@ -251,9 +248,7 @@ AppManager::~AppManager()
     
     _instance = 0;
 
-    if (qApp) {
-        delete qApp;
-    }
+    delete qApp;
 }
 
 void

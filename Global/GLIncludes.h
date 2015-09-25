@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_GLINCLUDES_H_
-#define NATRON_GLOBAL_GLINCLUDES_H_
+#ifndef NATRON_GLOBAL_GLINCLUDES_H
+#define NATRON_GLOBAL_GLINCLUDES_H
 
 #include <GL/glew.h>
 #define QT_NO_OPENGL_ES_2
@@ -230,4 +230,4 @@ private:
 
 CLANG_DIAG_ON(deprecated)
 
-#endif // ifndef NATRON_GLOBAL_GLINCLUDES_H_
+#endif // ifndef NATRON_GLOBAL_GLINCLUDES_H

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_ViewerTabPrivate_h
-#define _Gui_ViewerTabPrivate_h
+#ifndef Gui_ViewerTabPrivate_h
+#define Gui_ViewerTabPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -227,4 +227,4 @@ struct ViewerTabPrivate
     void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
 };
-#endif // _Gui_ViewerTabPrivate_h
+#endif // Gui_ViewerTabPrivate_h

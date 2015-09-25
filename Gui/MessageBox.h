@@ -17,8 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-#ifndef _NATRON_MESSAGE_BOX_H_
-#define _NATRON_MESSAGE_BOX_H_
+#ifndef _NATRON_MESSAGE_BOX_H
+#define _NATRON_MESSAGE_BOX_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -95,4 +95,4 @@ private:
 
 }
 
-#endif // _NATRON_MESSAGE_BOX_H_
+#endif // _NATRON_MESSAGE_BOX_H

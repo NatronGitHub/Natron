@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXHOST_H_
-#define NATRON_ENGINE_OFXHOST_H_
+#ifndef NATRON_ENGINE_OFXHOST_H
+#define NATRON_ENGINE_OFXHOST_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -171,4 +171,4 @@ private:
 };
 } // namespace Natron
 
-#endif // ifndef NATRON_ENGINE_OFXHOST_H_
+#endif // ifndef NATRON_ENGINE_OFXHOST_H

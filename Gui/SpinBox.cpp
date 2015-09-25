@@ -123,14 +123,10 @@ void
 SpinBox::setType(SpinBoxTypeEnum type)
 {
     _imp->type = type;
-    if (_imp->doubleValidator) {
-        delete _imp->doubleValidator;
-        _imp->doubleValidator = 0;
-    }
-    if (_imp->intValidator) {
-        delete _imp->intValidator;
-        _imp->intValidator = 0;
-    }
+    delete _imp->doubleValidator;
+    _imp->doubleValidator = 0;
+    delete _imp->intValidator;
+    _imp->intValidator = 0;
     switch (_imp->type) {
         case eSpinBoxTypeDouble:
             _imp->mini.setValue<double>(-DBL_MAX);

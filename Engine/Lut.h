@@ -21,8 +21,8 @@
 ///
 
 
-#ifndef NATRON_ENGINE_LUT_H_
-#define NATRON_ENGINE_LUT_H_
+#ifndef NATRON_ENGINE_LUT_H
+#define NATRON_ENGINE_LUT_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -577,4 +577,4 @@ charToUint8xx(unsigned char quantum)
 } //namespace Natron
 
 
-#endif //NATRON_ENGINE_LUT_H_
+#endif //NATRON_ENGINE_LUT_H

@@ -17,8 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-#ifndef Natron_Engine_FitCurve_h_
-#define Natron_Engine_FitCurve_h_
+#ifndef Natron_Engine_FitCurve_h
+#define Natron_Engine_FitCurve_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -49,4 +49,4 @@ namespace FitCurve {
     void fit_cubic(const std::vector<Natron::Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier);
 }
 
-#endif // Natron_Engine_FitCurve_h_
+#endif // Natron_Engine_FitCurve_h

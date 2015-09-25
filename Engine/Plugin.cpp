@@ -32,12 +32,8 @@ using namespace Natron;
 
 Plugin::~Plugin()
 {
-    if (_lock) {
-        delete _lock;
-    }
-    if (_binary) {
-        delete _binary;
-    }
+    delete _lock;
+    delete _binary;
 }
 
 

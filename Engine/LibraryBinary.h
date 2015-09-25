@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_LIBRARYBINARY_H_
-#define NATRON_GLOBAL_LIBRARYBINARY_H_
+#ifndef NATRON_GLOBAL_LIBRARYBINARY_H
+#define NATRON_GLOBAL_LIBRARYBINARY_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -111,4 +111,4 @@ private:
     std::map<std::string,value_type> _functions; // <function name, pointer>
 };
 } // namespace Natron
-#endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H_
+#endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H

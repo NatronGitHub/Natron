@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_MEMORYINFO_H_
-#define NATRON_GLOBAL_MEMORYINFO_H_
+#ifndef NATRON_GLOBAL_MEMORYINFO_H
+#define NATRON_GLOBAL_MEMORYINFO_H
 
 // Memory utility functions ( info about RAM etc...)
 
@@ -305,4 +305,4 @@ getAmountFreePhysicalRAM()
 #endif
 }
 
-#endif // ifndef NATRON_GLOBAL_MEMORYINFO_H_
+#endif // ifndef NATRON_GLOBAL_MEMORYINFO_H

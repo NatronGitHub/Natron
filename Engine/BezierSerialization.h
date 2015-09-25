@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_BezierSerialization_h_
-#define _Engine_BezierSerialization_h_
+#ifndef Engine_BezierSerialization_h
+#define Engine_BezierSerialization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -144,4 +144,4 @@ private:
 BOOST_CLASS_VERSION(BezierSerialization,BEZIER_SERIALIZATION_VERSION)
 
 
-#endif // _Engine_BezierSerialization_h_
+#endif // Engine_BezierSerialization_h

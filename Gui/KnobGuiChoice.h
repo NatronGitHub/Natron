@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_KnobGuiChoice_h_
-#define _Gui_KnobGuiChoice_h_
+#ifndef Gui_KnobGuiChoice_h
+#define Gui_KnobGuiChoice_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -142,4 +142,4 @@ private:
     boost::weak_ptr<KnobChoice> _knob;
 };
 
-#endif // _Gui_KnobGuiChoice_h_
+#endif // Gui_KnobGuiChoice_h
