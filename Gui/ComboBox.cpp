@@ -861,8 +861,16 @@ ComboBox::removeItem(const QString & item)
     for (U32 i = 0; i < _rootNode->children.size(); ++i) {
         assert(_rootNode->children[i]);
         if (_rootNode->children[i]->isLeaf->text() == item) {
-            QString currentText = getCurrentIndexText();
+            
             _rootNode->children.erase(_rootNode->children.begin() + i);
+            
+            ///Decrease index for all other children
+            for (std::size_t j = 0; j < _rootNode->children.size(); ++j) {
+                assert(_rootNode->children[j]->isLeaf);
+                _rootNode->children[j]->isLeaf->setData(QVariant((int)j));
+            }
+            
+            QString currentText = getCurrentIndexText();
             if (currentText == item) {
                 setCurrentIndex(i - 1);
             }
@@ -872,6 +880,7 @@ ComboBox::removeItem(const QString & item)
                     --_separators[j];
                 }
             }
+            break;
         }
     }
 
