@@ -416,6 +416,10 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double smallTickSize;
     bool half_tick;
     ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+    if (_imp->dataType == eDataTypeInt && smallTickSize < 1.) {
+        smallTickSize = 1.;
+        half_tick = false;
+    }
     int m1, m2;
     const int ticks_max = 1000;
     double offset;
@@ -435,8 +439,10 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         QPen pen(color);
         pen.setWidthF(1.9);
         p.setPen(pen);
-        
+
+        // for Int slider, because smallTickSize is at least 1, isFloating can never be true
         bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
+        assert(!(_imp->dataType == eDataTypeInt && isFloating));
         bool renderFloating = _imp->dataType == eDataTypeDouble || !isFloating;
 
         if (renderFloating) {
