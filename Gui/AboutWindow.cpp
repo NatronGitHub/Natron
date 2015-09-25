@@ -201,7 +201,8 @@ AboutWindow::AboutWindow(Gui* gui,
     
     QWidget* thirdPartyContainer = new QWidget(_tabWidget);
     QVBoxLayout* thidPartyLayout = new QVBoxLayout(thirdPartyContainer);
-    
+    thidPartyLayout->setContentsMargins(0,0,0,0);
+
     _view = new TableView(thirdPartyContainer);
     _model = new TableModel(0,0,_view);
     _view->setTableModel(_model);
