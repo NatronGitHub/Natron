@@ -2720,18 +2720,27 @@ OfxEffectInstance::getMinorVersion() const
 bool
 OfxEffectInstance::supportsTiles() const
 {
-    OFX::Host::ImageEffect::ClipInstance* outputClip =  effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-    if (!outputClip) {
+    // first, check the descriptor, then the instance
+    if (!effectInstance()->getDescriptor().supportsTiles() || !effectInstance()->supportsTiles()) {
         return false;
     }
 
-    return effectInstance()->supportsTiles() && outputClip->supportsTiles();
+    OFX::Host::ImageEffect::ClipInstance* outputClip =  effectInstance()->getClip(kOfxImageEffectOutputClipName);
+
+    return outputClip->supportsTiles();
 }
 
 Natron::PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
+    // first, check the descriptor
+    {
+        const std::string& str = effectInstance()->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+        if (str == "false") {
+            return ePluginOpenGLRenderSupportNone;
+        }
+    }
+    // then, check the instance
     const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
     if (str == "false") {
         return ePluginOpenGLRenderSupportNone;
@@ -2746,7 +2755,8 @@ OfxEffectInstance::supportsOpenGLRender() const
 bool
 OfxEffectInstance::supportsMultiResolution() const
 {
-    return effectInstance()->supportsMultiResolution();
+    // first, check the descriptor, then the instance
+    return effectInstance()->getDescriptor().supportsMultiResolution() && effectInstance()->supportsMultiResolution();
 }
 
 void
@@ -3141,13 +3151,15 @@ OfxEffectInstance::clearTransform(int inputNb)
 bool
 OfxEffectInstance::isFrameVarying() const
 {
+    // only check the instance (frameVarying is set by clip prefs)
     return effectInstance()->isFrameVarying();
 }
 
 bool
 OfxEffectInstance::doesTemporalClipAccess() const
 {
-    return effectInstance()->temporalAccess();
+    // first, check the descriptor, then the instance
+    return effectInstance()->getDescriptor().temporalAccess() && effectInstance()->temporalAccess();
 }
 
 bool
