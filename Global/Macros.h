@@ -85,7 +85,7 @@
 #define NATRON_VERSION_REVISION 0
 
 ///For example RC 1, RC 2 etc...
-#define NATRON_BUILD_NUMBER 0
+#define NATRON_BUILD_NUMBER 1
 
 #define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
@@ -106,7 +106,7 @@
 #else
 // Only modify the following line for actual releases, and revert it to its original state afterwards
 //#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
-#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
 #endif
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
