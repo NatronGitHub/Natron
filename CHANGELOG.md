@@ -29,6 +29,9 @@
 - New merge operators: grain-extract, grain-merge, color, hue, luminosity
 - New gamma and gain controllers on the viewer
 - Multiple viewers can now have their projection synchronised to enhance image comparison
+- Support for multi-layered workflows for cleaner graphs
+- Better support for multi-view workflows
+- Various performance and stability enhancements across the board 
 
 ## Version 1.2.1
 

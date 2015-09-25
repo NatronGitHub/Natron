@@ -87,7 +87,7 @@
 ///For example RC 1, RC 2 etc...
 #define NATRON_BUILD_NUMBER 1
 
-#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/master/LATEST_VERSION.txt"
+#define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/workshop/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"
