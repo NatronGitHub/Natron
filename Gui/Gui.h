@@ -375,6 +375,8 @@ public:
     void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
 
     void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    
+    void clearColorPickers();
 
     bool hasPickers() const;
 

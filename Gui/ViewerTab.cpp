@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QPalette>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -73,6 +74,21 @@ static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
     if (isParentGrp) {
         makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
     }
+}
+
+static void addSpacer(QBoxLayout* layout)
+{
+    layout->addSpacing(5);
+    QFrame* line = new QFrame(layout->parentWidget());
+    line->setFrameShape(QFrame::VLine);
+    line->setFrameShadow(QFrame::Raised);
+    //line->setObjectName("LayoutSeparator");
+    QPalette* palette = new QPalette();
+    palette->setColor(QPalette::Foreground,Qt::black);
+    line->setPalette(*palette);
+    layout->addWidget(line);
+    layout->addSpacing(5);
+    
 }
 
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
@@ -137,6 +153,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels:") + "</b></p><p>"
                                        + tr("The channels to display on the viewer.") + "</p>");
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
+    
+    addSpacer(_imp->firstRowLayout);
     
     QAction* lumiAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionLuminance, tr("Luminance"), _imp->viewerChannels);
     QAction* rgbAction = new QAction(QIcon(), tr("RGB"), _imp->viewerChannels);
@@ -203,11 +221,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect(_imp->syncViewerButton, SIGNAL(clicked(bool)), this,SLOT(onSyncViewersButtonPressed(bool)));
     _imp->firstRowLayout->addWidget(_imp->syncViewerButton);
 
+    
     _imp->centerViewerButton = new Button(_imp->firstSettingsRow);
     _imp->centerViewerButton->setFocusPolicy(Qt::NoFocus);
     _imp->centerViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->centerViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->firstRowLayout->addWidget(_imp->centerViewerButton);
+
+    addSpacer(_imp->firstRowLayout);
 
 
     _imp->clipToProjectFormatButton = new Button(_imp->firstSettingsRow);
@@ -227,23 +248,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->enableViewerRoI->setChecked(false);
     _imp->enableViewerRoI->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->enableViewerRoI);
-
-    _imp->refreshButton = new Button(_imp->firstSettingsRow);
-    _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
-    _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->refreshButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
-        QStringList refreshActions;
-        refreshActions << kShortcutIDActionRefresh;
-        refreshActions << kShortcutIDActionRefreshWithStats;
-        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.") +
-                               "</p>" + "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p><p>" +
-                               tr("Press ") + "%2" + tr(" to activate in-depth render statistics useful "
-                                                   "for debugging the composition.") + "</p>", _imp->refreshButton);
-    }
-    _imp->firstRowLayout->addWidget(_imp->refreshButton);
     
+
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -259,11 +265,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale->setChecked(false);
     _imp->activateRenderScale->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->activateRenderScale);
-
+    
     _imp->renderScaleCombo = new ComboBox(_imp->firstSettingsRow);
     _imp->renderScaleCombo->setFocusPolicy(Qt::NoFocus);
     _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor "
-                                            "to accelerate the rendering."), Qt::WhiteSpaceNormal));
+                                                                       "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
     QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, "2", _imp->renderScaleCombo);
     QAction* proxy4 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, "4", _imp->renderScaleCombo);
@@ -277,7 +283,27 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->renderScaleCombo->addAction(proxy32);
     _imp->firstRowLayout->addWidget(_imp->renderScaleCombo);
 
-    _imp->firstRowLayout->addStretch();
+    
+    addSpacer(_imp->firstRowLayout);
+    
+    _imp->refreshButton = new Button(_imp->firstSettingsRow);
+    _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
+    _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->refreshButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    {
+        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
+        QStringList refreshActions;
+        refreshActions << kShortcutIDActionRefresh;
+        refreshActions << kShortcutIDActionRefreshWithStats;
+        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.") +
+                                "</p>" + "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p><p>" +
+                                tr("Press ") + "%2" + tr(" to activate in-depth render statistics useful "
+                                                         "for debugging the composition.") + "</p>", _imp->refreshButton);
+    }
+    _imp->firstRowLayout->addWidget(_imp->refreshButton);
+
+    
+    addSpacer(_imp->firstRowLayout);
 
     _imp->firstInputLabel = new Natron::Label("A:",_imp->firstSettingsRow);
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
@@ -285,9 +311,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
     _imp->firstInputImage->addItem(" - ");
     QObject::connect( _imp->firstInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onFirstInputNameChanged(QString) ) );
-
     _imp->firstRowLayout->addWidget(_imp->firstInputImage);
 
+    QPixmap pixMerge;
+    appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixMerge);
+    _imp->compositingOperatorLabel = new Natron::Label("",_imp->firstSettingsRow);
+    _imp->compositingOperatorLabel->setPixmap(pixMerge);
+    _imp->firstRowLayout->addWidget(_imp->compositingOperatorLabel);
+    
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCompositingOperatorIndexChanged(int) ) );
     _imp->compositingOperator->addItem(tr(" - "), QIcon(), QKeySequence(), tr("Only the A input is used."));
@@ -403,8 +434,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerColorSpace->setCurrentIndex(1);
     
     QPixmap pixCheckerboardEnabled,pixCheckerboardDisabld;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, &pixCheckerboardEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED, &pixCheckerboardDisabld);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixCheckerboardEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixCheckerboardDisabld);
     QIcon icCk;
     icCk.addPixmap(pixCheckerboardEnabled,QIcon::Normal,QIcon::On);
     icCk.addPixmap(pixCheckerboardDisabld,QIcon::Normal,QIcon::Off);
@@ -430,6 +461,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->secondRowLayout->addStretch();
 
+    QPixmap colorPickerpix;
+    appPTR->getIcon(NATRON_PIXMAP_COLOR_PICKER, NATRON_MEDIUM_BUTTON_ICON_SIZE, &colorPickerpix);
+    
+    _imp->pickerButton = new Button(QIcon(colorPickerpix),"",_imp->secondSettingsRow);
+    _imp->pickerButton->setFocusPolicy(Qt::NoFocus);
+    _imp->pickerButton->setCheckable(true);
+    _imp->pickerButton->setChecked(true);
+    _imp->pickerButton->setDown(true);
+    _imp->pickerButton->setToolTip(Natron::convertFromPlainText(tr("Show/Hide information bar in the bottom of the viewer and if unchecked deactivate any active color picker."), Qt::WhiteSpaceNormal));
+    _imp->pickerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->pickerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+     QObject::connect(_imp->pickerButton,SIGNAL(clicked(bool)),this,SLOT(onPickerButtonClicked(bool)));
+    
+    _imp->secondRowLayout->addWidget(_imp->pickerButton);
     /*=============================================*/
 
     /*OpenGL viewer*/

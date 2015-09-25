@@ -115,6 +115,7 @@ struct ViewerTabPrivate
     ComboBox* renderScaleCombo;
     Natron::Label* firstInputLabel;
     ComboBox* firstInputImage;
+    Natron::Label* compositingOperatorLabel;
     ComboBox* compositingOperator;
     Natron::Label* secondInputLabel;
     ComboBox* secondInputImage;
@@ -132,6 +133,7 @@ struct ViewerTabPrivate
     ScaleSliderQWidget* gammaSlider;
     ComboBox* viewerColorSpace;
     Button* checkerboardButton;
+    Button* pickerButton;
     ComboBox* viewsComboBox;
     int currentViewIndex;
     QMutex currentViewMutex;

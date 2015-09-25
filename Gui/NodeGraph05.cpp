@@ -296,28 +296,35 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 }
             }
             
+            ///Connect the created node to the selected node
+            ///finally we connect the created node to the selected node
+            int createdInput = createdNodeInternal->getPreferredInputForConnection();
+            if (createdInput != -1) {
+                ignore_result(createdNodeInternal->connectInput(selectedNodeInternal, createdInput));
+            }
+            
             if ( !createdNodeInternal->isOutputNode() ) {
                 ///we find all the nodes that were previously connected to the selected node,
                 ///and connect them to the created node instead.
                 std::map<Natron::Node*,int> outputsConnectedToSelectedNode;
                 selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
+                
                 for (std::map<Natron::Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
                      it != outputsConnectedToSelectedNode.end(); ++it) {
-                    if (it->first->getParentMultiInstanceName().empty()) {
-                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
-                        if (ok) {
-                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
-                        }
+                    if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal.get()) {
+                    
+                        ignore_result(it->first->disconnectInput(it->second));
+                        ignore_result(it->first->connectInput(createdNodeInternal, it->second));
+//                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
+//                        if (ok) {
+//                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
+//                        }
                         //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                     }
                 }
             }
             
-            ///finally we connect the created node to the selected node
-            int createdInput = createdNodeInternal->getPreferredInputForConnection();
-            if (createdInput != -1) {
-                (void)proj->connectNodes(createdInput, selectedNodeInternal, createdNodeInternal.get());
-            }
+           
             
         } else {
             ///the created node is an output node and the selected node already has several outputs, create it aside
