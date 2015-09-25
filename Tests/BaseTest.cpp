@@ -222,10 +222,18 @@ TEST_F(BaseTest,GenerateDot)
 {
     ///create the generator
     boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
-
+    
     ///create the writer and set its output filename
     boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
-
+    ASSERT_TRUE(generator && writer);
+    
+    boost::shared_ptr<KnobI> frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    ASSERT_TRUE(frameRange);
+    KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
+    ASSERT_TRUE(knob);
+    knob->setValue(1, 0);
+    knob->setValue(1, 1);
+    
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString filePath = binPath + "/test_dot_generator.jpg";
     writer->setOutputFilesForWriter(filePath.toStdString());
