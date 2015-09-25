@@ -25,6 +25,8 @@
 #include "KnobFile.h"
 
 #include <utility>
+#include <stdexcept>
+
 #include <QtCore/QStringList>
 #include <QtCore/QMutexLocker>
 #include <QDebug>
