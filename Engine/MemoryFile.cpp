@@ -43,6 +43,7 @@
 #include <stdexcept>
 
 #include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #define MIN_FILE_SIZE 4096
 
@@ -239,8 +240,10 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 #endif
     
     if (file_handle == INVALID_HANDLE_VALUE) {
+		std::string winError = Natron::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
+		str.append(winError);
         throw std::runtime_error(str);
     }
 
