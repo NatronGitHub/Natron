@@ -2832,6 +2832,8 @@ makeNameScriptFriendly(const std::string& str)
 {
     if (str == "from") {
         return "pFrom";
+    } else if (str == "lambda") {
+        return "pLambda";
     }
     ///Remove any non alpha-numeric characters from the baseName
     std::locale loc;
