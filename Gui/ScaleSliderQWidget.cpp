@@ -435,14 +435,18 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         QPen pen(color);
         pen.setWidthF(1.9);
         p.setPen(pen);
+        
+        bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
+        bool renderFloating = _imp->dataType == eDataTypeDouble || !isFloating;
 
-        QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
-        QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
+        if (renderFloating) {
+            QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
+            QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
 
-        p.drawLine(tickBottomPos,tickTopPos);
+            p.drawLine(tickBottomPos,tickTopPos);
+        }
 
-        bool renderText = _imp->dataType == eDataTypeDouble || std::abs(std::floor(0.5 + value) - value) == 0.;
-        if (renderText && tickSize > minTickSizeText) {
+        if (renderFloating && tickSize > minTickSizeText) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
             const int sSizePixel =  fontM.width(s);
