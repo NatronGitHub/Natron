@@ -442,43 +442,43 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
 
     
     if (inspector) {
-        ///if the node is an inspector we have to do things differently
-        
-        if (oldSrc && newSrc) {
-            
-            ///also disconnect any current connection between the inspector and the _newSrc
-            _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
-            inspector->replaceInput(newSrc, _inputNb);
-            
-        } else {
-            if (oldSrc) {
-                ///we want to connect to nothing, hence disconnect
-                _graph->getGui()->getApp()->getProject()->disconnectNodes(oldSrc.get(),inspector);
-            }
-            if (newSrc) {
-                ///also disconnect any current connection between the inspector and the _newSrc
-                ///if this is a viewer only
-                if (dynamic_cast<ViewerInstance*>(inspector->getLiveInstance())) {
-                    _graph->getGui()->getApp()->getProject()->disconnectNodes(newSrc.get(),inspector);
-                }
-                _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
-            }
-        }
-      
-        
-    } else {
-        
-        if (oldSrc && newSrc) {
-            internalDst->replaceInput(newSrc, _inputNb);
-        } else {
-            if (oldSrc) {
-                _graph->getGui()->getApp()->getProject()->disconnectNodes( oldSrc.get(), internalDst.get() );
-            }
-            if (newSrc) {
-                _graph->getGui()->getApp()->getProject()->connectNodes( _inputNb, newSrc, internalDst.get() );
+        ///if the node is an inspector  disconnect any current connection between the inspector and the _newSrc
+        for (int i = 0; i < inspector->getMaxInputCount(); ++i) {
+            if (i != _inputNb && inspector->getInput(i) == newSrc) {
+                inspector->disconnectInput(i);
             }
         }
     }
+    if (oldSrc && newSrc) {
+        internalDst->replaceInput(newSrc, _inputNb);
+    } else {
+        
+        
+        if (oldSrc && newSrc) {
+            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(newSrc, _inputNb);
+            bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
+            ret == Natron::Node::eCanConnectInput_differentFPS ||
+            ret == Natron::Node::eCanConnectInput_differentPars;
+            if (connectionOk) {
+                internalDst->replaceInput(newSrc, _inputNb);
+            } else {
+                internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
+            }
+        } else if (oldSrc && !newSrc) {
+            internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
+        } else if (!oldSrc && newSrc) {
+            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(newSrc, _inputNb);
+            bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
+            ret == Natron::Node::eCanConnectInput_differentFPS ||
+            ret == Natron::Node::eCanConnectInput_differentPars;
+            if (connectionOk) {
+                internalDst->connectInput(newSrc,_inputNb);
+            } else {
+                internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
+            }
+        }
+    }
+    
     
     assert(_dst.lock());
     dst->refreshEdges();

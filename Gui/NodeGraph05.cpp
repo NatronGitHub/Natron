@@ -313,8 +313,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                      it != outputsConnectedToSelectedNode.end(); ++it) {
                     if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal.get()) {
                     
-                        ignore_result(it->first->disconnectInput(it->second));
-                        ignore_result(it->first->connectInput(createdNodeInternal, it->second));
+                        ignore_result(it->first->replaceInput(createdNodeInternal, it->second));
 //                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
 //                        if (ok) {
 //                            ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));

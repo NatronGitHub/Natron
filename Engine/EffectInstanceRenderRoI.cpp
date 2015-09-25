@@ -363,6 +363,77 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             it->second = compVec;
         }
     }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Handle pass-through for planes //////////////////////////////////////////////////////////
+    ComponentsAvailableMap componentsAvailables;
+    
+    //Available planes/components is view agnostic
+    getComponentsAvailable(args.time, &componentsAvailables);
+    
+    const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
+    
+    /*
+     * For all requested planes, check which components can be produced in output by this node.
+     * If the components are from the color plane, if another set of components of the color plane is present
+     * we try to render with those instead.
+     */
+    std::list<Natron::ImageComponents> requestedComponents;
+    ComponentsAvailableMap componentsToFetchUpstream;
+    for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+        assert(it->getNumComponents() > 0);
+        
+        bool isColorComponents = it->isColorPlane();
+        ComponentsAvailableMap::iterator found = componentsAvailables.end();
+        for (ComponentsAvailableMap::iterator it2 = componentsAvailables.begin(); it2 != componentsAvailables.end(); ++it2) {
+            if (it2->first == *it) {
+                found = it2;
+                break;
+            } else {
+                if ( isColorComponents && it2->first.isColorPlane() && isSupportedComponent(-1, it2->first) ) {
+                    //We found another set of components in the color plane, take it
+                    found = it2;
+                    break;
+                }
+            }
+        }
+        
+        // If  the requested component is not present, then it will just return black and transparant to the plug-in.
+        if ( found != componentsAvailables.end() ) {
+            if ( found->second.lock() == getNode() ) {
+                requestedComponents.push_back(*it);
+            } else {
+                //The component is not available directly from this node, fetch it upstream
+                componentsToFetchUpstream.insert( std::make_pair( *it, found->second.lock() ) );
+            }
+        }
+    }
+    
+    //Render planes that we are not able to render on this node from upstream
+    for (ComponentsAvailableMap::iterator it = componentsToFetchUpstream.begin(); it != componentsToFetchUpstream.end(); ++it) {
+        NodePtr node = it->second.lock();
+        if (node) {
+            RenderRoIArgs inArgs = args;
+            inArgs.preComputedRoD.clear();
+            inArgs.components.clear();
+            inArgs.components.push_back(it->first);
+            ImageList inputPlanes;
+            RenderRoIRetCode inputRetCode = node->getLiveInstance()->renderRoI(inArgs, &inputPlanes);
+            assert( inputPlanes.size() == 1 || inputPlanes.empty() );
+            if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputPlanes.empty() ) {
+                return inputRetCode;
+            }
+            outputPlanes->push_back( inputPlanes.front() );
+        }
+    }
+    
+    ///There might be only planes to render that were fetched from upstream
+    if ( requestedComponents.empty() ) {
+        return eRenderRoIRetCodeOk;
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End pass-through for planes //////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check if effect is identity ///////////////////////////////////////////////////////////////
@@ -474,76 +545,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End identity check ///////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Handle pass-through for planes //////////////////////////////////////////////////////////
-    ComponentsAvailableMap componentsAvailables;
 
-    //Available planes/components is view agnostic
-    getComponentsAvailable(args.time, &componentsAvailables);
-    
-    const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
-
-    /*
-     * For all requested planes, check which components can be produced in output by this node.
-     * If the components are from the color plane, if another set of components of the color plane is present
-     * we try to render with those instead.
-     */
-    std::list<Natron::ImageComponents> requestedComponents;
-    ComponentsAvailableMap componentsToFetchUpstream;
-    for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-        assert(it->getNumComponents() > 0);
-
-        bool isColorComponents = it->isColorPlane();
-        ComponentsAvailableMap::iterator found = componentsAvailables.end();
-        for (ComponentsAvailableMap::iterator it2 = componentsAvailables.begin(); it2 != componentsAvailables.end(); ++it2) {
-            if (it2->first == *it) {
-                found = it2;
-                break;
-            } else {
-                if ( isColorComponents && it2->first.isColorPlane() && isSupportedComponent(-1, it2->first) ) {
-                    //We found another set of components in the color plane, take it
-                    found = it2;
-                    break;
-                }
-            }
-        }
-
-        // If  the requested component is not present, then it will just return black and transparant to the plug-in.
-        if ( found != componentsAvailables.end() ) {
-            if ( found->second.lock() == getNode() ) {
-                requestedComponents.push_back(*it);
-            } else {
-                //The component is not available directly from this node, fetch it upstream
-                componentsToFetchUpstream.insert( std::make_pair( *it, found->second.lock() ) );
-            }
-        }
-    }
-
-    //Render planes that we are not able to render on this node from upstream
-    for (ComponentsAvailableMap::iterator it = componentsToFetchUpstream.begin(); it != componentsToFetchUpstream.end(); ++it) {
-        NodePtr node = it->second.lock();
-        if (node) {
-            RenderRoIArgs inArgs = args;
-            inArgs.preComputedRoD.clear();
-            inArgs.components.clear();
-            inArgs.components.push_back(it->first);
-            ImageList inputPlanes;
-            RenderRoIRetCode inputRetCode = node->getLiveInstance()->renderRoI(inArgs, &inputPlanes);
-            assert( inputPlanes.size() == 1 || inputPlanes.empty() );
-            if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputPlanes.empty() ) {
-                return inputRetCode;
-            }
-            outputPlanes->push_back( inputPlanes.front() );
-        }
-    }
-
-    ///There might be only planes to render that were fetched from upstream
-    if ( requestedComponents.empty() ) {
-        return eRenderRoIRetCodeOk;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// End pass-through for planes //////////////////////////////////////////////////////////
 
     // At this point, if only the pass through planes are view variant and the rendered view is different than 0,
     // just call renderRoI again for the components left to render on the view 0.

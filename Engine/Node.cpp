@@ -4130,12 +4130,14 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
             }
         }
         if (dc) {
-            int inputNb = (*it)->disconnectInput(this);
+            int inputNb = (*it)->getInputIndex(this);
             _imp->deactivatedState.insert( make_pair(*it, inputNb) );
             
             ///reconnect if inputToConnectTo is not null
             if (inputToConnectTo) {
-                getApp()->getProject()->connectNodes(inputNb, inputToConnectTo, *it);
+                (*it)->replaceInput(inputToConnectTo, inputNb);
+            } else {
+                ignore_result((*it)->disconnectInput(this));
             }
         }
     }
