@@ -41,6 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
+#define DROP_DOWN_ICON_SIZE 6
+
 class QHBoxLayout;
 class QMouseEvent;
 class QAction;
@@ -193,6 +195,7 @@ protected:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     
 private:
+    
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;

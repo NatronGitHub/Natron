@@ -52,7 +52,6 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiMacros.h"
 #include "Gui/Utils.h"
 
-#define DROP_DOWN_ICON_SIZE 6
 
 using namespace Natron;
 
@@ -676,6 +675,11 @@ ComboBox::setCurrentText_internal(const QString & text)
         }
     }
     
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
     int ret = -1;
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
@@ -688,6 +692,9 @@ ComboBox::setCurrentText_internal(const QString & text)
 void
 ComboBox::setMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str);
     setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
@@ -695,6 +702,9 @@ ComboBox::setMaximumWidthFromText(const QString & str)
 void
 ComboBox::growMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
 
     if ( w > maximumWidth() ) {
@@ -768,20 +778,25 @@ ComboBox::setCurrentIndex_internal(int index)
     if ((node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
         return false;
     }
-   
+    
     str = strippedText(text);
     
-    QFontMetrics m = fontMetrics();
-    setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
-
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        QFontMetrics m = fontMetrics();
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
+    bool ret;
     if ((index != -1 && index != _currentIndex) || _currentText != str) {
         _currentIndex = index;
         _currentText = str;
-        updateLabel();
-        return true;
+        ret =  true;
     } else {
-        return false;
+        ret = false;
     }
+    updateLabel();
+    return ret;
 }
 
 void
@@ -859,10 +874,14 @@ ComboBox::removeItem(const QString & item)
         qDebug() << "ComboBox::removeItem unsupported in cascading mode";
         return;
     }
+    
+
     for (U32 i = 0; i < _rootNode->children.size(); ++i) {
         assert(_rootNode->children[i]);
         if (_rootNode->children[i]->isLeaf->text() == item) {
             
+            
+            QString currentText = getCurrentIndexText();
             _rootNode->children.erase(_rootNode->children.begin() + i);
             
             ///Decrease index for all other children
@@ -871,7 +890,6 @@ ComboBox::removeItem(const QString & item)
                 _rootNode->children[j]->isLeaf->setData(QVariant((int)j));
             }
             
-            QString currentText = getCurrentIndexText();
             if (currentText == item) {
                 setCurrentIndex(i - 1);
             }
@@ -884,7 +902,6 @@ ComboBox::removeItem(const QString & item)
             break;
         }
     }
-
 }
 
 void

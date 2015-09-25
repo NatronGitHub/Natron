@@ -127,6 +127,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*VIEWER SETTINGS*/
 
     /*1st row of buttons*/
+    QFontMetrics fm = fontMetrics();
+
     _imp->firstSettingsRow = new QWidget(this);
     _imp->firstRowLayout = new QHBoxLayout(_imp->firstSettingsRow);
     _imp->firstSettingsRow->setLayout(_imp->firstRowLayout);
@@ -140,12 +142,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                        "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
                                        "its number of channels. (e.g: UV would be mapped to RG)") + "</p>");
     QObject::connect(_imp->layerChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onLayerComboChanged(int)));
+    _imp->layerChoice->setFixedWidth(fm.width("Color.Toto.RGBA") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->layerChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstRowLayout->addWidget(_imp->layerChoice);
     
     _imp->alphaChannelChoice = new ComboBox(_imp->firstSettingsRow);
     _imp->alphaChannelChoice->setToolTip("<p><b>" + tr("Alpha channel:") + "</b></p><p>"
                                          + tr("Select here a channel of any layer that will be used when displaying the "
                                               "alpha channel with the <b>Channels</b> choice on the right.") + "</p>");
+    _imp->alphaChannelChoice->setFixedWidth(fm.width("Color.alpha") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->alphaChannelChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     QObject::connect(_imp->alphaChannelChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onAlphaChannelComboChanged(int)));
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
@@ -153,6 +159,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels:") + "</b></p><p>"
                                        + tr("The channels to display on the viewer.") + "</p>");
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
+    _imp->viewerChannels->setFixedWidth(fm.width("Luminance") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->viewerChannels->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
     addSpacer(_imp->firstRowLayout);
     
@@ -309,7 +317,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
+    
+    _imp->firstInputImage->setFixedWidth(fm.width("ColorCorrect1") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->firstInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstInputImage->addItem(" - ");
+    
     QObject::connect( _imp->firstInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onFirstInputNameChanged(QString) ) );
     _imp->firstRowLayout->addWidget(_imp->firstInputImage);
 
@@ -319,12 +331,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperatorLabel->setPixmap(pixMerge);
     _imp->firstRowLayout->addWidget(_imp->compositingOperatorLabel);
     
+    
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCompositingOperatorIndexChanged(int) ) );
+    _imp->compositingOperator->setFixedWidth(fm.width("Minus") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->compositingOperator->addItem(tr(" - "), QIcon(), QKeySequence(), tr("Only the A input is used."));
     _imp->compositingOperator->addItem(tr("Over"), QIcon(), QKeySequence(), tr("A + B(1 - Aalpha)"));
     _imp->compositingOperator->addItem(tr("Under"), QIcon(), QKeySequence(), tr("A(1 - Balpha) + B"));
     _imp->compositingOperator->addItem(tr("Minus"), QIcon(), QKeySequence(), tr("A - B"));
+
     ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "Wipe", _imp->compositingOperator);
     actionWipe->setToolTip(tr("Wipe between A and B"));
     _imp->compositingOperator->addAction(actionWipe);
@@ -335,6 +351,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->secondInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onSecondInputNameChanged(QString) ) );
+    _imp->secondInputImage->setFixedWidth(fm.width("ColorCorrect1")  + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->secondInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->secondInputImage->addItem(" - ");
     _imp->firstRowLayout->addWidget(_imp->secondInputImage);
 
