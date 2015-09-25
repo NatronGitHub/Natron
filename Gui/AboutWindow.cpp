@@ -26,6 +26,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QSplitter>
 #include <QTextBrowser>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -202,6 +203,7 @@ AboutWindow::AboutWindow(Gui* gui,
     QWidget* thirdPartyContainer = new QWidget(_tabWidget);
     QVBoxLayout* thidPartyLayout = new QVBoxLayout(thirdPartyContainer);
     thidPartyLayout->setContentsMargins(0,0,0,0);
+    QSplitter *splitter = new QSplitter();
 
     _view = new TableView(thirdPartyContainer);
     _model = new TableModel(0,0,_view);
@@ -220,13 +222,15 @@ AboutWindow::AboutWindow(Gui* gui,
     _view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 #endif
     _view->header()->setStretchLastSection(true);
-    thidPartyLayout->addWidget(_view);
+    splitter->addWidget(_view);
     
     _thirdPartyBrowser = new QTextBrowser(thirdPartyContainer);
     _thirdPartyBrowser->setOpenExternalLinks(false);
-    thidPartyLayout->addWidget(_thirdPartyBrowser);
-  
-    
+    splitter->addWidget(_thirdPartyBrowser);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 4);
+    thidPartyLayout->addWidget(splitter);
+
     QString thirdPartyLicenseDir(THIRD_PARTY_LICENSE_DIR_PATH);
     QDir thirdPartyDir(thirdPartyLicenseDir);
 
@@ -249,14 +253,14 @@ AboutWindow::AboutWindow(Gui* gui,
     
     TableItem* readmeIndex = 0;
     for (int i = 0; i < rowsTmp.size(); ++i) {
-        if (!rowsTmp[i].startsWith("LICENSE")) {
+        if (!rowsTmp[i].startsWith("LICENSE-")) {
             continue;
         }
         TableItem* item = new TableItem;
-        item->setText(rowsTmp[i]);
+        item->setText(rowsTmp[i].remove("LICENSE-").remove(".txt").remove(".md"));
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         _view->setItem(i, 0, item);
-        if (rowsTmp[i] == "LICENSE-README.md") {
+        if (rowsTmp[i] == "README") {
             readmeIndex = item;
         }
     }
@@ -285,7 +289,9 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
         }
         QString fileName(THIRD_PARTY_LICENSE_DIR_PATH);
         fileName += '/';
+        fileName += "LICENSE-";
         fileName += item->text();
+        fileName += (item->text() == "README") ? ".md" : ".txt";
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QString content = QTextCodec::codecForName("UTF-8")->toUnicode(file.readAll());
