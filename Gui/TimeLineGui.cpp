@@ -400,6 +400,10 @@ TimeLineGui::paintGL()
         double smallTickSize;
         bool half_tick;
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+        if (smallTickSize < 1) {
+            smallTickSize = 1;
+            half_tick = false;
+        }
         int m1, m2;
         const int ticks_max = 1000;
         double offset;
@@ -415,18 +419,21 @@ TimeLineGui::paintGL()
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
+            // because smallTickSize is at least 1, isFloating can never be true
             bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
-            
-            if (!isFloating) {
-                glColor4f(txtR,txtG,txtB, alpha);
-                
-                glBegin(GL_LINES);
-                glVertex2f(value, tickBottom);
-                glVertex2f(value, tickTop);
-                glEnd();
-                glCheckErrorIgnoreOSXBug();
+            assert(!isFloating);
+            if (isFloating) {
+                continue;
             }
-            if (!isFloating && tickSize > minTickSizeText) {
+            glColor4f(txtR,txtG,txtB, alpha);
+
+            glBegin(GL_LINES);
+            glVertex2f(value, tickBottom);
+            glVertex2f(value, tickTop);
+            glEnd();
+            glCheckErrorIgnoreOSXBug();
+
+            if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
                 const int sSizePixel =  fontM.width(s);
