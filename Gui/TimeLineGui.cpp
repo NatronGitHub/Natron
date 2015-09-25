@@ -415,16 +415,18 @@ TimeLineGui::paintGL()
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glColor4f(txtR,txtG,txtB, alpha);
-
-            glBegin(GL_LINES);
-            glVertex2f(value, tickBottom);
-            glVertex2f(value, tickTop);
-            glEnd();
-            glCheckErrorIgnoreOSXBug();
-
-            bool doRender = std::abs(std::floor(0.5 + value) - value) == 0.;
-            if (doRender && tickSize > minTickSizeText) {
+            bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
+            
+            if (!isFloating) {
+                glColor4f(txtR,txtG,txtB, alpha);
+                
+                glBegin(GL_LINES);
+                glVertex2f(value, tickBottom);
+                glVertex2f(value, tickTop);
+                glEnd();
+                glCheckErrorIgnoreOSXBug();
+            }
+            if (!isFloating && tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
                 const int sSizePixel =  fontM.width(s);
