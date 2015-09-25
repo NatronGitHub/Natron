@@ -225,3 +225,5 @@ CrashReporterCLI/NatronRendererCrashReporter
 OpenColorIO-Configs
 PortIndex
 PortIndex.quick
+*.7z*
+*.exe*
