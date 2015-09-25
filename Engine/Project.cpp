@@ -822,7 +822,7 @@ Project::initializeKnobs()
     
     _imp->frameRange = Natron::createKnob<KnobInt>(this, "Frame Range",2);
     _imp->frameRange->setDefaultValue(1,0);
-    _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setDefaultValue(250,1);
     _imp->frameRange->setDimensionName(0, "first");
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
@@ -2035,7 +2035,7 @@ Project::unionFrameRangeWith(int first,int last)
 {
     
     int curFirst,curLast;
-    bool mustSet = !_imp->frameRange->hasModifications();
+    bool mustSet = !_imp->frameRange->hasModifications() && first != last;
     curFirst = _imp->frameRange->getValue(0);
     curLast = _imp->frameRange->getValue(1);
     curFirst = !mustSet ? std::min(first, curFirst) : first;
