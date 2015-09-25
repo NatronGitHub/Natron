@@ -3419,7 +3419,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
         return Node::eCanConnectInput_multiResNotSupported;
     }
     
-    RectD outputRod;
+  /*  RectD outputRod;
     stat = output->getLiveInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
     if (stat == eStatusFailed && !outputRod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
@@ -3427,7 +3427,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     
     if (rod != outputRod) {
         return Node::eCanConnectInput_multiResNotSupported;
-    }
+    }*/
     
     for (int i = 0; i < output->getMaxInputCount(); ++i) {
         NodePtr inputNode = output->getInput(i);
@@ -7142,6 +7142,14 @@ Node::getChannelSelectorKnob(int inputNb) const
 {
     std::map<int,ChannelSelector>::const_iterator found = _imp->channelsSelectors.find(inputNb);
     if (found == _imp->channelsSelectors.end()) {
+        if (inputNb == -1) {
+            ///The effect might be multi-planar and supply its own
+            boost::shared_ptr<KnobI> knob = getKnobByName(kNatronOfxParamOutputChannels);
+            if (!knob) {
+                return boost::shared_ptr<KnobChoice>();
+            }
+            return boost::dynamic_pointer_cast<KnobChoice>(knob);
+        }
         return boost::shared_ptr<KnobChoice>();
     }
     return found->second.layer.lock();
@@ -7394,8 +7402,18 @@ bool
 Node::addUserComponents(const Natron::ImageComponents& comps)
 {
     ///The node has node channel selector, don't allow adding a custom plane.
-    if (_imp->channelsSelectors.empty() && !getKnobByName(kNatronOfxParamOutputChannels)) {
+    boost::shared_ptr<KnobI> outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
+    if (_imp->channelsSelectors.empty() && !outputLayerKnob) {
         return false;
+    }
+    
+    if (!outputLayerKnob) {
+        //The effect does not have kNatronOfxParamOutputChannels but maybe the selector provided by Natron
+        std::map<int,ChannelSelector>::iterator found = _imp->channelsSelectors.find(-1);
+        if (found == _imp->channelsSelectors.end()) {
+            return false;
+        }
+        outputLayerKnob = found->second.layer.lock();
     }
     
     {
@@ -7416,6 +7434,13 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
                                                           s,
                                                           OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
                                                           true, true);
+    }
+    {
+        ///Set the selector to the new channel
+        KnobChoice* layerChoice = dynamic_cast<KnobChoice*>(outputLayerKnob.get());
+        if (layerChoice) {
+            layerChoice->setValueFromLabel(comps.getLayerName(), 0);
+        }
     }
     return true;
 }
