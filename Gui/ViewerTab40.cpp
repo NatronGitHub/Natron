@@ -566,6 +566,38 @@ ViewerTab::onVideoEngineStopped()
     }
 }
 
+bool
+ViewerTab::isPickerEnabled() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->pickerButton->isChecked();
+}
+
+void
+ViewerTab::setPickerEnabled(bool enabled)
+{
+    _imp->pickerButton->setChecked(enabled);
+    _imp->pickerButton->setDown(enabled);
+    setInfobarVisible(true);
+}
+
+void
+ViewerTab::onPickerButtonClicked(bool clicked)
+{
+    const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        if ((*it) != this) {
+            (*it)->onPickerButtonClicked(clicked);
+        }
+    }
+
+    
+    _imp->pickerButton->setDown(clicked);
+
+    setInfobarVisible(clicked);
+    getGui()->clearColorPickers();
+}
+
 void
 ViewerTab::onCheckerboardButtonClicked()
 {

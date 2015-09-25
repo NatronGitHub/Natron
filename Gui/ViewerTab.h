@@ -284,6 +284,9 @@ public:
     void refresh(bool enableRenderStats);
     
     void connectToInput(int inputNb);
+    
+    bool isPickerEnabled() const;
+    void setPickerEnabled(bool enabled);
 
 public Q_SLOTS:
 
@@ -384,6 +387,8 @@ public Q_SLOTS:
     void onVideoEngineStopped();
     
     void onCheckerboardButtonClicked();
+    
+    void onPickerButtonClicked(bool);
     
     void onSpinboxFpsChanged(double fps);
     

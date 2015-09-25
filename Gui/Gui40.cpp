@@ -207,6 +207,12 @@ void
 Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
+    const std::list<ViewerTab*> &viewers = getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        if (!(*it)->isPickerEnabled()) {
+            (*it)->setPickerEnabled(true);
+        }
+    }
     _imp->_projectGui->registerNewColorPicker(knob);
 }
 
@@ -215,6 +221,13 @@ Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
+}
+
+void
+Gui::clearColorPickers()
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->clearColorPickers();
 }
 
 bool
