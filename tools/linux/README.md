@@ -78,3 +78,10 @@ For this to work you need to create a file named **repo.sh** next to *snapshot.s
 
     REPO_DEST=user@host:/path
     REPO_URL=http://some.url
+	
+Release build:
+===============
+
+To do a release build just edit the git tags accordingly in common.sh  then type:
+	#Do a GPL build using 4 threads
+	NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 CV=0 sh build.sh tag 4
