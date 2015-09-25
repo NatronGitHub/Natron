@@ -815,7 +815,9 @@ void
 Node::refreshDynamicProperties()
 {
     setCurrentOpenGLRenderSupport(_imp->liveInstance->supportsOpenGLRender());
-    setCurrentSupportTiles(_imp->liveInstance->supportsTiles());
+    bool tilesSupported = _imp->liveInstance->supportsTiles();
+    bool multiResSupported = _imp->liveInstance->supportsMultiResolution();
+    setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport(_imp->liveInstance->getSequentialPreference());
 
 }
