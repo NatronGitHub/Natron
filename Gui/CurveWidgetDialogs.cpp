@@ -412,6 +412,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     _imp->xSpinbox = new SpinBox(_imp->boxContainer,xType);
     _imp->xSpinbox->setValue(_imp->originalX);
     QObject::connect(_imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)));
+    QObject::connect(_imp->xSpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
     _imp->boxLayout->addWidget(_imp->xSpinbox);
     
     if (mode == eEditModeKeyframePosition) {
@@ -438,6 +439,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
         
         _imp->ySpinbox->setValue(_imp->originalY);
         QObject::connect(_imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)));
+        QObject::connect(_imp->ySpinbox, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
         _imp->boxLayout->addWidget(_imp->ySpinbox);
     }
     
@@ -513,6 +515,13 @@ EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
 {
     moveKeyTo(_imp->key->key.getTime(), d);
 
+}
+                     
+void
+EditKeyFrameDialog::onEditingFinished()
+{
+    _imp->wasAccepted = true;
+    accept();
 }
 
 void

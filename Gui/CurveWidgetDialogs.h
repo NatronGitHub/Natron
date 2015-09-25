@@ -176,6 +176,7 @@ public Q_SLOTS:
     
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);
+    void onEditingFinished();
     
 private:
     
