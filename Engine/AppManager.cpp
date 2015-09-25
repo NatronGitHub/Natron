@@ -110,7 +110,7 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
     
-    QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(void*)), this, SLOT(onOFXDialogOnMainThreadReceived(void*)));
+    QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance*, void*)), this, SLOT(onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance*, void*)));
 }
 
 void
