@@ -837,7 +837,11 @@ void DopeSheetViewPrivate::drawScale() const
         bool half_tick;
 
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-
+        // nothing happens in the dopesheet at a scale smaller than 1 frame
+        if (smallTickSize < 1.) {
+            smallTickSize = 1;
+            half_tick = false;
+        }
         int m1, m2;
         const int ticks_max = 1000;
         double offset;
@@ -3322,15 +3326,16 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
         return;
     }
 
-    const double par_min = 0.0001;
-    const double par_max = 10000.;
+    const double par_min = 0.01; // 1 pixel for 100 frames
+    const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
 
     double par;
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     _imp->zoomOrPannedSinceLastFit = true;
-
+    qDebug() << scaleFactor;
+    
     par = _imp->zoomContext.aspectRatio() * scaleFactor;
 
     if (par <= par_min) {

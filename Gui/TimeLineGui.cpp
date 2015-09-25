@@ -823,10 +823,10 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
     }
     const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
-    if (newZoomFactor <= 0.01) {
+    if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
         newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
+    } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
+        newZoomFactor = 100.;
     }
     QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
     double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
