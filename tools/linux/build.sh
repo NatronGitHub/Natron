@@ -132,7 +132,7 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh "$INC_PATH/scripts/build-natron.sh" workshop >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -144,7 +144,7 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
         log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
         echo -n "Building Plugins (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" workshop >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -158,7 +158,7 @@ fi
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
     echo -n "Building Packages (log in $log)... "
-    env OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" workshop >& "$log" || FAIL=1
+    env OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
