@@ -675,13 +675,14 @@ ComboBox::setCurrentText_internal(const QString & text)
             break;
         }
     }
+    
+    int ret = -1;
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
-        update();
-        return index;
+        ret = index;
     }
     updateLabel();
-    return -1;
+    return ret;
 }
 
 void
