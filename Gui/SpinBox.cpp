@@ -789,7 +789,7 @@ SpinBox::setAnimation(int i)
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -798,7 +798,7 @@ SpinBox::setDirty(bool d)
     dirty = d;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 QMenu*
@@ -827,5 +827,5 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
-    repaint();
+    update();
 }

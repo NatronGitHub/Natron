@@ -51,28 +51,28 @@ void
 AnimatedCheckBox::setAnimation(int i)
 {
     animation = i;
-    repaint();
+    update();
 }
 
 void
 AnimatedCheckBox::setReadOnly(bool readOnly)
 {
     this->readOnly = readOnly;
-    repaint();
+    update();
 }
 
 void
 AnimatedCheckBox::setDirty(bool b)
 {
     dirty = b;
-    repaint();
+    update();
 }
 
 void
 AnimatedCheckBox::setChecked(bool c) {
     checked = c;
     Q_EMIT toggled(checked);
-    repaint();
+    update();
 }
 
 void
@@ -82,7 +82,7 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
         checked = !checked;
         Q_EMIT toggled(checked);
         Q_EMIT clicked(checked);
-        repaint();
+        update();
     } else {
         QFrame::keyPressEvent(e);
     }
@@ -96,7 +96,7 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
             return;
         }
         checked = !checked;
-        repaint();
+        update();
         Q_EMIT clicked(checked);
         Q_EMIT toggled(checked);
         

@@ -75,7 +75,7 @@ void
 SplashScreen::updateText(const QString & text)
 {
     _text = text;
-    repaint();
+    update();
     QCoreApplication::processEvents();
 }
 
@@ -120,7 +120,7 @@ void
 LoadProjectSplashScreen::updateText(const QString & text)
 {
     _text = text;
-    repaint();
+    update();
     QCoreApplication::processEvents();
 }
 
