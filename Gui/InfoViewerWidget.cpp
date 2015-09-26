@@ -315,7 +315,7 @@ InfoViewerWidget::setColor(float r,
         values.prepend("<b> ~ </b>");
     }
     rgbaValues->setText(values);
-    rgbaValues->repaint();
+    rgbaValues->update();
     float h,s,v,l;
     // Nuke's HSV display is based on sRGB, an L is Rec.709.
     // see http://forums.thefoundry.co.uk/phpBB2/viewtopic.php?t=2283
@@ -327,7 +327,7 @@ InfoViewerWidget::setColor(float r,
     QPixmap pix(15,15);
     pix.fill(col);
     color->setPixmap(pix);
-    color->repaint();
+    color->update();
 
     const QFont &hsvFont = hvl_lastOption->font();
 
@@ -350,7 +350,7 @@ InfoViewerWidget::setColor(float r,
                  .arg(hsvFont.pixelSize());
 
     hvl_lastOption->setText(hsvlValues);
-    hvl_lastOption->repaint();
+    hvl_lastOption->update();
 } // setColor
 
 void

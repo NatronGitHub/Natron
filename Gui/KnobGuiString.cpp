@@ -99,7 +99,7 @@ AnimatingTextEdit::setAnimation(int v)
     animation = v;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -109,7 +109,7 @@ AnimatingTextEdit::setReadOnlyNatron(bool ro)
     readOnlyNatron = ro;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -118,7 +118,7 @@ AnimatingTextEdit::setDirty(bool b)
     dirty = b;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void

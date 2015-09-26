@@ -367,7 +367,7 @@ ComboBox::mousePressEvent(QMouseEvent* e)
     if ( buttonDownIsLeft(e) && !_readOnly && _enabled ) {
         _clicked = true;
         createMenu();
-        repaint();
+        update();
         QFrame::mousePressEvent(e);
     }
 }
@@ -376,7 +376,7 @@ void
 ComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
     _clicked = false;
-    repaint();
+    update();
     QFrame::mouseReleaseEvent(e);
 }
 
@@ -451,7 +451,7 @@ ComboBox::createMenu()
     }
     _clicked = false;
     setFocus();
-    repaint();
+    update();
 }
 
 int
@@ -988,7 +988,7 @@ void
 ComboBox::setReadOnly(bool readOnly)
 {
     _readOnly = readOnly;
-    repaint();
+    update();
 }
 
 bool
@@ -1001,7 +1001,7 @@ void
 ComboBox::setEnabled_natron(bool enabled)
 {
     _enabled = enabled;
-    repaint();
+    update();
 }
 
 int
@@ -1014,21 +1014,21 @@ void
 ComboBox::setAnimation(int i)
 {
     _animation = i;
-    repaint();
+    update();
 }
 
 void
 ComboBox::setDirty(bool b)
 {
     _dirty = b;
-    repaint();
+    update();
 }
 
 void
 ComboBox::setAltered(bool b)
 {
     _altered = b;
-    repaint();
+    update();
 }
 
 bool

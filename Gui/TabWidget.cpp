@@ -113,7 +113,7 @@ public:
     {
         _type = type;
         if (type != TabWidget::eDropRectNone) {
-            repaint();
+            update();
         }
     }
     
@@ -1266,7 +1266,7 @@ TabWidget::dropEvent(QDropEvent* e)
     }
     _imp->drawDropRect = false;
     setFrameShape(QFrame::NoFrame);
-    repaint();
+    update();
 }
 
 TabBar::TabBar(TabWidget* tabWidget,

@@ -241,7 +241,7 @@ void
 ScaleSliderQWidget::setAltered(bool b)
 {
     _imp->altered = b;
-    repaint();
+    update();
 }
 
 bool
@@ -504,6 +504,6 @@ ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
-    repaint();
+    update();
 }
 

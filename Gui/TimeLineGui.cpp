@@ -973,7 +973,7 @@ TimeLineGui::toWidgetCoordinates(double x,
 void
 TimeLineGui::onKeyframesIndicatorsChanged()
 {
-    repaint();
+    update();
 }
 
 void
