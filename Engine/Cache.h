@@ -1386,10 +1386,6 @@ private:
                            we re-open the mapping to the RAM put the entry
                            back into the memoryCache.*/
 
-                        if ( ret.empty() ) {
-                            _diskCache.erase(diskCached);
-                        }
-
                         try {
                             (*it)->reOpenFileMapping();
                         } catch (const std::exception & e) {
@@ -1406,6 +1402,7 @@ private:
 
                         //put it back into the RAM
                         _memoryCache.insert( (*it)->getHashKey(), *it );
+                        
 
                         U64 memoryCacheSize, maximumInMemorySize;
                         {
@@ -1435,7 +1432,10 @@ private:
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );
                         }
-
+                        
+                        ///Remove it from the disk cache
+                        _diskCache.erase(diskCached);
+                        
                         return true;
                     }
                 }
