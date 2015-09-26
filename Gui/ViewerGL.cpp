@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h

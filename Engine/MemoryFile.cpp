@@ -24,8 +24,6 @@
 
 #include "Engine/MemoryFile.h"
 
-#include <stdexcept>
-
 #ifdef __NATRON_WIN32__
 # include <windows.h>
 #else // unix

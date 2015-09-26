@@ -26,6 +26,7 @@
 #include "ViewerInstancePrivate.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
