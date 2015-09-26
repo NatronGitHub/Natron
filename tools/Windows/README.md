@@ -34,4 +34,6 @@ The environment is now ready to build Natron and plug-ins, just run:
 	BIT=64
 	sh snapshots.sh 64
 
-	
+To launch a release build, edit common.sh to adjust which git tags should be used then:
+	#GPL build, without openfx-opencv plug-ins for 64bit target using 8 threads.
+	NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 CV=0 sh build.sh 64 tag 8

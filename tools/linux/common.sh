@@ -24,11 +24,11 @@
 
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
-NATRON_GIT_TAG=tags/2.0.0
-IOPLUG_GIT_TAG=tags/2.0.0
-MISCPLUG_GIT_TAG=tags/2.0.0
-ARENAPLUG_GIT_TAG=tags/2.0.0
-CVPLUG_GIT_TAG=tags/2.0.0
+NATRON_GIT_TAG=tags/2.0.0-RC1
+IOPLUG_GIT_TAG=tags/2.0.0-RC1
+MISCPLUG_GIT_TAG=tags/2.0.0-RC1
+ARENAPLUG_GIT_TAG=tags/2.0.0-RC1
+CVPLUG_GIT_TAG=tags/2.0.0-RC1
 #----------------------------------------------------------
 
 

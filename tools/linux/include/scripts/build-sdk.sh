@@ -156,7 +156,7 @@ if [ ! -f "$INSTALL_PATH/bin/yasm" ]; then
     fi
     tar xvf "$SRC_PATH/$YASM_TAR" || exit 1
     cd yasm* || exit 1
-    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
@@ -169,7 +169,7 @@ if [ ! -f "$INSTALL_PATH/bin/cmake" ]; then
     fi
     tar xvf "$SRC_PATH/$CMAKE_TAR" || exit 1
     cd cmake* || exit 1
-    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
@@ -182,7 +182,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python2.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$PY2_TAR" || exit 1
     cd Python-2* || exit 1
-    ./configure --prefix="$INSTALL_PATH" --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-shared  || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p "$INSTALL_PATH/docs/python2" || exit 1
@@ -197,7 +197,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python3.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$PY3_TAR" || exit 1
     cd Python-3* || exit 1
-    ./configure --prefix=$INSTALL_PATH --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p "$INSTALL_PATH/docs/python3" || exit 1
@@ -699,11 +699,11 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
     fi
     tar xvf $SRC_PATH/$FFMPEG_TAR || exit 1
     cd ffmpeg-2* || exit 1
-    ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     make distclean
-    ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/ffmpeg || exit 1
     cp COPYING* CREDITS $INSTALL_PATH/docs/ffmpeg/
