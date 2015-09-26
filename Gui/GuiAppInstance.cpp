@@ -24,6 +24,7 @@
 
 #include "GuiAppInstance.h"
 
+#include <stdexcept>
 
 #include <QDir>
 #include <QSettings>
