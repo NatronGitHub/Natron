@@ -2258,32 +2258,34 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
                 assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
                 
-                
-                if ( ( it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
-                    ( it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
+                it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
+                if (useMaskMix) {
+                    it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                }
+                if ( ( it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
+                    ( it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
-                    ImagePtr tmp( new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
+                    ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
                     
                     it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
                                                          getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
+                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() ),
                                                          -1, false, unPremultRequired, tmp.get() );
                     tmp->downscaleMipMap( it->second.tmpImage->getRoD(),
                                          actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
+                    it->second.fullscaleImage->pasteFrom(*tmp, it->second.fullscaleImage->getBounds(), false);
                 } else {
                     /*
                      *  Downscaling required only
                      */
                     it->second.tmpImage->downscaleMipMap( it->second.tmpImage->getRoD(),
                                                          actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
+                    it->second.fullscaleImage->pasteFrom(*(it->second.tmpImage), it->second.fullscaleImage->getBounds(), false);
                 }
                 
-                it->second.downscaleImage->copyUnProcessedChannels(downscaledRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
-                if (useMaskMix) {
-                    it->second.downscaleImage->applyMaskMix(downscaledRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                }
+                
                 it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
                 
             } else { // if (renderFullScaleThenDownscale) {
