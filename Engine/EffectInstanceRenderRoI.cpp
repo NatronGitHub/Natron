@@ -818,7 +818,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
 #ifndef DEBUG
-            isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+            isPlaneCached->getRestToRender_trimap(upscaledRoi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
 #else
             // in debug mode, check that the result of getRestToRender_trimap and getRestToRender is the same if the image
             // is not currently rendered concurrently
@@ -832,9 +832,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             if (!ibr) {
                 Image::ReadAccess racc( isPlaneCached.get() );
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+                isPlaneCached->getRestToRender_trimap(upscaledRoi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
                 std::list<RectI> tmpRects;
-                isPlaneCached->getRestToRender(roi, tmpRects);
+                isPlaneCached->getRestToRender(upscaledRoi, tmpRects);
 
                 //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
                 //The other thread should have removed that image from the cache or marked the image as rendered.
@@ -846,14 +846,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     assert(*it == *oIt);
                 }
             } else {
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+                isPlaneCached->getRestToRender_trimap(upscaledRoi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
             }
 #endif
         } else {
-            isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+            isPlaneCached->getRestToRender(upscaledRoi, rectsLeftToRender);
         }
 #else
-        isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+        isPlaneCached->getRestToRender(upscaledRoi, rectsLeftToRender);
 #endif
         if ( isDuringPaintStroke && !rectsLeftToRender.empty() && !lastStrokePixelRoD.isNull() ) {
             rectsLeftToRender.clear();
@@ -1404,9 +1404,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
         //We have to return the downscale image, so make sure it has been computed
-        if ( (renderRetCode != eRenderRoIStatusRenderFailed) && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled ) {
+        if ( (renderRetCode != eRenderRoIStatusRenderFailed) &&
+            renderFullScaleThenDownscale &&
+            it->second.fullscaleImage->getMipMapLevel() != mipMapLevel &&
+            !hasSomethingToRender) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
-            roi.intersect(it->second.fullscaleImage->getBounds(), &roi);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
                 it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
                                                            it->second.fullscaleImage->getRoD(),
@@ -1417,7 +1419,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                            false) );
             }
 
-            it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
+            it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), upscaledRoi, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
         }
         ///The image might need to be converted to fit the original requested format
         bool imageConversionNeeded = it->first != it->second.downscaleImage->getComponents() || args.bitdepth != it->second.downscaleImage->getBitDepth();
