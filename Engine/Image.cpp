@@ -1740,13 +1740,15 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         PIX * dstPixFirst = dstLineBatchStart;
         // fill the first line
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += components, xo += xcount, dstPixFirst += xcount * components) {
-            xcount = scale + xo - xi * scale;
+            xcount = scale - (xo - xi * scale);
+            xcount = std::min(xcount, dstRoi.x2 - xo);
             //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
             for (int i = 0; i < xcount; ++i, dstPix += components) {
                 assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % components == 0 );
+                assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * components);
                 for (int c = 0; c < components; ++c) {
                     dstPix[c] = srcPix[c];
                 }
