@@ -231,6 +231,7 @@ public:
      * full RoD images to the effect whenever it fetches one.
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool supportsRenderQuality() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

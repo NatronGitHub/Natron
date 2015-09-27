@@ -1476,7 +1476,6 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    double par,
                                    unsigned int mipmapLevel,
                                    bool renderFullScaleThenDownscale,
-                                   bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                    bool useDiskCache,
                                    bool createInCache,
                                    boost::shared_ptr<Natron::Image>* fullScaleImage,
@@ -1487,9 +1486,29 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
-    if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+    if (renderFullScaleThenDownscale) {
         downscaleImage->reset( new Natron::Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
+        boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
+                                                                                               rod,
+                                                                                               fullScaleImageBounds,
+                                                                                               par,
+                                                                                               0,
+                                                                                               isProjectFormat,
+                                                                                               components,
+                                                                                               depth,
+                                                                                               framesNeeded);
+        
+        //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
+        
+        fullScaleImage->reset();
+        getOrCreateFromCacheInternal(key, upscaledImageParams, createInCache, useDiskCache, fullScaleImage);
+        
+        if (!*fullScaleImage) {
+            return false;
+        }
+
     } else {
+        
         ///Cache the image with the requested components instead of the remapped ones
         boost::shared_ptr<Natron::ImageParams> cachedImgParams = Natron::Image::makeParams(cost,
                                                                                            rod,
@@ -1506,39 +1525,11 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
         ///When calling allocateMemory() on the image, the cache already has the lock since it added it
         ///so taking this lock now ensures the image will be allocated completetly
 
-        getOrCreateFromCacheInternal(key, cachedImgParams, createInCache, useDiskCache, fullScaleImage);
-        if (!*fullScaleImage) {
+        getOrCreateFromCacheInternal(key, cachedImgParams, createInCache, useDiskCache, downscaleImage);
+        if (!*downscaleImage) {
             return false;
         }
-
-
-        *downscaleImage = *fullScaleImage;
-    }
-
-    if (renderFullScaleThenDownscale) {
-        if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
-            ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
-            fullScaleImage->reset( new Natron::Image(components, rod, fullScaleImageBounds, 0, par, depth, true) );
-        } else {
-            boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
-                                                                                                   rod,
-                                                                                                   fullScaleImageBounds,
-                                                                                                   par,
-                                                                                                   0,
-                                                                                                   isProjectFormat,
-                                                                                                   components,
-                                                                                                   depth,
-                                                                                                   framesNeeded);
-
-            //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
-
-            fullScaleImage->reset();
-            getOrCreateFromCacheInternal(key, upscaledImageParams, createInCache, useDiskCache, fullScaleImage);
-
-            if (!*fullScaleImage) {
-                return false;
-            }
-        }
+        *fullScaleImage = *downscaleImage;
     }
 
     return true;
@@ -1650,7 +1641,6 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs & args,
                                  specificData,
                                  args.frameTLS,
                                  args.renderFullScaleThenDownscale,
-                                 args.renderUseScaleOneInputs,
                                  args.isSequentialRender,
                                  args.isRenderResponseToUserInteraction,
                                  args.firstFrame,
@@ -1676,7 +1666,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const RectToRender & rectToRender,
                                       const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTLS,
                                       bool renderFullScaleThenDownscale,
-                                      bool renderUseScaleOneInputs,
                                       bool isSequentialRender,
                                       bool isRenderResponseToUserInteraction,
                                       int firstFrame,
@@ -1696,8 +1685,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       ImagePlanesToRender & planes) // when MT, planes is a copy so there's is no data race
 {
     assert( !rectToRender.rect.isNull() );
-
-    bool outputUseImage = renderFullScaleThenDownscale && renderUseScaleOneInputs;
 
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
@@ -1725,7 +1712,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
     RectD canonicalRectToRender;
     downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalRectToRender);
-    if ( !outputUseImage && (mipMapLevel > 0) && (renderMappedMipMapLevel != mipMapLevel) ) {
+    if (renderFullScaleThenDownscale) {
+        assert(mipMapLevel > 0 && renderMappedMipMapLevel != mipMapLevel);
         canonicalRectToRender.toPixelEnclosing(renderMappedMipMapLevel, par, &renderMappedRectToRender);
     }
 
@@ -1745,7 +1733,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 
     // check the bitmap!
     if (frameArgs.tilesSupported) {
-        if (outputUseImage) {
+        if (renderFullScaleThenDownscale) {
             //The renderMappedImage is cached , read bitmap from it
             canonicalRectToRender.toPixelEnclosing(0, par, &downscaledRectToRender);
             downscaledRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &downscaledRectToRender);
@@ -1786,28 +1774,15 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 
             assert( downscaledRectToRenderMinimal.isNull() || (renderBounds.x1 <= downscaledRectToRenderMinimal.x1 && downscaledRectToRenderMinimal.x2 <= renderBounds.x2 &&
                                                                renderBounds.y1 <= downscaledRectToRenderMinimal.y1 && downscaledRectToRenderMinimal.y2 <= renderBounds.y2) );
-
-
-            if (renderFullScaleThenDownscale) {
-                ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-                ///we stick to what was requested
-                RectD canonicalrenderRectToRender;
-                if ( downscaledRectToRender.contains(downscaledRectToRenderMinimal) ) {
-                    downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
-                    downscaledRectToRender = downscaledRectToRenderMinimal;
-                } else {
-                    downscaledRectToRender.toCanonical(mipMapLevel, par, rod, &canonicalrenderRectToRender);
-                }
-                canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderMappedRectToRender);
-                renderMappedRectToRender.intersect(firstPlaneToRender.renderMappedImage->getBounds(), &renderMappedRectToRender);
-            } else {
-                ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
-                ///we stick to what was requested
-                if ( downscaledRectToRender.contains(downscaledRectToRenderMinimal) ) {
-                    downscaledRectToRender = downscaledRectToRenderMinimal;
-                    renderMappedRectToRender = downscaledRectToRender;
-                }
+            
+            
+            ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
+            ///we stick to what was requested
+            if ( downscaledRectToRender.contains(downscaledRectToRenderMinimal) ) {
+                downscaledRectToRender = downscaledRectToRenderMinimal;
+                renderMappedRectToRender = downscaledRectToRender;
             }
+            
         }
     } // tilesSupported
       ///It might have been already rendered now
@@ -1871,7 +1846,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
          it != rectToRender.imgs.end();
          ++it) {
         for (ImageList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            assert(outputUseImage || (*it2)->getMipMapLevel() == mipMapLevel);
             const RectD & srcRodCanonical = (*it2)->getRoD();
             RectI srcBounds;
             srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio(), &srcBounds ); // compute srcRod at level 0
@@ -1935,7 +1909,6 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         rectToRender.identityTime,
                                                         rectToRender.identityInput,
                                                         renderFullScaleThenDownscale,
-                                                        renderUseScaleOneInputs,
                                                         isSequentialRender,
                                                         isRenderResponseToUserInteraction,
                                                         renderMappedRectToRender,
@@ -1967,7 +1940,6 @@ EffectInstance::renderHandler(RenderArgs & args,
                               double identityTime,
                               Natron::EffectInstance* identityInput,
                               bool renderFullScaleThenDownscale,
-                              bool renderUseScaleOneInputs,
                               bool isSequentialRender,
                               bool isRenderResponseToUserInteraction,
                               const RectI & renderMappedRectToRender,
@@ -1999,7 +1971,6 @@ EffectInstance::renderHandler(RenderArgs & args,
            renderBounds.y1 <= renderMappedRectToRender.y1 && renderMappedRectToRender.y2 <= renderBounds.y2);
 # endif
 
-    bool outputUseImage = renderUseScaleOneInputs && renderFullScaleThenDownscale;
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
     for (int i = 0; i < 4; ++i) {
@@ -2037,7 +2008,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  this);
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-                if (outputUseImage) {
+                if (renderFullScaleThenDownscale) {
                     it->second.fullscaleImage->fillZero(downscaledRectToRender);
                     it->second.fullscaleImage->markForRendered(downscaledRectToRender);
                 } else {
@@ -2058,7 +2029,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 return eRenderingFunctorRetFailed;
             } else if ( identityPlanes.empty() ) {
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-                    if (outputUseImage) {
+                    if (renderFullScaleThenDownscale) {
                         it->second.fullscaleImage->fillZero(downscaledRectToRender);
                         it->second.fullscaleImage->markForRendered(downscaledRectToRender);
                     } else {
@@ -2076,7 +2047,7 @@ EffectInstance::renderHandler(RenderArgs & args,
 
                 ImageList::iterator idIt = identityPlanes.begin();
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
-                    if ( outputUseImage && ( (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
+                    if ( renderFullScaleThenDownscale && ( (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
                         if ( !(*idIt)->getBounds().contains(downscaledRectToRender) ) {
                             ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
                             it->second.fullscaleImage->fillZero(downscaledRectToRender);
@@ -2165,7 +2136,7 @@ EffectInstance::renderHandler(RenderArgs & args,
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
-            if (outputUseImage) {
+            if (renderFullScaleThenDownscale) {
                 it->second.fullscaleImage->markForRendering(downscaledRectToRender);
             } else {
                 it->second.downscaleImage->markForRendering(downscaledRectToRender);
@@ -2225,7 +2196,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                    using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
                  */
                 for (std::map<ImageComponents, PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
-                    if (outputUseImage) {
+                    if (renderFullScaleThenDownscale) {
                         it->second.fullscaleImage->clearBitmap(downscaledRectToRender);
                     } else {
                         it->second.downscaleImage->clearBitmap(downscaledRectToRender);
@@ -2283,86 +2254,38 @@ EffectInstance::renderHandler(RenderArgs & args,
         } else {
             if (renderFullScaleThenDownscale) {
                 ///copy the rectangle rendered in the full scale image to the downscaled output
-
-                /* If we're using renderUseScaleOneInputs, the full scale image is cached.
-                   We might have been asked to render only a portion.
-                   Hence we're not sure that the whole part of the image will be downscaled.
-                   Instead we do all the downscale at once at the end of renderRoI().
-                   If !renderUseScaleOneInputs the image is not cached.
-                   Hence we know it will be rendered completly so it is safe to do this here and take advantage of the multi-threading.*/
-                if ( (mipMapLevel != 0) && !renderUseScaleOneInputs ) {
-                    assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
-
-
-                    if ( ( it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
-                         ( it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
-                        /*
-                         * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
-                         */
-                        ImagePtr tmp( new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
-
-                        it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
-                                                              getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                              getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
-                                                              -1, false, unPremultRequired, tmp.get() );
-                        tmp->downscaleMipMap( it->second.tmpImage->getRoD(),
-                                              actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
-                    } else {
-                        /*
-                         *  Downscaling required only
-                         */
-                        it->second.tmpImage->downscaleMipMap( it->second.tmpImage->getRoD(),
-                                                              actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
-                    }
-
-                    it->second.downscaleImage->copyUnProcessedChannels(downscaledRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
-                    if (useMaskMix) {
-                        it->second.downscaleImage->applyMaskMix(downscaledRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                    }
-                    it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                } else { // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
-                    assert(it->second.renderMappedImage == it->second.fullscaleImage);
-                    if (it->second.tmpImage != it->second.renderMappedImage) {
-                        if ( ( it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
-                             ( it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
-                            /*
-                             * BitDepth/Components conversion required
-                             */
-
-                            it->second.tmpImage->copyUnProcessedChannels(it->second.tmpImage->getBounds(), planes.outputPremult, originalImagePremultiplication, processChannels, originalInputImage);
-                            if (useMaskMix) {
-                                it->second.tmpImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
-                            }
-                            it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
-                                                                  getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                                  getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() ),
-                                                                  -1, false, unPremultRequired, it->second.fullscaleImage.get() );
-                        } else {
-                            /*
-                             * No conversion required, copy to output
-                             */
-                            int prefInput = getNode()->getPreferredInput();
-                            RectI roiPixel;
-                            ImagePtr originalInputImageFullScale;
-                            if (prefInput != -1) {
-                                originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
-                            }
-
-
-                            if (originalInputImageFullScale) {
-                                it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImageFullScale);
-                                if (useMaskMix) {
-                                    ImagePtr originalMaskFullScale = getImage(getMaxInputCount() - 1, time, actionArgs.mappedScale, view, NULL, ImageComponents::getAlphaComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
-                                    if (originalMaskFullScale) {
-                                        it->second.fullscaleImage->applyMaskMix(actionArgs.roi, originalMaskFullScale.get(), originalInputImageFullScale.get(), doMask, false, mix);
-                                    }
-                                }
-                            }
-                            it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
-                        }
-                    }
-                    it->second.fullscaleImage->markForRendered(actionArgs.roi);
+                assert(mipMapLevel != 0);
+                
+                assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
+                
+                
+                if ( ( it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
+                    ( it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
+                    /*
+                     * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
+                     */
+                    ImagePtr tmp( new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
+                    
+                    it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
+                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
+                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
+                                                         -1, false, unPremultRequired, tmp.get() );
+                    tmp->downscaleMipMap( it->second.tmpImage->getRoD(),
+                                         actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
+                } else {
+                    /*
+                     *  Downscaling required only
+                     */
+                    it->second.tmpImage->downscaleMipMap( it->second.tmpImage->getRoD(),
+                                                         actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
                 }
+                
+                it->second.downscaleImage->copyUnProcessedChannels(downscaledRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, originalInputImage);
+                if (useMaskMix) {
+                    it->second.downscaleImage->applyMaskMix(downscaledRectToRender, maskImage.get(), originalInputImage.get(), doMask, false, mix);
+                }
+                it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
+                
             } else { // if (renderFullScaleThenDownscale) {
                 ///Copy the rectangle rendered in the downscaled image
                 if (it->second.tmpImage != it->second.downscaleImage) {
@@ -2428,7 +2351,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::Image
             const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
             boost::shared_ptr<ImageParams> params = img->getParams();
             PlaneToRender p;
-            bool ok = allocateImagePlane(img->getKey(), img->getRoD(), img->getBounds(), img->getBounds(), false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+            bool ok = allocateImagePlane(img->getKey(), img->getRoD(), img->getBounds(), img->getBounds(), false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
             if (!ok) {
                 return ImagePtr();
             } else {

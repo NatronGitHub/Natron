@@ -203,7 +203,8 @@ namespace Natron {
                                 bool frameVaryingOrAnimated,
                                 double time,
                                 int view,
-                                bool draftMode);
+                                bool draftMode,
+                                bool fullScaleWithDownscaleInputs);
         static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                          const RectD & rod,    // the image rod in canonical coordinates
                                                          const double par,

@@ -2715,6 +2715,12 @@ OfxEffectInstance::getMinorVersion() const
 }
 
 bool
+OfxEffectInstance::supportsRenderQuality() const
+{
+    return effectInstance()->supportsRenderQuality();
+}
+
+bool
 OfxEffectInstance::supportsTiles() const
 {
     // first, check the descriptor, then the instance

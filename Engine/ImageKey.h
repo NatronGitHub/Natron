@@ -39,6 +39,10 @@ public:
     int _view;
     double _pixelAspect;
     bool _draftMode;
+    
+    //When true that means the image has been computed based on inputs using a mipmaplevel != 0
+    //hence it is probably not very high quality, even though the mipmap level is 0
+    bool _fullScaleWithDownscaleInputs;
 
     ImageKey();
 
@@ -48,7 +52,8 @@ public:
              double time,
              int view,
              double pixelAspect,
-             bool draftMode);
+             bool draftMode,
+             bool fullScaleWithDownscaleInputs);
 
     void fillHash(Hash64* hash) const;
 

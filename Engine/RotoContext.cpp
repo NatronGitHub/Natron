@@ -2353,7 +2353,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     hash.append(stroke->getMergeNode()->getLiveInstance()->getRenderHash());
     hash.computeHash();
     
-    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false);
+    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false, false);
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);

@@ -1127,6 +1127,8 @@ public:
     /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
     void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
 
+    virtual bool supportsRenderQuality() const { return false; }
+
     /**
      * @brief Does this effect can support multiple clips PAR ?
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultipleClipPARs
@@ -1636,7 +1638,6 @@ private:
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
-                                          bool useScaleOneInputImages,
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
@@ -1694,7 +1695,6 @@ private:
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
-                            bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                             bool useDiskCache,
                             bool createInCache,
                             boost::shared_ptr<Natron::Image>* fullScaleImage,
@@ -1725,7 +1725,6 @@ private:
         ParallelRenderArgs frameArgs;
         std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > frameTLS;
         bool renderFullScaleThenDownscale;
-        bool renderUseScaleOneInputs;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         int firstFrame;
@@ -1753,7 +1752,6 @@ private:
                                                   const RectToRender & rectToRender,
                                                   const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTls,
                                                   bool renderFullScaleThenDownscale,
-                                                  bool renderUseScaleOneInputs,
                                                   bool isSequentialRender,
                                                   bool isRenderResponseToUserInteraction,
                                                   int firstFrame, int lastFrame,
@@ -1800,7 +1798,6 @@ private:
                                           double identityTime,
                                           Natron::EffectInstance* identityInput,
                                           bool renderFullScaleThenDownscale,
-                                          bool renderUseScaleOneInputs,
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
                                           const RectI & renderMappedRectToRender,
