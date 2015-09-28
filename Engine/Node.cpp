@@ -6648,6 +6648,11 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
     
     hasChanged |= refreshChannelSelectors(canChangeValues);
 
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        _imp->mustComputeInputRelatedData = false;
+    }
+    
     return hasChanged;
 }
 
@@ -6683,11 +6688,6 @@ Node::refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes)
     
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
     
-    {
-        QMutexLocker k(&_imp->pluginsPropMutex);
-        _imp->mustComputeInputRelatedData = false;
-    }
-    
     return hasChanged;
 }
 
@@ -6702,7 +6702,19 @@ void
 Node::forceRefreshAllInputRelatedData()
 {
     markInputRelatedDataDirtyRecursive();
-    refreshInputRelatedDataRecursive();
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+    if (isGroup) {
+        std::list<Node*> inputs;
+        isGroup->getInputsOutputs(&inputs);
+        for (std::list<Node*>::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+            if ((*it)) {
+                (*it)->refreshInputRelatedDataRecursive();
+            }
+        }
+    } else {
+        refreshInputRelatedDataRecursive();
+    }
 }
 
 void
@@ -6734,20 +6746,24 @@ Node::markInputRelatedDataDirtyRecursive()
     markInputRelatedDataDirtyRecursiveInternal(marked);
 }
 
+void
+Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes)
+{
+    refreshInputRelatedDataInternal(markedNodes);
+    
+    ///Now notify outputs we have changed
+    std::list<Natron::Node*>  outputs;
+    getOutputsWithGroupRedirection(outputs);
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
+    }
+}
 
 void
 Node::refreshInputRelatedDataRecursive()
 {
     std::list<Node*> markedNodes;
-    if (refreshInputRelatedDataInternal(markedNodes)) {
-        
-        ///Now notify outputs we have changed
-        std::list<Natron::Node*>  outputs;
-        getOutputsWithGroupRedirection(outputs);
-        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            (*it)->refreshInputRelatedDataInternal( markedNodes );
-        }
-    }
+    refreshInputRelatedDataRecursiveInternal(markedNodes);
 }
 
 bool

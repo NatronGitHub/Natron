@@ -1037,6 +1037,8 @@ public:
     
 private:
     
+    void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    
     void refreshInputRelatedDataRecursive();
     
     void refreshAllInputRelatedData(bool canChangeValues);
