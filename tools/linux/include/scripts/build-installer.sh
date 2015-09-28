@@ -359,6 +359,9 @@ mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
   ln -sf ../../../lib/libgomp.so.1 .
 )
 
+mkdir -p $CLIBS_PATH/data/share/etc || exit 1
+cp -a $INSTALL_PATH/etc/fonts $CLIBS_PATH/data/share/etc/ || exit 1
+(cd $CLIBS_PATH/data ; ln -sf share Resources )
 
 # TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
 
