@@ -108,7 +108,20 @@ for y in $OFX_LIB_DEP; do
     cp -v $y $IO_LIBS/ || exit 1
 done
 
-rm -f $IO_LIBS/{libgcc*,libstdc*}
+rm -f $IO_LIBS/{libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libtiff*,libz.*}
+(cd $IO_LIBS ;
+  ln -sf ../../../lib/libbz2.so.1.0 .
+  ln -sf ../../../lib/libbz2.so.1 .
+  ln -sf ../../../lib/libfontconfig.so.1 .
+  ln -sf ../../../lib/libfreetype.so.6 .
+  ln -sf ../../../lib/libpng12.so.0 .
+  ln -sf ../../../lib/libjpeg.so.9 .
+  ln -sf ../../../lib/libtiff.so.5 .
+  ln -sf ../../../lib/libz.so.1 .
+  ln -sf ../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../lib/libstdc++.so.6 .
+)
+strip -s $IO_LIBS/*
 
 IO_LIC=$OFX_IO_PATH/meta/ofx-io-license.txt
 echo "" >>$IO_LIC || exit 1
@@ -261,8 +274,19 @@ OFX_CIMG_DEPENDS=$(ldd $OFX_MISC_PATH/data/Plugins/*/*/*/*|grep opt | awk '{prin
 for x in $OFX_CIMG_DEPENDS; do
     cp -v $x $CIMG_LIBS/ || exit 1
 done
-rm -f $CIMG_LIBS/{libgcc*,libstdc*}
+rm -f $CIMG_LIBS/{libgcc*,libstdc*,libgomp*}
+(cd $CIMG_LIBS ;
+  ln -sf ../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../lib/libstdc++.so.6 .
+  ln -sf ../../../lib/libgomp.so.1 .
+)
 strip -s $CIMG_LIBS/*
+MISC_LIBS=$OFX_MISC_PATH/data/Plugins/Misc.ofx.bundle/Libraries
+mkdir -p $MISC_LIBS || exit 1
+(cd $MISC_LIBS ;
+  ln -sf ../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../lib/libstdc++.so.6 .
+)
 
 # NATRON
 NATRON_PATH=$INSTALLER/packages/$NATRON_PKG
@@ -322,6 +346,19 @@ done
 if [ -f $INC_PATH/misc/compat${BIT}.tgz ]; then
     tar xvf $INC_PATH/misc/compat${BIT}.tgz -C $CLIBS_PATH/data/lib/ || exit 1
 fi
+
+cp $INSTALL_PATH/lib/{libicudata.so.55,libicui18n.so.55,libicuuc.so.55} $CLIBS_PATH/data/lib/ || exit 1
+(cd $CLIBS_PATH/data/lib;
+  rm -f libbz2.so.1.0
+  ln -sf libbz2.so.1 libbz2.so.1.0
+)
+
+mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
+(cd $IO_LIBS ;
+  ln -sf ../../../lib/libOpenColorIO.so.1 .
+  ln -sf ../../../lib/libgomp.so.1 .
+)
+
 
 # TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
 
@@ -388,8 +425,22 @@ OFX_ARENA_DEPENDS=$(ldd $OFX_ARENA_PATH/data/Plugins/*/*/*/*|grep opt | awk '{pr
 for x in $OFX_ARENA_DEPENDS; do
     cp -v $x $ARENA_LIBS/ || exit 1
 done
+rm -f $ARENA_LIBS/{libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
+(cd $ARENA_LIBS ; 
+  ln -sf ../../../lib/libbz2.so.1.0 .
+  ln -sf ../../../lib/libexpat.so.1 .
+  ln -sf ../../../lib/libfontconfig.so.1 .
+  ln -sf ../../../lib/libfreetype.so.6 .
+  ln -sf ../../../lib/libglib-2.0.so.0 .
+  ln -sf ../../../lib/libgthread-2.0.so.0 .
+  ln -sf ../../../lib/libpng12.so.0 .
+  ln -sf ../../../lib/libz.so.1 .
+  ln -sf ../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../lib/libstdc++.so.6 .
+  ln -sf ../../../lib/libOpenColorIO.so.1 .
+  ln -sf ../../../lib/libgomp.so.1 .
+)
 strip -s $ARENA_LIBS/*
-rm -f $ARENA_LIBS/{libcairo*,libgcc*,libstdc*}
 
 # OFX CV
 #OFX_CV_VERSION=$TAG
