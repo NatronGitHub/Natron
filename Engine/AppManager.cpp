@@ -1464,9 +1464,10 @@ AppManager::createOFXEffect(boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                             bool allowFileDialogs,
-                            bool disableRenderScaleSupport) const
+                            bool disableRenderScaleSupport,
+                            bool *hasUsedFileDialog) const
 {
-    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
 }
 
 void

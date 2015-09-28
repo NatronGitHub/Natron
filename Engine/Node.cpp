@@ -269,6 +269,8 @@ struct Node::Implementation
     , currentSupportTiles(false)
     , currentSupportOpenGLRender(Natron::ePluginOpenGLRenderSupportNone)
     , currentSupportSequentialRender(Natron::eSequentialPreferenceNotSequential)
+    , draftModeUsed(false)
+    , mustComputeInputRelatedData(true)
     , duringPaintStrokeCreation(false)
     , lastStrokeMovementMutex()
     , lastStrokeMovementBbox()
@@ -324,6 +326,7 @@ struct Node::Implementation
     void onMaskSelectorChanged(int inputNb,const MaskSelector& selector);
     
     bool getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const;
+    
     
     Node* _publicInterface;
     
@@ -483,6 +486,8 @@ struct Node::Implementation
     bool currentSupportTiles;
     Natron::PluginOpenGLRenderSupport currentSupportOpenGLRender;
     Natron::SequentialPreferenceEnum currentSupportSequentialRender;
+    bool draftModeUsed,mustComputeInputRelatedData;
+
     
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
@@ -499,6 +504,7 @@ struct Node::Implementation
     bool useAlpha0ToConvertFromRGBToRGBA;
     
     bool isBeingDestroyed;
+    
 };
 
 /**
@@ -606,7 +612,7 @@ Node::load(const std::string & parentMultiInstanceName,
         }
     }
 
-    
+    bool hasUsedFileDialog = false;
     if (func.first) {
         _imp->liveInstance.reset(func.second(thisShared));
         assert(_imp->liveInstance);
@@ -631,6 +637,7 @@ Node::load(const std::string & parentMultiInstanceName,
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
+            hasUsedFileDialog = true;
             boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
             CreateNodeArgs::DefaultValuesList list;
             list.push_back(defaultFile);
@@ -638,7 +645,7 @@ Node::load(const std::string & parentMultiInstanceName,
         }
     } else { //ofx plugin
                 
-        _imp->liveInstance = appPTR->createOFXEffect(thisShared,&serialization,paramValues,!isFileDialogPreviewReader && userEdited,renderScaleSupportPreference == 1);
+        _imp->liveInstance = appPTR->createOFXEffect(thisShared,&serialization,paramValues,!isFileDialogPreviewReader && userEdited,renderScaleSupportPreference == 1, &hasUsedFileDialog);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
@@ -717,9 +724,30 @@ Node::load(const std::string & parentMultiInstanceName,
     
     _imp->nodeCreated = true;
     
-    refreshChannelSelectors(serialization.isNull());
+    refreshAllInputRelatedData(serialization.isNull());
 
     _imp->runOnNodeCreatedCB(serialization.isNull());
+    
+    
+    ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
+    ///that we set
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
+        if (knob) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+            }
+        } else {
+            qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
+        }
+    }
+    
+    if (hasUsedFileDialog) {
+        boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (fileNameKnob) {
+            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
+        }
+    }
     
 } // load
 
@@ -5167,7 +5195,7 @@ Node::findClosestInList(const Natron::ImageComponents& comp,
             } else {
                 int diff = it->getNumComponents() - comp.getNumComponents();
                 int diffSoFar = closestComp->getNumComponents() - comp.getNumComponents();
-                if (diff > diffSoFar) {
+                if (diff > diffSoFar && diffSoFar != 0) {
                     closestComp = it;
                 }
             }
@@ -5318,32 +5346,51 @@ Node::onInputChanged(int inputNb)
     }
     assert( QThread::currentThread() == qApp->thread() );
     _imp->duringInputChangedAction = true;
-    std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
-    boost::shared_ptr<Node> inp = getInput(inputNb);
-    if ( found != _imp->maskSelectors.end() ) {
-        boost::shared_ptr<KnobBool> enabled = found->second.enabled.lock();
-        assert(enabled);
-        enabled->blockValueChanges();
-        enabled->setValue(inp ? true : false, 0);
-        enabled->unblockValueChanges();
+    
+    refreshMaskEnabledNess(inputNb);
+    refreshLayersChoiceSecretness(inputNb);
+    refreshDynamicProperties();
+    
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
+    if (isViewer) {
+        isViewer->refreshActiveInputs(inputNb);
     }
-    std::map<int,ChannelSelector>::iterator foundChan = _imp->channelsSelectors.find(inputNb);
-    if ( foundChan != _imp->channelsSelectors.end() ) {
-        std::map<int,ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
-        bool outputIsAll = false;
-        if (foundOuptut != _imp->channelsSelectors.end()) {
-            boost::shared_ptr<KnobChoice> outputChoice = foundOuptut->second.layer.lock();
-            if (outputChoice) {
-                outputIsAll = outputChoice->getActiveEntryText_mt_safe() == "All";
-            }
-        }
-        boost::shared_ptr<KnobChoice> chanChoice = foundChan->second.layer.lock();
-        if (chanChoice) {
-            chanChoice->setSecret(!inp.get() || outputIsAll);
-        }
+    
+    
+    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+  
+        ///When loading a group (or project) just wait until everything is setup to actually compute input
+        ///related data such as clip preferences
+        
+        /**
+         * The plug-in might call getImage, set a valid thread storage on the tree.
+         **/
+        double time = getApp()->getTimeLine()->currentFrame();
+        ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
+                                                 time,
+                                                 0 /*view*/,
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 0,
+                                                 shared_from_this(),
+                                                 0,
+                                                 0, //texture index
+                                                 getApp()->getTimeLine().get(),
+                                                 NodePtr(),
+                                                 false,
+                                                 false,
+                                                 false,
+                                                 boost::shared_ptr<RenderStats>());
+        
+        
+        ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
+        
+        _imp->liveInstance->onInputChanged(inputNb);
+        
+        forceRefreshAllInputRelatedData();
     }
-    _imp->liveInstance->onInputChanged(inputNb);
-    _imp->liveInstance->refreshChannelSelectors_recursive();
+   
     _imp->duringInputChangedAction = false;
 }
 
@@ -6484,6 +6531,232 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
     
 }
 
+bool
+Node::refreshLayersChoiceSecretness(int inputNb)
+{
+    std::map<int,ChannelSelector>::iterator foundChan = _imp->channelsSelectors.find(inputNb);
+    boost::shared_ptr<Node> inp = getInput(inputNb);
+    if ( foundChan != _imp->channelsSelectors.end() ) {
+        std::map<int,ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
+        bool outputIsAll = false;
+        if (foundOuptut != _imp->channelsSelectors.end()) {
+            boost::shared_ptr<KnobChoice> outputChoice = foundOuptut->second.layer.lock();
+            if (outputChoice) {
+                outputIsAll = outputChoice->getActiveEntryText_mt_safe() == "All";
+            }
+        }
+        boost::shared_ptr<KnobChoice> chanChoice = foundChan->second.layer.lock();
+        if (chanChoice) {
+            bool isSecret = chanChoice->getIsSecret();
+            bool mustBeSecret = !inp.get() || outputIsAll;
+            bool changed = isSecret != mustBeSecret;
+            if (changed) {
+                chanChoice->setSecret(mustBeSecret);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool
+Node::refreshMaskEnabledNess(int inputNb)
+{
+    std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
+    boost::shared_ptr<Node> inp = getInput(inputNb);
+    bool changed = false;
+    if ( found != _imp->maskSelectors.end() ) {
+        boost::shared_ptr<KnobBool> enabled = found->second.enabled.lock();
+        assert(enabled);
+        enabled->blockValueChanges();
+        bool curValue = enabled->getValue();
+        bool newValue = inp ? true : false;
+        changed = curValue != newValue;
+        if (changed) {
+            enabled->setValue(newValue, 0);
+        }
+        enabled->unblockValueChanges();
+    }
+    return changed;
+}
+
+bool
+Node::refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs)
+{
+    bool hasDraftInput = false;
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]) {
+            hasDraftInput |= inputs[i]->isDraftModeUsed();
+        }
+    }
+    hasDraftInput |= _imp->liveInstance->supportsRenderQuality();
+    bool changed;
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        changed = _imp->draftModeUsed != hasDraftInput;
+        _imp->draftModeUsed = hasDraftInput;
+    }
+    return changed;
+}
+
+void
+Node::refreshAllInputRelatedData(bool canChangeValues)
+{
+    refreshAllInputRelatedData(canChangeValues,getInputs_copy());
+}
+
+bool
+Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::shared_ptr<Natron::Node> >& inputs)
+{
+    bool hasChanged = false;
+    hasChanged |= refreshDraftFlagInternal(inputs);
+    
+    ///if all non optional clips are connected, call getClipPrefs
+    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
+    if (!hasMandatoryInputDisconnected()) {
+        
+        if (getApp()->getProject()->isLoadingProject()) {
+            //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
+            //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
+            _imp->liveInstance->clearActionsCache();
+        }
+        
+        double time = (double)getApp()->getTimeLine()->currentFrame();
+        
+        RenderScale scaleOne;
+        scaleOne.x = scaleOne.y = 1.;
+        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
+        if (_imp->liveInstance->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
+            RectD rod;
+            
+            Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scaleOne, 0, &rod);
+            if (stat != eStatusFailed) {
+                RenderScale scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scale, 0, &rod);
+                if (stat != eStatusFailed) {
+                    _imp->liveInstance->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
+                } else {
+                    _imp->liveInstance->setSupportsRenderScaleMaybe(EffectInstance::eSupportsNo);
+                }
+            }
+            
+        }
+        hasChanged |= _imp->liveInstance->checkOFXClipPreferences(time, scaleOne, kOfxChangeUserEdited, true);
+    }
+    
+    hasChanged |= refreshChannelSelectors(canChangeValues);
+
+    return hasChanged;
+}
+
+bool
+Node::refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes)
+{
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        if (!_imp->mustComputeInputRelatedData) {
+            //We didn't change
+            return false;
+        }
+    }
+    
+    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return false;
+    }
+    
+    ///Check if inputs must be refreshed first
+ 
+    int maxInputs = getMaxInputCount();
+    std::vector<NodePtr> inputsCopy(maxInputs);
+    for (int i = 0; i < maxInputs; ++i) {
+        inputsCopy[i] = getInput(i);
+        if (inputsCopy[i] && inputsCopy[i]->isInputRelatedDataDirty()) {
+            inputsCopy[i]->refreshInputRelatedDataInternal(markedNodes);
+        }
+    }
+    
+    
+    markedNodes.push_back(this);
+    
+    bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
+    
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        _imp->mustComputeInputRelatedData = false;
+    }
+    
+    return hasChanged;
+}
+
+bool
+Node::isInputRelatedDataDirty() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->mustComputeInputRelatedData;
+}
+
+void
+Node::forceRefreshAllInputRelatedData()
+{
+    markInputRelatedDataDirtyRecursive();
+    refreshInputRelatedDataRecursive();
+}
+
+void
+Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes) {
+    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        _imp->mustComputeInputRelatedData = true;
+    }
+    markedNodes.push_back(this);
+    
+    std::list<Natron::Node*>  outputs;
+    getOutputsWithGroupRedirection(outputs);
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        (*it)->markInputRelatedDataDirtyRecursiveInternal( markedNodes );
+    }
+    
+
+
+}
+
+void
+Node::markInputRelatedDataDirtyRecursive()
+{
+    std::list<Natron::Node*> marked;
+    markInputRelatedDataDirtyRecursiveInternal(marked);
+}
+
+
+void
+Node::refreshInputRelatedDataRecursive()
+{
+    std::list<Node*> markedNodes;
+    if (refreshInputRelatedDataInternal(markedNodes)) {
+        
+        ///Now notify outputs we have changed
+        std::list<Natron::Node*>  outputs;
+        getOutputsWithGroupRedirection(outputs);
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            (*it)->refreshInputRelatedDataInternal( markedNodes );
+        }
+    }
+}
+
+bool
+Node::isDraftModeUsed() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->draftModeUsed;
+}
+
 void
 Node::setPosition(double x,double y)
 {
@@ -6599,59 +6872,6 @@ Node::isSettingsPanelOpened() const
     
 }
 
-void
-Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
-{
-    std::list<Natron::Node*>::const_iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-    if (found != markedNodes.end()) {
-        return;
-    }
-
-    /*
-     * Always call getClipPreferences on the inputs first since the preference of this node may 
-     * depend on the inputs.
-     */
-    boost::shared_ptr<RotoContext> roto = getRotoContext();
-    NodePtr rotoNode;
-    if (roto) {
-        rotoNode = roto->getNode();
-    }
-    boost::shared_ptr<RotoDrawableItem> rotoItem = getAttachedRotoItem();
-
-    for (int i = 0; i < getMaxInputCount(); ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            if (rotoItem) {
-                if (rotoItem->getContext()->getNode() == input) {
-                    continue;
-                }
-            }
-            input->restoreClipPreferencesRecursive(markedNodes);
-        }
-    }
-    
-    if (roto) {
-        NodeList nodes;
-        roto->getRotoPaintTreeNodes(&nodes);
-        for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-            (*it)->restoreClipPreferencesRecursive(markedNodes);
-        }
-    }
-    
-    /*
-     * And now call getClipPreferences on ourselves
-     */
-    
-    //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
-    //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
-    _imp->liveInstance->clearActionsCache();
-    
-    _imp->liveInstance->restoreClipPreferences();
-    refreshChannelSelectors(false);
-    
-    markedNodes.push_back(this);
-    
-}
 
 
 void
@@ -7162,16 +7382,17 @@ Node::getChannelSelectorKnob(int inputNb) const
     return found->second.layer.lock();
 }
 
-void
+bool
 Node::refreshChannelSelectors(bool setValues)
 {
     if (!isNodeCreated()) {
-        return;
+        return false;
     }
     _imp->liveInstance->setComponentsAvailableDirty(true);
     
     int time = getApp()->getTimeLine()->currentFrame();
     
+    bool hasChanged = false;
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
@@ -7182,9 +7403,8 @@ Node::refreshChannelSelectors(bool setValues)
         }
         
         boost::shared_ptr<KnobChoice> layerKnob = it->second.layer.lock();
-        std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        
-        std::string curLayer = it->second.layerName.lock()->getValue();
+        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
+        const std::string curLayer = it->second.layerName.lock()->getValue();
 
         
         std::vector<std::string> choices;
@@ -7242,13 +7462,14 @@ Node::refreshChannelSelectors(bool setValues)
                     }
                 }
             }
-        }
+        } // if (node) {
         
         if (!gotColor) {
             assert(choices.size() > 0);
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
             colorIndex = 1;
+            colorComp = ImageComponents::getRGBAComponents();
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
@@ -7264,9 +7485,20 @@ Node::refreshChannelSelectors(bool setValues)
         if (!gotMotionBw) {
             choices.push_back(kNatronBackwardMotionVectorsPlaneName);
         }
-
+        
+        if (choices.size() != currentLayerEntries.size()) {
+            hasChanged = true;
+        } else {
+            for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
+                if (currentLayerEntries[i] != choices[i]) {
+                    hasChanged = true;
+                    break;
+                }
+            }
+        }
         
         layerKnob->populateChoices(choices);
+        
  
         if (setValues) {
             assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
@@ -7290,7 +7522,7 @@ Node::refreshChannelSelectors(bool setValues)
                         layerKnob->setValue(i, 0);
                         _imp->liveInstance->endChanges(true);
                         layerKnob->unblockValueChanges();
-                        if (isColor && _imp->enabledChan[0].lock()) {
+                        if (isColor && it->first == -1 && _imp->enabledChan[0].lock()) {
                             assert(colorIndex != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
@@ -7306,8 +7538,8 @@ Node::refreshChannelSelectors(bool setValues)
                     }
                 }
             }
-        }
-    }
+        } // if (setValues) {
+    } // for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
     
     for (std::map<int,MaskSelector>::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
         NodePtr node;
@@ -7317,9 +7549,8 @@ Node::refreshChannelSelectors(bool setValues)
             node = getInput(it->first);
         }
         
-        std::vector<std::string> currentLayerEntries = it->second.channel.lock()->getEntries_mt_safe();
-        
-        std::string curLayer = it->second.channelName.lock()->getValue();
+        const std::vector<std::string> currentLayerEntries = it->second.channel.lock()->getEntries_mt_safe();
+        const std::string curLayer = it->second.channelName.lock()->getValue();
         
         
         std::vector<std::string> choices;
@@ -7378,7 +7609,19 @@ Node::refreshChannelSelectors(bool setValues)
             }
             alphaIndex = choices.size() - 1;
         }
+        
+        if (choices.size() != currentLayerEntries.size()) {
+            hasChanged = true;
+        } else {
+            for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
+                if (currentLayerEntries[i] != choices[i]) {
+                    hasChanged = true;
+                    break;
+                }
+            }
+        }
         it->second.channel.lock()->populateChoices(choices);
+        
         
         if (setValues) {
             assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
@@ -7402,6 +7645,8 @@ Node::refreshChannelSelectors(bool setValues)
     
     //Notify the effect channels have changed (the viewer needs this)
     _imp->liveInstance->onChannelsSelectorRefreshed();
+    
+    return hasChanged;
     
 } // Node::refreshChannelSelectors(bool setValues)
 

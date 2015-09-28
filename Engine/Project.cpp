@@ -1234,7 +1234,7 @@ Project::onKnobValueChanged(KnobI* knob,
                 }
                 
                 ///Format change, hence probably the PAR so run getClipPreferences again
-                forceGetClipPreferencesOnAllTrees();
+                forceComputeInputDependentDataOnAllTrees();
             }
             Q_EMIT formatChanged(frmt);
         }
@@ -1243,7 +1243,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        forceGetClipPreferencesOnAllTrees();
+        forceComputeInputDependentDataOnAllTrees();
     } else if (knob == _imp->frameRange.get()) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);

@@ -302,6 +302,13 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     EffectInstance* effect = node->getLiveInstance();
     assert(effect);
     
+    if (effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsMaybe) {
+        /*
+         If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
+         We safely fail here
+         */
+        return eStatusFailed;
+    }
     assert(effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsNo ||
            effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();

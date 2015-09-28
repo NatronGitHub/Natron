@@ -85,7 +85,8 @@ public:
                                               const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                               bool allowFileDialogs,
-                                              bool disableRenderScaleSupport) = 0;
+                                              bool disableRenderScaleSupport,
+                                              bool *hasUsedFileDialog) = 0;
     static QStringList makePluginGrouping(const std::string & pluginIdentifier,
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
@@ -114,7 +115,8 @@ public:
                                       const NodeSerialization* serialization,
                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                       bool allowFileDialogs,
-                                      bool disableRenderScaleSupport) OVERRIDE FINAL;
+                                      bool disableRenderScaleSupport,
+                                      bool *hasUsedFileDialog) OVERRIDE FINAL;
 
     Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
     {
@@ -246,7 +248,6 @@ public:
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
-    virtual void restoreClipPreferences() OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
     virtual Natron::StatusEnum beginSequenceRender(double first,
                                                    double last,
@@ -271,7 +272,7 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb, std::list<Natron::ImageComponents>* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void checkOFXClipPreferences(double time,
+    virtual bool checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;

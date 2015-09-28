@@ -916,7 +916,6 @@ public:
 
     bool isForceCachingEnabled() const;
     
-    void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
@@ -1009,7 +1008,8 @@ public:
     
     unsigned int getPluginPythonModuleVersion() const;
   
-    void refreshChannelSelectors(bool setValues);
+    //Returns true if changed
+    bool refreshChannelSelectors(bool setValues);
     
     bool getProcessChannel(int channelIndex) const;
     
@@ -1030,7 +1030,30 @@ public:
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
     void removeAllImagesFromCache();
     
+    bool isDraftModeUsed() const;
+    bool isInputRelatedDataDirty() const;
+    
+    void forceRefreshAllInputRelatedData();
+    
 private:
+    
+    void refreshInputRelatedDataRecursive();
+    
+    void refreshAllInputRelatedData(bool canChangeValues);
+    
+    bool refreshMaskEnabledNess(int inpubNb);
+    
+    bool refreshLayersChoiceSecretness(int inpubNb);
+    
+    void markInputRelatedDataDirtyRecursive();
+    
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    
+    bool refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes);
+    
+    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
     void setNameInternal(const std::string& name);
 

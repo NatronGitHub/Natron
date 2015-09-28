@@ -1387,17 +1387,17 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*node*/)
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
 {
-//    assert(node);
-//    if (!_imp->_currentProject->isLoadingProject()) {
-//        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
-//        assert(isGrp);
-//        if (!isGrp) {
-//            return;
-//        }
-//        isGrp->forceGetClipPreferencesOnAllTrees();
-//    }
+    assert(node);
+    if (!_imp->_currentProject->isLoadingProject()) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+        assert(isGrp);
+        if (!isGrp) {
+            return;
+        }
+        isGrp->forceComputeInputDependentDataOnAllTrees();
+    }
 }
 
 bool

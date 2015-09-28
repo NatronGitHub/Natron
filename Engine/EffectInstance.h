@@ -673,10 +673,16 @@ public:
                                         bool forceGetClipPrefAction,
                                         bool recurse);
 
-    void refreshChannelSelectors_recursive();
-
     virtual void onChannelsSelectorRefreshed() {}
 
+
+    virtual bool checkOFXClipPreferences(double /*time*/,
+                                     const RenderScale & /*scale*/,
+                                     const std::string & /*reason*/,
+                                     bool /*forceGetClipPrefAction*/)
+    {
+        return false;
+    }
 
 protected:
 
@@ -686,12 +692,6 @@ protected:
                                            bool forceGetClipPrefAction,
                                            std::list<Natron::Node*> & markedNodes);
 
-    virtual void checkOFXClipPreferences(double /*time*/,
-                                         const RenderScale & /*scale*/,
-                                         const std::string & /*reason*/,
-                                         bool /*forceGetClipPrefAction*/)
-    {
-    }
 
 
 public:
@@ -907,9 +907,6 @@ public:
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
-protected:
-
-
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -917,8 +914,13 @@ protected:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
-     **/
+    **/
     virtual Natron::StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+
+protected:
+
+
+
     virtual void calcDefaultRegionOfDefinition(U64 hash, double time, int view, const RenderScale & scale, RectD *rod);
 
     /**
@@ -1188,11 +1190,6 @@ public:
      * @brief Called everytimes an input connection is changed
      **/
     virtual void onInputChanged(int inputNo);
-
-    /**
-     * @brief Called after the project has restored all nodes and their links, to set clip preferences.
-     **/
-    virtual void restoreClipPreferences();
 
     /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
@@ -1816,10 +1813,7 @@ private:
      **/
     int getInputNumber(Natron::EffectInstance* inputEffect) const;
 
-protected:
-    static void
-    refreshChannelSelectors_recursiveInternal(Natron::Node* node,
-                                              std::list<Natron::Node*> & markedNodes);
+
 };
 
 

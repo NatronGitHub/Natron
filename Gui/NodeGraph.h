@@ -83,8 +83,7 @@ public:
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
-                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,bool pushUndoRedoCommand);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
     
@@ -167,7 +166,9 @@ public:
      * It will move the inputs / outputs slightly to fit this node into the nodegraph
      * so they do not overlap.
      **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
+    void moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &n,
+                                   const boost::shared_ptr<NodeGui>& selected,
+                                   bool autoConnect);
     
     void copyNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,NodeClipBoard& clipboard);
     

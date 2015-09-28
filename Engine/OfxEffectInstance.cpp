@@ -218,7 +218,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
-                                                bool disableRenderScaleSupport)
+                                                bool disableRenderScaleSupport,
+                                                bool *hasUsedFileDialog)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
@@ -232,6 +233,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     ///Only called from the main thread.
     assert( QThread::currentThread() == qApp->thread() );
     assert(plugin && desc && context != eContextNone);
+    
+    
+    *hasUsedFileDialog = false;
     
     _context = context;
 
@@ -326,6 +330,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 images = getApp()->saveImageFileDialog();
             }
             if (!images.empty()) {
+                *hasUsedFileDialog = true;
                 boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
                 CreateNodeArgs::DefaultValuesList list;
                 list.push_back(defaultFile);
@@ -391,19 +396,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
+        //checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
         
-      
-        // check that the plugin supports kOfxImageComponentRGBA for all the clips
-        /*const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = effectInstance()->getDescriptor().getClipsByOrder();
-        for (U32 i = 0; i < clips.size(); ++i) {
-            if ( (clips[i]->getProps().findStringPropValueIndex(kOfxImageEffectPropSupportedComponents, kOfxImageComponentRGBA) == -1)
-                 && !clips[i]->isOptional() && !clips[i]->isMask() ) {
-                appPTR->writeToOfxLog_mt_safe( QString( plugin->getDescriptor().getLabel().c_str() )
-                                               + "RGBA components not supported by OFX plugin in context " + QString( context.c_str() ) );
-                throw std::runtime_error(std::string("RGBA components not supported by OFX plugin in context ") + context);
-            }
-        }*/
+
     } catch (const std::exception & e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
         throw;
@@ -414,25 +409,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
     _initialized = true;
     
-    ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
-    ///that we set
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
-        if (knob) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
-            }
-        } else {
-            qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
-        }
-    }
-    
-    if (!images.empty()) {
-        boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-        if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
-        }
-    }
+  
     endChanges();
     
 } // createOfxImageEffectInstance
@@ -944,9 +921,7 @@ void
 OfxEffectInstance::onInputChanged(int inputNo)
 {
     
-    if (getApp()->getProject()->isLoadingProject() || getApp()->isCreatingPythonGroup()) {
-        return;
-    }
+    
     assert(_context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
@@ -955,56 +930,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
     s.x = s.y = 1.;
     
     
-    /**
-     * The plug-in might call getImage, set a valid thread storage on the tree.
-     **/
-    ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
-                                             time,
-                                             0 /*view*/,
-                                             true,
-                                             false,
-                                             false,
-                                             0,
-                                             getNode(),
-                                             0,
-                                             0, //texture index
-                                             getApp()->getTimeLine().get(),
-                                             NodePtr(),
-                                             false,
-                                             false,
-                                             false,
-                                             boost::shared_ptr<RenderStats>());
-    
     EffectPointerThreadProperty_RAII propHolder_raii(this);
-    
-    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    
-    ///if all non optional clips are connected, call getClipPrefs
-    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if (_effect->areAllNonOptionalClipsConnected()) {
-        
-        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
-        if (supportsRenderScaleMaybe() == eSupportsMaybe) {
-            OfxRectD rod;
-            OfxPointD scaleOne;
-            scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
-            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                OfxPointD scale;
-                scale.x = 0.5;
-                scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
-                if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                    setSupportsRenderScaleMaybe(eSupportsYes);
-                } else {
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                }
-            }
-
-        }
-        checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, true);
-    }
-    
+   
     {
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
@@ -1020,7 +947,6 @@ OfxEffectInstance::onInputChanged(int inputNo)
         _effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
 
-    getNode()->refreshDynamicProperties();
 }
 
 /** @brief map a std::string to a context */
@@ -1286,7 +1212,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 
 
 
-void
+bool
 OfxEffectInstance::checkOFXClipPreferences(double time,
                                            const RenderScale & scale,
                                            const std::string & reason,
@@ -1294,7 +1220,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
 {
     
     if (!_created) {
-        return;
+        return false;
     }
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
@@ -1312,15 +1238,15 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
         QWriteLocker preferencesLocker(_preferencesLock);
         if (forceGetClipPrefAction) {
             if (!_effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
-                return;
+                return false;
             }
         } else {
             if (_effect->areClipPrefsDirty()) {
                 if (!_effect->getClipPreferences_safe(clipsPrefs, effectPrefs)) {
-                    return;
+                    return false;
                 }
             } else {
-                return;
+                return false;
             }
         }
     }
@@ -1333,6 +1259,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     
     clipPrefsProxy(this,time,clipsPrefs,effectPrefs,modifiedClips);
     
+    bool changed = false;
     
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
@@ -1341,12 +1268,21 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     {
         QWriteLocker l(_preferencesLock);
         for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
-            it->first->setComponents(it->second.components);
-            it->first->setPixelDepth(it->second.bitdepth);
-            it->first->setAspectRatio(it->second.par);
+            if (it->first->getComponents() != it->second.components) {
+                it->first->setComponents(it->second.components);
+                changed = true;
+            }
+            if (it->second.bitdepth != it->first->getPixelDepth()) {
+                it->first->setPixelDepth(it->second.bitdepth);
+                changed = true;
+            }
+            if (it->second.par != it->first->getAspectRatio()) {
+                it->first->setAspectRatio(it->second.par);
+                changed = true;
+            }
         }
         
-        effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
+        changed |= effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
                                                  effectPrefs.continuous, effectPrefs.frameVarying);
     }
     
@@ -1368,45 +1304,9 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
         }
     }
     
-    
+    return changed;
 } // checkOFXClipPreferences
 
-void
-OfxEffectInstance::restoreClipPreferences()
-{
-    assert(_context != eContextNone);
-
-    double time = getApp()->getTimeLine()->currentFrame();
-    RenderScale s;
-    s.x = s.y = 1.;
-    
-    ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
-    if (supportsRenderScaleMaybe() == eSupportsMaybe) {
-        OfxRectD rod;
-        OfxPointD scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
-        OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
-        if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-            OfxPointD scale;
-            scale.x = 0.5;
-            scale.y = 0.5;
-            rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
-            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                setSupportsRenderScaleMaybe(eSupportsYes);
-            } else {
-                setSupportsRenderScaleMaybe(eSupportsNo);
-            }
-        }
-        
-    }
-
-    
-    ///if all non optional clips are connected, call getClipPrefs
-    ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
-    if ( _effect->areAllNonOptionalClipsConnected() ) {
-        checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, false);
-    }
-}
 
 std::vector<std::string>
 OfxEffectInstance::supportedFileFormats() const

@@ -45,6 +45,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
@@ -421,7 +422,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,pushUndoRedoCommand);
 
     assert(nodegui);
     if ( parentMultiInstance && nodegui) {
@@ -464,6 +465,32 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
         triggerAutoSave();
     }
+    
+    
+    ///only move main instances
+    if (node->getParentMultiInstanceName().empty()) {
+        if (selectedNodes.empty()) {
+            autoConnect = false;
+        }
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
+            nodegui->refreshPosition( pos.x(),pos.y(), true );
+        } else {
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nodegui.get());
+            if (!isBd && !isGroup) {
+                boost::shared_ptr<NodeGui> selectedNode;
+                if (selectedNodes.size() == 1) {
+                    selectedNode = selectedNodes.front();
+                    BackDropGui* isBackdropGui = dynamic_cast<BackDropGui*>(selectedNode.get());
+                    if (isBackdropGui) {
+                        selectedNode.reset();
+                    }
+                }
+                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui,selectedNode,autoConnect);
+            }
+        }
+    }
+    
 } // createNodeGui
 
 std::string
@@ -1061,11 +1088,18 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
         graph = _imp->_gui->getNodeGraph();
     }
     assert(graph);
-
+    std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
+    boost::shared_ptr<NodeGui> selectedNode;
+    if (!selectedNodes.empty()) {
+        selectedNode = selectedNodes.front();
+        if (dynamic_cast<BackDropGui*>(selectedNode.get())) {
+            selectedNode.reset();
+        }
+    }
     boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
     assert(node_gui_i);
     boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-    graph->moveNodesForIdealPosition(nodeGui, true);
+    graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
 
     std::list<ViewerInstance* > viewers;
     node->hasViewersConnected(&viewers);

@@ -166,7 +166,8 @@ public:
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
-                                            bool disableRenderScaleSupport) const;
+                                            bool disableRenderScaleSupport,
+                                                              bool *hasUsedFileDialog) const;
 
     void registerAppInstance(AppInstance* app);
 

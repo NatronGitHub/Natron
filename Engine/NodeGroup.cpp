@@ -913,7 +913,7 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
 }
 
 void
-NodeCollection::forceGetClipPreferencesOnAllTrees()
+NodeCollection::forceComputeInputDependentDataOnAllTrees()
 {
     NodeList nodes;
     getNodes_recursive(nodes);
@@ -922,7 +922,7 @@ NodeCollection::forceGetClipPreferencesOnAllTrees()
     
     std::list<Natron::Node*> markedNodes;
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-        it->output.node->restoreClipPreferencesRecursive(markedNodes);
+        it->output.node->forceRefreshAllInputRelatedData();
     }
 }
 

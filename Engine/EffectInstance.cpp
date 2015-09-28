@@ -3002,11 +3002,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 void
 EffectInstance::onInputChanged(int /*inputNo*/)
 {
-    if ( !getApp()->getProject()->isLoadingProject() ) {
-        RenderScale s;
-        s.x = s.y = 1.;
-        checkOFXClipPreferences_public(getCurrentTime(), s, kOfxChangeUserEdited, true, true);
-    }
+
 }
 
 Natron::StatusEnum
@@ -4117,11 +4113,6 @@ EffectInstance::getNearestNonIdentity(double time)
     }
 }
 
-void
-EffectInstance::restoreClipPreferences()
-{
-    setSupportsRenderScaleMaybe(eSupportsYes);
-}
 
 void
 EffectInstance::onNodeHashChanged(U64 hash)
@@ -4274,33 +4265,6 @@ double
 EffectInstance::getPreferredFrameRate() const
 {
     return getApp()->getProjectFrameRate();
-}
-
-void
-EffectInstance::refreshChannelSelectors_recursiveInternal(Natron::Node* node,
-                                                          std::list<Natron::Node*> & markedNodes)
-{
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), node);
-
-    if ( found != markedNodes.end() ) {
-        return;
-    }
-    node->refreshChannelSelectors(false);
-
-    markedNodes.push_back(node);
-    std::list<Natron::Node*>  outputs;
-    node->getOutputsWithGroupRedirection(outputs);
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        refreshChannelSelectors_recursiveInternal( (*it), markedNodes );
-    }
-}
-
-void
-EffectInstance::refreshChannelSelectors_recursive()
-{
-    std::list<Natron::Node*> markedNodes;
-
-    refreshChannelSelectors_recursiveInternal(getNode().get(), markedNodes);
 }
 
 void

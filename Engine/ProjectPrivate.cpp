@@ -198,7 +198,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     
    
     
-    _publicInterface->forceGetClipPreferencesOnAllTrees();
+    _publicInterface->forceComputeInputDependentDataOnAllTrees();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

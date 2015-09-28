@@ -140,10 +140,7 @@ public:
 
     boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
                                              bool requestedByLoad,
-                                             double xPosHint,
-                                             double yPosHint,
-                                             bool pushUndoRedoCommand,
-                                             bool autoConnect);
+                                             bool pushUndoRedoCommand);
 
     void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
     

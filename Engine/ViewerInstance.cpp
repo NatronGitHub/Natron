@@ -2748,17 +2748,17 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 }
 
 void
-ViewerInstance::onInputChanged(int inputNb)
+ViewerInstance::refreshActiveInputs(int inputNbChanged)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    NodePtr inputNode = getNode()->getRealInput(inputNb);
+    NodePtr inputNode = getNode()->getRealInput(inputNbChanged);
     {
         QMutexLocker l(&_imp->activeInputsMutex);
         if (!inputNode) {
             ///check if the input was one of the active ones if so set to -1
-            if (_imp->activeInputs[0] == inputNb) {
+            if (_imp->activeInputs[0] == inputNbChanged) {
                 _imp->activeInputs[0] = -1;
-            } else if (_imp->activeInputs[1] == inputNb) {
+            } else if (_imp->activeInputs[1] == inputNbChanged) {
                 _imp->activeInputs[1] = -1;
             }
         } else {
@@ -2768,31 +2768,32 @@ ViewerInstance::onInputChanged(int inputNb)
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
                     op = Natron::eViewerCompositingOperatorWipe;
                 }
-                _imp->activeInputs[1] = inputNb;
+                _imp->activeInputs[1] = inputNbChanged;
                 
             } else {
-                _imp->activeInputs[0] = inputNb;
+                _imp->activeInputs[0] = inputNbChanged;
             }
         }
     }
     Q_EMIT activeInputsChanged();
     Q_EMIT refreshOptionalState();
-    Q_EMIT clipPreferencesChanged();
 }
 
 void
-ViewerInstance::restoreClipPreferences()
+ViewerInstance::onInputChanged(int /*inputNb*/)
 {
+  
     Q_EMIT clipPreferencesChanged();
 }
 
-void
+bool
 ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const RenderScale & /*scale*/,
                              const std::string & /*reason*/,
                              bool /*forceGetClipPrefAction*/)
 {
     Q_EMIT clipPreferencesChanged();
+    return false;
 }
 
 void

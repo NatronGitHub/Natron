@@ -213,8 +213,8 @@ public:
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual void restoreClipPreferences() OVERRIDE FINAL;
-
+    void refreshActiveInputs(int inputNbChanged);
+    
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
@@ -233,7 +233,7 @@ public:
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual void checkOFXClipPreferences(double time,
+    virtual bool checkOFXClipPreferences(double time,
                                          const RenderScale & scale,
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;

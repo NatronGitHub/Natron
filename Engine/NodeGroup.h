@@ -267,7 +267,7 @@ public:
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
     
     
-    void forceGetClipPreferencesOnAllTrees();
+    void forceComputeInputDependentDataOnAllTrees();
     
     /**
      * @brief Callback called when a node of the collection is being deactivated

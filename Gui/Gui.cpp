@@ -235,10 +235,7 @@ Gui::closeEvent(QCloseEvent* e)
 boost::shared_ptr<NodeGui>
 Gui::createNodeGUI( boost::shared_ptr<Node> node,
                     bool requestedByLoad,
-                    double xPosHint,
-                    double yPosHint,
-                    bool pushUndoRedoCommand,
-                    bool autoConnect)
+                    bool pushUndoRedoCommand)
 {
     assert(_imp->_nodeGraphArea);
 
@@ -252,8 +249,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,
-                                                              xPosHint, yPosHint, pushUndoRedoCommand, autoConnect);
+    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,pushUndoRedoCommand);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 

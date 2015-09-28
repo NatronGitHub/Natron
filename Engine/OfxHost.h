@@ -142,7 +142,8 @@ public:
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
-                                                bool disableRenderScaleSupport);
+                                                bool disableRenderScaleSupport,
+                                                                 bool *hasUsedFileDialog);
 
     void addPathToLoadOFXPlugins(const std::string path);
 

@@ -512,7 +512,8 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                  bool allowFileDialogs,
-                                 bool disableRenderScaleSupport)
+                                 bool disableRenderScaleSupport,
+                                 bool *hasUsedFileDialog)
 {
     assert(node);
     const Natron::Plugin* natronPlugin = node->getPlugin();
@@ -528,7 +529,7 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
         node->setLiveInstance(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
 
     return hostSideEffect;
 }

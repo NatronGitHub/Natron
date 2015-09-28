@@ -329,10 +329,7 @@ NodeGraph::visibleWidgetRect() const
 boost::shared_ptr<NodeGui>
 NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
                          bool requestedByLoad,
-                         double xPosHint,
-                         double yPosHint,
-                         bool pushUndoRedoCommand,
-                         bool autoConnect)
+                         bool pushUndoRedoCommand)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -382,20 +379,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
         QMutexLocker l(&_imp->_nodesMutex);
         _imp->_nodes.push_back(node_ui);
     }
-    ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() ) {
-        if (_imp->_selection.empty()) {
-            autoConnect = false;
-        }
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
-            QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
-            node_ui->refreshPosition( pos.x(),pos.y(), true );
-        } else {
-            if (!isBd && !isGrp) {
-                moveNodesForIdealPosition(node_ui,autoConnect);
-            }
-        }
-    }
+
     
     if (!requestedByLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance()))) {
         node_ui->ensurePanelCreated();
