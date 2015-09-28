@@ -261,6 +261,8 @@ public:
 
     //
     std::map<DSNode *, FrameRange > nodeRanges;
+    std::list<DSNode*> nodeRangesBeingComputed; // to avoid recursion in groups
+    int rangeComputationRecursion;
 
     // for rendering
     QFont *font;
@@ -308,6 +310,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     gui(0),
     timeline(),
     nodeRanges(),
+    nodeRangesBeingComputed(),
+    rangeComputationRecursion(0),
     font(new QFont(appFont,appFontSize)),
     textRenderer(),
     kfTexturesIDs(),
@@ -1808,6 +1812,13 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 
 void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 {
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(reader);
+    ++rangeComputationRecursion;
+    
     NodePtr node = reader->getInternalNode();
 
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
@@ -1833,10 +1844,23 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     if (boost::shared_ptr<DSNode> isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader)) {
         computeNodeRange(isConnectedToTimeNode.get());
     }
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(retimer);
+    ++rangeComputationRecursion;
+    
     NodePtr node = retimer->getInternalNode();
     NodePtr input = node->getInput(0);
     if (input) {
@@ -1870,10 +1894,23 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     else {
         nodeRanges[retimer] = FrameRange();
     }
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(timeOffset);
+    ++rangeComputationRecursion;
+    
     FrameRange range(0, 0);
 
     // Retrieve nearest reader useful values
@@ -1891,10 +1928,23 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
     }
 
     nodeRanges[timeOffset] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(frameRange);
+    ++rangeComputationRecursion;
+    
     NodePtr node = frameRange->getInternalNode();
 
     Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("frameRange").get());
@@ -1905,24 +1955,39 @@ void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
     range.second = frameRangeKnob->getValue(1);
 
     nodeRanges[frameRange] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
     NodePtr node = group->getInternalNode();
     assert(node);
     if (!node) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is NULL");
     }
-
+    
     FrameRange range;
     std::set<double> times;
-
+    
     NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(node->getLiveInstance());
     assert(nodegroup);
     if (!nodegroup) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
     }
+    
+    nodeRangesBeingComputed.push_back(group);
+    ++rangeComputationRecursion;
+    
+    
     NodeList nodes = nodegroup->getNodes();
 
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1984,6 +2049,12 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     }
 
     nodeRanges[group] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
+
 }
 
 void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)

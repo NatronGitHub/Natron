@@ -2362,11 +2362,14 @@ Node::makeCacheInfo() const
 std::string
 Node::makeInfoForInput(int inputNumber) const
 {
+    if (inputNumber < 0 || inputNumber >= getMaxInputCount()) {
+        return "";
+    }
     const Natron::Node* inputNode = 0;
     std::string inputName ;
     if (inputNumber != -1) {
         inputNode = getInput(inputNumber).get();
-        inputName = _imp->liveInstance->getInputLabel(inputNumber);
+        inputName = getInputLabel(inputNumber);
     } else {
         inputNode = this;
         inputName = "Output";
