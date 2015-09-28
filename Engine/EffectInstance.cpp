@@ -815,7 +815,9 @@ EffectInstance::getImage(int inputNb,
      */
 
     ///Check that the rendered image contains what we requested.
-    assert( (!isMask && inputImg->getComponents() == comp) || (isMask && inputImg->getComponents() == maskComps) );
+    if ((!isMask && inputImg->getComponents() != comp) || (isMask && inputImg->getComponents() != maskComps)) {
+        return ImagePtr();
+    }
 
     if (roiPixel) {
         *roiPixel = pixelRoI;
