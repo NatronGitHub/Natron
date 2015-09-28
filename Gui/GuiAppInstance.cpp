@@ -45,7 +45,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
-#include "Gui/BackdropGui.h"
+#include "Gui/BackDropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"

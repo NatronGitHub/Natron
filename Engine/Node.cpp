@@ -724,7 +724,9 @@ Node::load(const std::string & parentMultiInstanceName,
     
     _imp->nodeCreated = true;
     
-    refreshAllInputRelatedData(serialization.isNull());
+    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+        refreshAllInputRelatedData(serialization.isNull());
+    }
 
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
