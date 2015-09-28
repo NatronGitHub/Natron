@@ -170,6 +170,7 @@ PANGO_TAR=pango-1.37.0.tar.xz
 BZIP_TAR=bzip2-1.0.6.tar.gz
 CROCO_TAR=libcroco-0.6.8.tar.xz
 SVG_TAR=librsvg-2.40.10.tar.xz
+GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1

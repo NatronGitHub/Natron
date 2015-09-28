@@ -156,7 +156,7 @@ if [ ! -f "$INSTALL_PATH/lib/libz.so.1" ]; then
     fi
     tar xvf "$SRC_PATH/$ZLIB_TAR" || exit 1
     cd zlib* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --enable-shared || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
@@ -576,6 +576,19 @@ if [ ! -f "$INSTALL_PATH/lib/libcroco-0.6.so.3" ]; then
     tar xvf "$SRC_PATH/$CROCO_TAR" || exit 1
     cd libcroco-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install gdk
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/gdk-pixbuf-2.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GDK_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$GDK_TAR" -O "$SRC_PATH/$GDK_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GDK_TAR" || exit 1
+    cd gdk-pix* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
