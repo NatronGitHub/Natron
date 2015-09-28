@@ -431,6 +431,7 @@ done
 rm -f $ARENA_LIBS/{libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
 (cd $ARENA_LIBS ; 
   ln -sf ../../../lib/libbz2.so.1.0 .
+  ln -sf ../../../lib/libbz2.so.1 .
   ln -sf ../../../lib/libexpat.so.1 .
   ln -sf ../../../lib/libfontconfig.so.1 .
   ln -sf ../../../lib/libfreetype.so.6 .
