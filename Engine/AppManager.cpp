@@ -178,8 +178,12 @@ AppManager::load(int &argc,
     }
 #endif
 
-
-    initPython(argc, argv);
+    try {
+        initPython(argc, argv);
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
