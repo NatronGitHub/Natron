@@ -12,6 +12,10 @@ DIR=`cd -P "$SOURCEDIR" && pwd`
 
 export LC_NUMERIC=C
 
+if [ -d "$DIR/Resources/etc/fonts" ]; then
+  export FONTCONFIG_PATH=$DIR/Resources/etc/fonts
+fi
+
 if [ "$1" = "-update" -a -x "$DIR/NatronSetup" ]; then
     "$DIR/NatronSetup" --updater
     exit 0

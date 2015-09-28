@@ -149,23 +149,8 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
 
-#if defined(__NATRON_OSX__)
+    // set fontconfig path on all platforms
     if (qgetenv("FONTCONFIG_PATH").isNull()) {
-        // set FONTCONFIG_PATH to Natron.app/Contents/Resources/etc/fonts (required by plugins using fontconfig)
-        QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
-        QString pathcfg = path + "/fonts.conf";
-        // Note:
-        // a minimalist fonts.conf file for OS X is:
-        // <fontconfig><dir>/System/Library/Fonts</dir><dir>/Library/Fonts</dir><dir>~/Library/Fonts</dir></fontconfig>
-        if (!QFile(pathcfg).exists()) {
-            qWarning() << "Fontconfig configuration file" << pathcfg << "does not exist, not setting FONTCONFIG_PATH";
-        } else {
-            qDebug() << "Setting FONTCONFIG_PATH to" << path;
-            qputenv("FONTCONFIG_PATH", path.toUtf8());
-        }
-    }
-#elif defined(__NATRON_WIN32__)
-        if (qgetenv("FONTCONFIG_PATH").isNull()) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
         QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
         QString pathcfg = path + "/fonts.conf";
@@ -176,7 +161,6 @@ AppManager::load(int &argc,
             qputenv("FONTCONFIG_PATH", path.toUtf8());
         }
     }
-#endif
 
     try {
         initPython(argc, argv);
