@@ -198,7 +198,13 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
     }
     
     if (!_label) {
-        _label = new QGraphicsTextItem(QString( dst->getNode()->getInputLabel(_inputNb).c_str() ),this);
+        QString label;
+        try {
+            label = QString( dst->getNode()->getInputLabel(_inputNb).c_str() );
+        } catch (...) {
+            
+        }
+        _label = new QGraphicsTextItem(label,this);
         _label->setDefaultTextColor( QColor(200,200,200) );
     } else {
         _label->setPlainText( QString( dst->getNode()->getInputLabel(_inputNb).c_str() ) );

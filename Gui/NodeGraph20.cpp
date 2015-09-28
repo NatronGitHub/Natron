@@ -228,7 +228,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
                 boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
-                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader();
+                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
@@ -312,7 +312,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                                 if ( edge && !edge->isOutputEdge() ) {
                                     
-                                    if ((*it)->getNode()->getLiveInstance()->isReader()) {
+                                    if ((*it)->getNode()->getLiveInstance()->isReader() ||
+                                        (*it)->getNode()->getMaxInputCount() == 0) {
                                         edge = 0;
                                         continue;
                                     }
@@ -324,7 +325,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeInternalNode->getLiveInstance()->isReader()) {
+                                        !selectedNodeIsReader) {
                                         ret = Natron::Node::eCanConnectInput_ok;
                                     }
                                     
