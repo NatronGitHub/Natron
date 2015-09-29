@@ -2392,7 +2392,7 @@ Node::makeCacheInfo() const
 std::string
 Node::makeInfoForInput(int inputNumber) const
 {
-    if (inputNumber < 0 || inputNumber >= getMaxInputCount()) {
+    if (inputNumber < -1 || inputNumber >= getMaxInputCount()) {
         return "";
     }
     const Natron::Node* inputNode = 0;
