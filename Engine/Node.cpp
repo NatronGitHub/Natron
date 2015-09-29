@@ -5359,10 +5359,13 @@ Node::onInputChanged(int inputNb)
     }
     
     
-    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+    
+    if ((!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
+        _imp->liveInstance->isRotoPaintNode()) {
   
         ///When loading a group (or project) just wait until everything is setup to actually compute input
         ///related data such as clip preferences
+        ///Exception for the Rotopaint node which needs to setup its own graph internally
         
         /**
          * The plug-in might call getImage, set a valid thread storage on the tree.

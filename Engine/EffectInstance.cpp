@@ -858,27 +858,21 @@ EffectInstance::getImage(int inputNb,
 
         inputImg = rescaledImg;
     }
-
-
-    if ( comp.getNumComponents() != inputImg->getComponents().getNumComponents() ) {
-        ImagePtr remappedImg;
-        {
-            Image::ReadAccess acc = inputImg->getReadRights();
-
-            remappedImg.reset( new Image(comp, inputImg->getRoD(), inputImg->getBounds(), inputImg->getMipMapLevel(), inputImg->getPixelAspectRatio(), inputImg->getBitDepth(), false) );
-
-            Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth( inputImg->getBitDepth() );
-            bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied &&
-                                     inputImg->getComponents().getNumComponents() == 4 && comp.getNumComponents() == 3;
-            inputImg->convertToFormat( inputImg->getBounds(),
-                                       colorspace, colorspace,
-                                       channelForMask, false, unPremultIfNeeded, remappedImg.get() );
-        }
-        inputImg = remappedImg;
+    
+    
+    //Remap if needed
+    ImagePremultiplicationEnum outputPremult;
+    if (comp.isColorPlane()) {
+        outputPremult = n->getOutputPremultiplication();
+    } else {
+        outputPremult = eImagePremultiplicationOpaque;
     }
+    
+    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, comp, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
 
-
-    if ( inputImagesThreadLocal.empty() ) {
+    
+    
+    if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
         _imp->addInputImageTempPointer(inputNb, inputImg);
     }
@@ -3168,7 +3162,11 @@ EffectInstance::getFramesNeeded_public(U64 hash,
         return framesNeeded;
     }
 
-    framesNeeded = getFramesNeeded(time, view);
+    try {
+        framesNeeded = getFramesNeeded(time, view);
+    } catch (std::exception &e) {
+        setPersistentMessage(Natron::eMessageTypeError, e.what());
+    }
     _imp->actionsCache.setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
 
     return framesNeeded;

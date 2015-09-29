@@ -185,6 +185,46 @@ optimizeRectsToRender(Natron::EffectInstance* self,
     }
 } // optimizeRectsToRender
 
+ImagePtr
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                             const ImagePtr& inputImage,
+                                             const RectI& roi,
+                                             const ImageComponents& targetComponents,
+                                             ImageBitDepthEnum targetDepth,
+                                             bool useAlpha0ForRGBToRGBAConversion,
+                                             ImagePremultiplicationEnum outputPremult)
+{
+    bool imageConversionNeeded = targetComponents != inputImage->getComponents() || targetDepth != inputImage->getBitDepth();
+    if (!imageConversionNeeded) {
+        return inputImage;
+    } else {
+        /**
+         * Lock the downscaled image so it cannot be resized while creating the temp image and calling convertToFormat.
+         **/
+        Image::ReadAccess acc = inputImage->getReadRights();
+        RectI bounds = inputImage->getBounds();
+        
+        ImagePtr tmp(new Image(targetComponents, inputImage->getRoD(), bounds, inputImage->getMipMapLevel(), inputImage->getPixelAspectRatio(), targetDepth, false));
+        
+        bool unPremultIfNeeded = outputPremult == eImagePremultiplicationPremultiplied && inputImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
+        
+        if (useAlpha0ForRGBToRGBAConversion) {
+            inputImage->convertToFormatAlpha0( roi,
+                                              app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
+                                              app->getDefaultColorSpaceForBitDepth(targetDepth),
+                                              -1, false, unPremultIfNeeded, tmp.get() );
+        } else {
+            inputImage->convertToFormat( roi,
+                                        app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
+                                        app->getDefaultColorSpaceForBitDepth(targetDepth),
+                                        -1, false, unPremultIfNeeded, tmp.get() );
+        }
+        
+        return tmp;
+    }
+    
+}
+
 EffectInstance::RenderRoIRetCode
 EffectInstance::renderRoI(const RenderRoIArgs & args,
                           ImageList* outputPlanes)
@@ -513,7 +553,33 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 
                 
 
-                return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
+                RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
+                if (ret == eRenderRoIRetCodeOk) {
+                    ImageList convertedPlanes;
+                    AppInstance* app = getApp();
+                    assert(inputArgs.components.size() == outputPlanes->size());
+                    bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
+                    
+                    std::list<Natron::ImageComponents>::const_iterator compIt = args.components.begin();
+                    
+                    for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                        
+                        ImagePremultiplicationEnum premult;
+                        const ImageComponents & outComp = outputComponents.front();
+                        if ( outComp.isColorPlane() ) {
+                            premult = getOutputPremultiplication();
+                        } else {
+                            premult = eImagePremultiplicationOpaque;
+                        }
+                        
+                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs.bitdepth, useAlpha0ForRGBToRGBAConversion, premult);
+                        assert(tmp);
+                        convertedPlanes.push_back(tmp);
+                    }
+                    *outputPlanes = convertedPlanes;
+                } else {
+                    return ret;
+                }
             } else {
                 assert( outputPlanes->empty() );
             }
@@ -1423,36 +1489,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
         }
+        
         ///The image might need to be converted to fit the original requested format
-        bool imageConversionNeeded = it->first != it->second.downscaleImage->getComponents() || args.bitdepth != it->second.downscaleImage->getBitDepth();
-
-        if ( imageConversionNeeded && (renderRetCode != eRenderRoIStatusRenderFailed) ) {
-            /**
-             * Lock the downscaled image so it cannot be resized while creating the temp image and calling convertToFormat.
-             **/
-            boost::shared_ptr<Image> tmp;
-            {
-                Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
-                RectI bounds = it->second.downscaleImage->getBounds();
-
-                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), bounds, mipMapLevel, it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
-
-                bool unPremultIfNeeded = planesToRender.outputPremult == eImagePremultiplicationPremultiplied && it->second.downscaleImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
-
-                if (useAlpha0ForRGBToRGBAConversion) {
-                    it->second.downscaleImage->convertToFormatAlpha0( roi,
-                                                                      getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
-                                                                      getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                                                      -1, false, unPremultIfNeeded, tmp.get() );
-                } else {
-                    it->second.downscaleImage->convertToFormat( roi,
-                                                                getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
-                                                                getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                                                -1, false, unPremultIfNeeded, tmp.get() );
-                }
-            }
-            it->second.downscaleImage = tmp;
-        }
+        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult);
+        
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);
     }

@@ -604,7 +604,7 @@ ViewerInstance::renderViewer(int view,
     }
     
 
-    if ( (ret[0] == eStatusFailed) && (ret[1] == eStatusFailed) ) {
+    if ( (ret[0] == eStatusFailed) || (ret[1] == eStatusFailed) ) {
         return eStatusFailed;
     }
 

@@ -1661,6 +1661,14 @@ private:
                                              InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
+    static boost::shared_ptr<Natron::Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                                                         const boost::shared_ptr<Natron::Image>& inputImage,
+                                                                         const RectI& roi,
+                                                                         const ImageComponents& targetComponents,
+                                                                         ImageBitDepthEnum targetDepth,
+                                                                         bool useAlpha0ForRGBToRGBAConversion,
+                                                                         ImagePremultiplicationEnum outputPremult);
+
 
     /**
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not

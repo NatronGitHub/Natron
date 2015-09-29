@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtOpenGL/QGLShaderProgram>
+#include <QTreeWidget>
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -2861,6 +2862,10 @@ ViewerGL::enterEvent(QEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
+    /*
+     We steal focus from all those widgets so that the user automatically
+     gets keyboard focus in viewer when mouse enters.
+     */
     QWidget* currentFocus = qApp->focusWidget();
     
     bool canSetFocus = !currentFocus ||
@@ -2872,7 +2877,8 @@ ViewerGL::enterEvent(QEvent* e)
     currentFocus->objectName() == "Properties" ||
     currentFocus->objectName() == "SettingsPanel" ||
     currentFocus->objectName() == "qt_tabwidget_tabbar" ||
-    currentFocus->objectName() == "PanelTabBar";
+    currentFocus->objectName() == "PanelTabBar" ||
+    dynamic_cast<QTreeWidget*>(currentFocus);
     
     if (canSetFocus) {
         setFocus();

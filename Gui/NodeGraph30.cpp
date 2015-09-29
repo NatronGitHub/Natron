@@ -61,7 +61,27 @@ using namespace Natron;
 void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
-    if ( !getLastSelectedViewer() ) {
+    ViewerTab* lastUsedViewer =  getLastSelectedViewer();
+    
+    if (lastUsedViewer) {
+        boost::shared_ptr<NodeCollection> collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
+        if (collection && collection->getNodeGraph() != this) {
+            //somehow the group doesn't belong to this nodegraph , pick another one
+            const std::list<ViewerTab*>& tabs = getGui()->getViewersList();
+            lastUsedViewer = 0;
+            for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+                
+                boost::shared_ptr<NodeCollection> otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
+                if (otherCollection && otherCollection->getNodeGraph() == this) {
+                    lastUsedViewer = *it;
+                    break;
+                }
+            }
+        }
+    }
+    
+    
+    if ( !lastUsedViewer ) {
         _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
@@ -76,7 +96,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
 
     ///get a pointer to the last user selected viewer
-    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( getLastSelectedViewer()->
+    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                                                      getInternalNode()->getNode() );
 
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
