@@ -123,6 +123,21 @@ RotoContext::getStrokeBeingPainted() const
     return _imp->strokeBeingPainted;
 }
 
+boost::shared_ptr<Natron::Node>
+RotoContext::getRotoPaintBottomMergeNode() const
+{
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    if (items.empty()) {
+        return boost::shared_ptr<Natron::Node>();
+    }
+    
+    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+    assert(firstStrokeItem);
+    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+    assert(bottomMerge);
+    return bottomMerge;
+}
+
 void
 RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
 {

@@ -223,15 +223,7 @@ FramesNeededMap
 RotoPaint::getFramesNeeded(double time, int view)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
-    if (items.empty()) {
-        return FramesNeededMap();
-    }
-    
-    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-    assert(firstStrokeItem);
-    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-    assert(bottomMerge);
+    boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
 
     FramesNeededMap ret;
     std::map<int, std::vector<OfxRangeD> > views;
@@ -251,16 +243,7 @@ RotoPaint::getRegionsOfInterest(double /*time*/,
                           RoIMap* ret)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
-    if (items.empty()) {
-        return;
-    }
-    
-    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-    assert(firstStrokeItem);
-    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-    assert(bottomMerge);
-    
+    boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
     ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
 }
 

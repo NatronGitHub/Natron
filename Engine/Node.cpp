@@ -3085,7 +3085,7 @@ Node::hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers
 {
     Natron::OutputEffectInstance* thisWriter = dynamic_cast<Natron::OutputEffectInstance*>(_imp->liveInstance.get());
     
-    if (thisWriter) {
+    if (thisWriter && thisWriter->isOutput()) {
         std::list<Natron::OutputEffectInstance* >::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
         if ( alreadyExists == writers->end() ) {
             writers->push_back(thisWriter);
@@ -6720,7 +6720,7 @@ Node::forceRefreshAllInputRelatedData()
 }
 
 void
-Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes) {
+Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse) {
     std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
     if (found != markedNodes.end()) {
         return;
@@ -6731,10 +6731,22 @@ Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& marke
     }
     markedNodes.push_back(this);
     
-    std::list<Natron::Node*>  outputs;
-    getOutputsWithGroupRedirection(outputs);
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->markInputRelatedDataDirtyRecursiveInternal( markedNodes );
+    if (isRotoPaintingNode()) {
+        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        assert(roto);
+        std::list<NodePtr> rotoNodes;
+        roto->getRotoPaintTreeNodes(&rotoNodes);
+        for (std::list<NodePtr>::iterator it = rotoNodes.begin(); it!=rotoNodes.end(); ++it) {
+            (*it)->markInputRelatedDataDirtyRecursiveInternal(markedNodes,false);
+        }
+    }
+    
+    if (recurse) {
+        std::list<Natron::Node*>  outputs;
+        getOutputsWithGroupRedirection(outputs);
+        for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            (*it)->markInputRelatedDataDirtyRecursiveInternal( markedNodes, true );
+        }
     }
     
 
@@ -6745,7 +6757,7 @@ void
 Node::markInputRelatedDataDirtyRecursive()
 {
     std::list<Natron::Node*> marked;
-    markInputRelatedDataDirtyRecursiveInternal(marked);
+    markInputRelatedDataDirtyRecursiveInternal(marked, true);
 }
 
 void
@@ -6753,12 +6765,22 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedN
 {
     refreshInputRelatedDataInternal(markedNodes);
     
+    if (isRotoPaintingNode()) {
+        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        assert(roto);
+        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+        if (bottomMerge) {
+            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
+        }
+    }
+    
     ///Now notify outputs we have changed
     std::list<Natron::Node*>  outputs;
     getOutputsWithGroupRedirection(outputs);
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
     }
+    
 }
 
 void

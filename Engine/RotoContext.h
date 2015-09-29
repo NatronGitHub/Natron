@@ -376,6 +376,8 @@ public:
         
     void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
+    boost::shared_ptr<Natron::Node> getRotoPaintBottomMergeNode() const;
+    
     void setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke);
     boost::shared_ptr<RotoStrokeItem> getStrokeBeingPainted() const;
     

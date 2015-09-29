@@ -829,7 +829,7 @@ EffectInstance::getImage(int inputNb,
         ImageBitDepthEnum depth;
         n->getPreferredDepthAndComponents(-1, &prefComps, &depth);
         assert(!prefComps.empty());
-        qDebug() << n->getScriptName_mt_safe().c_str() << "output clip preferences is" << prefComps.front().getComponentsGlobalName().c_str();
+        qDebug() << n->getScriptName_mt_safe().c_str() << "output clip preference is" << prefComps.front().getComponentsGlobalName().c_str();
     }
 
 #endif

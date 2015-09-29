@@ -1049,7 +1049,7 @@ private:
     
     void markInputRelatedDataDirtyRecursive();
     
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse);
     
     bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
