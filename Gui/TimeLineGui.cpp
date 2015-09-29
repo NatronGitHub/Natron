@@ -341,8 +341,8 @@ TimeLineGui::paintGL()
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame,0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame,0);
 
-        glScissor( firstFrameWidgetPos.x(),0,
-                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
+        glScissor( firstFrameWidgetPos.x(), 0,
+                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(), height() );
 
         double bgR,bgG,bgB;
         settings->getBaseColor(&bgR, &bgG, &bgB);
@@ -353,14 +353,22 @@ TimeLineGui::paintGL()
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_SCISSOR_TEST);
 
-        if (_imp->state == eTimelineStateSelectingZoomRange) {
-#pragma message WARN("TODO: draw timeline select range")
-            // https://github.com/MrKepzie/Natron/issues/917
-            // draw the select range, from _imp->mousePressX to _imp->mouseMoveX
-        }
-
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if (_imp->state == eTimelineStateSelectingZoomRange) {
+            // draw timeline selected range
+            // https://github.com/MrKepzie/Natron/issues/917
+            // draw the select range, from _imp->mousePressX to _imp->mouseMoveX
+            glColor4f(1, 1, 1, 0.3);
+            glBegin(GL_POLYGON);
+            glVertex2f(toTimeLine(_imp->mousePressX), btmLeft.y());
+            glVertex2f(toTimeLine(_imp->mousePressX), topRight.y());
+            glVertex2f(toTimeLine(_imp->mouseMoveX), topRight.y());
+            glVertex2f(toTimeLine(_imp->mouseMoveX), btmLeft.y());
+            glEnd();
+        }
+
 
         QFontMetrics fontM(_imp->font);
 
