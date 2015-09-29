@@ -1669,7 +1669,7 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
         }
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             throw std::runtime_error("getFramesNeeded action failed");
-        } else if (stat == kOfxStatOK) {
+        } else {
             for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
                 assert(clip);
@@ -1684,9 +1684,11 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
             }
         }
     }
-    if (stat == kOfxStatReplyDefault) {
-        return Natron::EffectInstance::getFramesNeeded(time,view);
-    }
+    
+    //Default is already handled by HostSupport
+//    if (stat == kOfxStatReplyDefault) {
+//        return Natron::EffectInstance::getFramesNeeded(time,view);
+//    }
     return ret;
 }
 

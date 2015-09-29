@@ -239,7 +239,6 @@ struct Node::Implementation
     , childrenMutex()
     , children()
     , multiInstanceParentName()
-    , duringInputChangedAction(false)
     , keyframesDisplayedOnTimeline(false)
     , timersMutex()
     , lastRenderStartedSlotCallTime()
@@ -282,6 +281,8 @@ struct Node::Implementation
     , distToNextOut(0.)
     , useAlpha0ToConvertFromRGBToRGBA(false)
     , isBeingDestroyed(false)
+    , inputModifiedRecursion(0)
+    , inputsModified()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -442,7 +443,6 @@ struct Node::Implementation
     
     ///the name of the parent at the time this node was created
     std::string multiInstanceParentName;
-    bool duringInputChangedAction; //< true if we're during onInputChanged(...). MT-safe since only modified by the main thread
     bool keyframesDisplayedOnTimeline;
     
     ///This is to avoid the slots connected to the main-thread to be called too much
@@ -504,6 +504,13 @@ struct Node::Implementation
     bool useAlpha0ToConvertFromRGBToRGBA;
     
     bool isBeingDestroyed;
+    
+    /*
+     Used to block render emitions while modifying nodes links
+     MT-safe: only accessed/used on main thread
+     */
+    int inputModifiedRecursion;
+    std::set<int> inputsModified;
     
 };
 
@@ -3775,8 +3782,10 @@ Node::switchInput0And1()
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
     if (!useGuiInputs) {
+        beginInputEdition();
         onInputChanged(inputAIndex);
         onInputChanged(inputBIndex);
+        endInputEdition(true);
     }
     computeHash();
     
@@ -5341,27 +5350,63 @@ Node::getImageBeingRendered(int time,
 }
 
 void
+Node::beginInputEdition()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    ++_imp->inputModifiedRecursion;
+}
+
+void
+Node::endInputEdition(bool triggerRender)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->inputModifiedRecursion > 0) {
+        --_imp->inputModifiedRecursion;
+    }
+    
+    if (!_imp->inputModifiedRecursion) {
+        
+        forceRefreshAllInputRelatedData();
+        refreshDynamicProperties();
+        
+        triggerRender = triggerRender && !_imp->inputsModified.empty();
+        _imp->inputsModified.clear();
+        
+        if (triggerRender) {
+            std::list<ViewerInstance* > viewers;
+            hasViewersConnected(&viewers);
+            for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+                (*it2)->renderCurrentFrame(true);
+            }
+        }
+    }
+}
+
+void
 Node::onInputChanged(int inputNb)
 {
     if (getApp()->getProject()->isProjectClosing()) {
         return;
     }
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->duringInputChangedAction = true;
+
+    bool mustCallEndInputEdition = _imp->inputModifiedRecursion == 0;
+    if (mustCallEndInputEdition) {
+        beginInputEdition();
+    }
     
     refreshMaskEnabledNess(inputNb);
     refreshLayersChoiceSecretness(inputNb);
-    refreshDynamicProperties();
     
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
     if (isViewer) {
         isViewer->refreshActiveInputs(inputNb);
     }
     
+    bool shouldDoInputChanged = (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
+    _imp->liveInstance->isRotoPaintNode();
     
-    
-    if ((!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
-        _imp->liveInstance->isRotoPaintNode()) {
+    if (shouldDoInputChanged) {
   
         ///When loading a group (or project) just wait until everything is setup to actually compute input
         ///related data such as clip preferences
@@ -5390,21 +5435,23 @@ Node::onInputChanged(int inputNb)
         
         
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-        
         _imp->liveInstance->onInputChanged(inputNb);
-        
-        forceRefreshAllInputRelatedData();
+        _imp->inputsModified.insert(inputNb);
     }
    
-    _imp->duringInputChangedAction = false;
+    
+    if (mustCallEndInputEdition) {
+        endInputEdition(true);
+    }
+   
 }
 
 void
 Node::onParentMultiInstanceInputChanged(int input)
 {
-    _imp->duringInputChangedAction = true;
+    ++_imp->inputModifiedRecursion;
     _imp->liveInstance->onInputChanged(input);
-    _imp->duringInputChangedAction = false;
+    --_imp->inputModifiedRecursion;
 }
 
 
@@ -5413,7 +5460,7 @@ Node::duringInputChangedAction() const
 {
     assert( QThread::currentThread() == qApp->thread() );
     
-    return _imp->duringInputChangedAction;
+    return _imp->inputModifiedRecursion > 0;
 }
 
 void
@@ -6433,20 +6480,12 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
     
+    beginInputEdition();
     for (std::set<int>::iterator it = inputChanges.begin(); it!=inputChanges.end(); ++it) {
         onInputChanged(*it);
     }
-    
-    if (!inputChanges.empty()) {
-        std::list<ViewerInstance* > viewers;
-        hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it = viewers.begin();
-             it != viewers.end();
-             ++it) {
-            (*it)->renderCurrentFrame(true);
-        }
-    }
-    
+    endInputEdition(true);
+
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;

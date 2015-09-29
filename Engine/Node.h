@@ -790,6 +790,10 @@ public:
      * do not respect the OpenFX specification.
      **/
     boost::shared_ptr<Natron::Image> getImageBeingRendered(int time,unsigned int mipMapLevel,int view);
+    
+    void beginInputEdition();
+    
+    void endInputEdition(bool triggerRender);
 
     void onInputChanged(int inputNb);
 

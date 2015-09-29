@@ -232,32 +232,9 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                                     _imp->_highLightedEdge->getSource() ) );
                     }
                 } else {
-                    boost::shared_ptr<NodeGui> src = _imp->_highLightedEdge->getSource();
-                    pushUndoCommand( new ConnectCommand(this,_imp->_highLightedEdge,_imp->_highLightedEdge->getSource(),
-                                                               selectedNode) );
-
-                    ///find out if the node is already connected to what the edge is connected
-                    bool alreadyConnected = false;
-                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
-                    if (src) {
-                        for (U32 i = 0; i < inpNodes.size(); ++i) {
-                            if ( inpNodes[i] == src->getNode() ) {
-                                alreadyConnected = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (src && !alreadyConnected) {
-                        ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
-                        int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                        if (prefInput != -1) {
-                            Edge* inputEdge = selectedNode->getInputArrow(prefInput);
-                            assert(inputEdge);
-                            pushUndoCommand( new ConnectCommand(this,inputEdge,inputEdge->getSource(),src) );
-                        }
-                    }
-                }
+                    
+                    pushUndoCommand(new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode));
+                } // if ( _imp->_highLightedEdge->isOutputEdge() )
 
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();

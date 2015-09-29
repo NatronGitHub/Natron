@@ -487,13 +487,6 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                     }
                 }
                 nodegui->getDagGui()->moveNodesForIdealPosition(nodegui,selectedNode,autoConnect);
-                if (autoConnect) {
-                    std::list<ViewerInstance* > viewers;
-                    node->hasViewersConnected(&viewers);
-                    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-                        (*it2)->renderCurrentFrame(true);
-                    }
-                }
             }
         }
     }
