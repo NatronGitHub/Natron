@@ -5368,11 +5368,15 @@ Node::endInputEdition(bool triggerRender)
     
     if (!_imp->inputModifiedRecursion) {
         
-        forceRefreshAllInputRelatedData();
-        refreshDynamicProperties();
-        
-        triggerRender = triggerRender && !_imp->inputsModified.empty();
+        bool hasChanged = !_imp->inputsModified.empty();
         _imp->inputsModified.clear();
+
+        if (hasChanged) {
+            forceRefreshAllInputRelatedData();
+            refreshDynamicProperties();
+        }
+        
+        triggerRender = triggerRender && hasChanged;
         
         if (triggerRender) {
             std::list<ViewerInstance* > viewers;

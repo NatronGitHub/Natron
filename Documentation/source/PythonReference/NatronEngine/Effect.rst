@@ -117,6 +117,8 @@ Member functions description
 	Starts a begin/End bracket, blocking all evaluation (=renders and callback onParamChanged) that would be issued due to
 	a call to :func:`setValue<NatronEngine.IntParam.setValue>` on any parameter of the Effect.
 	
+	Similarly all input changes will not be evaluated until endChanges() is called.
+	
 	Typically to change several values at once we bracket the changes like this::
 	
 		node.beginChanges()	
@@ -124,9 +126,15 @@ Member functions description
 		param2.setValue(...)
 		param3.setValue(...)
 		param4.setValue(...)
-		node.endChanges()  # This triggers a new render and a call to the onParamChanged callback
+		node.endChanges()  # This triggers a new render 
 
-
+	A more complex call:
+	
+		node.beginChanges()
+		node.connectInput(0,otherNode)
+		node.connectInput(1,thirdNode)
+		param1.setValue(...)
+		node.endChanges() # This triggers a new render
 
 
 .. method:: NatronEngine.Effect.endChanges()

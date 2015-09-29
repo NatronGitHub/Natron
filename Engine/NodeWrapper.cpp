@@ -298,12 +298,14 @@ void
 Effect::beginChanges()
 {
     _node->getLiveInstance()->beginChanges();
+    _node->beginInputEdition();
 }
 
 void
 Effect::endChanges()
 {
     _node->getLiveInstance()->endChanges();
+    _node->endInputEdition(true);
 }
 
 IntParam*
