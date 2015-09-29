@@ -206,15 +206,18 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
         
         ImagePtr tmp(new Image(targetComponents, inputImage->getRoD(), bounds, inputImage->getMipMapLevel(), inputImage->getPixelAspectRatio(), targetDepth, false));
         
+        RectI clippedRoi;
+        roi.intersect(bounds, &clippedRoi);
+        
         bool unPremultIfNeeded = outputPremult == eImagePremultiplicationPremultiplied && inputImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
         
         if (useAlpha0ForRGBToRGBAConversion) {
-            inputImage->convertToFormatAlpha0( roi,
+            inputImage->convertToFormatAlpha0( clippedRoi,
                                               app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                               app->getDefaultColorSpaceForBitDepth(targetDepth),
                                               -1, false, unPremultIfNeeded, tmp.get() );
         } else {
-            inputImage->convertToFormat( roi,
+            inputImage->convertToFormat( clippedRoi,
                                         app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                         app->getDefaultColorSpaceForBitDepth(targetDepth),
                                         -1, false, unPremultIfNeeded, tmp.get() );
