@@ -670,24 +670,21 @@ TimeLineGui::seek(SequenceTime time)
 void
 TimeLineGui::mousePressEvent(QMouseEvent* e)
 {
-    int leftBound,rightBound;
-    {
-        QMutexLocker k(&_imp->boundariesMutex);
-        leftBound = _imp->leftBoundary;
-        rightBound = _imp->rightBoundary;
-    }
     if (buttonDownIsMiddle(e)) {
-        centerOn(leftBound, rightBound);
-
-        if (_imp->gui->isTripleSyncEnabled()) {
-            _imp->updateEditorFrameRanges();
-            _imp->updateOpenedViewersFrameRanges();
-        }
+        _imp->state = eTimelineStatePanning;
+    } else if (buttonDownIsRight(e)) {
+        _imp->state = eTimelineStateSelectingRange;
     } else {
         _imp->lastMouseEventWidgetCoord = e->pos();
         double t = toTimeLineCoordinates(e->x(),0).x();
         SequenceTime tseq = std::floor(t + 0.5);
         if (modCASIsControl(e)) {
+            int leftBound,rightBound;
+            {
+                QMutexLocker k(&_imp->boundariesMutex);
+                leftBound = _imp->leftBoundary;
+                rightBound = _imp->rightBoundary;
+            }
             _imp->state = eTimelineStateDraggingBoundary;
             int firstPos = toWidgetCoordinates(leftBound - 1,0).x();
             int lastPos = toWidgetCoordinates(rightBound + 1,0).x();
@@ -720,7 +717,12 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     SequenceTime tseq = std::floor(t + 0.5);
     bool distortViewPort = false;
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-    if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
+    if (_imp->state == eTimelineStatePanning) {
+#pragma message WARN("TODO: timeline panning")
+    } else if (_imp->state == eTimelineStateSelectingRange) {
+#pragma message WARN("TODO: timeline select range")
+        // https://github.com/MrKepzie/Natron/issues/917
+    } else if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->timeline->currentFrame() ) {
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
@@ -783,8 +785,27 @@ TimeLineGui::leaveEvent(QEvent* e)
 void
 TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 {
-    if (_imp->state == eTimelineStateDraggingCursor) {
-        
+    if (_imp->state == eTimelineStateSelectingRange) {
+#pragma message WARN("TODO: timeline select range")
+
+        // TODO: https://github.com/MrKepzie/Natron/issues/917
+        // - if the last selected frame is the same as the first selected frame, zoom on the PROJECT range (NOT the playback range as in the following)
+        // - if they are different, zoom on that range
+        int leftBound,rightBound;
+        {
+            QMutexLocker k(&_imp->boundariesMutex);
+            leftBound = _imp->leftBoundary;
+            rightBound = _imp->rightBoundary;
+        }
+
+        centerOn(leftBound, rightBound);
+
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->updateEditorFrameRanges();
+            _imp->updateOpenedViewersFrameRanges();
+        }
+    } else if (_imp->state == eTimelineStateDraggingCursor) {
+
         bool wasScrubbing = false;
         if (_imp->gui->isDraftRenderEnabled()) {
             _imp->gui->setDraftRenderEnabled(false);
