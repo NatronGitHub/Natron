@@ -1124,12 +1124,7 @@ ViewerInstance::renderViewer_internal(int view,
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
-//        if (!isSequentialRender) {
-//            _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-//        }
-        if (!isSequentialRender) {
-            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-        }
+        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         return eStatusReplyDefault;
     }
     

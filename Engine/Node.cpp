@@ -3607,8 +3607,12 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
     
+    bool mustCallEnd = false;
+    
     if (!useGuiInputs) {
         ///Call the instance changed action with a reason clip changed
+        beginInputEdition();
+        mustCallEnd = true;
         onInputChanged(inputNumber);
     }
     
@@ -3620,6 +3624,10 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     std::string inputChangedCB = getInputChangedCallback();
     if (!inputChangedCB.empty()) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
+    }
+    
+    if (mustCallEnd) {
+        endInputEdition(true);
     }
     
     return true;
@@ -3694,7 +3702,10 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
 
+    bool mustCallEnd = false;
     if (!useGuiInputs) {
+        beginInputEdition();
+        mustCallEnd = true;
         ///Call the instance changed action with a reason clip changed
         onInputChanged(inputNumber);
     }
@@ -3709,7 +3720,9 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
 
-    
+    if (mustCallEnd) {
+        endInputEdition(true);
+    }
     return true;
 }
 
@@ -3781,11 +3794,13 @@ Node::switchInput0And1()
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
+    bool mustCallEnd = false;
     if (!useGuiInputs) {
         beginInputEdition();
+        mustCallEnd = true;
         onInputChanged(inputAIndex);
         onInputChanged(inputBIndex);
-        endInputEdition(true);
+        
     }
     computeHash();
     
@@ -3797,6 +3812,10 @@ Node::switchInput0And1()
 
     
     _imp->ifGroupForceHashChangeOfInputs();
+    
+    if (mustCallEnd) {
+        endInputEdition(true);
+    }
 
 } // switchInput0And1
 
@@ -3886,7 +3905,10 @@ Node::disconnectInput(int inputNumber)
     }
     
     Q_EMIT inputChanged(inputNumber);
+    bool mustCallEnd = false;
     if (!useGuiValues) {
+        beginInputEdition();
+        mustCallEnd= true;
         onInputChanged(inputNumber);
     }
     computeHash();
@@ -3896,6 +3918,9 @@ Node::disconnectInput(int inputNumber)
     std::string inputChangedCB = getInputChangedCallback();
     if (!inputChangedCB.empty()) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
+    }
+    if (mustCallEnd) {
+        endInputEdition(true);
     }
     return inputNumber;
 }
@@ -3944,7 +3969,10 @@ Node::disconnectInput(Node* input)
         }
         input->disconnectOutput(useGuiValues,this);
         Q_EMIT inputChanged(found);
+        bool mustCallEnd = false;
         if (!useGuiValues) {
+            beginInputEdition();
+            mustCallEnd = true;
             onInputChanged(found);
         }
         computeHash();
@@ -3954,6 +3982,10 @@ Node::disconnectInput(Node* input)
         std::string inputChangedCB = getInputChangedCallback();
         if (!inputChangedCB.empty()) {
             _imp->runInputChangedCallback(found, inputChangedCB);
+        }
+        
+        if (mustCallEnd) {
+            endInputEdition(true);
         }
         
         return found;
