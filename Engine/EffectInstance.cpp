@@ -599,11 +599,11 @@ EffectInstance::getImage(int inputNb,
         return ImagePtr();
     }
 
-    std::list<ImageComponents> outputClipPrefComps;
+    /*std::list<ImageComponents> outputClipPrefComps;
     ImageBitDepthEnum outputDepth;
     getPreferredDepthAndComponents(inputNb, &outputClipPrefComps, &outputDepth);
     assert(outputClipPrefComps.size() >= 1);
-    const ImageComponents & prefComps = outputClipPrefComps.front();
+    const ImageComponents & prefComps = outputClipPrefComps.front();*/
 
     ///If optionalBounds have been set, use this for the RoI instead of the data int the TLS
     RectD optionalBounds;
@@ -743,9 +743,9 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, prefComps, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, comp, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, prefComps,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, comp,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getNode()->updateStrokeImage(inputImg);
@@ -814,11 +814,26 @@ EffectInstance::getImage(int inputNb,
      * instantaneous thanks to the image cache.
      */
 
+#ifdef DEBUG
     ///Check that the rendered image contains what we requested.
     if ((!isMask && inputImg->getComponents() != comp) || (isMask && inputImg->getComponents() != maskComps)) {
-        return ImagePtr();
+        ImageComponents cc;
+        if (isMask) {
+            cc = maskComps;
+        } else {
+            cc = comp;
+        }
+        qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << n->getScriptName_mt_safe().c_str() << "returned an image with"
+        << inputImg->getComponents().getComponentsGlobalName().c_str();
+        std::list<Natron::ImageComponents> prefComps;
+        ImageBitDepthEnum depth;
+        n->getPreferredDepthAndComponents(-1, &prefComps, &depth);
+        assert(!prefComps.empty());
+        qDebug() << n->getScriptName_mt_safe().c_str() << "output clip preferences is" << prefComps.front().getComponentsGlobalName().c_str();
     }
 
+#endif
+    
     if (roiPixel) {
         *roiPixel = pixelRoI;
     }
@@ -845,16 +860,16 @@ EffectInstance::getImage(int inputNb,
     }
 
 
-    if ( prefComps.getNumComponents() != inputImg->getComponents().getNumComponents() ) {
+    if ( comp.getNumComponents() != inputImg->getComponents().getNumComponents() ) {
         ImagePtr remappedImg;
         {
             Image::ReadAccess acc = inputImg->getReadRights();
 
-            remappedImg.reset( new Image(prefComps, inputImg->getRoD(), inputImg->getBounds(), inputImg->getMipMapLevel(), inputImg->getPixelAspectRatio(), inputImg->getBitDepth(), false) );
+            remappedImg.reset( new Image(comp, inputImg->getRoD(), inputImg->getBounds(), inputImg->getMipMapLevel(), inputImg->getPixelAspectRatio(), inputImg->getBitDepth(), false) );
 
             Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth( inputImg->getBitDepth() );
             bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied &&
-                                     inputImg->getComponents().getNumComponents() == 4 && prefComps.getNumComponents() == 3;
+                                     inputImg->getComponents().getNumComponents() == 4 && comp.getNumComponents() == 3;
             inputImg->convertToFormat( inputImg->getBounds(),
                                        colorspace, colorspace,
                                        channelForMask, false, unPremultIfNeeded, remappedImg.get() );
