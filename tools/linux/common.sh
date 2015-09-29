@@ -49,8 +49,8 @@ PACKAGES=$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$AREN
 GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
 COLOR_PROFILES_VERSION=2.0.0
 
-# bump number on bugfixes
-CORELIBS_VERSION=2.0.0
+# bump timestamp on SDK changes, important!
+CORELIBS_VERSION=20150928
 
 # SDK
 #
@@ -229,3 +229,10 @@ if [ -z "$MKJOBS" ]; then
     MKJOBS=$DEFAULT_MKJOBS
 fi
 
+# License
+#
+#
+if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
+    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
+    exit 1
+fi

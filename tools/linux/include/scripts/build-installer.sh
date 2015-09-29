@@ -73,15 +73,22 @@ mkdir -p $INSTALLER/config $INSTALLER/packages || exit 1
 cat $INC_PATH/config/config.xml | sed "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g" > $INSTALLER/config/config.xml || exit 1
 cp $INC_PATH/config/*.png $INSTALLER/config/ || exit 1
 
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    FFLIC=gpl
+else
+    FFLIC=lgpl
+fi
+
 # OFX IO
 OFX_IO_VERSION=$TAG
 OFX_IO_PATH=$INSTALLER/packages/$IOPLUG_PKG
-mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins || exit 1
+mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins $OFX_IO_PATH/data/bin || exit 1
 cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
 cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
-cat $INSTALL_PATH/docs/openfx-io/VERSION > $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
-echo "" >> $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
-cat $INSTALL_PATH/docs/openfx-io/LICENSE >> $OFX_IO_PATH/meta/ofx-io-license.txt || exit 1
+cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/bin/ || exit 1
+cat $CWD/include/scripts/ffmpeg.sh > $OFX_IO_PATH/data/ffmpeg || exit 1
+cat $CWD/include/scripts/ffmpeg.sh | sed 's/ffmpeg/ffprobe/g' > $OFX_IO_PATH/data/ffprobe || exit 1
+chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
 cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/ || exit 1
 strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
 IO_LIBS=$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Libraries
@@ -92,17 +99,7 @@ for x in $OFX_DEPENDS; do
     cp -v $x $IO_LIBS/ || exit 1
 done
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
-fi
-
-if [ "$NATRON_LICENSE" = "GPL" ]; then
-    FFLIC=gpl
-else
-    FFLIC=lgpl
-fi
-cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavformat.so.56,libavcodec.so.56,libswscale.so.3,libavutil.so.54,libswresample.so.1} $IO_LIBS/ || exit 1
+cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavfilter.so.5,libavdevice.so.56,libpostproc.so.53,libavresample.so.2,libavformat.so.56,libavcodec.so.56,libswscale.so.3,libavutil.so.54,libswresample.so.1} $IO_LIBS/ || exit 1
 OFX_LIB_DEP=$(ldd $IO_LIBS/*|grep opt | awk '{print $3}')
 for y in $OFX_LIB_DEP; do
     cp -v $y $IO_LIBS/ || exit 1
@@ -123,148 +120,12 @@ rm -f $IO_LIBS/{libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libt
 )
 strip -s $IO_LIBS/*
 
-IO_LIC=$OFX_IO_PATH/meta/ofx-io-license.txt
-echo "" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-echo "BOOST:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/boost/LICENSE_1_0.txt >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "FFMPEG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-if [ "$NATRON_LICENSE" = "GPL" ]; then
-    cat $INSTALL_PATH/docs/ffmpeg/COPYING.GPLv3 >> $IO_LIC || exit 1
-else
-    cat $INSTALL_PATH/docs/ffmpeg/COPYING.LGPLv2.1 >>$IO_LIC || exit 1
-fi
-
-echo "" >>$IO_LIC || exit 1
-echo "JPEG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/jpeg/README  >>$IO_LIC  || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OPENCOLORIO:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/ocio/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OPENIMAGEIO:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/oiio/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OPENEXR:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/openexr/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OPENJPEG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/openjpeg/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "PNG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/png/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "TIFF:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/tiff/COPYRIGHT >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "SEEXPR:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/seexpr/license.txt >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "LIBRAW:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libraw/COPYRIGHT >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "JASPER:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/jasper/COPYRIGHT >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "LCMS:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/lcms/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "DIRAC:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/dirac/COPYING.MPL >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "LAME:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/lame/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "MODPLUG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libmodplug/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OGG:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libogg/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "THEORA:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libtheora/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "VORBIS:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libvorbis/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "VPX:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/libvpx/LICENSE >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "OPUS:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/opus/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "ORC:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/orc/COPYING >>$IO_LIC || exit 1
-
-echo "" >>$IO_LIC || exit 1
-echo "SPEEX:" >>$IO_LIC || exit 1
-echo "" >>$IO_LIC || exit 1
-cat $INSTALL_PATH/docs/speex/COPYING >>$IO_LIC || exit 1
-
-if [ "$NATRON_LICENSE" = "GPL" ]; then
-    echo "" >>$IO_LIC || exit 1
-    echo "X264:" >>$IO_LIC || exit 1
-    echo "" >>$IO_LIC || exit 1
-    cat $INSTALL_PATH/docs/x264/COPYING >>$IO_LIC || exit 1
-
-    echo "" >>$IO_LIC || exit 1
-    echo "XVID:" >>$IO_LIC || exit 1
-    echo "" >>$IO_LIC || exit 1
-    cat $INSTALL_PATH/docs/xvidcore/LICENSE >>$IO_LIC || exit 1
-fi
-
 # OFX MISC
 OFX_MISC_VERSION=$TAG
 OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
 mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins || exit 1
 cat $XML/openfx-misc.xml | sed "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" > $OFX_MISC_PATH/meta/package.xml || exit 1
 cat $QS/openfx-misc.qs > $OFX_MISC_PATH/meta/installscript.qs || exit 1
-cat $INSTALL_PATH/docs/openfx-misc/VERSION > $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
-echo "" >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
-cat $INSTALL_PATH/docs/openfx-misc/LICENSE >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
 cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/ || exit 1
 strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
 CIMG_LIBS=$OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Libraries
@@ -301,10 +162,6 @@ strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer
 if [ -f "$NATRON_PATH/data/bin/NatronCrashReporter" ]; then
     strip -s $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter
 fi
-
-# most (all) distros has ffmpeg in the repository
-#cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffmpeg $NATRON_PATH/data/bin/ || exit 1
-#cp $INSTALL_PATH/ffmpeg-${FFLIC}/bin/ffprobe $NATRON_PATH/data/bin/ || exit 1
 
 wget $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
@@ -368,23 +225,6 @@ cp -a $INSTALL_PATH/etc/fonts $CLIBS_PATH/data/share/etc/ || exit 1
 strip -s $CLIBS_PATH/data/lib/*
 strip -s $CLIBS_PATH/data/bin/*/*
 
-CORE_DOC=$CLIBS_PATH
-cat $INSTALL_PATH/docs/boost/LICENSE_1_0.txt >> $CORE_DOC/meta/3rdparty-license.txt 
-cat $INSTALL_PATH/docs/cairo/COPYING-MPL-1.1 >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/glew/LICENSE.txt >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/jpeg/README >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/png/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/qt/*LGPL* >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/tiff/COPYRIGHT >> $CORE_DOC/meta/3rdparty-license.txt
-
-if [ "$PYV" = "3" ]; then
-    cat $INSTALL_PATH/docs/python3/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
-else
-    cat $INSTALL_PATH/docs/python2/LICENSE >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
-fi
-cat $INSTALL_PATH/docs/pyside/* >> $CORE_DOC/meta/3rdparty-license.txt
-cat $INSTALL_PATH/docs/shibroken/* >> $CORE_DOC/meta/3rdparty-license.txt 
-
 #Copy Python distrib
 mkdir -p $CLIBS_PATH/data/Plugins || exit 1
 if [ "$PYV" = "3" ]; then
@@ -398,7 +238,6 @@ else
     (cd $CLIBS_PATH/data/lib/python2.7/site-packages; ln -sf ../../../Plugins/PySide . )
     rm -rf $CLIBS_PATH/data/lib/python2.7/{test,config} || exit 1
 fi
-#rm -f $CLIBS_PATH/data/Plugins/PySide/{QtDeclarative,QtHelp,QtScript,QtScriptTools,QtSql,QtTest,QtUiTools,QtXmlPatterns}.so || exit 1
 PY_DEPENDS=$(ldd $CLIBS_PATH/data/Plugins/PySide/*|grep opt | awk '{print $3}')
 for y in $PY_DEPENDS; do
     cp -v $y $CLIBS_PATH/data/lib/ || exit 1
@@ -412,15 +251,8 @@ OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
 mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins || exit 1
 cat $XML/openfx-arena.xml | sed "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" > $OFX_ARENA_PATH/meta/package.xml || exit 1
 cat $QS/openfx-arena.qs > $OFX_ARENA_PATH/meta/installscript.qs || exit 1
-cat $INSTALL_PATH/docs/openfx-arena/VERSION > $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-echo "" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-cat $INSTALL_PATH/docs/openfx-arena/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
 cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/ || exit 1
 strip -s $OFX_ARENA_PATH/data/Plugins/*/*/*/*
-echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-echo "LCMS License:" >>$OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-cat $INSTALL_PATH/docs/lcms/COPYING >>$OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
 
 ARENA_LIBS=$OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Libraries
 mkdir -p $ARENA_LIBS || exit 1
