@@ -48,6 +48,7 @@ timeline's time.
 
 .. method:: NatronEngine.Double2DParam.get(frame)
 	
+	:param frame: :class:`float<PySide.QtCore.float>`
 	:rtype: :class:`Double2DTuple`
 	
 Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the given *frame*.

@@ -120,12 +120,12 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: get()const
-    // 1: get(int)const
+    // 1: get(double)const
     if (numArgs == 0) {
         overloadId = 0; // get()const
     } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 1; // get(int)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        overloadId = 1; // get(double)const
     }
 
     // Function signature not found.
@@ -143,13 +143,13 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // get(int frame) const
+        case 1: // get(double frame) const
         {
-            int cppArg0;
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get(int)const
+                // get(double)const
                 ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
@@ -164,7 +164,7 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_ColorParamFunc_get_TypeError:
-        const char* overloads[] = {"", "int", 0};
+        const char* overloads[] = {"", "float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.get", overloads);
         return 0;
 }
@@ -572,12 +572,12 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
 
 
     // Overloaded function decisor
-    // 0: getValueAtTime(int,int)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: getValueAtTime(double,int)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // getValueAtTime(int,int)const
+            overloadId = 0; // getValueAtTime(double,int)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // getValueAtTime(int,int)const
+            overloadId = 0; // getValueAtTime(double,int)const
         }
     }
 
@@ -597,13 +597,13 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
                     goto Sbk_ColorParamFunc_getValueAtTime_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getValueAtTime(int,int)const
+            // getValueAtTime(double,int)const
             double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -616,7 +616,7 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_ColorParamFunc_getValueAtTime_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.getValueAtTime", overloads);
         return 0;
 }

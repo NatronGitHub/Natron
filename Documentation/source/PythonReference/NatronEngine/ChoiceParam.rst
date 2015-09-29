@@ -67,7 +67,7 @@ hovers the entry with the mouse.
 .. method:: NatronEngine.ChoiceParam.get(frame)
 
 
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
 Get the value of the parameter at the given *frame*.
@@ -130,7 +130,7 @@ Same as :func:`get()<NatronEngine.ChoiceParam.get>`
 .. method:: NatronEngine.ChoiceParam.getValueAtTime(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
 Same as :func:`get(frame)<NatronEngine.ChoiceParam.get>`

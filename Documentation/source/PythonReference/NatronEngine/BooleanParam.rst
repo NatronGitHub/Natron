@@ -53,7 +53,7 @@ Returns the value of the parameter at the current timeline's time.
 .. method:: NatronEngine.BooleanParam.get(frame)
 
 
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Returns the value of the parameter at the given *frame*. This value may be interpolated
@@ -85,7 +85,7 @@ Same as :func:`get()<NatronEngine.BooleanParam.get>`
 .. method:: NatronEngine.BooleanParam.getValueAtTime(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Same as :func:`get(frame)<NatronEngine.BooleanParam.get>`

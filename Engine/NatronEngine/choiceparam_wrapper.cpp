@@ -178,12 +178,12 @@ static PyObject* Sbk_ChoiceParamFunc_get(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: get()const
-    // 1: get(int)const
+    // 1: get(double)const
     if (numArgs == 0) {
         overloadId = 0; // get()const
     } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 1; // get(int)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        overloadId = 1; // get(double)const
     }
 
     // Function signature not found.
@@ -201,13 +201,13 @@ static PyObject* Sbk_ChoiceParamFunc_get(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // get(int frame) const
+        case 1: // get(double frame) const
         {
-            int cppArg0;
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get(int)const
+                // get(double)const
                 int cppResult = const_cast<const ::ChoiceParamWrapper*>(cppSelf)->get(cppArg0);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
             }
@@ -222,7 +222,7 @@ static PyObject* Sbk_ChoiceParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_ChoiceParamFunc_get_TypeError:
-        const char* overloads[] = {"", "int", 0};
+        const char* overloads[] = {"", "float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.get", overloads);
         return 0;
 }
@@ -389,9 +389,9 @@ static PyObject* Sbk_ChoiceParamFunc_getValueAtTime(PyObject* self, PyObject* py
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getValueAtTime(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getValueAtTime(int)const
+    // 0: getValueAtTime(double)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getValueAtTime(double)const
     }
 
     // Function signature not found.
@@ -399,11 +399,11 @@ static PyObject* Sbk_ChoiceParamFunc_getValueAtTime(PyObject* self, PyObject* py
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getValueAtTime(int)const
+            // getValueAtTime(double)const
             int cppResult = const_cast<const ::ChoiceParamWrapper*>(cppSelf)->getValueAtTime(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
@@ -416,7 +416,7 @@ static PyObject* Sbk_ChoiceParamFunc_getValueAtTime(PyObject* self, PyObject* py
     return pyResult;
 
     Sbk_ChoiceParamFunc_getValueAtTime_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getValueAtTime", overloads);
         return 0;
 }

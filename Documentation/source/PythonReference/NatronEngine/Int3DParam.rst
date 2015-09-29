@@ -35,7 +35,7 @@ current time.
 
 .. method:: NatronEngine.Int3DParam.get(frame)
 	
-	:param frame: :class:`int`
+	:param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`<Int3DTuple>`
     
     
