@@ -43,8 +43,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
+#include <QToolButton>
 #include <QProgressDialog>
 #include <QVBoxLayout>
+#include <QTreeWidget>
+#include <QTabBar>
 
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -56,6 +59,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/GuiAppInstance.h"
@@ -73,7 +77,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
-
+#include "Gui/Histogram.h"
 
 using namespace Natron;
 
@@ -432,15 +436,30 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
+static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
+{
+    if (!w) {
+        return false;
+    }
+    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
+    if (panel) {
+        return panel;
+    } else {
+        return isParentSettingsPanelRecursive(w->parentWidget());
+    }
+}
+
 void
 Gui::keyPressEvent(QKeyEvent* e)
 {
     QWidget* w = qApp->widgetAt( QCursor::pos() );
 
-    if ( w && ( w->objectName() == QString("SettingsPanel") ) && (e->key() == Qt::Key_Escape) ) {
-        RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
-        assert(panel);
-        panel->getPanel()->closePanel();
+    if (e->key() == Qt::Key_Escape) {
+        
+        RightClickableWidget* panel = isParentSettingsPanelRecursive(w);
+        if (panel) {
+            panel->getPanel()->closePanel();
+        }
     }
 
     Qt::Key key = (Qt::Key)e->key();
@@ -843,3 +862,27 @@ Gui::ddeOpenFile(const QString& filePath)
 #pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
 }
 #endif
+
+
+bool
+Gui::isFocusStealingPossible()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool canSetFocus = !currentFocus ||
+    dynamic_cast<ViewerGL*>(currentFocus) ||
+    dynamic_cast<CurveWidget*>(currentFocus) ||
+    dynamic_cast<Histogram*>(currentFocus) ||
+    dynamic_cast<NodeGraph*>(currentFocus) ||
+    dynamic_cast<QToolButton*>(currentFocus) ||
+    currentFocus->objectName() == "Properties" ||
+    currentFocus->objectName() == "tree" ||
+    currentFocus->objectName() == "SettingsPanel" ||
+    currentFocus->objectName() == "qt_tabwidget_tabbar" ||
+    dynamic_cast<QTreeWidget*>(currentFocus) ||
+    dynamic_cast<QTabBar*>(currentFocus);
+    
+    return canSetFocus;
+
+}

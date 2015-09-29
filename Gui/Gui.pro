@@ -164,6 +164,7 @@ SOURCES += \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
+    PropertiesBinWrapper.cpp \
     PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \

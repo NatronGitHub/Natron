@@ -33,6 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QWheelEvent>
 #include <QToolButton>
 #include <QApplication>
+#include <QTabBar>
+#include <QTreeWidget>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -141,20 +143,7 @@ void
 NodeGraph::enterEvent(QEvent* e)
 {
     QGraphicsView::enterEvent(e);
-    
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar";
-    
-    if (canSetFocus) {
+    if (getGui() && getGui()->isFocusStealingPossible()) {
         setFocus();
     }
 

@@ -16,34 +16,20 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_PropertiesBinWrapper_h
-#define Gui_PropertiesBinWrapper_h
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QWidget>
+#include "PropertiesBinWrapper.h"
+#include "Gui/Gui.h"
 
-#include "Global/Macros.h"
-
-#include "Engine/ScriptObject.h"
-
-class Gui;
-class PropertiesBinWrapper : public QWidget, public ScriptObject
+void
+PropertiesBinWrapper::enterEvent(QEvent* event)
 {
-    Gui* _gui;
-public:
-    PropertiesBinWrapper(Gui* parent)
-    : QWidget(parent)
-    , ScriptObject()
-    , _gui(parent)
-    {
+    if (_gui->isFocusStealingPossible()) {
+        setFocus();
     }
-    
-    virtual void enterEvent(QEvent* event) OVERRIDE FINAL;
-};
-
-#endif // Gui_PropertiesBinWrapper_h
+    QWidget::enterEvent(event);
+}

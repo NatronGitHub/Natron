@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtOpenGL/QGLShaderProgram>
 #include <QTreeWidget>
+#include <QTabBar>
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -2859,28 +2860,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
 void
 ViewerGL::enterEvent(QEvent* e)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    
-    /*
-     We steal focus from all those widgets so that the user automatically
-     gets keyboard focus in viewer when mouse enters.
-     */
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar" ||
-    currentFocus->objectName() == "PanelTabBar" ||
-    dynamic_cast<QTreeWidget*>(currentFocus);
-    
-    if (canSetFocus) {
+    if (_imp->viewerTab && _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->isFocusStealingPossible()) {
         setFocus();
     }
     QWidget::enterEvent(e);

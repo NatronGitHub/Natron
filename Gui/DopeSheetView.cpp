@@ -3439,7 +3439,9 @@ void DopeSheetView::enterEvent(QEvent *e)
 {
     running_in_main_thread();
 
-    setFocus();
+    if (_imp->gui && _imp->gui->isFocusStealingPossible()) {
+        setFocus();
+    }
 
     QGLWidget::enterEvent(e);
 }

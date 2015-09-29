@@ -1439,19 +1439,7 @@ Histogram::keyPressEvent(QKeyEvent* e)
 
 void
 Histogram::enterEvent(QEvent* e) {
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar";
-    
-    if (canSetFocus) {
+    if (_imp->gui && _imp->gui->isFocusStealingPossible()) {
         setFocus();
     }
     QGLWidget::enterEvent(e);

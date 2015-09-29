@@ -50,8 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/Histogram.h"
-#include "Gui/NodeGraph.h"
+
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
@@ -1351,24 +1350,9 @@ void
 CurveWidget::enterEvent(QEvent* e)
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-            dynamic_cast<ViewerGL*>(currentFocus) ||
-            dynamic_cast<CurveWidget*>(currentFocus) ||
-            dynamic_cast<Histogram*>(currentFocus) ||
-            dynamic_cast<NodeGraph*>(currentFocus) ||
-            dynamic_cast<QToolButton*>(currentFocus) ||
-            currentFocus->objectName() == "Properties" ||
-            currentFocus->objectName() == "tree" ||
-            currentFocus->objectName() == "SettingsPanel" ||
-            currentFocus->objectName() == "qt_tabwidget_tabbar";
-    
-    if (canSetFocus) {
+    if (_imp->_gui->isFocusStealingPossible()) {
         setFocus();
     }
-    
     QGLWidget::enterEvent(e);
 }
 
