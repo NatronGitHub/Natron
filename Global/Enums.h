@@ -38,7 +38,7 @@ enum TimelineStateEnum
     eTimelineStateDraggingCursor,
     eTimelineStateDraggingBoundary,
     eTimelineStatePanning,
-    eTimelineStateSelectingRange,
+    eTimelineStateSelectingZoomRange,
 };
 
 enum TimelineChangeReasonEnum
