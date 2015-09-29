@@ -24,6 +24,8 @@
 #Usage snapshot.sh noThreads
 #Options:
 #NO_LOOP=1: Only build once and then exits.
+#NATRON_LICENSE=(GPL,COMMERCIAL)
+#Usage example: MKJOBS=8 NATRON_LICENSE=GPL sh snapshot.sh
 
 #Easier to debug
 set -x
@@ -181,7 +183,7 @@ BUILD_CV=0
 cd $CWD || exit 1
 if [ "$FAIL" != "1" ]; then
   if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "1" ]; then
-      NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 SNAPSHOT=1 sh build.sh workshop $JOBS
+      NATRON_LICENSE=$NATRON_LICENSE OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 SNAPSHOT=1 sh build.sh workshop $JOBS
   fi
 fi
 

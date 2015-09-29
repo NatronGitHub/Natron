@@ -78,7 +78,13 @@ For this to work you need to create a file named **repo.sh** next to *snapshot.s
 
     REPO_DEST=user@host:/path
     REPO_URL=http://some.url
+
+Launching snapshots
+===================
 	
+    #Build GPL snapshots using 8 threads
+    MKJOBS=8 NATRON_LICENSE=GPL sh snapshot.sh
+
 Release build:
 ===============
 
