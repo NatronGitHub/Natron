@@ -538,7 +538,7 @@ InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
 : ConnectCommand(graph,edge,edge->getSource(),newSrc,parent)
 , _inputEdge(0)
 {
-    assert(edge->getSource() && newSrc);
+    assert(newSrc);
     setText(QObject::tr("Insert node"));
 }
 
