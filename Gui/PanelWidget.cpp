@@ -16,22 +16,47 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_RegisteredTabs_h
-#define Gui_RegisteredTabs_h
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <utility> // pair
-#include <map>
-#include <string>
+#include "PanelWidget.h"
+#include <cassert>
 
-class ScriptObject;
-class PanelWidget;
+PanelWidget::PanelWidget(QWidget* thisWidget,
+                         Gui* gui)
+: ScriptObject()
+, _thisWidget(thisWidget)
+, _gui(gui)
+{
+    assert(_gui && _thisWidget);
+}
 
-typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
+PanelWidget::~PanelWidget()
+{
+    
+}
 
-#endif // Gui_RegisteredTabs_h
+Gui*
+PanelWidget::getGui() const
+{
+    return _gui;
+}
+
+void
+PanelWidget::notifyGuiClosingPublic()
+{
+    _gui = 0;
+    notifyGuiClosing();
+}
+
+void
+PanelWidget::enterEventBase()
+{
+    if (_gui && _gui->isFocusStealingPossible()) {
+        _thisWidget->setFocus();
+    }
+
+}

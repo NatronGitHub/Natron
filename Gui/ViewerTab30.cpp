@@ -288,12 +288,6 @@ ViewerTab::discardInternalNodePointer()
     _imp->viewerNode = 0;
 }
 
-Gui*
-ViewerTab::getGui() const
-{
-    return _imp->gui;
-}
-
 
 void
 ViewerTab::onAutoContrastChanged(bool b)
@@ -431,7 +425,7 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
     std::map<NodeGui*,TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
 
     if ( it != _imp->trackerNodes.end() ) {
-        if (!_imp->gui) {
+        if (!getGui()) {
             if (permanently) {
                 delete it->second;
             }
@@ -482,7 +476,7 @@ void
 ViewerTab::createRotoInterface(NodeGui* n)
 {
     RotoGui* roto = new RotoGui( n,this,getRotoGuiSharedData(n) );
-    QObject::connect( roto,SIGNAL( selectedToolChanged(int) ),_imp->gui,SLOT( onRotoSelectedToolChanged(int) ) );
+    QObject::connect( roto,SIGNAL( selectedToolChanged(int) ),getGui(),SLOT( onRotoSelectedToolChanged(int) ) );
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->rotoNodes.insert( std::make_pair(n,roto) );
 
     assert(ret.second);
@@ -685,7 +679,7 @@ ViewerTab::getRotoGuiSharedData(NodeGui* node) const
 void
 ViewerTab::onRotoEvaluatedForThisViewer()
 {
-    _imp->gui->onViewerRotoEvaluated(this);
+    getGui()->onViewerRotoEvaluated(this);
 }
 
 void
@@ -721,12 +715,9 @@ ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
 }
 
 void
-ViewerTab::notifyAppClosing()
+ViewerTab::notifyGuiClosing()
 {
-    _imp->gui = 0;
     _imp->timeLineGui->discardGuiPointer();
-    _imp->app = 0;
-    
     for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.begin() ; it!=_imp->rotoNodes.end(); ++it) {
         it->second->notifyGuiClosing();
     }

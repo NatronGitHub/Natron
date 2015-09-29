@@ -18,7 +18,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/ScriptObject.h"
+#include "Gui/PanelWidget.h"
 
 class DopeSheetEditorPrivate;
 class Gui;
@@ -59,7 +59,7 @@ class TimeLine;
  *
  * These two views query the model to display and modify data.
  */
-class DopeSheetEditor : public QWidget, public ScriptObject
+class DopeSheetEditor : public QWidget, public PanelWidget
 {
 
 public:
@@ -98,6 +98,7 @@ public:
 
 private:
     
+    virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;

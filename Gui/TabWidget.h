@@ -61,7 +61,7 @@ class QPaintEvent;
 class Gui;
 class ScriptObject;
 class Splitter;
-
+class PanelWidget;
 
 class DragPixmap
     : public QWidget
@@ -179,51 +179,51 @@ public:
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the object's name is empty but the TabWidget needs a decoration*/
-    bool appendTab(QWidget* widget, ScriptObject* object);
+    bool appendTab(PanelWidget* widget, ScriptObject* object);
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QIcon & icon,QWidget* widget,  ScriptObject* object);
+    bool appendTab(const QIcon & icon,PanelWidget* widget,  ScriptObject* object);
 
     /*Inserts before the element at index.*/
-    void insertTab(int index,const QIcon & icon,QWidget* widget, ScriptObject* object);
+    void insertTab(int index,const QIcon & icon,PanelWidget* widget, ScriptObject* object);
 
-    void insertTab(int index,QWidget* widget, ScriptObject* object);
+    void insertTab(int index,PanelWidget* widget, ScriptObject* object);
 
     /*Removes from the TabWidget, but does not delete the widget.
        Returns NULL if the index is not in a good range.*/
-    QWidget* removeTab(int index,bool userAction);
+    PanelWidget* removeTab(int index,bool userAction);
 
     /*Get the header name of the tab at index "index".*/
     QString getTabLabel(int index) const;
 
     /*Convenience function*/
-    QString getTabLabel(QWidget* tab) const;
+    QString getTabLabel(PanelWidget* tab) const;
 
-    void setTabLabel(QWidget* tab,const QString & name);
+    void setTabLabel(PanelWidget* tab,const QString & name);
 
     /*Removes from the TabWidget, but does not delete the widget.*/
-    void removeTab(QWidget* widget,bool userAction);
+    void removeTab(PanelWidget* widget,bool userAction);
 
     int count() const;
     
-    QWidget* tabAt(int index) const;
+    PanelWidget* tabAt(int index) const;
     
-    void tabAt(int index, QWidget** w, ScriptObject** obj) const;
+    void tabAt(int index, PanelWidget** w, ScriptObject** obj) const;
 
     QStringList getTabScriptNames() const;
 
-    QWidget* currentWidget() const;
+    PanelWidget* currentWidget() const;
     
-    void currentWidget(QWidget** w,ScriptObject** obj) const;
+    void currentWidget(PanelWidget** w,ScriptObject** obj) const;
     
     /**
      * @brief Set w as the current widget of the tab
      **/
-    void setCurrentWidget(QWidget* w);
+    void setCurrentWidget(PanelWidget* w);
 
     void dettachTabs();
-    static bool moveTab(QWidget* what, ScriptObject* obj,TabWidget* where);
+    static bool moveTab(PanelWidget* what, ScriptObject* obj,TabWidget* where);
 
     /**
      * @brief Starts dragging the selected panel. The following actions are performed:
@@ -266,7 +266,7 @@ public:
 
     void discardGuiPointer();
     
-    void onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const std::string& newName);
+    void onTabScriptNameChanged(PanelWidget* tab,const std::string& oldName,const std::string& newName);
 
 public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an

@@ -2857,14 +2857,6 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
     QGLWidget::focusOutEvent(e);
 }
 
-void
-ViewerGL::enterEvent(QEvent* e)
-{
-    if (_imp->viewerTab && _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->isFocusStealingPossible()) {
-        setFocus();
-    }
-    QWidget::enterEvent(e);
-}
 
 void
 ViewerGL::leaveEvent(QEvent* e)

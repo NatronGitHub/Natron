@@ -242,7 +242,7 @@ struct GuiPrivate
     ProjectGui* _projectGui;
 
     ///ptr to the currently dragged tab for d&d purpose.
-    QWidget* _currentlyDraggedPanel;
+    PanelWidget* _currentlyDraggedPanel;
     QSize _currentlyDraggedPanelInitialSize;
 
     ///The "About" window.

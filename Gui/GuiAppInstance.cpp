@@ -179,7 +179,7 @@ GuiAppInstance::~GuiAppInstance()
 
     QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
-    _imp->_gui->getNodeGraph()->discardGuiPointer();
+    _imp->_gui->getNodeGraph()->notifyGuiClosingPublic();
     _imp->_gui->deleteLater();
     _imp->_gui = 0;
     _imp.reset();

@@ -557,8 +557,8 @@ void
 ViewerTab::onVideoEngineStopped()
 {
     ///Refresh knobs
-    if (_imp->gui && _imp->gui->isGUIFrozen()) {
-        NodeGraph* graph = _imp->gui->getNodeGraph();
+    if (getGui() && getGui()->isGUIFrozen()) {
+        NodeGraph* graph = getGui()->getNodeGraph();
         if (graph && _imp->timeLineGui) {
             boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
             graph->refreshNodesKnobsAtTime(timeline->currentFrame());
@@ -1093,11 +1093,11 @@ ViewerTab::isViewersSynchroEnabled() const
 void
 ViewerTab::synchronizeOtherViewersProjection()
 {
-    assert(_imp->gui);
-    _imp->gui->setMasterSyncViewer(this);
+    assert(getGui());
+    getGui()->setMasterSyncViewer(this);
     double left,bottom,factor,par;
     _imp->viewer->getProjection(&left, &bottom, &factor, &par);
-    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ((*it) != this) {
             (*it)->getViewer()->setProjection(left, bottom, factor, par);
@@ -1112,7 +1112,7 @@ void
 ViewerTab::onSyncViewersButtonPressed(bool clicked)
 {
 
-    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->_imp->syncViewerButton->setDown(clicked);
         (*it)->_imp->syncViewerButton->setChecked(clicked);
@@ -1179,14 +1179,14 @@ ViewerTab::toggleTripleSync(bool toggled)
     _imp->tripleSyncButton->setDown(toggled);
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
-        DopeSheetEditor* deditor = _imp->gui->getDopeSheetEditor();
-        CurveEditor* cEditor = _imp->gui->getCurveEditor();
+        DopeSheetEditor* deditor = getGui()->getDopeSheetEditor();
+        CurveEditor* cEditor = getGui()->getCurveEditor();
         //Sync curve editor and dopesheet tree width
         cEditor->setTreeWidgetWidth(deditor->getTreeWidgetWidth());
         
         SequenceTime left,right;
         _imp->timeLineGui->getVisibleRange(&left, &right);
-        _imp->gui->centerOpenedViewersOn(left, right);
+        getGui()->centerOpenedViewersOn(left, right);
         deditor->centerOn(left, right);
         cEditor->getCurveWidget()->centerOn(left, right);
     }

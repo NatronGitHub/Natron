@@ -39,8 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
-#include "Engine/ScriptObject.h"
-
+#include "Gui/PanelWidget.h"
 #include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
 
@@ -347,7 +346,7 @@ struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
     , public CurveSelection
-    , public ScriptObject
+    , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -406,6 +405,8 @@ public Q_SLOTS:
     void onExprLineEditFinished();
     
 private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     

@@ -1346,15 +1346,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     }
 } // keyPressEvent
 
-void
-CurveWidget::enterEvent(QEvent* e)
-{
-    // always running in the main thread
-    if (_imp->_gui->isFocusStealingPossible()) {
-        setFocus();
-    }
-    QGLWidget::enterEvent(e);
-}
+
 
 //struct RefreshTangent_functor{
 //    CurveWidgetPrivate* _imp;
@@ -1686,28 +1678,6 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
     }
     _imp->refreshTimelinePositions();
     update();
-}
-
-bool
-CurveWidget::isTabVisible() const
-{
-    if ( parentWidget() ) {
-        QWidget* parent  = parentWidget()->parentWidget();
-        if (parent) {
-            if (parent->objectName() == "CurveEditor") {
-                TabWidget* tab = dynamic_cast<TabWidget*>( parentWidget()->parentWidget()->parentWidget() );
-                if (tab) {
-                    if ( tab->isFloatingWindowChild() ) {
-                        return true;
-                    }
-
-                    return tab->currentWidget() == parent;
-                }
-            }
-        }
-    }
-
-    return false;
 }
 
 void

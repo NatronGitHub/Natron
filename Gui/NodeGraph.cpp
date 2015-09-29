@@ -74,8 +74,8 @@ NodeGraph::NodeGraph(Gui* gui,
                      QWidget *parent)
     : QGraphicsView(scene,parent)
     , NodeGraphI()
-    , ScriptObject()
-      , _imp( new NodeGraphPrivate(gui,this, group) )
+    , PanelWidget(this,gui)
+      , _imp( new NodeGraphPrivate(this, group) )
 {
     
     group->setNodeGraphPointer(this);
@@ -139,7 +139,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     _imp->_undoStack = new QUndoStack(this);
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
-    _imp->_gui->registerNewUndoStack(_imp->_undoStack);
+    getGui()->registerNewUndoStack(_imp->_undoStack);
 
     _imp->_hintInputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
     _imp->_hintInputEdge->setDefaultColor( QColor(0,255,0,100) );
@@ -178,7 +178,7 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_menu = new Natron::Menu(this);
     //_imp->_menu->setFont( QFont(appFont,appFontSize) );
 
-    boost::shared_ptr<TimeLine> timeline = _imp->_gui->getApp()->getTimeLine();
+    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
     QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
     QObject::connect( timeline.get(),SIGNAL( frameAboutToChange() ), this,SLOT( onTimelineTimeAboutToChange() ) );
 }
@@ -196,7 +196,7 @@ NodeGraph::~NodeGraph()
         (*it)->discardGraphPointer();
     }
 
-    if (_imp->_gui) {
+    if (getGui()) {
         QGraphicsScene* scene = _imp->_hintInputEdge->scene();
         if (scene) {
             scene->removeItem(_imp->_hintInputEdge);
@@ -236,16 +236,10 @@ NodeGraph::getRootItem() const
     return _imp->_root;
 }
 
-Gui*
-NodeGraph::getGui() const
-{
-    return _imp->_gui;
-}
 
 void
-NodeGraph::discardGuiPointer()
+NodeGraph::notifyGuiClosing()
 {
-    _imp->_gui = 0;
     boost::shared_ptr<NodeCollection> group = getGroup();
     if (group) {
         group->discardNodeGraphPointer();
@@ -389,7 +383,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
 
     boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
-        _imp->_gui->registerNewUndoStack(nodeStack.get());
+        getGui()->registerNewUndoStack(nodeStack.get());
     }
     
     if (pushUndoRedoCommand) {

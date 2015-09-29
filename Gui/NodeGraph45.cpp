@@ -141,7 +141,7 @@ NodeGraph::onTimelineTimeAboutToChange()
 {
     assert(QThread::currentThread() == qApp->thread());
     _imp->wasLaskUserSeekDuringPlayback = false;
-    const std::list<ViewerTab*>& viewers = _imp->_gui->getViewersList();
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
         _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,true);
@@ -155,10 +155,10 @@ NodeGraph::onTimeChanged(SequenceTime time,
     assert(QThread::currentThread() == qApp->thread());
     std::vector<ViewerInstance* > viewers;
 
-    if (!_imp->_gui) {
+    if (!getGui()) {
         return;
     }
-    boost::shared_ptr<Natron::Project> project = _imp->_gui->getApp()->getProject();
+    boost::shared_ptr<Natron::Project> project = getGui()->getApp()->getProject();
 
     ///Refresh all knobs at the current time
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
@@ -223,8 +223,8 @@ void
 NodeGraph::focusInEvent(QFocusEvent* e)
 {
     QGraphicsView::focusInEvent(e);
-    if (_imp->_gui) {
-        _imp->_gui->setLastSelectedGraph(this);
+    if (getGui()) {
+        getGui()->setLastSelectedGraph(this);
     }
 }
 

@@ -232,7 +232,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                                         QString(),
                                         CreateNodeArgs::DefaultValuesList(),
                                         createdNodeInternal->getGroup());
-                    boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                    boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                     assert(dotNodeGui_i);
@@ -347,7 +347,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     createdNodeInternal->getGroup());
-                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                 assert(dotNodeGui_i);

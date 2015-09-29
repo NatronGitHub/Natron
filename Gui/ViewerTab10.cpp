@@ -122,7 +122,7 @@ ViewerTab::updateViewsMenu(int count)
     } else {
         _imp->viewsComboBox->setCurrentIndex(0);
     }
-    _imp->gui->updateViewsActions(count);
+    getGui()->updateViewsActions(count);
 }
 
 void
@@ -237,7 +237,7 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
-        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
+        getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionForward);
     }
 }
@@ -253,12 +253,12 @@ ViewerTab::abortRendering()
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
-    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(false);
+    if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(false);
     }
-    if (_imp->gui) {
+    if (getGui()) {
         ///Abort all viewers because they are all synchronised.
-        const std::list<ViewerTab*> & activeNodes = _imp->gui->getViewersList();
+        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
 
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
@@ -272,7 +272,7 @@ ViewerTab::abortRendering()
 void
 ViewerTab::onEngineStarted(bool forward)
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     
@@ -286,15 +286,15 @@ ViewerTab::onEngineStarted(bool forward)
         _imp->play_Backward_Button->setChecked(!forward);
     }
 
-    if (_imp->gui && !_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(true);
+    if (getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(true);
     }
 }
 
 void
 ViewerTab::onEngineStopped()
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     
@@ -307,8 +307,8 @@ ViewerTab::onEngineStopped()
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
-    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(false);
+    if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(false);
     }
 }
 
@@ -317,7 +317,7 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
-        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
+        getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionBackward);
 
     }
@@ -379,12 +379,12 @@ void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
                                  int /*reason*/)
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     _imp->currentFrameBox->setValue(time);
     
-    if (_imp->timeLineGui->getTimeline() != _imp->gui->getApp()->getTimeLine()) {
+    if (_imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine()) {
         _imp->viewerNode->renderCurrentFrame(true);
     }
 }
@@ -427,7 +427,7 @@ ViewerTab::refresh()
 
 ViewerTab::~ViewerTab()
 {
-    if (_imp->gui) {
+    if (getGui()) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
             boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
@@ -440,15 +440,15 @@ ViewerTab::~ViewerTab()
                         assert(graph);
                     }
                 } else {
-                    graph = _imp->gui->getNodeGraph();
+                    graph = getGui()->getNodeGraph();
                 }
             }
             _imp->viewerNode->invalidateUiContext();
         } else {
-            graph = _imp->gui->getNodeGraph();
+            graph = getGui()->getNodeGraph();
         }
         assert(graph);
-        if ( _imp->app && !_imp->app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
+        if ( getGui()->getApp() && !getGui()->getApp()->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
     }
@@ -477,6 +477,14 @@ ViewerTab::previousLayer()
     currentIndex = (currentIndex - 1) % nChoices;
     _imp->layerChoice->setCurrentIndex(currentIndex);
 }
+
+void
+ViewerTab::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
 
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
@@ -603,10 +611,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         lastFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
-        _imp->app->getTimeLine()->goToPreviousKeyframe();
+        getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
-        _imp->app->getTimeLine()->goToNextKeyframe();
+        getGui()->getApp()->getTimeLine()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         centerViewer();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
@@ -711,11 +719,11 @@ ViewerTab::eventFilter(QObject *target,
                        QEvent* e)
 {
     if (e->type() == QEvent::MouseButtonPress) {
-        if (_imp->gui && _imp->app) {
+        if (getGui() && getGui()->getApp()) {
             boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
             assert(gui_i);
             boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            _imp->gui->selectNode(gui);
+            getGui()->selectNode(gui);
         }
     }
 

@@ -242,7 +242,7 @@ Gui::maximize(TabWidget* what)
 
             bool hasProperties = false;
             for (int i = 0; i < (*it)->count(); ++i) {
-                QString tabName = (*it)->tabAt(i)->objectName();
+                QString tabName = (*it)->tabAt(i)->getWidget()->objectName();
                 if (tabName == kPropertiesBinName) {
                     hasProperties = true;
                     break;
@@ -251,7 +251,7 @@ Gui::maximize(TabWidget* what)
 
             bool hasNodeGraphOrCurveEditor = false;
             for (int i = 0; i < what->count(); ++i) {
-                QWidget* tab = what->tabAt(i);
+                QWidget* tab = what->tabAt(i)->getWidget();
                 assert(tab);
                 NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
                 CurveEditor* isEditor = dynamic_cast<CurveEditor*>(tab);
@@ -369,7 +369,7 @@ Gui::addViewerTab(ViewerTab* tab,
 }
 
 void
-Gui::registerTab(QWidget* tab,
+Gui::registerTab(PanelWidget* tab,
                  ScriptObject* obj)
 {
     std::string name = obj->getScriptName();
@@ -381,7 +381,7 @@ Gui::registerTab(QWidget* tab,
 }
 
 void
-Gui::unregisterTab(QWidget* tab)
+Gui::unregisterTab(PanelWidget* tab)
 {
     for (RegisteredTabs::iterator it = _imp->_registeredTabs.begin(); it != _imp->_registeredTabs.end(); ++it) {
         if (it->second.first == tab) {
@@ -509,7 +509,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             if ( it != _imp->_viewerTabs.end() ) {
                 _imp->_viewerTabs.erase(it);
             }
-            tab->notifyAppClosing();
+            tab->notifyGuiClosingPublic();
             tab->deleteLater();
         }
     }
@@ -685,7 +685,7 @@ Gui::getPythonPanels() const
     return _imp->_userPanels;
 }
 
-QWidget*
+PanelWidget*
 Gui::findExistingTab(const std::string & name) const
 {
     RegisteredTabs::const_iterator it = _imp->_registeredTabs.find(name);
@@ -699,7 +699,7 @@ Gui::findExistingTab(const std::string & name) const
 
 void
 Gui::findExistingTab(const std::string & name,
-                     QWidget** w,
+                     PanelWidget** w,
                      ScriptObject** o) const
 {
     RegisteredTabs::const_iterator it = _imp->_registeredTabs.find(name);

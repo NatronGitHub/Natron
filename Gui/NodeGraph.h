@@ -42,8 +42,8 @@ CLANG_DIAG_ON(uninitialized)
 
 
 #include "Engine/NodeGraphI.h"
-#include "Engine/ScriptObject.h"
 #include "Global/GlobalDefines.h"
+#include "Gui/PanelWidget.h"
 
 class QVBoxLayout;
 class QScrollArea;
@@ -65,7 +65,7 @@ namespace Natron {
 class Node;
 }
 
-class NodeGraph : public QGraphicsView, public NodeGraphI, public ScriptObject, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -116,9 +116,8 @@ public:
     void restoreFromTrash(NodeGui* node);
 
     QGraphicsItem* getRootItem() const;
-    Gui* getGui() const;
 
-    void discardGuiPointer();
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
     void discardScenePointer();
 
 

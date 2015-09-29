@@ -34,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeWrapper.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
+#include "Gui/PanelWidget.h"
 
 class GuiApp;
 class Gui;
@@ -100,7 +101,7 @@ private:
 
 
 struct PyPanelPrivate;
-class PyPanel : public QWidget, public UserParamHolder, public ScriptObject
+class PyPanel : public QWidget, public UserParamHolder, public PanelWidget
 {
     Q_OBJECT
     

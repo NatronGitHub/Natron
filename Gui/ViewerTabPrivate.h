@@ -49,6 +49,7 @@ namespace Natron {
     class ImageComponents;
 }
 class ViewerGL;
+class ViewerTab;
 class GuiAppInstance;
 class ComboBox;
 class Button;
@@ -83,9 +84,10 @@ struct ViewerTabPrivate
 
     typedef std::map<int,InputName> InputNamesMap;
 
+    ViewerTab* publicInterface;
+    
     /*OpenGL viewer*/
     ViewerGL* viewer;
-    GuiAppInstance* app;
     QWidget* viewerContainer;
     QHBoxLayout* viewerLayout;
     QWidget* viewerSubContainer;
@@ -183,7 +185,6 @@ struct ViewerTabPrivate
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
-    Gui* gui;
     ViewerInstance* viewerNode; // < pointer to the internal node
     
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
@@ -205,8 +206,7 @@ struct ViewerTabPrivate
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
     boost::weak_ptr<Natron::Node> lastOverlayNode;
     
-    ViewerTabPrivate(Gui* gui,
-                     ViewerInstance* node);
+    ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates

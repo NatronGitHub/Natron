@@ -86,7 +86,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         } else {
             node->setVisibleSettingsPanel(true);
             if (node->getSettingPanel()) {
-                _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+                getGui()->putSettingsPanelFirst( node->getSettingPanel() );
             } else {
                 ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
                 if (isViewer) {
@@ -140,7 +140,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                     if (isParentTab) {
                         isParentTab->setCurrentWidget(graph);
                     } else {
-                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                        NodeGraph* lastSelectedGraph = getGui()->getLastSelectedGraph();
                         ///We're in the double click event, it should've entered the focus in event beforehand!
                         assert(lastSelectedGraph == this);
                         
@@ -162,7 +162,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 bool
 NodeGraph::event(QEvent* e)
 {
-    if (!_imp->_gui) {
+    if (!getGui()) {
         return false;
     }
     if (e->type() == QEvent::KeyPress) {
@@ -243,9 +243,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
         QCoreApplication::postEvent(parentWidget(),ev);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
-        _imp->_gui->createReader();
+        getGui()->createReader();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key) ) {
-        _imp->_gui->createWriter();
+        getGui()->createWriter();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
         deleteSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key) ) {

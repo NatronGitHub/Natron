@@ -113,7 +113,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                             const std::string& parentName,
                             bool clone)
 {
-    boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Natron::Node> n = _publicInterface->getGui()->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                                parentName,
                                                                                internalSerialization.getPluginMajorVersion(),
                                                                                internalSerialization.getPluginMinorVersion(),
@@ -153,7 +153,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( !masterNodeName.empty() ) {
 
-        boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
+        boost::shared_ptr<Natron::Node> masterNode = _publicInterface->getGui()->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
         if ( masterNode && masterNode->isActivated() ) {
@@ -161,7 +161,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
     std::list<boost::shared_ptr<Natron::Node> > allNodes;
-    _gui->getApp()->getProject()->getActiveNodes(&allNodes);
+    _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
     n->restoreKnobsLinks(internalSerialization,allNodes);
 
     //We don't want the clone to have the same hash as the original
@@ -170,7 +170,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     gui->copyFrom(guiSerialization);
     QPointF newPos = gui->getPos_mt_safe() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
-    gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
+    gui->forceComputePreview( _publicInterface->getGui()->getApp()->getProject()->currentFrame() );
 
     if (clone) {
         DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );

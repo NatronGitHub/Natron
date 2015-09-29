@@ -103,8 +103,6 @@ private:
 struct CurveEditorPrivate
 {
     
-    Gui* gui;
-    
     std::list<NodeCurveEditorContext*> nodes;
     std::list<RotoCurveEditorContext*> rotos;
     QVBoxLayout* mainLayout;
@@ -130,9 +128,8 @@ struct CurveEditorPrivate
     
     boost::weak_ptr<KnobCurveGui> selectedKnobCurve;
     
-    CurveEditorPrivate(Gui* gui)
-    : gui(gui)
-    , nodes()
+    CurveEditorPrivate()
+    : nodes()
     , rotos()
     , mainLayout(0)
     , splitter(0)
@@ -163,8 +160,8 @@ CurveEditor::CurveEditor(Gui* gui,
                          QWidget *parent)
 : QWidget(parent)
 , CurveSelection()
-, ScriptObject()
-, _imp(new CurveEditorPrivate(gui))
+, PanelWidget(this,gui)
+, _imp(new CurveEditorPrivate())
 {
     setObjectName("CurveEditor");
     _imp->undoAction = _imp->undoStack->createUndoAction( this,tr("&Undo") );
@@ -897,8 +894,8 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
         }
-        _imp->gui->putSettingsPanelFirst( node->getSettingPanel() );
-        _imp->gui->getApp()->redrawAllViewers();
+        getGui()->putSettingsPanelFirst( node->getSettingPanel() );
+        getGui()->getApp()->redrawAllViewers();
     }
 }
 
@@ -1542,6 +1539,13 @@ CurveEditor::keyPressEvent(QKeyEvent* e)
     }
 }
 
+void
+CurveEditor::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
 boost::shared_ptr<CurveGui>
 CurveEditor::getSelectedCurve() const
 {
@@ -1578,7 +1582,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
             std::string expr = knob->getExpression(knobCurve->getDimension());
             if (!expr.empty()) {
                 _imp->knobLineEdit->setText(expr.c_str());
-                double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
+                double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
                 _imp->resultLabel->setText("= " + QString::number(v));
             } else {
                 _imp->knobLineEdit->clear();
@@ -1608,7 +1612,7 @@ CurveEditor::refreshCurrentExpression()
     boost::shared_ptr<KnobI> knob = curve->getInternalKnob();
     
     std::string expr = knob->getExpression(curve->getDimension());
-    double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), curve->getDimension());
+    double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), curve->getDimension());
     _imp->knobLineEdit->setText(expr.c_str());
     _imp->resultLabel->setText("= " + QString::number(v));
 }

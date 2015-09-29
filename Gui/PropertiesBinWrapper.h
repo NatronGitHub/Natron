@@ -25,25 +25,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QWidget>
 
-#include "Global/Macros.h"
+#include "Gui/PanelWidget.h"
 
-#include "Engine/ScriptObject.h"
-
-class Gui;
-class PropertiesBinWrapper : public QWidget, public ScriptObject
+class PropertiesBinWrapper : public QWidget, public PanelWidget
 {
-    Gui* _gui;
-public:
-    PropertiesBinWrapper(Gui* parent)
-    : QWidget(parent)
-    , ScriptObject()
-    , _gui(parent)
-    {
-    }
     
-    virtual void enterEvent(QEvent* event) OVERRIDE FINAL;
+public:
+    
+    PropertiesBinWrapper(Gui* parent);
+    
+    virtual ~PropertiesBinWrapper();
+    
+private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
 };
 
 #endif // Gui_PropertiesBinWrapper_h

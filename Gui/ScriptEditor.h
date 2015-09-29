@@ -38,13 +38,13 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/ScriptObject.h"
+#include "Gui/PanelWidget.h"
 
 class Gui;
 
 struct ScriptEditorPrivate;
 
-class ScriptEditor : public QWidget, public ScriptObject
+class ScriptEditor : public QWidget, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -95,6 +95,7 @@ public Q_SLOTS:
 
 private:
     
+    virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<ScriptEditorPrivate> _imp;

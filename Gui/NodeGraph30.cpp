@@ -84,7 +84,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     
     
     if ( !lastUsedViewer ) {
-        _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+        getGui()->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           true,
@@ -142,11 +142,8 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 void
 NodeGraph::enterEvent(QEvent* e)
 {
+    enterEventBase();
     QGraphicsView::enterEvent(e);
-    if (getGui() && getGui()->isFocusStealingPossible()) {
-        setFocus();
-    }
-
     _imp->_nodeCreationShortcutEnabled = true;
    
 }
@@ -410,7 +407,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( n->getNode()->getLiveInstance() );
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
-        const std::list<ViewerTab*> & viewerTabs = _imp->_gui->getViewersList();
+        const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getViewer() == viewer ) {
                 setLastSelectedViewer( (*it) );

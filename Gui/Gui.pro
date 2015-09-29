@@ -160,6 +160,7 @@ SOURCES += \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
+    PanelWidget.cpp \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
@@ -292,6 +293,7 @@ HEADERS += \
     NodeGui.h \
     NodeGuiSerialization.h \
     NodeSettingsPanel.h \
+    PanelWidget.h \
     PickKnobDialog.h \
     PreferencesPanel.h \
     ProjectGui.h \

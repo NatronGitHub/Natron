@@ -195,7 +195,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
                             _imp->group.lock());
-        boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+        boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
         boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
@@ -207,8 +207,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
        
         
         
-        assert(_imp->_gui);
-        GuiAppInstance* guiApp = _imp->_gui->getApp();
+        assert(getGui());
+        GuiAppInstance* guiApp = getGui()->getApp();
         assert(guiApp);
         boost::shared_ptr<Natron::Project> project = guiApp->getProject();
         assert(project);

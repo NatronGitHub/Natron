@@ -16,22 +16,54 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_RegisteredTabs_h
-#define Gui_RegisteredTabs_h
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <utility> // pair
-#include <map>
-#include <string>
+#ifndef PANELWIDGET_H
+#define PANELWIDGET_H
 
-class ScriptObject;
-class PanelWidget;
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
-typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
+#include "Global/Macros.h"
 
-#endif // Gui_RegisteredTabs_h
+#include "Engine/ScriptObject.h"
+
+class Gui;
+class PanelWidget : public ScriptObject
+{
+    QWidget* _thisWidget;
+    Gui* _gui;
+public:
+    
+    PanelWidget(QWidget* thisWidget,Gui* gui);
+    
+    Gui* getGui() const;
+    
+    void notifyGuiClosingPublic();
+    
+    virtual ~PanelWidget();
+    
+    QWidget* getWidget() const
+    {
+        return _thisWidget;
+    }
+    
+protected:
+    
+    virtual void notifyGuiClosing() {}
+    
+    /**
+     * @brief To be called in the enterEvent handler of all derived classes.
+     **/
+    void enterEventBase();
+
+};
+
+#endif // PANELWIDGET_H

@@ -47,11 +47,10 @@
 class DopeSheetEditorPrivate
 {
 public:
-    DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui);
+    DopeSheetEditorPrivate(DopeSheetEditor *qq);
 
     /* attributes */
     DopeSheetEditor *q_ptr;
-    Gui *gui;
 
     QVBoxLayout *mainLayout;
 
@@ -63,9 +62,8 @@ public:
 
 };
 
-DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
+DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
     q_ptr(qq),
-    gui(gui),
     mainLayout(0),
     model(0),
     splitter(0),
@@ -80,8 +78,8 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent) :
     QWidget(parent),
-    ScriptObject(),
-    _imp(new DopeSheetEditorPrivate(this, gui))
+    PanelWidget(this,gui),
+    _imp(new DopeSheetEditorPrivate(this))
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -170,7 +168,7 @@ DopeSheetEditor::refreshSelectionBboxAndRedrawView()
 int
 DopeSheetEditor::getTimelineCurrentTime() const
 {
-    return _imp->gui->getApp()->getTimeLine()->currentFrame();
+    return getGui()->getApp()->getTimeLine()->currentFrame();
 }
 
 DopeSheetView*
@@ -208,3 +206,8 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
     }
 }
 
+void DopeSheetEditor::enterEvent(QEvent *e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}

@@ -73,13 +73,13 @@ ViewerTab::drawOverlays(double time,
                         double scaleY) const
 {
 
-    if ( !_imp->app ||
+    if (!getGui() ||
+        !getGui()->getApp() ||
         !_imp->viewer ||
-        _imp->app->isClosing() ||
+        getGui()->getApp()->isClosing() ||
         isFileDialogViewer() ||
-        !_imp->gui ||
-        (_imp->gui->isGUIFrozen() && !_imp->app->getIsUserPainting()) ||
-        _imp->app->isShowingDialog()) {
+        (getGui()->isGUIFrozen() && !getGui()->getApp()->getIsUserPainting()) ||
+        getGui()->getApp()->isShowingDialog()) {
         return;
     }
     
@@ -166,7 +166,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
 
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     
     
@@ -265,7 +265,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
                                  QMouseEvent* e)
 {
 
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
 
@@ -309,7 +309,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
                                         const QPointF & pos,
                                         QMouseEvent* e)
 {
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
@@ -320,7 +320,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         QPointF transformViewportPos;
         QPointF transformPos;
-        double time = _imp->app->getTimeLine()->currentFrame();
+        double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         int view = getCurrentView();
         
@@ -395,7 +395,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     int view = getCurrentView();
     
@@ -490,7 +490,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 {
     bool didSomething = false;
 
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
@@ -540,7 +540,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
 {
     bool didSomething = false;
 
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
@@ -553,7 +553,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         
         QPointF transformViewportPos;
         QPointF transformPos;
-        double time = _imp->app->getTimeLine()->currentFrame();
+        double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         int view = getCurrentView();
         
@@ -643,7 +643,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
                                           Natron::KeyboardModifiers km)
 {
     
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
@@ -702,7 +702,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
 {
     bool didSomething = false;
 
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
 
@@ -750,14 +750,14 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
 {
     bool didSomething = false;
 
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
     _imp->lastOverlayNode.reset();
 
 
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -813,7 +813,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
                                       Natron::KeyboardModifiers km)
 {
     
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
@@ -865,7 +865,7 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
                                    double scaleY,
                                    QKeyEvent* e)
 {
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
@@ -910,11 +910,11 @@ bool
 ViewerTab::notifyOverlaysFocusGained(double scaleX,
                                      double scaleY)
 {
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     
     bool ret = false;
@@ -952,11 +952,11 @@ bool
 ViewerTab::notifyOverlaysFocusLost(double scaleX,
                                    double scaleY)
 {
-    if ( !_imp->app || _imp->app->isClosing() ) {
+    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
     
     bool ret = false;
     std::list<boost::shared_ptr<Natron::Node> >  nodes;

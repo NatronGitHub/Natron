@@ -69,6 +69,7 @@ class QMutex;
 #include "Gui/RegisteredTabs.h"
 class GuiLayoutSerialization;
 class GuiAppInstance;
+class PanelWidget;
 class AppInstance;
 class NodeGui;
 class TabWidget;
@@ -296,8 +297,8 @@ public:
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
-    void registerTab(QWidget* tab,ScriptObject* obj);
-    void unregisterTab(QWidget* tab);
+    void registerTab(PanelWidget* tab,ScriptObject* obj);
+    void unregisterTab(PanelWidget* tab);
 
     void registerFloatingWindow(FloatingWidget* window);
     void unregisterFloatingWindow(FloatingWidget* window);
@@ -321,10 +322,10 @@ public:
 
     /*Returns a valid tab if a tab with a matching name has been
        found. Otherwise returns NULL.*/
-    QWidget* findExistingTab(const std::string & name) const;
-    void findExistingTab(const std::string & name, QWidget** w,ScriptObject** o) const;
+    PanelWidget* findExistingTab(const std::string & name) const;
+    void findExistingTab(const std::string & name, PanelWidget** w,ScriptObject** o) const;
 
-    void appendTabToDefaultViewerPane(QWidget* tab,ScriptObject* obj);
+    void appendTabToDefaultViewerPane(PanelWidget* tab,ScriptObject* obj);
 
     /**
      * @brief Get the central of the application, it is either 1 TabWidget or a Splitter.
@@ -353,9 +354,9 @@ public:
     /*force a refresh on all previews no matter what*/
     void forceRefreshAllPreviews();
 
-    void startDragPanel(QWidget* panel);
+    void startDragPanel(PanelWidget* panel);
 
-    QWidget* stopDragPanel(QSize* initialSize);
+    PanelWidget* stopDragPanel(QSize* initialSize);
 
     bool isDraggingPanel() const;
 

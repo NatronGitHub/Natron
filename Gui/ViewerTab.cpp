@@ -98,9 +98,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      Gui* gui,
                      ViewerInstance* node,
                      QWidget* parent)
-    : QWidget(parent)
-    , ScriptObject()
-      , _imp( new ViewerTabPrivate(gui,node) )
+: QWidget(parent)
+, PanelWidget(this,gui)
+, _imp( new ViewerTabPrivate(this,node) )
 {
     installEventFilter(this);
     
@@ -395,7 +395,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gainSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGainSliderEditingFinished(bool)));
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
@@ -436,7 +436,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->gammaBox->setValue(1.0);
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
     
-    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gammaSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGammaSliderEditingFinished(bool)));
     _imp->gammaSlider->setToolTip(gammaTt);
     QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
@@ -478,7 +478,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                           "Tells the viewer what view should be displayed.") );
     _imp->secondRowLayout->addWidget(_imp->viewsComboBox);
     _imp->viewsComboBox->hide();
-    int viewsCount = _imp->app->getProject()->getProjectViewsCount(); //getProjectViewsCount
+    int viewsCount = getGui()->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
     updateViewsMenu(viewsCount);
 
     _imp->secondRowLayout->addStretch();
@@ -692,7 +692,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                                                       "different from the project frame range, which "
                                                                       "is displayed on the timeline with a lighter background."),
                                                                Qt::WhiteSpaceNormal) );
-    boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
+    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
     _imp->frameRangeEdit->setMaximumWidth(70);
 
     _imp->playerLayout->addWidget(_imp->frameRangeEdit);
@@ -883,7 +883,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*=================================================*/
 
     /*frame seeker*/
-    _imp->timeLineGui = new TimeLineGui(node,timeline,_imp->gui,this);
+    _imp->timeLineGui = new TimeLineGui(node,timeline,getGui(),this);
     QObject::connect(_imp->timeLineGui, SIGNAL( boundariesChanged(SequenceTime,SequenceTime)),
                      this, SLOT(onTimelineBoundariesChanged(SequenceTime, SequenceTime)));
     QObject::connect(gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)));
@@ -977,7 +977,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     
     //Refresh the viewport lock state
-    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     if (!viewers.empty()) {
         ViewerTab* other = viewers.front();
         if (other->isViewersSynchroEnabled()) {

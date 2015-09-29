@@ -192,7 +192,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
     _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
     
     
-    _imp->panel = new DockablePanel(_imp->gui,
+    _imp->panel = new DockablePanel(gui,
                                     _imp->holder,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
@@ -254,7 +254,6 @@ PyModalDialog::getParam(const std::string& scriptName) const
 struct PyPanelPrivate
 {
     
-    Gui* gui;
     
     DialogParamHolder* holder;
     
@@ -269,8 +268,7 @@ struct PyPanelPrivate
 
     
     PyPanelPrivate()
-    : gui(0)
-    , holder(0)
+    : holder(0)
     , mainLayout(0)
     , panel(0)
     , centerContainer(0)
@@ -287,21 +285,20 @@ struct PyPanelPrivate
 PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool useUserParameters,GuiApp* app)
 : QWidget(app->getGui())
 , UserParamHolder()
-, ScriptObject()
+, PanelWidget(this,app->getGui())
 , _imp(new PyPanelPrivate())
 {
-    _imp->gui = app->getGui();
     setLabel(label.c_str());
 
     
     int idx = 1;
     std::string name = Natron::makeNameScriptFriendly(scriptName);
-    QWidget* existing = 0;
-    existing = _imp->gui->findExistingTab(name);
+    PanelWidget* existing = 0;
+    existing = getGui()->findExistingTab(name);
     while (existing) {
         std::stringstream ss;
         ss << name << idx;
-        existing = _imp->gui->findExistingTab(ss.str());
+        existing = getGui()->findExistingTab(ss.str());
         if (!existing) {
             name = ss.str();
         }
@@ -309,11 +306,11 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
     }
     
     setScriptName(name);
-    _imp->gui->registerTab(this,this);
+    getGui()->registerTab(this,this);
 
     
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder(name,_imp->gui->getApp());
+        _imp->holder = new DialogParamHolder(name,getGui()->getApp());
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
@@ -323,7 +320,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
         _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
         _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
         
-        _imp->panel = new DockablePanel(_imp->gui,
+        _imp->panel = new DockablePanel(getGui(),
                                         _imp->holder,
                                         _imp->mainLayout,
                                         DockablePanel::eHeaderModeNoHeader,
@@ -343,7 +340,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
 
 PyPanel::~PyPanel()
 {
-    _imp->gui->unregisterPyPanel(this);
+    getGui()->unregisterPyPanel(this);
 }
 
 std::string
@@ -467,7 +464,11 @@ PyTabWidget::insertTab(int index,PyPanel* tab)
 void
 PyTabWidget::removeTab(QWidget* tab)
 {
-    _tab->removeTab(tab, false);
+    PyPanel* isPanel = dynamic_cast<PyPanel*>(tab);
+    if (!isPanel) {
+        return;
+    }
+    _tab->removeTab(isPanel, false);
 }
 
 void
@@ -497,7 +498,11 @@ PyTabWidget::count()
 QWidget*
 PyTabWidget::currentWidget()
 {
-    return _tab->currentWidget();
+    PanelWidget* w =  _tab->currentWidget();
+    if (!w) {
+        return 0;
+    }
+    return w->getWidget();
 }
 
 void

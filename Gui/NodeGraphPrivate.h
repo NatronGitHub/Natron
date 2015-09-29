@@ -176,7 +176,6 @@ public:
 struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
-    Gui* _gui;
     
     boost::weak_ptr<NodeCollection> group;
     
@@ -230,8 +229,7 @@ struct NodeGraphPrivate
     ViewerTab* lastSelectedViewer;
     bool wasLaskUserSeekDuringPlayback;
     
-    NodeGraphPrivate(Gui* gui,
-                     NodeGraph* p,
+    NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
     
     void resetAllClipboards();

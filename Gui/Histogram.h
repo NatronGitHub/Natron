@@ -37,8 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-
-#include "Engine/ScriptObject.h"
+#include "Gui/PanelWidget.h"
 
 class QString;
 class QColor;
@@ -52,7 +51,7 @@ class ViewerGL;
 struct HistogramPrivate;
 class Histogram
     : public QGLWidget
-    , public ScriptObject
+    , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

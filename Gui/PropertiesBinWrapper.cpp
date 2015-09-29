@@ -25,11 +25,21 @@
 #include "PropertiesBinWrapper.h"
 #include "Gui/Gui.h"
 
-void
-PropertiesBinWrapper::enterEvent(QEvent* event)
+PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
+: QWidget(parent)
+, PanelWidget(this,parent)
 {
-    if (_gui->isFocusStealingPossible()) {
-        setFocus();
-    }
-    QWidget::enterEvent(event);
+    
+}
+
+PropertiesBinWrapper::~PropertiesBinWrapper()
+{
+    
+}
+
+void
+PropertiesBinWrapper::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
 }

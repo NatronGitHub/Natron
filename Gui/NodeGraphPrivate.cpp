@@ -43,11 +43,9 @@
 using namespace Natron;
 
 
-NodeGraphPrivate::NodeGraphPrivate(Gui* gui,
-                                   NodeGraph* p,
+NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
                                    const boost::shared_ptr<NodeCollection>& group)
 : _publicInterface(p)
-, _gui(gui)
 , group(group)
 , _lastMousePos()
 , _lastNodeDragStartPoint()

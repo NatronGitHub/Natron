@@ -79,94 +79,91 @@ enum EventStateEnum
 
 struct HistogramPrivate
 {
-    HistogramPrivate(Gui* parent,
-                     Histogram* widget)
-        : gui(parent)
-          , mainLayout(NULL)
-          , rightClickMenu(NULL)
-          , histogramSelectionMenu(NULL)
-          , histogramSelectionGroup(NULL)
-          , viewerCurrentInputMenu(NULL)
-          , viewerCurrentInputGroup(NULL)
-          , modeActions(0)
-          , modeMenu(NULL)
-          , fullImage(NULL)
-          , filterActions(0)
-          , filterMenu(NULL)
-          , widget(widget)
-          , mode(Histogram::eDisplayModeRGB)
-          , oldClick()
-          , zoomCtx()
-          , supportsGLSL(true)
-          , hasOpenGLVAOSupport(true)
-          , state(eEventStateNone)
-          , hasBeenModifiedSinceResize(false)
-          , _baseAxisColor(118,215,90,255)
-          , _scaleColor(67,123,52,255)
-          , _font(appFont,appFontSize)
-          , textRenderer()
-          , drawCoordinates(false)
-          , xCoordinateStr()
-          , rValueStr()
-          , gValueStr()
-          , bValueStr()
-          , filterSize(0)
+    HistogramPrivate(Histogram* widget)
+    : mainLayout(NULL)
+    , rightClickMenu(NULL)
+    , histogramSelectionMenu(NULL)
+    , histogramSelectionGroup(NULL)
+    , viewerCurrentInputMenu(NULL)
+    , viewerCurrentInputGroup(NULL)
+    , modeActions(0)
+    , modeMenu(NULL)
+    , fullImage(NULL)
+    , filterActions(0)
+    , filterMenu(NULL)
+    , widget(widget)
+    , mode(Histogram::eDisplayModeRGB)
+    , oldClick()
+    , zoomCtx()
+    , supportsGLSL(true)
+    , hasOpenGLVAOSupport(true)
+    , state(eEventStateNone)
+    , hasBeenModifiedSinceResize(false)
+    , _baseAxisColor(118,215,90,255)
+    , _scaleColor(67,123,52,255)
+    , _font(appFont,appFontSize)
+    , textRenderer()
+    , drawCoordinates(false)
+    , xCoordinateStr()
+    , rValueStr()
+    , gValueStr()
+    , bValueStr()
+    , filterSize(0)
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-          , histogramComputingShader()
-          , histogramMaximumShader()
-          , histogramRenderingShader()
+    , histogramComputingShader()
+    , histogramMaximumShader()
+    , histogramRenderingShader()
 #else
-          , histogramThread()
-          , histogram1()
-          , histogram2()
-          , histogram3()
-          , pixelsCount(0)
-          , vmin(0)
-          , vmax(0)
-          , binsCount(0)
-          , mipMapLevel(0)
-          , hasImage(false)
+    , histogramThread()
+    , histogram1()
+    , histogram2()
+    , histogram3()
+    , pixelsCount(0)
+    , vmin(0)
+    , vmax(0)
+    , binsCount(0)
+    , mipMapLevel(0)
+    , hasImage(false)
 #endif
-         , sizeH()
+    , sizeH()
     {
     }
-
+    
     boost::shared_ptr<Natron::Image> getHistogramImage(RectI* imagePortion) const;
-
-
+    
+    
     void showMenu(const QPoint & globalPos);
-
+    
     void drawScale();
-
+    
     void drawPicker();
     
     void drawWarnings();
     
     void drawMissingImage();
-
+    
     void updatePicker(double x);
-
+    
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-
+    
     void resizeComputingVBO(int w,int h);
-
-
+    
+    
     ///For all these functions, mode refers to either R,G,B,A or Y
     void computeHistogram(Histogram::DisplayModeEnum mode);
     void renderHistogram(Histogram::DisplayModeEnum mode);
     void activateHistogramComputingShader(Histogram::DisplayModeEnum mode);
     void activateHistogramRenderingShader(Histogram::DisplayModeEnum mode);
-
+    
 #else
     void drawHistogramCPU();
 #endif
-
+    
     //////////////////////////////////
     // data members
-
-    Gui* gui; //< ptr to the gui
+    
     QVBoxLayout* mainLayout;
-
+    
     ///////// OPTIONS
     Natron::Menu* rightClickMenu;
     QMenu* histogramSelectionMenu;
@@ -272,8 +269,9 @@ struct HistogramPrivate
 
 Histogram::Histogram(Gui* gui,
                      const QGLWidget* shareWidget)
-    : QGLWidget(gui,shareWidget)
-      , _imp( new HistogramPrivate(gui,this) )
+: QGLWidget(gui,shareWidget)
+, PanelWidget(this,gui)
+, _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -402,7 +400,7 @@ Histogram::Histogram(Gui* gui,
     }
 
     QObject::connect( _imp->filterActions, SIGNAL( triggered(QAction*) ), this, SLOT( onFilterChanged(QAction*) ) );
-    QObject::connect( _imp->gui, SIGNAL( viewersChanged() ), this, SLOT( populateViewersChoices() ) );
+    QObject::connect( getGui(), SIGNAL( viewersChanged() ), this, SLOT( populateViewersChoices() ) );
     populateViewersChoices();
 }
 
@@ -457,11 +455,11 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         return boost::shared_ptr<Natron::Image>();
     } else if (index == 1) {
         //current viewer
-        viewer = gui->getNodeGraph()->getLastSelectedViewer();
+        viewer = widget->getGui()->getNodeGraph()->getLastSelectedViewer();
         
     } else {
         boost::shared_ptr<Natron::Image> ret;
-        const std::list<ViewerTab*> & viewerTabs = gui->getViewersList();
+        const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
                 viewer = *it;
@@ -564,7 +562,7 @@ Histogram::populateViewersChoices()
     _imp->histogramSelectionMenu->addAction(currentAction);
 
 
-    const std::list<ViewerTab*> & viewerTabs = _imp->gui->getViewersList();
+    const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
     int c = 2;
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
         if ( (*it)->getInternalNode()->getNode()->isActivated() ) {
@@ -614,7 +612,7 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
 
     if (viewer && hasImageBackend) {
         QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
-        ViewerTab* lastSelectedViewer = _imp->gui->getNodeGraph()->getLastSelectedViewer();
+        ViewerTab* lastSelectedViewer = getGui()->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
             currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();
@@ -1439,9 +1437,7 @@ Histogram::keyPressEvent(QKeyEvent* e)
 
 void
 Histogram::enterEvent(QEvent* e) {
-    if (_imp->gui && _imp->gui->isFocusStealingPossible()) {
-        setFocus();
-    }
+    enterEventBase();
     QGLWidget::enterEvent(e);
 }
 

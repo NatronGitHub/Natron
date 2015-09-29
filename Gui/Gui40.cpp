@@ -83,20 +83,20 @@ Gui::forceRefreshAllPreviews()
 }
 
 void
-Gui::startDragPanel(QWidget* panel)
+Gui::startDragPanel(PanelWidget* panel)
 {
     assert(!_imp->_currentlyDraggedPanel);
     _imp->_currentlyDraggedPanel = panel;
     if (panel) {
-        _imp->_currentlyDraggedPanelInitialSize = panel->size();
+        _imp->_currentlyDraggedPanelInitialSize = panel->getWidget()->size();
     }
 }
 
-QWidget*
+PanelWidget*
 Gui::stopDragPanel(QSize* initialSize)
 {
     assert(_imp->_currentlyDraggedPanel);
-    QWidget* ret = _imp->_currentlyDraggedPanel;
+    PanelWidget* ret = _imp->_currentlyDraggedPanel;
     _imp->_currentlyDraggedPanel = 0;
     *initialSize = _imp->_currentlyDraggedPanelInitialSize;
 
@@ -512,7 +512,7 @@ Gui::getPropertiesLayout() const
 }
 
 void
-Gui::appendTabToDefaultViewerPane(QWidget* tab,
+Gui::appendTabToDefaultViewerPane(PanelWidget* tab,
                                   ScriptObject* obj)
 {
     TabWidget* viewerAnchor = getAnchor();
