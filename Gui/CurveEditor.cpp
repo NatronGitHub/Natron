@@ -1534,15 +1534,19 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
 void
 CurveEditor::keyPressEvent(QKeyEvent* e)
 {
-    //Qt::KeyboardModifiers modifiers = e->modifiers();
-    //Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
     
-    onInputEventCalled();
-    
-    if (e->key() == Qt::Key_F && modCASIsControl(e)) {
+    bool accept = true;
+    if (isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
         _imp->filterEdit->setFocus();
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
+    }
+    if (accept) {
+        takeClickFocus();
+        e->accept();
     }
 }
 

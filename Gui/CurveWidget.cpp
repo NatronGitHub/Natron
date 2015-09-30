@@ -1301,19 +1301,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
-    CurveEditor* ce = 0;
-    if ( parentWidget() ) {
-        QWidget* parent  = parentWidget()->parentWidget();
-        if (parent) {
-            if (parent->objectName() == "CurveEditor") {
-                ce = dynamic_cast<CurveEditor*>(parent);
-            }
-        }
-    }
-    if (ce) {
-        ce->onInputEventCalled();
-    }
-    
+    bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     
@@ -1348,7 +1336,24 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else {
+        accept = false;
         QGLWidget::keyPressEvent(e);
+    }
+    if (accept) {
+        CurveEditor* ce = 0;
+        if ( parentWidget() ) {
+            QWidget* parent  = parentWidget()->parentWidget();
+            if (parent) {
+                if (parent->objectName() == "CurveEditor") {
+                    ce = dynamic_cast<CurveEditor*>(parent);
+                }
+            }
+        }
+        if (ce) {
+            ce->onInputEventCalled();
+        }
+        
+        e->accept();
     }
 } // keyPressEvent
 
