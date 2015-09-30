@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+#include <QStyle>
 #include <QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -1313,15 +1314,35 @@ TabWidget::dropEvent(QDropEvent* e)
 
 TabBar::TabBar(TabWidget* tabWidget,
                QWidget* parent)
-    : QTabBar(parent)
-      , _dragPos()
-      , _dragPix(0)
-      , _tabWidget(tabWidget)
-      , _processingLeaveEvent(false)
+        : QTabBar(parent)
+        , _dragPos()
+        , _dragPix(0)
+        , _tabWidget(tabWidget)
+        , _processingLeaveEvent(false)
+        , mouseOverFocus(false)
+        , clickFocus(false)
 {
     setTabsClosable(true);
     setMouseTracking(true);
     QObject::connect( this, SIGNAL( tabCloseRequested(int) ), tabWidget, SLOT( closeTab(int) ) );
+}
+        
+void
+TabBar::setMouseOverFocus(bool focus)
+{
+    mouseOverFocus = focus;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
+}
+        
+void
+TabBar::setClickFocus(bool focus)
+{
+    clickFocus = focus;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
 void

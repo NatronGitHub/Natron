@@ -91,7 +91,10 @@ class TabBar
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
+    
+    Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
+    Q_PROPERTY(bool clickFocus READ hasClickFocus WRITE setClickFocus)
+    
 public:
 
     explicit TabBar(TabWidget* tabWidget,
@@ -101,6 +104,18 @@ public:
     {
     }
 
+    bool hasMouseOverFocus() const
+    {
+        return mouseOverFocus;
+    }
+    
+    bool hasClickFocus() const
+    {
+        return clickFocus;
+    }
+    
+    void setMouseOverFocus(bool focus);
+    void setClickFocus(bool focus);
     
 Q_SIGNALS:
     
@@ -117,6 +132,9 @@ private:
     DragPixmap* _dragPix;
     TabWidget* _tabWidget; // ptr to the tabWidget
     bool _processingLeaveEvent; // to avoid recursions in leaveEvent
+    
+    bool mouseOverFocus;
+    bool clickFocus;
 };
 
 class TabWidgetHeader : public QWidget
