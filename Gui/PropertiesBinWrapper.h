@@ -30,6 +30,7 @@
 
 class PropertiesBinWrapper : public QWidget, public PanelWidget
 {
+    Q_OBJECT
     
 public:
     
@@ -37,8 +38,12 @@ public:
     
     virtual ~PropertiesBinWrapper();
     
-private:
+public Q_SLOTS:
     
+    void onFocusChanged(QWidget* old, QWidget*);
+    
+private:
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 };

@@ -239,14 +239,7 @@ SpinBox::interpretReturn()
     }
 }
 
-/*
- void
- SpinBox::mousePressEvent(QMouseEvent* e)
- {
- //setCursorPosition(cursorPositionAt(e->pos())); // LineEdit::mousePressEvent(e) does this already
- LineEdit::mousePressEvent(e);
- }
- */
+
 
 QString
 SpinBoxPrivate::setNum(double cur)
