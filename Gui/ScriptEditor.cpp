@@ -448,8 +448,18 @@ ScriptEditor::getInputScript() const
 }
 
 void
+ScriptEditor::mousePressEvent(QMouseEvent* e)
+{
+    takeClickFocus();
+    QWidget::mousePressEvent(e);
+}
+
+void
 ScriptEditor::keyPressEvent(QKeyEvent* e)
 {
+
+    bool accept = true;
+    
     Qt::Key key = (Qt::Key)e->key();
     if (key == Qt::Key_BracketLeft && modCASIsControl(e)) {
         onUndoClicked();
@@ -460,9 +470,12 @@ ScriptEditor::keyPressEvent(QKeyEvent* e)
     } else if (key == Qt::Key_Backspace && modifierHasControl(e)) {
         onClearOutputClicked();
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
     }
-    
+    if (accept) {
+        takeClickFocus();
+    }
 }
 
 void
@@ -509,4 +522,11 @@ ScriptEditor::enterEvent(QEvent *e)
 {
     enterEventBase();
     QWidget::enterEvent(e);
+}
+
+void
+ScriptEditor::leaveEvent(QEvent *e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
 }

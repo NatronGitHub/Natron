@@ -643,7 +643,19 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (ce) {
+        ce->onInputEventCalled();
+    }
+    
     setFocus();
     ////
     // right button: popup menu
@@ -1282,18 +1294,6 @@ CurveWidget::sizeHint() const
     return _imp->sizeH;
 }
 
-static TabWidget* findParentTabRecursive(QWidget* w)
-{
-    QWidget* parent = w->parentWidget();
-    if (!parent) {
-        return 0;
-    }
-    TabWidget* tab = dynamic_cast<TabWidget*>(parent);
-    if (tab) {
-        return tab;
-    }
-    return findParentTabRecursive(parent);
-}
 
 void
 CurveWidget::keyPressEvent(QKeyEvent* e)
@@ -1301,17 +1301,23 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (ce) {
+        ce->onInputEventCalled();
+    }
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        TabWidget* parentTab = findParentTabRecursive(this);
-        if (parentTab) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-            QCoreApplication::postEvent(parentTab,ev);
-        }
-
-    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
         constantInterpForSelectedKeyFrames();
@@ -1347,7 +1353,13 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
 } // keyPressEvent
 
 
-
+void
+CurveWidget::enterEvent(QEvent* e)
+{
+    setFocus();
+    QGLWidget::enterEvent(e);
+    
+}
 //struct RefreshTangent_functor{
 //    CurveWidgetPrivate* _imp;
 //

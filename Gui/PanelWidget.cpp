@@ -25,6 +25,8 @@
 #include "PanelWidget.h"
 #include <cassert>
 
+#include "Gui/TabWidget.h"
+
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
 : ScriptObject()
@@ -52,11 +54,75 @@ PanelWidget::notifyGuiClosingPublic()
     notifyGuiClosing();
 }
 
+static TabWidget* getParentPaneRecursive(QWidget* w)
+{
+    if (!w) {
+        return 0;
+    }
+    TabWidget* tw = dynamic_cast<TabWidget*>(w);
+    if (tw) {
+        return tw;
+    } else {
+        return getParentPaneRecursive(w->parentWidget());
+    }
+}
+
+TabWidget*
+PanelWidget::getParentPane() const
+{
+    return getParentPaneRecursive(_thisWidget);
+}
+
 void
 PanelWidget::enterEventBase()
 {
+    
+    TabWidget* parentPane = getParentPane();
+    if (parentPane) {
+        parentPane->setWidgetMouseOverFocus(this, true);
+    }
     if (_gui && _gui->isFocusStealingPossible()) {
         _thisWidget->setFocus();
     }
 
+}
+
+void
+PanelWidget::takeClickFocus()
+{
+    TabWidget* parentPane = getParentPane();
+    if (parentPane) {
+        parentPane->setWidgetClickFocus(this, true);
+    }
+    if (_gui) {
+        const RegisteredTabs& tabs = _gui->getRegisteredTabs();
+        for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+            if (it->second.first != this) {
+                it->second.first->removeClickFocus();
+            }
+        }
+        _gui->setCurrentPanelFocus(this);
+    }
+}
+
+void
+PanelWidget::removeClickFocus()
+{
+    TabWidget* parentPane = getParentPane();
+    if (parentPane) {
+        parentPane->setWidgetClickFocus(this, false);
+    }
+    if (_gui) {
+        _gui->setCurrentPanelFocus(0);
+    }
+}
+
+
+void
+PanelWidget::leaveEventBase()
+{
+    TabWidget* parentPane = getParentPane();
+    if (parentPane) {
+        parentPane->setWidgetMouseOverFocus(this, false);
+    }
 }

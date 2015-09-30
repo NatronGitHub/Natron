@@ -40,6 +40,7 @@ public:
 private:
     
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 };
 
 #endif // Gui_PropertiesBinWrapper_h

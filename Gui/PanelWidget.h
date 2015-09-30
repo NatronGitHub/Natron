@@ -36,6 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ScriptObject.h"
 
 class Gui;
+class TabWidget;
 class PanelWidget : public ScriptObject
 {
     QWidget* _thisWidget;
@@ -55,6 +56,12 @@ public:
         return _thisWidget;
     }
     
+    TabWidget* getParentPane() const;
+    
+    void removeClickFocus();
+    
+    void takeClickFocus();
+    
 protected:
     
     virtual void notifyGuiClosing() {}
@@ -63,6 +70,12 @@ protected:
      * @brief To be called in the enterEvent handler of all derived classes.
      **/
     void enterEventBase();
+    
+    /**
+     * @brief To be called in the leaveEvent handler of all derived classes.
+     **/
+    void leaveEventBase();
+ 
 
 };
 

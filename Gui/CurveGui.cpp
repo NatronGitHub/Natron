@@ -258,31 +258,34 @@ CurveGui::drawCurve(int curveIndex,
     }
     if (!keyframes.empty()) {
         
-        std::pair<KeyFrame,bool> isX1AKey;
-        while ( x1 < (w - 1) ) {
-            double x,y;
-            if (!isX1AKey.second) {
-                x = _curveWidget->toZoomCoordinates(x1,0).x();
-                y = evaluate(false,x);
-            } else {
-                x = isX1AKey.first.getTime();
-                y = isX1AKey.first.getValue();
+        try {
+            std::pair<KeyFrame,bool> isX1AKey;
+            while ( x1 < (w - 1) ) {
+                double x,y;
+                if (!isX1AKey.second) {
+                    x = _curveWidget->toZoomCoordinates(x1,0).x();
+                    y = evaluate(false,x);
+                } else {
+                    x = isX1AKey.first.getTime();
+                    y = isX1AKey.first.getValue();
+                }
+                vertices.push_back( (float)x );
+                vertices.push_back( (float)y );
+                isX1AKey = nextPointForSegment(x1,&x2,keyframes);
+                x1 = x2;
             }
-            vertices.push_back( (float)x );
-            vertices.push_back( (float)y );
-            isX1AKey = nextPointForSegment(x1,&x2,keyframes);
-            x1 = x2;
+            //also add the last point
+            {
+                double x = _curveWidget->toZoomCoordinates(x1,0).x();
+                double y = evaluate(false,x);
+                vertices.push_back( (float)x );
+                vertices.push_back( (float)y );
+            }
+        } catch (...) {
+            
         }
-        //also add the last point
-        {
-            double x = _curveWidget->toZoomCoordinates(x1,0).x();
-            double y = evaluate(false,x);
-            vertices.push_back( (float)x );
-            vertices.push_back( (float)y );
-        }
-        
     }
-
+    
     QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
     QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
 
@@ -593,11 +596,10 @@ KnobCurveGui::getKeyFrameIndex(double time) const
     return getInternalCurve()->keyFrameIndex(time);
 }
 
-void
+KeyFrame
 KnobCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
 {
-    assert(_internalCurve);
-    _internalCurve->setKeyFrameInterpolation(interp, index);
+    return getInternalCurve()->setKeyFrameInterpolation(interp, index);
 }
 
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
@@ -687,9 +689,10 @@ BezierCPCurveGui::getKeyFrameIndex(double time) const
     return _bezier->getKeyFrameIndex(time);
 }
 
-void
+KeyFrame
 BezierCPCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
 {
     _bezier->setKeyFrameInterpolation(interp, index);
+    return KeyFrame();
 }
 

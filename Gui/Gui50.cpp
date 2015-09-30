@@ -48,6 +48,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QTabBar>
+#include <QTextEdit>
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QTreeView>
 
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -60,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/GuiAppInstance.h"
@@ -452,20 +458,23 @@ static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
 void
 Gui::keyPressEvent(QKeyEvent* e)
 {
+    if (_imp->currentPanelFocusEventRecursion > 0) {
+        return;
+    }
+    
     QWidget* w = qApp->widgetAt( QCursor::pos() );
 
-    if (e->key() == Qt::Key_Escape) {
+    
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+
+    if (key == Qt::Key_Escape) {
         
         RightClickableWidget* panel = isParentSettingsPanelRecursive(w);
         if (panel) {
             panel->getPanel()->closePanel();
         }
-    }
-
-    Qt::Key key = (Qt::Key)e->key();
-    Qt::KeyboardModifiers modifiers = e->modifiers();
-
-    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
@@ -530,7 +539,18 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
-        QMainWindow::keyPressEvent(e);
+        if (_imp->currentPanelFocus) {
+            
+            ++_imp->currentPanelFocusEventRecursion;
+            //If a panel as the click focus, try to send the event to it
+            QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
+            assert(curFocusWidget);
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
+            qApp->notify(curFocusWidget,ev);
+            --_imp->currentPanelFocusEventRecursion;
+        } else {
+            QMainWindow::keyPressEvent(e);
+        }
     }
 }
 
@@ -870,19 +890,29 @@ Gui::isFocusStealingPossible()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QWidget* currentFocus = qApp->focusWidget();
     
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "tree" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar" ||
+    bool focusStealingNotPossible =
+    dynamic_cast<QLineEdit*>(currentFocus) ||
+    dynamic_cast<QTextEdit*>(currentFocus) ||
+    dynamic_cast<QCheckBox*>(currentFocus) ||
+    dynamic_cast<ComboBox*>(currentFocus) ||
+    dynamic_cast<QComboBox*>(currentFocus) ||
     dynamic_cast<QTreeWidget*>(currentFocus) ||
-    dynamic_cast<QTabBar*>(currentFocus);
-    
-    return canSetFocus;
+    dynamic_cast<QTreeView*>(currentFocus);
 
+    return !focusStealingNotPossible;
+
+}
+
+void
+Gui::setCurrentPanelFocus(PanelWidget* widget)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->currentPanelFocus = widget;
+}
+
+PanelWidget*
+Gui::getCurrentPanelFocus() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->currentPanelFocus;
 }

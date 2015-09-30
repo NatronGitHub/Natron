@@ -235,6 +235,9 @@ public:
     
     void currentWidget(PanelWidget** w,ScriptObject** obj) const;
     
+    void setWidgetMouseOverFocus(PanelWidget* w, bool hoverFocus);
+    void setWidgetClickFocus(PanelWidget* w, bool clickFocus);
+    
     /**
      * @brief Set w as the current widget of the tab
      **/
@@ -271,6 +274,8 @@ public:
 
     ///MT-Safe
     bool isFullScreen() const;
+    
+    void togglePaneFullScreen();
 
     ///MT-Safe
     bool isAnchor() const;

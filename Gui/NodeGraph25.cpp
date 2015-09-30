@@ -235,14 +235,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
-    if (key == Qt::Key_Escape) {
-        return QGraphicsView::keyPressEvent(e);
-    }
+    bool accept = true;
     
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-        QCoreApplication::postEvent(parentWidget(),ev);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
         getGui()->createReader();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key) ) {
         getGui()->createWriter();
@@ -277,8 +272,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         createGroupFromSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, modifiers, key) ) {
         expandSelectedGroups();
-    } else if (key == Qt::Key_Control) {
+    } else if (key == Qt::Key_Control && modCASIsNone(e)) {
         _imp->setNodesBendPointsVisible(true);
+        accept = false;
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
                 isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, modifiers, key) ) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
@@ -426,8 +422,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         
         if (!intercepted) {
+            accept = false;
             QGraphicsView::keyPressEvent(e);
         }
+    }
+    if (accept) {
+        takeClickFocus();
     }
 } // keyPressEvent
 

@@ -149,13 +149,18 @@ Gui::loadStyleSheet()
 {
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
-    QString selStr, sunkStr, baseStr, raisedStr, txtStr, intStr, kfStr, eStr, altStr;
+    QString selStr, sunkStr, baseStr, raisedStr, txtStr, intStr, kfStr, eStr, altStr, lightSelStr;
 
     //settings->
     {
         double r, g, b;
         settings->getSelectionColor(&r, &g, &b);
+        double lr,lg,lb;
+        lr = 1;
+        lg = 0.75;
+        lb = 0.47;
         selStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(r)).arg(Color::floatToInt<256>(g)).arg(Color::floatToInt<256>(b));
+        lightSelStr = QString("rgb(%1,%2,%3)").arg(Color::floatToInt<256>(lr)).arg(Color::floatToInt<256>(lg)).arg(Color::floatToInt<256>(lb));
     }
     {
         double r, g, b;
@@ -220,7 +225,8 @@ Gui::loadStyleSheet()
                        .arg(kfStr) // %7: keyframe value color
                        .arg("rgb(0,0,0)") // %8: disabled editable text
                        .arg(eStr) // %9: expression background color
-                       .arg(altStr) ); // %10 = altered text color
+                       .arg(altStr)  // %10 = altered text color
+                       .arg(lightSelStr)); // %11 = mouse over selection color
     } else {
         Natron::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
     }
@@ -383,6 +389,9 @@ Gui::registerTab(PanelWidget* tab,
 void
 Gui::unregisterTab(PanelWidget* tab)
 {
+    if (getCurrentPanelFocus() == tab) {
+        tab->removeClickFocus();
+    }
     for (RegisteredTabs::iterator it = _imp->_registeredTabs.begin(); it != _imp->_registeredTabs.end(); ++it) {
         if (it->second.first == tab) {
             _imp->_registeredTabs.erase(it);

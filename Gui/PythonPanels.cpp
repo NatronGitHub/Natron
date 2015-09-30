@@ -438,6 +438,33 @@ PyPanel::save_serialization_thread() const
     return _imp->serialization;
 }
 
+void
+PyPanel::mousePressEvent(QMouseEvent* e)
+{
+    takeClickFocus();
+    QWidget::mousePressEvent(e);
+}
+
+void
+PyPanel::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
+void
+PyPanel::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
+
+void
+PyPanel::keyPressEvent(QKeyEvent* e)
+{
+    QWidget::keyPressEvent(e);
+}
+
 PyTabWidget::PyTabWidget(TabWidget* pane)
 : _tab(pane)
 {

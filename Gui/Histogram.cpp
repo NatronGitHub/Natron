@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveWidget.h"
@@ -1227,6 +1228,8 @@ Histogram::mousePressEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    takeClickFocus();
+    
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
@@ -1422,16 +1425,22 @@ Histogram::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if (e->key() == Qt::Key_Space) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
-        QCoreApplication::postEvent(parentWidget(),ev);
-    } else if (e->key() == Qt::Key_F) {
+    
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    
+    bool accept = true;
+    
+    if (isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
         _imp->hasBeenModifiedSinceResize = false;
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
     } else {
+        accept = false;
         QGLWidget::keyPressEvent(e);
+    }
+    if (accept) {
+        takeClickFocus();
     }
 }
 
@@ -1446,7 +1455,7 @@ Histogram::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    leaveEventBase();
     _imp->drawCoordinates = false;
     QGLWidget::leaveEvent(e);
 }

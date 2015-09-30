@@ -43,3 +43,10 @@ PropertiesBinWrapper::enterEvent(QEvent* e)
     enterEventBase();
     QWidget::enterEvent(e);
 }
+
+void
+PropertiesBinWrapper::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}

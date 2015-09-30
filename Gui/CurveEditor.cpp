@@ -51,6 +51,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/EffectInstance.h"
 #include "Engine/TimeLine.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/CurveGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
@@ -63,6 +64,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/TabWidget.h"
 
 using std::make_pair;
 using std::cout;
@@ -1532,6 +1534,11 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
 void
 CurveEditor::keyPressEvent(QKeyEvent* e)
 {
+    //Qt::KeyboardModifiers modifiers = e->modifiers();
+    //Qt::Key key = (Qt::Key)e->key();
+    
+    onInputEventCalled();
+    
     if (e->key() == Qt::Key_F && modCASIsControl(e)) {
         _imp->filterEdit->setFocus();
     } else {
@@ -1544,6 +1551,19 @@ CurveEditor::enterEvent(QEvent* e)
 {
     enterEventBase();
     QWidget::enterEvent(e);
+}
+
+void
+CurveEditor::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
+
+void
+CurveEditor::onInputEventCalled()
+{
+    takeClickFocus();
 }
 
 boost::shared_ptr<CurveGui>

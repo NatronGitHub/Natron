@@ -281,6 +281,8 @@ public:
     
     bool isPickerEnabled() const;
     void setPickerEnabled(bool enabled);
+    
+    void onMousePressCalledInViewer();
 
 public Q_SLOTS:
 
@@ -441,6 +443,7 @@ private:
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     boost::scoped_ptr<ViewerTabPrivate> _imp;

@@ -151,6 +151,7 @@ NodeGraph::enterEvent(QEvent* e)
 void
 NodeGraph::leaveEvent(QEvent* e)
 {
+    leaveEventBase();
     QGraphicsView::leaveEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = false;

@@ -50,6 +50,7 @@
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
 #include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/Gui.h"
@@ -3045,6 +3046,8 @@ void DopeSheetView::paintGL()
 void DopeSheetView::mousePressEvent(QMouseEvent *e)
 {
     running_in_main_thread();
+    
+    _imp->model->getEditor()->onInputEventCalled();
 
     bool didSomething = false;
 
@@ -3444,57 +3447,3 @@ void DopeSheetView::focusInEvent(QFocusEvent *e)
     _imp->model->setUndoStackActive();
 }
 
-void DopeSheetView::keyPressEvent(QKeyEvent *e)
-{
-    running_in_main_thread();
-
-    Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = Qt::Key(e->key());
-
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        TabWidget* tab = dynamic_cast<TabWidget*>(parentWidget()->parentWidget()->parentWidget());
-        assert(tab);
-        if (tab) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-            QCoreApplication::postEvent(tab,ev);
-        }
-        
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
-        deleteSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
-        centerOnSelection();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
-        onSelectedAllTriggered();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
-        constantInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
-        linearInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
-        smoothInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
-        catmullRomInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
-        cubicInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
-        horizontalInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
-        breakInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key)) {
-        copySelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
-        pasteKeyframes();
-    } else {
-        QGLWidget::keyPressEvent(e);
-    }
-}

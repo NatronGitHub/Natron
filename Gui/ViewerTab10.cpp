@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/TrackerGui.h"
+#include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -485,19 +486,24 @@ ViewerTab::enterEvent(QEvent* e)
     QWidget::enterEvent(e);
 }
 
+void
+ViewerTab::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
 
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
+    
+    bool accept = true;
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
+    double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
 
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) { //< this shortcut is global
-        if ( parentWidget() ) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,key, modifiers);
-            QCoreApplication::postEvent(parentWidget(),ev);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);
@@ -672,8 +678,44 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         connectToInput(8);
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectToInput(9);
+    } if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
+        _imp->viewer->toggleOverlays();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
+        _imp->viewer->toggleWipe();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, modifiers, key)) {
+        _imp->viewer->centerWipe();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
+        hideAllToolbars();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
+        showAllToolbars();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, modifiers, key) ) {
+        togglePlayerVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, modifiers, key) ) {
+        toggleTimelineVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, modifiers, key) ) {
+        toggleInfobarVisbility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, modifiers, key) ) {
+        toggleLeftToolbarVisiblity();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, modifiers, key) ) {
+        toggleRightToolbarVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
+        toggleTopToolbarVisibility();
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(scale, scale, e) ) {
+        update();
+    } else if ( notifyOverlaysKeyDown(scale, scale, e) ) {
+        update();
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
+    }
+    if (accept) {
+        takeClickFocus();
     }
 } // keyPressEvent
 

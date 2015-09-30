@@ -126,9 +126,11 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
 
 public:
+    
+    friend class PanelWidget;
+    
     explicit Gui(GuiAppInstance* app,
                  QWidget* parent = 0);
 
@@ -594,6 +596,9 @@ public:
      */
     static bool isFocusStealingPossible();
     
+    PanelWidget* getCurrentPanelFocus() const;
+
+    
 Q_SIGNALS:
 
 
@@ -718,7 +723,8 @@ public Q_SLOTS:
 private:
 
     
-
+    void setCurrentPanelFocus(PanelWidget* widget);
+    
     AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
 
     void setupUi();

@@ -266,6 +266,11 @@ struct GuiPrivate
     
     RenderStatsDialog* statsDialog;
     
+    PanelWidget* currentPanelFocus;
+    
+    //To prevent recursion when we forward an uncaught event to the click focus widget
+    int currentPanelFocusEventRecursion;
+    
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);
 

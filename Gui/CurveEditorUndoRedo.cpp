@@ -560,9 +560,9 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                 
                 int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
                 if (keyframeIndex != -1) {
-                    it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
+                   it->key->key = it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
                 }
-                
+                isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
             } else {
                 knob->setInterpolationAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
             }

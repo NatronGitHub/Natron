@@ -248,6 +248,8 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _lastEnteredTabWidget(0)
 , pythonCommands()
 , statsDialog(0)
+, currentPanelFocus(0)
+, currentPanelFocusEventRecursion(0)
 {
 }
 

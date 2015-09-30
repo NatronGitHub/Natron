@@ -56,6 +56,9 @@ void
 NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
+    
+    takeClickFocus();
+    
     _imp->_hasMovedOnce = false;
     _imp->_deltaSinceMousePress = QPointF(0,0);
     if ( buttonDownIsMiddle(e) ) {

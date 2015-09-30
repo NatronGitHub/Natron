@@ -137,8 +137,11 @@ protected:
     
     void onUserDataChanged();
     
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void enterEvent(QEvent* e) OVERRIDE ;
+    virtual void leaveEvent(QEvent* e) OVERRIDE ;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE ;
 private:
-    
     boost::scoped_ptr<PyPanelPrivate> _imp;
     
 };

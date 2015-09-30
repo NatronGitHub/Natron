@@ -1082,6 +1082,13 @@ TabWidget::removeTab(int index,bool userAction)
             }
         }
     }
+    
+    QWidget* w = tab->getWidget();
+
+    if (_imp->tabBar->hasClickFocus() && _imp->currentWidget == tab) {
+        tab->removeClickFocus();
+    }
+    
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
         
@@ -1115,8 +1122,7 @@ TabWidget::removeTab(int index,bool userAction)
 
     
     _imp->removeTabToPython(tab, obj->getScriptName());
-    
-    QWidget* w = tab->getWidget();
+
     if (userAction) {
       
         if (isViewer) {
@@ -1194,6 +1200,17 @@ TabWidget::makeCurrentTab(int index)
         return;
     }
     QWidget* tabW = tab->getWidget();
+    
+    PanelWidget* curWidget;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        curWidget = _imp->currentWidget;
+    }
+    bool hadFocus = false;
+    if (curWidget && _imp->tabBar->hasClickFocus()) {
+        hadFocus = true;
+        curWidget->removeClickFocus();
+    }
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
         
@@ -1206,7 +1223,9 @@ TabWidget::makeCurrentTab(int index)
             _imp->mainLayout->removeWidget(w);
         }
         _imp->currentWidget = tab;
+        curWidget = _imp->currentWidget;
     }
+    
     _imp->mainLayout->addWidget(tabW);
     QObject::connect(tabW, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
     
@@ -1215,6 +1234,10 @@ TabWidget::makeCurrentTab(int index)
     _imp->modifyingTabBar = true;
     _imp->tabBar->setCurrentIndex(index);
     _imp->modifyingTabBar = false;
+    
+    if (hadFocus) {
+        curWidget->takeClickFocus();
+    }
 }
         
         void
@@ -1754,37 +1777,51 @@ TabWidget::setAsAnchor(bool anchor)
         update();
     }
 }
+        
+void
+TabWidget::togglePaneFullScreen()
+{
+    bool oldFullScreen;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        oldFullScreen = _imp->fullScreen;
+        _imp->fullScreen = !_imp->fullScreen;
+    }
+
+    if (oldFullScreen) {
+        _imp->gui->minimize();
+    } else {
+        _imp->gui->maximize(this);
+    }
+}
 
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
-    if ( (e->key() == Qt::Key_Space) && modCASIsNone(e) ) {
-        bool fullScreen;
-        {
-            QMutexLocker l(&_imp->tabWidgetStateMutex);
-            fullScreen = _imp->fullScreen;
-        }
-        {
-            QMutexLocker l(&_imp->tabWidgetStateMutex);
-            _imp->fullScreen = !_imp->fullScreen;
-        }
-        if (fullScreen) {
-            _imp->gui->minimize();
-        } else {
-            _imp->gui->maximize(this);
-        }
-        e->accept();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, e->modifiers(), e->key())) {
+    
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+
+    bool accepted = true;
+    
+    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
+        togglePaneFullScreen();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, modifiers, key)) {
         moveToNextTab();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, e->modifiers(), e->key())) {
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, modifiers, key)) {
         moveToPreviousTab();
-    }else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, modifiers, key)) {
         closeCurrentWidget();
-    } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
+    } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, modifiers, key)) {
         _imp->gui->toggleFullScreen();
-        e->accept();
     } else {
+        accepted = false;
         QFrame::keyPressEvent(e);
+    }
+    if (accepted) {
+        if (_imp->currentWidget) {
+            _imp->currentWidget->takeClickFocus();
+        }
     }
 }
 
@@ -1810,12 +1847,20 @@ TabWidget::moveTab(PanelWidget* what,
         //it wasn't found somehow
     }
 
+    bool hadClickFocus = false;
     if (from) {
+        hadClickFocus = from->getGui()->getCurrentPanelFocus() == what;
+        
+        ///This line will remove click focus
         from->removeTab(what, false);
     }
     assert(where);
+
     where->appendTab(what,obj);
-    //what->setParent(where);
+    if (hadClickFocus) {
+        where->setWidgetClickFocus(what, true);
+    }
+
     if ( !where->getGui()->isAboutToClose() &&  !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
     }
@@ -1881,6 +1926,26 @@ TabWidget::currentWidget(PanelWidget** w,ScriptObject** obj) const
         }
     }
     *obj = 0;
+}
+        
+void
+TabWidget::setWidgetMouseOverFocus(PanelWidget* w, bool hoverFocus)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (w == _imp->currentWidget) {
+        _imp->tabBar->setMouseOverFocus(hoverFocus);
+    }
+    
+}
+
+void
+TabWidget::setWidgetClickFocus(PanelWidget* w, bool clickFocus)
+{
+     assert(QThread::currentThread() == qApp->thread());
+    if (w == _imp->currentWidget) {
+        _imp->tabBar->setClickFocus(clickFocus);
+    }
+
 }
 
 int

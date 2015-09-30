@@ -582,6 +582,12 @@ ViewerTab::setPickerEnabled(bool enabled)
 }
 
 void
+ViewerTab::onMousePressCalledInViewer()
+{
+    takeClickFocus();
+}
+
+void
 ViewerTab::onPickerButtonClicked(bool clicked)
 {
     const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
