@@ -622,42 +622,32 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
     for (int i = 0; i < layoutItemsCount; ++i) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>( item->widget() );
-        if (panel) {
-            boost::shared_ptr<NodeGui> node = panel->getNode();
-            boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-            if (node && internalNode) {
-                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
-                if (multiInstance) {
-//                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-//                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-//                        NodePtr instance = it->first.lock();
-//                        if (node->isSettingsPanelVisible() &&
-//                            !node->isSettingsPanelMinimized() &&
-//                            instance->isActivated() &&
-//                            instance->hasOverlay() &&
-//                            it->second &&
-//                            !instance->isNodeDisabled()) {
-//                            nodes.push_back(instance);
-//                        }
-//                    }
-                    if ( internalNode->hasOverlay() &&
-                         !internalNode->isNodeDisabled() &&
-                         node->isSettingsPanelVisible() &&
-                         !node->isSettingsPanelMinimized() ) {
-                        nodes.push_back( node->getNode() );
-                    }
-                } else {
-                    if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
-                         !internalNode->isNodeDisabled() &&
-                        !internalNode->getParentMultiInstance() && 
-                         internalNode->isActivated() &&
-                         node->isSettingsPanelVisible() &&
-                         !node->isSettingsPanelMinimized() ) {
-                        nodes.push_back( node->getNode() );
-                    }
+        if (!panel) {
+            continue;
+        }
+        boost::shared_ptr<NodeGui> node = panel->getNode();
+        boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+        if (node && internalNode) {
+            boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+            if (multiInstance) {
+                if ( internalNode->hasOverlay() &&
+                    !internalNode->isNodeDisabled() &&
+                    node->isSettingsPanelVisible() &&
+                    !node->isSettingsPanelMinimized() ) {
+                    nodes.push_back( node->getNode() );
+                }
+            } else {
+                if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
+                    !internalNode->isNodeDisabled() &&
+                    !internalNode->getParentMultiInstance() &&
+                    internalNode->isActivated() &&
+                    node->isSettingsPanelVisible() &&
+                    !node->isSettingsPanelMinimized() ) {
+                    nodes.push_back( node->getNode() );
                 }
             }
         }
+        
     }
 }
 

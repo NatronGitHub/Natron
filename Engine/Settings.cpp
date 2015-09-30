@@ -2241,6 +2241,8 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
 
     }
     
+    restoreKnobsFromSettings(knobsToRestore);
+
     for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin(); it != pluginsMap.end(); ++it) {
         if (!it->second.enabled->getValue()) {
             pluginsToIgnore.push_back(it->first);
@@ -2248,6 +2250,8 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
             _perPluginRenderScaleSupport.insert(std::make_pair(it->first->getPluginID().toStdString(), it->second.renderScaleSupport));
         }
     }
+    
+    
 }
 
 void

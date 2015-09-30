@@ -1363,7 +1363,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
         return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     } else if (pluginId == "BackDrop") {
         return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
-    } else if (pluginId == "RotoOFX  [Draw]") {
+    } else if (pluginId == "RotoOFX  [Draw]" || pluginId == PLUGINID_OFX_ROTO) {
         return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     }
     
