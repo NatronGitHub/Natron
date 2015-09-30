@@ -306,7 +306,7 @@ public:
                                    bool mustCreateMutex,
                                    int major,
                                    int minor,
-                                   bool canBeUserCreated);
+                                   bool isDeprecated);
 
     bool isNCacheFilesOpenedCapped() const;
     size_t getNCacheFilesOpened() const;

@@ -120,7 +120,7 @@ public:
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
-    void populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore);
+    void populatePluginsTab();
     
     void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 
@@ -236,7 +236,7 @@ public:
      * for the given plug-in.
      * If the plug-in ID is not valid, -1 is returned.
      **/
-    int getRenderScaleSupportPreference(const std::string& pluginID) const;
+    int getRenderScaleSupportPreference(const Natron::Plugin* p) const;
     
     
     bool notifyOnFileChange() const;
@@ -306,6 +306,8 @@ public:
     void restoreDefaultAppearance();
     
     std::string getUserStyleSheetFilePath() const;
+    
+    bool isPluginDeactivated(const Natron::Plugin* p) const;
     
 Q_SIGNALS:
     
@@ -479,7 +481,27 @@ private:
     boost::shared_ptr<KnobColor> _dopeSheetEditorScaleColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
     
-    std::map<std::string,boost::shared_ptr<KnobChoice> > _perPluginRenderScaleSupport;
+    struct PerPluginKnobs
+    {
+        boost::shared_ptr<KnobBool> enabled;
+        boost::shared_ptr<KnobChoice> renderScaleSupport;
+        
+        PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
+                       const boost::shared_ptr<KnobChoice>& renderScaleSupport)
+        : enabled(enabled)
+        , renderScaleSupport(renderScaleSupport)
+        {
+            
+        }
+        
+        PerPluginKnobs()
+        : enabled() , renderScaleSupport()
+        {
+            
+        }
+    };
+
+    std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;

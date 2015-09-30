@@ -597,7 +597,7 @@ Node::load(const std::string & parentMultiInstanceName,
    
     boost::shared_ptr<Node> thisShared = shared_from_this();
 
-    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(getPluginID());
+    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(_imp->plugin);
 
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
     std::pair<bool,EffectBuilder> func;

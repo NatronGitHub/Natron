@@ -26,7 +26,9 @@
 
 #include <QMutex>
 
+#include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/Settings.h"
 
 using namespace Natron;
 
@@ -216,6 +218,16 @@ Plugin::getOfxDesc(ContextEnum* ctx) const
     return _ofxDescriptor;
 }
 
+bool
+Plugin::getIsUserCreatable() const
+{
+    if (!_activatedSet) {
+        _activated = !appPTR->getCurrentSettings()->isPluginDeactivated(this);
+        _activatedSet = true;
+    }
+    return !_isInternalOnly && _activated;
+}
+
 void
 Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
 {
@@ -245,3 +257,4 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
         }
     }
 }
+
