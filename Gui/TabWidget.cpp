@@ -1048,6 +1048,39 @@ TabWidget::removeTab(int index,bool userAction)
         return 0;
     }
     
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
+    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    
+    int newIndex = -1;
+    if (isGraph) {
+        /*
+         If the tab is a group pane, try to find the parent group pane in this pane and set it active
+         */
+        boost::shared_ptr<NodeCollection> collect = isGraph->getGroup();
+        assert(collect);
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collect.get());
+        if (isGroup) {
+            collect = isGroup->getNode()->getGroup();
+            if (collect) {
+                
+                NodeGraph* parentGraph = 0;
+                isGroup  = dynamic_cast<NodeGroup*>(collect.get());
+                if (isGroup) {
+                    parentGraph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+                } else {
+                    parentGraph = getGui()->getNodeGraph();
+                }
+                assert(parentGraph);
+                for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
+                    if (_imp->tabs[i].first == parentGraph) {
+                        newIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
         
@@ -1057,7 +1090,13 @@ TabWidget::removeTab(int index,bool userAction)
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() > 0) {
             l.unlock();
-            makeCurrentTab((index - 1 >= 0) ? index - 1 : 0);
+            int i;
+            if (newIndex == -1) {
+                i = (index - 1 >= 0) ? index - 1 : 0;
+            } else {
+                i = newIndex;
+            }
+            makeCurrentTab(i);
             l.relock();
         } else {
             _imp->currentWidget = 0;
@@ -1072,9 +1111,7 @@ TabWidget::removeTab(int index,bool userAction)
         }
         //tab->setParent(_imp->gui);
     }
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
-    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
-    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+
     
     _imp->removeTabToPython(tab, obj->getScriptName());
     
