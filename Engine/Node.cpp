@@ -731,11 +731,13 @@ Node::load(const std::string & parentMultiInstanceName,
     
     _imp->nodeCreated = true;
     
-    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+    bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
+    
+    if (!getApp()->getProject()->isLoadingProject() && !isLoadingPyPlug) {
         refreshAllInputRelatedData(serialization.isNull());
     }
 
-    _imp->runOnNodeCreatedCB(serialization.isNull());
+    _imp->runOnNodeCreatedCB(serialization.isNull() && !isLoadingPyPlug);
     
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
@@ -1333,6 +1335,19 @@ Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerializa
         }
         
     }
+}
+
+void
+Node::loadSerializationForPyPlug(const NodeSerialization & serialization)
+{
+    loadKnobs(serialization);
+    if (!serialization.isNull() && !serialization.getUserPages().empty()) {
+        _imp->liveInstance->refreshKnobs();
+    }
+    
+    //Also restore script name/label (overwriting what is written in the PyPlug)
+    setScriptName_no_error_check(serialization.getNodeScriptName());
+    setLabel(serialization.getNodeLabel());
 }
 
 void

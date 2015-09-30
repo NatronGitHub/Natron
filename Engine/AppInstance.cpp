@@ -678,10 +678,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             node = containerNode;
         }
         if (requestedByLoad) {
-            containerNode->loadKnobs(serialization);
-            if (!serialization.isNull() && !serialization.getUserPages().empty()) {
-                containerNode->getLiveInstance()->refreshKnobs();
-            }
+            containerNode->loadSerializationForPyPlug(serialization);           
             node = containerNode;
         }
         
