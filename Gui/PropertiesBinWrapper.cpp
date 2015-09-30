@@ -32,7 +32,6 @@ PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
 : QWidget(parent)
 , PanelWidget(this,parent)
 {
-    QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*, QWidget*)));
 }
 
 PropertiesBinWrapper::~PropertiesBinWrapper()
@@ -47,30 +46,7 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
     QWidget::mousePressEvent(e);
 }
 
-static PropertiesBinWrapper* isPropertiesBinChild(QWidget* w, int recursionLevel)
-{
-    if (!w) {
-        return 0;
-    }
-    PropertiesBinWrapper* pw = dynamic_cast<PropertiesBinWrapper*>(w);
-    if (pw && recursionLevel > 0) {
-        /*
-         Do not return it if recursion is 0, otherwise the focus stealing of the mouse over will actually take click focus
-         */
-        return pw;
-    }
-    return isPropertiesBinChild(w->parentWidget(), recursionLevel + 1);
-}
 
-void
-PropertiesBinWrapper::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
-{
-    PropertiesBinWrapper* pw = isPropertiesBinChild(newFocus,0);
-    if (pw) {
-        assert(pw == this);
-        takeClickFocus();
-    }
-}
 
 void
 PropertiesBinWrapper::enterEvent(QEvent* e)

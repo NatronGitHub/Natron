@@ -916,3 +916,27 @@ Gui::getCurrentPanelFocus() const
     assert(QThread::currentThread() == qApp->thread());
     return _imp->currentPanelFocus;
 }
+
+static PanelWidget* isPaneChild(QWidget* w, int recursionLevel)
+{
+    if (!w) {
+        return 0;
+    }
+    PanelWidget* pw = dynamic_cast<PanelWidget*>(w);
+    if (pw && recursionLevel > 0) {
+        /*
+         Do not return it if recursion is 0, otherwise the focus stealing of the mouse over will actually take click focus
+         */
+        return pw;
+    }
+    return isPaneChild(w->parentWidget(), recursionLevel + 1);
+}
+
+void
+Gui::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
+{
+    PanelWidget* pw = isPaneChild(newFocus,0);
+    if (pw) {
+        pw->takeClickFocus();
+    }
+}

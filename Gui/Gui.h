@@ -720,6 +720,9 @@ public Q_SLOTS:
     
     void onRenderProgressDialogFinished();
     
+    void onFocusChanged(QWidget* old, QWidget*);
+
+    
 private:
 
     
