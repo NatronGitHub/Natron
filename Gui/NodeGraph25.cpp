@@ -177,7 +177,7 @@ NodeGraph::event(QEvent* e)
             QObject::connect( nodeCreation,SIGNAL( rejected() ),this,SLOT( onNodeCreationDialogFinished() ) );
             nodeCreation->show();
 
-
+            takeClickFocus();
             ke->accept();
 
             return true;
