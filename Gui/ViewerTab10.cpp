@@ -678,7 +678,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         connectToInput(8);
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectToInput(9);
-    } if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         _imp->viewer->toggleOverlays();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
         _imp->viewer->toggleWipe();
