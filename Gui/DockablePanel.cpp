@@ -432,11 +432,12 @@ DockablePanel::DockablePanel(Gui* gui ,
         tabWidget->getTabBar()->setObjectName("DockablePanelTabWidget");
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     }
+    QObject::connect(_imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)));
     _imp->_horizLayout->addWidget(_imp->_tabWidget);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
-        _imp->addPage(NULL,defaultPageName);
+        _imp->getOrCreatePage(NULL);
     }
 }
 
@@ -461,6 +462,36 @@ DockablePanel::~DockablePanel()
 }
 
 void
+DockablePanel::onPageIndexChanged(int index)
+{
+    assert(_imp->_tabWidget);
+    QString name = _imp->_tabWidget->tabText(index);
+    PageMap::iterator found = _imp->_pages.find(name);
+    if (found == _imp->_pages.end()) {
+        return;
+    }
+    
+    std::string stdName = name.toStdString();
+    
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        if (!isPage) {
+            continue;
+        }
+        if (isPage->getDescription() == stdName) {
+            isPage->setSecret(false);
+        } else {
+            isPage->setSecret(true);
+        }
+    }
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    if (isEffect && isEffect->getNode()->hasOverlay()) {
+        isEffect->getApp()->redrawAllViewers();
+    }
+}
+
+void
 DockablePanel::turnOffPages()
 {
     _imp->_pagesEnabled = false;
@@ -469,7 +500,7 @@ DockablePanel::turnOffPages()
     setFrameShape(QFrame::NoFrame);
     
     boost::shared_ptr<KnobPage> userPage = _imp->_holder->getOrCreateUserPageKnob();
-    _imp->addPage(userPage.get(), userPage->getDescription().c_str());
+    _imp->getOrCreatePage(userPage.get());
     
 }
 

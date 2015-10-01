@@ -786,6 +786,11 @@ public:
      **/
     virtual bool getIsSecret() const = 0;
     virtual bool getDefaultIsSecret() const = 0;
+    
+    /**
+     * @brief Returns true if a knob is secret because it is either itself secret or one of its parent, recursively
+     **/
+    virtual bool getIsSecretRecursive() const = 0;
 
     /**
      * @biref This is called to notify the gui that the knob shouldn't be editable.
@@ -1192,6 +1197,7 @@ public:
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual void setSecretByDefault(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;

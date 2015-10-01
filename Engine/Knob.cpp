@@ -2272,6 +2272,19 @@ KnobHelper::getIsSecret() const
 }
 
 bool
+KnobHelper::getIsSecretRecursive() const
+{
+    if (getIsSecret()) {
+        return true;
+    }
+    boost::shared_ptr<KnobI> parent = getParentKnob();
+    if (parent) {
+        return parent->getIsSecretRecursive();
+    }
+    return false;
+}
+
+bool
 KnobHelper::getDefaultIsSecret() const
 {
     QMutexLocker k(&_imp->stateMutex);

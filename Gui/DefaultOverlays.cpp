@@ -27,6 +27,8 @@
 #include <list>
 #include <cmath>
 
+#include <boost/weak_ptr.hpp>
+
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/GuiApplicationManager.h"
@@ -57,7 +59,7 @@ enum PositionInteractState
 
 struct PositionInteract
 {
-    boost::shared_ptr<KnobDouble> param;
+    boost::weak_ptr<KnobDouble> param;
     QPointF dragPos;
     PositionInteractState state;
     
@@ -136,7 +138,7 @@ DefaultOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
     assert(QThread::currentThread() == qApp->thread());
     
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param == position) {
+        if (it->param.lock() == position) {
             return false;
         }
     }
@@ -171,6 +173,15 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
     QFont font(appFont,appFontSize);
     QFontMetrics fm(font);
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        
+        boost::shared_ptr<KnobDouble> knob = it->param.lock();
+        if (!knob) {
+            continue;
+        }
+        if (knob->getIsSecretRecursive()) {
+            continue;
+        }
+    
         
         float pR = 1.f;
         float pG = 1.f;
