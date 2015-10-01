@@ -614,7 +614,7 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;
     }
-    
+
     PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
     
     if (firstFrame == lastFrame) {
@@ -747,7 +747,6 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,bool* enableRe
         
         int ret = _imp->framesToRender.front();
         _imp->framesToRender.pop_front();
-        
         ///Flag the thread as active
         {
             QMutexLocker l(&_imp->renderThreadsMutex);
@@ -843,7 +842,6 @@ OutputSchedulerThread::startRender()
     
     
     Natron::SchedulingPolicyEnum policy = getSchedulingPolicy();
-    
     if (policy == Natron::eSchedulingPolicyFFA) {
         
         
@@ -963,7 +961,6 @@ OutputSchedulerThread::stopRender()
         
     }
     
-    
     {
         QMutexLocker l(&_imp->startRequestsMutex);
         while (_imp->startRequests <= 0) {
@@ -1003,6 +1000,7 @@ OutputSchedulerThread::run()
                 bufferEmpty = _imp->buf.empty();
             }
             
+            int expectedTimeToRender;
             while (!bufferEmpty) {
                 
                 if ( _imp->checkForExit() ) {
@@ -1020,7 +1018,7 @@ OutputSchedulerThread::run()
                     }
                 }
                 
-                int expectedTimeToRender = timelineGetTime();
+                expectedTimeToRender = timelineGetTime();
                 
                 BufferedFrames framesToRender;
                 {
@@ -1171,9 +1169,11 @@ OutputSchedulerThread::run()
             }
             if (!renderFinished && !isAbortRequested) {
                 
-                    QMutexLocker bufLocker (&_imp->bufMutex);
-                    ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
+                QMutexLocker bufLocker (&_imp->bufMutex);
+                ///Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
+                if (_imp->buf.empty()) {
                     _imp->bufCondition.wait(&_imp->bufMutex);
+                }
             } else {
                 if (blocking) {
                     //Move the timeline to the last rendered frame to keep it in sync with what is displayed
@@ -1181,7 +1181,7 @@ OutputSchedulerThread::run()
                 }
                 break;
             }
-        }
+        } // for (;;)
         
          stopRender();
         
