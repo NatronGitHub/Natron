@@ -1563,7 +1563,7 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
                 _imp->runningCallbackCond.wakeAll();
             }
             
-        }
+        } // QMutexLocker l2(&_imp->processMutex);
         ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
         ///that will not be processed anyway because the first thing it does is checking for abort
         {
@@ -2468,8 +2468,10 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
             assert(params);
             _viewer->updateViewer(params);
         }
+        _viewer->redrawViewerNow();
+    } else {
+        _viewer->redrawViewer();
     }
-    _viewer->redrawViewer();
     
 }
 

@@ -103,7 +103,7 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on the attached viewer*/
+    /*Calls update() on the attached viewer*/
     virtual OfxStatus redraw() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// hooks to kOfxInteractPropViewportSize in the property set
@@ -269,7 +269,7 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on all viewers*/
+    /*Calls update() on all viewers*/
     virtual OfxStatus redraw();
 
 

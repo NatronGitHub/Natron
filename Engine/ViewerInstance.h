@@ -269,6 +269,8 @@ public Q_SLOTS:
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
      **/
     void redrawViewer();
+    
+    void redrawViewerNow();
 
   
     void executeDisconnectTextureRequestOnMainThread(int index);

@@ -3299,6 +3299,14 @@ ViewerGL::redraw()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    update();
+}
+
+void
+ViewerGL::redrawNow()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
     updateGL();
 }
 

@@ -2708,6 +2708,14 @@ ViewerInstance::redrawViewer()
     _imp->uiContext->redraw();
 }
 
+void
+ViewerInstance::redrawViewerNow()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert(_imp->uiContext);
+    _imp->uiContext->redrawNow();
+}
 
 int
 ViewerInstance::getLutType() const

@@ -156,7 +156,7 @@ CurveWidget::addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    //updateGL(); //force initializeGL to be called if it wasn't before.
+    //update(); //force initializeGL to be called if it wasn't before.
     _imp->_curves.push_back(curve);
     curve->setColor(_imp->_nextCurveAddedColor);
     _imp->_nextCurveAddedColor.setHsv( _imp->_nextCurveAddedColor.hsvHue() + 60,
@@ -666,7 +666,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // no need to set _imp->_lastMousePos
         // no need to set _imp->_dragStartPoint
 
-        // no need to updateGL()
+        // no need to update()
         e->accept();
         return;
     }
@@ -724,7 +724,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_dragStartPoint = e->pos();
         // no need to set _imp->_dragStartPoint
 
-        // no need to updateGL()
+        // no need to update()
         return;
     } else if (((e->buttons() & Qt::MiddleButton) &&
                 (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
@@ -768,7 +768,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
             _imp->_lastMousePos = e->pos();
-            //no need to updateGL()
+            //no need to update()
             return;
         }
     }
@@ -836,7 +836,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateDraggingTimeline;
         _imp->_lastMousePos = e->pos();
         // no need to set _imp->_dragStartPoint
-        // no need to updateGL()
+        // no need to update()
         return;
     }
 
@@ -1542,7 +1542,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
 
         return;
     }
-    //this function will call updateGL() for us
+    //this function will call update() for us
     pushUndoCommand( new AddKeysCommand(this,curve, _imp->_keyFramesClipBoard) );
 }
 

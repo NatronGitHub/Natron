@@ -155,7 +155,7 @@ CustomParamInteract::swapOpenGLBuffers()
 void
 CustomParamInteract::redraw()
 {
-    updateGL();
+    update();
 }
 
 void

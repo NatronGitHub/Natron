@@ -296,9 +296,14 @@ public:
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
 
     /**
-     * @brief Repaint
+     * @brief update()
      **/
     virtual void redraw() OVERRIDE FINAL;
+    
+    /**
+     * @brief updateGL();
+     **/
+    virtual void redrawNow() OVERRIDE FINAL;
 
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
