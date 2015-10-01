@@ -103,7 +103,9 @@ private:
 struct PyPanelPrivate;
 class PyPanel : public QWidget, public UserParamHolder, public PanelWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
