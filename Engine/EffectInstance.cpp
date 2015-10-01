@@ -2520,6 +2520,12 @@ EffectInstance::setPersistentMessage(Natron::MessageTypeEnum type,
     getNode()->setPersistentMessage(type, content);
 }
 
+bool
+EffectInstance::hasPersistentMessage()
+{
+    return getNode()->hasPersistentMessage();
+}
+
 void
 EffectInstance::clearPersistentMessage(bool recurse)
 {
@@ -3165,7 +3171,9 @@ EffectInstance::getFramesNeeded_public(U64 hash,
     try {
         framesNeeded = getFramesNeeded(time, view);
     } catch (std::exception &e) {
-        setPersistentMessage(Natron::eMessageTypeError, e.what());
+        if (!hasPersistentMessage()) { // plugin may already have set a message
+            setPersistentMessage(Natron::eMessageTypeError, e.what());
+        }
     }
     _imp->actionsCache.setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
 

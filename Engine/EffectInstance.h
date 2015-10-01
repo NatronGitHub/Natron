@@ -1089,6 +1089,11 @@ public:
     void setPersistentMessage(Natron::MessageTypeEnum type, const std::string & content);
 
     /**
+     * @brief Test if a persistent message is set.
+     **/
+    bool hasPersistentMessage();
+
+    /**
      * @brief Clears any message posted previously by setPersistentMessage.
      **/
     void clearPersistentMessage(bool recurse);
