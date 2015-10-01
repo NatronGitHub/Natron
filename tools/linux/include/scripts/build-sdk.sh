@@ -927,7 +927,7 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
         QT_CONF="-no-openssl -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
     else
         QT_TAR=$QT4_TAR
-        QT_CONF="-no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+        QT_CONF="-xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
     fi
 
     if [ ! -f $SRC_PATH/$QT_TAR ]; then
