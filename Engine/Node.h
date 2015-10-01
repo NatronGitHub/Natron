@@ -132,12 +132,7 @@ public:
               const QString& fixedName,
               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
     
-    
-    /*
-     * @brief To be called on all nodes inside a PyPlug and the group node itself to load remaining user changes made on top of
-     * the default configuration that is coded in the Python script. This may for example include
-     */
-    void loadSerializationForPyPlug(const NodeSerialization & serialization);
+
 
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
@@ -1014,6 +1009,9 @@ public:
     void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
     void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
+    
+    bool hasPyPlugBeenEdited() const;
+    void setPyPlugEdited(bool edited);
     
     std::string getPluginPythonModule() const;
     

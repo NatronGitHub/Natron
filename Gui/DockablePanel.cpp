@@ -695,6 +695,17 @@ DockablePanel::initializeKnobsInternal()
 
     initializeExtraGui(_imp->_mainLayout);
     
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (isNodePanel) {
+        boost::shared_ptr<NodeCollection> collec = isNodePanel->getNode()->getNode()->getGroup();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collec.get());
+        if (isGroup) {
+            if (!isGroup->getNode()->hasPyPlugBeenEdited()) {
+                setEnabled(false);
+            }
+        }
+    }
+    
 }
 
 void
@@ -1473,9 +1484,9 @@ DockablePanel::onCenterButtonClicked()
 }
 
 void
-DockablePanel::onSubGraphEditionChanged(bool editable)
+DockablePanel::onSubGraphEditionChanged(bool /*editable*/)
 {
-    _imp->_enterInGroupButton->setVisible(editable);
+   // _imp->_enterInGroupButton->setVisible(editable);
 }
 
 void

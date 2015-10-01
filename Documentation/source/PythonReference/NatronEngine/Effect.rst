@@ -473,5 +473,7 @@ should not be used.
 Can be called to disable editing of the group via Natron's graphical user interface.
 This is handy to prevent users from accidentally breaking the sub-graph. 
 This can always be reverted by editing the python script associated.
+The user will still be able to see the internal node graph but will not be able to
+unlock it.
 
 

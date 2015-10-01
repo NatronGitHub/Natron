@@ -635,18 +635,30 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     {
         FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
         
-        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                 "",
-                                 -1,-1,
-                                 true, //< autoconnect
-                                 INT_MIN,INT_MIN,
-                                 true, //< push undo/redo command
-                                 true, // add to project
-                                 true,
-                                 QString(),
-                                 CreateNodeArgs::DefaultValuesList(),
-                                 group);
-        NodePtr containerNode = createNode(groupArgs);
+        NodePtr containerNode;
+        if (!requestedByLoad) {
+            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                     "",
+                                     -1,-1,
+                                     true, //< autoconnect
+                                     INT_MIN,INT_MIN,
+                                     true, //< push undo/redo command
+                                     true, // add to project
+                                     true,
+                                     QString(),
+                                     CreateNodeArgs::DefaultValuesList(),
+                                     group);
+            containerNode = createNode(groupArgs);
+        } else {
+            
+            LoadNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                   "",
+                                   -1,-1,
+                                   &serialization,
+                                   false,
+                                   group);
+            containerNode = loadNode(groupArgs);
+        }
         if (!containerNode) {
             return containerNode;
         }
@@ -677,14 +689,11 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             }
             node = containerNode;
         }
-        if (requestedByLoad) {
-            containerNode->loadSerializationForPyPlug(serialization);           
-            node = containerNode;
-        }
         
         if (!moduleName.isEmpty()) {
             setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
+     
         
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     

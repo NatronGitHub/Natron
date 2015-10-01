@@ -228,8 +228,12 @@ struct NodeGraphPrivate
     
     ViewerTab* lastSelectedViewer;
     
+    QPixmap unlockIcon;
+    
     NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
+    
+    QPoint getPyPlugUnlockPos() const;
     
     void resetAllClipboards();
 

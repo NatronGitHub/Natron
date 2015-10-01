@@ -88,6 +88,13 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _hasMovedOnce(false)
 , lastSelectedViewer(0)
 {
+    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &unlockIcon);
+}
+
+QPoint
+NodeGraphPrivate::getPyPlugUnlockPos() const
+{
+    return QPoint(_publicInterface->width() - unlockIcon.width() - 10,   10);
 }
 
 void

@@ -131,7 +131,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         
         if (modCASIsShift(e)) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-            if (isGrp && isGrp->isSubGraphEditable()) {
+            if (isGrp) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
                 NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
@@ -232,6 +232,19 @@ NodeGraph::onNodeCreationDialogFinished()
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    bool isGroupEditable = true;
+    bool groupEdited = true;
+    if (isGroup) {
+        isGroupEditable = isGroup->isSubGraphEditable();
+        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+    }
+    
+    if (!groupEdited) {
+        return;
+    }
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 

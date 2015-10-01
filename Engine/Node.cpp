@@ -258,6 +258,7 @@ struct Node::Implementation
     , pluginPythonModuleMutex()
     , pluginPythonModule()
     , pluginPythonModuleVersion(0)
+    , pyplugChangedSinceScript(false)
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
@@ -474,6 +475,9 @@ struct Node::Implementation
     std::string pluginPythonModule;
     unsigned int pluginPythonModuleVersion;
     
+    //Set to true when the user has edited a PyPlug
+    bool pyplugChangedSinceScript;
+    
     bool nodeCreated;
     
     mutable QMutex createdComponentsMutex;
@@ -607,17 +611,7 @@ Node::load(const std::string & parentMultiInstanceName,
     bool isFileDialogPreviewReader = fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
-    if (!serialization.isNull()) {
-        {
-            QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization.getCacheID();
-        }
-        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
-            setScriptName_no_error_check(serialization.getNodeScriptName());
-            setLabel(serialization.getNodeLabel());
-            nameSet = true;
-        }
-    }
+   
 
     bool hasUsedFileDialog = false;
     if (func.first) {
@@ -674,7 +668,17 @@ Node::load(const std::string & parentMultiInstanceName,
         _imp->isMultiInstance = true;
     }
     
-    
+    if (!serialization.isNull()) {
+        {
+            QMutexLocker k(&_imp->nameMutex);
+            _imp->cacheID = serialization.getCacheID();
+        }
+        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
+            setScriptName_no_error_check(serialization.getNodeScriptName());
+            setLabel(serialization.getNodeLabel());
+            nameSet = true;
+        }
+    }
     
     if (!nameSet) {
         if (fixedName.isEmpty()) {
@@ -1335,19 +1339,6 @@ Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerializa
         }
         
     }
-}
-
-void
-Node::loadSerializationForPyPlug(const NodeSerialization & serialization)
-{
-    loadKnobs(serialization);
-    if (!serialization.isNull() && !serialization.getUserPages().empty()) {
-        _imp->liveInstance->refreshKnobs();
-    }
-    
-    //Also restore script name/label (overwriting what is written in the PyPlug)
-    setScriptName_no_error_check(serialization.getNodeScriptName());
-    setLabel(serialization.getNodeLabel());
 }
 
 void
@@ -5735,6 +5726,20 @@ Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::stri
     }
     nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);
 
+}
+
+bool
+Node::hasPyPlugBeenEdited() const
+{
+    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    return _imp->pyplugChangedSinceScript || _imp->pluginPythonModule.empty();
+}
+
+void
+Node::setPyPlugEdited(bool edited)
+{
+    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    _imp->pyplugChangedSinceScript = edited;
 }
 
 void

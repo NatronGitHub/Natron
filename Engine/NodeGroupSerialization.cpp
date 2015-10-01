@@ -216,9 +216,6 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             ///We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
             ///load their serialization
             n = group->getNodeByName((*it)->getNodeScriptName());
-            if (n) {
-                n->loadSerializationForPyPlug(**it);
-            }
         }
         
         int majorVersion,minorVersion;

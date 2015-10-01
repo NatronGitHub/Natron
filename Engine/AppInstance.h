@@ -217,7 +217,6 @@ public:
 
     ///Same as createNode but used when loading a project
     boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs & args);
-
   
     boost::shared_ptr<Natron::Node> getNodeByFullySpecifiedName(const std::string & name) const;
     

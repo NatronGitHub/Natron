@@ -283,6 +283,18 @@ NodeGraph::paintEvent(QPaintEvent* e)
     if (app && app->getProject()->isLoadingProjectInternal()) {
         return;
     }
+    
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    bool isGroupEditable = true;
+    bool groupEdited = true;
+    if (isGroup) {
+        isGroupEditable = isGroup->isSubGraphEditable();
+        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+    }
+    
+    bool drawLockedMode = !isGroupEditable || !groupEdited;
+    
     if (_imp->_refreshOverlays) {
         ///The visible portion of the scene, in scene coordinates
         QRectF visibleScene = visibleSceneRect();
@@ -302,6 +314,31 @@ NodeGraph::paintEvent(QPaintEvent* e)
         _imp->_refreshOverlays = false;
     }
     QGraphicsView::paintEvent(e);
+    
+    if (drawLockedMode) {
+        ///Show a semi-opaque forground indicating the PyPlug has not been edited
+        QPainter p(this);
+        p.setBrush(QColor(120,120,120));
+        p.setOpacity(0.7);
+        p.drawRect(rect());
+        
+        if (isGroupEditable) {
+            ///Draw the unlock icon
+            QPoint pixPos = _imp->getPyPlugUnlockPos();
+            int pixW = _imp->unlockIcon.width();
+            int pixH = _imp->unlockIcon.height();
+            QRect pixRect(pixPos.x(),pixPos.y(),pixW,pixH);
+            pixRect.adjust(-2, -2, 2, 2);
+            QRect selRect(pixPos.x(),pixPos.y(),pixW,pixH);
+            pixRect.adjust(-3, -3, 3, 3);
+            p.setBrush(QColor(243,137,0));
+            p.setOpacity(1.);
+            p.drawRoundedRect(selRect,5,5);
+            p.setBrush(QColor(50,50,50));
+            p.drawRoundedRect(pixRect,5,5);
+            p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
+        }
+    }
 }
 
 QRectF
