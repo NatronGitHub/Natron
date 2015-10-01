@@ -216,9 +216,10 @@ mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
   ln -sf ../../../lib/libgomp.so.1 .
 )
 
-mkdir -p $CLIBS_PATH/data/share/etc || exit 1
-cp -a $INSTALL_PATH/etc/fonts $CLIBS_PATH/data/share/etc/ || exit 1
-sed -i "s#${SDK_PATH}/Natron-${SDK_VERSION}/#/#" $CLIBS_PATH/data/share/etc/fonts/fonts.conf || exit 1
+mkdir -p $CLIBS_PATH/data/share/etc/fonts/conf.d || exit 1
+cp $INSTALL_PATH/etc/fonts/fonts.conf $CLIBS_PATH/data/share/etc/fonts/ || exit 1
+cp $INSTALL_PATH/share/fontconfig/conf.avail/* $CLIBS_PATH/data/share/etc/fonts/conf.d/ || exit 1
+sed -i "s#${SDK_PATH}/Natron-${SDK_VERSION}/#/#;/conf.d/d" $CLIBS_PATH/data/share/etc/fonts/fonts.conf || exit 1
 (cd $CLIBS_PATH/data ; ln -sf share Resources )
 
 # TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
