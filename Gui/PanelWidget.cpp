@@ -26,6 +26,7 @@
 #include <cassert>
 
 #include "Gui/TabWidget.h"
+#include "Gui/Gui.h"
 
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
