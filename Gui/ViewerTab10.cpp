@@ -403,7 +403,7 @@ ViewerTab::centerViewer()
     if ( _imp->viewer->displayingImage() ) {
         _imp->viewerNode->renderCurrentFrame(false);
     } else {
-        _imp->viewer->updateGL();
+        _imp->viewer->update();
     }
 }
 

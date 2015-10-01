@@ -706,8 +706,8 @@ ViewerTab::setTurboButtonDown(bool down)
 void 
 ViewerTab::redrawGLWidgets()
 {
-	_imp->viewer->updateGL();
-	_imp->timeLineGui->updateGL();
+	_imp->viewer->update();
+	_imp->timeLineGui->update();
 }
 
 void

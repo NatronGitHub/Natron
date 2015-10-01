@@ -744,7 +744,7 @@ ViewerTab::onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperato
         _imp->infoWidget[1]->show();
     }
     
-    _imp->viewer->updateGL();
+    _imp->viewer->update();
 }
 
 void

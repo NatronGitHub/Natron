@@ -165,12 +165,12 @@ Gui::onPropertiesScrolled()
             (*it)->redrawGLWidgets();
         }
     }
-    _imp->_curveEditor->getCurveWidget()->updateGL();
+    _imp->_curveEditor->getCurveWidget()->update();
 
     {
         QMutexLocker k (&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->updateGL();
+            (*it)->update();
         }
     }
 #endif

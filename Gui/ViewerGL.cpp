@@ -213,7 +213,7 @@ ViewerGL::resizeGL(int w,
         if (!_imp->persistentMessages.empty()) {
             updatePersistentMessageToWidth(w - 20);
         } else {
-            updateGL();
+            update();
         }
     }
 }
@@ -2822,7 +2822,7 @@ ViewerGL::clearViewer()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->activeTextures[0] = 0;
     _imp->activeTextures[1] = 0;
-    updateGL();
+    update();
 }
 
 /*overload of QT enter/leave/resize events*/
