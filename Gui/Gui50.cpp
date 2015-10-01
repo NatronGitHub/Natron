@@ -709,7 +709,12 @@ Gui::onPrevTabTriggered()
     
     if (t) {
         t->moveToPreviousTab();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
+    
 
 }
 
@@ -720,6 +725,10 @@ Gui::onNextTabTriggered()
 
     if (t) {
         t->moveToNextTab();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
 }
 
@@ -730,6 +739,10 @@ Gui::onCloseTabTriggered()
 
     if (t) {
         t->closeCurrentWidget();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
 }
 
