@@ -813,6 +813,10 @@ DockablePanel::setClosedInternal(bool c)
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
+        
+        nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(getGui()->getApp()->getTimeLine()->currentFrame());
+        
+        
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
         boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();

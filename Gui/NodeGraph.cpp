@@ -176,13 +176,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     _imp->_menu = new Natron::Menu(this);
-    //_imp->_menu->setFont( QFont(appFont,appFontSize) );
     
-    if (!isGrp) {
-        boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
-        QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
-        QObject::connect( timeline.get(),SIGNAL( frameAboutToChange() ), this,SLOT( onTimelineTimeAboutToChange() ) );
-    }
 }
 
 NodeGraph::~NodeGraph()

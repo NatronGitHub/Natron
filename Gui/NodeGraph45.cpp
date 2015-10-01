@@ -137,59 +137,6 @@ NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
 }
 
 void
-NodeGraph::onTimelineTimeAboutToChange()
-{
-    assert(QThread::currentThread() == qApp->thread());
-    _imp->wasLaskUserSeekDuringPlayback = false;
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
-        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,true);
-    }
-}
-
-void
-NodeGraph::onTimeChanged(SequenceTime time,
-                         int reason)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    std::vector<ViewerInstance* > viewers;
-
-    if (!getGui()) {
-        return;
-    }
-    boost::shared_ptr<Natron::Project> project = getGui()->getApp()->getProject();
-
-    ///Refresh all knobs at the current time
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
-        if (isViewer) {
-            viewers.push_back(isViewer);
-        }
-        (*it)->refreshKnobsAfterTimeChange(time);
-    }
-    
-    ViewerInstance* leadViewer = getGui()->getApp()->getLastViewerUsingTimeline();
-
-    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
-    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
-    reason == eTimelineChangeReasonCurveEditorSeek;
-    
-    bool startPlayback = isUserEdited && _imp->wasLaskUserSeekDuringPlayback;
-    
-    ///Syncrhronize viewers
-    for (U32 i = 0; i < viewers.size(); ++i) {
-        if (!startPlayback) {
-            if (viewers[i] != leadViewer || isUserEdited) {
-                viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
-            }
-        } else {
-            viewers[i]->renderFromCurrentFrameUsingCurrentDirection(getGui()->getApp()->isRenderStatsActionChecked());
-        }
-    }
-}
-
-void
 NodeGraph::onGuiFrozenChanged(bool frozen)
 {
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {

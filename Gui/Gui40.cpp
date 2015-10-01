@@ -65,6 +65,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/NodeSettingsPanel.h"
 
 
 using namespace Natron;
@@ -842,3 +843,40 @@ Gui::onEnableRenderStatsActionTriggered()
         _imp->statsDialog->show();
     }
 }
+
+void
+Gui::onTimeChanged(SequenceTime time,
+                         int reason)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    boost::shared_ptr<Natron::Project> project = getApp()->getProject();
+    
+    ///Refresh all visible knobs at the current time
+    if (!getApp()->isGuiFrozen()) {
+        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
+            NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+            if (nodePanel) {
+                nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(time);
+            }
+        }
+    }
+
+    
+    ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
+    
+    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
+    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
+    reason == eTimelineChangeReasonCurveEditorSeek;
+    
+    
+
+    const std::list<ViewerTab*>& viewers = getViewersList();
+    ///Syncrhronize viewers
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end();++it) {
+        if ((*it)->getInternalNode() != leadViewer || isUserEdited) {
+            (*it)->getInternalNode()->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+        }
+    }
+}
+

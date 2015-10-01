@@ -921,6 +921,7 @@ OutputSchedulerThread::stopRender()
         QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
         _imp->abortBeingProcessed = true;
         
+        
         bool wasAborted;
         {
             QMutexLocker l(&_imp->abortedRequestedMutex);
@@ -928,6 +929,26 @@ OutputSchedulerThread::stopRender()
             
             ///reset back the abort flag
             _imp->abortRequested = 0;
+            
+            
+            ///Clear any frames that were processed ahead
+            {
+                QMutexLocker l2(&_imp->bufMutex);
+                _imp->clearBuffer();
+            }
+            
+            ///Notify everyone that the render is finished
+            _imp->engine->s_renderFinished(wasAborted ? 1 : 0);
+            
+            onRenderStopped(wasAborted);
+            
+            ///Flag that we're no longer doing work
+            {
+                QMutexLocker l(&_imp->workingMutex);
+                _imp->working = false;
+            }
+            
+            
             
             {
                 QMutexLocker k(&_imp->abortFlagMutex);
@@ -937,22 +958,7 @@ OutputSchedulerThread::stopRender()
             _imp->abortedRequestedCondition.wakeAll();
         }
         
-        ///Flag that we're no longer doing work
-        {
-            QMutexLocker l(&_imp->workingMutex);
-            _imp->working = false;
-        }
-        
-        ///Clear any frames that were processed ahead
-        {
-            QMutexLocker l2(&_imp->bufMutex);
-            _imp->clearBuffer();
-        }
-        
-        ///Notify everyone that the render is finished
-        _imp->engine->s_renderFinished(wasAborted ? 1 : 0);
-        
-        onRenderStopped(wasAborted);
+      
 
         
     }

@@ -2603,12 +2603,16 @@ void
 KnobHelper::setAnimationLevel(int dimension,
                               Natron::AnimationLevelEnum level)
 {
+    bool changed = false;
     {
         QMutexLocker l(&_imp->animationLevelMutex);
         assert( dimension < (int)_imp->animationLevel.size() );
-        _imp->animationLevel[dimension] = level;
+        if (_imp->animationLevel[dimension] != level) {
+            changed = true;
+            _imp->animationLevel[dimension] = level;
+        }
     }
-    if ( _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
+    if ( changed && _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
         if (getExpression(dimension).empty()) {
             _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
         }

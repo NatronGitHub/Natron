@@ -299,7 +299,7 @@ EffectInstance::getRenderHash() const
     if ( !_imp->frameRenderArgs.hasLocalData() ) {
         return getHash();
     } else {
-        ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
+        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
         if (!args.validArgs) {
             return getHash();
         } else {
@@ -319,7 +319,7 @@ EffectInstance::aborted() const
         ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
         return false;
     } else {
-        ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
+        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
         if (!args.validArgs) {
             ///No valid args, probably not rendering
             return false;
@@ -642,7 +642,7 @@ EffectInstance::getImage(int inputNb,
         }
     } else {
         RenderArgs & renderArgs = _imp->renderArgs.localData();
-        ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
+        const ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
 
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
             if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {

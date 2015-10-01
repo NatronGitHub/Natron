@@ -87,7 +87,6 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _deltaSinceMousePress(0,0)
 , _hasMovedOnce(false)
 , lastSelectedViewer(0)
-, wasLaskUserSeekDuringPlayback(false)
 {
 }
 

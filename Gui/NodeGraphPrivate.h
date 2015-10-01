@@ -227,7 +227,6 @@ struct NodeGraphPrivate
     bool _hasMovedOnce;
     
     ViewerTab* lastSelectedViewer;
-    bool wasLaskUserSeekDuringPlayback;
     
     NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
