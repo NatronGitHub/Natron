@@ -140,7 +140,7 @@ Gui::setupUi()
     
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
     QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
-
+    QObject::connect( timeline.get(),SIGNAL( frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
 
     /*Searches recursively for all child objects of the given object,
        and connects matching signals from them to slots of object that follow the following form:

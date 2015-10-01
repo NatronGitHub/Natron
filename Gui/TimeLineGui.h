@@ -161,7 +161,6 @@ private:
 
 Q_SIGNALS:
 
-    void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);
 
 private:

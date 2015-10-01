@@ -207,16 +207,11 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
 
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-    
-    
-    //connect the gui to the internal timeline
-    QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
     
     QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
 
@@ -670,8 +665,12 @@ TimeLineGui::renderText(double x,
 
 void
 TimeLineGui::onFrameChanged(SequenceTime,
-                            int)
+                            int reason)
 {
+    Natron::TimelineChangeReasonEnum r = (Natron::TimelineChangeReasonEnum)reason;
+    if (r == eTimelineChangeReasonUserSeek) {
+        return;
+    }
     update();
 }
 
@@ -680,7 +679,7 @@ TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-        Q_EMIT frameChanged(time);
+        _imp->timeline->onFrameChanged(time);
         update();
     }
 }
@@ -746,7 +745,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         if ( tseq != _imp->timeline->currentFrame() ) {
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-            Q_EMIT frameChanged(tseq);
+            _imp->timeline->onFrameChanged(tseq);
         }
         distortViewPort = true;
         _imp->alphaCursor = false;
@@ -860,7 +859,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             if ( (tseq != _imp->timeline->currentFrame()) ) {
 
                 _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-                Q_EMIT frameChanged(tseq);
+                _imp->timeline->onFrameChanged(tseq);
             }
 
         } else if (autoProxyEnabled && wasScrubbing) {

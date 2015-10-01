@@ -146,6 +146,11 @@ struct ProducedFrame
     bool processRequest;
 };
 
+static bool isBufferFull(int nbBufferedElement, int hardwardIdealThreadCount)
+{
+    return nbBufferedElement >= hardwardIdealThreadCount * 3;
+}
+
 struct OutputSchedulerThreadPrivate
 {
     
@@ -616,7 +621,6 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
     }
 
     PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
-    
     if (firstFrame == lastFrame) {
         _imp->framesToRender.push_back(startingFrame);
         _imp->lastFramePushedIndex = startingFrame;
@@ -721,7 +725,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,bool* enableRe
     bool bufferFull;
     {
         QMutexLocker k(&_imp->bufMutex);
-        bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+        bufferFull = isBufferFull((int)_imp->buf.size(),nbThreadsHardware);
     }
     
     QMutexLocker l(&_imp->framesToRenderMutex);
@@ -732,11 +736,11 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,bool* enableRe
         
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
-        
         {
             QMutexLocker k(&_imp->bufMutex);
-            bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+            bufferFull = isBufferFull((int)_imp->buf.size(),nbThreadsHardware);
         }
+        
     }
     
    
@@ -867,7 +871,6 @@ OutputSchedulerThread::startRender()
                 return;
             }
         }
-        
         ///Push as many frames as there are threads
         pushFramesToRender(startingFrame,nThreads);
     }
@@ -1001,6 +1004,9 @@ OutputSchedulerThread::run()
             }
             
             int expectedTimeToRender;
+            bool isAbortRequested;
+            bool blocking;
+            
             while (!bufferEmpty) {
                 
                 if ( _imp->checkForExit() ) {
@@ -1092,6 +1098,14 @@ OutputSchedulerThread::run()
                 }
                 
                 
+                {
+                    QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
+                    isAbortRequested = _imp->abortRequested > 0;
+                    blocking = _imp->isAbortRequestBlocking;
+                }
+                if (isAbortRequested) {
+                    break;
+                }
                 
                 if (_imp->mode == eProcessFrameBySchedulerThread) {
                     processFrame(framesToRender);
@@ -1160,13 +1174,14 @@ OutputSchedulerThread::run()
                 
             } // while(!bufferEmpty)
             
-            bool isAbortRequested;
-            bool blocking;
+            ///Refresh the abort requested flag because the abort might have got called in between
             {
                 QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
                 isAbortRequested = _imp->abortRequested > 0;
                 blocking = _imp->isAbortRequestBlocking;
             }
+
+           
             if (!renderFinished && !isAbortRequested) {
                 
                 QMutexLocker bufLocker (&_imp->bufMutex);
@@ -1174,6 +1189,15 @@ OutputSchedulerThread::run()
                 if (_imp->buf.empty()) {
                     _imp->bufCondition.wait(&_imp->bufMutex);
                 }
+                /*else {
+                    
+                    if (isBufferFull((int)_imp->buf.size(),appPTR->getHardwareIdealThreadCount())) {
+                        qDebug() << "PLAYBACK STALL detected: Internal buffer is full but frame" << expectedTimeToRender
+                        << "is still expected to be rendered. Stopping render.";
+                        assert(false);
+                        break;
+                    }
+                }*/
             } else {
                 if (blocking) {
                     //Move the timeline to the last rendered frame to keep it in sync with what is displayed
@@ -1522,6 +1546,10 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
                 _imp->framesToRender.clear();
             }
             
+            {
+                QMutexLocker k(&_imp->bufMutex);
+                _imp->buf.clear();
+            }
             
             if (isMainThread) {
                 

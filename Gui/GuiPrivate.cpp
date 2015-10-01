@@ -250,6 +250,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , statsDialog(0)
 , currentPanelFocus(0)
 , currentPanelFocusEventRecursion(0)
+, wasLaskUserSeekDuringPlayback(false)
 {
 }
 
