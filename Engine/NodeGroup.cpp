@@ -1052,6 +1052,9 @@ NodeCollection::invalidateParallelRenderArgs()
     
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (*it || !(*it)->getLiveInstance()) {
+            continue;
+        }
         (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {
