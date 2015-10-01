@@ -1865,6 +1865,13 @@ Node::hasOverlay() const
     if (!_imp->liveInstance) {
         return false;
     }
+    
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        if (nodeGui->hasDefaultOverlay()) {
+            return true;
+        }
+    }
 
     return _imp->liveInstance->hasOverlay();
 }
