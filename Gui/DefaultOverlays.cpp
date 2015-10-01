@@ -286,7 +286,7 @@ DefaultOverlay::penMotion(double time,
             double y = fround(_imp->lastPenPos.y(), pscale.y);
             boost::shared_ptr<KnobDouble> param = it->param.lock();
             if (param) {
-                param->setValues(x, y, Natron::eValueChangedReasonUserEdited);
+                param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
             }
         }
         if (didSomething || valuesChanged) {
@@ -316,7 +316,7 @@ DefaultOverlay::penUp(double time,
                 double y = fround(_imp->lastPenPos.y(), pscale.y);
                 boost::shared_ptr<KnobDouble> param = it->param.lock();
                 if (param) {
-                    param->setValues(x, y, Natron::eValueChangedReasonUserEdited);
+                    param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
                 }
             }
 
