@@ -433,6 +433,8 @@ public Q_SLOTS:
     
 private:
     
+    void onPickerButtonClickedInternal(ViewerTab* caller,bool);
+    
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
 
     

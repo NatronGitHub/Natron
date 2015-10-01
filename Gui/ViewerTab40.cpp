@@ -588,20 +588,27 @@ ViewerTab::onMousePressCalledInViewer()
 }
 
 void
-ViewerTab::onPickerButtonClicked(bool clicked)
+ViewerTab::onPickerButtonClickedInternal(ViewerTab* caller,bool clicked)
 {
-    const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
-        if ((*it) != this) {
-            (*it)->onPickerButtonClicked(clicked);
+    if (this == caller) {
+        const std::list<ViewerTab*> &viewers = getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+            if ((*it) != caller) {
+                (*it)->onPickerButtonClickedInternal(caller,clicked);
+            }
         }
     }
-
     
     _imp->pickerButton->setDown(clicked);
-
+    
     setInfobarVisible(clicked);
     getGui()->clearColorPickers();
+}
+
+void
+ViewerTab::onPickerButtonClicked(bool clicked)
+{
+    onPickerButtonClickedInternal(this, clicked);
 }
 
 void
