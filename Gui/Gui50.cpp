@@ -445,7 +445,7 @@ Gui::resizeEvent(QResizeEvent* e)
 static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
 {
     if (!w) {
-        return false;
+        return 0;
     }
     RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
     if (panel) {
