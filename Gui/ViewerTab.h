@@ -433,6 +433,10 @@ public Q_SLOTS:
     
 private:
     
+    void refreshFPSBoxFromClipPreferences();
+    
+    void onSpinboxFpsChangedInternal(double fps);
+    
     void onPickerButtonClickedInternal(ViewerTab* caller,bool);
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

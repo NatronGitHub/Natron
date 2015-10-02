@@ -120,6 +120,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , fpsLockedMutex()
 , fpsLocked(true)
 , fpsBox(NULL)
+, userFps(24)
 , turboButton(NULL)
 , timeLineGui(NULL)
 , rotoNodes()

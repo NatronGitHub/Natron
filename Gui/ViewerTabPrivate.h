@@ -173,6 +173,7 @@ struct ViewerTabPrivate
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
+    double userFps;
     Button* turboButton;
 
     /*frame seeker*/

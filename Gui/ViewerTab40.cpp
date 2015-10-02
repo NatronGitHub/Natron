@@ -225,6 +225,12 @@ ViewerTab::onCanSetFPSClicked(bool toggled)
         QMutexLocker l(&_imp->fpsLockedMutex);
         _imp->fpsLocked = !toggled;
     }
+    
+    if (toggled) {
+        onSpinboxFpsChangedInternal(_imp->userFps);
+    } else {
+        refreshFPSBoxFromClipPreferences();
+    }
 
 }
 
@@ -640,11 +646,24 @@ void ViewerTab::setCheckerboardEnabled(bool enabled)
 }
 
 void
+ViewerTab::onSpinboxFpsChangedInternal(double fps)
+{
+    _imp->fpsBox->setValue(fps);
+    _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
+    {
+        QMutexLocker k(&_imp->fpsMutex);
+        _imp->fps = fps;
+    }
+}
+
+void
 ViewerTab::onSpinboxFpsChanged(double fps)
 {
-    _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
-    QMutexLocker k(&_imp->fpsMutex);
-    _imp->fps = fps;
+    {
+        QMutexLocker k(&_imp->fpsMutex);
+        _imp->userFps = fps;
+    }
+    onSpinboxFpsChangedInternal(fps);
 }
 
 double
@@ -660,6 +679,7 @@ ViewerTab::setDesiredFps(double fps)
     {
         QMutexLocker l(&_imp->fpsMutex);
         _imp->fps = fps;
+        _imp->userFps = fps;
     }
     _imp->fpsBox->setValue(fps);
     _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);

@@ -1008,25 +1008,30 @@ ViewerTab::onAvailableComponentsChanged()
 }
 
 void
+ViewerTab::refreshFPSBoxFromClipPreferences()
+{
+    int activeInputs[2];
+    
+    _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+    EffectInstance* input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : 0;
+    if (input0) {
+        _imp->fpsBox->setValue(input0->getPreferredFrameRate());
+    } else {
+        EffectInstance* input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : 0;
+        if (input1) {
+            _imp->fpsBox->setValue(input1->getPreferredFrameRate());
+        } else {
+            _imp->fpsBox->setValue(getGui()->getApp()->getProjectFrameRate());
+        }
+    }
+    onSpinboxFpsChangedInternal(_imp->fpsBox->value());
+}
+
+void
 ViewerTab::onClipPreferencesChanged()
 {
     //Try to set auto-fps if it is enabled
     if (_imp->fpsLocked) {
-        
-        int activeInputs[2];
-        
-        _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-        EffectInstance* input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : 0;
-        if (input0) {
-            _imp->fpsBox->setValue(input0->getPreferredFrameRate());
-        } else {
-            EffectInstance* input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : 0;
-            if (input1) {
-                _imp->fpsBox->setValue(input1->getPreferredFrameRate());
-            } else {
-                _imp->fpsBox->setValue(getGui()->getApp()->getProjectFrameRate());
-            }
-        }
-        onSpinboxFpsChanged(_imp->fpsBox->value());
+        refreshFPSBoxFromClipPreferences();
     }
 }
