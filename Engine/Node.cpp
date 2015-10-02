@@ -376,6 +376,7 @@ struct Node::Implementation
     bool activated;
     
     Natron::Plugin* plugin; //< the plugin which stores the function to instantiate the effect
+    std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
@@ -4723,8 +4724,8 @@ Node::getPluginID() const
     if (!_imp->plugin) {
         return std::string();
     }
-    if (!_imp->pluginPythonModule.empty()) {
-        return _imp->pluginPythonModule;
+    if (!_imp->pyPlugID.empty()) {
+        return _imp->pyPlugID;
     } else {
         return _imp->plugin->getPluginID().toStdString();
     }
@@ -5730,10 +5731,15 @@ Node::setPluginDescription(const std::string& description)
 void
 Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
 {
+    
+    assert(QThread::currentThread() == qApp->thread());
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
         return;
     }
+
+    _imp->pyPlugID = pluginID;
+    
     nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);
 
 }
