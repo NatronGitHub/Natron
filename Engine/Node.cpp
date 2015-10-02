@@ -4723,7 +4723,11 @@ Node::getPluginID() const
     if (!_imp->plugin) {
         return std::string();
     }
-    return _imp->plugin->getPluginID().toStdString();
+    if (!_imp->pluginPythonModule.empty()) {
+        return _imp->pluginPythonModule;
+    } else {
+        return _imp->plugin->getPluginID().toStdString();
+    }
 }
 
 std::string
