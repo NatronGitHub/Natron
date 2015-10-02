@@ -898,9 +898,7 @@ Gui::isFocusStealingPossible()
     dynamic_cast<QTextEdit*>(currentFocus) ||
     dynamic_cast<QCheckBox*>(currentFocus) ||
     dynamic_cast<ComboBox*>(currentFocus) ||
-    dynamic_cast<QComboBox*>(currentFocus) ||
-    dynamic_cast<QTreeWidget*>(currentFocus) ||
-    dynamic_cast<QTreeView*>(currentFocus);
+    dynamic_cast<QComboBox*>(currentFocus);
 
     return !focusStealingNotPossible;
 
