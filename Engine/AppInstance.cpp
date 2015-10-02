@@ -784,8 +784,16 @@ AppInstance::createNodeInternal(const QString & pluginID,
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
 
+    QString findId;
+    //Roto has moved to a built-in plugin
+    if (userEdited && pluginID == PLUGINID_OFX_ROTO) {
+        findId = PLUGINID_NATRON_ROTO;
+    } else {
+        findId = pluginID;
+    }
+    
     try {
-        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
+        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
