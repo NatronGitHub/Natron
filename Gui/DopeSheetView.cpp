@@ -3408,7 +3408,6 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     _imp->zoomOrPannedSinceLastFit = true;
-    qDebug() << scaleFactor;
     
     par = _imp->zoomContext.aspectRatio() * scaleFactor;
 
