@@ -830,6 +830,8 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
                 assert(comps.size() == 1);
                 comp = comps.front();
+            } else {
+                comp = _nodeInstance->getNode()->findClosestSupportedComponents(inputnb, comp);
             }
         }
 
