@@ -649,6 +649,11 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
                                      CreateNodeArgs::DefaultValuesList(),
                                      group);
             containerNode = createNode(groupArgs);
+            std::string containerName;
+            group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+            containerNode->setScriptName(containerName);
+            
+            
         } else {
             
             LoadNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
@@ -662,10 +667,6 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         if (!containerNode) {
             return containerNode;
         }
-        std::string containerName;
-        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-        containerNode->setScriptName(containerName);
-        
         
         
         std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
