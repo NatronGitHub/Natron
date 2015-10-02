@@ -403,12 +403,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QString autoContrastToolTip( "<p><b>" + tr("Auto-contrast:") + "</b></p><p>" + tr(
                                      "Automatically adjusts the gain and the offset applied "
                                      "to the colors of the visible image portion on the viewer.") + "</p>");
-    _imp->autoConstrastLabel = new ClickableLabel(tr("Auto-contrast:"),_imp->secondSettingsRow);
-    _imp->autoConstrastLabel->setToolTip(autoContrastToolTip);
-    _imp->secondRowLayout->addWidget(_imp->autoConstrastLabel);
 
-    _imp->autoContrast = new QCheckBox(_imp->secondSettingsRow);
-    _imp->autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+    QPixmap acOn,acOff;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_AUTOCONTRAST_DISABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &acOff);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_AUTOCONTRAST_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &acOn);
+    QIcon acIc;
+    acIc.addPixmap(acOn,QIcon::Normal,QIcon::On);
+    acIc.addPixmap(acOff,QIcon::Normal,QIcon::Off);
+    _imp->autoContrast = new Button(acIc,"",_imp->secondSettingsRow);
+    _imp->autoContrast->setCheckable(true);
+    _imp->autoContrast->setChecked(false);
+    _imp->autoContrast->setDown(false);
+    _imp->autoContrast->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->autoContrast->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->autoContrast->setToolTip(autoContrastToolTip);
     _imp->secondRowLayout->addWidget(_imp->autoContrast);
     
@@ -943,8 +950,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->viewsComboBox,SIGNAL( currentIndexChanged(int) ),this,SLOT( showView(int) ) );
     QObject::connect( _imp->enableViewerRoI, SIGNAL( clicked(bool) ), this, SLOT( onEnableViewerRoIButtonToggle(bool) ) );
     QObject::connect( _imp->autoContrast,SIGNAL( clicked(bool) ),this,SLOT( onAutoContrastChanged(bool) ) );
-    QObject::connect( _imp->autoConstrastLabel,SIGNAL( clicked(bool) ),this,SLOT( onAutoContrastChanged(bool) ) );
-    QObject::connect( _imp->autoConstrastLabel,SIGNAL( clicked(bool) ),_imp->autoContrast,SLOT( setChecked(bool) ) );
     QObject::connect( _imp->renderScaleCombo,SIGNAL( currentIndexChanged(int) ),this,SLOT( onRenderScaleComboIndexChanged(int) ) );
     QObject::connect( _imp->activateRenderScale,SIGNAL( toggled(bool) ),this,SLOT( onRenderScaleButtonClicked(bool) ) );
     

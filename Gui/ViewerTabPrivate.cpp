@@ -82,7 +82,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , gainBox(NULL)
 , gainSlider(NULL)
 , lastFstopValue(0.)
-, autoConstrastLabel(NULL)
 , autoContrast(NULL)
 , gammaBox(NULL)
 , lastGammaValue(1.)

@@ -292,6 +292,8 @@ ViewerTab::discardInternalNodePointer()
 void
 ViewerTab::onAutoContrastChanged(bool b)
 {
+    _imp->autoContrast->setDown(b);
+    _imp->autoContrast->setChecked(b);
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
     _imp->toggleGainButton->setEnabled(!b);

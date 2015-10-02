@@ -216,6 +216,12 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED:
                 path = NATRON_IMAGES_PATH "renderScale_checked.png";
                 break;
+            case NATRON_PIXMAP_VIEWER_AUTOCONTRAST_ENABLED:
+                path = NATRON_IMAGES_PATH "AutoContrastON.png";
+                break;
+            case NATRON_PIXMAP_VIEWER_AUTOCONTRAST_DISABLED:
+                path = NATRON_IMAGES_PATH "AutoContrast.png";
+                break;
             case NATRON_PIXMAP_OPEN_FILE:
                 path = NATRON_IMAGES_PATH "open-file.png";
                 break;

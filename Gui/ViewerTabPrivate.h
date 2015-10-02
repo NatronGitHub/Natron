@@ -127,8 +127,7 @@ struct ViewerTabPrivate
     SpinBox* gainBox;
     ScaleSliderQWidget* gainSlider;
     double lastFstopValue;
-    ClickableLabel* autoConstrastLabel;
-    QCheckBox* autoContrast;
+    Button* autoContrast;
     SpinBox* gammaBox;
     double lastGammaValue;
     Button* toggleGammaButton;
