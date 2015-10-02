@@ -48,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewerInstance.h"
