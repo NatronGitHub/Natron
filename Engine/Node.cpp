@@ -5756,6 +5756,7 @@ Node::setPyPlugEdited(bool edited)
 {
     QMutexLocker k(&_imp->pluginPythonModuleMutex);
     _imp->pyplugChangedSinceScript = edited;
+    _imp->pyPlugID.clear();
 }
 
 void
