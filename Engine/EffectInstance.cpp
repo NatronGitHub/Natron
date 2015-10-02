@@ -551,6 +551,11 @@ EffectInstance::getImage(int inputNb,
                          const bool dontUpscale,
                          RectI* roiPixel)
 {
+    if (time != time) {
+        // time is NaN
+
+        return ImagePtr();
+    }
     ///The input we want the image from
     EffectInstance* n = getInput(inputNb);
 

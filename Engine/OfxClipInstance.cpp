@@ -758,6 +758,11 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
     return getImagePlaneInternal(time, view, optionalBounds, &plane);
 }
 
@@ -779,7 +784,12 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time, int view, const OfxRectD *o
     //If TLS does not work then nothing will work.
     assert( hasLocalData );
 #endif
-    
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
+
     if (isOutput()) {
         return getOutputImageInternal(ofxPlane);
     } else {
@@ -830,8 +840,13 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     if (comp.getNumComponents() == 0) {
         return 0;
     }
-    
-  
+    if (time != time) {
+        // time is NaN
+
+        return 0;
+    }
+
+
     boost::shared_ptr<Transform::Matrix3x3> transform;
     bool usingReroute  = false;
     int rerouteInputNb = -1;
