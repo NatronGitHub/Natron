@@ -220,7 +220,7 @@ ViewerTab::onCanSetFPSLabelClicked(bool toggled)
 void
 ViewerTab::onCanSetFPSClicked(bool toggled)
 {
-    _imp->fpsBox->setReadOnly(!toggled);
+    _imp->fpsBox->setEnabled(toggled);
     {
         QMutexLocker l(&_imp->fpsLockedMutex);
         _imp->fpsLocked = !toggled;

@@ -750,7 +750,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     
     _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeDouble);
-    _imp->fpsBox->setReadOnly(_imp->fpsLocked);
+    _imp->fpsBox->setEnabled(!_imp->fpsLocked);
     _imp->fpsBox->decimals(1);
     _imp->fpsBox->setValue(24.0);
     _imp->fpsBox->setIncrement(0.1);
