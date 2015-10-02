@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_ManageUserParamsDialog_h_
-#define _Gui_ManageUserParamsDialog_h_
+#ifndef Gui_ManageUserParamsDialog_h
+#define Gui_ManageUserParamsDialog_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -73,4 +73,4 @@ private:
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };
 
-#endif // _Gui_ManageUserParamsDialog_h_
+#endif // Gui_ManageUserParamsDialog_h

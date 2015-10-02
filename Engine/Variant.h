@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_Variant_h_
-#define _Engine_Variant_h_
+#ifndef Engine_Variant_h
+#define Engine_Variant_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -207,4 +207,4 @@ Variant::setValue(const char* const & str)
     QVariant::setValue( QString(str) );
 }
 
-#endif // _Engine_Variant_h_
+#endif // Engine_Variant_h

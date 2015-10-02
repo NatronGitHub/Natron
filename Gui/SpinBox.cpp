@@ -123,14 +123,10 @@ void
 SpinBox::setType(SpinBoxTypeEnum type)
 {
     _imp->type = type;
-    if (_imp->doubleValidator) {
-        delete _imp->doubleValidator;
-        _imp->doubleValidator = 0;
-    }
-    if (_imp->intValidator) {
-        delete _imp->intValidator;
-        _imp->intValidator = 0;
-    }
+    delete _imp->doubleValidator;
+    _imp->doubleValidator = 0;
+    delete _imp->intValidator;
+    _imp->intValidator = 0;
     switch (_imp->type) {
         case eSpinBoxTypeDouble:
             _imp->mini.setValue<double>(-DBL_MAX);
@@ -243,14 +239,7 @@ SpinBox::interpretReturn()
     }
 }
 
-/*
- void
- SpinBox::mousePressEvent(QMouseEvent* e)
- {
- //setCursorPosition(cursorPositionAt(e->pos())); // LineEdit::mousePressEvent(e) does this already
- LineEdit::mousePressEvent(e);
- }
- */
+
 
 QString
 SpinBoxPrivate::setNum(double cur)
@@ -667,9 +656,17 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             _imp->valueWhenEnteringFocus = value();
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
+            if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+                ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
+                e->accept();
+            }
         }
     } else {
         QLineEdit::keyPressEvent(e);
+        if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+            ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
+            e->accept();
+        }
     }
 }
 
@@ -785,7 +782,7 @@ SpinBox::setAnimation(int i)
     animation = i;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -794,7 +791,7 @@ SpinBox::setDirty(bool d)
     dirty = d;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 QMenu*
@@ -823,5 +820,5 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
-    repaint();
+    update();
 }

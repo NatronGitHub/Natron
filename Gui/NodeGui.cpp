@@ -422,6 +422,22 @@ NodeGui::initialize(NodeGraph* dag,
 } // initialize
 
 void
+NodeGui::restoreStateAfterCreation()
+{
+    NodePtr internalNode = getNode();
+    ///Refresh the disabled knob
+    if ( internalNode->isNodeDisabled() ) {
+        onDisabledKnobToggled(true);
+    }
+    if ( !internalNode->isMultiInstance() ) {
+        _nodeLabel = internalNode->getNodeExtraLabel().c_str();
+        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+    }
+    ///Refresh the name in the line edit
+    onInternalNameChanged( internalNode->getLabel().c_str() );
+}
+
+void
 NodeGui::ensurePanelCreated()
 {
     if (_panelCreated) {
@@ -2436,10 +2452,8 @@ NodeGui::deleteReferences()
         _outputEdge = NULL;
     }
 
-    if (_settingsPanel) {
-        delete _settingsPanel;
-        _settingsPanel = NULL;
-    }
+    delete _settingsPanel;
+    _settingsPanel = NULL;
 }
 
 QSize

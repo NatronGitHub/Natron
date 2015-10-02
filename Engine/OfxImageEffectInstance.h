@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
-#define NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
+#ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H
+#define NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -197,7 +197,7 @@ public:
      * @brief To be called once no action is currently being run after getClipPreferences_safe was called.
      * Caller maintains a lock around this call to prevent race conditions.
      **/
-    void updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
+    bool updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
                                 bool continuous,bool frameVarying);
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -329,4 +329,4 @@ public:
 
 } // namespace Natron
 
-#endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
+#endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H

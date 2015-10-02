@@ -69,25 +69,13 @@ class UserParamHolder
     KnobHolder* _holder;
 public:
     
-    UserParamHolder()
-    : _holder(0)
-    {
-        
-    }
+    UserParamHolder();
     
-    UserParamHolder(KnobHolder* holder)
-    : _holder(holder)
-    {
-        
-    }
+    UserParamHolder(KnobHolder* holder);
     
     virtual ~UserParamHolder() {}
     
-    void setHolder(KnobHolder* holder)
-    {
-        assert(!_holder);
-        _holder = holder;
-    }
+    void setHolder(KnobHolder* holder);
     
     /////////////Functions to create custom parameters//////////////////////////
     ///////////////////////////////////////////////////////////////////////////

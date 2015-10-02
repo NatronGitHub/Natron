@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_KnobGuiInt_h_
-#define _Gui_KnobGuiInt_h_
+#ifndef Gui_KnobGuiInt_h
+#define Gui_KnobGuiInt_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -168,4 +168,4 @@ private:
 };
 
 
-#endif // _Gui_KnobGuiInt_h_
+#endif // Gui_KnobGuiInt_h

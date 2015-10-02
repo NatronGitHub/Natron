@@ -65,6 +65,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/NodeSettingsPanel.h"
 
 
 using namespace Natron;
@@ -83,20 +84,20 @@ Gui::forceRefreshAllPreviews()
 }
 
 void
-Gui::startDragPanel(QWidget* panel)
+Gui::startDragPanel(PanelWidget* panel)
 {
     assert(!_imp->_currentlyDraggedPanel);
     _imp->_currentlyDraggedPanel = panel;
     if (panel) {
-        _imp->_currentlyDraggedPanelInitialSize = panel->size();
+        _imp->_currentlyDraggedPanelInitialSize = panel->getWidget()->size();
     }
 }
 
-QWidget*
+PanelWidget*
 Gui::stopDragPanel(QSize* initialSize)
 {
     assert(_imp->_currentlyDraggedPanel);
-    QWidget* ret = _imp->_currentlyDraggedPanel;
+    PanelWidget* ret = _imp->_currentlyDraggedPanel;
     _imp->_currentlyDraggedPanel = 0;
     *initialSize = _imp->_currentlyDraggedPanelInitialSize;
 
@@ -207,6 +208,12 @@ void
 Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
+    const std::list<ViewerTab*> &viewers = getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        if (!(*it)->isPickerEnabled()) {
+            (*it)->setPickerEnabled(true);
+        }
+    }
     _imp->_projectGui->registerNewColorPicker(knob);
 }
 
@@ -215,6 +222,13 @@ Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
+}
+
+void
+Gui::clearColorPickers()
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->clearColorPickers();
 }
 
 bool
@@ -499,7 +513,7 @@ Gui::getPropertiesLayout() const
 }
 
 void
-Gui::appendTabToDefaultViewerPane(QWidget* tab,
+Gui::appendTabToDefaultViewerPane(PanelWidget* tab,
                                   ScriptObject* obj)
 {
     TabWidget* viewerAnchor = getAnchor();
@@ -829,3 +843,53 @@ Gui::onEnableRenderStatsActionTriggered()
         _imp->statsDialog->show();
     }
 }
+
+
+void
+Gui::onTimelineTimeAboutToChange()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->wasLaskUserSeekDuringPlayback = false;
+    const std::list<ViewerTab*>& viewers = getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
+        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,true);
+    }
+}
+
+void
+Gui::onTimeChanged(SequenceTime time,
+                         int reason)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    boost::shared_ptr<Natron::Project> project = getApp()->getProject();
+    
+    ///Refresh all visible knobs at the current time
+    if (!getApp()->isGuiFrozen()) {
+        for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
+            NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+            if (nodePanel) {
+                nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(time);
+            }
+        }
+    }
+
+    
+    ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
+    
+    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
+    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
+    reason == eTimelineChangeReasonCurveEditorSeek;
+    
+    
+
+    const std::list<ViewerTab*>& viewers = getViewersList();
+    ///Syncrhronize viewers
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end();++it) {
+        if ((*it)->getInternalNode() != leadViewer || isUserEdited) {
+            (*it)->getInternalNode()->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+        }
+    }
+}
+

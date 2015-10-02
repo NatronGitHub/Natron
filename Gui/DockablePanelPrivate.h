@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_DockablePanelPrivate_h_
-#define _Gui_DockablePanelPrivate_h_
+#ifndef Gui_DockablePanelPrivate_h
+#define Gui_DockablePanelPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -172,7 +172,7 @@ struct DockablePanelPrivate
                          const boost::shared_ptr<QUndoStack>& stack);
     
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator addPage(KnobPage* page,const QString & name);
+    PageMap::iterator getOrCreatePage(KnobPage* page);
 
     boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 
@@ -193,4 +193,4 @@ struct DockablePanelPrivate
 };
 
 
-#endif // _Gui_DockablePanelPrivate_h_
+#endif // Gui_DockablePanelPrivate_h

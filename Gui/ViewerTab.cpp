@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QPalette>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -75,6 +76,21 @@ static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
     }
 }
 
+static void addSpacer(QBoxLayout* layout)
+{
+    layout->addSpacing(5);
+    QFrame* line = new QFrame(layout->parentWidget());
+    line->setFrameShape(QFrame::VLine);
+    line->setFrameShadow(QFrame::Raised);
+    //line->setObjectName("LayoutSeparator");
+    QPalette* palette = new QPalette();
+    palette->setColor(QPalette::Foreground,Qt::black);
+    line->setPalette(*palette);
+    layout->addWidget(line);
+    layout->addSpacing(5);
+    
+}
+
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      NodeGui* currentRoto,
                      const std::list<NodeGui*> & existingTrackerNodes,
@@ -82,9 +98,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      Gui* gui,
                      ViewerInstance* node,
                      QWidget* parent)
-    : QWidget(parent)
-    , ScriptObject()
-      , _imp( new ViewerTabPrivate(gui,node) )
+: QWidget(parent)
+, PanelWidget(this,gui)
+, _imp( new ViewerTabPrivate(this,node) )
 {
     installEventFilter(this);
     
@@ -111,6 +127,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*VIEWER SETTINGS*/
 
     /*1st row of buttons*/
+    QFontMetrics fm = fontMetrics();
+
     _imp->firstSettingsRow = new QWidget(this);
     _imp->firstRowLayout = new QHBoxLayout(_imp->firstSettingsRow);
     _imp->firstSettingsRow->setLayout(_imp->firstRowLayout);
@@ -124,12 +142,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                        "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
                                        "its number of channels. (e.g: UV would be mapped to RG)") + "</p>");
     QObject::connect(_imp->layerChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onLayerComboChanged(int)));
+    _imp->layerChoice->setFixedWidth(fm.width("Color.Toto.RGBA") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->layerChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstRowLayout->addWidget(_imp->layerChoice);
     
     _imp->alphaChannelChoice = new ComboBox(_imp->firstSettingsRow);
     _imp->alphaChannelChoice->setToolTip("<p><b>" + tr("Alpha channel:") + "</b></p><p>"
                                          + tr("Select here a channel of any layer that will be used when displaying the "
                                               "alpha channel with the <b>Channels</b> choice on the right.") + "</p>");
+    _imp->alphaChannelChoice->setFixedWidth(fm.width("Color.alpha") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->alphaChannelChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     QObject::connect(_imp->alphaChannelChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onAlphaChannelComboChanged(int)));
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
@@ -137,6 +159,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels:") + "</b></p><p>"
                                        + tr("The channels to display on the viewer.") + "</p>");
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
+    _imp->viewerChannels->setFixedWidth(fm.width("Luminance") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->viewerChannels->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    
+    addSpacer(_imp->firstRowLayout);
     
     QAction* lumiAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionLuminance, tr("Luminance"), _imp->viewerChannels);
     QAction* rgbAction = new QAction(QIcon(), tr("RGB"), _imp->viewerChannels);
@@ -203,11 +229,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect(_imp->syncViewerButton, SIGNAL(clicked(bool)), this,SLOT(onSyncViewersButtonPressed(bool)));
     _imp->firstRowLayout->addWidget(_imp->syncViewerButton);
 
+    
     _imp->centerViewerButton = new Button(_imp->firstSettingsRow);
     _imp->centerViewerButton->setFocusPolicy(Qt::NoFocus);
     _imp->centerViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->centerViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->firstRowLayout->addWidget(_imp->centerViewerButton);
+
+    addSpacer(_imp->firstRowLayout);
 
 
     _imp->clipToProjectFormatButton = new Button(_imp->firstSettingsRow);
@@ -227,23 +256,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->enableViewerRoI->setChecked(false);
     _imp->enableViewerRoI->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->enableViewerRoI);
-
-    _imp->refreshButton = new Button(_imp->firstSettingsRow);
-    _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
-    _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->refreshButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
-        QStringList refreshActions;
-        refreshActions << kShortcutIDActionRefresh;
-        refreshActions << kShortcutIDActionRefreshWithStats;
-        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.") +
-                               "</p>" + "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p><p>" +
-                               tr("Press ") + "%2" + tr(" to activate in-depth render statistics useful "
-                                                   "for debugging the composition.") + "</p>", _imp->refreshButton);
-    }
-    _imp->firstRowLayout->addWidget(_imp->refreshButton);
     
+
     _imp->activateRenderScale = new Button(_imp->firstSettingsRow);
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -259,11 +273,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale->setChecked(false);
     _imp->activateRenderScale->setDown(false);
     _imp->firstRowLayout->addWidget(_imp->activateRenderScale);
-
+    
     _imp->renderScaleCombo = new ComboBox(_imp->firstSettingsRow);
     _imp->renderScaleCombo->setFocusPolicy(Qt::NoFocus);
     _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor "
-                                            "to accelerate the rendering."), Qt::WhiteSpaceNormal));
+                                                                       "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
     QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, "2", _imp->renderScaleCombo);
     QAction* proxy4 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel4, "4", _imp->renderScaleCombo);
@@ -277,34 +291,73 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->renderScaleCombo->addAction(proxy32);
     _imp->firstRowLayout->addWidget(_imp->renderScaleCombo);
 
-    _imp->firstRowLayout->addStretch();
+    
+    addSpacer(_imp->firstRowLayout);
+    
+    _imp->refreshButton = new Button(_imp->firstSettingsRow);
+    _imp->refreshButton->setFocusPolicy(Qt::NoFocus);
+    _imp->refreshButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->refreshButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    {
+        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
+        QStringList refreshActions;
+        refreshActions << kShortcutIDActionRefresh;
+        refreshActions << kShortcutIDActionRefreshWithStats;
+        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.") +
+                                "</p>" + "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p><p>" +
+                                tr("Press ") + "%2" + tr(" to activate in-depth render statistics useful "
+                                                         "for debugging the composition.") + "</p>", _imp->refreshButton);
+    }
+    _imp->firstRowLayout->addWidget(_imp->refreshButton);
+
+    
+    addSpacer(_imp->firstRowLayout);
 
     _imp->firstInputLabel = new Natron::Label("A:",_imp->firstSettingsRow);
+    _imp->firstInputLabel->setToolTip(Natron::convertFromPlainText(tr("Viewer input A."), Qt::WhiteSpaceNormal));
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
+    _imp->firstInputImage->setToolTip(_imp->firstInputLabel->toolTip());
+    _imp->firstInputImage->setFixedWidth(fm.width("ColorCorrect1") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->firstInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstInputImage->addItem(" - ");
     QObject::connect( _imp->firstInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onFirstInputNameChanged(QString) ) );
-
     _imp->firstRowLayout->addWidget(_imp->firstInputImage);
 
+    QPixmap pixMerge;
+    appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixMerge);
+    _imp->compositingOperatorLabel = new Natron::Label("",_imp->firstSettingsRow);
+    _imp->compositingOperatorLabel->setPixmap(pixMerge);
+    _imp->compositingOperatorLabel->setToolTip(Natron::convertFromPlainText(tr("Operation applied between viewer inputs A and B."), Qt::WhiteSpaceNormal));
+    _imp->firstRowLayout->addWidget(_imp->compositingOperatorLabel);
+    
+    
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCompositingOperatorIndexChanged(int) ) );
+    _imp->compositingOperator->setFixedWidth(fm.width("Minus") + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    _imp->compositingOperator->setToolTip(_imp->compositingOperatorLabel->toolTip());
     _imp->compositingOperator->addItem(tr(" - "), QIcon(), QKeySequence(), tr("Only the A input is used."));
     _imp->compositingOperator->addItem(tr("Over"), QIcon(), QKeySequence(), tr("A + B(1 - Aalpha)"));
     _imp->compositingOperator->addItem(tr("Under"), QIcon(), QKeySequence(), tr("A(1 - Balpha) + B"));
     _imp->compositingOperator->addItem(tr("Minus"), QIcon(), QKeySequence(), tr("A - B"));
+
     ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "Wipe", _imp->compositingOperator);
     actionWipe->setToolTip(tr("Wipe between A and B"));
     _imp->compositingOperator->addAction(actionWipe);
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
     _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
+    _imp->secondInputLabel->setToolTip(Natron::convertFromPlainText(tr("Viewer input B."), Qt::WhiteSpaceNormal));
     _imp->firstRowLayout->addWidget(_imp->secondInputLabel);
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);
-    QObject::connect( _imp->secondInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onSecondInputNameChanged(QString) ) );
+    _imp->secondInputImage->setToolTip(_imp->secondInputLabel->toolTip());
+    _imp->secondInputImage->setFixedWidth(fm.width("ColorCorrect1")  + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->secondInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->secondInputImage->addItem(" - ");
+    QObject::connect( _imp->secondInputImage,SIGNAL( currentIndexChanged(QString) ),this,SLOT( onSecondInputNameChanged(QString) ) );
     _imp->firstRowLayout->addWidget(_imp->secondInputImage);
 
     _imp->firstRowLayout->addStretch();
@@ -342,7 +395,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gainSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGainSliderEditingFinished(bool)));
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
@@ -350,12 +403,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QString autoContrastToolTip( "<p><b>" + tr("Auto-contrast:") + "</b></p><p>" + tr(
                                      "Automatically adjusts the gain and the offset applied "
                                      "to the colors of the visible image portion on the viewer.") + "</p>");
-    _imp->autoConstrastLabel = new ClickableLabel(tr("Auto-contrast:"),_imp->secondSettingsRow);
-    _imp->autoConstrastLabel->setToolTip(autoContrastToolTip);
-    _imp->secondRowLayout->addWidget(_imp->autoConstrastLabel);
 
-    _imp->autoContrast = new QCheckBox(_imp->secondSettingsRow);
-    _imp->autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect); // Don't use the layout rect calculated from QMacStyle.
+    QPixmap acOn,acOff;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_AUTOCONTRAST_DISABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &acOff);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_AUTOCONTRAST_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &acOn);
+    QIcon acIc;
+    acIc.addPixmap(acOn,QIcon::Normal,QIcon::On);
+    acIc.addPixmap(acOff,QIcon::Normal,QIcon::Off);
+    _imp->autoContrast = new Button(acIc,"",_imp->secondSettingsRow);
+    _imp->autoContrast->setCheckable(true);
+    _imp->autoContrast->setChecked(false);
+    _imp->autoContrast->setDown(false);
+    _imp->autoContrast->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->autoContrast->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->autoContrast->setToolTip(autoContrastToolTip);
     _imp->secondRowLayout->addWidget(_imp->autoContrast);
     
@@ -373,17 +433,17 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGammaButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->toggleGammaButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->toggleGammaButton->setToolTip(Natron::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting"), Qt::WhiteSpaceNormal));
+    _imp->toggleGammaButton->setToolTip(Natron::convertFromPlainText(tr("Viewer gamma correction: switch between gamma=1.0 and user setting."), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
     
     _imp->gammaBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
-    QString gammaTt = Natron::convertFromPlainText(tr("Gamma correction. It is applied after gain and before colorspace correction"), Qt::WhiteSpaceNormal);
+    QString gammaTt = Natron::convertFromPlainText(tr("Viewer gamma correction level (applied after gain and before colorspace correction)."), Qt::WhiteSpaceNormal);
     _imp->gammaBox->setToolTip(gammaTt);
     QObject::connect(_imp->gammaBox,SIGNAL(valueChanged(double)), this, SLOT(onGammaSpinBoxValueChanged(double)));
     _imp->gammaBox->setValue(1.0);
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
     
-    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,_imp->gui,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gammaSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGammaSliderEditingFinished(bool)));
     _imp->gammaSlider->setToolTip(gammaTt);
     QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
@@ -403,8 +463,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerColorSpace->setCurrentIndex(1);
     
     QPixmap pixCheckerboardEnabled,pixCheckerboardDisabld;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, &pixCheckerboardEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED, &pixCheckerboardDisabld);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixCheckerboardEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixCheckerboardDisabld);
     QIcon icCk;
     icCk.addPixmap(pixCheckerboardEnabled,QIcon::Normal,QIcon::On);
     icCk.addPixmap(pixCheckerboardDisabld,QIcon::Normal,QIcon::Off);
@@ -414,7 +474,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setChecked(false);
     _imp->checkerboardButton->setDown(false);
     _imp->checkerboardButton->setToolTip(Natron::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
-                                                                     "(within the project window only)."), Qt::WhiteSpaceNormal));
+                                                                     "(only within the project window)."), Qt::WhiteSpaceNormal));
     _imp->checkerboardButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->checkerboardButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->checkerboardButton,SIGNAL(clicked(bool)),this,SLOT(onCheckerboardButtonClicked()));
@@ -425,11 +485,25 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                           "Tells the viewer what view should be displayed.") );
     _imp->secondRowLayout->addWidget(_imp->viewsComboBox);
     _imp->viewsComboBox->hide();
-    int viewsCount = _imp->app->getProject()->getProjectViewsCount(); //getProjectViewsCount
+    int viewsCount = getGui()->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
     updateViewsMenu(viewsCount);
 
     _imp->secondRowLayout->addStretch();
 
+    QPixmap colorPickerpix;
+    appPTR->getIcon(NATRON_PIXMAP_COLOR_PICKER, NATRON_MEDIUM_BUTTON_ICON_SIZE, &colorPickerpix);
+    
+    _imp->pickerButton = new Button(QIcon(colorPickerpix),"",_imp->secondSettingsRow);
+    _imp->pickerButton->setFocusPolicy(Qt::NoFocus);
+    _imp->pickerButton->setCheckable(true);
+    _imp->pickerButton->setChecked(true);
+    _imp->pickerButton->setDown(true);
+    _imp->pickerButton->setToolTip(Natron::convertFromPlainText(tr("Show/Hide information bar in the bottom of the viewer and if unchecked deactivate any active color picker."), Qt::WhiteSpaceNormal));
+    _imp->pickerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->pickerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+     QObject::connect(_imp->pickerButton,SIGNAL(clicked(bool)),this,SLOT(onPickerButtonClicked(bool)));
+    
+    _imp->secondRowLayout->addWidget(_imp->pickerButton);
     /*=============================================*/
 
     /*OpenGL viewer*/
@@ -613,18 +687,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     //QFont font(appFont,appFontSize);
     
-    _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame range"),_imp->playerButtonsContainer);
+    _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Playback range:"),_imp->playerButtonsContainer);
     //_imp->canEditFrameRangeLabel->setFont(font);
     
     _imp->playerLayout->addWidget(_imp->canEditFrameRangeLabel);
 
     _imp->frameRangeEdit = new LineEdit(_imp->playerButtonsContainer);
     QObject::connect( _imp->frameRangeEdit,SIGNAL( editingFinished() ),this,SLOT( onFrameRangeEditingFinished() ) );
-    _imp->frameRangeEdit->setToolTip( Natron::convertFromPlainText(tr("Define here the timeline bounds in which the cursor will playback. Alternatively"
-                                                                  " you can drag the red markers on the timeline. The frame range of the project "
-                                                                  "is the part coloured in grey on the timeline."),
+    _imp->frameRangeEdit->setToolTip( Natron::convertFromPlainText(tr("Timeline bounds for video playback. It may be edited by dragging"
+                                                                      " the red markers on the timeline using Ctrl+click+drag. This is "
+                                                                      "different from the project frame range, which "
+                                                                      "is displayed on the timeline with a lighter background."),
                                                                Qt::WhiteSpaceNormal) );
-    boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
+    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
     _imp->frameRangeEdit->setMaximumWidth(70);
 
     _imp->playerLayout->addWidget(_imp->frameRangeEdit);
@@ -640,7 +715,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     tripleSyncIc.addPixmap(tripleSyncUnlockPix, QIcon::Normal, QIcon::Off);
     tripleSyncIc.addPixmap(tripleSyncLockedPix, QIcon::Normal, QIcon::On);
     _imp->tripleSyncButton = new Button(tripleSyncIc,"",_imp->playerButtonsContainer);
-    _imp->tripleSyncButton->setToolTip(Natron::convertFromPlainText(tr("When activated, timeline's frame-range will be synchronized with the Dope Sheet and the Curve Editor as well."),Qt::WhiteSpaceNormal));
+    _imp->tripleSyncButton->setToolTip(Natron::convertFromPlainText(tr("When activated, the timeline frame-range is synchronized with the Dope Sheet and the Curve Editor."),Qt::WhiteSpaceNormal));
     _imp->tripleSyncButton->setCheckable(true);
     _imp->tripleSyncButton->setChecked(false);
     _imp->tripleSyncButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
@@ -655,10 +730,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
     
-    QString canEditFpsBoxTT = Natron::convertFromPlainText(tr("When unchecked, the frame rate will be automatically set by "
-                                                          " the informations of the input stream of the Viewer.  "
-                                                          "When checked, you're free to set the frame rate of the Viewer.")
-                                                       , Qt::WhiteSpaceNormal);
+    QString canEditFpsBoxTT = Natron::convertFromPlainText(tr("When unchecked, the playback frame rate is automatically set from "
+                                                              " the Viewer A input.  "
+                                                              "When checked, the user setting is used.")
+                                                           , Qt::WhiteSpaceNormal);
     
     _imp->canEditFpsBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->canEditFpsBox->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
@@ -666,7 +741,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
     QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
     
-    _imp->canEditFpsLabel = new ClickableLabel(tr("fps"),_imp->playerButtonsContainer);
+    _imp->canEditFpsLabel = new ClickableLabel(tr("fps:"),_imp->playerButtonsContainer);
     QObject::connect(_imp->canEditFpsLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFPSLabelClicked(bool)));
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
     //_imp->canEditFpsLabel->setFont(font);
@@ -675,12 +750,13 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     
     _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeDouble);
-    _imp->fpsBox->setReadOnly(_imp->fpsLocked);
+    _imp->fpsBox->setEnabled(!_imp->fpsLocked);
     _imp->fpsBox->decimals(1);
-    _imp->fpsBox->setValue(24.0);
+    _imp->userFps = 24.;
+    _imp->fpsBox->setValue(_imp->userFps);
     _imp->fpsBox->setIncrement(0.1);
     _imp->fpsBox->setToolTip( "<p><b>" + tr("fps:") + "</b></p>" + tr(
-                                  "Enter here the desired playback rate.") );
+                                  "Viewer playback framerate, in frames per second.") );
     
     _imp->playerLayout->addWidget(_imp->fpsBox);
     
@@ -697,8 +773,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->turboButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->turboButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
-                                  tr("When checked, everything besides the viewer will not be refreshed in the user interface "
-                                                                                              "for maximum efficiency during playback.") + "</p>");
+                                  tr("When checked, only the viewer is redrawn during playback, "
+                                     "for maximum efficiency.") + "</p>");
     _imp->turboButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _imp->turboButton, SIGNAL (clicked(bool)), getGui(), SLOT(onFreezeUIButtonClicked(bool) ) );
     _imp->playerLayout->addWidget(_imp->turboButton);
@@ -799,14 +875,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                            tr("Clips the portion of the image displayed "
                               "on the viewer to the project format. "
                               "When off, everything in the union of all nodes "
-                              "region of definition will be displayed.") +"</p>" +
+                              "region of definition is displayed.") +"</p>" +
                               "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->clipToProjectFormatButton);
     
     QStringList roiActions;
     roiActions << kShortcutIDActionROIEnabled;
     roiActions << kShortcutIDActionNewROI;
     setTooltipWithShortcut2(kShortcutGroupViewer, roiActions,"<p>" +
-                           tr("When active, enables the region of interest that will limit"
+                           tr("When active, enables the region of interest that limits"
                               " the portion of the viewer that is kept updated.") +"</p>" +
                             "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>" +
                             "<p>" + tr("Press ") + " %2 " + tr("to activate and drag a new region.") + "</p>", _imp->enableViewerRoI);
@@ -815,7 +891,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*=================================================*/
 
     /*frame seeker*/
-    _imp->timeLineGui = new TimeLineGui(node,timeline,_imp->gui,this);
+    _imp->timeLineGui = new TimeLineGui(node,timeline,getGui(),this);
     QObject::connect(_imp->timeLineGui, SIGNAL( boundariesChanged(SequenceTime,SequenceTime)),
                      this, SLOT(onTimelineBoundariesChanged(SequenceTime, SequenceTime)));
     QObject::connect(gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)));
@@ -875,8 +951,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->viewsComboBox,SIGNAL( currentIndexChanged(int) ),this,SLOT( showView(int) ) );
     QObject::connect( _imp->enableViewerRoI, SIGNAL( clicked(bool) ), this, SLOT( onEnableViewerRoIButtonToggle(bool) ) );
     QObject::connect( _imp->autoContrast,SIGNAL( clicked(bool) ),this,SLOT( onAutoContrastChanged(bool) ) );
-    QObject::connect( _imp->autoConstrastLabel,SIGNAL( clicked(bool) ),this,SLOT( onAutoContrastChanged(bool) ) );
-    QObject::connect( _imp->autoConstrastLabel,SIGNAL( clicked(bool) ),_imp->autoContrast,SLOT( setChecked(bool) ) );
     QObject::connect( _imp->renderScaleCombo,SIGNAL( currentIndexChanged(int) ),this,SLOT( onRenderScaleComboIndexChanged(int) ) );
     QObject::connect( _imp->activateRenderScale,SIGNAL( toggled(bool) ),this,SLOT( onRenderScaleButtonClicked(bool) ) );
     
@@ -909,7 +983,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     
     //Refresh the viewport lock state
-    const std::list<ViewerTab*>& viewers = _imp->gui->getViewersList();
+    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
     if (!viewers.empty()) {
         ViewerTab* other = viewers.front();
         if (other->isViewersSynchroEnabled()) {

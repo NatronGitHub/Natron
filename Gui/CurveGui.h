@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_CurveGui_h
-#define _Gui_CurveGui_h
+#ifndef Gui_CurveGui_h
+#define Gui_CurveGui_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -132,7 +132,7 @@ public:
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     virtual int getKeyFrameIndex(double time) const = 0;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
+    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
     
 Q_SIGNALS:
 
@@ -206,7 +206,7 @@ public:
     }
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
     
 private:
@@ -244,7 +244,7 @@ public:
     virtual KeyFrameSet getKeyFrames() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
 private:
     
@@ -254,4 +254,4 @@ private:
 };
 
 
-#endif // _Gui_CurveGui_h
+#endif // Gui_CurveGui_h

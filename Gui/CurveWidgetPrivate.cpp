@@ -389,7 +389,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( _timeline->currentFrame(),btmRight.y() );
         glVertex2f( _timeline->currentFrame(),topLeft.y() );
         glEnd();
-        glCheckError();
+        glCheckErrorIgnoreOSXBug();
 
         glEnable(GL_POLYGON_SMOOTH);
         glHint(GL_POLYGON_SMOOTH_HINT,GL_DONT_CARE);
@@ -401,7 +401,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( _timelineBtmPoly.at(1).x(),_timelineBtmPoly.at(1).y() );
         glVertex2f( _timelineBtmPoly.at(2).x(),_timelineBtmPoly.at(2).y() );
         glEnd();
-        glCheckError();
+        glCheckErrorIgnoreOSXBug();
 
         glBegin(GL_POLYGON);
         glVertex2f( _timelineTopPoly.at(0).x(),_timelineTopPoly.at(0).y() );
@@ -409,7 +409,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( _timelineTopPoly.at(2).x(),_timelineTopPoly.at(2).y() );
         glEnd();
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
-    glCheckError();
+    glCheckErrorIgnoreOSXBug();
 }
 
 void

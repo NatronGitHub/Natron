@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_COMBOBOX_H_
-#define NATRON_GUI_COMBOBOX_H_
+#ifndef NATRON_GUI_COMBOBOX_H
+#define NATRON_GUI_COMBOBOX_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -40,6 +40,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
+
+#define DROP_DOWN_ICON_SIZE 6
 
 class QHBoxLayout;
 class QMouseEvent;
@@ -194,6 +196,7 @@ protected:
     
 private:
     
+    
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
@@ -218,4 +221,4 @@ private:
     void updateLabel();
 };
 
-#endif // ifndef NATRON_GUI_COMBOBOX_H_
+#endif // ifndef NATRON_GUI_COMBOBOX_H

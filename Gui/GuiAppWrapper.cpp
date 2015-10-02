@@ -91,7 +91,7 @@ GuiApp::getTabWidget(const std::string& name) const
 bool
 GuiApp::moveTab(const std::string& scriptName,PyTabWidget* pane)
 {
-    QWidget* w;
+    PanelWidget* w;
     ScriptObject* o;
     _app->getGui()->findExistingTab(scriptName, &w, &o);
     if (!w || !o) {
@@ -435,11 +435,11 @@ GuiApp::getViewer(const std::string& scriptName) const
 PyPanel*
 GuiApp::getUserPanel(const std::string& scriptName) const
 {
-    QWidget* w = _app->getGui()->findExistingTab(scriptName);
+    PanelWidget* w = _app->getGui()->findExistingTab(scriptName);
     if (!w) {
         return 0;
     }
-    return dynamic_cast<PyPanel*>(w);
+    return dynamic_cast<PyPanel*>(w->getWidget());
 }
 
 PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)

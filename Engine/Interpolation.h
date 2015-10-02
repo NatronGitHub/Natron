@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_INTERPOLATION_H_
-#define NATRON_ENGINE_INTERPOLATION_H_
+#ifndef NATRON_ENGINE_INTERPOLATION_H
+#define NATRON_ENGINE_INTERPOLATION_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -193,4 +193,4 @@ int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s
 }
 
 
-#endif // NATRON_ENGINE_INTERPOLATION_H_
+#endif // NATRON_ENGINE_INTERPOLATION_H

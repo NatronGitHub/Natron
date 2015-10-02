@@ -155,12 +155,9 @@ protected:
 
     void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
 
-    void enterEvent(QEvent *e) OVERRIDE FINAL;
     void focusInEvent(QFocusEvent *e) OVERRIDE FINAL;
 
-    void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
-
-private Q_SLOTS:
+public Q_SLOTS:
     /**
      * @brief Computes the timeline positions and refresh the view.
      *

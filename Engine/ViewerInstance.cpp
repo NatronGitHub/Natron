@@ -26,6 +26,7 @@
 #include "ViewerInstancePrivate.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -525,11 +526,12 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
                 lastAge = mergeNode->getStrokeImageAge();
-                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge)) {
+                int strokeIndex;
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
                     
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox);
+                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox,strokeIndex);
                         }
                     }
                     updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
@@ -603,7 +605,7 @@ ViewerInstance::renderViewer(int view,
     }
     
 
-    if ( (ret[0] == eStatusFailed) && (ret[1] == eStatusFailed) ) {
+    if ( (ret[0] == eStatusFailed) || (ret[1] == eStatusFailed) ) {
         return eStatusFailed;
     }
 
@@ -1123,12 +1125,7 @@ ViewerInstance::renderViewer_internal(int view,
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
-//        if (!isSequentialRender) {
-//            _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-//        }
-        if (!isSequentialRender) {
-            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-        }
+        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         return eStatusReplyDefault;
     }
     
@@ -2422,7 +2419,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     if (doUpdate) {
         
         ImageList tiles;
-        Natron::ImageBitDepthEnum depth;
         if (params->cachedFrame) {
             if (!params->tiles.empty()) {
                 tiles = params->tiles;
@@ -2432,8 +2428,9 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         } else {
             assert(!params->tiles.empty());
             tiles = params->tiles;
-            depth = tiles.front()->getBitDepth();
         }
+
+        Natron::ImageBitDepthEnum depth;
         if (!tiles.empty()) {
             depth = tiles.front()->getBitDepth();
         } else {
@@ -2490,17 +2487,23 @@ ViewerInstance::onGammaChanged(double value)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsGamma = value;
-        _imp->fillGammaLut(1. / value);
+        if (_imp->viewerParamsGamma != value) {
+            _imp->viewerParamsGamma = value;
+            _imp->fillGammaLut(1. / value);
+            changed = true;
+        }
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
-        && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    } else {
-        _imp->uiContext->redraw();
+    if (changed) {
+        if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+            && !getApp()->getProject()->isLoadingProject() ) {
+            renderCurrentFrame(true);
+        } else {
+            _imp->uiContext->redraw();
+        }
     }
 }
 
@@ -2516,17 +2519,23 @@ ViewerInstance::onGainChanged(double exp)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsGain = exp;
+        if (_imp->viewerParamsGain != exp) {
+            _imp->viewerParamsGain = exp;
+            changed = true;
+        }
     }
-    assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
-         && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    } else {
-        _imp->uiContext->redraw();
+    if (changed) {
+        assert(_imp->uiContext);
+        if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+            && !getApp()->getProject()->isLoadingProject() ) {
+            renderCurrentFrame(true);
+        } else {
+            _imp->uiContext->redraw();
+        }
     }
 }
 
@@ -2553,12 +2562,15 @@ ViewerInstance::onAutoContrastChanged(bool autoContrast,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsAutoContrast = autoContrast;
+        if (_imp->viewerParamsAutoContrast != autoContrast) {
+            _imp->viewerParamsAutoContrast = autoContrast;
+            changed = true;
+        }
     }
-    if ( refresh && !getApp()->getProject()->isLoadingProject() ) {
+    if ( changed && refresh && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }
@@ -2580,7 +2592,9 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
     
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        
+        if (_imp->viewerParamsLut == colorspace) {
+            return;
+        }
         _imp->viewerParamsLut = colorspace;
     }
     assert(_imp->uiContext);
@@ -2597,17 +2611,27 @@ ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         if (!bothInputs) {
-            _imp->viewerParamsChannels[0] = channels;
+            if (_imp->viewerParamsChannels[0] != channels) {
+                _imp->viewerParamsChannels[0] = channels;
+                changed = true;
+            }
         } else {
-            _imp->viewerParamsChannels[0] = channels;
-            _imp->viewerParamsChannels[1] = channels;
+            if (_imp->viewerParamsChannels[0] != channels) {
+                _imp->viewerParamsChannels[0] = channels;
+                changed = true;
+            }
+            if (_imp->viewerParamsChannels[1] != channels) {
+                _imp->viewerParamsChannels[1] = channels;
+                changed = true;
+            }
         }
     }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
+    if ( changed && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }
@@ -2617,11 +2641,15 @@ ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRend
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsLayer = layer;
+        if (_imp->viewerParamsLayer != layer) {
+            _imp->viewerParamsLayer = layer;
+            changed = true;
+        }
     }
-    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
+    if ( doRender && changed && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }
@@ -2631,12 +2659,19 @@ ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std:
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        _imp->viewerParamsAlphaLayer = layer;
-        _imp->viewerParamsAlphaChannelName = channelName;
+        if (_imp->viewerParamsAlphaLayer != layer) {
+            _imp->viewerParamsAlphaLayer = layer;
+            changed = true;
+        }
+        if (_imp->viewerParamsAlphaChannelName != channelName) {
+            _imp->viewerParamsAlphaChannelName = channelName;
+            changed = true;
+        }
     }
-    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
+    if ( changed && doRender && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }
@@ -2674,6 +2709,14 @@ ViewerInstance::redrawViewer()
     _imp->uiContext->redraw();
 }
 
+void
+ViewerInstance::redrawViewerNow()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert(_imp->uiContext);
+    _imp->uiContext->redrawNow();
+}
 
 int
 ViewerInstance::getLutType() const
@@ -2747,17 +2790,17 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 }
 
 void
-ViewerInstance::onInputChanged(int inputNb)
+ViewerInstance::refreshActiveInputs(int inputNbChanged)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    NodePtr inputNode = getNode()->getRealInput(inputNb);
+    NodePtr inputNode = getNode()->getRealInput(inputNbChanged);
     {
         QMutexLocker l(&_imp->activeInputsMutex);
         if (!inputNode) {
             ///check if the input was one of the active ones if so set to -1
-            if (_imp->activeInputs[0] == inputNb) {
+            if (_imp->activeInputs[0] == inputNbChanged) {
                 _imp->activeInputs[0] = -1;
-            } else if (_imp->activeInputs[1] == inputNb) {
+            } else if (_imp->activeInputs[1] == inputNbChanged) {
                 _imp->activeInputs[1] = -1;
             }
         } else {
@@ -2767,31 +2810,32 @@ ViewerInstance::onInputChanged(int inputNb)
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
                     op = Natron::eViewerCompositingOperatorWipe;
                 }
-                _imp->activeInputs[1] = inputNb;
+                _imp->activeInputs[1] = inputNbChanged;
                 
             } else {
-                _imp->activeInputs[0] = inputNb;
+                _imp->activeInputs[0] = inputNbChanged;
             }
         }
     }
     Q_EMIT activeInputsChanged();
     Q_EMIT refreshOptionalState();
-    Q_EMIT clipPreferencesChanged();
 }
 
 void
-ViewerInstance::restoreClipPreferences()
+ViewerInstance::onInputChanged(int /*inputNb*/)
 {
+  
     Q_EMIT clipPreferencesChanged();
 }
 
-void
+bool
 ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const RenderScale & /*scale*/,
                              const std::string & /*reason*/,
                              bool /*forceGetClipPrefAction*/)
 {
     Q_EMIT clipPreferencesChanged();
+    return false;
 }
 
 void

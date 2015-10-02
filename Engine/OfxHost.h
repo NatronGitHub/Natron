@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXHOST_H_
-#define NATRON_ENGINE_OFXHOST_H_
+#ifndef NATRON_ENGINE_OFXHOST_H
+#define NATRON_ENGINE_OFXHOST_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -126,10 +126,10 @@ public:
     // that request.
 
     /// @see OfxDialogSuiteV1.RequestDialog()
-    virtual OfxStatus requestDialog(void* user_data) OVERRIDE;
+    virtual OfxStatus requestDialog(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs, void* instanceData) OVERRIDE;
 
     /// @see OfxDialogSuiteV1.NotifyRedrawPending()
-    virtual OfxStatus notifyRedrawPending() OVERRIDE;
+    virtual OfxStatus notifyRedrawPending(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs) OVERRIDE;
 #endif
 #ifdef OFX_SUPPORTS_OPENGLRENDER
     /// @see OfxImageEffectOpenGLRenderSuiteV1.flushResources()
@@ -142,7 +142,8 @@ public:
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
-                                                bool disableRenderScaleSupport);
+                                                bool disableRenderScaleSupport,
+                                                                 bool *hasUsedFileDialog);
 
     void addPathToLoadOFXPlugins(const std::string path);
 
@@ -171,4 +172,4 @@ private:
 };
 } // namespace Natron
 
-#endif // ifndef NATRON_ENGINE_OFXHOST_H_
+#endif // ifndef NATRON_ENGINE_OFXHOST_H

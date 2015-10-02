@@ -197,6 +197,11 @@ public:
      **/
     virtual void clearLastRenderedImage() = 0;
     
+    /**
+     *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
+     **/
+    virtual void redrawNow() = 0;
+    
 };
 
 

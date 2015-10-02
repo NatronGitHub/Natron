@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_ResizableMessageBox_h_
-#define _Gui_ResizableMessageBox_h_
+#ifndef Gui_ResizableMessageBox_h
+#define Gui_ResizableMessageBox_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -44,4 +44,4 @@ private:
     bool event(QEvent *e) OVERRIDE FINAL;
 };
 
-#endif // _Gui_ResizableMessageBox_h_
+#endif // Gui_ResizableMessageBox_h

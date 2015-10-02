@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_LogWindow_h_
-#define _Gui_LogWindow_h_
+#ifndef Gui_LogWindow_h
+#define Gui_LogWindow_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -57,4 +57,4 @@ public Q_SLOTS:
     void onClearButtonClicked();
 };
 
-#endif // _Gui_LogWindow_h_
+#endif // Gui_LogWindow_h

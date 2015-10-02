@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_OFXOVERLAYINTERACT_H_
-#define NATRON_ENGINE_OFXOVERLAYINTERACT_H_
+#ifndef NATRON_ENGINE_OFXOVERLAYINTERACT_H
+#define NATRON_ENGINE_OFXOVERLAYINTERACT_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -103,7 +103,7 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on the attached viewer*/
+    /*Calls update() on the attached viewer*/
     virtual OfxStatus redraw() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// hooks to kOfxInteractPropViewportSize in the property set
@@ -269,7 +269,7 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on all viewers*/
+    /*Calls update() on all viewers*/
     virtual OfxStatus redraw();
 
 
@@ -316,4 +316,4 @@ public:
 };
 }
 
-#endif // NATRON_ENGINE_OFXOVERLAYINTERACT_H_
+#endif // NATRON_ENGINE_OFXOVERLAYINTERACT_H

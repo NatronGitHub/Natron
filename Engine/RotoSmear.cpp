@@ -240,8 +240,8 @@ RotoSmear::render(const RenderActionArgs& args)
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
     std::list<std::list<std::pair<Natron::Point,double> > > strokes;
-    //stroke->evaluateStroke(0, &points);
-    node->getLastPaintStrokePoints(args.time, &strokes);
+    int strokeIndex;
+    node->getLastPaintStrokePoints(args.time, &strokes, &strokeIndex);
 
     
     bool isFirstStrokeTick = false;
@@ -295,6 +295,8 @@ RotoSmear::render(const RenderActionArgs& args)
     //renderPoint is the final point we rendered, recorded for the next call to render when we are bulding up the smear
     std::pair<Point,double> prev,cur,renderPoint;
     
+    bool bgInitialized = false;
+
     for (std::list<std::list<std::pair<Natron::Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
         int firstPoint = (int)std::floor((itStroke->size() * writeOnStart));
         int endPoint = (int)std::ceil((itStroke->size() * writeOnEnd));
@@ -312,6 +314,14 @@ RotoSmear::render(const RenderActionArgs& args)
         bool didPaint = false;
         double distToNext = 0.;
 
+        ImagePtr bgImg;
+        
+        if (strokeIndex == 0) {
+            ///For the first multi-stroke, init background
+            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+        }
+
+        
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             
@@ -319,19 +329,20 @@ RotoSmear::render(const RenderActionArgs& args)
             int nComps = plane->first.getNumComponents();
             
             
-            ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), plane->second->getBitDepth(), par, false, &bgImgRoI);
-            if (!bgImg) {
+            if (!bgImg && !bgInitialized && strokeIndex == 0) {
                 plane->second->fillZero(args.roi);
+                bgInitialized = true;
                 continue;
             }
             
             //First copy the source image if this is the first stroke tick
             
-            if (isFirstStrokeTick || !duringPainting) {
+            if ((isFirstStrokeTick || !duringPainting) && !bgInitialized && strokeIndex == 0) {
                 
                 //Make sure all areas are black and transparant
                 plane->second->fillZero(args.roi);
                 plane->second->pasteFrom(*bgImg,args.roi, false);
+                bgInitialized = true;
             }
             
             if (brushSpacing == 0 || (writeOnEnd - writeOnStart) <= 0. || visiblePortion.empty() || itStroke->size() <= 1) {
@@ -365,6 +376,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 cur = _imp->lastCur;
             }
             
+            isFirstStrokeTick = false;
             
             while (it!=visiblePortion.end()) {
                 

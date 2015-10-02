@@ -59,7 +59,7 @@ Label::refreshStyle()
 {
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void

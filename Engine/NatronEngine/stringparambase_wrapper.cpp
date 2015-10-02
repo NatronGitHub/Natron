@@ -4,6 +4,7 @@
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
+GCC_DIAG_OFF(missing-declarations)
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -119,12 +120,12 @@ static PyObject* Sbk_StringParamBaseFunc_get(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: get()const
-    // 1: get(int)const
+    // 1: get(double)const
     if (numArgs == 0) {
         overloadId = 0; // get()const
     } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 1; // get(int)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        overloadId = 1; // get(double)const
     }
 
     // Function signature not found.
@@ -142,13 +143,13 @@ static PyObject* Sbk_StringParamBaseFunc_get(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // get(int frame) const
+        case 1: // get(double frame) const
         {
-            int cppArg0;
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get(int)const
+                // get(double)const
                 std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->get(cppArg0);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
             }
@@ -163,7 +164,7 @@ static PyObject* Sbk_StringParamBaseFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_StringParamBaseFunc_get_TypeError:
-        const char* overloads[] = {"", "int", 0};
+        const char* overloads[] = {"", "float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.get", overloads);
         return 0;
 }
@@ -233,9 +234,9 @@ static PyObject* Sbk_StringParamBaseFunc_getValueAtTime(PyObject* self, PyObject
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getValueAtTime(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getValueAtTime(int)const
+    // 0: getValueAtTime(double)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getValueAtTime(double)const
     }
 
     // Function signature not found.
@@ -243,11 +244,11 @@ static PyObject* Sbk_StringParamBaseFunc_getValueAtTime(PyObject* self, PyObject
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getValueAtTime(int)const
+            // getValueAtTime(double)const
             std::string cppResult = const_cast<const ::StringParamBaseWrapper*>(cppSelf)->getValueAtTime(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
@@ -260,7 +261,7 @@ static PyObject* Sbk_StringParamBaseFunc_getValueAtTime(PyObject* self, PyObject
     return pyResult;
 
     Sbk_StringParamBaseFunc_getValueAtTime_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.getValueAtTime", overloads);
         return 0;
 }

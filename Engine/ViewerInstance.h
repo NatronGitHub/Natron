@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_VIEWERNODE_H_
-#define NATRON_ENGINE_VIEWERNODE_H_
+#ifndef NATRON_ENGINE_VIEWERNODE_H
+#define NATRON_ENGINE_VIEWERNODE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -213,8 +213,8 @@ public:
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
-    virtual void restoreClipPreferences() OVERRIDE FINAL;
-
+    void refreshActiveInputs(int inputNbChanged);
+    
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
@@ -233,7 +233,7 @@ public:
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual void checkOFXClipPreferences(double time,
+    virtual bool checkOFXClipPreferences(double time,
                                          const RenderScale & scale,
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
@@ -269,6 +269,8 @@ public Q_SLOTS:
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
      **/
     void redrawViewer();
+    
+    void redrawViewerNow();
 
   
     void executeDisconnectTextureRequestOnMainThread(int index);
@@ -372,4 +374,4 @@ private:
 };
 
 //} // namespace Natron
-#endif // NATRON_ENGINE_VIEWERNODE_H_
+#endif // NATRON_ENGINE_VIEWERNODE_H

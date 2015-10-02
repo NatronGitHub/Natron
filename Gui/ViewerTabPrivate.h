@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_ViewerTabPrivate_h
-#define _Gui_ViewerTabPrivate_h
+#ifndef Gui_ViewerTabPrivate_h
+#define Gui_ViewerTabPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -49,6 +49,7 @@ namespace Natron {
     class ImageComponents;
 }
 class ViewerGL;
+class ViewerTab;
 class GuiAppInstance;
 class ComboBox;
 class Button;
@@ -83,9 +84,10 @@ struct ViewerTabPrivate
 
     typedef std::map<int,InputName> InputNamesMap;
 
+    ViewerTab* publicInterface;
+    
     /*OpenGL viewer*/
     ViewerGL* viewer;
-    GuiAppInstance* app;
     QWidget* viewerContainer;
     QHBoxLayout* viewerLayout;
     QWidget* viewerSubContainer;
@@ -115,6 +117,7 @@ struct ViewerTabPrivate
     ComboBox* renderScaleCombo;
     Natron::Label* firstInputLabel;
     ComboBox* firstInputImage;
+    Natron::Label* compositingOperatorLabel;
     ComboBox* compositingOperator;
     Natron::Label* secondInputLabel;
     ComboBox* secondInputImage;
@@ -124,14 +127,14 @@ struct ViewerTabPrivate
     SpinBox* gainBox;
     ScaleSliderQWidget* gainSlider;
     double lastFstopValue;
-    ClickableLabel* autoConstrastLabel;
-    QCheckBox* autoContrast;
+    Button* autoContrast;
     SpinBox* gammaBox;
     double lastGammaValue;
     Button* toggleGammaButton;
     ScaleSliderQWidget* gammaSlider;
     ComboBox* viewerColorSpace;
     Button* checkerboardButton;
+    Button* pickerButton;
     ComboBox* viewsComboBox;
     int currentViewIndex;
     QMutex currentViewMutex;
@@ -170,6 +173,7 @@ struct ViewerTabPrivate
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
+    double userFps;
     Button* turboButton;
 
     /*frame seeker*/
@@ -181,7 +185,6 @@ struct ViewerTabPrivate
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
-    Gui* gui;
     ViewerInstance* viewerNode; // < pointer to the internal node
     
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
@@ -203,8 +206,7 @@ struct ViewerTabPrivate
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
     boost::weak_ptr<Natron::Node> lastOverlayNode;
     
-    ViewerTabPrivate(Gui* gui,
-                     ViewerInstance* node);
+    ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
@@ -225,4 +227,4 @@ struct ViewerTabPrivate
     void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
 };
-#endif // _Gui_ViewerTabPrivate_h
+#endif // Gui_ViewerTabPrivate_h

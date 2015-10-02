@@ -43,8 +43,16 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
+#include <QToolButton>
 #include <QProgressDialog>
 #include <QVBoxLayout>
+#include <QTreeWidget>
+#include <QTabBar>
+#include <QTextEdit>
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QTreeView>
 
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -56,6 +64,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/GuiAppInstance.h"
@@ -73,7 +83,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
-
+#include "Gui/Histogram.h"
 
 using namespace Natron;
 
@@ -432,21 +442,39 @@ Gui::resizeEvent(QResizeEvent* e)
     setMtSafeWindowSize( width(), height() );
 }
 
+static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
+{
+    if (!w) {
+        return false;
+    }
+    RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
+    if (panel) {
+        return panel;
+    } else {
+        return isParentSettingsPanelRecursive(w->parentWidget());
+    }
+}
+
 void
 Gui::keyPressEvent(QKeyEvent* e)
 {
+    if (_imp->currentPanelFocusEventRecursion > 0) {
+        return;
+    }
+    
     QWidget* w = qApp->widgetAt( QCursor::pos() );
 
-    if ( w && ( w->objectName() == QString("SettingsPanel") ) && (e->key() == Qt::Key_Escape) ) {
-        RightClickableWidget* panel = dynamic_cast<RightClickableWidget*>(w);
-        assert(panel);
-        panel->getPanel()->closePanel();
-    }
-
+    
     Qt::Key key = (Qt::Key)e->key();
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
-    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+    if (key == Qt::Key_Escape) {
+        
+        RightClickableWidget* panel = isParentSettingsPanelRecursive(w);
+        if (panel) {
+            panel->getPanel()->closePanel();
+        }
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
             getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
@@ -511,7 +539,18 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
-        QMainWindow::keyPressEvent(e);
+        if (_imp->currentPanelFocus) {
+            
+            ++_imp->currentPanelFocusEventRecursion;
+            //If a panel as the click focus, try to send the event to it
+            QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
+            assert(curFocusWidget);
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
+            qApp->notify(curFocusWidget,ev);
+            --_imp->currentPanelFocusEventRecursion;
+        } else {
+            QMainWindow::keyPressEvent(e);
+        }
     }
 }
 
@@ -583,42 +622,32 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
     for (int i = 0; i < layoutItemsCount; ++i) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>( item->widget() );
-        if (panel) {
-            boost::shared_ptr<NodeGui> node = panel->getNode();
-            boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-            if (node && internalNode) {
-                boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
-                if (multiInstance) {
-//                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-//                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-//                        NodePtr instance = it->first.lock();
-//                        if (node->isSettingsPanelVisible() &&
-//                            !node->isSettingsPanelMinimized() &&
-//                            instance->isActivated() &&
-//                            instance->hasOverlay() &&
-//                            it->second &&
-//                            !instance->isNodeDisabled()) {
-//                            nodes.push_back(instance);
-//                        }
-//                    }
-                    if ( internalNode->hasOverlay() &&
-                         !internalNode->isNodeDisabled() &&
-                         node->isSettingsPanelVisible() &&
-                         !node->isSettingsPanelMinimized() ) {
-                        nodes.push_back( node->getNode() );
-                    }
-                } else {
-                    if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
-                         !internalNode->isNodeDisabled() &&
-                        !internalNode->getParentMultiInstance() && 
-                         internalNode->isActivated() &&
-                         node->isSettingsPanelVisible() &&
-                         !node->isSettingsPanelMinimized() ) {
-                        nodes.push_back( node->getNode() );
-                    }
+        if (!panel) {
+            continue;
+        }
+        boost::shared_ptr<NodeGui> node = panel->getNode();
+        boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+        if (node && internalNode) {
+            boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
+            if (multiInstance) {
+                if ( internalNode->hasOverlay() &&
+                    !internalNode->isNodeDisabled() &&
+                    node->isSettingsPanelVisible() &&
+                    !node->isSettingsPanelMinimized() ) {
+                    nodes.push_back( node->getNode() );
+                }
+            } else {
+                if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
+                    !internalNode->isNodeDisabled() &&
+                    !internalNode->getParentMultiInstance() &&
+                    internalNode->isActivated() &&
+                    node->isSettingsPanelVisible() &&
+                    !node->isSettingsPanelMinimized() ) {
+                    nodes.push_back( node->getNode() );
                 }
             }
         }
+        
     }
 }
 
@@ -680,7 +709,12 @@ Gui::onPrevTabTriggered()
     
     if (t) {
         t->moveToPreviousTab();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
+    
 
 }
 
@@ -691,6 +725,10 @@ Gui::onNextTabTriggered()
 
     if (t) {
         t->moveToNextTab();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
 }
 
@@ -701,6 +739,10 @@ Gui::onCloseTabTriggered()
 
     if (t) {
         t->closeCurrentWidget();
+        PanelWidget* pw = t->currentWidget();
+        if (pw) {
+            pw->takeClickFocus();
+        }
     }
 }
 
@@ -843,3 +885,59 @@ Gui::ddeOpenFile(const QString& filePath)
 #pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
 }
 #endif
+
+
+bool
+Gui::isFocusStealingPossible()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    QWidget* currentFocus = qApp->focusWidget();
+    
+    bool focusStealingNotPossible =
+    dynamic_cast<QLineEdit*>(currentFocus) ||
+    dynamic_cast<QTextEdit*>(currentFocus) ||
+    dynamic_cast<QCheckBox*>(currentFocus) ||
+    dynamic_cast<ComboBox*>(currentFocus) ||
+    dynamic_cast<QComboBox*>(currentFocus);
+
+    return !focusStealingNotPossible;
+
+}
+
+void
+Gui::setCurrentPanelFocus(PanelWidget* widget)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->currentPanelFocus = widget;
+}
+
+PanelWidget*
+Gui::getCurrentPanelFocus() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->currentPanelFocus;
+}
+
+static PanelWidget* isPaneChild(QWidget* w, int recursionLevel)
+{
+    if (!w) {
+        return 0;
+    }
+    PanelWidget* pw = dynamic_cast<PanelWidget*>(w);
+    if (pw && recursionLevel > 0) {
+        /*
+         Do not return it if recursion is 0, otherwise the focus stealing of the mouse over will actually take click focus
+         */
+        return pw;
+    }
+    return isPaneChild(w->parentWidget(), recursionLevel + 1);
+}
+
+void
+Gui::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
+{
+    PanelWidget* pw = isPaneChild(newFocus,0);
+    if (pw) {
+        pw->takeClickFocus();
+    }
+}

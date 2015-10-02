@@ -60,7 +60,7 @@ Get the value of the parameter at the current timeline's time
 .. method:: NatronEngine.StringParamBase.get(frame)
 
 
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`str<NatronEngine.std::string>`
 
 
@@ -94,7 +94,7 @@ Same as :func:`get()<NatronEngine.StringParamBase.get>`
 .. method:: NatronEngine.StringParamBase.getValueAtTime(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`str<NatronEngine.std::string>`
 
 Same as :func:`get(frame)<NatronEngine.StringParamBase.get>`

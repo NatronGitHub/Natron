@@ -17,8 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-#ifndef NODEBACKDROP_H
-#define NODEBACKDROP_H
+#ifndef Gui_BackDropGui_h
+#define Gui_BackDropGui_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -89,4 +89,4 @@ private:
     boost::scoped_ptr<BackDropGuiPrivate> _imp;
 };
 
-#endif // NODEBACKDROP_H
+#endif // Gui_BackDropGui_h

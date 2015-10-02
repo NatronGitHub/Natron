@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_VIEWERGL_H_
-#define NATRON_GUI_VIEWERGL_H_
+#ifndef NATRON_GUI_VIEWERGL_H
+#define NATRON_GUI_VIEWERGL_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -296,9 +296,14 @@ public:
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
 
     /**
-     * @brief Repaint
+     * @brief update()
      **/
     virtual void redraw() OVERRIDE FINAL;
+    
+    /**
+     * @brief updateGL();
+     **/
+    virtual void redrawNow() OVERRIDE FINAL;
 
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
@@ -418,9 +423,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
     

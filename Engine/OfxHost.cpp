@@ -512,7 +512,8 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                  bool allowFileDialogs,
-                                 bool disableRenderScaleSupport)
+                                 bool disableRenderScaleSupport,
+                                 bool *hasUsedFileDialog)
 {
     assert(node);
     const Natron::Plugin* natronPlugin = node->getPlugin();
@@ -528,7 +529,7 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
         node->setLiveInstance(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
 
     return hostSideEffect;
 }
@@ -664,8 +665,6 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
-        bool userCreatable = !p->getDescriptor().isDeprecated();
-        bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         
         Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
@@ -676,7 +675,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                                               foundWriter != contexts.end(),
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                                               p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                              p->getVersionMajor(), p->getVersionMinor(),userCreatable );
+                                                              p->getVersionMajor(), p->getVersionMinor(),p->getDescriptor().isDeprecated() );
+        bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
         }
@@ -1317,16 +1317,21 @@ Natron::OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 // dialog
 /// @see OfxDialogSuiteV1.RequestDialog()
 OfxStatus
-Natron::OfxHost::requestDialog(void* user_data)
+Natron::OfxHost::requestDialog(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs, void* instanceData)
 {
-    appPTR->requestOFXDIalogOnMainThread(user_data);
+    Q_UNUSED(inArgs);
+    OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
+    Natron::OfxImageEffectInstance *effectInstance = dynamic_cast<Natron::OfxImageEffectInstance*>(effectBase);
+    appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
     return kOfxStatOK;
 }
 
 /// @see OfxDialogSuiteV1.NotifyRedrawPending()
 OfxStatus
-Natron::OfxHost::notifyRedrawPending()
+Natron::OfxHost::notifyRedrawPending(OfxImageEffectHandle instance, OfxPropertySetHandle inArgs)
 {
+    Q_UNUSED(instance);
+    Q_UNUSED(inArgs);
     return kOfxStatReplyDefault;
 }
 

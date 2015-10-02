@@ -69,7 +69,7 @@ Member functions description
 .. method:: NatronEngine.DoubleParam.get(frame)
 
 
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
 Returns the value of this parameter at the given *frame*. If the animation curve has an 
@@ -165,7 +165,7 @@ Returns the value of this parameter at the given *dimension* at the current time
 .. method:: NatronEngine.DoubleParam.getValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`float<PySide.QtCore.double>`
 

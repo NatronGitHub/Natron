@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_ENUMS_H_
-#define NATRON_GLOBAL_ENUMS_H_
+#ifndef NATRON_GLOBAL_ENUMS_H
+#define NATRON_GLOBAL_ENUMS_H
 
 #include "Global/Macros.h"
 #include <QFlags>
@@ -37,6 +37,8 @@ enum TimelineStateEnum
     eTimelineStateIdle,
     eTimelineStateDraggingCursor,
     eTimelineStateDraggingBoundary,
+    eTimelineStatePanning,
+    eTimelineStateSelectingZoomRange,
 };
 
 enum TimelineChangeReasonEnum
@@ -154,6 +156,8 @@ enum PixmapEnum
     NATRON_PIXMAP_VIEWER_ROI_DISABLED,
     NATRON_PIXMAP_VIEWER_RENDER_SCALE,
     NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED,
+    NATRON_PIXMAP_VIEWER_AUTOCONTRAST_ENABLED,
+    NATRON_PIXMAP_VIEWER_AUTOCONTRAST_DISABLED,
 
     NATRON_PIXMAP_OPEN_FILE,
     NATRON_PIXMAP_COLORWHEEL,
@@ -560,4 +564,4 @@ enum DopeSheetItemType
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 
 
-#endif // NATRON_GLOBAL_ENUMS_H_
+#endif // NATRON_GLOBAL_ENUMS_H

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RotoContext_h_
-#define _Engine_RotoContext_h_
+#ifndef Engine_RotoContext_h
+#define Engine_RotoContext_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -376,6 +376,8 @@ public:
         
     void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
+    boost::shared_ptr<Natron::Node> getRotoPaintBottomMergeNode() const;
+    
     void setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke);
     boost::shared_ptr<RotoStrokeItem> getStrokeBeingPainted() const;
     
@@ -456,4 +458,4 @@ private:
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 
-#endif // _Engine_RotoContext_h_
+#endif // Engine_RotoContext_h

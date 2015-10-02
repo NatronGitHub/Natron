@@ -1,7 +1,7 @@
 /* -*- mode: css -*- */
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
-/*%10 = altered text colour*/
+/*%10 = altered text colour, %11 = mouse over selection color*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -457,12 +457,17 @@ QSplitter::handle::vertical {
     height: 3px;
 }
 
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
+QTabBar {
+    tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */
+    background-color: %4; /* color of the background over non-selected tabs, and to the sides of the tab when there is only one */
+}
+
 QTabBar::tab {
-    color: %5;
-    background: %4;
+    background-color: %4; /* the background of non-selected tabs */
     border: 1px solid ;
-    border-bottom-color: %2;
-    min-width: 18ex;
+    border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
+    min-width: 8ex;
     padding: 2px;
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
@@ -476,19 +481,15 @@ QTabBar::tab:hover {
     background: %1;
 }
 QTabBar::tab:selected {
-    background: %2;
+    background: %2; /* the background of the selected tab */
     border-bottom-style:none;
-    border-color: %1;
+    /*border-color: %1;*/
 }
 
-QTabBar::tab:selected:focus {
-    border-color: %1;
-}
 
 QTabBar::tab:!selected {
-    margin-top: 0px; /* make non-selected tabs look smaller */
-    margin-left: 0px;
-    margin-right: 0px;
+    color: %5;  color of the text on deselected tabs
+    margin-top: 2px; /* make non-selected tabs look smaller */
 }
 
 /* make use of negative margins for overlapping tabs */
@@ -516,7 +517,17 @@ QTabBar::close-button:hover {
     subcontrol-position:right;
 }
 
+TabBar[mouseOverFocus="true"][clickFocus="false"] {
+    color: %11;
+}
 
+TabBar[clickFocus="true"] {
+    color: %1;
+}
+
+TabBar[mouseOverFocus="false"][clickFocus="false"] {
+    color: %5;
+}
 
 QTabWidget::tab-bar {
     alignment: left;
@@ -543,19 +554,14 @@ QToolButton {
 
 SpinBox[animation="0"] {
     background-color: %3;
-    color: %5;
 }
 SpinBox[animation="1"] {
     background-color: %6;
-    color: %5;
 }
 SpinBox[animation="2"] {
     background-color: %7;
-    color: %5;
 }
-SpinBox[altered="false"] {
-    color: %5;
-}
+
 SpinBox[animation="3"] {
     background-color: %9;
     color: black;

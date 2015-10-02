@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RectISerialization_h_
-#define _Engine_RectISerialization_h_
+#ifndef Engine_RectISerialization_h
+#define Engine_RectISerialization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -50,4 +50,4 @@ void RectI::serialize(Archive & ar,
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
 
-#endif // _Engine_RectISerialization_h_
+#endif // Engine_RectISerialization_h

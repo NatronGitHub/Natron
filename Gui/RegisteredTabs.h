@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_RegisteredTabs_h_
-#define _Gui_RegisteredTabs_h_
+#ifndef Gui_RegisteredTabs_h
+#define Gui_RegisteredTabs_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,9 +29,9 @@
 #include <map>
 #include <string>
 
-class QWidget;
 class ScriptObject;
+class PanelWidget;
 
-typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
+typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
 
-#endif // _Gui_RegisteredTabs_h_
+#endif // Gui_RegisteredTabs_h

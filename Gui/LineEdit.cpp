@@ -119,7 +119,7 @@ LineEdit::setAnimation(int v)
     animation = v;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -128,7 +128,7 @@ LineEdit::setDirty(bool b)
     dirty = b;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void
@@ -137,7 +137,7 @@ LineEdit::setAltered(bool b)
     altered = b;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 void

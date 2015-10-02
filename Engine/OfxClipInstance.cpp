@@ -758,6 +758,11 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
     return getImagePlaneInternal(time, view, optionalBounds, &plane);
 }
 
@@ -779,7 +784,12 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time, int view, const OfxRectD *o
     //If TLS does not work then nothing will work.
     assert( hasLocalData );
 #endif
-    
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
+
     if (isOutput()) {
         return getOutputImageInternal(ofxPlane);
     } else {
@@ -830,8 +840,13 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     if (comp.getNumComponents() == 0) {
         return 0;
     }
-    
-  
+    if (time != time) {
+        // time is NaN
+
+        return 0;
+    }
+
+
     boost::shared_ptr<Transform::Matrix3x3> transform;
     bool usingReroute  = false;
     int rerouteInputNb = -1;
@@ -1002,7 +1017,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         nComps = natronComps.front().getNumComponents();
     }
     
-    /* // this will dump the image as seen from the plug-in
+     /*// this will dump the image as seen from the plug-in
      QString filename;
      QTextStream ts(&filename);
      QDateTime now = QDateTime::currentDateTime();
@@ -1029,12 +1044,17 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
             natronPlane = tls->clipComponents;
         }
         
-        assert(natronPlane.getNumComponents() > 0);
-        /*if (natronPlane.getNumComponents() == 0) {
+        
+        /*
+         If the plugin is multi-planar, we are in the situation where it called the regular clipGetImage without a plane in argument
+         so the components will not have been set on the TLS hence just use regular components.
+         */
+        if (natronPlane.getNumComponents() == 0 && _nodeInstance->isMultiPlanar()) {
             std::list<ImageComponents> comps = ofxComponentsToNatronComponents(_components);
             assert(!comps.empty());
             natronPlane = comps.front();
-        }*/
+        }
+        assert(natronPlane.getNumComponents() > 0);
         
     } else {
         natronPlane = ofxPlaneToNatronPlane(*ofxPlane);

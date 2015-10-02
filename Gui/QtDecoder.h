@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_READERS_READQT_H_
-#define NATRON_READERS_READQT_H_
+#ifndef NATRON_READERS_READQT_H
+#define NATRON_READERS_READQT_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:

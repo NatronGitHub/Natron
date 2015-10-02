@@ -31,6 +31,8 @@ addons:
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     # we use the irie/boost ppa for that purpose
     - irie-boost
+    # kubuntu-ppa/backports contains OpenCV
+    - kubuntu-ppa-backports
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     - xorg-edgers-ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
@@ -48,6 +50,23 @@ addons:
     - python-pyside
     - libpyside-dev
     - libshiboken-dev
+  coverity_scan:
+    # customized build script URL
+    # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
+    # TRAVIS_BRANCH: name of the branch currently being built
+    build_script_url: https://raw.githubusercontent.com/$TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/.travis-coverity-scan-build.sh
+    # project metadata
+    project:
+      name: $TRAVIS_REPO_SLUG
+    # Where email notification of build analysis results will be sent
+    notification_email: frederic.devernay@m4x.org
+    # Commands to prepare for build_command
+    #build_command_prepend: ./configure
+    # This command will be added as an argument to "cov-build" to compile
+    # the project for analysis
+    build_command: "tools/travis/build.sh"
+    # Pattern to match selecting branches that will run analysis
+    branch_pattern: coverity_scan
 
 matrix:
   exclude:
@@ -97,21 +116,3 @@ after_success:
 after_failure:
   - cat install_dependencies.log || true
 
-addons:
-  coverity_scan:
-    # customized build script URL
-    # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
-    # TRAVIS_BRANCH: name of the branch currently being built
-    build_script_url: https://raw.githubusercontent.com/$TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/.travis-coverity-scan-build.sh
-    # project metadata
-    project:
-      name: $TRAVIS_REPO_SLUG
-    # Where email notification of build analysis results will be sent
-    notification_email: frederic.devernay@m4x.org
-    # Commands to prepare for build_command
-    #build_command_prepend: ./configure
-    # This command will be added as an argument to "cov-build" to compile
-    # the project for analysis
-    build_command: "tools/travis/build.sh"
-    # Pattern to match selecting branches that will run analysis
-    branch_pattern: coverity_scan

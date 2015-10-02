@@ -47,11 +47,10 @@
 class DopeSheetEditorPrivate
 {
 public:
-    DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui);
+    DopeSheetEditorPrivate(DopeSheetEditor *qq);
 
     /* attributes */
     DopeSheetEditor *q_ptr;
-    Gui *gui;
 
     QVBoxLayout *mainLayout;
 
@@ -63,9 +62,8 @@ public:
 
 };
 
-DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
+DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
     q_ptr(qq),
-    gui(gui),
     mainLayout(0),
     model(0),
     splitter(0),
@@ -80,8 +78,8 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq, Gui *gui)  :
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent) :
     QWidget(parent),
-    ScriptObject(),
-    _imp(new DopeSheetEditorPrivate(this, gui))
+    PanelWidget(this,gui),
+    _imp(new DopeSheetEditorPrivate(this))
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -170,7 +168,7 @@ DopeSheetEditor::refreshSelectionBboxAndRedrawView()
 int
 DopeSheetEditor::getTimelineCurrentTime() const
 {
-    return _imp->gui->getApp()->getTimeLine()->currentFrame();
+    return getGui()->getApp()->getTimeLine()->currentFrame();
 }
 
 DopeSheetView*
@@ -203,8 +201,57 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     Qt::KeyboardModifiers modifiers = e->modifiers();
  
+    bool accept = true;
     if (isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key)) {
         _imp->model->renameSelectedNode();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
+        _imp->dopeSheetView->deleteSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
+        _imp->dopeSheetView->centerOnSelection();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
+        _imp->dopeSheetView->onSelectedAllTriggered();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
+        _imp->dopeSheetView->constantInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
+        _imp->dopeSheetView->linearInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
+        _imp->dopeSheetView->smoothInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
+        _imp->dopeSheetView->catmullRomInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
+        _imp->dopeSheetView->cubicInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
+        _imp->dopeSheetView->horizontalInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
+        _imp->dopeSheetView->breakInterpSelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key)) {
+        _imp->dopeSheetView->copySelectedKeyframes();
+    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
+        _imp->dopeSheetView->pasteKeyframes();
+    } else {
+        accept = false;
+        QWidget::keyPressEvent(e);
+    }
+    if (accept) {
+        takeClickFocus();
+        e->accept();
     }
 }
 
+void DopeSheetEditor::enterEvent(QEvent *e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
+void DopeSheetEditor::leaveEvent(QEvent *e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
+
+void
+DopeSheetEditor::onInputEventCalled()
+{
+    takeClickFocus();
+}

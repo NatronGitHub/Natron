@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Natron_Gui_Utils_h_
-#define Natron_Gui_Utils_h_
+#ifndef Natron_Gui_Utils_h
+#define Natron_Gui_Utils_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -31,4 +31,4 @@ namespace Natron {
 QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);
 }
 
-#endif // Natron_Gui_Utils_h_
+#endif // Natron_Gui_Utils_h

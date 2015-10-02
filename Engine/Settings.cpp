@@ -1169,7 +1169,7 @@ Settings::setDefaultValues()
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
     _systemFontChoice->setDefaultValue(0);
-    _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
     _checkForUpdates->setDefaultValue(false);
     _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
@@ -2101,35 +2101,14 @@ static int filterDefaultRenderScaleSupportPlugin(const QString& ofxPluginID)
     return 0;
 }
 
-struct PerPluginKnobs
-{
-    boost::shared_ptr<KnobBool> enabled;
-    boost::shared_ptr<KnobChoice> renderScaleSupport;
-    
-    PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
-                   const boost::shared_ptr<KnobChoice>& renderScaleSupport)
-        : enabled(enabled)
-        , renderScaleSupport(renderScaleSupport)
-    {
-        
-    }
-    
-    PerPluginKnobs()
-        : enabled() , renderScaleSupport()
-    {
-        
-    }
-};
 
 void
-Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
+Settings::populatePluginsTab()
 {
     
     const PluginsMap& plugins = appPTR->getPluginsList();
     
     std::vector<boost::shared_ptr<KnobI> > knobsToRestore;
-    
-    std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
     
     std::map< std::string,std::string > groupNames;
     ///First pass to exctract all groups
@@ -2169,86 +2148,113 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         }
         assert(it->second.size() > 0);
         
-        Natron::Plugin* plugin  = *it->second.rbegin();
-        assert(plugin);
-        
-        if (plugin->getIsForInternalUseOnly()) {
-            continue;
-        }
-        
-        boost::shared_ptr<KnobGroup> group;
-        const QStringList& grouping = plugin->getGrouping();
-        if (grouping.size() > 0) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            Natron::Plugin* plugin  = *it2;
+            assert(plugin);
             
-            std::string mainGroup = Natron::makeNameScriptFriendly(grouping[0].toStdString());
+            if (plugin->getIsForInternalUseOnly()) {
+                continue;
+            }
             
-            ///Find the corresponding group
-            for (std::list< boost::shared_ptr<KnobGroup> >::const_iterator it2 = groups.begin(); it2 != groups.end(); ++it2) {
-                if ((*it2)->getName() == mainGroup) {
-                    group  = *it2;
-                    break;
+            boost::shared_ptr<KnobGroup> group;
+            const QStringList& grouping = plugin->getGrouping();
+            if (grouping.size() > 0) {
+                
+                std::string mainGroup = Natron::makeNameScriptFriendly(grouping[0].toStdString());
+                
+                ///Find the corresponding group
+                for (std::list< boost::shared_ptr<KnobGroup> >::const_iterator it3 = groups.begin(); it3 != groups.end(); ++it3) {
+                    if ((*it3)->getName() == mainGroup) {
+                        group  = *it3;
+                        break;
+                    }
                 }
             }
-        }
-        
-        ///Create checkbox to activate/deactivate the plug-in
-        std::string pluginName = plugin->getPluginID().toStdString();
-        
-        boost::shared_ptr<KnobString> pluginLabel = Natron::createKnob<KnobString>(this, pluginName);
-        pluginLabel->setAsLabel();
-        pluginLabel->setName(it->first);
-        pluginLabel->setAnimationEnabled(false);
-        pluginLabel->setDefaultValue(pluginName);
-        pluginLabel->setAddNewLine(false);
-        pluginLabel->hideDescription();
-        pluginLabel->setIsPersistant(false);
-        if (group) {
-            group->addKnob(pluginLabel);
-        }
-        
-        
-        boost::shared_ptr<KnobBool> pluginActivation = Natron::createKnob<KnobBool>(this, "Enabled");
-        pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()) && plugin->getIsUserCreatable());
-        pluginActivation->setName(it->first + ".enabled");
-        pluginActivation->setAnimationEnabled(false);
-        pluginActivation->setAddNewLine(false);
-        pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
-        if (group) {
-            group->addKnob(pluginActivation);
-        }
-        
-        knobsToRestore.push_back(pluginActivation);
-        
-        boost::shared_ptr<KnobChoice> zoomSupport = Natron::createKnob<KnobChoice>(this, "Zoom support");
-        zoomSupport->populateChoices(zoomSupportEntries);
-        zoomSupport->setName(it->first + ".zoomSupport");
-        zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(plugin->getPluginID()));
-        zoomSupport->setHintToolTip("Controls whether the plug-in should have its default zoom support or it should be activated. "
-                                    "This parameter is useful because some plug-ins flag that they can support different level of zoom "
-                                    "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
-                                    "plug-in, hence making it work at different zoom levels."
-                                    "Changes to this parameter will not be applied to existing instances of the plug-in (nodes) unless you "
-                                    "restart the application.");
-        zoomSupport->setAnimationEnabled(false);
-        if (group) {
-            group->addKnob(zoomSupport);
-        }
-        
-        knobsToRestore.push_back(zoomSupport);
+            
+            ///Create checkbox to activate/deactivate the plug-in
+            std::string pluginName = plugin->getPluginID().toStdString();
+            
+            boost::shared_ptr<KnobString> pluginLabel = Natron::createKnob<KnobString>(this, pluginName);
+            pluginLabel->setAsLabel();
+            pluginLabel->setName(it->first);
+            pluginLabel->setAnimationEnabled(false);
+            pluginLabel->setDefaultValue(pluginName);
+            pluginLabel->setAddNewLine(false);
+            pluginLabel->hideDescription();
+            pluginLabel->setIsPersistant(false);
+            if (group) {
+                group->addKnob(pluginLabel);
+            }
+            
+            
+            boost::shared_ptr<KnobBool> pluginActivation = Natron::createKnob<KnobBool>(this, "Enabled");
+            pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()) && !plugin->getIsDeprecated());
+            pluginActivation->setName(it->first + ".enabled");
+            pluginActivation->setAnimationEnabled(false);
+            pluginActivation->setAddNewLine(false);
+            pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
+            if (group) {
+                group->addKnob(pluginActivation);
+            }
+            
+            knobsToRestore.push_back(pluginActivation);
+            
+            boost::shared_ptr<KnobChoice> zoomSupport = Natron::createKnob<KnobChoice>(this, "Zoom support");
+            zoomSupport->populateChoices(zoomSupportEntries);
+            zoomSupport->setName(it->first + ".zoomSupport");
+            zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(plugin->getPluginID()));
+            zoomSupport->setHintToolTip("Controls whether the plug-in should have its default zoom support or it should be deactivated. "
+                                        "This parameter is useful because some plug-ins flag that they can support different level of zoom "
+                                        "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
+                                        "plug-in, hence making it work at different zoom levels."
+                                        "Changes to this parameter will not be applied to existing instances of the plug-in (nodes) unless you "
+                                        "restart the application.");
+            zoomSupport->setAnimationEnabled(false);
+            if (group) {
+                group->addKnob(zoomSupport);
+            }
+            
+            knobsToRestore.push_back(zoomSupport);
+            
+            
+            _pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 
+        }
         
-        pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
-
     }
     
-    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin(); it != pluginsMap.end(); ++it) {
-        if (!it->second.enabled->getValue()) {
-            pluginsToIgnore.push_back(it->first);
-        } else {
-            _perPluginRenderScaleSupport.insert(std::make_pair(it->first->getPluginID().toStdString(), it->second.renderScaleSupport));
-        }
-    }
+    restoreKnobsFromSettings(knobsToRestore);
+    
 }
+
+bool
+Settings::isPluginDeactivated(const Natron::Plugin* p) const
+{
+    if (p->getIsForInternalUseOnly()) {
+        return false;
+    }
+    std::map<const Natron::Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
+    if (found == _pluginsMap.end()) {
+        qDebug() << "Settings::isPluginDeactivated: Plugin not found";
+        return false;
+    }
+    return !found->second.enabled->getValue();
+}
+
+int
+Settings::getRenderScaleSupportPreference(const Natron::Plugin* p) const
+{
+    if (p->getIsForInternalUseOnly()) {
+        return 0;
+    }
+    std::map<const Natron::Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
+    if (found == _pluginsMap.end()) {
+        qDebug() << "Settings::getRenderScaleSupportPreference: Plugin not found";
+        return -1;
+    }
+    return found->second.renderScaleSupport->getValue();
+}
+
 
 void
 Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts)
@@ -2746,15 +2752,6 @@ Settings::didSettingsExistOnStartup() const
 }
 
 
-int
-Settings::getRenderScaleSupportPreference(const std::string& pluginID) const
-{
-    std::map<std::string,boost::shared_ptr<KnobChoice> >::const_iterator found = _perPluginRenderScaleSupport.find(pluginID);
-    if (found != _perPluginRenderScaleSupport.end()) {
-        return found->second->getValue();
-    }
-    return -1;
-}
 
 bool
 Settings::notifyOnFileChange() const

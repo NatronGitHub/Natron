@@ -60,9 +60,7 @@ public:
 
     ~LogPrivate()
     {
-        if (_stream) {
-            delete _stream;
-        }
+        delete _stream;
         if (_file) {
             _file->close();
             delete _file;

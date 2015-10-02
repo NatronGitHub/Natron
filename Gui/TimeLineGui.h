@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_TIMELINE_H_
-#define NATRON_GUI_TIMELINE_H_
+#ifndef NATRON_GUI_TIMELINE_H
+#define NATRON_GUI_TIMELINE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -95,11 +95,13 @@ public:
      *@brief See toZoomCoordinates in ViewerGL.h
      **/
     QPointF toTimeLineCoordinates(double x, double y) const;
+    double toTimeLine(double x) const;
 
     /**
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
     QPointF toWidgetCoordinates(double x, double y) const;
+    double toWidget(double t) const;
 
     /**
      * @brief Activates the SLOT onViewerCacheFrameAdded() and the SIGNALS removedLRUCachedFrame() and  clearedViewerCache()
@@ -126,7 +128,7 @@ public Q_SLOTS:
     
     void recenterOnBounds();
 
-    void centerOn(SequenceTime left,SequenceTime right);
+    void centerOn(SequenceTime left, SequenceTime right, int margin = 5);
 
     void onFrameChanged(SequenceTime,int);
 
@@ -159,7 +161,6 @@ private:
 
 Q_SIGNALS:
 
-    void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);
 
 private:

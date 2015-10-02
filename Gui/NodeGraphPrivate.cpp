@@ -43,11 +43,9 @@
 using namespace Natron;
 
 
-NodeGraphPrivate::NodeGraphPrivate(Gui* gui,
-                                   NodeGraph* p,
+NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
                                    const boost::shared_ptr<NodeCollection>& group)
 : _publicInterface(p)
-, _gui(gui)
 , group(group)
 , _lastMousePos()
 , _lastNodeDragStartPoint()
@@ -89,8 +87,14 @@ NodeGraphPrivate::NodeGraphPrivate(Gui* gui,
 , _deltaSinceMousePress(0,0)
 , _hasMovedOnce(false)
 , lastSelectedViewer(0)
-, wasLaskUserSeekDuringPlayback(false)
 {
+    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &unlockIcon);
+}
+
+QPoint
+NodeGraphPrivate::getPyPlugUnlockPos() const
+{
+    return QPoint(_publicInterface->width() - unlockIcon.width() - 10,   10);
 }
 
 void

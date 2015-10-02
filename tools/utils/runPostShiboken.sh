@@ -39,6 +39,7 @@ sed -e 's@^#include <shiboken.h>$@#include "Global/Macros.h"\
 CLANG_DIAG_OFF(mismatched-tags)\
 GCC_DIAG_OFF(unused-parameter)\
 GCC_DIAG_OFF(missing-field-initializers)\
+GCC_DIAG_OFF(missing-declarations)\
 #include <shiboken.h> // produces many warnings@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 sed -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\

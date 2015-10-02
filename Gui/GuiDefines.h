@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_GuiDefines_h_
-#define _Gui_GuiDefines_h_
+#ifndef Gui_GuiDefines_h
+#define Gui_GuiDefines_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -49,6 +49,8 @@
 #define NATRON_FONT_SIZE_11 11
 #define NATRON_FONT_SIZE_12 12
 #define NATRON_FONT_SIZE_13 13
+#define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
+
 #define NATRON_MAX_RECENT_FILES 5
 
-#endif // _Gui_GuiDefines_h_
+#endif // Gui_GuiDefines_h

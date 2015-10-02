@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_RenderingProgressDialog_h_
-#define _Gui_RenderingProgressDialog_h_
+#ifndef Gui_RenderingProgressDialog_h
+#define Gui_RenderingProgressDialog_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -93,4 +93,4 @@ private:
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };
 
-#endif // _Gui_RenderingProgressDialog_h_
+#endif // Gui_RenderingProgressDialog_h

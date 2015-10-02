@@ -151,19 +151,14 @@ You must copy them to a directory named `../share/OpenColorIO-Configs` relative 
     pacman -S qt4 cairo glew python expat boost pixman ffmpeg opencolorio openimageio wget git cmake gcc make libxslt pkg-config
     wget https://raw.githubusercontent.com/olear/natron-linux/master/include/misc/build-natron-on-archlinux.sh
 
-## CentOS6
-
-### Add devtools-2
-```
-wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo
-```
+## CentOS6+ (64-bit)
 
 ### Install dependencies
 ```
-yum -y install libxslt-devel pango-devel librsvg2-devel libxml2-devel devtoolset-2-toolchain gcc-c++ kernel-devel libX*devel fontconfig-devel freetype-devel zlib-devel *GL*devel *xcb*devel xorg*devel libdrm-devel mesa*devel *glut*devel dbus-devel bzip2-devel glib2-devel bison flex expat-devel libtool-ltdl-devel git
+yum -y install gcc-c++ wget libX*devel *GL*devel *xcb*devel xorg*devel libdrm-devel mesa*devel *glut*devel dbus-devel bison flex expat-devel libtool-ltdl-devel git make glibc-devel glibc-devel.i686
 ```
 
-### Download SDK
+### Download SDK (third-party software)
 ```
 wget http://downloads.natron.fr/Third_Party_Binaries/Natron-CY2015-Linux-x86_64-SDK.tar.xz
 tar xvf Natron-CY2015-Linux-x86_64-SDK.tar.xz -C /opt/
@@ -180,18 +175,15 @@ for i in $(echo "Natron openfx-io openfx-misc openfx-arena");do cd $i ; git subm
 
 ### Build Natron and plugins
 ```
-scl enable devtoolset-2 bash
 export INSTALL_PATH=/opt/Natron-CY2015
 export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
-export LD_LIBRARY_PATH=$INSTALL_PATH/lib:$INSTALL_PATH/ffmpeg-gpl/lib
-export PATH=/usr/local/bin:$INSTALL_PATH/bin:$INSTALL_PATH/ffmpeg-gpl/bin:$PATH
+export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib64:$INSTALL_PATH/lib:$INSTALL_PATH/ffmpeg-gpl/lib
+export PATH=$INSTALL_PATH/gcc/bin:$INSTALL_PATH/bin:$INSTALL_PATH/ffmpeg-gpl/bin:$PATH
 export QTDIR=$INSTALL_PATH
 export BOOST_ROOT=$INSTALL_PATH
 export PYTHON_HOME=$INSTALL_PATH
 export PYTHON_PATH=$INSTALL_PATH/lib/python2.7
 export PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
-export OPENJPEG_HOME=$INSTALL_PATH
-export THIRD_PARTY_TOOLS_HOME=$INSTALL_PATH
 
 cd Natron
 wget https://raw.githubusercontent.com/MrKepzie/Natron/workshop/tools/linux/include/natron/config.pri

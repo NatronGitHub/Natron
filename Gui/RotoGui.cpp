@@ -746,7 +746,9 @@ RotoGui::RotoGui(NodeGui* node,
     }
     _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeCopy);
     _imp->compositingOperatorButton->setToolTip(Natron::convertFromPlainText(tr("The blending mode of the next brush stroke."), Qt::WhiteSpaceNormal));
+    QObject::connect(_imp->compositingOperatorButton, SIGNAL(currentIndexChanged(int)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->brushButtonsBarLayout->addWidget(_imp->compositingOperatorButton);
+    
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
@@ -757,6 +759,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
     
     _imp->opacitySpinbox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+    QObject::connect(_imp->opacitySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->opacitySpinbox->setToolTip(opacitytt);
     _imp->opacitySpinbox->setMinimum(0);
     _imp->opacitySpinbox->setMaximum(1);
@@ -794,6 +797,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
     
     _imp->sizeSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
+    QObject::connect(_imp->sizeSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->sizeSpinbox->setMinimum(0);
     _imp->sizeSpinbox->setMaximum(1000);
     _imp->sizeSpinbox->setValue(25.);
@@ -820,6 +824,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->hardnessLabel);
     
     _imp->hardnessSpinBox = new SpinBox(_imp->brushButtonsBar,SpinBox::eSpinBoxTypeDouble);
+    QObject::connect(_imp->hardnessSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->hardnessSpinBox->setMinimum(0);
     _imp->hardnessSpinBox->setMaximum(1);
     _imp->hardnessSpinBox->setValue(0.2);
@@ -873,6 +878,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetLabel);
     
     _imp->timeOffsetSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeInt);
+    QObject::connect(_imp->timeOffsetSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->timeOffsetSpinbox->setValue(0);
     _imp->timeOffsetSpinbox->setVisible(false);
     _imp->timeOffsetSpinbox->setToolTip(timeOfftt);
@@ -3176,11 +3182,13 @@ RotoGui::penMotion(double time,
     case eEventStateDraggingCloneOffset: {
         _imp->rotoData->cloneOffset.first -= dx;
         _imp->rotoData->cloneOffset.second -= dy;
+        onBreakMultiStrokeTriggered();
     }   break;
     case eEventStateDraggingBrushSize: {
         double size = _imp->sizeSpinbox->value();
         size += ((dx + dy) / 2.);
         _imp->sizeSpinbox->setValue(std::max(1.,size));
+        onBreakMultiStrokeTriggered();
         didSomething = true;
     }   break;
     case eEventStateDraggingBrushOpacity: {
@@ -3193,6 +3201,7 @@ RotoGui::penMotion(double time,
             newOpa = newOpa < 0 ? .0 : 0.05;
         }
         _imp->opacitySpinbox->setValue(newOpa);
+        onBreakMultiStrokeTriggered();
         didSomething = true;
     }   break;
     case eEventStateNone:
@@ -3400,11 +3409,8 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         assert(layer);
         context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
         context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
-    } else {
-        std::string name = context->generateUniqueName(itemName);
-        rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
-        rotoData->strokeBeingPaint->createNodes(false);
     }
+    
     assert(rotoData->strokeBeingPaint);
     boost::shared_ptr<KnobColor> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
     boost::shared_ptr<KnobChoice> operatorKnob = rotoData->strokeBeingPaint->getOperatorKnob();
@@ -3551,29 +3557,36 @@ RotoGui::keyDown(double /*time*/,
         didSomething = true;
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
         _imp->selectTool->handleSelection();
+        didSomething = true;
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
         if (_imp->bezierEditionTool) {
             _imp->bezierEditionTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
         if (_imp->pointsEditionTool) {
             _imp->pointsEditionTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
         if (_imp->paintBrushTool) {
             _imp->paintBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
         if (_imp->cloneBrushTool) {
             _imp->cloneBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
         if (_imp->effectBrushTool) {
             _imp->effectBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
         if (_imp->mergeBrushTool) {
             _imp->mergeBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, modifiers, key) ) {
         moveSelectedCpsWithKeyArrows(1,0);
@@ -3601,6 +3614,7 @@ RotoGui::keyDown(double /*time*/,
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, modifiers, key) ) {
         lockSelectedCurves();
+        didSomething = true;
     }
 
     return didSomething;
@@ -4778,6 +4792,7 @@ RotoGui::onColorWheelButtonClicked()
         _imp->colorPickerLabel->setColor(previousColor);
     } else {
         _imp->colorPickerLabel->setColor(dialog.currentColor());
+        onBreakMultiStrokeTriggered();
     }
 }
 
@@ -4792,25 +4807,30 @@ void
 RotoGui::onPressureOpacityClicked(bool isDown)
 {
     _imp->pressureOpacityButton->setDown(isDown);
+    onBreakMultiStrokeTriggered();
 }
 
 void
 RotoGui::onPressureSizeClicked(bool isDown)
 {
     _imp->pressureSizeButton->setDown(isDown);
+    onBreakMultiStrokeTriggered();
 }
 
 void
 RotoGui::onPressureHardnessClicked(bool isDown)
 {
     _imp->pressureHardnessButton->setDown(isDown);
+    onBreakMultiStrokeTriggered();
 }
 
 void
 RotoGui::onBuildupClicked(bool isDown)
 {
     _imp->buildUpButton->setDown(isDown);
+    onBreakMultiStrokeTriggered();
 }
+
 
 void
 RotoGui::notifyGuiClosing()
@@ -4824,4 +4844,5 @@ void
 RotoGui::onResetCloneTransformClicked()
 {
     _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
+    onBreakMultiStrokeTriggered();
 }

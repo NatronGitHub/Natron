@@ -393,7 +393,7 @@ moveKey(KeyPtr &k,
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime() ,Natron::eValueChangedReasonUserEdited);
         } else {
             knob->moveValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
@@ -560,9 +560,9 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                 
                 int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
                 if (keyframeIndex != -1) {
-                    it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
+                   it->key->key = it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
                 }
-                
+                isParametric->evaluateValueChange(isKnobCurve->getDimension(), it->key->key.getTime(), Natron::eValueChangedReasonUserEdited);
             } else {
                 knob->setInterpolationAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
             }
@@ -752,7 +752,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
             int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
             _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
             _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right,keyframeIndexInCurve);
-            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
+            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), _key->key.getTime(), Natron::eValueChangedReasonUserEdited);
         }
         
         _widget->refreshDisplayedTangents();
@@ -1028,7 +1028,7 @@ TransformKeysCommand::transform(const KeyPtr& k)
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(p.x,p.y, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
         } else {
             knob->transformValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), *_matrix,&k->key);
         }

@@ -34,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeWrapper.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
+#include "Gui/PanelWidget.h"
 
 class GuiApp;
 class Gui;
@@ -100,9 +101,11 @@ private:
 
 
 struct PyPanelPrivate;
-class PyPanel : public QWidget, public UserParamHolder, public ScriptObject
+class PyPanel : public QWidget, public UserParamHolder, public PanelWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
@@ -136,8 +139,11 @@ protected:
     
     void onUserDataChanged();
     
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void enterEvent(QEvent* e) OVERRIDE ;
+    virtual void leaveEvent(QEvent* e) OVERRIDE ;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE ;
 private:
-    
     boost::scoped_ptr<PyPanelPrivate> _imp;
     
 };

@@ -148,6 +148,37 @@ else
 fi
 export LD_LIBRARY_PATH
 
+# Install zlib
+if [ ! -f "$INSTALL_PATH/lib/libz.so.1" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$ZLIB_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$ZLIB_TAR" -O "$SRC_PATH/$ZLIB_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$ZLIB_TAR" || exit 1
+    cd zlib* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install bzip
+if [ ! -f "$INSTALL_PATH/lib/libbz2.so" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$BZIP_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$BZIP_TAR" -O "$SRC_PATH/$BZIP_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$BZIP_TAR" || exit 1
+    cd bzip* || exit 1
+    sed -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$(BIGFILES)/' -i ./Makefile-libbz2_so || exit 1
+    make -f Makefile-libbz2_so || exit 1
+    install -m755 libbz2.so.1.0.6 $INSTALL_PATH/lib || exit 1
+    install -m644 bzlib.h $INSTALL_PATH/include/ || exit 1
+    cd $INSTALL_PATH/lib || exit 1
+    ln -s libbz2.so.1.0.6 libbz2.so || exit 1
+    ln -s libbz2.so.1.0.6 libbz2.so.1 || exit 1
+    ln -s libbz2.so.1.0.6 libbz2.so.1.0 || exit 1
+fi
+
 # Install yasm
 if [ ! -f "$INSTALL_PATH/bin/yasm" ]; then
     cd "$TMP_PATH" || exit 1
@@ -156,7 +187,7 @@ if [ ! -f "$INSTALL_PATH/bin/yasm" ]; then
     fi
     tar xvf "$SRC_PATH/$YASM_TAR" || exit 1
     cd yasm* || exit 1
-    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
@@ -169,7 +200,20 @@ if [ ! -f "$INSTALL_PATH/bin/cmake" ]; then
     fi
     tar xvf "$SRC_PATH/$CMAKE_TAR" || exit 1
     cd cmake* || exit 1
-    ./configure --prefix="$INSTALL_PATH" CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install icu
+if [ ! -f "$INSTALL_PATH/bin/icu-config" ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f "$SRC_PATH/$ICU_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$ICU_TAR" -O "$SRC_PATH/$ICU_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$ICU_TAR" || exit 1
+    cd icu/source || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
 fi
@@ -182,7 +226,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python2.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$PY2_TAR" || exit 1
     cd Python-2* || exit 1
-    ./configure --prefix="$INSTALL_PATH" --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-shared  || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p "$INSTALL_PATH/docs/python2" || exit 1
@@ -197,7 +241,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python3.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$PY3_TAR" || exit 1
     cd Python-3* || exit 1
-    ./configure --prefix=$INSTALL_PATH --enable-shared CFLAGS="$BF" CXXFLAGS="$BF" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p "$INSTALL_PATH/docs/python3" || exit 1
@@ -206,8 +250,6 @@ fi
 
 # Setup env
 PKG_CONFIG_PATH="$INSTALL_PATH/lib/pkgconfig"
-#LD_LIBRARY_PATH="$INSTALL_PATH/lib"
-#PATH="$INSTALL_PATH/bin:$PATH"
 QTDIR="$INSTALL_PATH"
 BOOST_ROOT="$INSTALL_PATH"
 OPENJPEG_HOME="$INSTALL_PATH"
@@ -216,6 +258,112 @@ PYTHON_HOME="$INSTALL_PATH"
 PYTHON_PATH="$INSTALL_PATH/lib/python2.7"
 PYTHON_INCLUDE="$INSTALL_PATH/include/python2.7"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
+
+# Install expat
+if [ ! -f "$INSTALL_PATH/lib/libexpat.so" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$EXPAT_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$EXPAT_TAR" -O "$SRC_PATH/$EXPAT_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$EXPAT_TAR" || exit 1
+    cd expat* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install png
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/libpng.pc ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f $SRC_PATH/$PNG_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$PNG_TAR -O $SRC_PATH/$PNG_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$PNG_TAR || exit 1
+    cd libpng* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    mkdir -p $INSTALL_PATH/docs/png || exit 1
+    cp LIC* COP* README AUTH* CONT* $INSTALL_PATH/docs/png/
+fi
+
+# Install freetype
+if [ ! -f "$INSTALL_PATH/lib/libfreetype.so" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$FTYPE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$FTYPE_TAR" -O "$SRC_PATH/$FTYPE_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$FTYPE_TAR" || exit 1
+    cd freetype* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install fontconfig
+if [ ! -f "$INSTALL_PATH/lib/libfontconfig.so" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$FCONFIG_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$FCONFIG_TAR" -O "$SRC_PATH/$FCONFIG_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$FCONFIG_TAR" || exit 1
+    cd fontconfig* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install ffi
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libffi.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$FFI_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$FFI_TAR" -O "$SRC_PATH/$FFI_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$FFI_TAR" || exit 1
+    cd libffi* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install glib
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/glib-2.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GLIB_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$GLIB_TAR" -O "$SRC_PATH/$GLIB_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GLIB_TAR" || exit 1
+    cd glib-2* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install xml
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libxml-2.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$LIBXML_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$LIBXML_TAR" -O "$SRC_PATH/$LIBXML_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$LIBXML_TAR" || exit 1
+    cd libxml* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared --without-python || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install xslt
+if [ ! -f "$INSTALL_PATH/lib/libxslt.so.1" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$LIBXSLT_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$LIBXSLT_TAR" -O "$SRC_PATH/$LIBXSLT_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$LIBXSLT_TAR" || exit 1
+    cd libxslt* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared --without-python || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
 
 # Install boost
 if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
@@ -245,21 +393,6 @@ if [ ! -f $INSTALL_PATH/lib/libjpeg.a ]; then
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/jpeg || exit 1
     cp LIC* COP* READ* AUTH* CONT* $INSTALL_PATH/docs/jpeg/
-fi
-
-# Install png
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/libpng.pc ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$PNG_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$PNG_TAR -O $SRC_PATH/$PNG_TAR || exit 1
-    fi
-    tar xvf $SRC_PATH/$PNG_TAR || exit 1
-    cd libpng* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
-    make -j${MKJOBS} || exit 1
-    make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/png || exit 1
-    cp LIC* COP* README AUTH* CONT* $INSTALL_PATH/docs/png/
 fi
 
 # Install tiff
@@ -365,6 +498,112 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     cp LIC* COP* README AUTH* CONT* $INSTALL_PATH/docs/openexr/
 fi
 
+# Install pixman
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/pixman-1.pc ]; then
+    if [ ! -f $SRC_PATH/$PIX_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$PIX_TAR -O $SRC_PATH/$PIX_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$PIX_TAR || exit 1
+    cd pixman-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    mkdir -p $INSTALL_PATH/docs/pixman || exit 1
+    cp COPYING* README AUTHORS $INSTALL_PATH/docs/pixman/ || exit 1
+fi
+
+# Install cairo
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/cairo.pc ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f $SRC_PATH/$CAIRO_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$CAIRO_TAR -O $SRC_PATH/$CAIRO_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$CAIRO_TAR || exit 1
+    cd cairo-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include -I${INSTALL_PATH}/include/pixman-1" LDFLAGS="-L${INSTALL_PATH}/lib -lpixman-1" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    mkdir -p $INSTALL_PATH/docs/cairo || exit 1
+    cp COPYING* README AUTHORS $INSTALL_PATH/docs/cairo/ || exit 1
+fi
+
+# Install harbuzz
+if [ ! -f $INSTALL_PATH/lib/pkgconfig/harfbuzz.pc ]; then
+    cd $TMP_PATH || exit 1
+    if [ ! -f $SRC_PATH/$BUZZ_TAR ]; then
+        wget $THIRD_PARTY_SRC_URL/$BUZZ_TAR -O $SRC_PATH/$BUZZ_TAR || exit 1
+    fi
+    tar xvf $SRC_PATH/$BUZZ_TAR || exit 1
+    cd harfbuzz-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-docs --enable-static --enable-shared --with-freetype --with-cairo --with-gobject --with-glib --with-icu || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    mkdir -p $INSTALL_PATH/docs/cairo || exit 1
+    cp COPYING* README AUTHORS $INSTALL_PATH/docs/cairo/ || exit 1
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$FTYPE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$FTYPE_TAR" -O "$SRC_PATH/$FTYPE_TAR" || exit 1
+    fi
+    rm -rf freetype*
+    tar xvf "$SRC_PATH/$FTYPE_TAR" || exit 1
+    cd freetype* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install pango
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/pango.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$PANGO_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$PANGO_TAR" -O "$SRC_PATH/$PANGO_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$PANGO_TAR" || exit 1
+    cd pango-* || exit 1
+    env FONTCONFIG_CFLAGS="-I$INSTALL_PATH/include" FONTCONFIG_LIBS="-L$INSTALL_PATH/lib -lfontconfig" CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared --with-included-modules=basic-fc || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install croco
+if [ ! -f "$INSTALL_PATH/lib/libcroco-0.6.so.3" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CROCO_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CROCO_TAR" -O "$SRC_PATH/$CROCO_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CROCO_TAR" || exit 1
+    cd libcroco-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install gdk
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/gdk-pixbuf-2.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$GDK_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$GDK_TAR" -O "$SRC_PATH/$GDK_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$GDK_TAR" || exit 1
+    cd gdk-pix* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
+# Install svg
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librsvg-2.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$SVG_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$SVG_TAR" -O "$SRC_PATH/$SVG_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$SVG_TAR" || exit 1
+    cd librsvg-* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --enable-static --enable-shared --disable-introspection --disable-vala --disable-pixbuf-loader || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+fi
+
 # Install magick
 if [ "$REBUILD_MAGICK" = "1" ]; then
     rm -rf $INSTALL_PATH/include/ImageMagick-6/ $INSTALL_PATH/lib/libMagick* $INSTALL_PATH/share/ImageMagick-6/ $INSTALL_PATH/lib/pkgconfig/{Image,Magick}*
@@ -399,35 +638,6 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/glew.pc ]; then
     make install GLEW_DEST=$INSTALL_PATH libdir=/lib bindir=/bin includedir=/include || exit 1
     mkdir -p $INSTALL_PATH/docs/glew || exit 1
     cp LICENSE.txt README.txt $INSTALL_PATH/docs/glew/ || exit 1
-fi
-
-# Install pixman
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/pixman-1.pc ]; then
-    if [ ! -f $SRC_PATH/$PIX_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$PIX_TAR -O $SRC_PATH/$PIX_TAR || exit 1
-    fi
-    tar xvf $SRC_PATH/$PIX_TAR || exit 1
-    cd pixman-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
-    make -j${MKJOBS} || exit 1
-    make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/pixman || exit 1
-    cp COPYING* README AUTHORS $INSTALL_PATH/docs/pixman/ || exit 1
-fi
-
-# Install cairo
-if [ ! -f $INSTALL_PATH/lib/pkgconfig/cairo.pc ]; then
-    cd $TMP_PATH || exit 1
-    if [ ! -f $SRC_PATH/$CAIRO_TAR ]; then
-        wget $THIRD_PARTY_SRC_URL/$CAIRO_TAR -O $SRC_PATH/$CAIRO_TAR || exit 1
-    fi
-    tar xvf $SRC_PATH/$CAIRO_TAR || exit 1
-    cd cairo-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include -I${INSTALL_PATH}/include/pixman-1" LDFLAGS="-L${INSTALL_PATH}/lib -lpixman-1" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
-    make -j${MKJOBS} || exit 1
-    make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/cairo || exit 1
-    cp COPYING* README AUTHORS $INSTALL_PATH/docs/cairo/ || exit 1
 fi
 
 # Install ocio
@@ -699,11 +909,11 @@ if [ ! -d $INSTALL_PATH/ffmpeg-gpl ] || [ ! -d $INSTALL_PATH/ffmpeg-lgpl ]; then
     fi
     tar xvf $SRC_PATH/$FFMPEG_TAR || exit 1
     cd ffmpeg-2* || exit 1
-    ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     make distclean
-    ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-lgpl --libdir=$INSTALL_PATH/ffmpeg-lgpl/lib --enable-shared --disable-static $LGPL_SETTINGS || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/ffmpeg || exit 1
     cp COPYING* CREDITS $INSTALL_PATH/docs/ffmpeg/
@@ -717,7 +927,7 @@ if [ ! -f $INSTALL_PATH/bin/qmake ]; then
         QT_CONF="-no-openssl -opengl desktop -opensource -nomake examples -nomake tests -release -no-gtkstyle -confirm-license -no-c++11 -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
     else
         QT_TAR=$QT4_TAR
-        QT_CONF="-no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
+        QT_CONF="-xrender -xrandr -xcursor -xfixes -xinerama -fontconfig -xinput -sm -no-multimedia -no-openssl -confirm-license -release -opensource -opengl desktop -nomake demos -nomake docs -nomake examples -no-gtkstyle -I${INSTALL_PATH}/include -L${INSTALL_PATH}/lib"
     fi
 
     if [ ! -f $SRC_PATH/$QT_TAR ]; then

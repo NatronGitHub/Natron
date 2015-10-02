@@ -50,6 +50,7 @@
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
+#include "Gui/DopeSheetEditor.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
 #include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/Gui.h"
@@ -261,6 +262,8 @@ public:
 
     //
     std::map<DSNode *, FrameRange > nodeRanges;
+    std::list<DSNode*> nodeRangesBeingComputed; // to avoid recursion in groups
+    int rangeComputationRecursion;
 
     // for rendering
     QFont *font;
@@ -308,6 +311,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     gui(0),
     timeline(),
     nodeRanges(),
+    nodeRangesBeingComputed(),
+    rangeComputationRecursion(0),
     font(new QFont(appFont,appFontSize)),
     textRenderer(),
     kfTexturesIDs(),
@@ -837,7 +842,11 @@ void DopeSheetViewPrivate::drawScale() const
         bool half_tick;
 
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
-
+        // nothing happens in the dopesheet at a scale smaller than 1 frame
+        if (smallTickSize < 1.) {
+            smallTickSize = 1;
+            half_tick = false;
+        }
         int m1, m2;
         const int ticks_max = 1000;
         double offset;
@@ -1804,6 +1813,13 @@ void DopeSheetViewPrivate::computeNodeRange(DSNode *dsNode)
 
 void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 {
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(reader);
+    ++rangeComputationRecursion;
+    
     NodePtr node = reader->getInternalNode();
 
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName(kReaderParamNameStartingTime).get());
@@ -1829,10 +1845,23 @@ void DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
     if (boost::shared_ptr<DSNode> isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader)) {
         computeNodeRange(isConnectedToTimeNode.get());
     }
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(retimer);
+    ++rangeComputationRecursion;
+    
     NodePtr node = retimer->getInternalNode();
     NodePtr input = node->getInput(0);
     if (input) {
@@ -1866,10 +1895,23 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
     else {
         nodeRanges[retimer] = FrameRange();
     }
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(timeOffset);
+    ++rangeComputationRecursion;
+    
     FrameRange range(0, 0);
 
     // Retrieve nearest reader useful values
@@ -1887,10 +1929,23 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
     }
 
     nodeRanges[timeOffset] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
+    nodeRangesBeingComputed.push_back(frameRange);
+    ++rangeComputationRecursion;
+    
     NodePtr node = frameRange->getInternalNode();
 
     Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>(node->getKnobByName("frameRange").get());
@@ -1901,24 +1956,39 @@ void DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
     range.second = frameRangeKnob->getValue(1);
 
     nodeRanges[frameRange] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
 }
 
 void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 {
+    
+    if (std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group) != nodeRangesBeingComputed.end()) {
+        return;
+    }
+    
     NodePtr node = group->getInternalNode();
     assert(node);
     if (!node) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is NULL");
     }
-
+    
     FrameRange range;
     std::set<double> times;
-
+    
     NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(node->getLiveInstance());
     assert(nodegroup);
     if (!nodegroup) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
     }
+    
+    nodeRangesBeingComputed.push_back(group);
+    ++rangeComputationRecursion;
+    
+    
     NodeList nodes = nodegroup->getNodes();
 
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1980,6 +2050,12 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     }
 
     nodeRanges[group] = range;
+    
+    --rangeComputationRecursion;
+    std::list<DSNode*>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group);
+    assert(found != nodeRangesBeingComputed.end());
+    nodeRangesBeingComputed.erase(found);
+
 }
 
 void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
@@ -2970,6 +3046,8 @@ void DopeSheetView::paintGL()
 void DopeSheetView::mousePressEvent(QMouseEvent *e)
 {
     running_in_main_thread();
+    
+    _imp->model->getEditor()->onInputEventCalled();
 
     bool didSomething = false;
 
@@ -3322,15 +3400,16 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
         return;
     }
 
-    const double par_min = 0.0001;
-    const double par_max = 10000.;
+    const double par_min = 0.01; // 1 pixel for 100 frames
+    const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
 
     double par;
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     _imp->zoomOrPannedSinceLastFit = true;
-
+    qDebug() << scaleFactor;
+    
     par = _imp->zoomContext.aspectRatio() * scaleFactor;
 
     if (par <= par_min) {
@@ -3359,14 +3438,7 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     }
 }
 
-void DopeSheetView::enterEvent(QEvent *e)
-{
-    running_in_main_thread();
 
-    setFocus();
-
-    QGLWidget::enterEvent(e);
-}
 
 void DopeSheetView::focusInEvent(QFocusEvent *e)
 {
@@ -3375,57 +3447,3 @@ void DopeSheetView::focusInEvent(QFocusEvent *e)
     _imp->model->setUndoStackActive();
 }
 
-void DopeSheetView::keyPressEvent(QKeyEvent *e)
-{
-    running_in_main_thread();
-
-    Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = Qt::Key(e->key());
-
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        TabWidget* tab = dynamic_cast<TabWidget*>(parentWidget()->parentWidget()->parentWidget());
-        assert(tab);
-        if (tab) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-            QCoreApplication::postEvent(tab,ev);
-        }
-        
-    } else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
-        deleteSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
-        centerOnSelection();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
-        onSelectedAllTriggered();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, modifiers, key)) {
-        constantInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, modifiers, key)) {
-        linearInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key)) {
-        smoothInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key)) {
-        catmullRomInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, modifiers, key)) {
-        cubicInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key)) {
-        horizontalInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, modifiers, key)) {
-        breakInterpSelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key)) {
-        copySelectedKeyframes();
-    }
-    else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key)) {
-        pasteKeyframes();
-    } else {
-        QGLWidget::keyPressEvent(e);
-    }
-}

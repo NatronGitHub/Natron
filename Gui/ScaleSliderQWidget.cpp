@@ -118,7 +118,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
     _imp->zoomCtx.setScreenSize(sizeh.width(), sizeh.height());
-    setFocusPolicy(Qt::ClickFocus);
+    setFocusPolicy(Qt::NoFocus);
 }
 
 QSize
@@ -241,7 +241,7 @@ void
 ScaleSliderQWidget::setAltered(bool b)
 {
     _imp->altered = b;
-    repaint();
+    update();
 }
 
 bool
@@ -416,6 +416,10 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double smallTickSize;
     bool half_tick;
     ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+    if (_imp->dataType == eDataTypeInt && smallTickSize < 1.) {
+        smallTickSize = 1.;
+        half_tick = false;
+    }
     int m1, m2;
     const int ticks_max = 1000;
     double offset;
@@ -436,13 +440,19 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         pen.setWidthF(1.9);
         p.setPen(pen);
 
-        QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
-        QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
+        // for Int slider, because smallTickSize is at least 1, isFloating can never be true
+        bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
+        assert(!(_imp->dataType == eDataTypeInt && isFloating));
+        bool renderFloating = _imp->dataType == eDataTypeDouble || !isFloating;
 
-        p.drawLine(tickBottomPos,tickTopPos);
+        if (renderFloating) {
+            QPointF tickBottomPos = _imp->zoomCtx.toWidgetCoordinates(value, tickBottom);
+            QPointF tickTopPos = _imp->zoomCtx.toWidgetCoordinates(value, tickTop);
 
-        bool renderText = _imp->dataType == eDataTypeDouble || std::abs(std::floor(0.5 + value) - value) == 0.;
-        if (renderText && tickSize > minTickSizeText) {
+            p.drawLine(tickBottomPos,tickTopPos);
+        }
+
+        if (renderFloating && tickSize > minTickSizeText) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
             const int sSizePixel =  fontM.width(s);
@@ -494,6 +504,6 @@ ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
-    repaint();
+    update();
 }
 

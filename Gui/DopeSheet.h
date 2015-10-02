@@ -371,7 +371,8 @@ public:
 
     DopeSheetSelectionModel *getSelectionModel() const;
     
-
+    DopeSheetEditor* getEditor() const;
+    
     // User interaction
     void deleteSelectedKeyframes();
 

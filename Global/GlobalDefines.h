@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
-#define NATRON_GLOBAL_GLOBALDEFINES_H_
+#ifndef NATRON_GLOBAL_GLOBALDEFINES_H
+#define NATRON_GLOBAL_GLOBALDEFINES_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -188,6 +188,34 @@ s2ws(const std::string & s)
 #endif
 
 }
+
+#ifdef __NATRON_WIN32__
+
+
+//Returns the last Win32 error, in string format. Returns an empty string if there is no error.
+inline 
+std::string GetLastErrorAsString()
+{
+    //Get the error message, if any.
+    DWORD errorMessageID = ::GetLastError();
+    if(errorMessageID == 0)
+        return std::string(); //No error message has been recorded
+
+    LPSTR messageBuffer = 0;
+    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+    std::string message(messageBuffer, size);
+
+    //Free the buffer.
+    LocalFree(messageBuffer);
+
+    return message;
 }
 
-#endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
+
+#endif
+
+} // Natron
+
+#endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H

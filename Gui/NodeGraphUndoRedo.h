@@ -152,15 +152,38 @@ public:
     virtual void undo();
     virtual void redo();
 
-private:
+protected:
     
-    void doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
-                   const boost::shared_ptr<Natron::Node> & newSrc);
+    static void doConnect(const NodeGuiPtr &oldSrc,
+                          const NodeGuiPtr & newSrc,
+                          const NodeGuiPtr& dst,
+                          int inputNb);
     
     boost::weak_ptr<NodeGui> _oldSrc,_newSrc;
     boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
+};
+
+/*
+ * @brief Inserts an existing node in a stream
+ */
+class InsertNodeCommand : public ConnectCommand
+{
+public:
+    
+    InsertNodeCommand(NodeGraph* graph,
+                   Edge* edge,
+                   const boost::shared_ptr<NodeGui> & newSrc,
+                   QUndoCommand *parent = 0);
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    Edge* _inputEdge;
+    
 };
 
 

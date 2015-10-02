@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_PropertiesBinWrapper_h_
-#define _Gui_PropertiesBinWrapper_h_
+#ifndef Gui_PropertiesBinWrapper_h
+#define Gui_PropertiesBinWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,20 +25,23 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QWidget>
 
-#include "Global/Macros.h"
+#include "Gui/PanelWidget.h"
 
-#include "Engine/ScriptObject.h"
-
-class PropertiesBinWrapper : public QWidget, public ScriptObject
+class PropertiesBinWrapper : public QWidget, public PanelWidget
 {
+    
 public:
-    PropertiesBinWrapper(QWidget* parent)
-    : QWidget(parent)
-    , ScriptObject()
-    {
-    }
+    
+    PropertiesBinWrapper(Gui* parent);
+    
+    virtual ~PropertiesBinWrapper();
+
+    
+private:
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 };
 
-#endif // _Gui_PropertiesBinWrapper_h_
+#endif // Gui_PropertiesBinWrapper_h

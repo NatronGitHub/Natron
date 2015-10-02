@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RotoLayer_h_
-#define _Engine_RotoLayer_h_
+#ifndef Engine_RotoLayer_h
+#define Engine_RotoLayer_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -156,4 +156,4 @@ private:
 };
 
 
-#endif // _Engine_RotoLayer_h_
+#endif // Engine_RotoLayer_h

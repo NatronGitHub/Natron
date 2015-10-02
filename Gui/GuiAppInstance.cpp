@@ -24,6 +24,7 @@
 
 #include "GuiAppInstance.h"
 
+#include <stdexcept>
 
 #include <QDir>
 #include <QSettings>
@@ -44,6 +45,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/BackDropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
@@ -84,6 +86,7 @@ struct GuiAppInstancePrivate
     
     mutable QMutex userIsPaintingMutex;
     boost::shared_ptr<Natron::Node> userIsPainting;
+    bool turboAlreadyActiveBeforePainting;
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -100,6 +103,7 @@ struct GuiAppInstancePrivate
     , overlayRedrawRequests(0)
     , userIsPaintingMutex()
     , userIsPainting()
+    , turboAlreadyActiveBeforePainting(false)
     {
     }
 
@@ -175,7 +179,7 @@ GuiAppInstance::~GuiAppInstance()
 
     QCoreApplication::processEvents();
 //#ifndef __NATRON_WIN32__
-    _imp->_gui->getNodeGraph()->discardGuiPointer();
+    _imp->_gui->getNodeGraph()->notifyGuiClosingPublic();
     _imp->_gui->deleteLater();
     _imp->_gui = 0;
     _imp.reset();
@@ -418,7 +422,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,pushUndoRedoCommand);
 
     assert(nodegui);
     if ( parentMultiInstance && nodegui) {
@@ -461,6 +465,32 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
         triggerAutoSave();
     }
+    
+    
+    ///only move main instances
+    if (node->getParentMultiInstanceName().empty()) {
+        if (selectedNodes.empty()) {
+            autoConnect = false;
+        }
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
+            nodegui->refreshPosition( pos.x(),pos.y(), true );
+        } else {
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nodegui.get());
+            if (!isBd && !isGroup) {
+                boost::shared_ptr<NodeGui> selectedNode;
+                if (selectedNodes.size() == 1) {
+                    selectedNode = selectedNodes.front();
+                    BackDropGui* isBackdropGui = dynamic_cast<BackDropGui*>(selectedNode.get());
+                    if (isBackdropGui) {
+                        selectedNode.reset();
+                    }
+                }
+                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui,selectedNode,autoConnect);
+            }
+        }
+    }
+    
 } // createNodeGui
 
 std::string
@@ -978,6 +1008,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     _imp->declareAppAndParamsString = script;
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    if (!ok) {
+        throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
+    }
 }
 
 void
@@ -1041,32 +1074,40 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
 {
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection = node->getGroup();
-    assert(collection);
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
-    if (isGrp) {
-        NodeGraphI* graph_i = isGrp->getNodeGraph();
-        assert(graph_i);
-        graph = dynamic_cast<NodeGraph*>(graph_i);
-    } else {
-        graph = _imp->_gui->getNodeGraph();
+    if (!requestedByLoad) {
+        NodeGraph* graph = 0;
+        boost::shared_ptr<NodeCollection> collection = node->getGroup();
+        assert(collection);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            graph = dynamic_cast<NodeGraph*>(graph_i);
+        } else {
+            graph = _imp->_gui->getNodeGraph();
+        }
+        assert(graph);
+        std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
+        boost::shared_ptr<NodeGui> selectedNode;
+        if (!selectedNodes.empty()) {
+            selectedNode = selectedNodes.front();
+            if (dynamic_cast<BackDropGui*>(selectedNode.get())) {
+                selectedNode.reset();
+            }
+        }
+        boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+        assert(node_gui_i);
+        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+        graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
-    assert(graph);
-
-    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
-    assert(node_gui_i);
-    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-    graph->moveNodesForIdealPosition(nodeGui, true);
-
     std::list<ViewerInstance* > viewers;
     node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(false);
     }
-    AppInstance::onGroupCreationFinished(node);
+    AppInstance::onGroupCreationFinished(node,requestedByLoad);
 }
 
 bool
@@ -1078,11 +1119,17 @@ GuiAppInstance::isDraftRenderEnabled() const
 void
 GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
 {
+    bool wasTurboActive;
     {
         QMutexLocker k(&_imp->userIsPaintingMutex);
         _imp->userIsPainting = rotopaintNode;
+        if (rotopaintNode) {
+            _imp->turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        }
+        wasTurboActive = _imp->turboAlreadyActiveBeforePainting;
     }
-    _imp->_gui->onFreezeUIButtonClicked(rotopaintNode.get() != 0);
+    bool isPainting = rotopaintNode.get() != 0;
+    _imp->_gui->onFreezeUIButtonClicked(isPainting || wasTurboActive);
 }
 
 boost::shared_ptr<Natron::Node>

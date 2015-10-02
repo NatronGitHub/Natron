@@ -52,6 +52,7 @@
 #include <limits>
 #include <cfloat>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
@@ -70,6 +71,9 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
 {
     int ncps = (int)cps.size();
     assert(ncps);
+    if (!ncps) {
+        throw std::logic_error("getPointAt()");
+    }
     if (t < 0) {
         t += ncps;
     }
@@ -111,6 +115,9 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
 {
     int ncps = (int)cps.size();
     assert(ncps);
+    if (!ncps) {
+        throw std::logic_error("getLeftPointAt()");
+    }
     if (t < 0) {
         t += ncps;
     }
@@ -166,6 +173,9 @@ static Point getRightPointAt(const BezierCPs& cps, int time, double t)
 {
     int ncps = cps.size();
     assert(ncps);
+    if (!ncps) {
+        throw std::logic_error("getRightPointAt()");
+    }
     if (t < 0) {
         t += ncps;
     }

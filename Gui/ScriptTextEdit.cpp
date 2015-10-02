@@ -55,7 +55,7 @@ ScriptTextEdit::setOutput(bool o)
     isOutput = o;
     style()->unpolish(this);
     style()->polish(this);
-    repaint();
+    update();
 }
 
 bool

@@ -822,7 +822,7 @@ Project::initializeKnobs()
     
     _imp->frameRange = Natron::createKnob<KnobInt>(this, "Frame Range",2);
     _imp->frameRange->setDefaultValue(1,0);
-    _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setDefaultValue(250,1);
     _imp->frameRange->setDimensionName(0, "first");
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
@@ -1234,7 +1234,7 @@ Project::onKnobValueChanged(KnobI* knob,
                 }
                 
                 ///Format change, hence probably the PAR so run getClipPreferences again
-                forceGetClipPreferencesOnAllTrees();
+                forceComputeInputDependentDataOnAllTrees();
             }
             Q_EMIT formatChanged(frmt);
         }
@@ -1243,7 +1243,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        forceGetClipPreferencesOnAllTrees();
+        forceComputeInputDependentDataOnAllTrees();
     } else if (knob == _imp->frameRange.get()) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
@@ -1701,7 +1701,9 @@ Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>
         assert(i < encoded.size());
         size_t endNamePos = encoded.find(endNameTag,i);
         assert(endNamePos != std::string::npos && endNamePos < encoded.size());
-        
+        if (endNamePos == std::string::npos || endNamePos >= encoded.size()) {
+            throw std::logic_error("Project::makeEnvMap()");
+        }
         std::string name,value;
         while (i < endNamePos) {
             name.push_back(encoded[i]);
@@ -2033,7 +2035,7 @@ Project::unionFrameRangeWith(int first,int last)
 {
     
     int curFirst,curLast;
-    bool mustSet = !_imp->frameRange->hasModifications();
+    bool mustSet = !_imp->frameRange->hasModifications() && first != last;
     curFirst = _imp->frameRange->getValue(0);
     curLast = _imp->frameRange->getValue(1);
     curFirst = !mustSet ? std::min(first, curFirst) : first;

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_NODE_H_
-#define NATRON_ENGINE_NODE_H_
+#ifndef NATRON_ENGINE_NODE_H
+#define NATRON_ENGINE_NODE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -131,6 +131,8 @@ public:
               bool isPartOfProject,
               const QString& fixedName,
               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
+    
+
 
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
@@ -422,7 +424,8 @@ public:
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
     void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                   const RectD& lastPointsBbox);
+                                   const RectD& lastPointsBbox,
+                                   int strokeIndex);
     
     //Used by nodes below the rotopaint tree to optimize the RoI
     void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
@@ -437,7 +440,7 @@ public:
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes) const;
+    void getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,
@@ -790,6 +793,10 @@ public:
      * do not respect the OpenFX specification.
      **/
     boost::shared_ptr<Natron::Image> getImageBeingRendered(int time,unsigned int mipMapLevel,int view);
+    
+    void beginInputEdition();
+    
+    void endInputEdition(bool triggerRender);
 
     void onInputChanged(int inputNb);
 
@@ -916,7 +923,6 @@ public:
 
     bool isForceCachingEnabled() const;
     
-    void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
@@ -1005,11 +1011,15 @@ public:
     
     void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
     
+    bool hasPyPlugBeenEdited() const;
+    void setPyPlugEdited(bool edited);
+    
     std::string getPluginPythonModule() const;
     
     unsigned int getPluginPythonModuleVersion() const;
   
-    void refreshChannelSelectors(bool setValues);
+    //Returns true if changed
+    bool refreshChannelSelectors(bool setValues);
     
     bool getProcessChannel(int channelIndex) const;
     
@@ -1030,7 +1040,32 @@ public:
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
     void removeAllImagesFromCache();
     
+    bool isDraftModeUsed() const;
+    bool isInputRelatedDataDirty() const;
+    
+    void forceRefreshAllInputRelatedData();
+    
 private:
+    
+    void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    
+    void refreshInputRelatedDataRecursive();
+    
+    void refreshAllInputRelatedData(bool canChangeValues);
+    
+    bool refreshMaskEnabledNess(int inpubNb);
+    
+    bool refreshLayersChoiceSecretness(int inpubNb);
+    
+    void markInputRelatedDataDirtyRecursive();
+    
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse);
+    
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    
+    bool refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes);
+    
+    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
     void setNameInternal(const std::string& name);
 
@@ -1252,4 +1287,4 @@ public:
 };
 
 
-#endif // NATRON_ENGINE_NODE_H_
+#endif // NATRON_ENGINE_NODE_H

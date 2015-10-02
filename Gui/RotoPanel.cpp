@@ -409,7 +409,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->tree->setDragDropMode(QAbstractItemView::InternalMove);
     _imp->tree->setDragEnabled(true);
     _imp->tree->setExpandsOnDoubleClick(false);
-    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
+    _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,1);
     QString treeToolTip = Natron::convertFromPlainText(tr("This tree contains the hierarchy of shapes, strokes and layers along with some "
                                                       "most commonly used attributes for each of them. "
                                                       "Each attribute can be found in the parameters above in the panel.\n"

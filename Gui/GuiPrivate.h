@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_GuiPrivate_h_
-#define _Gui_GuiPrivate_h_
+#ifndef Gui_GuiPrivate_h
+#define Gui_GuiPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -242,7 +242,7 @@ struct GuiPrivate
     ProjectGui* _projectGui;
 
     ///ptr to the currently dragged tab for d&d purpose.
-    QWidget* _currentlyDraggedPanel;
+    PanelWidget* _currentlyDraggedPanel;
     QSize _currentlyDraggedPanelInitialSize;
 
     ///The "About" window.
@@ -265,6 +265,13 @@ struct GuiPrivate
     std::map<ActionWithShortcut*, std::string> pythonCommands;
     
     RenderStatsDialog* statsDialog;
+    
+    PanelWidget* currentPanelFocus;
+    
+    //To prevent recursion when we forward an uncaught event to the click focus widget
+    int currentPanelFocusEventRecursion;
+    
+    bool wasLaskUserSeekDuringPlayback;
     
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);
@@ -302,4 +309,4 @@ struct GuiPrivate
     bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
 
-#endif // _Gui_GuiPrivate_h_
+#endif // Gui_GuiPrivate_h

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_NodeGraphPrivate_h_
-#define _Gui_NodeGraphPrivate_h_
+#ifndef Gui_NodeGraphPrivate_h
+#define Gui_NodeGraphPrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -176,7 +176,6 @@ public:
 struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
-    Gui* _gui;
     
     boost::weak_ptr<NodeCollection> group;
     
@@ -228,11 +227,13 @@ struct NodeGraphPrivate
     bool _hasMovedOnce;
     
     ViewerTab* lastSelectedViewer;
-    bool wasLaskUserSeekDuringPlayback;
     
-    NodeGraphPrivate(Gui* gui,
-                     NodeGraph* p,
+    QPixmap unlockIcon;
+    
+    NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
+    
+    QPoint getPyPlugUnlockPos() const;
     
     void resetAllClipboards();
 
@@ -275,4 +276,4 @@ struct NodeGraphPrivate
     
 };
 
-#endif // _Gui_NodeGraphPrivate_h_
+#endif // Gui_NodeGraphPrivate_h

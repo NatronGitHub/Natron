@@ -635,25 +635,38 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     {
         FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
         
-        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                 "",
-                                 -1,-1,
-                                 true, //< autoconnect
-                                 INT_MIN,INT_MIN,
-                                 true, //< push undo/redo command
-                                 true, // add to project
-                                 true,
-                                 QString(),
-                                 CreateNodeArgs::DefaultValuesList(),
-                                 group);
-        NodePtr containerNode = createNode(groupArgs);
+        NodePtr containerNode;
+        if (!requestedByLoad) {
+            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                     "",
+                                     -1,-1,
+                                     true, //< autoconnect
+                                     INT_MIN,INT_MIN,
+                                     true, //< push undo/redo command
+                                     true, // add to project
+                                     true,
+                                     QString(),
+                                     CreateNodeArgs::DefaultValuesList(),
+                                     group);
+            containerNode = createNode(groupArgs);
+            std::string containerName;
+            group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+            containerNode->setScriptName(containerName);
+            
+            
+        } else {
+            
+            LoadNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                   "",
+                                   -1,-1,
+                                   &serialization,
+                                   false,
+                                   group);
+            containerNode = loadNode(groupArgs);
+        }
         if (!containerNode) {
             return containerNode;
         }
-        std::string containerName;
-        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-        containerNode->setScriptName(containerName);
-        
         
         
         std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
@@ -677,22 +690,16 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             }
             node = containerNode;
         }
-        if (requestedByLoad) {
-            containerNode->loadKnobs(serialization);
-            if (!serialization.isNull() && !serialization.getUserPages().empty()) {
-                containerNode->getLiveInstance()->refreshKnobs();
-            }
-            node = containerNode;
-        }
         
         if (!moduleName.isEmpty()) {
             setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
+     
         
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node);
+    onGroupCreationFinished(node, requestedByLoad);
     
     return node;
 }
@@ -777,15 +784,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
 
-    QString findId;
-    //Roto has moved to a built-in plugin
-    if (userEdited && pluginID == PLUGINID_OFX_ROTO) {
-        findId = PLUGINID_NATRON_ROTO;
-    } else {
-        findId = pluginID;
-    }
     try {
-        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
+        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
@@ -959,7 +959,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
             }
             
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-            onGroupCreationFinished(node);
+            onGroupCreationFinished(node, false);
         }
     }
     
@@ -999,7 +999,7 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               INT_MIN,INT_MIN,
                               false,
                               true,
-                              true,
+                              false,
                               true,
                               QString(),
                               CreateNodeArgs::DefaultValuesList(),
@@ -1387,17 +1387,17 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*node*/)
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
 {
-//    assert(node);
-//    if (!_imp->_currentProject->isLoadingProject()) {
-//        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
-//        assert(isGrp);
-//        if (!isGrp) {
-//            return;
-//        }
-//        isGrp->forceGetClipPreferencesOnAllTrees();
-//    }
+    assert(node);
+    if (!_imp->_currentProject->isLoadingProject() && !requestedByLoad) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+        assert(isGrp);
+        if (!isGrp) {
+            return;
+        }
+        isGrp->forceComputeInputDependentDataOnAllTrees();
+    }
 }
 
 bool

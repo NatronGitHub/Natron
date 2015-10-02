@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_ABSTRACTCACHE_H_
-#define NATRON_ENGINE_ABSTRACTCACHE_H_
+#ifndef NATRON_ENGINE_ABSTRACTCACHE_H
+#define NATRON_ENGINE_ABSTRACTCACHE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -1386,10 +1386,6 @@ private:
                            we re-open the mapping to the RAM put the entry
                            back into the memoryCache.*/
 
-                        if ( ret.empty() ) {
-                            _diskCache.erase(diskCached);
-                        }
-
                         try {
                             (*it)->reOpenFileMapping();
                         } catch (const std::exception & e) {
@@ -1406,6 +1402,7 @@ private:
 
                         //put it back into the RAM
                         _memoryCache.insert( (*it)->getHashKey(), *it );
+                        
 
                         U64 memoryCacheSize, maximumInMemorySize;
                         {
@@ -1435,7 +1432,10 @@ private:
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );
                         }
-
+                        
+                        ///Remove it from the disk cache
+                        _diskCache.erase(diskCached);
+                        
                         return true;
                     }
                 }

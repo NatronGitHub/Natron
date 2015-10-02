@@ -58,7 +58,8 @@ GCC_DIAG_ON(sign-compare)
 #define NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS 10
 #define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION 11
 #define NODE_SERIALIZATION_INTRODUCES_CACHE_ID 12
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_CACHE_ID
+#define NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS 13
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS
 
 namespace Natron {
 class Node;
@@ -246,10 +247,9 @@ private:
         ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
         ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
-        if (_pluginID == PLUGINID_NATRON_GROUP) {
-            ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
-            ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
-        }
+        ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+        ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
+        
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
@@ -305,7 +305,8 @@ private:
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         
         if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
-            if (_pluginID == PLUGINID_NATRON_GROUP) {
+            
+            if (version >= NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS || _pluginID == PLUGINID_NATRON_GROUP) {
                 ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
                 if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION) {
                     ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RotoPoint_h_
-#define _Engine_RotoPoint_h_
+#ifndef Engine_RotoPoint_h
+#define Engine_RotoPoint_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -110,4 +110,4 @@ struct RotoPoint
     : pressure(pressure_), timestamp(timestamp_) { pos.x = x; pos.y = y; }
 };
 
-#endif // _Engine_RotoPoint_h_
+#endif // Engine_RotoPoint_h

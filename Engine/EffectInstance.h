@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
-#define NATRON_ENGINE_EFFECTINSTANCE_H_
+#ifndef NATRON_ENGINE_EFFECTINSTANCE_H
+#define NATRON_ENGINE_EFFECTINSTANCE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -673,10 +673,16 @@ public:
                                         bool forceGetClipPrefAction,
                                         bool recurse);
 
-    void refreshChannelSelectors_recursive();
-
     virtual void onChannelsSelectorRefreshed() {}
 
+
+    virtual bool checkOFXClipPreferences(double /*time*/,
+                                     const RenderScale & /*scale*/,
+                                     const std::string & /*reason*/,
+                                     bool /*forceGetClipPrefAction*/)
+    {
+        return false;
+    }
 
 protected:
 
@@ -686,12 +692,6 @@ protected:
                                            bool forceGetClipPrefAction,
                                            std::list<Natron::Node*> & markedNodes);
 
-    virtual void checkOFXClipPreferences(double /*time*/,
-                                         const RenderScale & /*scale*/,
-                                         const std::string & /*reason*/,
-                                         bool /*forceGetClipPrefAction*/)
-    {
-    }
 
 
 public:
@@ -907,9 +907,6 @@ public:
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
-protected:
-
-
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -917,8 +914,13 @@ protected:
      * @param isProjectFormat[out] If set to true, then rod is taken to be equal to the current project format.
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
-     **/
+    **/
     virtual Natron::StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+
+protected:
+
+
+
     virtual void calcDefaultRegionOfDefinition(U64 hash, double time, int view, const RenderScale & scale, RectD *rod);
 
     /**
@@ -1087,6 +1089,11 @@ public:
     void setPersistentMessage(Natron::MessageTypeEnum type, const std::string & content);
 
     /**
+     * @brief Test if a persistent message is set.
+     **/
+    bool hasPersistentMessage();
+
+    /**
      * @brief Clears any message posted previously by setPersistentMessage.
      **/
     void clearPersistentMessage(bool recurse);
@@ -1126,6 +1133,8 @@ public:
 
     /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
     void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
+
+    virtual bool supportsRenderQuality() const { return false; }
 
     /**
      * @brief Does this effect can support multiple clips PAR ?
@@ -1186,11 +1195,6 @@ public:
      * @brief Called everytimes an input connection is changed
      **/
     virtual void onInputChanged(int inputNo);
-
-    /**
-     * @brief Called after the project has restored all nodes and their links, to set clip preferences.
-     **/
-    virtual void restoreClipPreferences();
 
     /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
@@ -1636,7 +1640,6 @@ private:
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
-                                          bool useScaleOneInputImages,
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
@@ -1662,6 +1665,14 @@ private:
                                              const ComponentsNeededMap & compsNeeded,
                                              InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
+
+    static boost::shared_ptr<Natron::Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                                                         const boost::shared_ptr<Natron::Image>& inputImage,
+                                                                         const RectI& roi,
+                                                                         const ImageComponents& targetComponents,
+                                                                         ImageBitDepthEnum targetDepth,
+                                                                         bool useAlpha0ForRGBToRGBAConversion,
+                                                                         ImagePremultiplicationEnum outputPremult);
 
 
     /**
@@ -1694,7 +1705,6 @@ private:
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
-                            bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                             bool useDiskCache,
                             bool createInCache,
                             boost::shared_ptr<Natron::Image>* fullScaleImage,
@@ -1725,7 +1735,6 @@ private:
         ParallelRenderArgs frameArgs;
         std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > frameTLS;
         bool renderFullScaleThenDownscale;
-        bool renderUseScaleOneInputs;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         int firstFrame;
@@ -1753,7 +1762,6 @@ private:
                                                   const RectToRender & rectToRender,
                                                   const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTls,
                                                   bool renderFullScaleThenDownscale,
-                                                  bool renderUseScaleOneInputs,
                                                   bool isSequentialRender,
                                                   bool isRenderResponseToUserInteraction,
                                                   int firstFrame, int lastFrame,
@@ -1800,7 +1808,6 @@ private:
                                           double identityTime,
                                           Natron::EffectInstance* identityInput,
                                           bool renderFullScaleThenDownscale,
-                                          bool renderUseScaleOneInputs,
                                           bool isSequentialRender,
                                           bool isRenderResponseToUserInteraction,
                                           const RectI & renderMappedRectToRender,
@@ -1819,10 +1826,7 @@ private:
      **/
     int getInputNumber(Natron::EffectInstance* inputEffect) const;
 
-protected:
-    static void
-    refreshChannelSelectors_recursiveInternal(Natron::Node* node,
-                                              std::list<Natron::Node*> & markedNodes);
+
 };
 
 
@@ -1843,4 +1847,4 @@ public:
 typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 
 } // Natron
-#endif // NATRON_ENGINE_EFFECTINSTANCE_H_
+#endif // NATRON_ENGINE_EFFECTINSTANCE_H

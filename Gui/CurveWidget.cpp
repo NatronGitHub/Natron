@@ -50,8 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/Histogram.h"
-#include "Gui/NodeGraph.h"
+
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
@@ -157,7 +156,7 @@ CurveWidget::addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    //updateGL(); //force initializeGL to be called if it wasn't before.
+    //update(); //force initializeGL to be called if it wasn't before.
     _imp->_curves.push_back(curve);
     curve->setColor(_imp->_nextCurveAddedColor);
     _imp->_nextCurveAddedColor.setHsv( _imp->_nextCurveAddedColor.hsvHue() + 60,
@@ -644,7 +643,19 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (ce) {
+        ce->onInputEventCalled();
+    }
+    
     setFocus();
     ////
     // right button: popup menu
@@ -655,7 +666,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // no need to set _imp->_lastMousePos
         // no need to set _imp->_dragStartPoint
 
-        // no need to updateGL()
+        // no need to update()
         e->accept();
         return;
     }
@@ -713,7 +724,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_dragStartPoint = e->pos();
         // no need to set _imp->_dragStartPoint
 
-        // no need to updateGL()
+        // no need to update()
         return;
     } else if (((e->buttons() & Qt::MiddleButton) &&
                 (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
@@ -757,7 +768,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
             _imp->_lastMousePos = e->pos();
-            //no need to updateGL()
+            //no need to update()
             return;
         }
     }
@@ -825,7 +836,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateDraggingTimeline;
         _imp->_lastMousePos = e->pos();
         // no need to set _imp->_dragStartPoint
-        // no need to updateGL()
+        // no need to update()
         return;
     }
 
@@ -1283,18 +1294,6 @@ CurveWidget::sizeHint() const
     return _imp->sizeH;
 }
 
-static TabWidget* findParentTabRecursive(QWidget* w)
-{
-    QWidget* parent = w->parentWidget();
-    if (!parent) {
-        return 0;
-    }
-    TabWidget* tab = dynamic_cast<TabWidget*>(parent);
-    if (tab) {
-        return tab;
-    }
-    return findParentTabRecursive(parent);
-}
 
 void
 CurveWidget::keyPressEvent(QKeyEvent* e)
@@ -1302,17 +1301,11 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     
+    bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        TabWidget* parentTab = findParentTabRecursive(this);
-        if (parentTab) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-            QCoreApplication::postEvent(parentTab,ev);
-        }
-
-    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
         constantInterpForSelectedKeyFrames();
@@ -1343,35 +1336,35 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
     } else {
+        accept = false;
         QGLWidget::keyPressEvent(e);
     }
+    if (accept) {
+        CurveEditor* ce = 0;
+        if ( parentWidget() ) {
+            QWidget* parent  = parentWidget()->parentWidget();
+            if (parent) {
+                if (parent->objectName() == "CurveEditor") {
+                    ce = dynamic_cast<CurveEditor*>(parent);
+                }
+            }
+        }
+        if (ce) {
+            ce->onInputEventCalled();
+        }
+        
+        e->accept();
+    }
 } // keyPressEvent
+
 
 void
 CurveWidget::enterEvent(QEvent* e)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-            dynamic_cast<ViewerGL*>(currentFocus) ||
-            dynamic_cast<CurveWidget*>(currentFocus) ||
-            dynamic_cast<Histogram*>(currentFocus) ||
-            dynamic_cast<NodeGraph*>(currentFocus) ||
-            dynamic_cast<QToolButton*>(currentFocus) ||
-            currentFocus->objectName() == "Properties" ||
-            currentFocus->objectName() == "tree" ||
-            currentFocus->objectName() == "SettingsPanel" ||
-            currentFocus->objectName() == "qt_tabwidget_tabbar";
-    
-    if (canSetFocus) {
-        setFocus();
-    }
-    
+    setFocus();
     QGLWidget::enterEvent(e);
+    
 }
-
 //struct RefreshTangent_functor{
 //    CurveWidgetPrivate* _imp;
 //
@@ -1549,7 +1542,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
 
         return;
     }
-    //this function will call updateGL() for us
+    //this function will call update() for us
     pushUndoCommand( new AddKeysCommand(this,curve, _imp->_keyFramesClipBoard) );
 }
 
@@ -1702,28 +1695,6 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
     }
     _imp->refreshTimelinePositions();
     update();
-}
-
-bool
-CurveWidget::isTabVisible() const
-{
-    if ( parentWidget() ) {
-        QWidget* parent  = parentWidget()->parentWidget();
-        if (parent) {
-            if (parent->objectName() == "CurveEditor") {
-                TabWidget* tab = dynamic_cast<TabWidget*>( parentWidget()->parentWidget()->parentWidget() );
-                if (tab) {
-                    if ( tab->isFloatingWindowChild() ) {
-                        return true;
-                    }
-
-                    return tab->currentWidget() == parent;
-                }
-            }
-        }
-    }
-
-    return false;
 }
 
 void

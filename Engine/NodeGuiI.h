@@ -131,6 +131,8 @@ public :
     virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) = 0;
     
     virtual bool isUserSelected() const = 0;
+    
+    virtual void restoreStateAfterCreation() = 0;
 };
 
 #endif // NODEGUII_H

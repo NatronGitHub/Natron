@@ -52,7 +52,6 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiMacros.h"
 #include "Gui/Utils.h"
 
-#define DROP_DOWN_ICON_SIZE 6
 
 using namespace Natron;
 
@@ -368,7 +367,7 @@ ComboBox::mousePressEvent(QMouseEvent* e)
     if ( buttonDownIsLeft(e) && !_readOnly && _enabled ) {
         _clicked = true;
         createMenu();
-        repaint();
+        update();
         QFrame::mousePressEvent(e);
     }
 }
@@ -377,7 +376,7 @@ void
 ComboBox::mouseReleaseEvent(QMouseEvent* e)
 {
     _clicked = false;
-    repaint();
+    update();
     QFrame::mouseReleaseEvent(e);
 }
 
@@ -452,7 +451,7 @@ ComboBox::createMenu()
     }
     _clicked = false;
     setFocus();
-    repaint();
+    update();
 }
 
 int
@@ -675,18 +674,27 @@ ComboBox::setCurrentText_internal(const QString & text)
             break;
         }
     }
+    
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
+    int ret = -1;
     if ( (_currentIndex != index) && (index != -1) ) {
         _currentIndex = index;
-        update();
-        return index;
+        ret = index;
     }
     updateLabel();
-    return -1;
+    return ret;
 }
 
 void
 ComboBox::setMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str);
     setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
@@ -694,6 +702,9 @@ ComboBox::setMaximumWidthFromText(const QString & str)
 void
 ComboBox::growMaximumWidthFromText(const QString & str)
 {
+    if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
+        return;
+    }
     int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
 
     if ( w > maximumWidth() ) {
@@ -767,20 +778,25 @@ ComboBox::setCurrentIndex_internal(int index)
     if ((node->isLeaf && node->isLeaf->data().toString() == "New")) {// "New" choice
         return false;
     }
-   
+    
     str = strippedText(text);
     
-    QFontMetrics m = fontMetrics();
-    setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
-
+    if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
+        QFontMetrics m = fontMetrics();
+        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        setMinimumWidth(w);
+    }
+    
+    bool ret;
     if ((index != -1 && index != _currentIndex) || _currentText != str) {
         _currentIndex = index;
         _currentText = str;
-        updateLabel();
-        return true;
+        ret =  true;
     } else {
-        return false;
+        ret = false;
     }
+    updateLabel();
+    return ret;
 }
 
 void
@@ -858,11 +874,22 @@ ComboBox::removeItem(const QString & item)
         qDebug() << "ComboBox::removeItem unsupported in cascading mode";
         return;
     }
+    
+
     for (U32 i = 0; i < _rootNode->children.size(); ++i) {
         assert(_rootNode->children[i]);
         if (_rootNode->children[i]->isLeaf->text() == item) {
+            
+            
             QString currentText = getCurrentIndexText();
             _rootNode->children.erase(_rootNode->children.begin() + i);
+            
+            ///Decrease index for all other children
+            for (std::size_t j = 0; j < _rootNode->children.size(); ++j) {
+                assert(_rootNode->children[j]->isLeaf);
+                _rootNode->children[j]->isLeaf->setData(QVariant((int)j));
+            }
+            
             if (currentText == item) {
                 setCurrentIndex(i - 1);
             }
@@ -872,9 +899,9 @@ ComboBox::removeItem(const QString & item)
                     --_separators[j];
                 }
             }
+            break;
         }
     }
-
 }
 
 void
@@ -961,7 +988,7 @@ void
 ComboBox::setReadOnly(bool readOnly)
 {
     _readOnly = readOnly;
-    repaint();
+    update();
 }
 
 bool
@@ -974,7 +1001,7 @@ void
 ComboBox::setEnabled_natron(bool enabled)
 {
     _enabled = enabled;
-    repaint();
+    update();
 }
 
 int
@@ -987,21 +1014,21 @@ void
 ComboBox::setAnimation(int i)
 {
     _animation = i;
-    repaint();
+    update();
 }
 
 void
 ComboBox::setDirty(bool b)
 {
     _dirty = b;
-    repaint();
+    update();
 }
 
 void
 ComboBox::setAltered(bool b)
 {
     _altered = b;
-    repaint();
+    update();
 }
 
 bool

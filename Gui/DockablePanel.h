@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Gui_DockablePanel_h_
-#define _Gui_DockablePanel_h_
+#ifndef Gui_DockablePanel_h
+#define Gui_DockablePanel_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -177,6 +177,8 @@ public:
     void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
 public Q_SLOTS:
+    
+    void onPageIndexChanged(int index);
 
     /*Internal slot, not meant to be called externally.*/
     void closePanel();
@@ -291,4 +293,4 @@ private:
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
 
-#endif // _Gui_DockablePanel_h_
+#endif // Gui_DockablePanel_h

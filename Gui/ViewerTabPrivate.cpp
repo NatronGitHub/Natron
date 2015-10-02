@@ -39,15 +39,15 @@
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/ViewerTab.h"
 
 
 using namespace Natron;
 
 
-ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
-                                   ViewerInstance* node)
-: viewer(NULL)
-, app( gui->getApp() )
+ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node)
+: publicInterface(publicInterface)
+, viewer(NULL)
 , viewerContainer(NULL)
 , viewerLayout(NULL)
 , viewerSubContainer(NULL)
@@ -74,6 +74,7 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , renderScaleCombo(NULL)
 , firstInputLabel(NULL)
 , firstInputImage(NULL)
+, compositingOperatorLabel(NULL)
 , compositingOperator(NULL)
 , secondInputLabel(NULL)
 , secondInputImage(NULL)
@@ -81,7 +82,6 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , gainBox(NULL)
 , gainSlider(NULL)
 , lastFstopValue(0.)
-, autoConstrastLabel(NULL)
 , autoContrast(NULL)
 , gammaBox(NULL)
 , lastGammaValue(1.)
@@ -89,6 +89,7 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , gammaSlider(NULL)
 , viewerColorSpace(NULL)
 , checkerboardButton(NULL)
+, pickerButton(NULL)
 , viewsComboBox(NULL)
 , currentViewIndex(0)
 , currentViewMutex()
@@ -119,6 +120,7 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , fpsLockedMutex()
 , fpsLocked(true)
 , fpsBox(NULL)
+, userFps(24)
 , turboButton(NULL)
 , timeLineGui(NULL)
 , rotoNodes()
@@ -128,7 +130,6 @@ ViewerTabPrivate::ViewerTabPrivate(Gui* gui,
 , inputNamesMap()
 , compOperatorMutex()
 , compOperator(eViewerCompositingOperatorNone)
-, gui(gui)
 , viewerNode(node)
 , visibleToolbarsMutex()
 , infobarVisible(true)
@@ -330,7 +331,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            activeInput[i]->getComponentsAvailable(publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
                 if (it->second.lock()) {
                     comps->insert(it->first);

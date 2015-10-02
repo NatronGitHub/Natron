@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_AppManager_h_
-#define _Engine_AppManager_h_
+#ifndef Engine_AppManager_h
+#define Engine_AppManager_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -166,7 +166,8 @@ public:
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
-                                            bool disableRenderScaleSupport) const;
+                                            bool disableRenderScaleSupport,
+                                                              bool *hasUsedFileDialog) const;
 
     void registerAppInstance(AppInstance* app);
 
@@ -305,7 +306,7 @@ public:
                                    bool mustCreateMutex,
                                    int major,
                                    int minor,
-                                   bool canBeUserCreated);
+                                   bool isDeprecated);
 
     bool isNCacheFilesOpenedCapped() const;
     size_t getNCacheFilesOpened() const;
@@ -476,18 +477,18 @@ public Q_SLOTS:
     
     GlobalOFXTLS& getCurrentThreadTLS();
     
-    void requestOFXDIalogOnMainThread(void* user_data);
+    void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 public Q_SLOTS:
     
-    void onOFXDialogOnMainThreadReceived(void* user_data);
+    void onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
     
-    void s_requestOFXDialogOnMainThread(void* user_data);
+    void s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 protected:
 
@@ -688,5 +689,5 @@ public:
 } // namespace Natron
 
 
-#endif // _Engine_AppManager_h_
+#endif // Engine_AppManager_h
 

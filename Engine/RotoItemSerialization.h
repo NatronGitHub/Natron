@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RotoItemSerialization_h_
-#define _Engine_RotoItemSerialization_h_
+#ifndef Engine_RotoItemSerialization_h
+#define Engine_RotoItemSerialization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -111,4 +111,4 @@ BOOST_CLASS_VERSION(RotoItemSerialization,ROTO_ITEM_VERSION)
 
 //BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoItemSerialization);
 
-#endif // _Engine_RotoItemSerialization_h_
+#endif // Engine_RotoItemSerialization_h

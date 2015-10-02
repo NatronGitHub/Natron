@@ -27,6 +27,8 @@
 #include <list>
 #include <cmath>
 
+#include <boost/weak_ptr.hpp>
+
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/GuiApplicationManager.h"
@@ -57,7 +59,7 @@ enum PositionInteractState
 
 struct PositionInteract
 {
-    boost::shared_ptr<KnobDouble> param;
+    boost::weak_ptr<KnobDouble> param;
     QPointF dragPos;
     PositionInteractState state;
     
@@ -136,7 +138,7 @@ DefaultOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
     assert(QThread::currentThread() == qApp->thread());
     
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param == position) {
+        if (it->param.lock() == position) {
             return false;
         }
     }
@@ -172,6 +174,15 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
     QFontMetrics fm(font);
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
         
+        boost::shared_ptr<KnobDouble> knob = it->param.lock();
+        if (!knob) {
+            continue;
+        }
+        if (knob->getIsSecretRecursive()) {
+            continue;
+        }
+    
+        
         float pR = 1.f;
         float pG = 1.f;
         float pB = 1.f;
@@ -188,8 +199,9 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
         if (it->state == ePositionInteractStatePicked) {
             pos = _imp->lastPenPos;
         } else {
-            pos.rx() = it->param->getValueAtTime(time, 0);
-            pos.ry() = it->param->getValueAtTime(time, 1);
+            pos.rx() = knob->getValueAtTime(time, 0);
+            pos.ry() = knob->getValueAtTime(time, 1);
+            
         }
         //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
         glPointSize( (GLfloat)it->pointSize() );
@@ -210,8 +222,9 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
             glEnd();
             QColor c;
             c.setRgbF(pR * l, pG * l, pB * l);
+            
             _imp->textRenderer.renderText(pos.x(), pos.y() - (fm.height() + it->pointSize()) * pscale.y,
-                                          pscale.x, pscale.y, QString(it->param->getDescription().c_str()), c, font);
+                                          pscale.x, pscale.y, QString(knob->getDescription().c_str()), c, font);
         }
     }
 
@@ -232,8 +245,11 @@ DefaultOverlay::penMotion(double time,
         if (it->state == ePositionInteractStatePicked) {
             pos = _imp->lastPenPos;
         } else {
-            pos.rx() = it->param->getValueAtTime(time, 0);
-            pos.ry() = it->param->getValueAtTime(time, 1);
+            boost::shared_ptr<KnobDouble> param = it->param.lock();
+            if (param) {
+                pos.rx() = param->getValueAtTime(time, 0);
+                pos.ry() = param->getValueAtTime(time, 1);
+            }
         }
         
         bool didSomething = false;
@@ -268,8 +284,10 @@ DefaultOverlay::penMotion(double time,
         if (it->state != ePositionInteractStateInactive && _imp->interactiveDrag && valuesChanged) {
             double x = fround(_imp->lastPenPos.x(), pscale.x);
             double y = fround(_imp->lastPenPos.y(), pscale.y);
-            it->param->setValue(x , 0);
-            it->param->setValue(y , 1);
+            boost::shared_ptr<KnobDouble> param = it->param.lock();
+            if (param) {
+                param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+            }
         }
         if (didSomething || valuesChanged) {
             return true;
@@ -296,8 +314,10 @@ DefaultOverlay::penUp(double time,
             if (!_imp->interactiveDrag) {
                 double x = fround(_imp->lastPenPos.x(), pscale.x);
                 double y = fround(_imp->lastPenPos.y(), pscale.y);
-                it->param->setValue(x , 0);
-                it->param->setValue(y , 1);
+                boost::shared_ptr<KnobDouble> param = it->param.lock();
+                if (param) {
+                    param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+                }
             }
 
             it->state = ePositionInteractStateInactive;
@@ -393,7 +413,7 @@ DefaultOverlay::hasDefaultOverlayForParam(const KnobI* param)
 {
     assert(QThread::currentThread() == qApp->thread());
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param.get() == param) {
+        if (it->param.lock().get() == param) {
             return true;
         }
     }
@@ -404,7 +424,7 @@ void
 DefaultOverlay::removeDefaultOverlay(KnobI* knob)
 {
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->param.get() == knob) {
+        if (it->param.lock().get() == knob) {
             _imp->positions.erase(it);
             return;
         }

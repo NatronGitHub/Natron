@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _Engine_RectD_h_
-#define _Engine_RectD_h_
+#ifndef Engine_RectD_h
+#define Engine_RectD_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -342,4 +342,4 @@ operator!=(const RectD & b1,
 Q_DECLARE_METATYPE(RectD)
 
 
-#endif // _Engine_RectD_h_
+#endif // Engine_RectD_h

@@ -155,7 +155,7 @@ CustomParamInteract::swapOpenGLBuffers()
 void
 CustomParamInteract::redraw()
 {
-    updateGL();
+    update();
 }
 
 void
@@ -240,7 +240,7 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     viewportPos.y = e->y();
     OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -259,7 +259,7 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     viewportPos.y = e->y();
     OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -278,7 +278,7 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     viewportPos.y = e->y();
     OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, pos, viewportPos, /*pressure=*/1.);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -291,7 +291,7 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -304,7 +304,7 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale);
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -323,7 +323,7 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
         stat = _imp->entryPoint->keyDownAction( time, scale, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     }
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 
@@ -337,7 +337,7 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     QByteArray keyStr;
     OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
-        updateGL();
+        update();
     }
 }
 

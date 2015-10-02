@@ -119,7 +119,8 @@ CrashDialog::CrashDialog(const QString &filePath)
                            .arg("rgb(21,97,248)") // %7: keyframe value color
                            .arg("rgb(200,200,200)")  // %8: disabled editable text
                            .arg("rgb(180, 200, 100)")  // %9: expression background color
-                           .arg("rgb(150,150,50")); // *10: altered text color
+                           .arg("rgb(150,150,50") // %10: altered text color
+                           .arg("rgb(255,195,120)"));  // %11: mouse over selection color
         }
     
     setWindowTitle(tr("Natron Issue Reporter"));

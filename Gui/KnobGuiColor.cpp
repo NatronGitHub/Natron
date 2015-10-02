@@ -864,7 +864,7 @@ KnobGuiColor::showColorDialog()
         knob->endChanges();
 
     }
-    knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void

@@ -551,7 +551,11 @@ DopeSheetSelectionModel *DopeSheet::getSelectionModel() const
     return _imp->selectionModel;
 }
 
-
+DopeSheetEditor*
+DopeSheet::getEditor() const
+{
+    return _imp->editor;
+}
 
 void DopeSheet::deleteSelectedKeyframes()
 {

@@ -51,8 +51,6 @@
 struct ScriptEditorPrivate
 {
     
-    Gui* gui;
-    
     QVBoxLayout* mainLayout;
     
     QWidget* buttonsContainer;
@@ -77,9 +75,8 @@ struct ScriptEditorPrivate
     QMutex autoSavedScriptMutex;
     QString autoSavedScript;
     
-    ScriptEditorPrivate(Gui* gui)
-    : gui(gui)
-    , mainLayout(0)
+    ScriptEditorPrivate()
+    : mainLayout(0)
     , buttonsContainer(0)
     , buttonsContainerLayout(0)
     , undoB(0)
@@ -103,7 +100,8 @@ struct ScriptEditorPrivate
 
 ScriptEditor::ScriptEditor(Gui* gui)
 : QWidget(gui)
-, _imp(new ScriptEditorPrivate(gui))
+, PanelWidget(this,gui)
+, _imp(new ScriptEditorPrivate())
 {
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->buttonsContainer = new QWidget(this);
@@ -298,13 +296,13 @@ ScriptEditor::onSourceScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->gui->getLastLoadProjectDirectory().toStdString(),
-                              _imp->gui,false);
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,getGui()->getLastLoadProjectDirectory().toStdString(),
+                              getGui(),false);
     
     if (dialog.exec()) {
         
         QDir currentDir = dialog.currentDirectory();
-        _imp->gui->updateLastOpenedProjectPath(currentDir.absolutePath());
+        getGui()->updateLastOpenedProjectPath(currentDir.absolutePath());
 
         QString fileName(dialog.selectedFiles().c_str());
         QFile file(fileName);
@@ -325,13 +323,13 @@ ScriptEditor::onLoadScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->gui->getLastLoadProjectDirectory().toStdString(),
-                              _imp->gui,false);
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,getGui()->getLastLoadProjectDirectory().toStdString(),
+                              getGui(),false);
     
     if (dialog.exec()) {
         
         QDir currentDir = dialog.currentDirectory();
-        _imp->gui->updateLastOpenedProjectPath(currentDir.absolutePath());
+        getGui()->updateLastOpenedProjectPath(currentDir.absolutePath());
         QString fileName(dialog.selectedFiles().c_str());
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly)) {
@@ -350,13 +348,13 @@ ScriptEditor::onSaveScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeSave,_imp->gui->getLastSaveProjectDirectory().toStdString(),
-                              _imp->gui,false);
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeSave,getGui()->getLastSaveProjectDirectory().toStdString(),
+                              getGui(),false);
     
     if (dialog.exec()) {
         
         QDir currentDir = dialog.currentDirectory();
-        _imp->gui->updateLastSavedProjectPath(currentDir.absolutePath());
+        getGui()->updateLastSavedProjectPath(currentDir.absolutePath());
 
         QString fileName(dialog.selectedFiles().c_str());
         QFile file(fileName);
@@ -450,8 +448,18 @@ ScriptEditor::getInputScript() const
 }
 
 void
+ScriptEditor::mousePressEvent(QMouseEvent* e)
+{
+    takeClickFocus();
+    QWidget::mousePressEvent(e);
+}
+
+void
 ScriptEditor::keyPressEvent(QKeyEvent* e)
 {
+
+    bool accept = true;
+    
     Qt::Key key = (Qt::Key)e->key();
     if (key == Qt::Key_BracketLeft && modCASIsControl(e)) {
         onUndoClicked();
@@ -462,9 +470,13 @@ ScriptEditor::keyPressEvent(QKeyEvent* e)
     } else if (key == Qt::Key_Backspace && modifierHasControl(e)) {
         onClearOutputClicked();
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
     }
-    
+    if (accept) {
+        takeClickFocus();
+        e->accept();
+    }
 }
 
 void
@@ -504,4 +516,18 @@ ScriptEditor::printAutoDeclaredVariable(const QString& str)
     QString cpy = str;
     cpy.replace("\n", "<br/>");
     _imp->outputEdit->append("<font color=grey><b>" + cpy + "</font></b>");
+}
+
+void
+ScriptEditor::enterEvent(QEvent *e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
+void
+ScriptEditor::leaveEvent(QEvent *e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
 }

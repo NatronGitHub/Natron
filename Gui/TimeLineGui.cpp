@@ -120,6 +120,8 @@ struct TimelineGuiPrivate
     bool alphaCursor; // should cursor be drawn semi-transparant
     QPoint lastMouseEventWidgetCoord;
     Natron::TimelineStateEnum state; //state machine for mouse events
+    int mousePressX; // widget X coordinate of last click
+    int mouseMoveX; // widget X coordinate of last mousemove position
     TimeLineZoomContext tlZoomCtx;
     Natron::TextRenderer textRenderer;
     QFont font;
@@ -144,6 +146,8 @@ struct TimelineGuiPrivate
         , alphaCursor(false)
         , lastMouseEventWidgetCoord()
         , state(eTimelineStateIdle)
+        , mousePressX(0)
+        , mouseMoveX(0)
         , tlZoomCtx()
         , textRenderer()
         , font(appFont,appFontSize)
@@ -159,7 +163,7 @@ struct TimelineGuiPrivate
 
     void updateEditorFrameRanges()
     {
-        double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
+        double zoomRight = parent->toTimeLine(parent->width() - 1);
 
         gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
         gui->getDopeSheetEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
@@ -167,7 +171,7 @@ struct TimelineGuiPrivate
 
     void updateOpenedViewersFrameRanges()
     {
-        double zoomRight = parent->toTimeLineCoordinates(parent->width() - 1, 0).x();
+        double zoomRight = parent->toTimeLine(parent->width() - 1);
 
         const std::list<ViewerTab *> &viewers = gui->getViewersList();
 
@@ -203,16 +207,11 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
         QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
 
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-    
-    
-    //connect the gui to the internal timeline
-    QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
     
     QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
 
@@ -337,8 +336,8 @@ TimeLineGui::paintGL()
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame,0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame,0);
 
-        glScissor( firstFrameWidgetPos.x(),0,
-                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
+        glScissor( firstFrameWidgetPos.x(), 0,
+                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(), height() );
 
         double bgR,bgG,bgB;
         settings->getBaseColor(&bgR, &bgG, &bgB);
@@ -351,6 +350,20 @@ TimeLineGui::paintGL()
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if (_imp->state == eTimelineStateSelectingZoomRange) {
+            // draw timeline selected range
+            // https://github.com/MrKepzie/Natron/issues/917
+            // draw the select range, from _imp->mousePressX to _imp->mouseMoveX
+            glColor4f(1, 1, 1, 0.3);
+            glBegin(GL_POLYGON);
+            glVertex2f(toTimeLine(_imp->mousePressX), btmLeft.y());
+            glVertex2f(toTimeLine(_imp->mousePressX), topRight.y());
+            glVertex2f(toTimeLine(_imp->mouseMoveX), topRight.y());
+            glVertex2f(toTimeLine(_imp->mouseMoveX), btmLeft.y());
+            glEnd();
+        }
+
 
         QFontMetrics fontM(_imp->font);
 
@@ -400,6 +413,10 @@ TimeLineGui::paintGL()
         double smallTickSize;
         bool half_tick;
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
+        if (smallTickSize < 1) {
+            smallTickSize = 1;
+            half_tick = false;
+        }
         int m1, m2;
         const int ticks_max = 1000;
         double offset;
@@ -415,6 +432,12 @@ TimeLineGui::paintGL()
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
+            // because smallTickSize is at least 1, isFloating can never be true
+            bool isFloating = std::abs(std::floor(0.5 + value) - value) != 0.;
+            assert(!isFloating);
+            if (isFloating) {
+                continue;
+            }
             glColor4f(txtR,txtG,txtB, alpha);
 
             glBegin(GL_LINES);
@@ -423,8 +446,7 @@ TimeLineGui::paintGL()
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            bool doRender = std::abs(std::floor(0.5 + value) - value) == 0.;
-            if (doRender && tickSize > minTickSizeText) {
+            if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
                 const int sSizePixel =  fontM.width(s);
@@ -529,7 +551,7 @@ TimeLineGui::paintGL()
 
         QString currentFrameStr( QString::number( _imp->timeline->currentFrame() ) );
         double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
-        double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
+        double cursorTextPos = toTimeLine(cursorTextXposWidget);
         renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font);
         glBegin(GL_POLYGON);
         glVertex2f( cursorBtm.x(),cursorBtm.y() );
@@ -546,7 +568,7 @@ TimeLineGui::paintGL()
         if ( leftBound != _imp->timeline->currentFrame() ) {
             QString leftBoundStr( QString::number(leftBound) );
             double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2.,0 ).x() - fontM.width(leftBoundStr) / 2.;
-            double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
+            double leftBoundTextPos = toTimeLine(leftBoundTextXposWidget);
             renderText(leftBoundTextPos,leftBoundTop.y(),
                        leftBoundStr, boundsColor, _imp->font);
         }
@@ -561,7 +583,7 @@ TimeLineGui::paintGL()
         if ( rightBound != cur ) {
             QString rightBoundStr( QString::number( rightBound ) );
             double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
-            double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
+            double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
             renderText(rightBoundTextPos,rightBoundTop.y(),
                        rightBoundStr, boundsColor, _imp->font);
         }
@@ -643,8 +665,12 @@ TimeLineGui::renderText(double x,
 
 void
 TimeLineGui::onFrameChanged(SequenceTime,
-                            int)
+                            int reason)
 {
+    Natron::TimelineChangeReasonEnum r = (Natron::TimelineChangeReasonEnum)reason;
+    if (r == eTimelineChangeReasonUserSeek) {
+        return;
+    }
     update();
 }
 
@@ -653,7 +679,7 @@ TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-        Q_EMIT frameChanged(time);
+        _imp->timeline->onFrameChanged(time);
         update();
     }
 }
@@ -661,27 +687,26 @@ TimeLineGui::seek(SequenceTime time)
 void
 TimeLineGui::mousePressEvent(QMouseEvent* e)
 {
-    int leftBound,rightBound;
-    {
-        QMutexLocker k(&_imp->boundariesMutex);
-        leftBound = _imp->leftBoundary;
-        rightBound = _imp->rightBoundary;
-    }
+    _imp->mousePressX = e->x();
+    _imp->mouseMoveX = _imp->mousePressX;
     if (buttonDownIsMiddle(e)) {
-        centerOn(leftBound, rightBound);
-
-        if (_imp->gui->isTripleSyncEnabled()) {
-            _imp->updateEditorFrameRanges();
-            _imp->updateOpenedViewersFrameRanges();
-        }
+        _imp->state = eTimelineStatePanning;
+    } else if (buttonDownIsRight(e)) {
+        _imp->state = eTimelineStateSelectingZoomRange;
     } else {
         _imp->lastMouseEventWidgetCoord = e->pos();
-        double t = toTimeLineCoordinates(e->x(),0).x();
+        const double t = toTimeLine(_imp->mousePressX);
         SequenceTime tseq = std::floor(t + 0.5);
         if (modCASIsControl(e)) {
+            int leftBound,rightBound;
+            {
+                QMutexLocker k(&_imp->boundariesMutex);
+                leftBound = _imp->leftBoundary;
+                rightBound = _imp->rightBoundary;
+            }
             _imp->state = eTimelineStateDraggingBoundary;
-            int firstPos = toWidgetCoordinates(leftBound - 1,0).x();
-            int lastPos = toWidgetCoordinates(rightBound + 1,0).x();
+            int firstPos = toWidget(leftBound - 1);
+            int lastPos = toWidget(rightBound + 1);
             int distFromFirst = std::abs(e->x() - firstPos);
             int distFromLast = std::abs(e->x() - lastPos);
             if (distFromFirst  > distFromLast) {
@@ -699,29 +724,40 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
 void
 TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 {
-    int leftBound,rightBound;
-    {
-        QMutexLocker k(&_imp->boundariesMutex);
-        leftBound = _imp->leftBoundary;
-        rightBound = _imp->rightBoundary;
-    }
-    
+    int mouseMoveXprev = _imp->mouseMoveX;
     _imp->lastMouseEventWidgetCoord = e->pos();
-    double t = toTimeLineCoordinates(e->x(),0).x();
+    _imp->mouseMoveX = e->x();
+    const double t = toTimeLine(_imp->mouseMoveX);
     SequenceTime tseq = std::floor(t + 0.5);
     bool distortViewPort = false;
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-    if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
+    if (_imp->state == eTimelineStatePanning) {
+        _imp->tlZoomCtx.left += toTimeLine(mouseMoveXprev) - toTimeLine(_imp->mouseMoveX);
+        update();
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->updateEditorFrameRanges();
+            _imp->updateOpenedViewersFrameRanges();
+        }
+    } else if (_imp->state == eTimelineStateSelectingZoomRange) {
+        // https://github.com/MrKepzie/Natron/issues/917
+        update();
+    } else if (_imp->state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->timeline->currentFrame() ) {
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-            Q_EMIT frameChanged(tseq);
+            _imp->timeline->onFrameChanged(tseq);
         }
         distortViewPort = true;
         _imp->alphaCursor = false;
     } else if (_imp->state == eTimelineStateDraggingBoundary) {
-        int firstPos = toWidgetCoordinates(leftBound - 1,0).x();
-        int lastPos = toWidgetCoordinates(rightBound + 1,0).x();
+        int leftBound,rightBound;
+        {
+            QMutexLocker k(&_imp->boundariesMutex);
+            leftBound = _imp->leftBoundary;
+            rightBound = _imp->rightBoundary;
+        }
+       int firstPos = toWidget(leftBound - 1);
+        int lastPos = toWidget(rightBound + 1);
         int distFromFirst = std::abs(e->x() - firstPos);
         int distFromLast = std::abs(e->x() - lastPos);
         if (distFromFirst  > distFromLast) { // moving last frame anchor
@@ -741,8 +777,8 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     }
 
     if (distortViewPort) {
-        double leftMost = toTimeLineCoordinates(0,0).x();
-        double rightMost = toTimeLineCoordinates(width() - 1,0).x();
+        double leftMost = toTimeLine(0);
+        double rightMost = toTimeLine(width() - 1);
         if (tseq < leftMost) {
             centerOn(tseq, rightMost);
         } else if (tseq > rightMost) {
@@ -753,6 +789,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     } else {
         update();
     }
+
 }
 
 void
@@ -774,8 +811,36 @@ TimeLineGui::leaveEvent(QEvent* e)
 void
 TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 {
-    if (_imp->state == eTimelineStateDraggingCursor) {
-        
+    if (_imp->state == eTimelineStateSelectingZoomRange) {
+        // - if the last selected frame is the same as the first selected frame, zoom on the PROJECT range
+        //   (NOT the playback range as in the following, and NOT adding margins as centerOn() does)
+        // - if they are different, zoom on that range
+        double t = toTimeLine(e->x());
+
+        int leftBound = std::floor(t + 0.5);
+        int rightBound = std::floor(toTimeLine(_imp->mousePressX) + 0.5);
+        if (leftBound > rightBound) {
+            std::swap(leftBound, rightBound);
+        } else if (leftBound == rightBound) {
+            if (!_imp->viewerTab->isFileDialogViewer()) {
+                double firstFrame,lastFrame;
+                _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+                leftBound = std::floor(firstFrame + 0.5);
+                rightBound = std::floor(lastFrame + 0.5);
+
+            } else {
+                _imp->viewerTab->getTimelineBounds(&leftBound, &rightBound);
+            }
+        }
+
+        centerOn(leftBound, rightBound, 0);
+
+        if (_imp->gui->isTripleSyncEnabled()) {
+            _imp->updateEditorFrameRanges();
+            _imp->updateOpenedViewersFrameRanges();
+        }
+    } else if (_imp->state == eTimelineStateDraggingCursor) {
+
         bool wasScrubbing = false;
         if (_imp->gui->isDraftRenderEnabled()) {
             _imp->gui->setDraftRenderEnabled(false);
@@ -789,12 +854,12 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
         
         
         if (onEditingFinishedOnly) {
-            double t = toTimeLineCoordinates(e->x(),0).x();
+            double t = toTimeLine(e->x());
             SequenceTime tseq = std::floor(t + 0.5);
             if ( (tseq != _imp->timeline->currentFrame()) ) {
 
                 _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewer->getNode());
-                Q_EMIT frameChanged(tseq);
+                _imp->timeline->onFrameChanged(tseq);
             }
 
         } else if (autoProxyEnabled && wasScrubbing) {
@@ -814,10 +879,10 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
     }
     const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
-    if (newZoomFactor <= 0.01) {
+    if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
         newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
+    } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
+        newZoomFactor = 100.;
     }
     QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
     double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
@@ -893,12 +958,13 @@ TimeLineGui::getVisibleRange(SequenceTime* left, SequenceTime* right) const
 
 void
 TimeLineGui::centerOn(SequenceTime left,
-                      SequenceTime right)
+                      SequenceTime right,
+                      int margin)
 {
-    double curveWidth = right - left + 10;
+    double curveWidth = right - left + 2 * margin;
     double w = width();
 
-    _imp->tlZoomCtx.left = left - 5;
+    _imp->tlZoomCtx.left = left - margin;
     _imp->tlZoomCtx.zoomFactor = w / curveWidth;
 
     update();
@@ -933,38 +999,52 @@ TimeLineGui::currentFrame() const
     return _imp->timeline->currentFrame();
 }
 
+double
+TimeLineGui::toTimeLine(double x) const
+{
+    double w = (double)width();
+    double left = _imp->tlZoomCtx.left;
+    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
+
+    return ( ( (right - left) * x ) / w ) + left;
+}
+
+double
+TimeLineGui::toWidget(double t) const
+{
+    double w = (double)width();
+    double left = _imp->tlZoomCtx.left;
+    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
+
+    return ( (t - left) / (right - left) ) * w;
+}
+
 QPointF
 TimeLineGui::toTimeLineCoordinates(double x,
                                    double y) const
 {
-    double w = (double)width();
     double h = (double)height();
     double bottom = _imp->tlZoomCtx.bottom;
-    double left = _imp->tlZoomCtx.left;
     double top =  bottom +  h / _imp->tlZoomCtx.zoomFactor;
-    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
 
-    return QPointF( ( ( (right - left) * x ) / w ) + left,( ( (bottom - top) * y ) / h ) + top );
+    return QPointF( toTimeLine(x), ( ( (bottom - top) * y ) / h ) + top );
 }
 
 QPointF
 TimeLineGui::toWidgetCoordinates(double x,
                                  double y) const
 {
-    double w = (double)width();
     double h = (double)height();
     double bottom = _imp->tlZoomCtx.bottom;
-    double left = _imp->tlZoomCtx.left;
     double top =  bottom +  h / _imp->tlZoomCtx.zoomFactor;
-    double right = left +  w / _imp->tlZoomCtx.zoomFactor;
 
-    return QPoint( ( (x - left) / (right - left) ) * w,( (y - top) / (bottom - top) ) * h );
+    return QPoint( toWidget(x), ( (y - top) / (bottom - top) ) * h );
 }
 
 void
 TimeLineGui::onKeyframesIndicatorsChanged()
 {
-    repaint();
+    update();
 }
 
 void

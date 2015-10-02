@@ -25,6 +25,8 @@
 #include "KnobFile.h"
 
 #include <utility>
+#include <stdexcept>
+
 #include <QtCore/QStringList>
 #include <QtCore/QMutexLocker>
 #include <QDebug>
@@ -210,7 +212,9 @@ KnobPath::getVariables(std::list<std::pair<std::string,std::string> >* paths) co
         assert(i < raw.size());
         size_t endNamePos = raw.find(endNameTag,i);
         assert(endNamePos != std::string::npos && endNamePos < raw.size());
-        
+        if (endNamePos == std::string::npos || endNamePos >= raw.size()) {
+            throw std::logic_error("KnobPath::getVariables()");
+        }
         std::string name,value;
         while (i < endNamePos) {
             name.push_back(raw[i]);

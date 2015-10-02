@@ -29,6 +29,7 @@
 #include <locale>
 #include <limits>
 #include <stdexcept>
+#include <cmath>
 
 #include <QLineF>
 #include <QtDebug>
@@ -485,7 +486,9 @@ bezierSegmentEval(bool useGuiCurves,
     
     double incr = 1. / (double)(nbPointsPerSegment - 1);
     Point cur;
-    for (double t = 0.; t <= 1.; t += incr) {
+    for (int i = 0; i < nbPointsPerSegment; ++i) {
+        double t = incr * i;
+
         Bezier::bezierPoint(p0, p1, p2, p3, t, &cur);
         points->push_back(cur);
     }
@@ -544,7 +547,16 @@ bezierSegmentMeetsPoint(bool useGuiCurves,
     double sqDistance = distance * distance;
     double minSqDistance = std::numeric_limits<double>::infinity();
     double tForMin = -1.;
-    for (double t = 0.; t <= 1.; t += incr) {
+    // 1/incr = 0.9 -> 2 points   +                + o
+    // 1/incr = 1.0 -> 2 points   +                o
+    // 1/incr = 1.1 -> 3 points   +              o +
+    // 1/incr = 2.0 -> 3 points   +        o       o
+    // 1/incr = 2.1 -> 4 points   +       o       o+
+    int nbPoints = std::ceil(1./incr) + 1;
+    for (int i = 0; i < nbPoints; ++i) {
+        double t = std::min(i * incr, 1.);
+        // the last point should be t == 1;
+        assert(t < 1 || (t == 1. && i == nbPoints-1));
         Point p;
         Bezier::bezierPoint(p02d, p12d, p22d, p32d, t, &p);
         double sqdist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
