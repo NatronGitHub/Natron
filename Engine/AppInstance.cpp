@@ -699,7 +699,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node);
+    onGroupCreationFinished(node, requestedByLoad);
     
     return node;
 }
@@ -959,7 +959,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
             }
             
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-            onGroupCreationFinished(node);
+            onGroupCreationFinished(node, false);
         }
     }
     
@@ -1387,10 +1387,10 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
 {
     assert(node);
-    if (!_imp->_currentProject->isLoadingProject()) {
+    if (!_imp->_currentProject->isLoadingProject() && !requestedByLoad) {
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
         assert(isGrp);
         if (!isGrp) {

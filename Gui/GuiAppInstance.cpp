@@ -1074,39 +1074,40 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
 {
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection = node->getGroup();
-    assert(collection);
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
-    if (isGrp) {
-        NodeGraphI* graph_i = isGrp->getNodeGraph();
-        assert(graph_i);
-        graph = dynamic_cast<NodeGraph*>(graph_i);
-    } else {
-        graph = _imp->_gui->getNodeGraph();
-    }
-    assert(graph);
-    std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
-    boost::shared_ptr<NodeGui> selectedNode;
-    if (!selectedNodes.empty()) {
-        selectedNode = selectedNodes.front();
-        if (dynamic_cast<BackDropGui*>(selectedNode.get())) {
-            selectedNode.reset();
+    if (!requestedByLoad) {
+        NodeGraph* graph = 0;
+        boost::shared_ptr<NodeCollection> collection = node->getGroup();
+        assert(collection);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            graph = dynamic_cast<NodeGraph*>(graph_i);
+        } else {
+            graph = _imp->_gui->getNodeGraph();
         }
+        assert(graph);
+        std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
+        boost::shared_ptr<NodeGui> selectedNode;
+        if (!selectedNodes.empty()) {
+            selectedNode = selectedNodes.front();
+            if (dynamic_cast<BackDropGui*>(selectedNode.get())) {
+                selectedNode.reset();
+            }
+        }
+        boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+        assert(node_gui_i);
+        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+        graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
-    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
-    assert(node_gui_i);
-    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-    graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
-
     std::list<ViewerInstance* > viewers;
     node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(false);
     }
-    AppInstance::onGroupCreationFinished(node);
+    AppInstance::onGroupCreationFinished(node,requestedByLoad);
 }
 
 bool
