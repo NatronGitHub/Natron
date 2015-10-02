@@ -608,7 +608,8 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
                                                    std::list<std::pair<Natron::Point,double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
-                                                   int* newAge)
+                                                   int* newAge,
+                                                   int* strokeIndex)
 {
     
     Transform::Matrix3x3 transform;
@@ -625,6 +626,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
     QMutexLocker k(&itemMutex);
     assert(!_imp->strokes.empty());
     RotoStrokeItemPrivate::StrokeCurves& stroke = _imp->strokes.back();
+    *strokeIndex = (int)_imp->strokes.size() - 1;
     assert(stroke.xCurve->getKeyFramesCount() == stroke.yCurve->getKeyFramesCount() && stroke.xCurve->getKeyFramesCount() == stroke.pressureCurve->getKeyFramesCount());
     
   

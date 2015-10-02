@@ -240,8 +240,8 @@ RotoSmear::render(const RenderActionArgs& args)
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
     std::list<std::list<std::pair<Natron::Point,double> > > strokes;
-    //stroke->evaluateStroke(0, &points);
-    node->getLastPaintStrokePoints(args.time, &strokes);
+    int strokeIndex;
+    node->getLastPaintStrokePoints(args.time, &strokes, &strokeIndex);
 
     
     bool isFirstStrokeTick = false;
@@ -314,7 +314,12 @@ RotoSmear::render(const RenderActionArgs& args)
         bool didPaint = false;
         double distToNext = 0.;
 
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+        ImagePtr bgImg;
+        
+        if (strokeIndex == 0) {
+            ///For the first multi-stroke, init background
+            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+        }
 
         
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
@@ -324,7 +329,7 @@ RotoSmear::render(const RenderActionArgs& args)
             int nComps = plane->first.getNumComponents();
             
             
-            if (!bgImg && !bgInitialized) {
+            if (!bgImg && !bgInitialized && strokeIndex == 0) {
                 plane->second->fillZero(args.roi);
                 bgInitialized = true;
                 continue;
@@ -332,7 +337,7 @@ RotoSmear::render(const RenderActionArgs& args)
             
             //First copy the source image if this is the first stroke tick
             
-            if ((isFirstStrokeTick || !duringPainting) && !bgInitialized) {
+            if ((isFirstStrokeTick || !duringPainting) && !bgInitialized && strokeIndex == 0) {
                 
                 //Make sure all areas are black and transparant
                 plane->second->fillZero(args.roi);

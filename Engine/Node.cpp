@@ -276,6 +276,7 @@ struct Node::Implementation
     , lastStrokeMovementBbox()
     , strokeBitmapCleared(false)
     , lastStrokeIndex(-1)
+    , multiStrokeIndex(0)
     , strokeImage()
     , lastStrokePoints()
     , distToNextIn(0.)
@@ -497,7 +498,7 @@ struct Node::Implementation
     mutable QMutex lastStrokeMovementMutex;
     RectD lastStrokeMovementBbox;
     bool strokeBitmapCleared;
-    int lastStrokeIndex;
+    int lastStrokeIndex,multiStrokeIndex;
     ImagePtr strokeImage;
     std::list<std::pair<Natron::Point,double> > lastStrokePoints;
     double distToNextIn,distToNextOut;
@@ -867,7 +868,8 @@ Node::refreshDynamicProperties()
 
 void
 Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                const RectD& lastPointsBbox)
+                                const RectD& lastPointsBbox,
+                                int strokeIndex)
 {
     
     {
@@ -877,6 +879,7 @@ Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Poi
         _imp->lastStrokeIndex = newAge;
         _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
+        _imp->multiStrokeIndex = strokeIndex;
     }
     _imp->liveInstance->clearActionsCache();
 }
@@ -951,16 +954,18 @@ Node::clearLastPaintStrokeRoD()
 }
 
 void
-Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes) const
+Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes,int* strokeIndex) const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (_imp->duringPaintStrokeCreation) {
         strokes->push_back(_imp->lastStrokePoints);
+        *strokeIndex = _imp->multiStrokeIndex;
     } else {
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
         stroke->evaluateStroke(0, time, strokes);
+        *strokeIndex = 0;
     }
 }
 

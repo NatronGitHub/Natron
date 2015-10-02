@@ -152,7 +152,8 @@ public:
     bool getMostRecentStrokeChangesSinceAge(int time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
-                                            int* newAge);
+                                            int* newAge,
+                                            int* strokeIndex);
     
     RectD getWholeStrokeRoDWhilePainting() const;
     

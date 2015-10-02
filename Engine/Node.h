@@ -424,7 +424,8 @@ public:
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
     void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                   const RectD& lastPointsBbox);
+                                   const RectD& lastPointsBbox,
+                                   int strokeIndex);
     
     //Used by nodes below the rotopaint tree to optimize the RoI
     void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
@@ -439,7 +440,7 @@ public:
     void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes) const;
+    void getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,

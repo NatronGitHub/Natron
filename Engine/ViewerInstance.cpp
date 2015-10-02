@@ -526,11 +526,12 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
                 lastAge = mergeNode->getStrokeImageAge();
-                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge)) {
+                int strokeIndex;
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
                     
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox);
+                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox,strokeIndex);
                         }
                     }
                     updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
