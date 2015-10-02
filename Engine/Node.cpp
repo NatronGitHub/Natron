@@ -198,6 +198,8 @@ struct Node::Implementation
     , activatedMutex()
     , activated(true)
     , plugin(plugin_)
+    , pyPlugID()
+    , pyPlugVersion(0)
     , computingPreview(false)
     , computingPreviewMutex()
     , pluginInstanceMemoryUsed(0)
@@ -377,6 +379,7 @@ struct Node::Implementation
     
     Natron::Plugin* plugin; //< the plugin which stores the function to instantiate the effect
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
+    int pyPlugVersion;
     
     bool computingPreview;
     mutable QMutex computingPreviewMutex;
@@ -3132,14 +3135,23 @@ int
 Node::getMajorVersion() const
 {
     ///Thread safe as it never changes
-    return _imp->liveInstance->getMajorVersion();
+    if (!_imp->pyPlugID.empty()) {
+        return _imp->pyPlugVersion;
+    }
+    if (!_imp->plugin) {
+        return 0;
+    }
+    return _imp->plugin->getMajorVersion();
 }
 
 int
 Node::getMinorVersion() const
 {
     ///Thread safe as it never changes
-    return _imp->liveInstance->getMinorVersion();
+    if (!_imp->plugin) {
+        return 0;
+    }
+    return _imp->plugin->getMinorVersion();
 }
 
 void
@@ -3893,7 +3905,10 @@ Node::disconnectInput(int inputNumber)
     
     NodePtr inputShared;
     bool useGuiValues = isNodeRendering();
-    _imp->liveInstance->abortAnyEvaluation();
+    
+    if (!_imp->isBeingDestroyed) {
+        _imp->liveInstance->abortAnyEvaluation();
+    }
     
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5738,6 +5753,7 @@ Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::stri
         return;
     }
 
+    _imp->pyPlugVersion = version;
     _imp->pyPlugID = pluginID;
     
     nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);

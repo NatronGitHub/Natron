@@ -433,7 +433,7 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node);
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node, bool requestedByLoad);
 
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
                                const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
