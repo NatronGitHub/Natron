@@ -902,7 +902,7 @@ RotoDrawableItem::resetCloneTransformCenter()
     if (!center) {
         return;
     }
-    resetCenter->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
+    resetCenter->evaluateValueChange(0, resetCenter->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
     double x = center->getValue(0);
     double y = center->getValue(1);
     _imp->cloneCenter->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);

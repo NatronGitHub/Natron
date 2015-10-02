@@ -1002,7 +1002,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         nComps = natronComps.front().getNumComponents();
     }
     
-    /* // this will dump the image as seen from the plug-in
+     /*// this will dump the image as seen from the plug-in
      QString filename;
      QTextStream ts(&filename);
      QDateTime now = QDateTime::currentDateTime();

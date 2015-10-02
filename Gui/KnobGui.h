@@ -209,6 +209,32 @@ public:
 
         return (int)ret;
     }
+    
+    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
+     signal/slot sequence can cause an infinite loop.*/
+    template<typename T>
+    void setValueAtTime(int dimension,
+                        const T & v,
+                        int time,
+                        KeyFrame* newKey,
+                        bool refreshGui,
+                        Natron::ValueChangedReasonEnum reason)
+    {
+        
+        Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
+        assert(knob);
+        bool addedKey  = false;
+        if (knob) {
+            addedKey = knob->setValueAtTime(time,v,dimension,reason,newKey);
+        }
+        if ((knob) && reason == Natron::eValueChangedReasonUserEdited) {
+            assert(newKey);
+            setKeyframeMarkerOnTimeline( newKey->getTime() );
+        }
+        if (refreshGui) {
+            updateGUI(dimension);
+        }
+    }
 
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;

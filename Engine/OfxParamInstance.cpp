@@ -228,7 +228,7 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
         to->beginChanges();
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
-            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited);
+            to->evaluateValueChange(i, from->getCurrentTime(), Natron::eValueChangedReasonPluginEdited);
         }
         to->endChanges();
     }

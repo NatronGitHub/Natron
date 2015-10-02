@@ -747,11 +747,12 @@ Node::load(const std::string & parentMultiInstanceName,
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
+    int time = getLiveInstance()->getCurrentTime();
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         if (knob) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+                knob->evaluateValueChange(i, time, Natron::eValueChangedReasonUserEdited);
             }
         } else {
             qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
@@ -761,7 +762,7 @@ Node::load(const std::string & parentMultiInstanceName,
     if (hasUsedFileDialog) {
         boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
+            fileNameKnob->evaluateValueChange(0, time, Natron::eValueChangedReasonUserEdited);
         }
     }
     

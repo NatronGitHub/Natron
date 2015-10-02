@@ -883,7 +883,7 @@ Knob<T>::setValue(const T & v,
             }
             break;
         }
-        }
+        } // switch (paramEditLevel) {
 
         ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
         ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
@@ -897,7 +897,7 @@ Knob<T>::setValue(const T & v,
                 return ret;
             }
         }
-    }
+    } // if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
     
     
     
@@ -979,6 +979,9 @@ Knob<T>::setValue(const T & v,
         _guiValues[dimension] = v;
     }
 
+    double time;
+    bool timeSet = false;
+    
     ///Add automatically a new keyframe
     if (isAnimationEnabled() &&
         getAnimationLevel(dimension) != Natron::eAnimationLevelNone && //< if the knob is animated
@@ -991,8 +994,8 @@ Knob<T>::setValue(const T & v,
            reason == Natron::eValueChangedReasonNatronInternalEdited ) && //< the change was made by the user or plugin
          ( newKey != NULL) ) { //< the keyframe to set is not null
         
-        double time = getCurrentTime();
-        
+        time = getCurrentTime();
+        timeSet = true;
         bool addedKeyFrame = setValueAtTime(time, v, dimension,reason,newKey);
         if (addedKeyFrame) {
             ret = eValueChangedReturnCodeKeyframeAdded;
@@ -1003,7 +1006,10 @@ Knob<T>::setValue(const T & v,
     }
 
     if (hasChanged && ret == eValueChangedReturnCodeNoKeyframeAdded) { //the other cases already called this in setValueAtTime()
-        evaluateValueChange(dimension,reason);
+        if (!timeSet) {
+            time = getCurrentTime();
+        }
+        evaluateValueChange(dimension, time, reason);
     }
     {
         QMutexLocker l(&_setValueRecursionLevelMutex);
@@ -1173,10 +1179,19 @@ Knob<T>::setValueAtTime(int time,
             break;
         case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
             if ( !get_SetValueRecursionLevel() ) {
+                {
+                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    ++_setValueRecursionLevel;
+                }
+
                 Variant vari;
                 valueToVariant(v, &vari);
                 holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension, time, true,true);
+                {
+                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    --_setValueRecursionLevel;
+                }
 
                 return true;
             }
@@ -1184,15 +1199,24 @@ Knob<T>::setValueAtTime(int time,
         }
         case KnobHolder::eMultipleParamsEditOn: {
             if ( !get_SetValueRecursionLevel() ) {
+                {
+                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    ++_setValueRecursionLevel;
+                }
+                
                 Variant vari;
                 valueToVariant(v, &vari);
                 _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension,time, false,true);
-
+                {
+                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    --_setValueRecursionLevel;
+                }
+                
                 return true;
             }
             break;
         }
-        }
+        } // switch (paramEditLevel) {
     }
 
 
@@ -1248,7 +1272,7 @@ Knob<T>::setValueAtTime(int time,
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
     }
     if (hasChanged) {
-        evaluateValueChange(dimension, reason);
+        evaluateValueChange(dimension, time,  reason);
     } else {
         return eValueChangedReturnCodeNothingChanged;
     }
@@ -1392,7 +1416,7 @@ Knob<T>::unSlave(int dimension,
         getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
     if (hasChanged) {
-        evaluateValueChange(dimension, reason);
+        evaluateValueChange(dimension, getCurrentTime(), reason);
     }
 }
 
@@ -1736,7 +1760,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, Natron::eValueChangedReasonUserEdited);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, time, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -1764,7 +1788,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, Natron::eValueChangedReasonUserEdited);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, key.getTime(), Natron::eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -2549,8 +2573,9 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         beginChanges();
+        int time = getCurrentTime();
         for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
-            evaluateValueChange(it->first, it->second);
+            evaluateValueChange(it->first, time, it->second);
         }
         endChanges();
     }
