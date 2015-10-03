@@ -2612,7 +2612,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     _imp->maskSelectors[i] = sel;
 
                 }
-            }
+            } // for (int i = 0; i < inputsCount; ++i) {
             
             bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
@@ -3165,6 +3165,10 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
+        if ((int)oldInputs.size() == inputCount) {
+            _imp->inputsInitialized = true;
+            return;
+        }
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
@@ -3191,6 +3195,27 @@ Node::initializeInputs()
         _imp->liveInstance->addAcceptedComponents(-1, &_imp->outputComponents);
     }
     _imp->inputsInitialized = true;
+    boost::shared_ptr<KnobPage> infoPage = _imp->infoPage.lock();
+    if (infoPage) {
+        _imp->inputFormats.clear();
+        for (int i = 0; i < inputCount; ++i) {
+            std::string inputLabel = getInputLabel(i);
+            boost::shared_ptr<KnobString> inputInfo = Natron::createKnob<KnobString>(_imp->liveInstance.get(), inputLabel + ' ' + tr("Info").toStdString(), 1, false);
+            inputInfo->setName(inputLabel + "Info");
+            inputInfo->setAnimationEnabled(false);
+            inputInfo->setIsPersistant(false);
+            inputInfo->setEvaluateOnChange(false);
+            inputInfo->setSecretByDefault(true);
+            inputInfo->hideDescription();
+            inputInfo->setAsLabel();
+            _imp->inputFormats.push_back(inputInfo);
+            infoPage->insertKnob(1 + i,inputInfo);
+        }
+        if (inputCount > 0) {
+            _imp->liveInstance->refreshKnobs();
+        }
+    }
+    
     Q_EMIT inputsInitialized();
 }
 
