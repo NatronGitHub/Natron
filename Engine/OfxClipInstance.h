@@ -360,9 +360,7 @@ public:
                       int nComps,
                       OfxClipInstance &clip);
 
-    virtual ~OfxImage()
-    {
-    }
+    virtual ~OfxImage();
 
     boost::shared_ptr<Natron::Image> getInternalImage() const
     {

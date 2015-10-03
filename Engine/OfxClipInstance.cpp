@@ -1256,7 +1256,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
     assert(internalImage);
     
-    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -1279,11 +1278,10 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
 
     if (isSrcImage) {
-        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
-        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        Natron::Image::ReadAccess access(internalImage.get());
+        const unsigned char* ptr = access.pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
-        _imgAccess = access;
     } else {
         boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
         unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
@@ -1346,6 +1344,9 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
+OfxImage::~OfxImage()
+{
+}
 
 int
 OfxClipInstance::getInputNb() const
