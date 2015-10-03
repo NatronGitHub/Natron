@@ -209,6 +209,8 @@ public:
     
     bool isAutoFixRelativeFilePathEnabled() const;
     
+    bool isAutoWipeEnabled() const;
+    
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r,double* g,double* b,double* a) const;
     void getCheckerboardColor2(double* r,double* g,double* b,double* a) const;
@@ -395,6 +397,7 @@ private:
     boost::shared_ptr<KnobInt> _checkerboardTileSize;
     boost::shared_ptr<KnobColor> _checkerboardColor1;
     boost::shared_ptr<KnobColor> _checkerboardColor2;
+    boost::shared_ptr<KnobBool> _autoWipe;
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
     boost::shared_ptr<KnobBool> _enableProgressReport;

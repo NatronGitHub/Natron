@@ -995,9 +995,14 @@ ViewerTab::connectToInput(int inputNb)
 {
     InspectorNode* node = dynamic_cast<InspectorNode*>(getInternalNode()->getNode().get());
     assert(node);
-    getInternalNode()->setActivateInputChangeRequestedFromViewer(true);
+    bool isAutoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
+    if (isAutoWipeEnabled) {
+        getInternalNode()->setActivateInputChangeRequestedFromViewer(true);
+    }
     node->setActiveInputAndRefresh(inputNb, true);
-    getInternalNode()->setActivateInputChangeRequestedFromViewer(false);
+    if (isAutoWipeEnabled) {
+        getInternalNode()->setActivateInputChangeRequestedFromViewer(false);
+    }
 }
 
 void
