@@ -118,7 +118,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
     _imp->zoomCtx.setScreenSize(sizeh.width(), sizeh.height());
-    setFocusPolicy(Qt::NoFocus);
+    setFocusPolicy(Qt::ClickFocus);
 }
 
 QSize
