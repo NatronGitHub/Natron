@@ -629,6 +629,7 @@ public:
      **/
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
     virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -1463,6 +1464,8 @@ public:
                         Natron::ValueChangedReasonEnum reason,
                         KeyFrame* newKey);
 
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
      * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue

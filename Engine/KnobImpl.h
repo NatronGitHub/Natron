@@ -1738,7 +1738,7 @@ bool
 Knob<T>::onKeyFrameSet(SequenceTime time,
                        int dimension)
 {
-    KeyFrame k;
+    KeyFrame key;
     boost::shared_ptr<Curve> curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && getKnobGuiPointer();
@@ -1753,21 +1753,14 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
         curve = getGuiCurve(dimension);
         setGuiCurveHasChanged(dimension,true);
     }
-
-    makeKeyFrame(curve.get(), time, getValueAtTime(time,dimension), &k);
-
-    bool ret = curve->addKeyFrame(k);
     
-    if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, Natron::eValueChangedReasonUserEdited);
-        evaluateValueChange(dimension, time, Natron::eValueChangedReasonUserEdited);
-    }
-    return ret;
+    makeKeyFrame(curve.get(), time, getValueAtTime(time,dimension), &key);
+    return setKeyFrame(key, dimension, Natron::eValueChangedReasonUserEdited);
 }
 
 template<typename T>
 bool
-Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
+Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason)
 {
     boost::shared_ptr<Curve> curve;
     KnobHolder* holder = getHolder();
@@ -1787,10 +1780,17 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     bool ret = curve->addKeyFrame(key);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, Natron::eValueChangedReasonUserEdited);
-        evaluateValueChange(dimension, key.getTime(), Natron::eValueChangedReasonUserEdited);
+        guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, reason);
+        evaluateValueChange(dimension, key.getTime(), reason);
     }
     return ret;
+}
+
+template<typename T>
+bool
+Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
+{
+    return setKeyFrame(key, dimension, Natron::eValueChangedReasonUserEdited);
 }
 
 template<typename T>
