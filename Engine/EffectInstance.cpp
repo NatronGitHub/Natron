@@ -1748,6 +1748,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///now make the preliminaries call to handle that region (getRoI etc...) so just stick with the old rect to render
 
     // check the bitmap!
+    
+    bool bitmapMarkedForRendering = false;
     if (frameArgs.tilesSupported) {
         if (renderFullScaleThenDownscale) {
             //The renderMappedImage is cached , read bitmap from it
@@ -1758,7 +1760,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 
 #if NATRON_ENABLE_TRIMAP
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
+                bitmapMarkedForRendering = true;
+                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
             } else {
                 downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect(downscaledRectToRender);
             }
@@ -1780,7 +1783,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 #if NATRON_ENABLE_TRIMAP
             RectI downscaledRectToRenderMinimal;
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
+                bitmapMarkedForRendering = true;
+                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
             } else {
                 downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect(downscaledRectToRender);
             }
@@ -1930,6 +1934,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         renderMappedRectToRender,
                                                         downscaledRectToRender,
                                                         byPassCache,
+                                                        bitmapMarkedForRendering,
                                                         outputClipPrefDepth,
                                                         outputClipPrefsComps,
                                                         processChannels,
@@ -1961,6 +1966,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               const RectI & renderMappedRectToRender,
                               const RectI & downscaledRectToRender,
                               bool byPassCache,
+                              bool bitmapMarkedForRendering,
                               Natron::ImageBitDepthEnum outputClipPrefDepth,
                               const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                               bool* processChannels,
@@ -2150,7 +2156,7 @@ EffectInstance::renderHandler(RenderArgs & args,
 
 
 #if NATRON_ENABLE_TRIMAP
-    if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+    if (!bitmapMarkedForRendering && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
             if (renderFullScaleThenDownscale) {
                 it->second.fullscaleImage->markForRendering(downscaledRectToRender);

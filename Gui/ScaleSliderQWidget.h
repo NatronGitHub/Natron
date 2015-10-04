@@ -102,6 +102,8 @@ public Q_SLOTS:
     void seekScalePosition(double v);
 
 private:
+    
+    void zoomRange();
 
     void seekInternal(double v);
 
@@ -117,7 +119,10 @@ private:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
     
 };

@@ -841,10 +841,23 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                                        DopeSheetEditor *model,
                                        QUndoCommand *parent) :
     QUndoCommand(parent),
-    _keys(keys),
+    _refTime(0),
+    _refKeyindex(-1),
+    _keys(),
     _model(model)
 {
+    _refTime = _model->getTimelineCurrentTime();
     setText(QObject::tr("Paste keyframes"));
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+        _keys.push_back(keys[i]);
+        if (_refKeyindex == -1) {
+            _refKeyindex = i;
+        } else {
+            if (keys[i].key.getTime() < _keys[_refKeyindex].key.getTime()) {
+                _refKeyindex = i;
+            }
+        }
+    }
 }
 
 void DSPasteKeysCommand::undo()
@@ -859,10 +872,10 @@ void DSPasteKeysCommand::redo()
 
 void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::vector<DopeSheetKey>::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        const DopeSheetKey& key = (*it);
 
-        boost::shared_ptr<DSKnob> knobContext = key.context.lock();
+    for (std::size_t i = 0; i < _keys.size(); ++i) {
+
+        boost::shared_ptr<DSKnob> knobContext = _keys[i].context.lock();
         if (!knobContext) {
             continue;
         }
@@ -871,9 +884,9 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         boost::shared_ptr<KnobI> knob = knobContext->getInternalKnob();
         knob->beginChanges();
 
-        SequenceTime currentTime = _model->getTimelineCurrentTime();
+        double keyTime = _keys[i].key.getTime();
 
-        double keyTime = key.key.getTime();
+        double setTime = keyTime - _keys[_refKeyindex].key.getTime() + _refTime;
 
         if (add) {
             Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knob.get());
@@ -883,22 +896,33 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             
             for (int i = 0; i < knob->getDimension(); ++i) {
                 if (dim == -1 || i == dim) {
+                    KeyFrame k = _keys[i].key;
+                    k.setTime(setTime);
+                    
                     if (isDouble) {
-                        isDouble->setValueAtTime(currentTime, isDouble->getValueAtTime(keyTime,i), i);
+                        k.setValue(isDouble->getValueAtTime(keyTime));
                     } else if (isBool) {
-                        isBool->setValueAtTime(currentTime, isBool->getValueAtTime(keyTime,i), i);
+                        k.setValue(isDouble->getValueAtTime(keyTime));
                     } else if (isInt) {
-                        isInt->setValueAtTime(currentTime, isInt->getValueAtTime(keyTime,i), i);
+                        k.setValue(isDouble->getValueAtTime(keyTime));
                     } else if (isString) {
-                        isString->setValueAtTime(currentTime, isString->getValueAtTime(keyTime,i), i);
+                        std::string v = isString->getValueAtTime(keyTime);
+                        double keyFrameValue = 0.;
+                        AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
+                        assert(isStringAnimatedKnob);
+                        if (isStringAnimatedKnob) {
+                            isStringAnimatedKnob->stringToKeyFrameValue(keyTime,v,&keyFrameValue);
+                        }
+                        k.setValue(keyFrameValue);
                     }
+                    knob->setKeyFrame(k, i, Natron::eValueChangedReasonNatronGuiEdited);
                 }
             }
         }
         else {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 if (dim == -1 || i == dim) {
-                    knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,currentTime, i);
+                    knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,setTime, i);
                 }
             }
         }

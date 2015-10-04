@@ -591,6 +591,32 @@ Natron::Bitmap::getBitmapAt(int x,
     }
 }
 
+#ifdef DEBUG
+void
+Image::printUnrenderedPixels(const RectI& roi) const
+{
+    if (!_useBitmap) {
+        return;
+    }
+    QMutexLocker k(&_entryLock);
+    
+    const char* bm = _bitmap.getBitmapAt(roi.x1, roi.y1);
+    int roiw = roi.x2 - roi.x1;
+    int boundsW = _bitmap.getBounds().width();
+    
+    for (int y = roi.y1; y < roi.y2; ++y,
+         bm += (boundsW - roiw)) {
+        for (int x = roi.x1; x < roi.x2; ++x,++bm) {
+            if (*bm == 0) {
+                qDebug() << '(' << x << ',' << y << ") = 0";
+            } else if (*bm == PIXEL_UNAVAILABLE) {
+                qDebug() << '(' << x << ',' << y << ") = PIXEL_UNAVAILABLE";
+            }
+        }
+    }
+}
+#endif
+
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<Natron::ImageParams>& params,
              const Natron::CacheAPI* cache,

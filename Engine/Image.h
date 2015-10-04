@@ -578,7 +578,23 @@ namespace Natron {
             QMutexLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
-
+        
+#if NATRON_ENABLE_TRIMAP
+        RectI getMinimalRectAndMarkForRendering_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere)
+        {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
+            RectI ret;
+            {
+                QMutexLocker locker(&_entryLock);
+                ret = _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+            }
+            markForRendering(ret);
+            return ret;
+        }
+#endif
+     
         void markForRendered(const RectI & roi)
         {
             if (!_useBitmap) {
@@ -614,6 +630,10 @@ namespace Natron {
             _bounds.intersect(roi, &intersection);
             _bitmap.clear(intersection);
         }
+        
+#ifdef DEBUG
+        void printUnrenderedPixels(const RectI& roi) const;
+#endif
         
         /**
      * @brief Fills the image with the given colour. If the image components

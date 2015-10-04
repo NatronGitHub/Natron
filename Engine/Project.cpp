@@ -56,6 +56,7 @@
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
+#include <ofxhXml.h> // OFX::XML::escape
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -1615,9 +1616,6 @@ Project::escapeXML(const std::string &istr)
                 i += 5;
                 break;
             default: {
-                // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-                // XML, because they would be converted to space when re-read.
-                // See http://www.w3.org/TR/xml/#AVNormalize
                 unsigned char c = (unsigned char)(str[i]);
                 // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
                 // XML, because they would be converted to space when re-read.
@@ -1639,6 +1637,7 @@ Project::escapeXML(const std::string &istr)
             }   break;
         }
     }
+    assert(str == OFX::XML::escape(istr)); // check that this escaped string is consistent with the one in HostSupport
     return str;
 }
 
