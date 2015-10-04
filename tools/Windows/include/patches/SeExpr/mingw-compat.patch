@@ -1,0 +1,17 @@
+--- SePlatform.h.orig	2015-10-04 16:59:06.340547700 +0200
++++ SePlatform.h	2015-10-04 17:00:59.794036900 +0200
+@@ -78,12 +78,13 @@
+ 
+ // missing functions on Windows
+ #ifdef WINDOWS
++#ifndef __MINGW32__
+ #   define snprintf sprintf_s
+ #   define strtok_r strtok_s
+     typedef __int64 FilePos;
+ #   define fseeko _fseeki64
+ #   define ftello _ftelli64
+-
++#endif // !defined(__MINGW32__)
+     inline double log2(double x) {
+         return log(x) * 1.4426950408889634; 
+     }
