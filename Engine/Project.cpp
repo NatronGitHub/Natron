@@ -1457,23 +1457,24 @@ Project::reset(bool aboutToQuit)
             }
         }
     }
-    clearNodes(true);
-
-    {
-        QMutexLocker l(&_imp->projectLock);
-        _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
-        _imp->hasProjectBeenSavedByUser = false;
-        _imp->projectCreationTime = QDateTime::currentDateTime();
-        _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
-        _imp->setProjectPath("");
-        _imp->autoSaveTimer->stop();
-        _imp->additionalFormats.clear();
-    }
-    _imp->timeline->removeAllKeyframesIndicators();
-    
-    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes(!aboutToQuit);
     
     if (!aboutToQuit) {
+        
+        {
+            QMutexLocker l(&_imp->projectLock);
+            _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->hasProjectBeenSavedByUser = false;
+            _imp->projectCreationTime = QDateTime::currentDateTime();
+            _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
+            _imp->setProjectPath("");
+            _imp->autoSaveTimer->stop();
+            _imp->additionalFormats.clear();
+        }
+        _imp->timeline->removeAllKeyframesIndicators();
+        
+        Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+        
         const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
         
         beginChanges();

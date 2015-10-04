@@ -130,12 +130,13 @@ AppInstance::AppInstance(int appID)
 
 AppInstance::~AppInstance()
 {
-    appPTR->removeInstance(_imp->_appID);
 
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
-    _imp->_currentProject->clearNodes(false);
+    _imp->_currentProject->closeProject(true);
     _imp->_currentProject->discardAppPointer();
+    
+    appPTR->removeInstance(_imp->_appID);
 }
 
 void
@@ -464,12 +465,9 @@ AppInstance::load(const CLArgs& cl)
             }
         }
         
-        try {
-            startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
-        } catch (const std::exception& e) {
-            getProject()->removeLockFile();
-            throw e;
-        }
+       
+        startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
+       
         
         
         
@@ -1122,7 +1120,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
            
             if (!node) {
                 std::string exc(writerName);
-                exc.append(tr(" does not belong to the project file. Please enter a valid writer name.").toStdString());
+                exc.append(tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString());
                 throw std::invalid_argument(exc);
             } else {
                 if ( !node->isOutputNode() ) {
