@@ -1813,6 +1813,7 @@ private:
                                           const RectI & renderMappedRectToRender,
                                           const RectI & downscaledRectToRender,
                                           bool byPassCache,
+                                          bool bitmapMarkedForRendering,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                           bool* processChannels,

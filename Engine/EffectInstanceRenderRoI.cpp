@@ -1463,6 +1463,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             } else {
                 it->second.downscaleImage->getRestToRender(roi, restToRender);
             }
+            /*
+             If crashing on this assert this is likely due to a bug of the Trimap system. 
+             Most likely another thread started rendering the portion that is in restToRender but did not fill the bitmap with 1
+             yet. Do not remove this assert, there should never be 2 threads running concurrently renderHandler for the same roi 
+             on the same image.
+             */
+            if (!restToRender.empty()) {
+                it->second.downscaleImage->printUnrenderedPixels(roi);
+            }
             assert( restToRender.empty() );
         }
     }
