@@ -74,8 +74,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-
-#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
@@ -416,7 +414,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 0);
+    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
     _imp->_horizLayout->setSpacing(0);
     if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
