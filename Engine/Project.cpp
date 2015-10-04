@@ -56,7 +56,7 @@
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
-#include <ofxhXML.h> // OFX::XML::escape
+#include <ofxhXml.h> // OFX::XML::escape
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
