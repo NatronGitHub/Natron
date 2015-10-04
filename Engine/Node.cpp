@@ -6663,7 +6663,6 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         ///The node is referenced multiple times below, cache it
         return true;
     } else {
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
         if (sz == 1) {
           
             Node* output = outputs.front();
@@ -6674,28 +6673,75 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
                 isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
                 if (output->getInput(activeInputs[0]).get() == this ||
                     output->getInput(activeInputs[1]).get() == this) {
+                    ///The node is a direct input of the viewer. Cache it because it is likely the user will make
+                    ///changes to the viewer that will need this image.
                     return true;
                 }
             }
+        
+            if (!isFrameVaryingOrAnimated) {
+                //This image never changes, cache it once.
+                return true;
+            }
+            if (output->isSettingsPanelOpened()) {
+                //Output node has panel opened, meaning the user is likely to be heavily editing
+                //that output node, hence requesting this node a lot. Cache it.
+                return true;
+            }
+            if (_imp->liveInstance->doesTemporalClipAccess()) {
+                //Very heavy to compute since many frames are fetched upstream. Cache it.
+                return true;
+            }
+            if (!_imp->liveInstance->supportsTiles()) {
+                //No tiles, image is going to be produced fully, cache it to prevent multiple access
+                //with different RoIs
+                return true;
+            }
+            if (_imp->liveInstance->getRecursionLevel() > 0) {
+                //We are in a call from getImage() and the image needs to be computed, so likely in an
+                //analysis pass. Cache it because the image is likely to get asked for severla times.
+                return true;
+            }
+            if (isForceCachingEnabled()) {
+                //Users wants it cached
+                return true;
+            }
+            NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(getGroup().get());
+            if (parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && parentIsGroup->getOutputNodeInput(false).get() == this) {
+                //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
+                return true;
+            }
             
-            return !isFrameVaryingOrAnimated ||
-            output->isSettingsPanelOpened() ||
-            _imp->liveInstance->doesTemporalClipAccess() ||
-            ! _imp->liveInstance->supportsTiles() ||
-            _imp->liveInstance->getRecursionLevel() > 0 ||
-            isForceCachingEnabled() ||
-            appPTR->isAggressiveCachingEnabled() ||
-            (isPreviewEnabled() && !appPTR->isBackground()) ||
-            (getRotoContext() && isSettingsPanelOpened()) ||
-            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
+            if (appPTR->isAggressiveCachingEnabled()) {
+                ///Users wants all nodes cached
+                return true;
+            }
+            
+            if (isPreviewEnabled() && !appPTR->isBackground()) {
+               ///The node has a preview, meaning the image will be computed several times between previews & actual renders. Cache it.
+                return true;
+            }
+            
+            if (isRotoPaintingNode() && isSettingsPanelOpened()) {
+                ///The Roto node is being edited, cache its output (special case because Roto has an internal node tree)
+                return true;
+            }
+            
+            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened()) {
+                ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
+                return true;
+            }
+            
         } else {
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
+            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
             (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         }
     }
     
-    
+    return false;
 }
 
 bool
