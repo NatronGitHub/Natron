@@ -6023,25 +6023,20 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     selector.layerName.lock()->setValue(entries[curLayer_i], 0);
     
     if (inputNb == -1) {
-        bool isAll = entries[curLayer_i] == "All";
-        if (isAll) {
-            ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
-            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-                if (it->first >= 0) {
-                    it->second.layer.lock()->setSecret(true);
-                }
+        bool outputIsAll = entries[curLayer_i] == "All";
+        
+        ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
+        for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
+            if (it->first >= 0) {
+                boost::shared_ptr<Node> inp = _publicInterface->getInput(inputNb);
+                bool mustBeSecret = !inp.get() || outputIsAll;
+                it->second.layer.lock()->setSecret(mustBeSecret);
             }
-        } else {
-            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-                if (it->first >= 0) {
-                    it->second.layer.lock()->setSecret(false);
-                }
-            }
-
         }
+       
     }
     {
-        ///Clip preferences have changed 
+        ///Clip preferences have changed
         RenderScale s;
         s.x = s.y = 1;
         liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
@@ -6071,6 +6066,10 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
             }
             enabled->setValue(true, 0);
         }
+    }
+    
+    if (inputNb == -1) {
+        _publicInterface->s_outputLayerChanged();
     }
 }
 
@@ -7749,6 +7748,9 @@ Node::refreshChannelSelectors(bool setValues)
         }
         
         layerKnob->populateChoices(choices);
+        if (hasChanged) {
+            s_outputLayerChanged();
+        }
         
  
         if (setValues) {

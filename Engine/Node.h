@@ -1068,6 +1068,8 @@ private:
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
     void setNameInternal(const std::string& name);
+    
+    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
 public Q_SLOTS:
 
@@ -1109,6 +1111,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void outputLayerChanged();
     
     void mustComputeHashOnMainThread();
 
