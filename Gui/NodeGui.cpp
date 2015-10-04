@@ -2674,7 +2674,7 @@ NodeGui::setNameItemHtml(const QString & name,
     EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if (foundOutput != neededComps.end() && !foundOutput->second.empty()) {
         const Natron::ImageComponents& comp = foundOutput->second.front();
-        if (!comp.isColorPlane()) {
+        if (!comp.isColorPlane() && comp.getNumComponents() > 0) {
             extraLayerStr.append("<br>");
             extraLayerStr.push_back('(');
             extraLayerStr.append(comp.getLayerName().c_str());
