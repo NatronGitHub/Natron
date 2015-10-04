@@ -417,6 +417,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
     _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 0);
+    _imp->_horizLayout->setSpacing(0);
     if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(currentColor);
