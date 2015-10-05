@@ -648,8 +648,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
         _imp->zoomCombobox->setCurrentIndex_no_emit(4);
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
-        switchInputAAndB();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, modifiers, key) ) {
         zoomIn();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {
@@ -710,6 +708,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         update();
     } else if ( notifyOverlaysKeyDown(scale, scale, e) ) {
         update();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
+        ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
+        switchInputAAndB();
     } else {
         accept = false;
         QWidget::keyPressEvent(e);
