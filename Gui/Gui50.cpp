@@ -262,7 +262,7 @@ Gui::progressUpdate(KnobHolder* effect,
         }
         found->second->setValue(t * 100);
     }
-    //QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
 
     return true;
 }
