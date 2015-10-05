@@ -194,7 +194,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
                                              bool useAlpha0ForRGBToRGBAConversion,
                                              ImagePremultiplicationEnum outputPremult)
 {
-    bool imageConversionNeeded = targetComponents != inputImage->getComponents() || targetDepth != inputImage->getBitDepth();
+    bool imageConversionNeeded = targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents() || targetDepth != inputImage->getBitDepth();
     if (!imageConversionNeeded) {
         return inputImage;
     } else {

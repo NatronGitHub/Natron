@@ -545,7 +545,7 @@ EffectInstance::getImage(int inputNb,
                          const RenderScale & scale,
                          const int view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
-                         const ImageComponents & comp,
+                         const ImageComponents & requestComps,
                          const Natron::ImageBitDepthEnum depth,
                          const double par,
                          const bool dontUpscale,
@@ -748,9 +748,9 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, comp, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, requestComps, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, comp,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, requestComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getNode()->updateStrokeImage(inputImg);
@@ -783,7 +783,7 @@ EffectInstance::getImage(int inputNb,
     assert(n);
 
     std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(isMask ? maskComps : comp);
+    requestedComps.push_back(isMask ? maskComps : requestComps);
     ImageList inputImages;
     RenderRoIRetCode retCode = n->renderRoI(RenderRoIArgs(time,
                                                           scale,
@@ -822,12 +822,12 @@ EffectInstance::getImage(int inputNb,
 
 #ifdef DEBUG
     ///Check that the rendered image contains what we requested.
-    if ((!isMask && inputImg->getComponents() != comp) || (isMask && inputImg->getComponents() != maskComps)) {
+    if ((!isMask && inputImg->getComponents() != requestComps) || (isMask && inputImg->getComponents() != maskComps)) {
         ImageComponents cc;
         if (isMask) {
             cc = maskComps;
         } else {
-            cc = comp;
+            cc = requestComps;
         }
         qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << n->getScriptName_mt_safe().c_str() << "returned an image with"
         << inputImg->getComponents().getComponentsGlobalName().c_str();
@@ -868,15 +868,19 @@ EffectInstance::getImage(int inputNb,
     
     //Remap if needed
     ImagePremultiplicationEnum outputPremult;
-    if (comp.isColorPlane()) {
+    if (requestComps.isColorPlane()) {
         outputPremult = n->getOutputPremultiplication();
     } else {
         outputPremult = eImagePremultiplicationOpaque;
     }
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, comp, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
 
+    std::list<Natron::ImageComponents> prefComps;
+    ImageBitDepthEnum prefDepth;
+    getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
+    assert(!prefComps.empty());
     
+    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
@@ -3667,19 +3671,11 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         {
             ImageComponents layer;
             std::vector<ImageComponents> compVec;
-            
-            //Use regular clip preferences
+            bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
             ImageBitDepthEnum depth;
             std::list<ImageComponents> clipPrefsComps;
             getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
-            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
-                //if (it->isColorPlane()) {
-                compVec.push_back(*it);
-                //}
-            }
-            
-            
-            bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
+
             if (ok && layer.getNumComponents() != 0) {
                 if (!layer.isColorPlane()) {
                     
@@ -3693,8 +3689,26 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
                     if (!found) {
                         compVec.push_back(layer);
                     }
-                } 
+                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                        if (!(*it).isColorPlane()) {
+                            compVec.push_back(*it);
+                        }
+                    }
+                } else {
+                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                        compVec.push_back(*it);
+                    }
+                }
+                
+            } else {
+                for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                    compVec.push_back(*it);
+                }
             }
+
+           
+            
+            
             
            
             comps->insert( std::make_pair(-1, compVec) );

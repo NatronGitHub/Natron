@@ -5304,7 +5304,7 @@ Node::findClosestInList(const Natron::ImageComponents& comp,
             } else {
                 int diff = it->getNumComponents() - comp.getNumComponents();
                 int diffSoFar = closestComp->getNumComponents() - comp.getNumComponents();
-                if (diff > diffSoFar && diffSoFar != 0) {
+                if (diff > 0 && diff < diffSoFar) {
                     closestComp = it;
                 }
             }
@@ -6040,7 +6040,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
         ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
         for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
             if (it->first >= 0) {
-                boost::shared_ptr<Node> inp = _publicInterface->getInput(inputNb);
+                boost::shared_ptr<Node> inp = _publicInterface->getInput(it->first);
                 bool mustBeSecret = !inp.get() || outputIsAll;
                 it->second.layer.lock()->setSecret(mustBeSecret);
             }
