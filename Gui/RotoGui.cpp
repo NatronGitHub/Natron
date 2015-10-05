@@ -3383,7 +3383,6 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
             itemName = kRotoPaintBurnBaseName;
             break;
         default:
-            assert(false);
             return;
     }
     

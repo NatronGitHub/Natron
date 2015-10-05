@@ -1415,78 +1415,14 @@ Knob<T>::unSlave(int dimension,
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
+    if (helper) {
+        helper->removeListener(this);
+    }
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), reason);
     }
 }
 
-template<>
-void
-Knob<std::string>::unSlave(int dimension,
-                           Natron::ValueChangedReasonEnum reason,
-                           bool copyState)
-{
-    assert( isSlave(dimension) );
-
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-
-    if (copyState) {
-        ///clone the master
-        {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
-            assert(isString); //< other data types aren't supported
-            if (isString) {
-                QMutexLocker l1(&_valueMutex);
-                _values[dimension] =  isString->getValue(master.first);
-                _guiValues[dimension] = _values[dimension];
-            }
-        }
-        boost::shared_ptr<Curve> curve = getCurve(dimension);
-        boost::shared_ptr<Curve> mastercurve = master.second->getCurve(master.first);
-        if (curve && mastercurve) {
-            curve->clone(*mastercurve);
-        }
-
-        cloneExtraData( master.second.get() );
-    }
-    KnobHelper* helper = dynamic_cast<KnobHelper*>( master.second.get() );
-    assert(helper);
-    if (helper) {
-        QObject::disconnect( helper->getSignalSlotHandler().get(),
-                            SIGNAL( updateSlaves(int,int) ),
-                            _signalSlotHandler.get(),
-                            SLOT( onMasterChanged(int,int) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(),
-                            SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
-                            _signalSlotHandler.get(),
-                            SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(),
-                            SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
-                            _signalSlotHandler.get(),
-                            SLOT( onMasterKeyFrameRemoved(SequenceTime,int,int)) );
-
-        QObject::disconnect( helper->getSignalSlotHandler().get(),
-                            SIGNAL( keyFrameMoved(int,int,int) ),
-                            _signalSlotHandler.get(),
-                            SLOT( onMasterKeyFrameMoved(int,int,int) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(),
-                            SIGNAL(animationRemoved(int) ),
-                            _signalSlotHandler.get(),
-                            SLOT(onMasterAnimationRemoved(int)) );
-    }
-    resetMaster(dimension);
-    setEnabled(dimension, true);
-    _signalSlotHandler->s_valueChanged(dimension,reason);
-    if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( this,master.second.get(),dimension,false );
-    }
-    if (reason == Natron::eValueChangedReasonPluginEdited) {
-        _signalSlotHandler->s_knobSlaved(dimension, false);
-    }
-    if (helper) {
-        helper->removeListener(this);
-    }
-}
 
 template<typename T>
 KnobHelper::ValueChangedReturnCodeEnum

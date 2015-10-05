@@ -951,7 +951,10 @@ public:
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
+    
+private:
     virtual void removeListener(KnobI* knob) = 0;
+public:
 
     virtual bool useNativeOverlayHandle() const { return false; }
 
@@ -1449,7 +1452,7 @@ private:
                          bool copyState) OVERRIDE FINAL;
 
 
-
+    
 public:
     
     
