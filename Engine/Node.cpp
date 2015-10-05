@@ -6930,27 +6930,32 @@ Node::forceRefreshAllInputRelatedData()
 }
 
 void
-Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse) {
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-    if (found != markedNodes.end()) {
-        return;
-    }
+Node::markAllInputRelatedDataDirty()
+{
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
         _imp->mustComputeInputRelatedData = true;
     }
-    markedNodes.push_back(this);
-    
     if (isRotoPaintingNode()) {
         boost::shared_ptr<RotoContext> roto = getRotoContext();
         assert(roto);
         std::list<NodePtr> rotoNodes;
         roto->getRotoPaintTreeNodes(&rotoNodes);
         for (std::list<NodePtr>::iterator it = rotoNodes.begin(); it!=rotoNodes.end(); ++it) {
-            (*it)->markInputRelatedDataDirtyRecursiveInternal(markedNodes,false);
+            (*it)->markAllInputRelatedDataDirty();
         }
     }
     
+}
+
+void
+Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse) {
+    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    markAllInputRelatedDataDirty();
+    markedNodes.push_back(this);
     if (recurse) {
         std::list<Natron::Node*>  outputs;
         getOutputsWithGroupRedirection(outputs);

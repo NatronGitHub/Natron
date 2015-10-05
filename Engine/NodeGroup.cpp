@@ -920,6 +920,10 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
     std::list<Project::NodesTree> trees;
     Project::extractTreesFromNodes(nodes, trees);
     
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        (*it)->markAllInputRelatedDataDirty();
+    }
+    
     std::list<Natron::Node*> markedNodes;
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
         it->output.node->forceRefreshAllInputRelatedData();

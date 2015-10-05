@@ -1045,6 +1045,8 @@ public:
     
     void forceRefreshAllInputRelatedData();
     
+    void markAllInputRelatedDataDirty();
+    
 private:
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
