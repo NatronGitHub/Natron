@@ -31,6 +31,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QDropEvent>
+#include <QScrollBar>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -140,3 +141,20 @@ ScriptTextEdit::leaveEvent(QEvent* /*e*/)
     }
 }
 
+void
+ScriptTextEdit::showEvent(QShowEvent* e)
+{
+    QTextEdit::showEvent(e);
+    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    Q_EMIT userScrollChanged(true);
+}
+
+void
+ScriptTextEdit::scrollContentsBy(int dx, int dy)
+{
+    QTextEdit::scrollContentsBy(dx, dy);
+    QScrollBar* sb = verticalScrollBar();
+    int v = sb->value();
+    int max = sb->maximum();
+    Q_EMIT userScrollChanged(v == max);
+}

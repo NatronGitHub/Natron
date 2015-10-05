@@ -67,6 +67,8 @@ public:
     void printAutoDeclaredVariable(const QString& str);
     
 public Q_SLOTS:
+    
+    void onUserScrollChanged(bool atBottom);
 
     void onShowHideOutputClicked(bool clicked);
     

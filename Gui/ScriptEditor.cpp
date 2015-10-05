@@ -35,6 +35,7 @@
 #include <QSplitter>
 #include <QTimer>
 #include <QMutex>
+#include <QScrollBar>
 #include <QKeyEvent>
 
 #include "Gui/GuiApplicationManager.h"
@@ -76,6 +77,9 @@ struct ScriptEditorPrivate
     QMutex autoSavedScriptMutex;
     QString autoSavedScript;
     
+    ///Indicate whether we should auto-scroll as results are printed or not
+    bool outputAtBottom;
+    
     ScriptEditorPrivate()
     : mainLayout(0)
     , buttonsContainer(0)
@@ -94,6 +98,7 @@ struct ScriptEditorPrivate
     , autoSaveTimer()
     , autoSavedScriptMutex()
     , autoSavedScript()
+    , outputAtBottom(true)
     {
         
     }
@@ -224,6 +229,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QSplitter* splitter = new QSplitter(Qt::Vertical,this);
     
     _imp->outputEdit = new ScriptTextEdit(this);
+    QObject::connect(_imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)));
     _imp->outputEdit->setOutput(true);
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
@@ -431,6 +437,9 @@ ScriptEditor::onExecScriptClicked()
             toAppend.append(output.c_str());
         }
         _imp->outputEdit->append(toAppend);
+        if (_imp->outputAtBottom) {
+            _imp->outputEdit->verticalScrollBar()->setValue(_imp->outputEdit->verticalScrollBar()->maximum());
+        }
         _imp->history.push(new InputScriptCommand(this,script));
         _imp->inputEdit->clear();
     }
@@ -515,6 +524,9 @@ void
 ScriptEditor::appendToScriptEditor(const QString& str)
 {
     _imp->outputEdit->append(str + "\n");
+    if (_imp->outputAtBottom) {
+        _imp->outputEdit->verticalScrollBar()->setValue(_imp->outputEdit->verticalScrollBar()->maximum());
+    }
 }
 
 void
@@ -526,6 +538,9 @@ ScriptEditor::printAutoDeclaredVariable(const QString& str)
     QString cpy = str;
     cpy.replace("\n", "<br/>");
     _imp->outputEdit->append("<font color=grey><b>" + cpy + "</font></b>");
+    if (_imp->outputAtBottom) {
+        _imp->outputEdit->verticalScrollBar()->setValue(_imp->outputEdit->verticalScrollBar()->maximum());
+    }
 }
 
 void
@@ -540,4 +555,10 @@ ScriptEditor::leaveEvent(QEvent *e)
 {
     leaveEventBase();
     QWidget::leaveEvent(e);
+}
+
+void
+ScriptEditor::onUserScrollChanged(bool atBottom)
+{
+    _imp->outputAtBottom = atBottom;
 }
