@@ -2381,7 +2381,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::Image
             const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
             boost::shared_ptr<ImageParams> params = img->getParams();
             PlaneToRender p;
-            bool ok = allocateImagePlane(img->getKey(), img->getRoD(), img->getBounds(), img->getBounds(), false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+            bool ok = allocateImagePlane(img->getKey(), args._rod, args._renderWindowPixel, args._renderWindowPixel, false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
             if (!ok) {
                 return ImagePtr();
             } else {
