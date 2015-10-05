@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutGroupTracking "Tracking"
 #define kShortcutGroupPlayer "Player"
 #define kShortcutGroupNodes "Nodes"
+#define kShortcutGroupScriptEditor "ScriptEditor"
 
 /////////GLOBAL SHORTCUTS
 #define kShortcutIDActionNewProject "newProject"
@@ -572,6 +573,25 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
 #define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste keyframes"
+
+// Script editor shortcuts
+#define kShortcutIDActionScriptEditorPrevScript "prevScript"
+#define kShortcutDescActionScriptEditorPrevScript "Previous Script"
+
+#define kShortcutIDActionScriptEditorNextScript "nextScript"
+#define kShortcutDescActionScriptEditorNextScript "Next Script"
+
+#define kShortcutIDActionScriptEditorClearHistory "clearHistory"
+#define kShortcutDescActionScriptEditorClearHistory "Clear History"
+
+#define kShortcutIDActionScriptExecScript "execScript"
+#define kShortcutDescActionScriptExecScript "Execute Script"
+
+#define kShortcutIDActionScriptClearOutput "clearOutput"
+#define kShortcutDescActionScriptClearOutput "Clear Output Window"
+
+#define kShortcutIDActionScriptShowOutput "showHideOutput"
+#define kShortcutDescActionScriptShowOutput "Show/Hide Output Window"
 
 class QWidget;
 

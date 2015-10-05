@@ -907,6 +907,16 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, kShortcutDescActionDopeSheetEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, kShortcutDescActionDopeSheetEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
+    
+    //Script editor
+    registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);
+    registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorNextScript, kShortcutDescActionScriptEditorNextScript, Qt::ControlModifier, Qt::Key_BracketRight, Qt::ShiftModifier | Qt::AltModifier);
+    registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorClearHistory, kShortcutDescActionScriptEditorClearHistory, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptExecScript, kShortcutDescActionScriptExecScript, Qt::ControlModifier, Qt::Key_Return);
+    registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptClearOutput, kShortcutDescActionScriptClearOutput, Qt::ControlModifier, Qt::Key_Backspace);
+    registerKeybind(kShortcutGroupScriptEditor, kShortcutIDActionScriptShowOutput, kShortcutDescActionScriptShowOutput, Qt::NoModifier, (Qt::Key)0);
+    
+    
 } // populateShortcuts
 
 
