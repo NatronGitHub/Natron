@@ -2663,21 +2663,16 @@ NodeGui::setNameItemHtml(const QString & name,
     bool hasFontData = true;
     QString extraLayerStr;
     
-    double time = getDagGui()->getGui()->getApp()->getTimeLine()->currentFrame();
-    EffectInstance::ComponentsNeededMap  neededComps;
-    bool processAll;
-    SequenceTime ptTime;
-    int ptView;
-    bool processChannels[4];
-    NodePtr ptInput;
-    getNode()->getLiveInstance()->getComponentsNeededAndProduced_public(time, 0, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
-    EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
-    if (foundOutput != neededComps.end() && !foundOutput->second.empty()) {
-        const Natron::ImageComponents& comp = foundOutput->second.front();
-        if (!comp.isColorPlane() && comp.getNumComponents() > 0) {
+    std::string selectedLayer;
+    bool foundLayer = getNode()->getSelectedLayer(-1,selectedLayer);
+    if (foundLayer) {
+        if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
+            selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
+            selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
+            selectedLayer != "None") {
             extraLayerStr.append("<br>");
             extraLayerStr.push_back('(');
-            extraLayerStr.append(comp.getLayerName().c_str());
+            extraLayerStr.append(selectedLayer.c_str());
             extraLayerStr.push_back(')');
         }
     }

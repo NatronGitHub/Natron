@@ -1083,7 +1083,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
      Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
     bool multiPlanar = _nodeInstance->isMultiPlanar();
-    const std::string& layerName = multiPlanar ? natronPlane.getLayerName() : planeBeingRendered.getLayerName();
+    const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName();// : planeBeingRendered.getLayerName();
     
     for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getLayerName() == layerName) {

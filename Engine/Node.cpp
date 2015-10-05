@@ -5948,6 +5948,18 @@ Node::onEffectKnobValueChanged(KnobI* what,
 }
 
 bool
+Node::getSelectedLayer(int inputNb,std::string& layer) const
+{
+    std::map<int,ChannelSelector>::iterator found = _imp->channelsSelectors.find(inputNb);
+    if (found == _imp->channelsSelectors.end()) {
+        return false;
+    }
+    boost::shared_ptr<KnobChoice> layerKnob = found->second.layer.lock();
+    layer = layerKnob->getActiveEntryText_mt_safe();
+    return true;
+}
+
+bool
 Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const
 {
     Node* node = 0;
@@ -7668,14 +7680,20 @@ Node::refreshChannelSelectors(bool setValues)
         } else {
             choices.push_back("None");
         }
-        bool gotColor = false;
-        bool gotDisparityLeft = false;
-        bool gotDisparityRight = false;
-        bool gotMotionBw = false;
-        bool gotMotionFw = false;
-        
-        int colorIndex = -1;
+        int gotColor = -1;
+
         Natron::ImageComponents colorComp;
+        
+        /*
+         These are default layers that we always display in the layer selector.
+         If one of them is found in the clip preferences, we set the default value to it.
+         */
+        std::map<std::string, int> defaultLayers;
+        defaultLayers[kNatronDisparityLeftPlaneName] = -1;
+        defaultLayers[kNatronDisparityRightPlaneName] = -1;
+        defaultLayers[kNatronForwardMotionVectorsPlaneName] = -1;
+        defaultLayers[kNatronBackwardMotionVectorsPlaneName] = -1;
+
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -7692,7 +7710,7 @@ Node::refreshChannelSelectors(bool setValues)
                     assert(choices.size() > 0);
                     std::vector<std::string>::iterator pos = choices.begin();
                     ++pos;
-                    colorIndex = 1;
+                    gotColor = 1;
 
                     if (numComp == 1) {
                         choices.insert(pos,kNatronAlphaComponentsName);
@@ -7703,44 +7721,44 @@ Node::refreshChannelSelectors(bool setValues)
                     } else {
                         assert(false);
                     }
-                    gotColor = true;
+                    
+                    ///Increment all default indexes
+                    for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                        if (it->second != -1) {
+                            ++it->second;
+                        }
+                    }
                 } else {
                     choices.push_back(it2->first.getLayerName());
-                    if (it2->first.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
-                        gotMotionBw = true;
-                    } else if (it2->first.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
-                        gotMotionFw = true;
-                    } else if (it2->first.getLayerName() == kNatronDisparityLeftPlaneName) {
-                        gotDisparityLeft = true;
-                    } else if (it2->first.getLayerName() == kNatronDisparityRightPlaneName) {
-                        gotDisparityRight = true;
+                    std::map<std::string, int>::iterator foundDefaultLayer = defaultLayers.find(it2->first.getLayerName());
+                    if (foundDefaultLayer != defaultLayers.end()) {
+                        foundDefaultLayer->second = choices.size() -1;
                     }
                 }
             }
         } // if (node) {
         
-        if (!gotColor) {
+        if (gotColor == -1) {
             assert(choices.size() > 0);
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
-            colorIndex = 1;
+            gotColor = 1;
+            ///Increment all default indexes
+            for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                if (it->second != -1) {
+                    ++it->second;
+                }
+            }
             colorComp = ImageComponents::getRGBAComponents();
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
-        if (!gotDisparityLeft) {
-            choices.push_back(kNatronDisparityLeftPlaneName);
+        for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+            if (it->second == -1) {
+                choices.push_back(it->first);
+            }
         }
-        if (!gotDisparityRight) {
-            choices.push_back(kNatronDisparityRightPlaneName);
-        }
-        if (!gotMotionFw) {
-            choices.push_back(kNatronForwardMotionVectorsPlaneName);
-        }
-        if (!gotMotionBw) {
-            choices.push_back(kNatronBackwardMotionVectorsPlaneName);
-        }
-        
+
         if (choices.size() != currentLayerEntries.size()) {
             hasChanged = true;
         } else {
@@ -7759,13 +7777,25 @@ Node::refreshChannelSelectors(bool setValues)
         
  
         if (setValues) {
-            assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
+
             if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
                 it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
-                layerKnob->setValue(colorIndex,0);
-                it->second.layerName.lock()->setValue(choices[colorIndex], 0);
+                int defaultIndex = -1;
+                for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                    if (it->second != -1) {
+                        defaultIndex = it->second;
+                        break;
+                    }
+                }
+                if (defaultIndex == -1) {
+                    defaultIndex = gotColor;
+                }
+                
+                assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
+                layerKnob->setValue(defaultIndex,0);
+                it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
             }
         } else {
             if (!curLayer.empty()) {
@@ -7781,7 +7811,7 @@ Node::refreshChannelSelectors(bool setValues)
                         _imp->liveInstance->endChanges(true);
                         layerKnob->unblockValueChanges();
                         if (isColor && it->first == -1 && _imp->enabledChan[0].lock()) {
-                            assert(colorIndex != -1);
+                            assert(gotColor != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
                             for (int j = 0; j < 4; ++j) {

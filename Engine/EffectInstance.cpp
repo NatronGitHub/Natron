@@ -2374,6 +2374,10 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::Image
 
             const PlaneToRender & firstPlane = args._outputPlanes.begin()->second;
             bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
+            if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
+                //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
+                useCache = false;
+            }
             const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
             boost::shared_ptr<ImageParams> params = img->getParams();
             PlaneToRender p;
@@ -3663,32 +3667,36 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         {
             ImageComponents layer;
             std::vector<ImageComponents> compVec;
-            bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
-            if (ok) {
-                if ( !layer.isColorPlane() && (layer.getNumComponents() != 0) ) {
-                    compVec.push_back(layer);
-                } else {
-                    //Use regular clip preferences
-                    ImageBitDepthEnum depth;
-                    std::list<ImageComponents> components;
-                    getPreferredDepthAndComponents(-1, &components, &depth);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        //if (it->isColorPlane()) {
-                        compVec.push_back(*it);
-                        //}
-                    }
-                }
-            } else {
-                //Use regular clip preferences
-                ImageBitDepthEnum depth;
-                std::list<ImageComponents> components;
-                getPreferredDepthAndComponents(-1, &components, &depth);
-                for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                    //if (it->isColorPlane()) {
-                    compVec.push_back(*it);
-                    //}
-                }
+            
+            //Use regular clip preferences
+            ImageBitDepthEnum depth;
+            std::list<ImageComponents> clipPrefsComps;
+            getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
+            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                //if (it->isColorPlane()) {
+                compVec.push_back(*it);
+                //}
             }
+            
+            
+            bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
+            if (ok && layer.getNumComponents() != 0) {
+                if (!layer.isColorPlane()) {
+                    
+                    bool found = false;
+                    for (std::size_t i = 0; i < compVec.size(); ++i) {
+                        if (compVec[i] == layer) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        compVec.push_back(layer);
+                    }
+                } 
+            }
+            
+           
             comps->insert( std::make_pair(-1, compVec) );
         }
 

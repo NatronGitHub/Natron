@@ -1047,6 +1047,8 @@ public:
     
     void markAllInputRelatedDataDirty();
     
+    bool getSelectedLayer(int inputNb,std::string& layer) const;
+    
 private:
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
