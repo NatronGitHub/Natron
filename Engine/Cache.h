@@ -669,7 +669,7 @@ public:
         CacheIterator memoryCached = _memoryCache(hash);
         if (memoryCached != _memoryCache.end()) {
             std::list<EntryTypePtr> & ret = getValueFromIterator(memoryCached);
-            for (typename std::list<EntryTypePtr>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
+            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                 if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
                     ret.erase(it);
                     break;
@@ -683,7 +683,7 @@ public:
             if (diskCached != _diskCache.end()) {
                 ///Remove the old entry
                 std::list<EntryTypePtr> & ret = getValueFromIterator(diskCached);
-                for (typename std::list<EntryTypePtr>::const_iterator it = ret.begin(); it != ret.end(); ++it) {
+                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                     if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
                         ret.erase(it);
                         break;
