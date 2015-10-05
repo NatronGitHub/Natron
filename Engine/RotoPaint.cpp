@@ -346,6 +346,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     RectD(),
                                     neededComps,
                                     bgDepth,
+                                    false,
                                     this);
         ImageList rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);

@@ -34,6 +34,7 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -505,7 +506,7 @@ public:
     , _cache()
     , _removeBackingFileBeforeDestruction(false)
     , _requestedStorage(eStorageModeNone)
-    , _entryLock(QMutex::Recursive)
+    , _entryLock(QReadWriteLock::Recursive)
     {
     }
 
@@ -527,7 +528,7 @@ public:
     , _removeBackingFileBeforeDestruction(false)
     , _requestedPath(path)
     , _requestedStorage(storage)
-    , _entryLock(QMutex::Recursive)
+    , _entryLock(QReadWriteLock::Recursive)
     {
     }
 
@@ -537,6 +538,11 @@ public:
             removeAnyBackingFile();
         }
         deallocate();
+    }
+    
+    const CacheAPI* getCacheAPI() const
+    {
+        return _cache;
     }
 
     void setCacheEntry(const KeyType & key,
@@ -567,12 +573,12 @@ public:
         
         {
             {
-                QMutexLocker k(&_entryLock);
+                QReadLocker k(&_entryLock);
                 if (_data.isAllocated()) {
                     return;
                 }
             }
-            QMutexLocker k(&_entryLock);
+            QWriteLocker k(&_entryLock);
             allocate(_params->getElementsCount(),_requestedStorage,_requestedPath);
             onMemoryAllocated(false);
         }
@@ -595,7 +601,7 @@ public:
         assert(!_requestedPath.empty());
         
         {
-            QMutexLocker k(&_entryLock);
+            QWriteLocker k(&_entryLock);
             
             restoreBufferFromFile(_requestedPath);
             
@@ -670,7 +676,7 @@ public:
     void reOpenFileMapping() const
     {
         {
-            QMutexLocker k(&_entryLock);
+            QWriteLocker k(&_entryLock);
             _data.reOpenFileMapping();
         }
         if (_cache) {
@@ -687,7 +693,7 @@ public:
         bool dataAllocated = _data.isAllocated();
         int time = getTime();
         {
-            QMutexLocker k(&_entryLock);
+            QWriteLocker k(&_entryLock);
             
             _data.deallocate();
         }
@@ -721,7 +727,7 @@ public:
      **/
     size_t dataSize() const
     {
-        bool got = _entryLock.tryLock();
+        bool got = _entryLock.tryLockForRead();
         std::size_t r = _data.size();
         if (got) {
             _entryLock.unlock();
@@ -736,7 +742,7 @@ public:
     
     bool isAllocated() const
     {
-        QMutexLocker k(&_entryLock);
+        QReadLocker k(&_entryLock);
         return _data.isAllocated();
     }
 
@@ -752,7 +758,7 @@ public:
         bool isAlloc = _data.isAllocated();
         bool hasRemovedFile;
         {
-            QMutexLocker k(&_entryLock);
+            QWriteLocker k(&_entryLock);
             hasRemovedFile = _data.removeAnyBackingFile();
         }
         
@@ -771,7 +777,7 @@ public:
      * @brief To be called when an entry is going to be removed from the cache entirely.
      **/
     void scheduleForDestruction() {
-        QMutexLocker k(&_entryLock);
+        QWriteLocker k(&_entryLock);
         _removeBackingFileBeforeDestruction = true;
     }
 
@@ -884,7 +890,7 @@ protected:
     bool _removeBackingFileBeforeDestruction;
     std::string _requestedPath;
     Natron::StorageModeEnum _requestedStorage;
-    mutable QMutex _entryLock;
+    mutable QReadWriteLock _entryLock;
 };
 }
 

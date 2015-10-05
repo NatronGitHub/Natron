@@ -1400,7 +1400,7 @@ ViewerInstance::renderViewer_internal(int view,
                                                                                 splitRoi[rectIndex],
                                                                                 inArgs.params->rod,
                                                                                 requestedComponents,
-                                                                                imageDepth, this),&planes);
+                                                                                imageDepth, false, this),&planes);
             assert(planes.size() == 0 || planes.size() == 1);
             if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
                 image = planes.front();

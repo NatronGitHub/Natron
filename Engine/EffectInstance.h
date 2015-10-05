@@ -142,45 +142,49 @@ public:
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
+        bool calledFromGetImage;
         const EffectInstance* caller;
 
         RenderRoIArgs()
-            : time(0)
-            , scale()
-            , mipMapLevel(0)
-            , view(0)
-            , byPassCache(false)
-            , roi()
-            , preComputedRoD()
-            , components()
-            , bitdepth(eImageBitDepthFloat)
-            , inputImagesList()
-            , caller(0)
+        : time(0)
+        , scale()
+        , mipMapLevel(0)
+        , view(0)
+        , byPassCache(false)
+        , roi()
+        , preComputedRoD()
+        , components()
+        , bitdepth(eImageBitDepthFloat)
+        , inputImagesList()
+        , calledFromGetImage(false)
+        , caller(0)
         {
         }
-
-        RenderRoIArgs( double time_,
-                       const RenderScale & scale_,
-                       unsigned int mipMapLevel_,
-                       int view_,
-                       bool byPassCache_,
-                       const RectI & roi_,
-                       const RectD & preComputedRoD_,
-                       const std::list<Natron::ImageComponents> & components_,
-                       Natron::ImageBitDepthEnum bitdepth_,
-                       const EffectInstance* caller,
-                       const EffectInstance::InputImagesMap & inputImages =  EffectInstance::InputImagesMap() )
-            : time(time_)
-            , scale(scale_)
-            , mipMapLevel(mipMapLevel_)
-            , view(view_)
-            , byPassCache(byPassCache_)
-            , roi(roi_)
-            , preComputedRoD(preComputedRoD_)
-            , components(components_)
-            , bitdepth(bitdepth_)
-            , inputImagesList(inputImages)
-            , caller(caller)
+        
+        RenderRoIArgs(double time_,
+                      const RenderScale & scale_,
+                      unsigned int mipMapLevel_,
+                      int view_,
+                      bool byPassCache_,
+                      const RectI & roi_,
+                      const RectD & preComputedRoD_,
+                      const std::list<Natron::ImageComponents> & components_,
+                      Natron::ImageBitDepthEnum bitdepth_,
+                      bool calledFromGetImage,
+                      const EffectInstance* caller,
+                      const EffectInstance::InputImagesMap & inputImages =  EffectInstance::InputImagesMap() )
+        : time(time_)
+        , scale(scale_)
+        , mipMapLevel(mipMapLevel_)
+        , view(view_)
+        , byPassCache(byPassCache_)
+        , roi(roi_)
+        , preComputedRoD(preComputedRoD_)
+        , components(components_)
+        , bitdepth(bitdepth_)
+        , inputImagesList(inputImages)
+        , calledFromGetImage(calledFromGetImage)
+        , caller(caller)
         {
         }
     };
@@ -1218,6 +1222,13 @@ public:
 
         //Points to a temporary image that the plug-in will render
         boost::shared_ptr<Natron::Image> tmpImage;
+        
+        /*
+         In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
+         if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
+         */
+        boost::shared_ptr<Natron::Image> cacheSwapImage;
+        
         void* originalCachedImage;
 
         /**
@@ -1230,6 +1241,7 @@ public:
             , downscaleImage()
             , renderMappedImage()
             , tmpImage()
+            , cacheSwapImage()
             , originalCachedImage(0)
             , isAllocatedOnTheFly(false)
         {

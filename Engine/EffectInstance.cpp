@@ -794,6 +794,7 @@ EffectInstance::getImage(int inputNb,
                                                           RectD(),
                                                           requestedComps,
                                                           depth,
+                                                          true,
                                                           this,
                                                           inputImagesThreadLocal), &inputImages);
 
@@ -2027,6 +2028,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  RectD(),
                                  comps,
                                  outputClipPrefDepth,
+                                 false,
                                  this);
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {

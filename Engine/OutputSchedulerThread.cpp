@@ -2159,6 +2159,7 @@ private:
                                                                               rod, // < any precomputed rod ? in canonical coordinates
                                                                               components,
                                                                               imageDepth,
+                                                                              false,
                                                                               _imp->output),&planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
@@ -2259,6 +2260,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    rod,
                                                    components,
                                                    imageDepth,
+                                                   false,
                                                    _effect,
                                                    inputImages);
         try {

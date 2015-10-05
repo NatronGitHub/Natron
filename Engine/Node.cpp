@@ -4628,7 +4628,7 @@ Node::makePreviewImage(SequenceTime time,
                                                          renderWindow,
                                                          rod,
                                                          requestedComps, //< preview is always rgb...
-                                                         getBitDepth(), effect) ,&planes);
+                                                         getBitDepth(), false, effect) ,&planes);
         if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
             return false;
         }

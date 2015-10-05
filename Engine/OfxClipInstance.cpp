@@ -987,7 +987,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         std::list<ImageComponents> requestedComps;
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,_nodeInstance,inputImages);
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,true,_nodeInstance,inputImages);
         ImageList planes;
         EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());
@@ -1278,10 +1278,11 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
 
     if (isSrcImage) {
-        Natron::Image::ReadAccess access(internalImage.get());
-        const unsigned char* ptr = access.pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
+        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
+        _imgAccess = access;
     } else {
         boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
         unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );

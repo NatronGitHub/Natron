@@ -204,14 +204,14 @@ Image::applyMaskMix(const RectI& roi,
         return;
     }
     
-    QMutexLocker k(&_entryLock);
-    boost::shared_ptr<QMutexLocker> originalLock;
-    boost::shared_ptr<QMutexLocker> maskLock;
+    QWriteLocker k(&_entryLock);
+    boost::shared_ptr<QReadLocker> originalLock;
+    boost::shared_ptr<QReadLocker> maskLock;
     if (originalImg) {
-        originalLock.reset(new QMutexLocker(&originalImg->_entryLock));
+        originalLock.reset(new QReadLocker(&originalImg->_entryLock));
     }
     if (maskImg) {
-        maskLock.reset(new QMutexLocker(&maskImg->_entryLock));
+        maskLock.reset(new QReadLocker(&maskImg->_entryLock));
     }
     RectI realRoI;
     roi.intersect(_bounds, &realRoI);

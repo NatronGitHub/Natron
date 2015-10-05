@@ -98,13 +98,13 @@ public:
 
     void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
     {
-        QMutexLocker k(&_entryLock);
+        QReadLocker k(&_entryLock);
         _params->getOriginalTiles(ret);
     }
 
     void addOriginalTile(const boost::shared_ptr<Natron::Image>& image)
     {
-        QMutexLocker k(&_entryLock);
+        QWriteLocker k(&_entryLock);
         _params->addOriginalTile(image);
     }
 

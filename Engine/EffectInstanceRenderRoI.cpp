@@ -1276,10 +1276,31 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                  * Another thread might have allocated the same image in the cache but with another RoI, make sure
                  * it is big enough for us, or resize it to our needs.
                  */
-                bool hasResized = it->second.fullscaleImage->ensureBounds(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
-                                                                          fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
-
-
+                bool hasResized;
+                
+                if (args.calledFromGetImage) {
+                    /*
+                     * When called from EffectInstance::getImage() we must prevent from taking any write lock because
+                     * this image probably already has a lock for read on it. To overcome the write lock, we resize in a
+                     * separate image and then we swap the images in the cache directly, without taking the image write lock.
+                     */
+                    
+                    hasResized = it->second.fullscaleImage->copyAndResizeIfNeeded(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes,&it->second.cacheSwapImage);
+                    if (hasResized) {
+                        ///Work on the swapImg and then swap in the cache
+                        ImagePtr swapImg = it->second.cacheSwapImage;
+                        it->second.cacheSwapImage = it->second.fullscaleImage;
+                        it->second.fullscaleImage = swapImg;
+                        if (!renderFullScaleThenDownscale) {
+                            it->second.downscaleImage = it->second.fullscaleImage;
+                        }
+                    }
+                } else {
+                    hasResized = it->second.fullscaleImage->ensureBounds(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
+                                                                         fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
+                }
+                
+                
                 /*
                  * Note that the image has been resized and the bitmap explicitly set to 1 in the newly allocated portions (for rotopaint purpose).
                  * We must reset it back to 0 in the last stroke tick RoD.
@@ -1289,11 +1310,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
 
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
-                    //Allocate a downscale image that will be cheap to create
-                    ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
                     it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
+                    
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
             }
@@ -1483,6 +1503,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
 
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
+        
+        //If we have worked on a local swaped image, swap it in the cache
+        if (it->second.cacheSwapImage) {
+            const CacheAPI* cache = it->second.cacheSwapImage->getCacheAPI();
+            const Cache<Image>* imgCache = dynamic_cast<const Cache<Image>*>(cache);
+            if (imgCache) {
+                Cache<Image>* ccImgCache = const_cast<Cache<Image>*>(imgCache);
+                assert(ccImgCache);
+                ccImgCache->swapOrInsert(it->second.cacheSwapImage, it->second.fullscaleImage);
+            }
+        }
+        
         //We have to return the downscale image, so make sure it has been computed
         if ( (renderRetCode != eRenderRoIStatusRenderFailed) &&
             renderFullScaleThenDownscale &&
