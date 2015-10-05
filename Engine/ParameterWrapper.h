@@ -1040,6 +1040,8 @@ public:
      * This can only be called right away after the parameter has been created.
      **/
     void setIconFilePath(const std::string& icon);
+    
+    void trigger();
 };
 
 class GroupParam : public Param

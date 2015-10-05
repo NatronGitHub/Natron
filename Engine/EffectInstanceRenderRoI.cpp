@@ -560,7 +560,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (ret == eRenderRoIRetCodeOk) {
                     ImageList convertedPlanes;
                     AppInstance* app = getApp();
-                    assert(inputArgs.components.size() == outputPlanes->size());
+                    assert(inputArgs.components.size() == outputPlanes->size() || outputPlanes->empty());
                     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
                     std::list<Natron::ImageComponents>::const_iterator compIt = args.components.begin();

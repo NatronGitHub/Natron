@@ -567,6 +567,12 @@ KnobButton::typeName() const
     return typeNameStatic();
 }
 
+void
+KnobButton::trigger()
+{
+    evaluateValueChange(0, getCurrentTime(),  Natron::eValueChangedReasonUserEdited);
+}
+
 /******************************KnobChoice**************************************/
 
 KnobChoice::KnobChoice(KnobHolder* holder,

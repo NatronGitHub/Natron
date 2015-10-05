@@ -1494,6 +1494,12 @@ ButtonParam::setIconFilePath(const std::string& icon)
     _buttonKnob.lock()->setIconFilePath(icon);
 }
 
+void
+ButtonParam::trigger()
+{
+    _buttonKnob.lock()->trigger();
+}
+
 ///////////////////GroupParam
 
 GroupParam::GroupParam(const boost::shared_ptr<KnobGroup>& knob)

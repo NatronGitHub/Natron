@@ -384,6 +384,8 @@ public:
     {
         return _iconFilePath;
     }
+    
+    void trigger();
 
 private:
 
