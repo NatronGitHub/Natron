@@ -131,11 +131,6 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
 
-    ///Clear nodes now, not in the destructor of the project as
-    ///deleting nodes might reference the project.
-    _imp->_currentProject->closeProject(true);
-    _imp->_currentProject->discardAppPointer();
-    
     appPTR->removeInstance(_imp->_appID);
 }
 
@@ -1239,7 +1234,15 @@ AppInstance::clearAllLastRenderedImages()
     }
 }
 
-
+void
+AppInstance::aboutToQuit()
+{
+    ///Clear nodes now, not in the destructor of the project as
+    ///deleting nodes might reference the project.
+    _imp->_currentProject->closeProject(true);
+    _imp->_currentProject->discardAppPointer();
+    
+}
 
 void
 AppInstance::quit()

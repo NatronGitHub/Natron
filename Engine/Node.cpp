@@ -5505,7 +5505,7 @@ Node::onInputChanged(int inputNb)
         isViewer->refreshActiveInputs(inputNb);
     }
     
-    bool shouldDoInputChanged = (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
+    bool shouldDoInputChanged = (!getApp()->getProject()->isProjectClosing() && !getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
     _imp->liveInstance->isRotoPaintNode();
     
     if (shouldDoInputChanged) {

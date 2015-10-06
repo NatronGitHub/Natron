@@ -162,29 +162,19 @@ GuiAppInstance::deletePreviewProvider()
 void
 GuiAppInstance::aboutToQuit()
 {
-
     deletePreviewProvider();
+    
+    AppInstance::aboutToQuit();
+    
     _imp->_isClosing = true;
     _imp->_gui->close();
-    _imp->_gui->setParent(NULL);
+    _imp->_gui->deleteLater();
+    _imp->_gui = 0;
 }
 
 GuiAppInstance::~GuiAppInstance()
 {
-    ///process events before closing gui
-    QCoreApplication::processEvents();
 
-    ///clear nodes prematurely so that any thread running is stopped
-    getProject()->clearNodes(false);
-
-    QCoreApplication::processEvents();
-//#ifndef __NATRON_WIN32__
-    _imp->_gui->getNodeGraph()->notifyGuiClosingPublic();
-    _imp->_gui->deleteLater();
-    _imp->_gui = 0;
-    _imp.reset();
-//#endif
-    QCoreApplication::processEvents();
 }
 
 bool

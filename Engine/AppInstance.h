@@ -175,10 +175,8 @@ public:
 
     virtual ~AppInstance();
 
-    virtual void aboutToQuit()
-    {
-    }
-
+    virtual void aboutToQuit();
+    
     struct RenderRequest {
         QString writerName;
         int firstFrame,lastFrame;
