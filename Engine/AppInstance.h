@@ -371,7 +371,7 @@ public:
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
     virtual void queueRedrawForAllViewers() {}
     
-    virtual void renderAllViewers() {}
+    virtual void renderAllViewers(bool /* canAbort*/) {}
     
     virtual void declareCurrentAppVariable_Python();
 

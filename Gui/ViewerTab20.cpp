@@ -467,7 +467,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     } else {
         
         ///If we are dragging with mouse, set draft mode (not for roto though)
-        if (!getGui()->isDraftRenderEnabled()) {
+        if (_imp->hasPenDown && !getGui()->isDraftRenderEnabled()) {
             getGui()->setDraftRenderEnabled(true);
         }
         
@@ -660,7 +660,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     
     if (mustTriggerRender) {
         //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
-        getGui()->getApp()->renderAllViewers();
+        getGui()->getApp()->renderAllViewers(true);
     }
     
     

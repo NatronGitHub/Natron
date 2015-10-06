@@ -584,7 +584,7 @@ AppManager::clearAllCaches()
     }
     
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        it->second.app->renderAllViewers();
+        it->second.app->renderAllViewers(true);
     }
     
     Project::clearAutoSavesDir();

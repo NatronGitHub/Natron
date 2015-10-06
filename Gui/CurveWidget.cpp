@@ -936,7 +936,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             _imp->_gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
-                _imp->_gui->renderAllViewers();
+                _imp->_gui->renderAllViewers(true);
             }
         }
     }

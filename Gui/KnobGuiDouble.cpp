@@ -546,7 +546,7 @@ KnobGuiDouble::onSliderEditingFinished(bool hasMovedOnce)
         double v = _slider->getPosition();
         sliderEditingEnd(v);
     } else if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers();
+        getGui()->renderAllViewers(true);
     }
 }
 

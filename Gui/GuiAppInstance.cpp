@@ -1029,9 +1029,9 @@ GuiAppInstance::closeLoadPRojectSplashScreen()
 }
 
 void
-GuiAppInstance::renderAllViewers()
+GuiAppInstance::renderAllViewers(bool canAbort)
 {
-    _imp->_gui->renderAllViewers();
+    _imp->_gui->renderAllViewers(canAbort);
 }
 
 void

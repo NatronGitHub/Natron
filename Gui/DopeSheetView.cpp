@@ -3328,7 +3328,7 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
             _imp->gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
-                _imp->gui->renderAllViewers();
+                _imp->gui->renderAllViewers(true);
             }
         }
     }

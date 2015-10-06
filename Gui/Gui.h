@@ -531,7 +531,7 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers();
+    void renderAllViewers(bool canAbort);
 
     void toggleAutoHideGraphInputs();
 

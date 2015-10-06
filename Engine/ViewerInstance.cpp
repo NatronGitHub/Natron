@@ -798,8 +798,17 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     //The original mipMapLevel without draft applied
     unsigned originalMipMapLevel = mipMapLevel;
     
-    if (zoomFactor < 1. && outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
+    if (outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled()) {
         unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
+        if (zoomFactor > 1) {
+            //Decrease draft mode at each inverse mipmaplevel level taken
+            unsigned int invLevel = Image::getLevelFromScale(1. / zoomFactor);
+            if (invLevel < autoProxyLevel) {
+                autoProxyLevel -= invLevel;
+            } else {
+                autoProxyLevel = 0;
+            }
+        }
         mipMapLevel = std::max(mipMapLevel, (int)autoProxyLevel);
     }
     

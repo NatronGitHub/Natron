@@ -863,7 +863,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             }
 
         } else if (autoProxyEnabled && wasScrubbing) {
-            _imp->gui->getApp()->renderAllViewers();
+            _imp->gui->getApp()->renderAllViewers(true);
         }
     }
 

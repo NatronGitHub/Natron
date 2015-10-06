@@ -664,12 +664,12 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers()
+Gui::renderAllViewers(bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(true);
+            (*it)->getInternalNode()->renderCurrentFrame(canAbort);
         }
     }
 }
