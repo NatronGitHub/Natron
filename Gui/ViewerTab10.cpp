@@ -107,16 +107,25 @@ ViewerTab::updateViewsMenu(int count)
     _imp->viewsComboBox->clear();
     if (count == 1) {
         _imp->viewsComboBox->hide();
-        _imp->viewsComboBox->addItem( tr("Main") );
-    } else if (count == 2) {
+        _imp->viewsComboBox->addItem(tr("Main"));
+    } else if (count >= 2) {
         _imp->viewsComboBox->show();
-        _imp->viewsComboBox->addItem( tr("Left"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1) );
-        _imp->viewsComboBox->addItem( tr("Right"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2) );
+        ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                             kShortcutIDShowLeftView,
+                                                             kShortcutDescShowLeftView,
+                                                             _imp->viewsComboBox);
+        _imp->viewsComboBox->addAction(leftAct);
+        ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                             kShortcutIDShowRightView,
+                                                             kShortcutDescShowRightView,
+                                                             _imp->viewsComboBox);
+        _imp->viewsComboBox->addAction(rightAct);
+        for (int i = 2; i < count; ++i) {
+            _imp->viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1));
+        }
     } else {
         _imp->viewsComboBox->show();
-        for (int i = 0; i < count; ++i) {
-            _imp->viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1),QIcon(),Gui::keySequenceForView(i) );
-        }
+        
     }
     if ( ( currentIndex < _imp->viewsComboBox->count() ) && (currentIndex != -1) ) {
         _imp->viewsComboBox->setCurrentIndex(currentIndex);
@@ -711,6 +720,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
         switchInputAAndB();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowLeftView, modifiers, key) ) {
+        showView(0);
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowRightView, modifiers, key) ) {
+        showView(1);
     } else {
         accept = false;
         QWidget::keyPressEvent(e);
@@ -720,6 +733,24 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         e->accept();
     }
 } // keyPressEvent
+
+
+
+void
+ViewerTab::keyReleaseEvent(QKeyEvent* e)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    if (!getGui()) {
+        return QWidget::keyPressEvent(e);
+    }
+    double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
+    if ( notifyOverlaysKeyUp(scale, scale, e) ) {
+        _imp->viewer->redraw();
+    } else {
+        QWidget::keyReleaseEvent(e);
+    }
+}
 
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)

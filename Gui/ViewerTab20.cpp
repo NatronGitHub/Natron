@@ -737,7 +737,17 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         return false;
     }
 
+
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    
+    /*
+     Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
+     whether they are up or down
+     */
+    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
+    e->key() == Qt::Key_Meta;
+    
+    
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -748,6 +758,10 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+                    if (isModifier) {
+                        nodes.erase(it);
+                        break;
+                    }
                     return true;
                 } else {
                     nodes.erase(it);
@@ -758,10 +772,14 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     }
 
     
+    
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin();
          it != nodes.rend();
          ++it) {
         if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+            if (isModifier) {
+                continue;
+            }
             return true;
         }
     }
@@ -786,8 +804,7 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
     
     _imp->lastOverlayNode.reset();
-
-
+    
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
