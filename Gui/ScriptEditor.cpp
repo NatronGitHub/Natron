@@ -228,16 +228,23 @@ ScriptEditor::ScriptEditor(Gui* gui)
     
     QSplitter* splitter = new QSplitter(Qt::Vertical,this);
     
+    QFont scriptFont("Courier New", 12);
+    if (!scriptFont.exactMatch()) {
+        scriptFont = font();
+    }
+    
     _imp->outputEdit = new ScriptTextEdit(this);
     QObject::connect(_imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)));
     _imp->outputEdit->setOutput(true);
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
+    _imp->outputEdit->setFont(scriptFont);
     
     _imp->inputEdit = new ScriptTextEdit(this);
     QObject::connect(_imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()));
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
     _imp->inputEdit->setTabStopWidth(fm.width(' ') * 4);
+    _imp->inputEdit->setFont(scriptFont);
     _imp->outputEdit->setTabStopWidth(fm.width(' ') * 4);
     
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
