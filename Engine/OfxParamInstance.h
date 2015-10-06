@@ -527,7 +527,7 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
-    
+    virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated(int dimension) const;
     bool isAnimated() const;
