@@ -2329,8 +2329,13 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
-    QMutexLocker k(&_imp->evaluateOnChangeMutex);
-    _imp->evaluateOnChange = b;
+    {
+        QMutexLocker k(&_imp->evaluateOnChangeMutex);
+        _imp->evaluateOnChange = b;
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_evaluateOnChangeChanged(b);
+    }
 }
 
 bool

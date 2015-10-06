@@ -217,6 +217,11 @@ public:
         Q_EMIT descriptionChanged();
     }
     
+    void s_evaluateOnChangeChanged(bool value)
+    {
+        Q_EMIT evaluateOnChangeChanged(value);
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -241,6 +246,8 @@ public Q_SLOTS:
 
     
 Q_SIGNALS:
+    
+    void evaluateOnChangeChanged(bool value);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
