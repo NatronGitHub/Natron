@@ -2453,6 +2453,12 @@ EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
                          Natron::ValueChangedReasonEnum /*reason*/)
 {
+    KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
+    if (isGrp || isPage) {
+        return;
+    }
+    
     ////If the node is currently modifying its input, to ask for a render
     ////because at then end of the inputChanged handler, it will ask for a refresh
     ////and a rebuild of the inputs tree.
@@ -2465,8 +2471,9 @@ EffectInstance::evaluate(KnobI* knob,
     if ( getApp()->getProject()->isLoadingProject() ) {
         return;
     }
-
-
+    
+    
+   
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
 
     /*if this is a writer (openfx or built-in writer)*/

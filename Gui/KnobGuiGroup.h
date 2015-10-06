@@ -130,6 +130,9 @@ public Q_SLOTS:
     void setChecked(bool b);
 
 private:
+    
+    void setCheckedInternal(bool checked, bool userRequested);
+    
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

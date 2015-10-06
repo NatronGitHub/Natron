@@ -479,9 +479,15 @@ DockablePanel::onPageIndexChanged(int index)
             continue;
         }
         if (isPage->getDescription() == stdName) {
-            isPage->setSecret(false);
+            if (isPage->getIsSecret()) {
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->setSecret(false);
+            }
         } else {
-            isPage->setSecret(true);
+            if (!isPage->getIsSecret()) {
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->setSecret(true);
+            }
         }
     }
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
