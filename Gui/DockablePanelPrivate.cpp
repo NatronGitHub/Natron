@@ -36,7 +36,6 @@
 #include <QDebug>
 #include <QScrollArea>
 
-#include "Engine/Knob.h" // KnobI
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h" // NATRON_PARAMETER_PAGE_NAME_INFO
 #include "Gui/ClickableLabel.h"
@@ -720,5 +719,28 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
     return _pages.insert( make_pair(name,p) ).first;
 }
 
-
+void
+DockablePanelPrivate::refreshPagesSecretness()
+{
+    assert(_tabWidget);
+    std::string stdName = _tabWidget->tabText(_tabWidget->currentIndex()).toStdString();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _holder->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        if (!isPage) {
+            continue;
+        }
+        if (isPage->getDescription() == stdName) {
+            if (isPage->getIsSecret()) {
+                isPage->setSecret(false);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
+        } else {
+            if (!isPage->getIsSecret()) {
+                isPage->setSecret(true);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
+        }
+    }
+}
 
