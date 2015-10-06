@@ -2488,10 +2488,10 @@ EffectInstance::evaluate(KnobI* knob,
                             Natron::questionDialog( QObject::tr("Render").toStdString(),
                                                     sequentialNode + QObject::tr(" can only "
                                                                                  "render in sequential mode. Due to limitations in the "
-                                                                                 "OpenFX standard that means that %1"
+                                                                                 "OpenFX standard, %1"
                                                                                  " will not be able "
                                                                                  "to render all the views of the project. "
-                                                                                 "Only the main view of the project will be rendered, you can "
+                                                                                 "Only the main view of the project will be rendered. You can "
                                                                                  "change the main view in the project settings. Would you like "
                                                                                  "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(), false );
                         if (answer != Natron::eStandardButtonYes) {

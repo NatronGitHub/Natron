@@ -778,7 +778,6 @@ Project::initializeKnobs()
     _imp->mainView->disableSlider();
     _imp->mainView->setDefaultValue(0);
     _imp->mainView->setMinimum(0);
-    _imp->mainView->setMaximum(0);
     _imp->mainView->setAnimationEnabled(false);
     page->addKnob(_imp->mainView);
 
