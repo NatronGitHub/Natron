@@ -378,14 +378,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
 {
     ///get a shared_ptr to this
     assert( getHolder() );
-    boost::shared_ptr<KnobDouble> thisShared;
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getHolder()->getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i].get() == this) {
-            thisShared = boost::dynamic_pointer_cast<KnobDouble>(knobs[i]);
-            break;
-        }
-    }
+    boost::shared_ptr<KnobDouble> thisShared = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
     assert(thisShared);
     
     std::string lastNodeName;

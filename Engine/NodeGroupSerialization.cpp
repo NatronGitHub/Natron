@@ -75,6 +75,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
     std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
     
+    std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
+    
     for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         
         std::string pluginID = (*it)->getPluginID();
@@ -269,12 +271,18 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed, hasProjectAWriter);
+                
             } else {
+                ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert(n->isMultiInstance());
-                NodeCollectionSerialization::restoreFromSerialization(children, group, true, moduleUpdatesProcessed,  hasProjectAWriter);
+                multiInstancesToRecurse.push_back(*it);
             }
         }
     } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    
+    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
+        NodeCollectionSerialization::restoreFromSerialization((*it)->getNodesCollection(), group, true, moduleUpdatesProcessed,  hasProjectAWriter);
+    }
     
     
     group->getApplication()->updateProjectLoadStatus(QObject::tr("Restoring graph links in group: ") + groupName);
