@@ -2669,7 +2669,8 @@ NodeGui::setNameItemHtml(const QString & name,
         if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
             selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
             selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
-            selectedLayer != "None") {
+            selectedLayer != "None" &&
+            selectedLayer != "All") {
             extraLayerStr.append("<br>");
             extraLayerStr.push_back('(');
             extraLayerStr.append(selectedLayer.c_str());

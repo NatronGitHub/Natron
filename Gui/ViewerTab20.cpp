@@ -264,11 +264,14 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
                                  double timestamp,
                                  QMouseEvent* e)
 {
-
+    
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
-
+    
+    _imp->hasPenDown = true;
+    _imp->hasCaughtPenMotionWhileDragging = false;
+    
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
@@ -463,11 +466,21 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         }
     } else {
         
+        ///If we are dragging with mouse, set draft mode (not for roto though)
+        if (!getGui()->isDraftRenderEnabled()) {
+            getGui()->setDraftRenderEnabled(true);
+        }
+        
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, scaleX, scaleY, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
+            
+            if (_imp->hasPenDown) {
+                _imp->hasCaughtPenMotionWhileDragging = true;
+            }
+            
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
             
@@ -544,6 +557,17 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         return false;
     }
     
+    ///Reset draft
+    bool mustTriggerRender = false;
+    if (getGui()->isDraftRenderEnabled()) {
+        getGui()->setDraftRenderEnabled(false);
+        mustTriggerRender = _imp->hasCaughtPenMotionWhileDragging;
+    }
+    
+    _imp->hasPenDown = false;
+    _imp->hasCaughtPenMotionWhileDragging = false;
+
+  
     _imp->lastOverlayNode.reset();
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -627,13 +651,20 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         
     }
 
+    
    
-    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+    if (!mustTriggerRender && !didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
         getGui()->getApp()->redrawAllViewers();
     }
     getGui()->getApp()->clearOverlayRedrawRequests();
     
-
+    if (mustTriggerRender) {
+        //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
+        getGui()->getApp()->renderAllViewers();
+    }
+    
+    
+    
     return didSomething;
 }
 
