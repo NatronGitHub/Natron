@@ -309,6 +309,9 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
 
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
+    
+    ///Remove wheel autofocus
+    _propertiesScrollArea->setFocusPolicy(Qt::StrongFocus);
     QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL( valueChanged(int) ), _gui, SLOT( onPropertiesScrolled() ) );
     _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
