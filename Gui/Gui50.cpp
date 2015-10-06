@@ -456,6 +456,12 @@ static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
 }
 
 void
+Gui::setLastKeyPressVisitedClickFocus(bool visited)
+{
+    _imp->keyPressEventHasVisitedFocusWidget = visited;
+}
+
+void
 Gui::keyPressEvent(QKeyEvent* e)
 {
     if (_imp->currentPanelFocusEventRecursion > 0) {
@@ -539,7 +545,7 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
-        if (_imp->currentPanelFocus) {
+        if (_imp->currentPanelFocus && !_imp->keyPressEventHasVisitedFocusWidget) {
             
             ++_imp->currentPanelFocusEventRecursion;
             //If a panel as the click focus, try to send the event to it

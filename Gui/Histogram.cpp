@@ -1442,6 +1442,8 @@ Histogram::keyPressEvent(QKeyEvent* e)
     if (accept) {
         takeClickFocus();
         e->accept();
+    } else {
+        handleUnCaughtKeyPressEvent();
     }
 }
 
