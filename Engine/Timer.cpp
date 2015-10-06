@@ -156,6 +156,9 @@ Timer::waitUntilNextFrameIsDue ()
 
     double timeSinceLastFrame =  now.tv_sec  - _lastFrameTime.tv_sec +
                                (now.tv_usec - _lastFrameTime.tv_usec) * 1e-6f;
+    if (timeSinceLastFrame < 0) {
+        timeSinceLastFrame = 0;
+    }
     double timeToSleep = spf - timeSinceLastFrame - _timingError;
 
     #ifdef _WIN32
