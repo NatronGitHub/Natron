@@ -517,8 +517,12 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     p.setPen(_imp->sliderColor);
     p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_imp->sliderColor);
 
-    /*draw a black rect around the slider for contrast*/
-    p.setPen(Qt::black);
+    /*draw a black rect around the slider for contrast or orange when focused*/
+	if (!hasFocus()) {
+		p.setPen(Qt::black);
+	} else {
+		p.setPen(QColor(243,137,0));
+	}
 
     p.drawLine( sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y() );
     p.drawLine( sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y() );
