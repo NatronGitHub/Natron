@@ -1179,11 +1179,11 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d,allPlugins,&foundInit, &foundInitGui);
     }
     if (!foundInit) {
-        QString message = QObject::tr("> init.py script not loaded");
+        QString message = QObject::tr("init.py script not loaded");
         appPTR->setLoadingStatus(message);
         std::cout << message.toStdString() << std::endl;
     } else {
-        QString message = QObject::tr("> init.py script loaded");
+        QString message = QObject::tr("init.py script loaded");
         appPTR->setLoadingStatus(message);
         std::cout << message.toStdString() << std::endl;
     }
@@ -1191,12 +1191,12 @@ AppManager::loadPythonGroups()
     if (!appPTR->isBackground()) {
         
         if (!foundInitGui) {
-            QString message = QObject::tr("> initGui.py script not loaded");
+            QString message = QObject::tr("initGui.py script not loaded");
             appPTR->setLoadingStatus(message);
             std::cout << message.toStdString() << std::endl;
 
         } else {
-            QString message = QObject::tr("> initGui.py script loaded");
+            QString message = QObject::tr("initGui.py script loaded");
             appPTR->setLoadingStatus(message);
             std::cout << message.toStdString() << std::endl;
         }
