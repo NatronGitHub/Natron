@@ -317,35 +317,58 @@ strip -s $ARENA_LIBS/*
 chown root:root -R $INSTALLER/*
 (cd $INSTALLER; find . -type d -name .git -exec rm -rf {} \;)
 
-# Build repo and package
+# Build repo and packages
+
+if [ "$1" = "workshop" ]; then
+  ONLINE_TAG=snapshot
+else
+  ONLINE_TAG=release
+fi
+ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
+BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
+REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
+rm -rf $REPO_DIR/packages $REPO_DIR/installers
+mkdir -p $REPO_DIR/{packages,installers} || exit 1
+
+if [ "$TAR_BUILD" = "1" ]; then
+  TAR_INSTALL=$TMP_PATH/$BUNDLED_INSTALL
+  mkdir -p $TAR_INSTALL || exit 1
+  cd $TAR_INSTALL || exit 1
+  cp -a $INSTALLER/packages/fr.*/data/* . || exit 1
+  cd .. || exit 1
+  tar cvvJf $BUNDLED_INSTALL.tar.xz $BUNDLED_INSTALL || exit 1 
+  rm -rf $BUNDLED_INSTALL
+  ln -sf $BUNDLED_INSTALL.tar.xz Natron-latest-$PKGOS-$ONLINE_TAG.tar.xz || exit 1
+  mv $BUNDLED_INSTALL.tar.xz Natron-latest-$PKGOS-$ONLINE_TAG.tar.xz $REPO_DIR/installers/ || exit 1
+fi
+
 if [ "$NO_INSTALLER" != "1" ]; then
-    if [ "$1" = "workshop" ]; then
-        ONLINE_TAG=snapshot
-    else
-        ONLINE_TAG=release
-    fi
-
-    ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
-    BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
-
-    REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
-    rm -rf $REPO_DIR/packages $REPO_DIR/installers
-
-    mkdir -p $REPO_DIR/packages || exit 1
-
     $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
-
-    mkdir -p $REPO_DIR/installers || exit 1
-
+    cd $REPO_DIR/installers || exit 1
     if [ "$OFFLINE" != "0" ]; then
         $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
-        cd $REPO_DIR/installers || exit 1
         tar cvvzf $BUNDLED_INSTALL.tgz $BUNDLED_INSTALL || exit 1
         ln -sf $BUNDLED_INSTALL.tgz Natron-latest-$PKGOS-$ONLINE_TAG.tgz || exit 1
     fi
-
     $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
     tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
+fi
+
+if [ "$RPM_BUILD" = "1" ]; then
+  if [ ! -f "/usr/bin/rpmbuild" ]; then
+    yum install -y rpmdevtools
+  fi
+  rm -rf ~/rpmbuild/*
+  echo "#!/bin/bash" > $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '26,65!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
+  sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1
+  cat $INC_PATH/natron/Natron.spec | sed "s/REPLACE_VERSION/`echo $NATRON_VERSION|sed 's/-/./g'`/" > $TMP_PATH/Natron.spec || exit 1
+  rpmbuild -bb $TMP_PATH/Natron.spec || exit 1
+  mv ~/rpmbuild/RPMS/*/Natron*.rpm $REPO_DIR/installers/ || exit 1
 fi
 
 rm $REPO_DIR/installers/$ONLINE_INSTALL $REPO_DIR/installers/$BUNDLED_INSTALL
