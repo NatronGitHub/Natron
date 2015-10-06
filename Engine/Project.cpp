@@ -56,6 +56,7 @@
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
+#include <ofxhXml.h> // OFX::XML::escape
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -777,7 +778,6 @@ Project::initializeKnobs()
     _imp->mainView->disableSlider();
     _imp->mainView->setDefaultValue(0);
     _imp->mainView->setMinimum(0);
-    _imp->mainView->setMaximum(0);
     _imp->mainView->setAnimationEnabled(false);
     page->addKnob(_imp->mainView);
 
@@ -1456,23 +1456,24 @@ Project::reset(bool aboutToQuit)
             }
         }
     }
-    clearNodes(true);
-
-    {
-        QMutexLocker l(&_imp->projectLock);
-        _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
-        _imp->hasProjectBeenSavedByUser = false;
-        _imp->projectCreationTime = QDateTime::currentDateTime();
-        _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
-        _imp->setProjectPath("");
-        _imp->autoSaveTimer->stop();
-        _imp->additionalFormats.clear();
-    }
-    _imp->timeline->removeAllKeyframesIndicators();
-    
-    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes(!aboutToQuit);
     
     if (!aboutToQuit) {
+        
+        {
+            QMutexLocker l(&_imp->projectLock);
+            _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->hasProjectBeenSavedByUser = false;
+            _imp->projectCreationTime = QDateTime::currentDateTime();
+            _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
+            _imp->setProjectPath("");
+            _imp->autoSaveTimer->stop();
+            _imp->additionalFormats.clear();
+        }
+        _imp->timeline->removeAllKeyframesIndicators();
+        
+        Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+        
         const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
         
         beginChanges();
@@ -1615,9 +1616,6 @@ Project::escapeXML(const std::string &istr)
                 i += 5;
                 break;
             default: {
-                // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-                // XML, because they would be converted to space when re-read.
-                // See http://www.w3.org/TR/xml/#AVNormalize
                 unsigned char c = (unsigned char)(str[i]);
                 // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
                 // XML, because they would be converted to space when re-read.
@@ -1639,6 +1637,7 @@ Project::escapeXML(const std::string &istr)
             }   break;
         }
     }
+    assert(str == OFX::XML::escape(istr)); // check that this escaped string is consistent with the one in HostSupport
     return str;
 }
 

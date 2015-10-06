@@ -249,6 +249,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                          RectD(), // < did we precompute any RoD to speed-up the call ?
                                                                          componentsToRender, //< requested comps
                                                                          inputPrefDepth,
+                                                                         false,
                                                                          effect);
                                     
                                     

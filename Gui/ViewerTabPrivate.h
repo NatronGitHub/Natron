@@ -205,6 +205,8 @@ struct ViewerTabPrivate
     
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
     boost::weak_ptr<Natron::Node> lastOverlayNode;
+    bool hasPenDown;
+    bool hasCaughtPenMotionWhileDragging;
     
     ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node);
 

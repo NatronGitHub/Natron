@@ -531,7 +531,7 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers();
+    void renderAllViewers(bool canAbort);
 
     void toggleAutoHideGraphInputs();
 
@@ -597,6 +597,8 @@ public:
     static bool isFocusStealingPossible();
     
     PanelWidget* getCurrentPanelFocus() const;
+    
+    void setLastKeyPressVisitedClickFocus(bool visited);
 
     
 Q_SIGNALS:

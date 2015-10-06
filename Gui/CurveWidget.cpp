@@ -936,7 +936,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             _imp->_gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
-                _imp->_gui->renderAllViewers();
+                _imp->_gui->renderAllViewers(true);
             }
         }
     }
@@ -1339,21 +1339,27 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         accept = false;
         QGLWidget::keyPressEvent(e);
     }
-    if (accept) {
-        CurveEditor* ce = 0;
-        if ( parentWidget() ) {
-            QWidget* parent  = parentWidget()->parentWidget();
-            if (parent) {
-                if (parent->objectName() == "CurveEditor") {
-                    ce = dynamic_cast<CurveEditor*>(parent);
-                }
+    
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
             }
         }
+    }
+
+    if (accept) {
         if (ce) {
             ce->onInputEventCalled();
         }
         
         e->accept();
+    } else {
+        if (ce) {
+            ce->handleUnCaughtKeyPressEvent();
+        }
     }
 } // keyPressEvent
 

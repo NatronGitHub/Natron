@@ -421,7 +421,7 @@ KnobGuiColor::onSliderEditingFinished(bool hasMovedOnce)
         double v = _slider->getPosition();
         onSliderValueChanged(v);
     } else if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers();
+        getGui()->renderAllViewers(true);
     }
 }
 

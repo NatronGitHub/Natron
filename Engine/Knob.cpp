@@ -2329,8 +2329,13 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
-    QMutexLocker k(&_imp->evaluateOnChangeMutex);
-    _imp->evaluateOnChange = b;
+    {
+        QMutexLocker k(&_imp->evaluateOnChangeMutex);
+        _imp->evaluateOnChange = b;
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_evaluateOnChangeChanged(b);
+    }
 }
 
 bool
@@ -2962,7 +2967,7 @@ KnobHelper::removeListener(KnobI* knob)
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
     assert(other);
     if (other && other->_signalSlotHandler && _signalSlotHandler) {
-        QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
+        QObject::disconnect( _signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), other->_signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
     }
     
     QWriteLocker l(&_imp->mastersMutex);

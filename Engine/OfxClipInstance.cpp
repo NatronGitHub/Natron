@@ -830,6 +830,8 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
                 assert(comps.size() == 1);
                 comp = comps.front();
+            } else {
+                comp = _nodeInstance->getNode()->findClosestSupportedComponents(inputnb, comp);
             }
         }
 
@@ -985,7 +987,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         std::list<ImageComponents> requestedComps;
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,_nodeInstance,inputImages);
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,true,_nodeInstance,inputImages);
         ImageList planes;
         EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());
@@ -1081,7 +1083,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
      Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
     bool multiPlanar = _nodeInstance->isMultiPlanar();
-    const std::string& layerName = multiPlanar ? natronPlane.getLayerName() : planeBeingRendered.getLayerName();
+    const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName();// : planeBeingRendered.getLayerName();
     
     for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getLayerName() == layerName) {
@@ -1254,7 +1256,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
     assert(internalImage);
     
-    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -1344,6 +1345,9 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
+OfxImage::~OfxImage()
+{
+}
 
 int
 OfxClipInstance::getInputNb() const

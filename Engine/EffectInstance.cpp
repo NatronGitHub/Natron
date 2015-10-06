@@ -545,7 +545,7 @@ EffectInstance::getImage(int inputNb,
                          const RenderScale & scale,
                          const int view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
-                         const ImageComponents & comp,
+                         const ImageComponents & requestComps,
                          const Natron::ImageBitDepthEnum depth,
                          const double par,
                          const bool dontUpscale,
@@ -748,9 +748,9 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, comp, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, requestComps, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, comp,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, requestComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getNode()->updateStrokeImage(inputImg);
@@ -783,7 +783,7 @@ EffectInstance::getImage(int inputNb,
     assert(n);
 
     std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(isMask ? maskComps : comp);
+    requestedComps.push_back(isMask ? maskComps : requestComps);
     ImageList inputImages;
     RenderRoIRetCode retCode = n->renderRoI(RenderRoIArgs(time,
                                                           scale,
@@ -794,6 +794,7 @@ EffectInstance::getImage(int inputNb,
                                                           RectD(),
                                                           requestedComps,
                                                           depth,
+                                                          true,
                                                           this,
                                                           inputImagesThreadLocal), &inputImages);
 
@@ -821,12 +822,12 @@ EffectInstance::getImage(int inputNb,
 
 #ifdef DEBUG
     ///Check that the rendered image contains what we requested.
-    if ((!isMask && inputImg->getComponents() != comp) || (isMask && inputImg->getComponents() != maskComps)) {
+    if ((!isMask && inputImg->getComponents() != requestComps) || (isMask && inputImg->getComponents() != maskComps)) {
         ImageComponents cc;
         if (isMask) {
             cc = maskComps;
         } else {
-            cc = comp;
+            cc = requestComps;
         }
         qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << n->getScriptName_mt_safe().c_str() << "returned an image with"
         << inputImg->getComponents().getComponentsGlobalName().c_str();
@@ -867,15 +868,19 @@ EffectInstance::getImage(int inputNb,
     
     //Remap if needed
     ImagePremultiplicationEnum outputPremult;
-    if (comp.isColorPlane()) {
+    if (requestComps.isColorPlane()) {
         outputPremult = n->getOutputPremultiplication();
     } else {
         outputPremult = eImagePremultiplicationOpaque;
     }
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, comp, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
 
+    std::list<Natron::ImageComponents> prefComps;
+    ImageBitDepthEnum prefDepth;
+    getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
+    assert(!prefComps.empty());
     
+    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
@@ -1748,6 +1753,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///now make the preliminaries call to handle that region (getRoI etc...) so just stick with the old rect to render
 
     // check the bitmap!
+    
+    bool bitmapMarkedForRendering = false;
     if (frameArgs.tilesSupported) {
         if (renderFullScaleThenDownscale) {
             //The renderMappedImage is cached , read bitmap from it
@@ -1758,7 +1765,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 
 #if NATRON_ENABLE_TRIMAP
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
+                bitmapMarkedForRendering = true;
+                downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
             } else {
                 downscaledRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRect(downscaledRectToRender);
             }
@@ -1780,7 +1788,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 #if NATRON_ENABLE_TRIMAP
             RectI downscaledRectToRenderMinimal;
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
+                bitmapMarkedForRendering = true;
+                downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(downscaledRectToRender, &isBeingRenderedElseWhere);
             } else {
                 downscaledRectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRect(downscaledRectToRender);
             }
@@ -1930,6 +1939,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         renderMappedRectToRender,
                                                         downscaledRectToRender,
                                                         byPassCache,
+                                                        bitmapMarkedForRendering,
                                                         outputClipPrefDepth,
                                                         outputClipPrefsComps,
                                                         processChannels,
@@ -1961,6 +1971,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               const RectI & renderMappedRectToRender,
                               const RectI & downscaledRectToRender,
                               bool byPassCache,
+                              bool bitmapMarkedForRendering,
                               Natron::ImageBitDepthEnum outputClipPrefDepth,
                               const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                               bool* processChannels,
@@ -2021,6 +2032,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  RectD(),
                                  comps,
                                  outputClipPrefDepth,
+                                 false,
                                  this);
         if (!identityInput) {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
@@ -2150,7 +2162,7 @@ EffectInstance::renderHandler(RenderArgs & args,
 
 
 #if NATRON_ENABLE_TRIMAP
-    if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+    if (!bitmapMarkedForRendering && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
             if (renderFullScaleThenDownscale) {
                 it->second.fullscaleImage->markForRendering(downscaledRectToRender);
@@ -2366,10 +2378,14 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::Image
 
             const PlaneToRender & firstPlane = args._outputPlanes.begin()->second;
             bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
+            if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
+                //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
+                useCache = false;
+            }
             const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
             boost::shared_ptr<ImageParams> params = img->getParams();
             PlaneToRender p;
-            bool ok = allocateImagePlane(img->getKey(), img->getRoD(), img->getBounds(), img->getBounds(), false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+            bool ok = allocateImagePlane(img->getKey(), args._rod, args._renderWindowPixel, args._renderWindowPixel, false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
             if (!ok) {
                 return ImagePtr();
             } else {
@@ -2437,6 +2453,12 @@ EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
                          Natron::ValueChangedReasonEnum /*reason*/)
 {
+    KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
+    if (isGrp || isPage) {
+        return;
+    }
+    
     ////If the node is currently modifying its input, to ask for a render
     ////because at then end of the inputChanged handler, it will ask for a refresh
     ////and a rebuild of the inputs tree.
@@ -2449,8 +2471,9 @@ EffectInstance::evaluate(KnobI* knob,
     if ( getApp()->getProject()->isLoadingProject() ) {
         return;
     }
-
-
+    
+    
+   
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
 
     /*if this is a writer (openfx or built-in writer)*/
@@ -2465,10 +2488,10 @@ EffectInstance::evaluate(KnobI* knob,
                             Natron::questionDialog( QObject::tr("Render").toStdString(),
                                                     sequentialNode + QObject::tr(" can only "
                                                                                  "render in sequential mode. Due to limitations in the "
-                                                                                 "OpenFX standard that means that %1"
+                                                                                 "OpenFX standard, %1"
                                                                                  " will not be able "
                                                                                  "to render all the views of the project. "
-                                                                                 "Only the main view of the project will be rendered, you can "
+                                                                                 "Only the main view of the project will be rendered. You can "
                                                                                  "change the main view in the project settings. Would you like "
                                                                                  "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(), false );
                         if (answer != Natron::eStandardButtonYes) {
@@ -3656,31 +3679,45 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
             ImageComponents layer;
             std::vector<ImageComponents> compVec;
             bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
-            if (ok) {
-                if ( !layer.isColorPlane() && (layer.getNumComponents() != 0) ) {
-                    compVec.push_back(layer);
+            ImageBitDepthEnum depth;
+            std::list<ImageComponents> clipPrefsComps;
+            getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
+
+            if (ok && layer.getNumComponents() != 0) {
+                if (!layer.isColorPlane()) {
+                    
+                    bool found = false;
+                    for (std::size_t i = 0; i < compVec.size(); ++i) {
+                        if (compVec[i] == layer) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        compVec.push_back(layer);
+                    }
+                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                        if (!(*it).isColorPlane()) {
+                            compVec.push_back(*it);
+                        }
+                    }
                 } else {
-                    //Use regular clip preferences
-                    ImageBitDepthEnum depth;
-                    std::list<ImageComponents> components;
-                    getPreferredDepthAndComponents(-1, &components, &depth);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                        //if (it->isColorPlane()) {
+                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
                         compVec.push_back(*it);
-                        //}
                     }
                 }
+                
             } else {
-                //Use regular clip preferences
-                ImageBitDepthEnum depth;
-                std::list<ImageComponents> components;
-                getPreferredDepthAndComponents(-1, &components, &depth);
-                for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                    //if (it->isColorPlane()) {
+                for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
                     compVec.push_back(*it);
-                    //}
                 }
             }
+
+           
+            
+            
+            
+           
             comps->insert( std::make_pair(-1, compVec) );
         }
 

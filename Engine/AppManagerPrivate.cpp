@@ -373,7 +373,6 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
     QString settingsFilePath(cachePath + QDir::separator() + "restoreFile." NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
-        qDebug() << "Disk cache empty.";
         cleanUpCacheDiskStructure(cachePath);
 
         return false;

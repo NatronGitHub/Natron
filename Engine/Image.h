@@ -223,22 +223,41 @@ namespace Natron {
                                                          const ImageComponents& components,
                                                          Natron::ImageBitDepthEnum bitdepth,
                                                          const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
-
         
-
-       // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
-
+        
+        
+        // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
+        
         /**
          * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
-         * a new buffer. This is not thread-safe and should be called only while under an ImageLocker 
+         * a new buffer. This is not thread-safe and should be called only while under an ImageLocker
          **/
         bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false, bool setBitmapTo1 = false);
         
         /**
-     * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
-     * scale applied to it. In order to return the true pixel data window you must call getBounds()
-     * WARNING: this is NOT the same definition as in OpenFX, where the Image RoD is always in pixels.
-     **/
+         * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
+         * write lock from this image.
+         **/
+        bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1, boost::shared_ptr<Image>* output);
+        
+    private:
+        
+        static void resizeInternal(const Image* srcImg,
+                                   const RectI& srcBounds,
+                                   const RectI& merge,
+                                   bool fillWithBlackAndTransparant,
+                                   bool setBitmapTo1,
+                                   bool createInCache,
+                                   boost::shared_ptr<Image>* outputImage);
+        
+        
+    public:
+        
+        /**
+         * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
+         * scale applied to it. In order to return the true pixel data window you must call getBounds()
+         * WARNING: this is NOT the same definition as in OpenFX, where the Image RoD is always in pixels.
+         **/
         const RectD & getRoD() const
         {
             return _rod;
@@ -249,22 +268,22 @@ namespace Natron {
          * to prevent an assert from triggering.
          **/
         void setRoD(const RectD& rod);
-
+        
         /**
-     * @brief Returns the bounds where data is in the image.
-     * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
-     * but slightly faster since it is stored as a member of the image.
-     **/
+         * @brief Returns the bounds where data is in the image.
+         * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
+         * but slightly faster since it is stored as a member of the image.
+         **/
         RectI getBounds() const
         {
-            QMutexLocker k(&_entryLock);
+            QReadLocker k(&_entryLock);
             return _bounds;
         };
         virtual size_t size() const OVERRIDE FINAL
         {
             std::size_t dt = dataSize();
             
-            bool got = _entryLock.tryLock();
+            bool got = _entryLock.tryLockForRead();
             dt += _bitmap.getBounds().area();
             if (got) {
                 _entryLock.unlock();
@@ -366,6 +385,12 @@ namespace Natron {
                 assert(img);
                 return img->pixelAt(x, y);
             }
+            
+            const char* bitmapAt(int x, int y) const
+            {
+                assert(img);
+                return img->getBitmapAt(x, y);
+            }
         };
         
         /**
@@ -404,6 +429,12 @@ namespace Natron {
             unsigned char* pixelAt(int x,int y)
             {
                 return img->pixelAt(x, y);
+            }
+            
+            char* bitmapAt(int x, int y) const
+            {
+                assert(img);
+                return img->getBitmapAt(x, y);
             }
         };
         
@@ -446,18 +477,29 @@ namespace Natron {
         const unsigned char* pixelAt(int x,int y) const;
         
         /**
-         * @brief Locks the image for read/write access. In the past we used a ReadWriteLock, however we cannot use this
-         * anymore: The lock for read is taken when a plugin attempts to fetch an image from a source clip. But if the plug-ins
+         * @brief Locks the image for read/write access. 
+         * There can be a deadlock situation in the following situation: 
+         * The lock for read is taken when a plugin attempts to
+         * fetch an image from a source clip. But if the plug-in
          * fetches twice the very same image (likely if this is a tracker on the last frame for example) then it will deadlock
-         * if a clip is not asking for the exact same region and thus there is something left to render.
+         * if a clip is not asking for the exact same region because it is likely there is something left to render.
+         *
+         * We detect such calls and ensure that there are no deadlock.
+         *
+         *
+         * NB: We cannot also rely on a mutex based implementation since it can lead to a deadlock in the following situation:
+         * Thread A requests image at time T and locks it
+         * Thread B requests image at time T+1 and locks it
+         * Thread A requests image at time T+1 and hangs
+         * Thread B requests image at time T and hangs
          **/
         void lockForRead() const
         {
-            _entryLock.lock();
+            _entryLock.lockForRead();
         }
         void lockForWrite() const
         {
-            _entryLock.lock();
+            _entryLock.lockForWrite();
         }
         
         void unlock() const
@@ -547,7 +589,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QMutexLocker locker(&_entryLock);
+            QReadLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
         }
 #endif
@@ -556,7 +598,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return ;
             }
-            QMutexLocker locker(&_entryLock);
+            QReadLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
         }
 
@@ -566,7 +608,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QMutexLocker locker(&_entryLock);
+            QReadLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
         }
 #endif
@@ -575,16 +617,32 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QMutexLocker locker(&_entryLock);
+            QReadLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
-
+        
+#if NATRON_ENABLE_TRIMAP
+        RectI getMinimalRectAndMarkForRendering_trimap(const RectI & regionOfInterest,bool* isBeingRenderedElsewhere)
+        {
+            if (!_useBitmap) {
+                return regionOfInterest;
+            }
+            RectI ret;
+            {
+                QReadLocker locker(&_entryLock);
+                ret = _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
+            }
+            markForRendering(ret);
+            return ret;
+        }
+#endif
+     
         void markForRendered(const RectI & roi)
         {
             if (!_useBitmap) {
                 return;
             }
-            QMutexLocker locker(&_entryLock);
+            QWriteLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.markForRendered(intersection);
@@ -597,7 +655,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QMutexLocker locker(&_entryLock);
+            QWriteLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.markForRendering(intersection);
@@ -609,11 +667,15 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QMutexLocker locker(&_entryLock);
+            QWriteLocker locker(&_entryLock);
             RectI intersection;
             _bounds.intersect(roi, &intersection);
             _bitmap.clear(intersection);
         }
+        
+#ifdef DEBUG
+        void printUnrenderedPixels(const RectI& roi) const;
+#endif
         
         /**
      * @brief Fills the image with the given colour. If the image components

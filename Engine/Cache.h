@@ -657,6 +657,44 @@ private:
     } // createInternal
 
 public:
+    
+    void swapOrInsert(const EntryTypePtr& entryToBeEvicted,
+                      const EntryTypePtr& newEntry)
+    {
+        QMutexLocker locker(&_lock);
+        
+        const typename EntryType::key_type& key = entryToBeEvicted->getKey();
+        typename EntryType::hash_type hash = entryToBeEvicted->getHashKey();
+        ///find a matching value in the internal memory container
+        CacheIterator memoryCached = _memoryCache(hash);
+        if (memoryCached != _memoryCache.end()) {
+            std::list<EntryTypePtr> & ret = getValueFromIterator(memoryCached);
+            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
+                    ret.erase(it);
+                    break;
+                }
+            }
+            ///Append it
+            ret.push_back(newEntry);
+        } else {
+            ///Look in disk cache
+            CacheIterator diskCached = _diskCache(hash);
+            if (diskCached != _diskCache.end()) {
+                ///Remove the old entry
+                std::list<EntryTypePtr> & ret = getValueFromIterator(diskCached);
+                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                    if ( (*it)->getKey() == key && (*it)->getParams() == entryToBeEvicted->getParams()) {
+                        ret.erase(it);
+                        break;
+                    }
+                }
+
+            }
+            ///Insert in mem cache
+            _memoryCache.insert(hash, newEntry);
+        }
+    }
 
 
     /**

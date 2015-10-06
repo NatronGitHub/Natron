@@ -222,8 +222,6 @@ RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
 FramesNeededMap
 RotoPaint::getFramesNeeded(double time, int view)
 {
-    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
 
     FramesNeededMap ret;
     std::map<int, std::vector<OfxRangeD> > views;
@@ -244,7 +242,9 @@ RotoPaint::getRegionsOfInterest(double /*time*/,
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
-    ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
+    if (bottomMerge) {
+        ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
+    }
 }
 
 bool
@@ -346,6 +346,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     RectD(),
                                     neededComps,
                                     bgDepth,
+                                    false,
                                     this);
         ImageList rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);

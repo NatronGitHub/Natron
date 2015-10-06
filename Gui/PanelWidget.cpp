@@ -88,6 +88,15 @@ PanelWidget::enterEventBase()
 
 }
 
+bool
+PanelWidget::isClickFocusPanel() const
+{
+    if (!_gui) {
+        return false;
+    }
+    return _gui->getCurrentPanelFocus() == this;
+}
+
 void
 PanelWidget::takeClickFocus()
 {
@@ -126,4 +135,14 @@ PanelWidget::leaveEventBase()
     if (parentPane) {
         parentPane->setWidgetMouseOverFocus(this, false);
     }
+}
+
+void
+PanelWidget::handleUnCaughtKeyPressEvent()
+{
+    if (!_gui) {
+        return;
+    }
+    _gui->setLastKeyPressVisitedClickFocus(_gui->getCurrentPanelFocus() == this);
+    
 }

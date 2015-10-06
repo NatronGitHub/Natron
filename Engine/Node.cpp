@@ -2612,7 +2612,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     _imp->maskSelectors[i] = sel;
 
                 }
-            }
+            } // for (int i = 0; i < inputsCount; ++i) {
             
             bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
@@ -3165,6 +3165,10 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
+        if ((int)oldInputs.size() == inputCount) {
+            _imp->inputsInitialized = true;
+            return;
+        }
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
@@ -3191,6 +3195,27 @@ Node::initializeInputs()
         _imp->liveInstance->addAcceptedComponents(-1, &_imp->outputComponents);
     }
     _imp->inputsInitialized = true;
+    boost::shared_ptr<KnobPage> infoPage = _imp->infoPage.lock();
+    if (infoPage) {
+        _imp->inputFormats.clear();
+        for (int i = 0; i < inputCount; ++i) {
+            std::string inputLabel = getInputLabel(i);
+            boost::shared_ptr<KnobString> inputInfo = Natron::createKnob<KnobString>(_imp->liveInstance.get(), inputLabel + ' ' + tr("Info").toStdString(), 1, false);
+            inputInfo->setName(inputLabel + "Info");
+            inputInfo->setAnimationEnabled(false);
+            inputInfo->setIsPersistant(false);
+            inputInfo->setEvaluateOnChange(false);
+            inputInfo->setSecretByDefault(true);
+            inputInfo->hideDescription();
+            inputInfo->setAsLabel();
+            _imp->inputFormats.push_back(inputInfo);
+            infoPage->insertKnob(1 + i,inputInfo);
+        }
+        if (inputCount > 0) {
+            _imp->liveInstance->refreshKnobs();
+        }
+    }
+    
     Q_EMIT inputsInitialized();
 }
 
@@ -4603,7 +4628,7 @@ Node::makePreviewImage(SequenceTime time,
                                                          renderWindow,
                                                          rod,
                                                          requestedComps, //< preview is always rgb...
-                                                         getBitDepth(), effect) ,&planes);
+                                                         getBitDepth(), false, effect) ,&planes);
         if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
             return false;
         }
@@ -5279,7 +5304,7 @@ Node::findClosestInList(const Natron::ImageComponents& comp,
             } else {
                 int diff = it->getNumComponents() - comp.getNumComponents();
                 int diffSoFar = closestComp->getNumComponents() - comp.getNumComponents();
-                if (diff > diffSoFar && diffSoFar != 0) {
+                if (diff > 0 && diff < diffSoFar) {
                     closestComp = it;
                 }
             }
@@ -5480,7 +5505,7 @@ Node::onInputChanged(int inputNb)
         isViewer->refreshActiveInputs(inputNb);
     }
     
-    bool shouldDoInputChanged = (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
+    bool shouldDoInputChanged = (!getApp()->getProject()->isProjectClosing() && !getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
     _imp->liveInstance->isRotoPaintNode();
     
     if (shouldDoInputChanged) {
@@ -5923,6 +5948,18 @@ Node::onEffectKnobValueChanged(KnobI* what,
 }
 
 bool
+Node::getSelectedLayer(int inputNb,std::string& layer) const
+{
+    std::map<int,ChannelSelector>::iterator found = _imp->channelsSelectors.find(inputNb);
+    if (found == _imp->channelsSelectors.end()) {
+        return false;
+    }
+    boost::shared_ptr<KnobChoice> layerKnob = found->second.layer.lock();
+    layer = layerKnob->getActiveEntryText_mt_safe();
+    return true;
+}
+
+bool
 Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const
 {
     Node* node = 0;
@@ -5998,25 +6035,20 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     selector.layerName.lock()->setValue(entries[curLayer_i], 0);
     
     if (inputNb == -1) {
-        bool isAll = entries[curLayer_i] == "All";
-        if (isAll) {
-            ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
-            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-                if (it->first >= 0) {
-                    it->second.layer.lock()->setSecret(true);
-                }
+        bool outputIsAll = entries[curLayer_i] == "All";
+        
+        ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
+        for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
+            if (it->first >= 0) {
+                boost::shared_ptr<Node> inp = _publicInterface->getInput(it->first);
+                bool mustBeSecret = !inp.get() || outputIsAll;
+                it->second.layer.lock()->setSecret(mustBeSecret);
             }
-        } else {
-            for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-                if (it->first >= 0) {
-                    it->second.layer.lock()->setSecret(false);
-                }
-            }
-
         }
+       
     }
     {
-        ///Clip preferences have changed 
+        ///Clip preferences have changed
         RenderScale s;
         s.x = s.y = 1;
         liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
@@ -6046,6 +6078,10 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
             }
             enabled->setValue(true, 0);
         }
+    }
+    
+    if (inputNb == -1) {
+        _publicInterface->s_outputLayerChanged();
     }
 }
 
@@ -6638,7 +6674,6 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         ///The node is referenced multiple times below, cache it
         return true;
     } else {
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
         if (sz == 1) {
           
             Node* output = outputs.front();
@@ -6649,28 +6684,75 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
                 isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
                 if (output->getInput(activeInputs[0]).get() == this ||
                     output->getInput(activeInputs[1]).get() == this) {
+                    ///The node is a direct input of the viewer. Cache it because it is likely the user will make
+                    ///changes to the viewer that will need this image.
                     return true;
                 }
             }
+        
+            if (!isFrameVaryingOrAnimated) {
+                //This image never changes, cache it once.
+                return true;
+            }
+            if (output->isSettingsPanelOpened()) {
+                //Output node has panel opened, meaning the user is likely to be heavily editing
+                //that output node, hence requesting this node a lot. Cache it.
+                return true;
+            }
+            if (_imp->liveInstance->doesTemporalClipAccess()) {
+                //Very heavy to compute since many frames are fetched upstream. Cache it.
+                return true;
+            }
+            if (!_imp->liveInstance->supportsTiles()) {
+                //No tiles, image is going to be produced fully, cache it to prevent multiple access
+                //with different RoIs
+                return true;
+            }
+            if (_imp->liveInstance->getRecursionLevel() > 0) {
+                //We are in a call from getImage() and the image needs to be computed, so likely in an
+                //analysis pass. Cache it because the image is likely to get asked for severla times.
+                return true;
+            }
+            if (isForceCachingEnabled()) {
+                //Users wants it cached
+                return true;
+            }
+            NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(getGroup().get());
+            if (parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && parentIsGroup->getOutputNodeInput(false).get() == this) {
+                //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
+                return true;
+            }
             
-            return !isFrameVaryingOrAnimated ||
-            output->isSettingsPanelOpened() ||
-            _imp->liveInstance->doesTemporalClipAccess() ||
-            ! _imp->liveInstance->supportsTiles() ||
-            _imp->liveInstance->getRecursionLevel() > 0 ||
-            isForceCachingEnabled() ||
-            appPTR->isAggressiveCachingEnabled() ||
-            (isPreviewEnabled() && !appPTR->isBackground()) ||
-            (getRotoContext() && isSettingsPanelOpened()) ||
-            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
+            if (appPTR->isAggressiveCachingEnabled()) {
+                ///Users wants all nodes cached
+                return true;
+            }
+            
+            if (isPreviewEnabled() && !appPTR->isBackground()) {
+               ///The node has a preview, meaning the image will be computed several times between previews & actual renders. Cache it.
+                return true;
+            }
+            
+            if (isRotoPaintingNode() && isSettingsPanelOpened()) {
+                ///The Roto node is being edited, cache its output (special case because Roto has an internal node tree)
+                return true;
+            }
+            
+            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            if (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened()) {
+                ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
+                return true;
+            }
+            
         } else {
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
+            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
             (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         }
     }
     
-    
+    return false;
 }
 
 bool
@@ -6860,27 +6942,32 @@ Node::forceRefreshAllInputRelatedData()
 }
 
 void
-Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse) {
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-    if (found != markedNodes.end()) {
-        return;
-    }
+Node::markAllInputRelatedDataDirty()
+{
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
         _imp->mustComputeInputRelatedData = true;
     }
-    markedNodes.push_back(this);
-    
     if (isRotoPaintingNode()) {
         boost::shared_ptr<RotoContext> roto = getRotoContext();
         assert(roto);
         std::list<NodePtr> rotoNodes;
         roto->getRotoPaintTreeNodes(&rotoNodes);
         for (std::list<NodePtr>::iterator it = rotoNodes.begin(); it!=rotoNodes.end(); ++it) {
-            (*it)->markInputRelatedDataDirtyRecursiveInternal(markedNodes,false);
+            (*it)->markAllInputRelatedDataDirty();
         }
     }
     
+}
+
+void
+Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse) {
+    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    markAllInputRelatedDataDirty();
+    markedNodes.push_back(this);
     if (recurse) {
         std::list<Natron::Node*>  outputs;
         getOutputsWithGroupRedirection(outputs);
@@ -7593,14 +7680,20 @@ Node::refreshChannelSelectors(bool setValues)
         } else {
             choices.push_back("None");
         }
-        bool gotColor = false;
-        bool gotDisparityLeft = false;
-        bool gotDisparityRight = false;
-        bool gotMotionBw = false;
-        bool gotMotionFw = false;
-        
-        int colorIndex = -1;
+        int gotColor = -1;
+
         Natron::ImageComponents colorComp;
+        
+        /*
+         These are default layers that we always display in the layer selector.
+         If one of them is found in the clip preferences, we set the default value to it.
+         */
+        std::map<std::string, int> defaultLayers;
+        defaultLayers[kNatronDisparityLeftPlaneName] = -1;
+        defaultLayers[kNatronDisparityRightPlaneName] = -1;
+        defaultLayers[kNatronForwardMotionVectorsPlaneName] = -1;
+        defaultLayers[kNatronBackwardMotionVectorsPlaneName] = -1;
+
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -7617,7 +7710,7 @@ Node::refreshChannelSelectors(bool setValues)
                     assert(choices.size() > 0);
                     std::vector<std::string>::iterator pos = choices.begin();
                     ++pos;
-                    colorIndex = 1;
+                    gotColor = 1;
 
                     if (numComp == 1) {
                         choices.insert(pos,kNatronAlphaComponentsName);
@@ -7628,44 +7721,44 @@ Node::refreshChannelSelectors(bool setValues)
                     } else {
                         assert(false);
                     }
-                    gotColor = true;
+                    
+                    ///Increment all default indexes
+                    for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                        if (it->second != -1) {
+                            ++it->second;
+                        }
+                    }
                 } else {
                     choices.push_back(it2->first.getLayerName());
-                    if (it2->first.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
-                        gotMotionBw = true;
-                    } else if (it2->first.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
-                        gotMotionFw = true;
-                    } else if (it2->first.getLayerName() == kNatronDisparityLeftPlaneName) {
-                        gotDisparityLeft = true;
-                    } else if (it2->first.getLayerName() == kNatronDisparityRightPlaneName) {
-                        gotDisparityRight = true;
+                    std::map<std::string, int>::iterator foundDefaultLayer = defaultLayers.find(it2->first.getLayerName());
+                    if (foundDefaultLayer != defaultLayers.end()) {
+                        foundDefaultLayer->second = choices.size() -1;
                     }
                 }
             }
         } // if (node) {
         
-        if (!gotColor) {
+        if (gotColor == -1) {
             assert(choices.size() > 0);
             std::vector<std::string>::iterator pos = choices.begin();
             ++pos;
-            colorIndex = 1;
+            gotColor = 1;
+            ///Increment all default indexes
+            for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                if (it->second != -1) {
+                    ++it->second;
+                }
+            }
             colorComp = ImageComponents::getRGBAComponents();
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
-        if (!gotDisparityLeft) {
-            choices.push_back(kNatronDisparityLeftPlaneName);
+        for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+            if (it->second == -1) {
+                choices.push_back(it->first);
+            }
         }
-        if (!gotDisparityRight) {
-            choices.push_back(kNatronDisparityRightPlaneName);
-        }
-        if (!gotMotionFw) {
-            choices.push_back(kNatronForwardMotionVectorsPlaneName);
-        }
-        if (!gotMotionBw) {
-            choices.push_back(kNatronBackwardMotionVectorsPlaneName);
-        }
-        
+
         if (choices.size() != currentLayerEntries.size()) {
             hasChanged = true;
         } else {
@@ -7678,16 +7771,31 @@ Node::refreshChannelSelectors(bool setValues)
         }
         
         layerKnob->populateChoices(choices);
+        if (hasChanged) {
+            s_outputLayerChanged();
+        }
         
  
         if (setValues) {
-            assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
+
             if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
                 it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
-                layerKnob->setValue(colorIndex,0);
-                it->second.layerName.lock()->setValue(choices[colorIndex], 0);
+                int defaultIndex = -1;
+                for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                    if (it->second != -1) {
+                        defaultIndex = it->second;
+                        break;
+                    }
+                }
+                if (defaultIndex == -1) {
+                    defaultIndex = gotColor;
+                }
+                
+                assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
+                layerKnob->setValue(defaultIndex,0);
+                it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
             }
         } else {
             if (!curLayer.empty()) {
@@ -7703,7 +7811,7 @@ Node::refreshChannelSelectors(bool setValues)
                         _imp->liveInstance->endChanges(true);
                         layerKnob->unblockValueChanges();
                         if (isColor && it->first == -1 && _imp->enabledChan[0].lock()) {
-                            assert(colorIndex != -1);
+                            assert(gotColor != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
                             for (int j = 0; j < 4; ++j) {

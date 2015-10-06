@@ -2879,22 +2879,6 @@ ViewerGL::resizeEvent(QResizeEvent* e)
 }
 
 
-void
-ViewerGL::keyReleaseEvent(QKeyEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->viewerTab->getGui()) {
-        return QGLWidget::keyPressEvent(e);
-    }
-    double scale = 1. / (1 << getCurrentRenderScale());
-    if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
-        update();
-    } else {
-        QGLWidget::keyReleaseEvent(e);
-    }
-}
-
 Natron::ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {

@@ -178,7 +178,7 @@ Gui::abortProject(bool quitApp)
 
         assert(_imp->_appInstance);
 
-        _imp->_appInstance->getProject()->closeProject(true);
+       // _imp->_appInstance->getProject()->closeProject(true);
         _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {

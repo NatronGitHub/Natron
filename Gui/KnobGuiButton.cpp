@@ -142,7 +142,7 @@ KnobGuiButton::emitValueChanged()
 {
     boost::shared_ptr<KnobButton> k = _knob.lock();
     assert(k);
-    k->evaluateValueChange(0, k->getCurrentTime(),  Natron::eValueChangedReasonUserEdited);
+    k->trigger();
 }
 
 void

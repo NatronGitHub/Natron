@@ -3383,7 +3383,6 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
             itemName = kRotoPaintBurnBaseName;
             break;
         default:
-            assert(false);
             return;
     }
     
@@ -4807,6 +4806,7 @@ void
 RotoGui::onPressureOpacityClicked(bool isDown)
 {
     _imp->pressureOpacityButton->setDown(isDown);
+    _imp->pressureOpacityButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 
@@ -4814,6 +4814,7 @@ void
 RotoGui::onPressureSizeClicked(bool isDown)
 {
     _imp->pressureSizeButton->setDown(isDown);
+    _imp->pressureSizeButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 
@@ -4821,6 +4822,7 @@ void
 RotoGui::onPressureHardnessClicked(bool isDown)
 {
     _imp->pressureHardnessButton->setDown(isDown);
+    _imp->pressureHardnessButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 

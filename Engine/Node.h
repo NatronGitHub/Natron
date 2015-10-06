@@ -1045,6 +1045,10 @@ public:
     
     void forceRefreshAllInputRelatedData();
     
+    void markAllInputRelatedDataDirty();
+    
+    bool getSelectedLayer(int inputNb,std::string& layer) const;
+    
 private:
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
@@ -1068,6 +1072,8 @@ private:
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
     void setNameInternal(const std::string& name);
+    
+    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
 public Q_SLOTS:
 
@@ -1109,6 +1115,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void outputLayerChanged();
     
     void mustComputeHashOnMainThread();
 

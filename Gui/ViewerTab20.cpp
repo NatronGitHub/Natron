@@ -264,11 +264,14 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
                                  double timestamp,
                                  QMouseEvent* e)
 {
-
+    
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
-
+    
+    _imp->hasPenDown = true;
+    _imp->hasCaughtPenMotionWhileDragging = false;
+    
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
@@ -463,11 +466,21 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         }
     } else {
         
+        ///If we are dragging with mouse, set draft mode (not for roto though)
+        if (_imp->hasPenDown && !getGui()->isDraftRenderEnabled()) {
+            getGui()->setDraftRenderEnabled(true);
+        }
+        
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, scaleX, scaleY, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
+            
+            if (_imp->hasPenDown) {
+                _imp->hasCaughtPenMotionWhileDragging = true;
+            }
+            
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
             
@@ -544,6 +557,17 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         return false;
     }
     
+    ///Reset draft
+    bool mustTriggerRender = false;
+    if (getGui()->isDraftRenderEnabled()) {
+        getGui()->setDraftRenderEnabled(false);
+        mustTriggerRender = _imp->hasCaughtPenMotionWhileDragging;
+    }
+    
+    _imp->hasPenDown = false;
+    _imp->hasCaughtPenMotionWhileDragging = false;
+
+  
     _imp->lastOverlayNode.reset();
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -627,13 +651,20 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         
     }
 
+    
    
-    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+    if (!mustTriggerRender && !didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
         getGui()->getApp()->redrawAllViewers();
     }
     getGui()->getApp()->clearOverlayRedrawRequests();
     
-
+    if (mustTriggerRender) {
+        //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
+        getGui()->getApp()->renderAllViewers(true);
+    }
+    
+    
+    
     return didSomething;
 }
 
@@ -706,7 +737,25 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         return false;
     }
 
+
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    
+    /*
+     Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
+     whether they are up or down
+     */
+    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
+    e->key() == Qt::Key_Meta;
+    
+    /*
+     * We should not pass to the plug-in the event if the panel doesn't have the focus because this event was forwarded from the Gui
+     * but if this panel does not accept the keyDown, the following keyUp will never be issued (since this panel did not take focus)
+     * which can lead to plug-in ending up in bad state with modifiers tracking (e.g: Transform).
+     */
+    if (isModifier && !isClickFocusPanel()) {
+        return false;
+    }
+    
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -717,6 +766,10 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+                    if (isModifier) {
+                        nodes.erase(it);
+                        break;
+                    }
                     return true;
                 } else {
                     nodes.erase(it);
@@ -727,10 +780,14 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     }
 
     
+    
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin();
          it != nodes.rend();
          ++it) {
         if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+            if (isModifier) {
+                continue;
+            }
             return true;
         }
     }
@@ -755,8 +812,7 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
     
     _imp->lastOverlayNode.reset();
-
-
+    
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     std::list<boost::shared_ptr<Natron::Node> >  nodes;

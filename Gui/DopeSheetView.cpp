@@ -3328,7 +3328,7 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
             _imp->gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
             if (autoProxyEnabled) {
-                _imp->gui->renderAllViewers();
+                _imp->gui->renderAllViewers(true);
             }
         }
     }
@@ -3408,7 +3408,6 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     _imp->zoomOrPannedSinceLastFit = true;
-    qDebug() << scaleFactor;
     
     par = _imp->zoomContext.aspectRatio() * scaleFactor;
 

@@ -74,8 +74,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-
-#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
@@ -416,7 +414,8 @@ DockablePanel::DockablePanel(Gui* gui ,
     
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 0);
+    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
+    _imp->_horizLayout->setSpacing(2);
     if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(currentColor);
@@ -480,9 +479,15 @@ DockablePanel::onPageIndexChanged(int index)
             continue;
         }
         if (isPage->getDescription() == stdName) {
-            isPage->setSecret(false);
+            if (isPage->getIsSecret()) {
+                isPage->setSecret(false);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
         } else {
-            isPage->setSecret(true);
+            if (!isPage->getIsSecret()) {
+                isPage->setSecret(true);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
         }
     }
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);

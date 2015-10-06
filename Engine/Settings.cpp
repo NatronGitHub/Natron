@@ -641,6 +641,12 @@ Settings::initializeKnobsViewers()
     _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
+    _autoWipe = Natron::createKnob<KnobBool>(this, "Automatically enable wipe");
+    _autoWipe->setName("autoWipeForViewer");
+    _autoWipe->setHintToolTip("When checked, the wipe tool of the viewer will be automatically enabled "
+                              "when the mouse is hovering the viewer and changing an input of a viewer." );
+    _autoWipe->setAnimationEnabled(false);
+    _viewersTab->addKnob(_autoWipe);
 
     
     _autoProxyWhenScrubbingTimeline = Natron::createKnob<KnobBool>(this, "Automatically enable proxy when scrubbing the timeline");
@@ -1206,6 +1212,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
+    _autoWipe->setDefaultValue(true);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _enableProgressReport->setDefaultValue(false);
@@ -3109,4 +3116,10 @@ std::string
 Settings::getUserStyleSheetFilePath() const
 {
     return _qssFile->getValue();
+}
+
+bool
+Settings::isAutoWipeEnabled() const
+{
+    return _autoWipe->getValue();
 }

@@ -130,12 +130,8 @@ AppInstance::AppInstance(int appID)
 
 AppInstance::~AppInstance()
 {
-    appPTR->removeInstance(_imp->_appID);
 
-    ///Clear nodes now, not in the destructor of the project as
-    ///deleting nodes might reference the project.
-    _imp->_currentProject->clearNodes(false);
-    _imp->_currentProject->discardAppPointer();
+    appPTR->removeInstance(_imp->_appID);
 }
 
 void
@@ -464,12 +460,9 @@ AppInstance::load(const CLArgs& cl)
             }
         }
         
-        try {
-            startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
-        } catch (const std::exception& e) {
-            getProject()->removeLockFile();
-            throw e;
-        }
+       
+        startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
+       
         
         
         
@@ -783,9 +776,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
-
+    QString findId;
+    //Roto has moved to a built-in plugin
+    if ((userEdited || requestedByLoad) &&
+        ((!_imp->_projectCreatedWithLowerCaseIDs && pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
+        findId = PLUGINID_NATRON_ROTO;
+    } else {
+        findId = pluginID;
+    }
+    
     try {
-        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
+        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs && requestedByLoad);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
@@ -1114,7 +1115,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
            
             if (!node) {
                 std::string exc(writerName);
-                exc.append(tr(" does not belong to the project file. Please enter a valid writer name.").toStdString());
+                exc.append(tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString());
                 throw std::invalid_argument(exc);
             } else {
                 if ( !node->isOutputNode() ) {
@@ -1233,7 +1234,15 @@ AppInstance::clearAllLastRenderedImages()
     }
 }
 
-
+void
+AppInstance::aboutToQuit()
+{
+    ///Clear nodes now, not in the destructor of the project as
+    ///deleting nodes might reference the project.
+    _imp->_currentProject->closeProject(true);
+    _imp->_currentProject->discardAppPointer();
+    
+}
 
 void
 AppInstance::quit()

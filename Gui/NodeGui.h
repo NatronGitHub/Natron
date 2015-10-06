@@ -429,6 +429,7 @@ protected:
     
 public Q_SLOTS:
 
+    void onOutputLayerChanged();
 
     void onSettingsPanelClosed(bool closed);
     

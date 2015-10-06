@@ -1104,7 +1104,7 @@ ViewerTab::onGammaSliderEditingFinished(bool hasMovedOnce)
 {
     bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
     if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers();
+        getGui()->renderAllViewers(true);
     }
 }
 
@@ -1113,7 +1113,7 @@ ViewerTab::onGainSliderEditingFinished(bool hasMovedOnce)
 {
     bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
     if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers();
+        getGui()->renderAllViewers(true);
     }
 }
 

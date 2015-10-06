@@ -262,7 +262,7 @@ Gui::progressUpdate(KnobHolder* effect,
         }
         found->second->setValue(t * 100);
     }
-    //QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
 
     return true;
 }
@@ -445,7 +445,7 @@ Gui::resizeEvent(QResizeEvent* e)
 static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
 {
     if (!w) {
-        return false;
+        return 0;
     }
     RightClickableWidget* panel = qobject_cast<RightClickableWidget*>(w);
     if (panel) {
@@ -453,6 +453,12 @@ static RightClickableWidget* isParentSettingsPanelRecursive(QWidget* w)
     } else {
         return isParentSettingsPanelRecursive(w->parentWidget());
     }
+}
+
+void
+Gui::setLastKeyPressVisitedClickFocus(bool visited)
+{
+    _imp->keyPressEventHasVisitedFocusWidget = visited;
 }
 
 void
@@ -539,7 +545,7 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
-        if (_imp->currentPanelFocus) {
+        if (_imp->currentPanelFocus && !_imp->keyPressEventHasVisitedFocusWidget) {
             
             ++_imp->currentPanelFocusEventRecursion;
             //If a panel as the click focus, try to send the event to it
@@ -664,12 +670,12 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers()
+Gui::renderAllViewers(bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(true);
+            (*it)->getInternalNode()->renderCurrentFrame(canAbort);
         }
     }
 }

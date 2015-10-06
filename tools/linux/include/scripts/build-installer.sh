@@ -247,6 +247,14 @@ done
 (cd $CLIBS_PATH ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 strip -s $CLIBS_PATH/data/Plugins/PySide/* $CLIBS_PATH/data/lib/python*/* $CLIBS_PATH/data/lib/python*/*/*
 
+# let Natron.sh handle gcc libs
+mkdir $CLIBS_PATH/data/lib/compat || exit 1
+mv $CLIBS_PATH/data/lib/{libgomp*,libgcc*,libstdc*} $CLIBS_PATH/data/lib/compat/ || exit 1
+if [ ! -f "$SRC_PATH/strings$BIT.tgz" ]; then
+  wget $THIRD_PARTY_SRC_URL/strings$BIT.tgz -O $SRC_PATH/strings$BIT.tgz || exit 1
+fi
+tar xvf $SRC_PATH/strings$BIT.tgz -C $CLIBS_PATH/data/bin/ || exit 1
+
 # OFX ARENA
 OFX_ARENA_VERSION=$TAG
 OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG

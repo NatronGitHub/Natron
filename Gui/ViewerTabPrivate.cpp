@@ -144,6 +144,8 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , fpsMutex()
 , fps(24.)
 , lastOverlayNode()
+, hasPenDown(false)
+, hasCaughtPenMotionWhileDragging(false)
 {
     infoWidget[0] = infoWidget[1] = NULL;
     currentRoto.first = NULL;

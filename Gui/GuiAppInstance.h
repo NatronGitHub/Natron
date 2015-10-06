@@ -174,7 +174,7 @@ public:
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
     
 
-    virtual void renderAllViewers() OVERRIDE FINAL;
+    virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     
     
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;

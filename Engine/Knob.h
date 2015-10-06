@@ -217,6 +217,11 @@ public:
         Q_EMIT descriptionChanged();
     }
     
+    void s_evaluateOnChangeChanged(bool value)
+    {
+        Q_EMIT evaluateOnChangeChanged(value);
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -241,6 +246,8 @@ public Q_SLOTS:
 
     
 Q_SIGNALS:
+    
+    void evaluateOnChangeChanged(bool value);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -629,6 +636,7 @@ public:
      **/
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
     virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -950,7 +958,10 @@ public:
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
+    
+private:
     virtual void removeListener(KnobI* knob) = 0;
+public:
 
     virtual bool useNativeOverlayHandle() const { return false; }
 
@@ -1448,7 +1459,7 @@ private:
                          bool copyState) OVERRIDE FINAL;
 
 
-
+    
 public:
     
     
@@ -1463,6 +1474,8 @@ public:
                         Natron::ValueChangedReasonEnum reason,
                         KeyFrame* newKey);
 
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
      * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue

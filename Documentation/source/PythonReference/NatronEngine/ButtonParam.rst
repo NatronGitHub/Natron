@@ -20,6 +20,7 @@ Functions
 ^^^^^^^^^
 
 *    def :meth:`setIconFilePath<NatronEngine.ButtonParam.setIconFilePath>` (icon)
+*    def :meth:`trigger<NatronEngine.ButtonParam.trigger>` ()
 
 
 Member functions description
@@ -37,5 +38,7 @@ a file-path relative to a path in the NATRON_PLUGIN_PATH.
 
 
 
+.. method:: NatronEngine.ButtonParam.trigger()
 
+Triggers the button action as though the user had pressed it.
 

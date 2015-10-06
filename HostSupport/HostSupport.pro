@@ -71,11 +71,16 @@ win32 {
 noexpat {
     SOURCES += \
     ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmlparse.c \
+    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.c \
+    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.c \
     
     HEADERS += \
         ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat.h \
         ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat_external.h \
         ../libs/OpenFX/HostSupport/expat-2.1.0/lib/ascii.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.h \
+        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/asciitab.h \
         ../libs/OpenFX/HostSupport/expat-2.1.0/expat_config.h \
 
     DEFINES += HAVE_EXPAT_CONFIG_H

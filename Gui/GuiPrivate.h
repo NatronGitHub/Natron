@@ -270,6 +270,7 @@ struct GuiPrivate
     
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
+    bool keyPressEventHasVisitedFocusWidget;
     
     bool wasLaskUserSeekDuringPlayback;
     

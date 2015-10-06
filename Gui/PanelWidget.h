@@ -62,6 +62,14 @@ public:
     
     void takeClickFocus();
     
+    bool isClickFocusPanel() const;
+    
+    
+    /*
+     * @brief To be called when a keypress event is not accepted
+     */
+    void handleUnCaughtKeyPressEvent();
+    
 protected:
     
     virtual void notifyGuiClosing() {}
@@ -75,6 +83,7 @@ protected:
      * @brief To be called in the leaveEvent handler of all derived classes.
      **/
     void leaveEventBase();
+  
  
 
 };
