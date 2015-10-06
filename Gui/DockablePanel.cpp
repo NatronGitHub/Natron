@@ -480,13 +480,13 @@ DockablePanel::onPageIndexChanged(int index)
         }
         if (isPage->getDescription() == stdName) {
             if (isPage->getIsSecret()) {
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
                 isPage->setSecret(false);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
             }
         } else {
             if (!isPage->getIsSecret()) {
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
                 isPage->setSecret(true);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
             }
         }
     }
