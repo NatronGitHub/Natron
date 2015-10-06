@@ -398,6 +398,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QStyleOption opt;
     opt.init(this);
     QPainter p(this);
+    p.setOpacity(1);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     double txtR,txtG,txtB;
@@ -521,7 +522,14 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 	if (!hasFocus()) {
 		p.setPen(Qt::black);
 	} else {
-		p.setPen(QColor(243,137,0));
+        QPen pen = p.pen();
+        pen.setColor(QColor(243,137,0));
+        QVector<qreal> dashStyle;
+        qreal space = 2;
+        dashStyle << 1 << space;
+        pen.setDashPattern(dashStyle);
+        p.setOpacity(0.8);
+        p.setPen(pen);
 	}
 
     p.drawLine( sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y() );
