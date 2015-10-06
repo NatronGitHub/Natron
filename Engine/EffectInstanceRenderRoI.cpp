@@ -50,6 +50,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/Cache.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
