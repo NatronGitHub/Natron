@@ -20,12 +20,6 @@ yum install libGLU
 apt-get install libxcb-shm0
 ```
 
-**Kubuntu:**
-
-```
-apt-get install librsvg2-2
-```
-
 Technical information
 =====================
 
@@ -34,22 +28,6 @@ Minimum requirements for running Natron on Linux:
 - Linux 2.6.18
 - Glibc 2.12
 - LibGCC 4.4
-- Freetype
-- Zlib
-- Glib
-- LibSM
-- LibICE
-- LibXrender
-- Fontconfig
-- LibXext
-- LibX11
-- Libxcb
-- Libexpat
-- LibXau
-- Bzip2
-- LibGL
-- Pango
-- librsvg
 
 Most Linux installations since 2010 meet these requirements. Natron is compatible with the VFX Reference Platform CY2015.
 

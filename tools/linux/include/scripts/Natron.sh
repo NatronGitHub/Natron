@@ -23,6 +23,42 @@ if [ -d "$DIR/Resources/etc/fonts" ]; then
   export FONTCONFIG_PATH="$DIR/Resources/etc/fonts"
 fi
 
+# Check gcc compat
+COMPAT_ARCH=`uname -m`
+COMPAT_VERSION=3.4.15
+if [ "$COMPAT_ARCH" = "x86_64" ]; then
+  COMPAT_SUFFIX=64
+fi
+if [ -f /usr/lib$COMPAT_SUFFIX/libstdc++.so.6 ]; then
+  STDC_LIB=/usr/lib$COMPAT_SUFFIX/libstdc++.so.6
+elif [ -f /usr/lib/libstdc++.so.6 ]; then
+  STDC_LIB=/usr/lib/libstdc++.so.6
+elif [ -f /usr/lib/$COMPAT_ARCH-linux-gnu/libstdc++.so.6 ]; then
+  STDC_LIB=/usr/lib/$COMPAT_ARCH-linux-gnu/libstdc++.so.6
+fi
+COMPAT_GCC=`$DIR/bin/strings $STDC_LIB | grep GLIBCXX_${COMPAT_VERSION}`
+if [ "$COMPAT_GCC" = "GLIBCXX_${COMPAT_VERSION}" ]; then
+  if [ -f "$DIR/lib/libstdc++.so.6" ]; then
+    rm -f $DIR/lib/libstdc++.so.6 || echo "Failed to remove symlink, please run as root to fix."
+  fi
+  if [ -f "$DIR/lib/libgcc_s.so.1" ]; then
+    rm -f $DIR/lib/libgcc_s.so.1 || echo "Failed to remove symlink, please run as root to fix."
+  fi
+  if [ -f "$DIR/lib/libgomp.so.1" ]; then
+    rm -f $DIR/lib/libgomp.so.1 || echo "Failed to remove symlink, please run as root to fix."
+  fi
+else
+  if [ ! -f "$DIR/lib/libstdc++.so.6" ]; then
+    cd $DIR/lib ; ln -sf compat/libstdc++.so.6 . || echo "Failed to create symlink, please run as root to fix."
+  fi
+  if [ ! -f "$DIR/lib/libgcc_s.so.1" ]; then
+    cd $DIR/lib ; ln -sf compat/libgcc_s.so.1 . || echo "Failed to create symlink, please run as root to fix."
+  fi
+  if [ ! -f "$DIR/lib/libgomp.so.1" ]; then
+    cd $DIR/lib ; ln -sf compat/libgomp.so.1 . || echo "Failed to create symlink, please run as root to fix."
+  fi
+fi
+
 # Check for updates
 if [ "$1" = "-update" -a -x "$DIR/NatronSetup" ]; then
     "$DIR/NatronSetup" --updater
