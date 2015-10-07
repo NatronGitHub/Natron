@@ -2538,81 +2538,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         if (!isBd) {
-     
-            std::vector<std::string> inputLabels(inputsCount);
-            std::vector<bool> hasMaskChannelSelector(inputsCount);
-            
-            for (int i = 0; i < inputsCount; ++i) {
-                
-                inputLabels[i] = _imp->liveInstance->getInputLabel(i);
-       
-                assert(i < (int)_imp->inputsComponents.size());
-                const std::list<ImageComponents>& inputSupportedComps = _imp->inputsComponents[i];
-                
-                bool isMask = _imp->liveInstance->isInputMask(i);
-                bool supportsOnlyAlpha = inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1;
-                
-                hasMaskChannelSelector[i] = false;
-                
-                if ((isMask || supportsOnlyAlpha) &&
-                    !_imp->liveInstance->isInputRotoBrush(i) ) {
-                    
-                    hasMaskChannelSelector[i] = true;
-                    
-                    MaskSelector sel;
-                    boost::shared_ptr<KnobBool> enabled = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), inputLabels[i],1,false);
-                    
-                    enabled->setDefaultValue(false, 0);
-                    enabled->setAddNewLine(false);
-                    if (isMask) {
-                        std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
-                        enabled->setName(enableMaskName);
-                        enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                                   "Turning this off will act as though the mask was disconnected.").toStdString());
-                    } else {
-                        std::string enableMaskName(std::string(kEnableInputKnobName) + "_" + inputLabels[i]);
-                        enabled->setName(enableMaskName);
-                        enabled->setHintToolTip(tr("Enable the image to come from the channel named by the choice parameter on the right. "
-                                                   "Turning this off will act as though the input was disconnected.").toStdString());
-                    }
-                    enabled->setAnimationEnabled(false);
-                    
-                    
-                    sel.enabled = enabled;
-                    
-                    boost::shared_ptr<KnobChoice> channel = Natron::createKnob<KnobChoice>(_imp->liveInstance.get(), "",1,false);
-                    
-                    std::vector<std::string> choices;
-                    choices.push_back("None");
-                    const ImageComponents& rgba = ImageComponents::getRGBAComponents();
-                    const std::vector<std::string>& channels = rgba.getComponentsNames();
-                    const std::string& layerName = rgba.getComponentsGlobalName();
-                    for (std::size_t c = 0; c < channels.size(); ++c) {
-                        choices.push_back(layerName + "." + channels[c]);
-                    }
-
-                    channel->populateChoices(choices);
-                    channel->setDefaultValue(choices.size() - 1, 0);
-                    channel->setAnimationEnabled(false);
-                    channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
-                                                       "Setting this to None is the same as disconnecting the input.").toStdString());
-                    if (isMask) {
-                        std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + inputLabels[i]);
-                        channel->setName(channelMaskName);
-                    } else {
-                        std::string channelMaskName(std::string(kInputChannelKnobName) + "_" + inputLabels[i]);
-                        channel->setName(channelMaskName);
-                    }
-                    sel.channel = channel;
-                    
-                    boost::shared_ptr<KnobString> channelName = Natron::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
-                    channelName->setSecretByDefault(true);
-                    channelName->setEvaluateOnChange(false);
-                    sel.channelName = channelName;
-                    _imp->maskSelectors[i] = sel;
-
-                }
-            } // for (int i = 0; i < inputsCount; ++i) {
             
             bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
@@ -2622,7 +2547,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<KnobPage> mainPage;
             const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
-
+            
             if (!isReaderOrWriterOrTrackerOrGroup) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
@@ -2637,29 +2562,58 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 }
                 assert(mainPage);
             }
+           
             
+            ///Pair hasMaskChannelSelector, isMask
+            std::vector<std::pair<bool,bool> > hasMaskChannelSelector(inputsCount);
+            std::vector<std::string> inputLabels(inputsCount);
+            for (int i = 0; i < inputsCount; ++i) {
+                inputLabels[i] = _imp->liveInstance->getInputLabel(i);
+                
+                assert(i < (int)_imp->inputsComponents.size());
+                const std::list<ImageComponents>& inputSupportedComps = _imp->inputsComponents[i];
+                
+                bool isMask = _imp->liveInstance->isInputMask(i);
+                bool supportsOnlyAlpha = inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1;
+                
+                hasMaskChannelSelector[i].first = false;
+                hasMaskChannelSelector[i].second = isMask;
+                
+                if ((isMask || supportsOnlyAlpha) &&
+                    !_imp->liveInstance->isInputRotoBrush(i) ) {
+                    hasMaskChannelSelector[i].first = true;
+                }
+            }
+      
+           
             if (useChannels) {
                 
+                
+                
                 bool useSelectors = !dynamic_cast<RotoPaint*>(_imp->liveInstance.get());
+                
                 if (useSelectors) {
-                    
-                    //There are a A and B inputs and the plug-in is not multi-planar, propose 2 layer selectors for the inputs.
+                                    
+                    ///Create input layer selectors
                     for (int i = 0; i < inputsCount; ++i) {
-                        if (!hasMaskChannelSelector[i]) {
+                        if (!hasMaskChannelSelector[i].first) {
                             _imp->createChannelSelector(i,inputLabels[i], false, mainPage);
                         }
                         
                     }
+                    ///Create output layer selectors
                     _imp->createChannelSelector(-1, "Output", true, mainPage);
                 }
-                    
-                    //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
-                    std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
-                    std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
-                    std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
-                    
-                    
-                    bool pluginDefaultPref[4];
+                
+
+                
+                //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
+                std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
+                std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
+                std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
+                
+                
+                bool pluginDefaultPref[4];
                 bool useRGBACheckbox = _imp->liveInstance->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
                 boost::shared_ptr<KnobBool> foundEnabled[4];
                 for (int i = 0; i < 4; ++i) {
@@ -2671,11 +2625,15 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         }
                     }
                 }
+                
                 if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3]) {
-                    _imp->enabledChan[0] = foundEnabled[0];
-                    _imp->enabledChan[1] = foundEnabled[1];
-                    _imp->enabledChan[2] = foundEnabled[2];
-                    _imp->enabledChan[3] = foundEnabled[3];
+                    for (int i = 0; i < 4; ++i) {
+                        if (foundEnabled[i]->getParentKnob() == mainPage) {
+                            mainPage->removeKnob(foundEnabled[i].get());
+                            mainPage->addKnob(foundEnabled[i]);
+                        }
+                        _imp->enabledChan[i] = foundEnabled[i];
+                    }
                 }
 #ifdef DEBUG
                 if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3] && useRGBACheckbox) {
@@ -2690,13 +2648,104 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         foundEnabled[i]->setAddNewLine(i == 3);
                         foundEnabled[i]->setDefaultValue(pluginDefaultPref[i]);
                         foundEnabled[i]->setHintToolTip(channelHints[i]);
-                        mainPage->insertKnob(i,foundEnabled[i]);
+                        mainPage->addKnob(foundEnabled[i]);
                         _imp->enabledChan[i] = foundEnabled[i];
                     }
                 }
+                
             } // useChannels
             
-            //Create the mix
+            ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes
+            std::vector<std::pair<std::string,boost::shared_ptr<KnobI> > > foundPluginDefaultKnobsToReorder;
+            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMaskInvertParamName, boost::shared_ptr<KnobI>()));
+            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMixParamName, boost::shared_ptr<KnobI>()));
+            if (mainPage) {
+                ///Insert auto-added knobs before mask invert if found
+                for (std::size_t i = 0; i < knobs.size(); ++i) {
+                    for (std::size_t j = 0; j < foundPluginDefaultKnobsToReorder.size(); ++j) {
+                        if (knobs[i]->getName() == foundPluginDefaultKnobsToReorder[j].first) {
+                            foundPluginDefaultKnobsToReorder[j].second = knobs[i];
+                        }
+                    }
+                }
+            }
+            
+            ///Create mask selectors
+            for (int i = 0; i < inputsCount; ++i) {
+                
+                if (!hasMaskChannelSelector[i].first) {
+                    continue;
+                }
+                
+                
+                MaskSelector sel;
+                boost::shared_ptr<KnobBool> enabled = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), inputLabels[i],1,false);
+                
+                enabled->setDefaultValue(false, 0);
+                enabled->setAddNewLine(false);
+                if (hasMaskChannelSelector[i].second) {
+                    std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
+                    enabled->setName(enableMaskName);
+                    enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                               "Turning this off will act as though the mask was disconnected.").toStdString());
+                } else {
+                    std::string enableMaskName(std::string(kEnableInputKnobName) + "_" + inputLabels[i]);
+                    enabled->setName(enableMaskName);
+                    enabled->setHintToolTip(tr("Enable the image to come from the channel named by the choice parameter on the right. "
+                                               "Turning this off will act as though the input was disconnected.").toStdString());
+                }
+                enabled->setAnimationEnabled(false);
+                mainPage->addKnob(enabled);
+                
+                
+                sel.enabled = enabled;
+                
+                boost::shared_ptr<KnobChoice> channel = Natron::createKnob<KnobChoice>(_imp->liveInstance.get(), "",1,false);
+                
+                std::vector<std::string> choices;
+                choices.push_back("None");
+                const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+                const std::vector<std::string>& channels = rgba.getComponentsNames();
+                const std::string& layerName = rgba.getComponentsGlobalName();
+                for (std::size_t c = 0; c < channels.size(); ++c) {
+                    choices.push_back(layerName + "." + channels[c]);
+                }
+                
+                channel->populateChoices(choices);
+                channel->setDefaultValue(choices.size() - 1, 0);
+                channel->setAnimationEnabled(false);
+                channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
+                                           "Setting this to None is the same as disconnecting the input.").toStdString());
+                if (hasMaskChannelSelector[i].second) {
+                    std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + inputLabels[i]);
+                    channel->setName(channelMaskName);
+                } else {
+                    std::string channelMaskName(std::string(kInputChannelKnobName) + "_" + inputLabels[i]);
+                    channel->setName(channelMaskName);
+                }
+                sel.channel = channel;
+                channel->setAddNewLine(false);
+                mainPage->addKnob(channel);
+                
+                boost::shared_ptr<KnobString> channelName = Natron::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
+                channelName->setSecretByDefault(true);
+                channelName->setEvaluateOnChange(false);
+                mainPage->addKnob(channelName);
+                sel.channelName = channelName;
+                
+                //Make sure the first default param in the vector is MaskInvert
+                assert(foundPluginDefaultKnobsToReorder.size() > 0 && foundPluginDefaultKnobsToReorder[0].first == kOfxMaskInvertParamName);
+                if (foundPluginDefaultKnobsToReorder[0].second) {
+                    //If there is a MaskInvert parameter, make it on the same line as the Mask channel parameter
+                    channelName->setAddNewLine(false);
+                }
+                
+                
+                _imp->maskSelectors[i] = sel;
+                
+            } // for (int i = 0; i < inputsCount; ++i) {
+    
+            //Create the host mix if needed
             if (!isReaderOrWriterOrTrackerOrGroup && _imp->liveInstance->isHostMixingEnabled()) {
                 boost::shared_ptr<KnobDouble> mixKnob = Natron::createKnob<KnobDouble>(_imp->liveInstance.get(), "Mix", 1, false);
                 mixKnob->setName("hostMix");
@@ -2707,6 +2756,18 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 mainPage->addKnob(mixKnob);
                 _imp->mixWithSource = mixKnob;
             }
+            
+            
+            /*
+             * Reposition the MaskInvert and Mix parameters declared by the plug-in
+             */
+            for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
+                if (foundPluginDefaultKnobsToReorder[i].second && foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) {
+                    mainPage->removeKnob(foundPluginDefaultKnobsToReorder[i].second.get());
+                    mainPage->addKnob(foundPluginDefaultKnobsToReorder[i].second);
+                }
+            }
+            
         } // !isBd
         boost::shared_ptr<KnobString> nodeLabel = Natron::createKnob<KnobString>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);

@@ -60,6 +60,9 @@ CLANG_DIAG_ON(deprecated)
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
 
+#define kOfxMaskInvertParamName "maskInvert"
+#define kOfxMixParamName "mix"
+
 class AppInstance;
 class NodeSettingsPanel;
 class KnobI;
