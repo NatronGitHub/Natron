@@ -2435,11 +2435,11 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::Value
     switch (reason) {
         case Natron::eValueChangedReasonUserEdited:
         case Natron::eValueChangedReasonNatronGuiEdited:
+        case Natron::eValueChangedReasonSlaveRefresh:
+        case Natron::eValueChangedReasonRestoreDefault:
             return kOfxChangeUserEdited;
         case Natron::eValueChangedReasonPluginEdited:
         case Natron::eValueChangedReasonNatronInternalEdited:
-        case Natron::eValueChangedReasonSlaveRefresh:
-        case Natron::eValueChangedReasonRestoreDefault:
             return kOfxChangePluginEdited;
         case Natron::eValueChangedReasonTimeChanged:
             return kOfxChangeTime;
