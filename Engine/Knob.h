@@ -2074,6 +2074,8 @@ public:
      **/
     void beginChanges();
     void endChanges(bool discardEverything = false);
+    
+    ChangesList getKnobChanges() const;
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

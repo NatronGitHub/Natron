@@ -531,6 +531,7 @@ RestoreDefaultsCommand::redo()
     KnobHolder* holder = first->getHolder();
     if (holder && holder->getApp()) {
         timeline = holder->getApp()->getTimeLine();
+        holder->beginChanges();
     }
     
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
@@ -550,13 +551,39 @@ RestoreDefaultsCommand::redo()
         if ((*it)->getHolder()) {
             (*it)->getHolder()->beginChanges();
         }
+        (*it)->blockValueChanges();
+
         for (int d = 0; d < (*it)->getDimension(); ++d) {
             (*it)->resetToDefaultValue(d);
         }
+        
+        (*it)->unblockValueChanges();
+        
         if ((*it)->getHolder()) {
             (*it)->getHolder()->endChanges(true);
         }
+        
     }
+    
+    /*
+     Block value changes and call instanceChange on all knobs  afterwards to put back the plug-in
+     in a correct state
+     */
+    int time = 0;
+    if (timeline) {
+        time = timeline->currentFrame();
+    }
+   for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+       if ((*it)->getHolder()) {
+           (*it)->getHolder()->onKnobValueChanged_public(it->get(), Natron::eValueChangedReasonRestoreDefault, time, true);
+        }
+    }
+    
+    if (holder && holder->getApp()) {
+        holder->endChanges();
+    }
+    
+    
     if (timeline) {
         timeline->removeMultipleKeyframeIndicator(times,true);
     }

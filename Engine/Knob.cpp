@@ -3692,6 +3692,13 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
+ChangesList
+KnobHolder::getKnobChanges() const
+{
+    QMutexLocker l(&_imp->evaluationBlockedMutex);
+    return _imp->knobChanged;
+}
+
 void
 KnobHolder::endChanges(bool discardEverything)
 {

@@ -6165,7 +6165,10 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     
     std::vector<std::string> entries = channel->getEntries_mt_safe();
     int curChan_i = channel->getValue();
-    assert(curChan_i >= 0 && curChan_i < (int)entries.size());
+    if (curChan_i < 0 || curChan_i >= (int)entries.size()) {
+        _publicInterface->refreshChannelSelectors(true);
+        return;
+    }
     selector.channelName.lock()->setValue(entries[curChan_i], 0);
     {
         ///Clip preferences have changed
