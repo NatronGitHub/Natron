@@ -5944,7 +5944,11 @@ Node::onEffectKnobValueChanged(KnobI* what,
         KnobString* strKnob = dynamic_cast<KnobString*>(what);
         if (strKnob) {
             QString operation = strKnob->getValue().c_str();
-            replaceCustomDataInlabel('(' + operation + ')');
+            if (!operation.isEmpty()) {
+                operation.prepend("(");
+                operation.append(")");
+            }
+            replaceCustomDataInlabel(operation);
         }
     } else if ( (what->getName() == kOfxImageEffectFileParamName) && _imp->liveInstance->isReader() ) {
         ///Refresh the preview automatically if the filename changed
