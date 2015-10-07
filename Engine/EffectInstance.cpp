@@ -369,11 +369,11 @@ EffectInstance::aborted() const
 } // EffectInstance::aborted
 
 bool
-EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
+EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,double time, int view) const
 {
     boost::shared_ptr<Node> n = _node.lock();
 
-    return n->shouldCacheOutput(isFrameVaryingOrAnimated);
+    return n->shouldCacheOutput(isFrameVaryingOrAnimated, time ,view);
 }
 
 U64

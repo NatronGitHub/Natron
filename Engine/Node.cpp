@@ -6708,8 +6708,92 @@ Node::dequeueActions()
     }
 }
 
+static void addIdentityNodesRecursively(const Node* caller,
+                                        const Node* node,
+                                        double time,
+                                        int view,
+                                        std::list<const Node*>* outputs,
+                                        std::list<const Node*>* markedNodes)
+{
+    if (std::find(markedNodes->begin(), markedNodes->end(), node) != markedNodes->end()) {
+        return;
+    }
+    
+    markedNodes->push_back(node);
+
+    
+    if (caller != node) {
+        
+        const ParallelRenderArgs* inputFrameArgs = node->getLiveInstance()->getParallelRenderArgsTLS();
+        const FrameViewRequest* request = 0;
+        bool isIdentity = false;
+        if (inputFrameArgs && inputFrameArgs->request) {
+            request = inputFrameArgs->request->getFrameViewRequest(time, view);
+            if (request) {
+                isIdentity = request->globalData.identityInputNb != -1;
+            }
+        }
+        
+        if (!request) {
+            
+            /*
+             Very unlikely that there's no request pass. But we still check
+             */
+            RenderScale scale;
+            scale.x = scale.y = 1;
+            double inputTimeId;
+            int inputNbId;
+            U64 renderHash;
+            
+            renderHash = node->getLiveInstance()->getRenderHash();
+            
+            RectD rod;
+            bool isProj;
+            Natron::StatusEnum stat = node->getLiveInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
+            if (stat == eStatusFailed) {
+                isIdentity = false;
+            } else {
+                RectI pixelRod;
+                rod.toPixelEnclosing(scale, node->getLiveInstance()->getPreferredAspectRatio(), &pixelRod);
+                isIdentity = node->getLiveInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &inputNbId);
+            }
+        }
+        
+        
+        if (!isIdentity) {
+            outputs->push_back(node);
+            return;
+        }
+    }
+    
+    ///Append outputs of this node instead
+    std::list<Node*> nodeOutputs;
+    node->getOutputs_mt_safe(nodeOutputs);
+    std::list<Node*> outputsToAdd;
+    for (std::list<Node*>::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
+        GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
+        //If the node is an output node, add all the outputs of the group node instead
+        if (isOutputNode) {
+            boost::shared_ptr<NodeCollection> collection = (*it)->getGroup();
+            assert(collection);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+            if (isGrp) {
+                std::list<Node*> groupOutputs;
+                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+                for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+                    outputsToAdd.push_back(*it2);
+                }
+            }
+        }
+    }
+    nodeOutputs.insert(nodeOutputs.end(), outputsToAdd.begin(),outputsToAdd.end());
+    for (std::list<Node*>::iterator it = nodeOutputs.begin(); it!=nodeOutputs.end(); ++it) {
+        addIdentityNodesRecursively(caller,*it,time,view,outputs, markedNodes);
+    }
+}
+
 bool
-Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
+Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const
 {
     /*
      * Here is a list of reasons when caching is enabled for a node:
@@ -6726,29 +6810,12 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
      * - The node does not support tiles
      */
 
-    std::list<Node*> outputs;
+    std::list<const Node*> outputs;
     {
-        QMutexLocker k(&_imp->outputsMutex);
-        outputs = _imp->outputs;
+        std::list<const Node*> markedNodes;
+        addIdentityNodesRecursively(this, this, time, view,&outputs,&markedNodes);
     }
-    std::list<Node*> outputsToAdd;
-    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
-        //If the node is an output node, add all the outputs of the group node instead
-        if (isOutputNode) {
-            boost::shared_ptr<NodeCollection> collection = (*it)->getGroup();
-            assert(collection);
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
-            if (isGrp) {
-                std::list<Node*> groupOutputs;
-                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
-                for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-                    outputsToAdd.push_back(*it2);
-                }
-            }
-        }
-    }
-    outputs.insert(outputs.end(), outputsToAdd.begin(),outputsToAdd.end());
+
     
     std::size_t sz = outputs.size();
     if (sz > 1) {
@@ -6757,7 +6824,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
     } else {
         if (sz == 1) {
           
-            Node* output = outputs.front();
+            const Node* output = outputs.front();
             
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
             if (isViewer) {

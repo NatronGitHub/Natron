@@ -909,7 +909,7 @@ public:
                                       const bool dontUpscale,
                                       RectI* roiPixel) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
 
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.

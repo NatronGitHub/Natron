@@ -679,7 +679,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool draftModeSupported = getNode()->isDraftModeUsed();
 
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
-    bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated);
+    bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
     Natron::ImageKey key(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
