@@ -2698,7 +2698,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                "Turning this off will act as though the input was disconnected.").toStdString());
                 }
                 enabled->setAnimationEnabled(false);
-                mainPage->addKnob(enabled);
+                if (mainPage) {
+                    mainPage->addKnob(enabled);
+                }
                 
                 
                 sel.enabled = enabled;
@@ -2728,12 +2730,16 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 }
                 sel.channel = channel;
                 channel->setAddNewLine(false);
-                mainPage->addKnob(channel);
+                if (mainPage) {
+                    mainPage->addKnob(channel);
+                }
                 
                 boost::shared_ptr<KnobString> channelName = Natron::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
                 channelName->setSecretByDefault(true);
                 channelName->setEvaluateOnChange(false);
-                mainPage->addKnob(channelName);
+                if (mainPage) {
+                    mainPage->addKnob(channelName);
+                }
                 sel.channelName = channelName;
                 
                 //Make sure the first default param in the vector is MaskInvert
@@ -2756,7 +2762,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 mixKnob->setMinimum(0.);
                 mixKnob->setMaximum(1.);
                 mixKnob->setDefaultValue(1.);
-                mainPage->addKnob(mixKnob);
+                if (mainPage) {
+                    mainPage->addKnob(mixKnob);
+                }
                 _imp->mixWithSource = mixKnob;
             }
             
@@ -2764,10 +2772,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
             /*
              * Reposition the MaskInvert and Mix parameters declared by the plug-in
              */
-            for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
-                if (foundPluginDefaultKnobsToReorder[i].second && foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) {
-                    mainPage->removeKnob(foundPluginDefaultKnobsToReorder[i].second.get());
-                    mainPage->addKnob(foundPluginDefaultKnobsToReorder[i].second);
+            if (mainPage) {
+                for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
+                    if (foundPluginDefaultKnobsToReorder[i].second && foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) {
+                        mainPage->removeKnob(foundPluginDefaultKnobsToReorder[i].second.get());
+                        mainPage->addKnob(foundPluginDefaultKnobsToReorder[i].second);
+                    }
                 }
             }
             
