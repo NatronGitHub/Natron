@@ -89,4 +89,5 @@ end tell
 EOT
 
 # convert to compressed image, delete temp image
-hdiutil convert "${DMG_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_FINAL}" || exit 1
+# UDBZ (bzip2) is supported on OS X >= 10.4
+hdiutil convert "${DMG_TMP}" -format UDBZ -o "${DMG_FINAL}" || exit 1
