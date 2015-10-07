@@ -193,7 +193,8 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
                                              const ImageComponents& targetComponents,
                                              ImageBitDepthEnum targetDepth,
                                              bool useAlpha0ForRGBToRGBAConversion,
-                                             ImagePremultiplicationEnum outputPremult)
+                                             ImagePremultiplicationEnum outputPremult,
+                                             int channelForAlpha)
 {
     bool imageConversionNeeded = targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents() || targetDepth != inputImage->getBitDepth();
     if (!imageConversionNeeded) {
@@ -216,12 +217,12 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
             inputImage->convertToFormatAlpha0( clippedRoi,
                                               app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                               app->getDefaultColorSpaceForBitDepth(targetDepth),
-                                              -1, false, unPremultIfNeeded, tmp.get() );
+                                              channelForAlpha, false, unPremultIfNeeded, tmp.get() );
         } else {
             inputImage->convertToFormat( clippedRoi,
                                         app->getDefaultColorSpaceForBitDepth(inputImage->getBitDepth()),
                                         app->getDefaultColorSpaceForBitDepth(targetDepth),
-                                        -1, false, unPremultIfNeeded, tmp.get() );
+                                        channelForAlpha, false, unPremultIfNeeded, tmp.get() );
         }
         
         return tmp;
@@ -576,7 +577,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                             premult = eImagePremultiplicationOpaque;
                         }
                         
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs.bitdepth, useAlpha0ForRGBToRGBAConversion, premult);
+                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs.bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
                         assert(tmp);
                         convertedPlanes.push_back(tmp);
                     }
@@ -1536,7 +1537,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         
         ///The image might need to be converted to fit the original requested format
-        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult);
+        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult, -1);
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);

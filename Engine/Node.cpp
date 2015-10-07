@@ -7001,6 +7001,26 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedN
         }
     }
     
+    /*
+     If this node is the bottom node of the rotopaint tree, forward directly to the outputs of the Rotopaint node
+     */
+    boost::shared_ptr<RotoDrawableItem> attachedItem = _imp->paintStroke.lock();
+    if (attachedItem) {
+        NodePtr rotoPaintNode = attachedItem->getContext()->getNode();
+        assert(rotoPaintNode);
+        boost::shared_ptr<RotoContext> context = rotoPaintNode->getRotoContext();
+        assert(context);
+        NodePtr bottomMerge = context->getRotoPaintBottomMergeNode();
+        if (bottomMerge.get() == this) {
+            std::list<Natron::Node*>  outputs;
+            rotoPaintNode->getOutputsWithGroupRedirection(outputs);
+            for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
+            }
+            return;
+        }
+    }
+    
     ///Now notify outputs we have changed
     std::list<Natron::Node*>  outputs;
     getOutputsWithGroupRedirection(outputs);

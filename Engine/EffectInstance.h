@@ -1684,7 +1684,8 @@ private:
                                                                          const ImageComponents& targetComponents,
                                                                          ImageBitDepthEnum targetDepth,
                                                                          bool useAlpha0ForRGBToRGBAConversion,
-                                                                         ImagePremultiplicationEnum outputPremult);
+                                                                         ImagePremultiplicationEnum outputPremult,
+                                                                         int channelForAlpha);
 
 
     /**
