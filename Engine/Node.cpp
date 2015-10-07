@@ -3189,7 +3189,7 @@ Node::hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers
 {
     Natron::OutputEffectInstance* thisWriter = dynamic_cast<Natron::OutputEffectInstance*>(_imp->liveInstance.get());
     
-    if (thisWriter && thisWriter->isOutput()) {
+    if (thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter)) {
         std::list<Natron::OutputEffectInstance* >::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
         if ( alreadyExists == writers->end() ) {
             writers->push_back(thisWriter);

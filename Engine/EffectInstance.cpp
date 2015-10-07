@@ -4209,7 +4209,17 @@ EffectInstance::abortAnyEvaluation()
     assert(node);
     node->incrementKnobsAge();
     std::list<Natron::OutputEffectInstance*> outputNodes;
-    node->hasOutputNodesConnected(&outputNodes);
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+    if (isGroup) {
+        std::list<Node*> inputOutputs;
+        isGroup->getInputsOutputs(&inputOutputs);
+        for (std::list<Node*>::iterator it = inputOutputs.begin(); it!=inputOutputs.end();++it) {
+            (*it)->hasOutputNodesConnected(&outputNodes);
+        }
+    } else {
+        node->hasOutputNodesConnected(&outputNodes);
+    }
     for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
         if (isViewer) {
