@@ -322,14 +322,7 @@ struct OutputSchedulerThreadPrivate
         }
         buf = newBuf;
     }
-    
-    void clearBuffer()
-    {
-        ///Private, shouldn't lock
-        assert(!bufMutex.tryLock());
-        
-        buf.clear();
-    }
+  
     
     void appendRunnable(RenderThreadTask* runnable)
     {
@@ -931,13 +924,7 @@ OutputSchedulerThread::stopRender()
             ///reset back the abort flag
             _imp->abortRequested = 0;
             
-            
-            ///Clear any frames that were processed ahead
-            {
-                QMutexLocker l2(&_imp->bufMutex);
-                _imp->clearBuffer();
-            }
-            
+  
             ///Notify everyone that the render is finished
             _imp->engine->s_renderFinished(wasAborted ? 1 : 0);
             
@@ -959,7 +946,16 @@ OutputSchedulerThread::stopRender()
             _imp->abortedRequestedCondition.wakeAll();
         }
         
-      
+        ///Clear the work queue
+        {
+            QMutexLocker framesLocker (&_imp->framesToRenderMutex);
+            _imp->framesToRender.clear();
+        }
+        
+        {
+            QMutexLocker k(&_imp->bufMutex);
+            _imp->buf.clear();
+        }
 
         
     }
@@ -1541,7 +1537,7 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
             }
             
             ///Clear the work queue
-            {
+           /* {
                 QMutexLocker framesLocker (&_imp->framesToRenderMutex);
                 _imp->framesToRender.clear();
             }
@@ -1549,7 +1545,7 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
             {
                 QMutexLocker k(&_imp->bufMutex);
                 _imp->buf.clear();
-            }
+            }*/
             
             if (isMainThread) {
                 
