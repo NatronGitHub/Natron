@@ -174,7 +174,7 @@ public:
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
     
 
-    virtual void renderAllViewers() OVERRIDE FINAL;
+    virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     
     
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
@@ -220,7 +220,7 @@ public:
     
 private:
 
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad) OVERRIDE FINAL;
     
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                                const boost::shared_ptr<Natron::Node>&  parentMultiInstance,

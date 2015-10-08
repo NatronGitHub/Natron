@@ -132,9 +132,9 @@ OfxClipInstance::getUnmappedComponents() const
     static const std::string alphaStr(kOfxImageComponentAlpha);
 
     EffectInstance* inputNode = getAssociatedNode();
-    if (!isOutput() && inputNode) {
+    /*if (!isOutput() && inputNode) {
         inputNode = inputNode->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
-    }
+    }*/
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         std::list<Natron::ImageComponents> comps;
@@ -758,6 +758,11 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
     return getImagePlaneInternal(time, view, optionalBounds, &plane);
 }
 
@@ -779,7 +784,12 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time, int view, const OfxRectD *o
     //If TLS does not work then nothing will work.
     assert( hasLocalData );
 #endif
-    
+    if (time != time) {
+        // time is NaN
+
+        return NULL;
+    }
+
     if (isOutput()) {
         return getOutputImageInternal(ofxPlane);
     } else {
@@ -820,6 +830,8 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
                 assert(comps.size() == 1);
                 comp = comps.front();
+            } else {
+                comp = _nodeInstance->getNode()->findClosestSupportedComponents(inputnb, comp);
             }
         }
 
@@ -830,8 +842,13 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     if (comp.getNumComponents() == 0) {
         return 0;
     }
-    
-  
+    if (time != time) {
+        // time is NaN
+
+        return 0;
+    }
+
+
     boost::shared_ptr<Transform::Matrix3x3> transform;
     bool usingReroute  = false;
     int rerouteInputNb = -1;
@@ -970,7 +987,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         std::list<ImageComponents> requestedComps;
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,_nodeInstance,inputImages);
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,true,_nodeInstance,inputImages);
         ImageList planes;
         EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());
@@ -1002,7 +1019,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         nComps = natronComps.front().getNumComponents();
     }
     
-    /* // this will dump the image as seen from the plug-in
+     /*// this will dump the image as seen from the plug-in
      QString filename;
      QTextStream ts(&filename);
      QDateTime now = QDateTime::currentDateTime();
@@ -1066,7 +1083,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
      Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
     bool multiPlanar = _nodeInstance->isMultiPlanar();
-    const std::string& layerName = multiPlanar ? natronPlane.getLayerName() : planeBeingRendered.getLayerName();
+    const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName();// : planeBeingRendered.getLayerName();
     
     for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getLayerName() == layerName) {
@@ -1239,7 +1256,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
     assert(internalImage);
     
-    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -1329,6 +1345,9 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
+OfxImage::~OfxImage()
+{
+}
 
 int
 OfxClipInstance::getInputNb() const

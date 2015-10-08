@@ -75,6 +75,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
     std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
     
+    std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
+    
     for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         
         std::string pluginID = (*it)->getPluginID();
@@ -125,7 +127,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
             }
-        }
+        } // if ( !(*it)->getMultiInstanceParentName().empty() ) {
 
         const std::string& pythonModuleAbsolutePath = (*it)->getPythonModule();
         
@@ -210,15 +212,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     
                 }
             }
-        }
+        } // if (!pythonModuleAbsolutePath.empty()) {
         
         if (!createNodes) {
             ///We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
             ///load their serialization
             n = group->getNodeByName((*it)->getNodeScriptName());
-            if (n) {
-                n->loadKnobs(**it);
-            }
         }
         
         int majorVersion,minorVersion;
@@ -272,11 +271,17 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed, hasProjectAWriter);
+                
             } else {
+                ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert(n->isMultiInstance());
-                NodeCollectionSerialization::restoreFromSerialization(children, group, true, moduleUpdatesProcessed,  hasProjectAWriter);
+                multiInstancesToRecurse.push_back(*it);
             }
         }
+    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    
+    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
+        NodeCollectionSerialization::restoreFromSerialization((*it)->getNodesCollection(), group, true, moduleUpdatesProcessed,  hasProjectAWriter);
     }
     
     
@@ -330,8 +335,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],thisNode.get()) ) {
-                    qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << oldInputs[j].c_str()
-                    << "[This is normal if loading a PyPlug]";
+                    if (createNodes) {
+                        qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << oldInputs[j].c_str()
+                        << "[This is normal if loading a PyPlug]";
+                    }
                 }
             }
         } else {
@@ -346,12 +353,14 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, thisNode.get())) {
-                    qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << it2->second.c_str()
-                    << "[This is normal if loading a PyPlug]";
+                    if (createNodes) {
+                        qDebug() << "Failed to connect node" << (*it)->getNodeScriptName().c_str() << "to" << it2->second.c_str()
+                        << "[This is normal if loading a PyPlug]";
+                    }
                 }
             }
         }
-    }
+    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
     
     ///Also reconnect parents of multiinstance nodes that were created on the fly
     for (std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
@@ -365,8 +374,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
                 if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first.get()) ) {
-                    qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << oldInputs[j].c_str()
-                    << "[This is normal if loading a PyPlug]";
+                    if (createNodes) {
+                        qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << oldInputs[j].c_str()
+                        << "[This is normal if loading a PyPlug]";
+                    }
                     
                 }
             }
@@ -382,8 +393,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first.get())) {
-                    qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << it2->second.c_str()
-                    << "[This is normal if loading a PyPlug]";
+                    if (createNodes) {
+                        qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << it2->second.c_str()
+                        << "[This is normal if loading a PyPlug]";
+                    }
                 }
             }
         }

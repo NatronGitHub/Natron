@@ -32,21 +32,18 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
-void init_RectD(PyObject* module);
 void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
 void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_ItemBase(PyObject* module);
-void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
+void init_Layer(PyObject* module);
 void init_Roto(PyObject* module);
 void init_UserParamHolder(PyObject* module);
 void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
 void init_AnimatedParam(PyObject* module);
-void init_ColorParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
 void init_StringParam(PyObject* module);
@@ -59,6 +56,8 @@ void init_Int3DParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
+void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
 void init_ButtonParam(PyObject* module);
 void init_GroupParam(PyObject* module);
 void init_PageParam(PyObject* module);
@@ -69,6 +68,7 @@ void init_Double2DTuple(PyObject* module);
 void init_Double3DTuple(PyObject* module);
 void init_ColorTuple(PyObject* module);
 void init_RectI(PyObject* module);
+void init_RectD(PyObject* module);
 void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -558,21 +558,18 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
-    init_RectD(module);
     init_PyCoreApplication(module);
     init_Group(module);
     init_App(module);
     init_AppSettings(module);
     init_ItemBase(module);
-    init_Layer(module);
     init_BezierCurve(module);
+    init_Layer(module);
     init_Roto(module);
     init_UserParamHolder(module);
     init_Effect(module);
     init_Param(module);
     init_AnimatedParam(module);
-    init_ColorParam(module);
-    init_ChoiceParam(module);
     init_BooleanParam(module);
     init_StringParamBase(module);
     init_StringParam(module);
@@ -585,6 +582,8 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
+    init_ColorParam(module);
+    init_ChoiceParam(module);
     init_ButtonParam(module);
     init_GroupParam(module);
     init_PageParam(module);
@@ -595,6 +594,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Double3DTuple(module);
     init_ColorTuple(module);
     init_RectI(module);
+    init_RectD(module);
     init_Natron(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.

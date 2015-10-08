@@ -591,6 +591,32 @@ Natron::Bitmap::getBitmapAt(int x,
     }
 }
 
+#ifdef DEBUG
+void
+Image::printUnrenderedPixels(const RectI& roi) const
+{
+    if (!_useBitmap) {
+        return;
+    }
+    QReadLocker k(&_entryLock);
+    
+    const char* bm = _bitmap.getBitmapAt(roi.x1, roi.y1);
+    int roiw = roi.x2 - roi.x1;
+    int boundsW = _bitmap.getBounds().width();
+    
+    for (int y = roi.y1; y < roi.y2; ++y,
+         bm += (boundsW - roiw)) {
+        for (int x = roi.x1; x < roi.x2; ++x,++bm) {
+            if (*bm == 0) {
+                qDebug() << '(' << x << ',' << y << ") = 0";
+            } else if (*bm == PIXEL_UNAVAILABLE) {
+                qDebug() << '(' << x << ',' << y << ") = PIXEL_UNAVAILABLE";
+            }
+        }
+    }
+}
+#endif
+
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<Natron::ImageParams>& params,
              const Natron::CacheAPI* cache,
@@ -634,7 +660,7 @@ Image::Image(const ImageComponents& components,
     , _useBitmap(useBitmap)
 {
     
-    setCacheEntry(makeKey(0,0,false,0,0, false),
+    setCacheEntry(makeKey(0, 0, false, 0, 0, false, false),
                   boost::shared_ptr<ImageParams>( new ImageParams( mipMapLevel,
                                                                    regionOfDefinition,
                                                                    par,
@@ -685,7 +711,7 @@ Image::onMemoryAllocated(bool diskRestoration)
 void
 Image::setBitmapDirtyZone(const RectI& zone)
 {
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     _bitmap.setDirtyZone(zone);
 }
 
@@ -695,9 +721,10 @@ Image::makeKey(const CacheEntryHolder* holder,
                bool frameVaryingOrAnimated,
                double time,
                int view,
-               bool draftMode)
+               bool draftMode,
+               bool fullScaleWithDownscaleInputs)
 {
-    return ImageKey(holder,nodeHashKey,frameVaryingOrAnimated,time,view, 1., draftMode);
+    return ImageKey(holder,nodeHashKey,frameVaryingOrAnimated,time,view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
 boost::shared_ptr<ImageParams>
@@ -770,11 +797,11 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     
-    boost::shared_ptr<QMutexLocker> k2;
+    boost::shared_ptr<QReadLocker> k2;
     if (takeSrcLock) {
-        k2.reset(new QMutexLocker(&srcImg._entryLock));
+        k2.reset(new QReadLocker(&srcImg._entryLock));
     }
     
     const RectI & bounds = _bounds;
@@ -823,104 +850,104 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
 void
 Image::setRoD(const RectD& rod)
 {
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     _rod = rod;
     _params->setRoD(rod);
 }
 
-bool
-Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1)
+void
+Image::resizeInternal(const Image* srcImg,
+                      const RectI& srcBounds,
+                      const RectI& merge,
+                      bool fillWithBlackAndTransparant,
+                      bool setBitmapTo1,
+                      bool createInCache,
+                      boost::shared_ptr<Image>* outputImage)
 {
-    
-    
-    if (getBounds().contains(newBounds)) {
-        return false;
+    ///Allocate to resized image
+    if (!createInCache) {
+        outputImage->reset(new Image(srcImg->getComponents(),
+                                     srcImg->getRoD(),
+                                     merge,
+                                     srcImg->getMipMapLevel(),
+                                     srcImg->getPixelAspectRatio(),
+                                     srcImg->getBitDepth(),
+                                     srcImg->usesBitMap()));
+    } else {
+        boost::shared_ptr<ImageParams> params(new ImageParams(*srcImg->getParams()));
+        params->setBounds(merge);
+        outputImage->reset(new Image(srcImg->getKey(), params, srcImg->getCacheAPI(), Natron::eStorageModeRAM,std::string()));
+        (*outputImage)->allocateMemory();
     }
+    Natron::ImageBitDepthEnum depth = srcImg->getBitDepth();
     
-    QMutexLocker k(&_entryLock);
-    
-    RectI merge = newBounds;
-    merge.merge(_bounds);
-    
-    
-    
-    ///Copy to a temp buffer of the good size
-    boost::scoped_ptr<Image> tmpImg(new Image(getComponents(),
-                                              getRoD(),
-                                              merge,
-                                              getMipMapLevel(),
-                                              getPixelAspectRatio(),
-                                              getBitDepth(),
-                                              usesBitMap()));
-    Natron::ImageBitDepthEnum depth = getBitDepth();
-
     if (fillWithBlackAndTransparant) {
         
         /*
          Compute the rectangles (A,B,C,D) where to set the image to 0
          
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAA
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             DDDDDXXXXXXXXXXXXXXXXXXBBBBB
-             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
-             CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+         AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+         AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+         DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+         DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+         DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+         DDDDDXXXXXXXXXXXXXXXXXXBBBBB
+         CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+         CCCCCCCCCCCCCCCCCCCCCCCCCCCC
          */
         RectI aRect;
         aRect.x1 = merge.x1;
-        aRect.y1 = _bounds.y2;
+        aRect.y1 = srcBounds.y2;
         aRect.y2 = merge.y2;
         aRect.x2 = merge.x2;
         
         RectI bRect;
-        bRect.x1 = _bounds.x2;
-        bRect.y1 = _bounds.y1;
+        bRect.x1 = srcBounds.x2;
+        bRect.y1 = srcBounds.y1;
         bRect.x2 = merge.x2;
-        bRect.y2 = _bounds.y2;
+        bRect.y2 = srcBounds.y2;
         
         RectI cRect;
         cRect.x1 = merge.x1;
         cRect.y1 = merge.y1;
         cRect.x2 = merge.x2;
-        cRect.y2 = _bounds.y1;
+        cRect.y2 = srcBounds.y1;
         
         RectI dRect;
         dRect.x1 = merge.x1;
-        dRect.y1 = _bounds.y1;
-        dRect.x2 = _bounds.x1;
-        dRect.y2 = _bounds.y2;
+        dRect.y1 = srcBounds.y1;
+        dRect.x2 = srcBounds.x1;
+        dRect.y2 = srcBounds.y2;
         
-        WriteAccess wacc(tmpImg.get());
-        std::size_t pixelSize = getComponentsCount() * getSizeOfForBitDepth(depth);
+        Image::WriteAccess wacc(outputImage->get());
+        std::size_t pixelSize = srcImg->getComponentsCount() * getSizeOfForBitDepth(depth);
         
         if (!aRect.isNull()) {
-            char* pix = (char*)tmpImg->pixelAt(aRect.x1, aRect.y1);
+            char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
             assert(pix);
             double a = aRect.area();
             std::size_t memsize = a * pixelSize;
             memset(pix, 0, memsize);
-            if (setBitmapTo1 && tmpImg->usesBitMap()) {
-                char* bm = (char*)tmpImg->getBitmapAt(aRect.x1, aRect.y1);
+            if (setBitmapTo1 && (*outputImage)->usesBitMap()) {
+                char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
                 assert(bm);
                 memset(bm, 1, a);
             }
         }
         if (!cRect.isNull()) {
-            char* pix = (char*)tmpImg->pixelAt(cRect.x1, cRect.y1);
+            char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
             assert(pix);
             double a = cRect.area();
             std::size_t memsize = a * pixelSize;
             memset(pix, 0, memsize);
-            if (setBitmapTo1 && tmpImg->usesBitMap()) {
-                char* bm = (char*)tmpImg->getBitmapAt(cRect.x1, cRect.y1);
+            if (setBitmapTo1 && (*outputImage)->usesBitMap()) {
+                char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
                 assert(bm);
                 memset(bm, 1, a);
             }
         }
         if (!bRect.isNull()) {
-            char* pix = (char*)tmpImg->pixelAt(bRect.x1, bRect.y1);
+            char* pix = (char*)wacc.pixelAt(bRect.x1, bRect.y1);
             assert(pix);
             int mw = merge.width();
             std::size_t rowsize = mw * pixelSize;
@@ -928,7 +955,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
             int bw = bRect.width();
             std::size_t rectRowSize = bw * pixelSize;
             
-            char* bm = (setBitmapTo1 && tmpImg->usesBitMap()) ? tmpImg->getBitmapAt(bRect.x1, bRect.y1) : 0;
+            char* bm = (setBitmapTo1 && (*outputImage)->usesBitMap()) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
             for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
                 memset(pix, 0, rectRowSize);
                 if (bm) {
@@ -938,7 +965,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
             }
         }
         if (!dRect.isNull()) {
-            char* pix = (char*)tmpImg->pixelAt(dRect.x1, dRect.y1);
+            char* pix = (char*)wacc.pixelAt(dRect.x1, dRect.y1);
             assert(pix);
             int mw = merge.width();
             std::size_t rowsize = mw * pixelSize;
@@ -946,7 +973,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
             int dw = dRect.width();
             std::size_t rectRowSize = dw * pixelSize;
             
-            char* bm = (setBitmapTo1 && tmpImg->usesBitMap()) ? tmpImg->getBitmapAt(dRect.x1, dRect.y1) : 0;
+            char* bm = (setBitmapTo1 && (*outputImage)->usesBitMap()) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
             for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
                 memset(pix, 0, rectRowSize);
                 if (bm) {
@@ -962,22 +989,59 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
     
     switch (depth) {
         case eImageBitDepthByte:
-            tmpImg->pasteFromForDepth<unsigned char>(*this, _bounds, usesBitMap(), false);
+            (*outputImage)->pasteFromForDepth<unsigned char>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
             break;
         case eImageBitDepthShort:
-            tmpImg->pasteFromForDepth<unsigned short>(*this, _bounds, usesBitMap(), false);
+            (*outputImage)->pasteFromForDepth<unsigned short>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
             break;
         case eImageBitDepthHalf:
             assert(false);
             break;
         case eImageBitDepthFloat:
-            tmpImg->pasteFromForDepth<float>(*this, _bounds, usesBitMap(), false);
+            (*outputImage)->pasteFromForDepth<float>(*srcImg, srcBounds, srcImg->usesBitMap(), false);
             break;
         case eImageBitDepthNone:
             break;
     }
-      
+    
 
+}
+
+bool
+Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1, boost::shared_ptr<Image>* output)
+{
+    if (getBounds().contains(newBounds)) {
+        return false;
+    }
+    assert(output);
+    
+    QReadLocker k(&_entryLock);
+    
+    RectI merge = newBounds;
+    merge.merge(_bounds);
+    
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, usesBitMap(), output);
+    return true;
+}
+
+bool
+Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1)
+{
+    
+    
+    if (getBounds().contains(newBounds)) {
+        return false;
+    }
+    
+    QWriteLocker k(&_entryLock);
+    
+    RectI merge = newBounds;
+    merge.merge(_bounds);
+    
+    ImagePtr tmpImg;
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, false, &tmpImg);
+    
+    
     ///Change the size of the current buffer
     _bounds = merge;
     _params->setBounds(merge);
@@ -1096,7 +1160,7 @@ Image::fill(const RectI & roi,
             float a)
 {
     
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1119,7 +1183,7 @@ Image::fill(const RectI & roi,
 void
 Image::fillZero(const RectI& roi)
 {
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     RectI intersection;
     if (!roi.intersect(_bounds, &intersection)) {
         return;
@@ -1155,7 +1219,7 @@ Image::fillZero(const RectI& roi)
 void
 Image::fillBoundsZero()
 {
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     
     std::size_t rowSize =  getComponents().getNumComponents();
     switch ( getBitDepth() ) {
@@ -1334,7 +1398,7 @@ Image::getPixelAspectRatio() const
 unsigned int
 Image::getRowElements() const
 {
-    QMutexLocker k(&_entryLock);
+    QReadLocker k(&_entryLock);
     return getComponentsCount() * _bounds.width();
 }
 
@@ -1358,8 +1422,8 @@ Image::halveRoIForDepth(const RectI & roi,
     }
     
     /// Take the lock for both bitmaps since we're about to read/write from them!
-    QMutexLocker k1(&output->_entryLock);
-    QMutexLocker k2(&_entryLock);
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
 
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = _bounds;
@@ -1541,8 +1605,8 @@ Image::halve1DImageForDepth(const RectI & roi,
     assert( output->getComponents() == getComponents() );
     
     /// Take the lock for both bitmaps since we're about to read/write from them!
-    QMutexLocker k1(&output->_entryLock);
-    QMutexLocker k2(&_entryLock);
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
 
     
     const RectI & srcBounds = _bounds;
@@ -1658,7 +1722,7 @@ Image::checkForNaNs(const RectI& roi)
         return false;
     }
  
-    QMutexLocker k(&_entryLock);
+    QWriteLocker k(&_entryLock);
     
     unsigned int compsCount = getComponentsCount();
 
@@ -1715,8 +1779,8 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         return;
     }
     
-    QMutexLocker k1(&output->_entryLock);
-    QMutexLocker k2(&_entryLock);
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
     
     int srcRowSize = _bounds.width() * components;
     int dstRowSize = output->_bounds.width() * components;
@@ -1740,13 +1804,15 @@ Image::upscaleMipMapForDepth(const RectI & roi,
         PIX * dstPixFirst = dstLineBatchStart;
         // fill the first line
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += components, xo += xcount, dstPixFirst += xcount * components) {
-            xcount = scale + xo - xi * scale;
+            xcount = scale - (xo - xi * scale);
+            xcount = std::min(xcount, dstRoi.x2 - xo);
             //assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
             for (int i = 0; i < xcount; ++i, dstPix += components) {
                 assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % components == 0 );
+                assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * components);
                 for (int c = 0; c < components; ++c) {
                     dstPix[c] = srcPix[c];
                 }
@@ -1798,8 +1864,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
     
-    QMutexLocker k1(&output->_entryLock);
-    QMutexLocker k2(&_entryLock);
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
     
     ///The destination rectangle
     const RectI & dstBounds = output->_bounds;

@@ -176,7 +176,6 @@ public:
 struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
-    Gui* _gui;
     
     boost::weak_ptr<NodeCollection> group;
     
@@ -228,11 +227,13 @@ struct NodeGraphPrivate
     bool _hasMovedOnce;
     
     ViewerTab* lastSelectedViewer;
-    bool wasLaskUserSeekDuringPlayback;
     
-    NodeGraphPrivate(Gui* gui,
-                     NodeGraph* p,
+    QPixmap unlockIcon;
+    
+    NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);
+    
+    QPoint getPyPlugUnlockPos() const;
     
     void resetAllClipboards();
 

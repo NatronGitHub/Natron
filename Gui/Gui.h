@@ -69,6 +69,7 @@ class QMutex;
 #include "Gui/RegisteredTabs.h"
 class GuiLayoutSerialization;
 class GuiAppInstance;
+class PanelWidget;
 class AppInstance;
 class NodeGui;
 class TabWidget;
@@ -125,9 +126,11 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
 
 public:
+    
+    friend class PanelWidget;
+    
     explicit Gui(GuiAppInstance* app,
                  QWidget* parent = 0);
 
@@ -140,10 +143,7 @@ public:
 
     boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
                                              bool requestedByLoad,
-                                             double xPosHint,
-                                             double yPosHint,
-                                             bool pushUndoRedoCommand,
-                                             bool autoConnect);
+                                             bool pushUndoRedoCommand);
 
     void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
     
@@ -299,8 +299,8 @@ public:
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
-    void registerTab(QWidget* tab,ScriptObject* obj);
-    void unregisterTab(QWidget* tab);
+    void registerTab(PanelWidget* tab,ScriptObject* obj);
+    void unregisterTab(PanelWidget* tab);
 
     void registerFloatingWindow(FloatingWidget* window);
     void unregisterFloatingWindow(FloatingWidget* window);
@@ -324,10 +324,10 @@ public:
 
     /*Returns a valid tab if a tab with a matching name has been
        found. Otherwise returns NULL.*/
-    QWidget* findExistingTab(const std::string & name) const;
-    void findExistingTab(const std::string & name, QWidget** w,ScriptObject** o) const;
+    PanelWidget* findExistingTab(const std::string & name) const;
+    void findExistingTab(const std::string & name, PanelWidget** w,ScriptObject** o) const;
 
-    void appendTabToDefaultViewerPane(QWidget* tab,ScriptObject* obj);
+    void appendTabToDefaultViewerPane(PanelWidget* tab,ScriptObject* obj);
 
     /**
      * @brief Get the central of the application, it is either 1 TabWidget or a Splitter.
@@ -356,9 +356,9 @@ public:
     /*force a refresh on all previews no matter what*/
     void forceRefreshAllPreviews();
 
-    void startDragPanel(QWidget* panel);
+    void startDragPanel(PanelWidget* panel);
 
-    QWidget* stopDragPanel(QSize* initialSize);
+    PanelWidget* stopDragPanel(QSize* initialSize);
 
     bool isDraggingPanel() const;
 
@@ -531,7 +531,7 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers();
+    void renderAllViewers(bool canAbort);
 
     void toggleAutoHideGraphInputs();
 
@@ -590,6 +590,17 @@ public:
      **/
     bool abortProject(bool quitApp);
     
+    /*
+     * @brief To be called by "main widgets" such as NodeGraph, Viewer etc... to determine if focus stealing is possible to have
+     * mouse position dependent shortcuts without the user actually clicking.
+     */
+    static bool isFocusStealingPossible();
+    
+    PanelWidget* getCurrentPanelFocus() const;
+    
+    void setLastKeyPressVisitedClickFocus(bool visited);
+
+    
 Q_SIGNALS:
 
 
@@ -601,6 +612,11 @@ Q_SIGNALS:
     void viewersChanged();
 
 public Q_SLOTS:
+    
+    ///Called whenever the time changes on the timeline
+    void onTimeChanged(SequenceTime time,int reason);
+    
+    void onTimelineTimeAboutToChange();
 
     void reloadStylesheet();
 
@@ -711,10 +727,14 @@ public Q_SLOTS:
     
     void onRenderProgressDialogFinished();
     
+    void onFocusChanged(QWidget* old, QWidget*);
+
+    
 private:
 
     
-
+    void setCurrentPanelFocus(PanelWidget* widget);
+    
     AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
 
     void setupUi();

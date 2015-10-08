@@ -29,9 +29,9 @@
 #include <map>
 #include <string>
 
-class QWidget;
 class ScriptObject;
+class PanelWidget;
 
-typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
+typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
 
 #endif // Gui_RegisteredTabs_h

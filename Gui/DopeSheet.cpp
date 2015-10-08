@@ -551,7 +551,11 @@ DopeSheetSelectionModel *DopeSheet::getSelectionModel() const
     return _imp->selectionModel;
 }
 
-
+DopeSheetEditor*
+DopeSheet::getEditor() const
+{
+    return _imp->editor;
+}
 
 void DopeSheet::deleteSelectedKeyframes()
 {
@@ -1379,7 +1383,7 @@ DSNodePrivate::~DSNodePrivate()
 
 void DSNodePrivate::initGroupNode()
 {
-    boost::shared_ptr<NodeGui> node = nodeGui.lock();
+   /* boost::shared_ptr<NodeGui> node = nodeGui.lock();
     if (!node) {
         return;
     }
@@ -1396,10 +1400,10 @@ void DSNodePrivate::initGroupNode()
         NodePtr subNode = (*it);
         boost::shared_ptr<NodeGui> subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
 
-        if (!subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
+        if (!subNodeGui || !subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
             continue;
         }
-    }
+    }*/
 }
 
 DSNode::DSNode(DopeSheet *model,

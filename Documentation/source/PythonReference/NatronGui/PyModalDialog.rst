@@ -40,15 +40,15 @@ To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<Na
 	
 	dialog = app1.createModalDialog()
 	
-To show the dialog to the user, use the :func:`exec()<>` function inherited from :class:`QDialog` ::
+To show the dialog to the user, use the :func:`exec_()<>` function inherited from :class:`QDialog` ::
 
-	dialog.exec()
+	dialog.exec_()
 	
-Note that once :func:`exec()<>` is called, no instruction will be executed until the user closed the dialog. 
+Note that once :func:`exec_()<>` is called, no instruction will be executed until the user closed the dialog. 
 
-The modal dialog always has *OK* and *Cancel* buttons. To query which button the user pressed, inspect the return value of the :func:`exec()<>` call::
+The modal dialog always has *OK* and *Cancel* buttons. To query which button the user pressed, inspect the return value of the :func:`exec_()<>` call::
 
-	if dialog.exec():
+	if dialog.exec_():
 		#The user pressed OK
 		...
 	else:
@@ -71,11 +71,11 @@ Once all your parameters are created, create the GUI for them using the :func:`r
 	
 	dialog.refreshUserParamsGUI()
 	
-	dialog.exec()
+	dialog.exec_()
 	
 You can then retrieve the value of a parameter once the dialog is finished using the :func:`getParam(scriptName)<NatronGui.PyModalDialog.getParam>` function::
 
-	if dialog.exec():
+	if dialog.exec_():
 		intValue = dialog.getParam("myInt").get()
 		boolValue = dialog.getParam("myBool").get()
 

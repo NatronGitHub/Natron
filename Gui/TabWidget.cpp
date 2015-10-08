@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+#include <QStyle>
 #include <QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -47,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewerInstance.h"
@@ -185,7 +187,7 @@ struct TabWidgetPrivate
     TabWidget* _publicInterface;
     Gui* gui;
     QVBoxLayout* mainLayout;
-    std::vector<std::pair<QWidget*,ScriptObject*> > tabs; // the actual tabs
+    std::vector<std::pair<PanelWidget*,ScriptObject*> > tabs; // the actual tabs
     QWidget* header;
     QHBoxLayout* headerLayout;
     bool modifyingTabBar;
@@ -193,7 +195,7 @@ struct TabWidgetPrivate
     Button* leftCornerButton;
     Button* floatButton;
     Button* closeButton;
-    QWidget* currentWidget;
+    PanelWidget* currentWidget;
     bool drawDropRect;
     bool fullScreen;
     bool isAnchor;
@@ -229,8 +231,8 @@ struct TabWidgetPrivate
 
     }
     
-    void declareTabToPython(QWidget* widget,const std::string& tabName);
-    void removeTabToPython(QWidget* widget,const std::string& tabName);
+    void declareTabToPython(PanelWidget* widget,const std::string& tabName);
+    void removeTabToPython(PanelWidget* widget,const std::string& tabName);
 };
 
 TabWidget::TabWidget(Gui* gui,
@@ -322,7 +324,7 @@ TabWidget::count() const
     return _imp->tabs.size();
 }
 
-QWidget*
+PanelWidget*
 TabWidget::tabAt(int index) const
 {
     QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -333,7 +335,7 @@ TabWidget::tabAt(int index) const
 }
 
 void
-TabWidget::tabAt(int index, QWidget** w, ScriptObject** obj) const
+TabWidget::tabAt(int index, PanelWidget** w, ScriptObject** obj) const
 {
     QMutexLocker l(&_imp->tabWidgetStateMutex);
     if (index < 0 || index >= (int)_imp->tabs.size()) {
@@ -640,7 +642,7 @@ TabWidget::closePane()
     if (tabToTransferTo) {
         ///move this tab's splits
         while (count() > 0) {
-            QWidget* w;
+            PanelWidget* w;
             ScriptObject* o;
             tabAt(0,&w,&o);
             if (w && o) {
@@ -649,7 +651,7 @@ TabWidget::closePane()
         }
     } else {
         while (count() > 0) {
-            QWidget* w = tabAt(0);
+            PanelWidget* w = tabAt(0);
             if (w) {
                 removeTab( w, true );
             }
@@ -763,7 +765,7 @@ TabWidget::getTabLabel(int index) const
 }
 
 QString
-TabWidget::getTabLabel(QWidget* tab) const
+TabWidget::getTabLabel(PanelWidget* tab) const
 {
     QMutexLocker k(&_imp->tabWidgetStateMutex);
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
@@ -775,7 +777,7 @@ TabWidget::getTabLabel(QWidget* tab) const
 }
 
 void
-TabWidget::setTabLabel(QWidget* tab,
+TabWidget::setTabLabel(PanelWidget* tab,
                       const QString & name)
 {
     QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -799,7 +801,7 @@ TabWidget::floatCurrentWidget()
         _imp->gui->registerPane(newPane);
         newPane->setObjectName_mt_safe( _imp->gui->getAvailablePaneName() );
         
-        QWidget* w;
+        PanelWidget* w;
         ScriptObject* o;
         currentWidget(&w, &o);
         if (w && o) {
@@ -815,7 +817,7 @@ TabWidget::floatCurrentWidget()
 void
 TabWidget::closeCurrentWidget()
 {
-    QWidget* w = currentWidget();
+    PanelWidget* w = currentWidget();
     if (!w) {
         return;
     }
@@ -827,7 +829,7 @@ void
 TabWidget::closeTab(int index)
 {
     
-    QWidget *w = tabAt(index);
+    PanelWidget *w = tabAt(index);
     if (!w) {
         return;
     }
@@ -945,14 +947,14 @@ TabWidget::splitVertically(bool autoSave)
 }
 
 bool
-TabWidget::appendTab(QWidget* widget, ScriptObject* object)
+TabWidget::appendTab(PanelWidget* widget, ScriptObject* object)
 {
     return appendTab(QIcon(),widget,object);
 }
 
 bool
 TabWidget::appendTab(const QIcon & icon,
-                     QWidget* widget,
+                     PanelWidget* widget,
                     ScriptObject* object)
 {
     {
@@ -997,7 +999,7 @@ TabWidget::appendTab(const QIcon & icon,
 void
 TabWidget::insertTab(int index,
                      const QIcon & icon,
-                     QWidget* widget,
+                     PanelWidget* widget,
                       ScriptObject* object)
 {
 
@@ -1014,8 +1016,10 @@ TabWidget::insertTab(int index,
         _imp->tabBar->insertTab(index,icon,title);
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
-        if (!widget->isVisible()) {
-            widget->setVisible(true);
+        
+        QWidget* w = widget->getWidget();
+        if (!w->isVisible()) {
+            w->setVisible(true);
         }
         
         l.unlock();
@@ -1030,20 +1034,60 @@ TabWidget::insertTab(int index,
 
 void
 TabWidget::insertTab(int index,
-                     QWidget* widget,
+                     PanelWidget* widget,
                      ScriptObject* object)
 {
     insertTab(index, QIcon(), widget,object);
 }
 
-QWidget*
+PanelWidget*
 TabWidget::removeTab(int index,bool userAction)
 {
-    QWidget* tab;
+    PanelWidget* tab;
     ScriptObject* obj;
     tabAt(index,&tab,&obj);
     if (!tab || !obj) {
         return 0;
+    }
+    
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
+    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    
+    int newIndex = -1;
+    if (isGraph) {
+        /*
+         If the tab is a group pane, try to find the parent group pane in this pane and set it active
+         */
+        boost::shared_ptr<NodeCollection> collect = isGraph->getGroup();
+        assert(collect);
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collect.get());
+        if (isGroup) {
+            collect = isGroup->getNode()->getGroup();
+            if (collect) {
+                
+                NodeGraph* parentGraph = 0;
+                isGroup  = dynamic_cast<NodeGroup*>(collect.get());
+                if (isGroup) {
+                    parentGraph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+                } else {
+                    parentGraph = getGui()->getNodeGraph();
+                }
+                assert(parentGraph);
+                for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
+                    if (_imp->tabs[i].first == parentGraph) {
+                        newIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    QWidget* w = tab->getWidget();
+
+    if (_imp->tabBar->hasClickFocus() && _imp->currentWidget == tab) {
+        tab->removeClickFocus();
     }
     
     {
@@ -1055,7 +1099,13 @@ TabWidget::removeTab(int index,bool userAction)
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() > 0) {
             l.unlock();
-            makeCurrentTab((index - 1 >= 0) ? index - 1 : 0);
+            int i;
+            if (newIndex == -1) {
+                i = (index - 1 >= 0) ? index - 1 : 0;
+            } else {
+                i = newIndex;
+            }
+            makeCurrentTab(i);
             l.relock();
         } else {
             _imp->currentWidget = 0;
@@ -1070,12 +1120,10 @@ TabWidget::removeTab(int index,bool userAction)
         }
         //tab->setParent(_imp->gui);
     }
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
-    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
-    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+
     
     _imp->removeTabToPython(tab, obj->getScriptName());
-    
+
     if (userAction) {
       
         if (isViewer) {
@@ -1088,22 +1136,22 @@ TabWidget::removeTab(int index,bool userAction)
             return tab;
         } else {
             ///Do not delete unique widgets such as the properties bin, node graph or curve editor
-            tab->setVisible(false);
+            w->setVisible(false);
         }
     } else {
-        tab->setVisible(false);
+        w->setVisible(false);
     }
     if (isGraph && _imp->gui->getLastSelectedGraph() == isGraph) {
         _imp->gui->setLastSelectedGraph(0);
     }
-	tab->setParent(_imp->gui);
+	w->setParent(_imp->gui);
 
     
     return tab;
 }
 
 void
-TabWidget::removeTab(QWidget* widget,bool userAction)
+TabWidget::removeTab(PanelWidget* widget,bool userAction)
 {
     int index = -1;
 
@@ -1118,14 +1166,14 @@ TabWidget::removeTab(QWidget* widget,bool userAction)
     }
 
     if (index != -1) {
-        QWidget* tab = removeTab(index,userAction);
+        PanelWidget* tab = removeTab(index,userAction);
         assert(tab == widget);
         Q_UNUSED(tab);
     }
 }
 
 void
-TabWidget::setCurrentWidget(QWidget* w)
+TabWidget::setCurrentWidget(PanelWidget* w)
 {
     int index = -1;
     {
@@ -1148,9 +1196,21 @@ TabWidget::makeCurrentTab(int index)
     if (_imp->modifyingTabBar) {
         return;
     }
-    QWidget* tab = tabAt(index);
+    PanelWidget* tab = tabAt(index);
     if (!tab) {
         return;
+    }
+    QWidget* tabW = tab->getWidget();
+    
+    PanelWidget* curWidget;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        curWidget = _imp->currentWidget;
+    }
+    bool hadFocus = false;
+    if (curWidget && _imp->tabBar->hasClickFocus()) {
+        hadFocus = true;
+        curWidget->removeClickFocus();
     }
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -1158,35 +1218,42 @@ TabWidget::makeCurrentTab(int index)
         /*Remove previous widget if any*/
         
         if (_imp->currentWidget) {
-            QObject::disconnect(_imp->currentWidget, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
-            _imp->currentWidget->setVisible(false);
-            _imp->mainLayout->removeWidget(_imp->currentWidget);
+            QWidget* w = _imp->currentWidget->getWidget();
+            QObject::disconnect(w, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
+            w->setVisible(false);
+            _imp->mainLayout->removeWidget(w);
         }
-
-        _imp->mainLayout->addWidget(tab);
-        QObject::connect(tab, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
         _imp->currentWidget = tab;
+        curWidget = _imp->currentWidget;
     }
-    tab->setVisible(true);
+    
+    _imp->mainLayout->addWidget(tabW);
+    QObject::connect(tabW, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
+    
+    tabW->setVisible(true);
     //tab->setParent(this);
     _imp->modifyingTabBar = true;
     _imp->tabBar->setCurrentIndex(index);
     _imp->modifyingTabBar = false;
+    
+    if (hadFocus) {
+        curWidget->takeClickFocus();
+    }
 }
-                         
-void
+        
+        void
 TabWidget::onCurrentTabDeleted()
 {
     QObject* s = sender();
     
     QMutexLocker l(&_imp->tabWidgetStateMutex);
 
-    if (s != _imp->currentWidget) {
+    if (!_imp->currentWidget || (s != _imp->currentWidget->getWidget())) {
         return;
     }
     _imp->currentWidget = 0;
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
-        if (_imp->tabs[i].first == s) {
+        if (_imp->tabs[i].first->getWidget() == s) {
 
             _imp->tabs.erase(_imp->tabs.begin() + i);
             _imp->modifyingTabBar = true;
@@ -1248,7 +1315,7 @@ TabWidget::dropEvent(QDropEvent* e)
 {
     e->accept();
     QString name( e->mimeData()->data("Tab") );
-    QWidget* w;
+    PanelWidget* w;
     ScriptObject* obj;
     _imp->gui->findExistingTab(name.toStdString(), &w, &obj);
     if (w && obj) {
@@ -1271,15 +1338,35 @@ TabWidget::dropEvent(QDropEvent* e)
 
 TabBar::TabBar(TabWidget* tabWidget,
                QWidget* parent)
-    : QTabBar(parent)
-      , _dragPos()
-      , _dragPix(0)
-      , _tabWidget(tabWidget)
-      , _processingLeaveEvent(false)
+        : QTabBar(parent)
+        , _dragPos()
+        , _dragPix(0)
+        , _tabWidget(tabWidget)
+        , _processingLeaveEvent(false)
+        , mouseOverFocus(false)
+        , clickFocus(false)
 {
     setTabsClosable(true);
     setMouseTracking(true);
     QObject::connect( this, SIGNAL( tabCloseRequested(int) ), tabWidget, SLOT( closeTab(int) ) );
+}
+        
+void
+TabBar::setMouseOverFocus(bool focus)
+{
+    mouseOverFocus = focus;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
+}
+        
+void
+TabBar::setClickFocus(bool focus)
+{
+    clickFocus = focus;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
 void
@@ -1411,7 +1498,7 @@ TabBar::makePixmapForDrag(int index)
     ///insert just the tab we want to screen shot
     addTab(tabs[index].second, tabs[index].first);
 
-    QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index) );
+    QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
 #if QT_VERSION < 0x050000
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
 #else
@@ -1491,7 +1578,7 @@ TabWidget::stopDragTab(const QPoint & globalPos)
     }
 
     QSize draggedPanelSize;
-    QWidget* draggedPanel = _imp->gui->stopDragPanel(&draggedPanelSize);
+    PanelWidget* draggedPanel = _imp->gui->stopDragPanel(&draggedPanelSize);
     if (!draggedPanel) {
         return false;
     }
@@ -1589,17 +1676,17 @@ TabWidget::stopDragTab(const QPoint & globalPos)
 void
 TabWidget::startDragTab(int index)
 {
-    QWidget* selectedTab = tabAt(index);
+    PanelWidget* selectedTab = tabAt(index);
     if (!selectedTab) {
         return;
     }
-
-    selectedTab->setParent(this);
+    QWidget* w = selectedTab->getWidget();
+    w->setParent(this);
 
     _imp->gui->startDragPanel(selectedTab);
 
     removeTab(selectedTab, false);
-    selectedTab->hide();
+    w->hide();
 }
 
 void
@@ -1691,46 +1778,60 @@ TabWidget::setAsAnchor(bool anchor)
         update();
     }
 }
+        
+void
+TabWidget::togglePaneFullScreen()
+{
+    bool oldFullScreen;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        oldFullScreen = _imp->fullScreen;
+        _imp->fullScreen = !_imp->fullScreen;
+    }
+
+    if (oldFullScreen) {
+        _imp->gui->minimize();
+    } else {
+        _imp->gui->maximize(this);
+    }
+}
 
 void
 TabWidget::keyPressEvent (QKeyEvent* e)
 {
-    if ( (e->key() == Qt::Key_Space) && modCASIsNone(e) ) {
-        bool fullScreen;
-        {
-            QMutexLocker l(&_imp->tabWidgetStateMutex);
-            fullScreen = _imp->fullScreen;
-        }
-        {
-            QMutexLocker l(&_imp->tabWidgetStateMutex);
-            _imp->fullScreen = !_imp->fullScreen;
-        }
-        if (fullScreen) {
-            _imp->gui->minimize();
-        } else {
-            _imp->gui->maximize(this);
-        }
-        e->accept();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, e->modifiers(), e->key())) {
+    
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+
+    bool accepted = true;
+    
+    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
+        togglePaneFullScreen();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, modifiers, key)) {
         moveToNextTab();
-    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, e->modifiers(), e->key())) {
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, modifiers, key)) {
         moveToPreviousTab();
-    }else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, modifiers, key)) {
         closeCurrentWidget();
-    } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
+    } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, modifiers, key)) {
         _imp->gui->toggleFullScreen();
-        e->accept();
     } else {
+        accepted = false;
         QFrame::keyPressEvent(e);
+    }
+    if (accepted) {
+        if (_imp->currentWidget) {
+            _imp->currentWidget->takeClickFocus();
+        }
     }
 }
 
 bool
-TabWidget::moveTab(QWidget* what,
+TabWidget::moveTab(PanelWidget* what,
                 ScriptObject* obj,
                    TabWidget *where)
 {
-    TabWidget* from = dynamic_cast<TabWidget*>( what->parentWidget() );
+    TabWidget* from = dynamic_cast<TabWidget*>( what->getWidget()->parentWidget() );
 
     if (from == where) {
         /*We check that even if it is the same TabWidget, it really exists.*/
@@ -1747,12 +1848,20 @@ TabWidget::moveTab(QWidget* what,
         //it wasn't found somehow
     }
 
+    bool hadClickFocus = false;
     if (from) {
+        hadClickFocus = from->getGui()->getCurrentPanelFocus() == what;
+        
+        ///This line will remove click focus
         from->removeTab(what, false);
     }
     assert(where);
+
     where->appendTab(what,obj);
-    //what->setParent(where);
+    if (hadClickFocus) {
+        where->setWidgetClickFocus(what, true);
+    }
+
     if ( !where->getGui()->isAboutToClose() &&  !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
     }
@@ -1798,7 +1907,7 @@ TabWidget::getTabScriptNames() const
     return ret;
 }
 
-QWidget*
+PanelWidget*
 TabWidget::currentWidget() const
 {
     QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -1807,7 +1916,7 @@ TabWidget::currentWidget() const
 }
 
 void
-TabWidget::currentWidget(QWidget** w,ScriptObject** obj) const
+TabWidget::currentWidget(PanelWidget** w,ScriptObject** obj) const
 {
     QMutexLocker l(&_imp->tabWidgetStateMutex);
     *w = _imp->currentWidget;
@@ -1818,6 +1927,26 @@ TabWidget::currentWidget(QWidget** w,ScriptObject** obj) const
         }
     }
     *obj = 0;
+}
+        
+void
+TabWidget::setWidgetMouseOverFocus(PanelWidget* w, bool hoverFocus)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (w == _imp->currentWidget) {
+        _imp->tabBar->setMouseOverFocus(hoverFocus);
+    }
+    
+}
+
+void
+TabWidget::setWidgetClickFocus(PanelWidget* w, bool clickFocus)
+{
+     assert(QThread::currentThread() == qApp->thread());
+    if (w == _imp->currentWidget) {
+        _imp->tabBar->setClickFocus(clickFocus);
+    }
+
 }
 
 int
@@ -1944,7 +2073,7 @@ TabWidget::onTabBarMouseLeft()
 }
 
 void
-TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const std::string& newName)
+TabWidget::onTabScriptNameChanged(PanelWidget* tab,const std::string& oldName,const std::string& newName)
 {
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     if (!isViewer) {
@@ -1970,7 +2099,7 @@ TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const 
 }
 
 void
-TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
+TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabName)
 {
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
@@ -2001,7 +2130,7 @@ TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
 }
 
 void
-TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
+TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabName)
 {
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);

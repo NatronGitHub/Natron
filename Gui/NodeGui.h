@@ -163,6 +163,8 @@ public:
     void deleteReferences();
 
     ~NodeGui() OVERRIDE;
+    
+    virtual void restoreStateAfterCreation() OVERRIDE FINAL;
 
     /**
      * @brief Fills the serializationObject with the current state of the NodeGui.
@@ -427,6 +429,7 @@ protected:
     
 public Q_SLOTS:
 
+    void onOutputLayerChanged();
 
     void onSettingsPanelClosed(bool closed);
     

@@ -200,10 +200,13 @@ if [ ! -f $INSTALL_PATH/lib/libSeExpr.a ]; then
     fi
     tar xvf $SRC_PATH/$SEE_TAR || exit 1
     cd SeExpr-* || exit 1
+	cd src/SeExpr || exit 1
+	patch -u -i $CWD/include/patches/SeExpr/mingw-compat.patch  || exit 1
+	cd ../..
     mkdir build || exit 1
     cd build || exit 1
     env CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" cmake .. -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH || exit 1
-    make || exit 1
+    make -j${MKJOBS} || exit 1
     make install || exit 1
     mkdir -p $INSTALL_PATH/docs/seexpr || exit 1
     cp ../README ../src/doc/license.txt $INSTALL_PATH/docs/seexpr/ || exit 1

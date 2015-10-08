@@ -50,7 +50,14 @@ public:
     void setOutput(bool o);
     
     bool getOutput() const;
+    
+Q_SIGNALS:
+    
+    void userScrollChanged(bool atBottom);
+    
 private:
+    
+    virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
     
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
     
@@ -61,6 +68,8 @@ private:
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    
+    virtual void scrollContentsBy(int dx, int dy) OVERRIDE FINAL;
     
     bool isOutput;
 };

@@ -74,8 +74,8 @@ NodeGraph::NodeGraph(Gui* gui,
                      QWidget *parent)
     : QGraphicsView(scene,parent)
     , NodeGraphI()
-    , ScriptObject()
-      , _imp( new NodeGraphPrivate(gui,this, group) )
+    , PanelWidget(this,gui)
+      , _imp( new NodeGraphPrivate(this, group) )
 {
     
     group->setNodeGraphPointer(this);
@@ -139,7 +139,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     _imp->_undoStack = new QUndoStack(this);
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
-    _imp->_gui->registerNewUndoStack(_imp->_undoStack);
+    getGui()->registerNewUndoStack(_imp->_undoStack);
 
     _imp->_hintInputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
     _imp->_hintInputEdge->setDefaultColor( QColor(0,255,0,100) );
@@ -176,11 +176,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     _imp->_menu = new Natron::Menu(this);
-    //_imp->_menu->setFont( QFont(appFont,appFontSize) );
-
-    boost::shared_ptr<TimeLine> timeline = _imp->_gui->getApp()->getTimeLine();
-    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(),SIGNAL( frameAboutToChange() ), this,SLOT( onTimelineTimeAboutToChange() ) );
+    
 }
 
 NodeGraph::~NodeGraph()
@@ -196,7 +192,7 @@ NodeGraph::~NodeGraph()
         (*it)->discardGraphPointer();
     }
 
-    if (_imp->_gui) {
+    if (getGui()) {
         QGraphicsScene* scene = _imp->_hintInputEdge->scene();
         if (scene) {
             scene->removeItem(_imp->_hintInputEdge);
@@ -236,16 +232,10 @@ NodeGraph::getRootItem() const
     return _imp->_root;
 }
 
-Gui*
-NodeGraph::getGui() const
-{
-    return _imp->_gui;
-}
 
 void
-NodeGraph::discardGuiPointer()
+NodeGraph::notifyGuiClosing()
 {
-    _imp->_gui = 0;
     boost::shared_ptr<NodeCollection> group = getGroup();
     if (group) {
         group->discardNodeGraphPointer();
@@ -293,6 +283,18 @@ NodeGraph::paintEvent(QPaintEvent* e)
     if (app && app->getProject()->isLoadingProjectInternal()) {
         return;
     }
+    
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    bool isGroupEditable = true;
+    bool groupEdited = true;
+    if (isGroup) {
+        isGroupEditable = isGroup->isSubGraphEditable();
+        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+    }
+    
+    bool drawLockedMode = !isGroupEditable || !groupEdited;
+    
     if (_imp->_refreshOverlays) {
         ///The visible portion of the scene, in scene coordinates
         QRectF visibleScene = visibleSceneRect();
@@ -312,6 +314,31 @@ NodeGraph::paintEvent(QPaintEvent* e)
         _imp->_refreshOverlays = false;
     }
     QGraphicsView::paintEvent(e);
+    
+    if (drawLockedMode) {
+        ///Show a semi-opaque forground indicating the PyPlug has not been edited
+        QPainter p(this);
+        p.setBrush(QColor(120,120,120));
+        p.setOpacity(0.7);
+        p.drawRect(rect());
+        
+        if (isGroupEditable) {
+            ///Draw the unlock icon
+            QPoint pixPos = _imp->getPyPlugUnlockPos();
+            int pixW = _imp->unlockIcon.width();
+            int pixH = _imp->unlockIcon.height();
+            QRect pixRect(pixPos.x(),pixPos.y(),pixW,pixH);
+            pixRect.adjust(-2, -2, 2, 2);
+            QRect selRect(pixPos.x(),pixPos.y(),pixW,pixH);
+            pixRect.adjust(-3, -3, 3, 3);
+            p.setBrush(QColor(243,137,0));
+            p.setOpacity(1.);
+            p.drawRoundedRect(selRect,5,5);
+            p.setBrush(QColor(50,50,50));
+            p.drawRoundedRect(pixRect,5,5);
+            p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
+        }
+    }
 }
 
 QRectF
@@ -329,10 +356,7 @@ NodeGraph::visibleWidgetRect() const
 boost::shared_ptr<NodeGui>
 NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
                          bool requestedByLoad,
-                         double xPosHint,
-                         double yPosHint,
-                         bool pushUndoRedoCommand,
-                         bool autoConnect)
+                         bool pushUndoRedoCommand)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -382,20 +406,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
         QMutexLocker l(&_imp->_nodesMutex);
         _imp->_nodes.push_back(node_ui);
     }
-    ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() ) {
-        if (_imp->_selection.empty()) {
-            autoConnect = false;
-        }
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
-            QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
-            node_ui->refreshPosition( pos.x(),pos.y(), true );
-        } else {
-            if (!isBd && !isGrp) {
-                moveNodesForIdealPosition(node_ui,autoConnect);
-            }
-        }
-    }
+
     
     if (!requestedByLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance()))) {
         node_ui->ensurePanelCreated();
@@ -405,7 +416,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
 
     boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
-        _imp->_gui->registerNewUndoStack(nodeStack.get());
+        getGui()->registerNewUndoStack(nodeStack.get());
     }
     
     if (pushUndoRedoCommand) {

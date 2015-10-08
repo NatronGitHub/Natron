@@ -26,11 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -39,8 +35,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h" // Key
 
-#include "Engine/ScriptObject.h"
 #include "Engine/RenderStats.h"
+
+#include "Gui/PanelWidget.h"
 
 namespace Natron
 {
@@ -62,9 +59,7 @@ class TrackerGui;
 class QInputEvent;
 struct RotoGuiSharedData;
 struct ViewerTabPrivate;
-class ViewerTab
-    : public QWidget
-    , public ScriptObject
+class ViewerTab : public QWidget, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -85,7 +80,6 @@ public:
     ViewerInstance* getInternalNode() const;
     void discardInternalNodePointer();
     
-    Gui* getGui() const;
     ViewerGL* getViewer() const;
 
     void setCurrentView(int view);
@@ -94,7 +88,7 @@ public:
 
     void seek(SequenceTime time);
 
-    void notifyAppClosing();
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
 
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
@@ -287,6 +281,8 @@ public:
     
     bool isPickerEnabled() const;
     void setPickerEnabled(bool enabled);
+    
+    void onMousePressCalledInViewer();
 
 public Q_SLOTS:
 
@@ -437,6 +433,12 @@ public Q_SLOTS:
     
 private:
     
+    void refreshFPSBoxFromClipPreferences();
+    
+    void onSpinboxFpsChangedInternal(double fps);
+    
+    void onPickerButtonClickedInternal(ViewerTab* caller,bool);
+    
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
 
     
@@ -446,6 +448,9 @@ private:
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     boost::scoped_ptr<ViewerTabPrivate> _imp;

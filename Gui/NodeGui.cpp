@@ -288,7 +288,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( disabledKnobToggled(bool) ),this,SLOT( onDisabledKnobToggled(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( bitDepthWarningToggled(bool,QString) ),this,SLOT( toggleBitDepthIndicator(bool,QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
-
+    QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
+    
     setCacheMode(DeviceCoordinateCache);
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
@@ -385,24 +386,12 @@ NodeGui::initialize(NodeGraph* dag,
                   Natron::clamp<qreal>(b, 0., 1.));
     setCurrentColor(color);
 
-    if ( !internalNode->isMultiInstance() ) {
-        _nodeLabel = internalNode->getNodeExtraLabel().c_str();
-        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
-    }
-
-
-    ///Refresh the name in the line edit
-    onInternalNameChanged( internalNode->getLabel().c_str() );
-
     ///Make the output edge
     if ( !isBd && !internalNode->isOutputNode() ) {
         _outputEdge = new Edge( thisAsShared,parentItem() );
     }
 
-    ///Refresh the disabled knob
-    if ( internalNode->isNodeDisabled() ) {
-        onDisabledKnobToggled(true);
-    }
+    restoreStateAfterCreation();
 
     ///Link the position of the node to the position of the parent multi-instance
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
@@ -420,6 +409,22 @@ NodeGui::initialize(NodeGraph* dag,
     getNode()->initializeDefaultOverlays();
 
 } // initialize
+
+void
+NodeGui::restoreStateAfterCreation()
+{
+    NodePtr internalNode = getNode();
+    ///Refresh the disabled knob
+    if ( internalNode->isNodeDisabled() ) {
+        onDisabledKnobToggled(true);
+    }
+    if ( !internalNode->isMultiInstance() ) {
+        _nodeLabel = internalNode->getNodeExtraLabel().c_str();
+        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+    }
+    ///Refresh the name in the line edit
+    onInternalNameChanged( internalNode->getLabel().c_str() );
+}
 
 void
 NodeGui::ensurePanelCreated()
@@ -2656,6 +2661,23 @@ NodeGui::setNameItemHtml(const QString & name,
     QString textLabel;
     textLabel.append("<div align=\"center\">");
     bool hasFontData = true;
+    QString extraLayerStr;
+    
+    std::string selectedLayer;
+    bool foundLayer = getNode()->getSelectedLayer(-1,selectedLayer);
+    if (foundLayer) {
+        if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
+            selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
+            selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
+            selectedLayer != "None" &&
+            selectedLayer != "All") {
+            extraLayerStr.append("<br>");
+            extraLayerStr.push_back('(');
+            extraLayerStr.append(selectedLayer.c_str());
+            extraLayerStr.push_back(')');
+        }
+    }
+    
     if ( !label.isEmpty() ) {
         QString labelCopy = label;
 
@@ -2679,9 +2701,9 @@ NodeGui::setNameItemHtml(const QString & name,
             QString toFind("\">");
             int endFontTag = labelCopy.indexOf(toFind,startFontTag);
             int i = endFontTag += toFind.size();
-            labelCopy.insert(i == -1 ? 0 : i, name + "<br>");
+            labelCopy.insert(i == -1 ? 0 : i, name + extraLayerStr + "<br>");
         } else {
-            labelCopy.prepend(name + "<br>");
+            labelCopy.prepend(name + extraLayerStr + "<br>");
         }
         textLabel.append(labelCopy);
 
@@ -2693,6 +2715,7 @@ NodeGui::setNameItemHtml(const QString & name,
                            .arg(QApplication::font().family()));
         textLabel.append(fontTag);
         textLabel.append(name);
+        textLabel.append(extraLayerStr);
         textLabel.append("</font>");
     }
     textLabel.append("</div>");
@@ -2713,6 +2736,12 @@ NodeGui::setNameItemHtml(const QString & name,
 //    QRectF labelBbox = _nameItem->boundingRect();
 //    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );
 } // setNameItemHtml
+
+void
+NodeGui::onOutputLayerChanged()
+{
+    setNameItemHtml(getNode()->getLabel().c_str(),_nodeLabel);
+}
 
 void
 NodeGui::onNodeExtraLabelChanged(const QString & label)

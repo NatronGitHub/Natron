@@ -698,7 +698,7 @@ KnobHelper::deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(curveChangeReason,dimension, reason);
-        evaluateValueChange(dimension,reason);
+        evaluateValueChange(dimension,time,reason);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, dimension);
@@ -788,7 +788,7 @@ KnobHelper::moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimen
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, newX, Natron::eValueChangedReasonPluginEdited);
         
         //We've set the internal curve, so synchronize the gui curve to the internal curve
         //the s_redrawGuiCurve signal will be emitted
@@ -881,7 +881,7 @@ KnobHelper::transformValueAtTime(Natron::CurveChangeReason curveChangeReason, in
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension,p.x, Natron::eValueChangedReasonPluginEdited);
         guiCurveCloneInternalCurve(curveChangeReason, dimension , eValueChangedReasonPluginEdited);
     }
     return true;
@@ -913,7 +913,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     animationRemoved_virtual(dimension);
     thisCurve->clone(curve);
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, getCurrentTime(), Natron::eValueChangedReasonPluginEdited);
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, eValueChangedReasonPluginEdited);
     }
     
@@ -963,7 +963,7 @@ KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimensio
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, time, Natron::eValueChangedReasonPluginEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
@@ -1014,7 +1014,7 @@ KnobHelper::moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension
     curve->setKeyFrameDerivatives(left, right, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, time, Natron::eValueChangedReasonPluginEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
@@ -1068,7 +1068,7 @@ KnobHelper::moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        evaluateValueChange(dimension, time, Natron::eValueChangedReasonPluginEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonPluginEdited);
     } else {
         if (_signalSlotHandler) {
@@ -1134,7 +1134,7 @@ KnobHelper::removeAnimation(int dimension,
     
     if (!useGuiCurve) {
         //virtual portion
-        evaluateValueChange(dimension, reason);
+        evaluateValueChange(dimension, getCurrentTime(), reason);
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal, dimension, reason);
     } else {
         if (_signalSlotHandler) {
@@ -1324,6 +1324,7 @@ KnobHelper::isValueChangesBlocked() const
 
 void
 KnobHelper::evaluateValueChange(int dimension,
+                                int time,
                                 Natron::ValueChangedReasonEnum reason)
 {
     
@@ -1341,10 +1342,10 @@ KnobHelper::evaluateValueChange(int dimension,
         if ( ( app && !app->getProject()->isLoadingProject() /*&& !app->isCreatingPythonGroup()*/) || !app ) {
             
             if (_imp->holder->isEvaluationBlocked()) {
-                _imp->holder->appendValueChange(this,reason);
+                _imp->holder->appendValueChange(this, time, reason);
             } else {
                 _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(this,reason);
+                _imp->holder->appendValueChange(this,time,  reason);
                 _imp->holder->endChanges();
             }
             
@@ -1353,8 +1354,10 @@ KnobHelper::evaluateValueChange(int dimension,
     
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
-        _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
+        if (!app || time == app->getTimeLine()->currentFrame()) {
+            _signalSlotHandler->s_valueChanged(dimension,(int)reason);
+            _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
+        }
         checkAnimationLevel(dimension);
     }
 }
@@ -2272,6 +2275,19 @@ KnobHelper::getIsSecret() const
 }
 
 bool
+KnobHelper::getIsSecretRecursive() const
+{
+    if (getIsSecret()) {
+        return true;
+    }
+    boost::shared_ptr<KnobI> parent = getParentKnob();
+    if (parent) {
+        return parent->getIsSecretRecursive();
+    }
+    return false;
+}
+
+bool
 KnobHelper::getDefaultIsSecret() const
 {
     QMutexLocker k(&_imp->stateMutex);
@@ -2313,8 +2329,13 @@ KnobHelper::setDirty(bool d)
 void
 KnobHelper::setEvaluateOnChange(bool b)
 {
-    QMutexLocker k(&_imp->evaluateOnChangeMutex);
-    _imp->evaluateOnChange = b;
+    {
+        QMutexLocker k(&_imp->evaluateOnChangeMutex);
+        _imp->evaluateOnChange = b;
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_evaluateOnChangeChanged(b);
+    }
 }
 
 bool
@@ -2531,7 +2552,7 @@ KnobHelper::slaveTo(int dimension,
     }
     
     if (hasChanged) {
-        evaluateValueChange(dimension, reason);
+        evaluateValueChange(dimension, getCurrentTime(), reason);
     }
 
     ///Register this as a listener of the master
@@ -2603,12 +2624,16 @@ void
 KnobHelper::setAnimationLevel(int dimension,
                               Natron::AnimationLevelEnum level)
 {
+    bool changed = false;
     {
         QMutexLocker l(&_imp->animationLevelMutex);
         assert( dimension < (int)_imp->animationLevel.size() );
-        _imp->animationLevel[dimension] = level;
+        if (_imp->animationLevel[dimension] != level) {
+            changed = true;
+            _imp->animationLevel[dimension] = level;
+        }
     }
-    if ( _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
+    if ( changed && _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
         if (getExpression(dimension).empty()) {
             _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
         }
@@ -2670,7 +2695,7 @@ KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChang
         }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, reason);
-        evaluateValueChange(dimension,reason);
+        evaluateValueChange(dimension, time ,reason);
     }
     
     if (holder && holder->getApp()) {
@@ -2808,7 +2833,7 @@ KnobHelper::onMasterChanged(KnobI* master,
                 ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
                 clone(master,i);
                 
-                evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+                evaluateValueChange(i, getCurrentTime(),Natron::eValueChangedReasonSlaveRefresh);
             }
             
             return;
@@ -2834,6 +2859,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int dimensionChanged)
     }
     
     KnobHolder* holder = getHolder();
+    int time = getCurrentTime();
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
         if (holder && !holder->isSetValueCurrentlyPossible()) {
             holder->abortAnyEvaluation();
@@ -2841,7 +2867,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int dimensionChanged)
             _imp->mustClearExprResults[*it] = true;
         } else {
             clearExpressionsResults(*it);
-            evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
+            evaluateValueChange(*it, time, Natron::eValueChangedReasonSlaveRefresh);
         }
     }
 }
@@ -2941,7 +2967,7 @@ KnobHelper::removeListener(KnobI* knob)
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
     assert(other);
     if (other && other->_signalSlotHandler && _signalSlotHandler) {
-        QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
+        QObject::disconnect( _signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), other->_signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
     }
     
     QWriteLocker l(&_imp->mastersMutex);
@@ -3666,6 +3692,13 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
+ChangesList
+KnobHolder::getKnobChanges() const
+{
+    QMutexLocker l(&_imp->evaluationBlockedMutex);
+    return _imp->knobChanged;
+}
+
 void
 KnobHolder::endChanges(bool discardEverything)
 {
@@ -3722,7 +3755,7 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob, int reason, int time, bool 
 }
 
 void
-KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
+KnobHolder::appendValueChange(KnobI* knob,int time,  Natron::ValueChangedReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
@@ -3734,9 +3767,9 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
         
         if (knob && !knob->isValueChangesBlocked()) {
             if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
-                Q_EMIT doValueChangeOnMainThread(knob, reason, getCurrentTime(), k.originatedFromMainThread);
+                Q_EMIT doValueChangeOnMainThread(knob, reason, time, k.originatedFromMainThread);
             } else {
-                onKnobValueChanged_public(knob, reason, getCurrentTime(), k.originatedFromMainThread);
+                onKnobValueChanged_public(knob, reason, time, k.originatedFromMainThread);
             }
         }
 
@@ -3795,25 +3828,28 @@ void
 KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
-
-    if (level == KnobHolder::eMultipleParamsEditOff) {
-        if (_imp->paramsEditRecursionLevel > 0) {
-            --_imp->paramsEditRecursionLevel;
-        }
-        if (_imp->paramsEditRecursionLevel == 0) {
-            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-        }
-        endChanges();
-
-    } else if (level == KnobHolder::eMultipleParamsEditOn) {
-        _imp->paramsEditLevel = level;
+    if (appPTR->isBackground()) {
+        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
     } else {
-        assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
-        beginChanges();
-        if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
-            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+        if (level == KnobHolder::eMultipleParamsEditOff) {
+            if (_imp->paramsEditRecursionLevel > 0) {
+                --_imp->paramsEditRecursionLevel;
+            }
+            if (_imp->paramsEditRecursionLevel == 0) {
+                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+            }
+            endChanges();
+            
+        } else if (level == KnobHolder::eMultipleParamsEditOn) {
+            _imp->paramsEditLevel = level;
+        } else {
+            assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+            beginChanges();
+            if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
+                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+            }
+            ++_imp->paramsEditRecursionLevel;
         }
-        ++_imp->paramsEditRecursionLevel;
     }
 }
 

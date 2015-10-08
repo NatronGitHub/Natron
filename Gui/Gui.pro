@@ -160,10 +160,12 @@ SOURCES += \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
+    PanelWidget.cpp \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
+    PropertiesBinWrapper.cpp \
     PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
@@ -291,6 +293,7 @@ HEADERS += \
     NodeGui.h \
     NodeGuiSerialization.h \
     NodeSettingsPanel.h \
+    PanelWidget.h \
     PickKnobDialog.h \
     PreferencesPanel.h \
     ProjectGui.h \

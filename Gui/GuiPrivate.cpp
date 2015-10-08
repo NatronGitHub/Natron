@@ -248,6 +248,10 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _lastEnteredTabWidget(0)
 , pythonCommands()
 , statsDialog(0)
+, currentPanelFocus(0)
+, currentPanelFocusEventRecursion(0)
+, keyPressEventHasVisitedFocusWidget(false)
+, wasLaskUserSeekDuringPlayback(false)
 {
 }
 
@@ -268,10 +272,16 @@ GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
+    std::list<TabWidget*> tabs;
     {
-        QMutexLocker k(&_viewerTabsMutex);
-        for (std::list<ViewerTab*>::iterator it = _viewerTabs.begin(); it != _viewerTabs.end(); ++it) {
-            (*it)->notifyAppClosing();
+        QMutexLocker k(&_panesMutex);
+        tabs = _panes;
+    }
+    for (std::list<TabWidget*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        (*it)->discardGuiPointer();
+        for (int i = 0; i < (*it)->count(); ++i) {
+            (*it)->tabAt(i)->notifyGuiClosingPublic();
+            
         }
     }
 
@@ -284,17 +294,7 @@ GuiPrivate::notifyGuiClosing()
         }
     }
     _lastFocusedGraph = 0;
-    _nodeGraphArea->discardGuiPointer();
-    for (std::list<NodeGraph*>::iterator it = _groups.begin(); it != _groups.end(); ++it) {
-        (*it)->discardGuiPointer();
-    }
 
-    {
-        QMutexLocker k(&_panesMutex);
-        for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
-            (*it)->discardGuiPointer();
-        }
-    }
 }
 
 void
@@ -309,6 +309,9 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->setSpacing(0);
 
     _propertiesScrollArea = new QScrollArea(_propertiesBin);
+    
+    ///Remove wheel autofocus
+    _propertiesScrollArea->setFocusPolicy(Qt::StrongFocus);
     QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL( valueChanged(int) ), _gui, SLOT( onPropertiesScrolled() ) );
     _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);

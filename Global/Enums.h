@@ -37,6 +37,8 @@ enum TimelineStateEnum
     eTimelineStateIdle,
     eTimelineStateDraggingCursor,
     eTimelineStateDraggingBoundary,
+    eTimelineStatePanning,
+    eTimelineStateSelectingZoomRange,
 };
 
 enum TimelineChangeReasonEnum
@@ -154,6 +156,8 @@ enum PixmapEnum
     NATRON_PIXMAP_VIEWER_ROI_DISABLED,
     NATRON_PIXMAP_VIEWER_RENDER_SCALE,
     NATRON_PIXMAP_VIEWER_RENDER_SCALE_CHECKED,
+    NATRON_PIXMAP_VIEWER_AUTOCONTRAST_ENABLED,
+    NATRON_PIXMAP_VIEWER_AUTOCONTRAST_DISABLED,
 
     NATRON_PIXMAP_OPEN_FILE,
     NATRON_PIXMAP_COLORWHEEL,

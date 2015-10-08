@@ -53,7 +53,8 @@ CONFIG(debug, debug|release){
 
 
 CONFIG(noassertions) {
-   DEFINES *= NDEBUG QT_NO_DEBUG
+#See http://doc.qt.io/qt-4.8/debug.html
+   DEFINES *= NDEBUG QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT
 }
 
 CONFIG(snapshot) {

@@ -86,7 +86,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         } else {
             node->setVisibleSettingsPanel(true);
             if (node->getSettingPanel()) {
-                _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+                getGui()->putSettingsPanelFirst( node->getSettingPanel() );
             } else {
                 ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
                 if (isViewer) {
@@ -131,7 +131,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         
         if (modCASIsShift(e)) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-            if (isGrp && isGrp->isSubGraphEditable()) {
+            if (isGrp) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
                 NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
@@ -140,7 +140,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                     if (isParentTab) {
                         isParentTab->setCurrentWidget(graph);
                     } else {
-                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                        NodeGraph* lastSelectedGraph = getGui()->getLastSelectedGraph();
                         ///We're in the double click event, it should've entered the focus in event beforehand!
                         assert(lastSelectedGraph == this);
                         
@@ -162,7 +162,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 bool
 NodeGraph::event(QEvent* e)
 {
-    if (!_imp->_gui) {
+    if (!getGui()) {
         return false;
     }
     if (e->type() == QEvent::KeyPress) {
@@ -177,7 +177,7 @@ NodeGraph::event(QEvent* e)
             QObject::connect( nodeCreation,SIGNAL( rejected() ),this,SLOT( onNodeCreationDialogFinished() ) );
             nodeCreation->show();
 
-
+            takeClickFocus();
             ke->accept();
 
             return true;
@@ -232,20 +232,28 @@ NodeGraph::onNodeCreationDialogFinished()
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    bool isGroupEditable = true;
+    bool groupEdited = true;
+    if (isGroup) {
+        isGroupEditable = isGroup->isSubGraphEditable();
+        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+    }
+    
+    if (!groupEdited) {
+        return;
+    }
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
 
-    if (key == Qt::Key_Escape) {
-        return QGraphicsView::keyPressEvent(e);
-    }
+    bool accept = true;
     
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-        QCoreApplication::postEvent(parentWidget(),ev);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
-        _imp->_gui->createReader();
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateReader, modifiers, key) ) {
+        getGui()->createReader();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateWriter, modifiers, key) ) {
-        _imp->_gui->createWriter();
+        getGui()->createWriter();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
         deleteSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key) ) {
@@ -277,8 +285,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         createGroupFromSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, modifiers, key) ) {
         expandSelectedGroups();
-    } else if (key == Qt::Key_Control) {
+    } else if (key == Qt::Key_Control && e->modifiers() == Qt::ControlModifier) {
         _imp->setNodesBendPointsVisible(true);
+        accept = false;
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
                 isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, modifiers, key) ) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
@@ -426,8 +435,15 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         
         if (!intercepted) {
+            accept = false;
             QGraphicsView::keyPressEvent(e);
         }
+    }
+    if (accept) {
+        takeClickFocus();
+        e->accept();
+    } else {
+        handleUnCaughtKeyPressEvent();
     }
 } // keyPressEvent
 

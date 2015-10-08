@@ -123,6 +123,21 @@ RotoContext::getStrokeBeingPainted() const
     return _imp->strokeBeingPainted;
 }
 
+boost::shared_ptr<Natron::Node>
+RotoContext::getRotoPaintBottomMergeNode() const
+{
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    if (items.empty()) {
+        return boost::shared_ptr<Natron::Node>();
+    }
+    
+    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
+    assert(firstStrokeItem);
+    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+    assert(bottomMerge);
+    return bottomMerge;
+}
+
 void
 RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
 {
@@ -2353,7 +2368,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     hash.append(stroke->getMergeNode()->getLiveInstance()->getRenderHash());
     hash.computeHash();
     
-    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false);
+    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false, false);
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);

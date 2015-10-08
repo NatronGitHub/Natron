@@ -40,6 +40,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtOpenGL/QGLShaderProgram>
+#include <QTreeWidget>
+#include <QTabBar>
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -211,7 +213,7 @@ ViewerGL::resizeGL(int w,
         if (!_imp->persistentMessages.empty()) {
             updatePersistentMessageToWidth(w - 20);
         } else {
-            updateGL();
+            update();
         }
     }
 }
@@ -1578,6 +1580,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
+    
+    _imp->viewerTab->onMousePressCalledInViewer();
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
@@ -2818,7 +2822,7 @@ ViewerGL::clearViewer()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->activeTextures[0] = 0;
     _imp->activeTextures[1] = 0;
-    updateGL();
+    update();
 }
 
 /*overload of QT enter/leave/resize events*/
@@ -2855,30 +2859,6 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
     QGLWidget::focusOutEvent(e);
 }
 
-void
-ViewerGL::enterEvent(QEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar" ||
-    currentFocus->objectName() == "PanelTabBar";
-    
-    if (canSetFocus) {
-        setFocus();
-    }
-    QWidget::enterEvent(e);
-}
 
 void
 ViewerGL::leaveEvent(QEvent* e)
@@ -2898,68 +2878,6 @@ ViewerGL::resizeEvent(QResizeEvent* e)
     QGLWidget::resizeEvent(e);
 }
 
-void
-ViewerGL::keyPressEvent(QKeyEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    
-    Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = (Qt::Key)e->key();
-    double scale = 1. / (1 << getCurrentRenderScale());
-
-    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
-        toggleOverlays();
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
-        toggleWipe();
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, modifiers, key)) {
-        centerWipe();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
-        _imp->viewerTab->hideAllToolbars();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
-        _imp->viewerTab->showAllToolbars();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, modifiers, key) ) {
-        _imp->viewerTab->togglePlayerVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, modifiers, key) ) {
-        _imp->viewerTab->toggleTimelineVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, modifiers, key) ) {
-        _imp->viewerTab->toggleInfobarVisbility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, modifiers, key) ) {
-        _imp->viewerTab->toggleLeftToolbarVisiblity();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, modifiers, key) ) {
-        _imp->viewerTab->toggleRightToolbarVisibility();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
-        _imp->viewerTab->toggleTopToolbarVisibility();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-        wheelEvent(&e);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-        wheelEvent(&e);
-    } else if ( e->isAutoRepeat() && _imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e) ) {
-        update();
-    } else if ( _imp->viewerTab->notifyOverlaysKeyDown(scale, scale, e) ) {
-        update();
-    } else {
-        QGLWidget::keyPressEvent(e);
-    }
-}
-
-void
-ViewerGL::keyReleaseEvent(QKeyEvent* e)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if (!_imp->viewerTab->getGui()) {
-        return QGLWidget::keyPressEvent(e);
-    }
-    double scale = 1. / (1 << getCurrentRenderScale());
-    if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
-        update();
-    } else {
-        QGLWidget::keyReleaseEvent(e);
-    }
-}
 
 Natron::ImageBitDepthEnum
 ViewerGL::getBitDepth() const
@@ -3362,6 +3280,14 @@ ViewerGL::swapOpenGLBuffers()
  **/
 void
 ViewerGL::redraw()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    update();
+}
+
+void
+ViewerGL::redrawNow()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

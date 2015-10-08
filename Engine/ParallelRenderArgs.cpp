@@ -249,6 +249,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                          RectD(), // < did we precompute any RoD to speed-up the call ?
                                                                          componentsToRender, //< requested comps
                                                                          inputPrefDepth,
+                                                                         false,
                                                                          effect);
                                     
                                     
@@ -302,6 +303,13 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     EffectInstance* effect = node->getLiveInstance();
     assert(effect);
     
+    if (effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsMaybe) {
+        /*
+         If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
+         We safely fail here
+         */
+        return eStatusFailed;
+    }
     assert(effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsNo ||
            effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();

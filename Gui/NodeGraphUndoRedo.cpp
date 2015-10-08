@@ -410,99 +410,222 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
 void
 ConnectCommand::undo()
 {
-    doConnect(_newSrc.lock() ? _newSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>(),
-              _oldSrc.lock() ? _oldSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>());
+    NodeGuiPtr newSrc = _newSrc.lock();
+    NodeGuiPtr oldSrc = _oldSrc.lock();
+    NodeGuiPtr dst = _dst.lock();
+    doConnect(newSrc,
+              oldSrc,
+              dst,
+              _inputNb);
+    
+    if (newSrc) {
+        setText( QObject::tr("Connect %1 to %2")
+                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+    } else {
+        setText( QObject::tr("Disconnect %1")
+                .arg(dst->getNode()->getLabel().c_str() ) );
+    }
+    
+    
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(dst->getNode()->getLiveInstance() );
+    if (!isDstAViewer) {
+        _graph->getGui()->getApp()->triggerAutoSave();
+    }
+    _graph->update();
    
 } // undo
 
 void
 ConnectCommand::redo()
 {
-    doConnect(_oldSrc.lock() ? _oldSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>(),
-              _newSrc.lock() ? _newSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>());
+    
+    NodeGuiPtr newSrc = _newSrc.lock();
+    NodeGuiPtr oldSrc = _oldSrc.lock();
+    NodeGuiPtr dst = _dst.lock();
+    doConnect(oldSrc,
+              newSrc,
+              dst,
+              _inputNb);
+    
+    if (newSrc) {
+        setText( QObject::tr("Connect %1 to %2")
+                .arg(dst->getNode()->getLabel().c_str() ).arg( newSrc->getNode()->getLabel().c_str() ) );
+    } else {
+        setText( QObject::tr("Disconnect %1")
+                .arg(dst->getNode()->getLabel().c_str() ) );
+    }
+    
+    
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(dst->getNode()->getLiveInstance() );
+    if (!isDstAViewer) {
+        _graph->getGui()->getApp()->triggerAutoSave();
+    }
+    _graph->update();
+
 } // redo
 
 
 
 void
-ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
-               const boost::shared_ptr<Natron::Node> & newSrc)
+ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
+                          const NodeGuiPtr &newSrc,
+                          const NodeGuiPtr& dst,
+                          int inputNb)
 {
-    NodeGuiPtr dst = _dst.lock();
-    boost::shared_ptr<Natron::Node> internalDst =  dst->getNode();
-    InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
+    NodePtr internalDst =  dst->getNode();
+    NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
+    NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
     
-    if (newSrc) {
-        setText( QObject::tr("Connect %1 to %2")
-                .arg(internalDst->getLabel().c_str() ).arg( newSrc->getLabel().c_str() ) );
-    } else {
-        setText( QObject::tr("Disconnect %1")
-                .arg(internalDst->getLabel().c_str() ) );
-    }
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
 
+    
     
     if (inspector) {
         ///if the node is an inspector  disconnect any current connection between the inspector and the _newSrc
         for (int i = 0; i < inspector->getMaxInputCount(); ++i) {
-            if (i != _inputNb && inspector->getInput(i) == newSrc) {
+            if (i != inputNb && inspector->getInput(i) == internalNewSrc) {
                 inspector->disconnectInput(i);
             }
         }
     }
-    if (oldSrc && newSrc) {
-        internalDst->replaceInput(newSrc, _inputNb);
+    if (internalOldSrc && internalNewSrc) {
+        internalDst->replaceInput(internalNewSrc, inputNb);
     } else {
         
         
-        if (oldSrc && newSrc) {
-            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(newSrc, _inputNb);
+        if (internalOldSrc && internalNewSrc) {
+            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
             ret == Natron::Node::eCanConnectInput_differentFPS ||
             ret == Natron::Node::eCanConnectInput_differentPars;
             if (connectionOk) {
-                internalDst->replaceInput(newSrc, _inputNb);
+                internalDst->replaceInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
+                internalDst->disconnectInput(internalDst->getInputIndex(internalOldSrc.get()));
             }
-        } else if (oldSrc && !newSrc) {
-            internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
-        } else if (!oldSrc && newSrc) {
-            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(newSrc, _inputNb);
+        } else if (internalOldSrc && !internalNewSrc) {
+            internalDst->disconnectInput(internalDst->getInputIndex(internalOldSrc.get()));
+        } else if (!internalOldSrc && internalNewSrc) {
+            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
             ret == Natron::Node::eCanConnectInput_differentFPS ||
             ret == Natron::Node::eCanConnectInput_differentPars;
             if (connectionOk) {
-                internalDst->connectInput(newSrc,_inputNb);
+                internalDst->connectInput(internalNewSrc,inputNb);
             } else {
-                internalDst->disconnectInput(internalDst->getInputIndex(oldSrc.get()));
+                internalDst->disconnectInput(internalDst->getInputIndex(internalOldSrc.get()));
             }
         }
     }
     
-    
-    assert(_dst.lock());
     dst->refreshEdges();
     dst->checkOptionalEdgesVisibility();
-    boost::shared_ptr<NodeGui> newSrcGui = _newSrc.lock();
-    boost::shared_ptr<NodeGui> oldSrcGui = _oldSrc.lock();
-    if (newSrcGui) {
-        newSrcGui->checkOptionalEdgesVisibility();
+
+    if (newSrc) {
+        newSrc->checkOptionalEdgesVisibility();
     }
-    if (oldSrcGui) {
-        oldSrcGui->checkOptionalEdgesVisibility();
+    if (oldSrc) {
+        oldSrc->checkOptionalEdgesVisibility();
     }
 
-    ///if the node has no inputs, all the viewers attached to that node should be black.
-    std::list<ViewerInstance* > viewers;
-    internalDst->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
+
+}
+
+InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
+                  Edge* edge,
+                  const boost::shared_ptr<NodeGui> & newSrc,
+                  QUndoCommand *parent)
+: ConnectCommand(graph,edge,edge->getSource(),newSrc,parent)
+, _inputEdge(0)
+{
+    assert(newSrc);
+    setText(QObject::tr("Insert node"));
+}
+
+
+void
+InsertNodeCommand::undo()
+{
+    NodeGuiPtr oldSrc = _oldSrc.lock();
+    NodeGuiPtr newSrc = _newSrc.lock();
+    NodeGuiPtr dst = _dst.lock();
+    assert(newSrc);
+    
+    NodePtr oldSrcInternal = oldSrc ? oldSrc->getNode() : NodePtr();
+    NodePtr newSrcInternal = newSrc->getNode();
+    NodePtr dstInternal = dst->getNode();
+    assert(newSrcInternal && dstInternal);
+    
+    doConnect(newSrc,oldSrc,dst,_inputNb);
+    
+    if (_inputEdge) {
+        doConnect(_inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber());
     }
     
-    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(internalDst->getLiveInstance() );
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(dst->getNode()->getLiveInstance() );
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
+    _graph->update();
+
+}
+
+void
+InsertNodeCommand::redo()
+{
+    NodeGuiPtr oldSrc = _oldSrc.lock();
+    NodeGuiPtr newSrc = _newSrc.lock();
+    NodeGuiPtr dst = _dst.lock();
+    assert(newSrc);
+    
+    NodePtr oldSrcInternal = oldSrc ? oldSrc->getNode() : NodePtr();
+    NodePtr newSrcInternal = newSrc->getNode();
+    NodePtr dstInternal = dst->getNode();
+    assert(newSrcInternal && dstInternal);
+    
+    newSrcInternal->beginInputEdition();
+    dstInternal->beginInputEdition();
+    
+    doConnect(oldSrc,newSrc,dst,_inputNb);
+    
+    
+    ///find out if the node is already connected to what the edge is connected
+    bool alreadyConnected = false;
+    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = newSrcInternal->getGuiInputs();
+    if (oldSrcInternal) {
+        for (U32 i = 0; i < inpNodes.size(); ++i) {
+            if (inpNodes[i] == oldSrcInternal) {
+                alreadyConnected = true;
+                break;
+            }
+        }
+    }
+    
+    _inputEdge = 0;
+    if (oldSrcInternal && !alreadyConnected) {
+        ///push a second command... this is a bit dirty but I don't have time to add a whole new command just for this
+        int prefInput = newSrcInternal->getPreferredInputForConnection();
+        if (prefInput != -1) {
+            _inputEdge = newSrc->getInputArrow(prefInput);
+            assert(_inputEdge);
+            doConnect(_inputEdge->getSource(), oldSrc, _inputEdge->getDest(), _inputEdge->getInputNumber());
+        }
+    }
+
+    ViewerInstance* isDstAViewer = dynamic_cast<ViewerInstance*>(dst->getNode()->getLiveInstance() );
+    if (!isDstAViewer) {
+        _graph->getGui()->getApp()->triggerAutoSave();
+    }
+    
+    newSrcInternal->endInputEdition(false);
+    dstInternal->endInputEdition(false);
+    
+    std::list<ViewerInstance* > viewers;
+    dstInternal->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+        (*it2)->renderCurrentFrame(true);
+    }
+    
     _graph->update();
 
 }

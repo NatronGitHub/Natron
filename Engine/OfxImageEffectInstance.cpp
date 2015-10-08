@@ -577,17 +577,19 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setAsInstanceSpecific();
     }
     
+    OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
+    assert(ptk);
+    ptk->connectDynamicProperties();
+    
     OfxPluginEntryPoint* interact =
         (OfxPluginEntryPoint*)descriptor.getProperties().getPointerProperty(kOfxParamPropInteractV1);
     if (interact) {
-        OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
-        assert(ptk);
         OFX::Host::Interact::Descriptor & interactDesc = ptk->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interact);
         interactDesc.describe(8, false);
     }
-
+    
     return instance;
 } // newParam
 
@@ -1061,15 +1063,32 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
 
 }
 
-void
+bool
 OfxImageEffectInstance::updatePreferences_safe(double frameRate,const std::string& fielding,const std::string& premult,
                             bool continuous,bool frameVarying)
 {
-    _outputFrameRate = frameRate;
-    _outputFielding = fielding;
-    _outputPreMultiplication = premult;
-    _continuousSamples = continuous;
-    _frameVarying = frameVarying;
+    bool changed = false;
+    if (_outputFrameRate != frameRate) {
+        _outputFrameRate = frameRate;
+        changed = true;
+    }
+    if (_outputFielding != fielding) {
+        _outputFielding = fielding;
+        changed = true;
+    }
+    if (_outputPreMultiplication != premult) {
+        _outputPreMultiplication = premult;
+        changed = true;
+    }
+    if (_continuousSamples != continuous) {
+        _continuousSamples = continuous;
+        changed = true;
+    }
+    if (_frameVarying != frameVarying) {
+        _frameVarying = frameVarying;
+        changed = true;
+    }
+    return changed;
 }
 
 const

@@ -177,6 +177,8 @@ public:
     void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
 public Q_SLOTS:
+    
+    void onPageIndexChanged(int index);
 
     /*Internal slot, not meant to be called externally.*/
     void closePanel();

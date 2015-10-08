@@ -421,7 +421,7 @@ KnobGuiColor::onSliderEditingFinished(bool hasMovedOnce)
         double v = _slider->getPosition();
         onSliderValueChanged(v);
     } else if (autoProxyEnabled && hasMovedOnce) {
-        getGui()->renderAllViewers();
+        getGui()->renderAllViewers(true);
     }
 }
 
@@ -864,7 +864,7 @@ KnobGuiColor::showColorDialog()
         knob->endChanges();
 
     }
-    knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
+    knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void

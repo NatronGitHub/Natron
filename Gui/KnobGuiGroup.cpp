@@ -176,20 +176,27 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
 }
 
 void
-KnobGuiGroup::setChecked(bool b)
+KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
 {
-    if (b == _checked) {
+    if (checked == _checked) {
         return;
     }
-    _checked = b;
-
+    _checked = checked;
+    
+    if (userRequested) {
+        boost::shared_ptr<KnobGroup> knob = _knob.lock();
+        if (knob) {
+            knob->evaluateValueChange(0, knob->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+        }
+    }
+    
     ///get the current index of the group knob in the layout, and reinsert
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
     
     for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (!b) {
+        if (!checked) {
             (*it)->hide();
         } else if ( !(*it)->getKnob()->getIsSecret() ) {
             (*it)->show(startChildIndex);
@@ -198,6 +205,12 @@ KnobGuiGroup::setChecked(bool b)
             }
         }
     }
+}
+
+void
+KnobGuiGroup::setChecked(bool b)
+{
+    setCheckedInternal(b, true);
 }
 
 bool
@@ -217,7 +230,7 @@ KnobGuiGroup::updateGUI(int /*dimension*/)
 {
     bool b = _knob.lock()->getValue(0);
 
-    setChecked(b);
+    setCheckedInternal(b,false);
     if (_button) {
         _button->setChecked(b);
     }

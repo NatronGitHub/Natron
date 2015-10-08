@@ -913,16 +913,20 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
 }
 
 void
-NodeCollection::forceGetClipPreferencesOnAllTrees()
+NodeCollection::forceComputeInputDependentDataOnAllTrees()
 {
     NodeList nodes;
     getNodes_recursive(nodes);
     std::list<Project::NodesTree> trees;
     Project::extractTreesFromNodes(nodes, trees);
     
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        (*it)->markAllInputRelatedDataDirty();
+    }
+    
     std::list<Natron::Node*> markedNodes;
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-        it->output.node->restoreClipPreferencesRecursive(markedNodes);
+        it->output.node->forceRefreshAllInputRelatedData();
     }
 }
 
@@ -1052,6 +1056,9 @@ NodeCollection::invalidateParallelRenderArgs()
     
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (!(*it) || !(*it)->getLiveInstance()) {
+            continue;
+        }
         (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {

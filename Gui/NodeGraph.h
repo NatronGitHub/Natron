@@ -42,8 +42,8 @@ CLANG_DIAG_ON(uninitialized)
 
 
 #include "Engine/NodeGraphI.h"
-#include "Engine/ScriptObject.h"
 #include "Global/GlobalDefines.h"
+#include "Gui/PanelWidget.h"
 
 class QVBoxLayout;
 class QScrollArea;
@@ -65,7 +65,7 @@ namespace Natron {
 class Node;
 }
 
-class NodeGraph : public QGraphicsView, public NodeGraphI, public ScriptObject, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -83,8 +83,7 @@ public:
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
-                                             double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,bool pushUndoRedoCommand);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
     
@@ -117,9 +116,8 @@ public:
     void restoreFromTrash(NodeGui* node);
 
     QGraphicsItem* getRootItem() const;
-    Gui* getGui() const;
 
-    void discardGuiPointer();
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
     void discardScenePointer();
 
 
@@ -167,7 +165,9 @@ public:
      * It will move the inputs / outputs slightly to fit this node into the nodegraph
      * so they do not overlap.
      **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
+    void moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &n,
+                                   const boost::shared_ptr<NodeGui>& selected,
+                                   bool autoConnect);
     
     void copyNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,NodeClipBoard& clipboard);
     
@@ -226,12 +226,7 @@ public Q_SLOTS:
     void toggleConnectionHints();
     
     void toggleAutoHideInputs(bool setSettings = true);
-    
-    void onTimelineTimeAboutToChange();
-    
-    ///Called whenever the time changes on the timeline
-    void onTimeChanged(SequenceTime time,int reason);
-    
+        
     void onGuiFrozenChanged(bool frozen);
 
     void onNodeCreationDialogFinished();

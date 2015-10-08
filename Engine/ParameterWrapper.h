@@ -289,7 +289,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     int get() const;
-    int get(int frame) const;
+    int get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -314,7 +314,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(int time,int dimension = 0) const;
+    int getValueAtTime(double time,int dimension = 0) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -398,7 +398,7 @@ public:
     virtual ~Int2DParam() {}
     
     Int2DTuple get() const;
-    Int2DTuple get(int frame) const;
+    Int2DTuple get(double frame) const;
     void set(int x, int y);
     void set(int x, int y, int frame);
 };
@@ -412,7 +412,7 @@ public:
     virtual ~Int3DParam() {}
     
     Int3DTuple get() const;
-    Int3DTuple get(int frame) const;
+    Int3DTuple get(double frame) const;
     void set(int x, int y, int z);
     void set(int x, int y, int z, int frame);
 };
@@ -434,7 +434,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     double get() const;
-    double get(int frame) const;
+    double get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -459,7 +459,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(int time,int dimension = 0) const;
+    double getValueAtTime(double time,int dimension = 0) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -543,7 +543,7 @@ public:
     virtual ~Double2DParam() {}
     
     Double2DTuple get() const;
-    Double2DTuple get(int frame) const;
+    Double2DTuple get(double frame) const;
     void set(double x, double y);
     void set(double x, double y, int frame);
     
@@ -559,7 +559,7 @@ public:
     virtual ~Double3DParam() {}
     
     Double3DTuple get() const;
-    Double3DTuple get(int frame) const;
+    Double3DTuple get(double frame) const;
     void set(double x, double y, double z);
     void set(double x, double y, double z, int frame);
 };
@@ -580,7 +580,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     ColorTuple get() const;
-    ColorTuple get(int frame) const;
+    ColorTuple get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -608,7 +608,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(int time,int dimension = 0) const;
+    double getValueAtTime(double time,int dimension = 0) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -698,7 +698,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     int get() const;
-    int get(int frame) const;
+    int get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -729,7 +729,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(int time) const;
+    int getValueAtTime(double time) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -805,7 +805,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     bool get() const;
-    bool get(int frame) const;
+    bool get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -830,7 +830,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    bool getValueAtTime(int time) const;
+    bool getValueAtTime(double time) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -878,7 +878,7 @@ public:
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
     std::string get() const;
-    std::string get(int frame) const;
+    std::string get(double frame) const;
     
     /**
      * @brief Convenience functions for multi-dimensional setting of values
@@ -903,7 +903,7 @@ public:
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    std::string getValueAtTime(int time) const;
+    std::string getValueAtTime(double time) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
@@ -1040,6 +1040,8 @@ public:
      * This can only be called right away after the parameter has been created.
      **/
     void setIconFilePath(const std::string& icon);
+    
+    void trigger();
 };
 
 class GroupParam : public Param

@@ -33,12 +33,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
+#include <QApplication>
 #include <QStyleOption>
 
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 
+#include "Gui/GuiMacros.h"
 #include "Gui/ticks.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
@@ -212,23 +214,66 @@ ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 }
 
 void
+ScaleSliderQWidget::focusInEvent(QFocusEvent* e)
+{
+    Qt::KeyboardModifiers mod = qApp->keyboardModifiers();
+    if (mod.testFlag(Qt::ControlModifier)) {
+        _imp->ctrlDown = true;
+    }
+    if (mod.testFlag(Qt::ShiftModifier)) {
+        _imp->shiftDown = true;
+    }
+    zoomRange();
+    QWidget::focusInEvent(e);
+}
+
+void
+ScaleSliderQWidget::focusOutEvent(QFocusEvent* e)
+{
+    _imp->ctrlDown = false;
+    _imp->shiftDown = false;
+    zoomRange();
+    QWidget::focusOutEvent(e);
+}
+
+void
+ScaleSliderQWidget::zoomRange()
+{
+    if (_imp->ctrlDown) {
+        double scale = _imp->shiftDown ? 100. : 10.;
+        assert(_imp->currentZoom != 0);
+        double effectiveZoom = scale / _imp->currentZoom;
+        _imp->currentZoom = scale;
+        _imp->zoomCtx.zoomx(_imp->value, 0, effectiveZoom);
+    } else {
+        _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
+        _imp->currentZoom = 1.;
+        centerOn(_imp->minimum, _imp->maximum);
+    }
+    update();
+}
+
+void
+ScaleSliderQWidget::enterEvent(QEvent* e)
+{
+    if (Gui::isFocusStealingPossible()) {
+        setFocus();
+    }
+    QWidget::enterEvent(e);
+}
+
+void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = true;
-        double scale = _imp->shiftDown ? 100. : 10.;
-        _imp->currentZoom = scale;
-        _imp->zoomCtx.zoomx(_imp->value, 0, scale);
-        update();
+        zoomRange();
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = true;
-        if (_imp->ctrlDown) {
-            _imp->zoomCtx.zoomx(_imp->value, 0, 10.);
-            _imp->currentZoom = 100.;
-        }
-        update();
+        zoomRange();
+    } else {
+        QWidget::keyPressEvent(e);
     }
-    QWidget::keyPressEvent(e);
 }
 
 double
@@ -255,24 +300,13 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = false;
-        _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
-        _imp->currentZoom = 1.;
-        centerOn(_imp->minimum, _imp->maximum);
-        return;
+        zoomRange();
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = false;
-        if (_imp->ctrlDown) {
-            _imp->zoomCtx.zoomx(_imp->value, 0, 1. / 10.);
-            _imp->currentZoom = 10.;
-        } else {
-            _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
-            centerOn(_imp->minimum, _imp->maximum);
-            _imp->currentZoom = 1.;
-            return;
-        }
-        update();
+        zoomRange();
+    } else {
+        QWidget::keyReleaseEvent(e);
     }
-    QWidget::keyReleaseEvent(e);
 }
 
 
@@ -364,6 +398,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QStyleOption opt;
     opt.init(this);
     QPainter p(this);
+    p.setOpacity(1);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     double txtR,txtG,txtB;
@@ -483,8 +518,19 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     p.setPen(_imp->sliderColor);
     p.fillRect(sliderBottomLeft.x(), sliderBottomLeft.y(), sliderTopRight.x() - sliderBottomLeft.x(), sliderTopRight.y() - sliderBottomLeft.y(),_imp->sliderColor);
 
-    /*draw a black rect around the slider for contrast*/
-    p.setPen(Qt::black);
+    /*draw a black rect around the slider for contrast or orange when focused*/
+	if (!hasFocus()) {
+		p.setPen(Qt::black);
+	} else {
+        QPen pen = p.pen();
+        pen.setColor(QColor(243,137,0));
+        QVector<qreal> dashStyle;
+        qreal space = 2;
+        dashStyle << 1 << space;
+        pen.setDashPattern(dashStyle);
+        p.setOpacity(0.8);
+        p.setPen(pen);
+	}
 
     p.drawLine( sliderBottomLeft.x(),sliderBottomLeft.y(),sliderBottomLeft.x(),sliderTopRight.y() );
     p.drawLine( sliderBottomLeft.x(),sliderTopRight.y(),sliderTopRight.x(),sliderTopRight.y() );

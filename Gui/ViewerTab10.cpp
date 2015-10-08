@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/TrackerGui.h"
+#include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -106,23 +107,32 @@ ViewerTab::updateViewsMenu(int count)
     _imp->viewsComboBox->clear();
     if (count == 1) {
         _imp->viewsComboBox->hide();
-        _imp->viewsComboBox->addItem( tr("Main") );
-    } else if (count == 2) {
+        _imp->viewsComboBox->addItem(tr("Main"));
+    } else if (count >= 2) {
         _imp->viewsComboBox->show();
-        _imp->viewsComboBox->addItem( tr("Left"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1) );
-        _imp->viewsComboBox->addItem( tr("Right"),QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2) );
+        ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                             kShortcutIDShowLeftView,
+                                                             kShortcutDescShowLeftView,
+                                                             _imp->viewsComboBox);
+        _imp->viewsComboBox->addAction(leftAct);
+        ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                             kShortcutIDShowRightView,
+                                                             kShortcutDescShowRightView,
+                                                             _imp->viewsComboBox);
+        _imp->viewsComboBox->addAction(rightAct);
+        for (int i = 2; i < count; ++i) {
+            _imp->viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1));
+        }
     } else {
         _imp->viewsComboBox->show();
-        for (int i = 0; i < count; ++i) {
-            _imp->viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1),QIcon(),Gui::keySequenceForView(i) );
-        }
+        
     }
     if ( ( currentIndex < _imp->viewsComboBox->count() ) && (currentIndex != -1) ) {
         _imp->viewsComboBox->setCurrentIndex(currentIndex);
     } else {
         _imp->viewsComboBox->setCurrentIndex(0);
     }
-    _imp->gui->updateViewsActions(count);
+    getGui()->updateViewsActions(count);
 }
 
 void
@@ -237,7 +247,7 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
-        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
+        getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionForward);
     }
 }
@@ -253,12 +263,12 @@ ViewerTab::abortRendering()
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
-    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(false);
+    if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(false);
     }
-    if (_imp->gui) {
+    if (getGui()) {
         ///Abort all viewers because they are all synchronised.
-        const std::list<ViewerTab*> & activeNodes = _imp->gui->getViewersList();
+        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
 
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
@@ -272,7 +282,7 @@ ViewerTab::abortRendering()
 void
 ViewerTab::onEngineStarted(bool forward)
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     
@@ -286,15 +296,15 @@ ViewerTab::onEngineStarted(bool forward)
         _imp->play_Backward_Button->setChecked(!forward);
     }
 
-    if (_imp->gui && !_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(true);
+    if (getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(true);
     }
 }
 
 void
 ViewerTab::onEngineStopped()
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     
@@ -307,8 +317,8 @@ ViewerTab::onEngineStopped()
         _imp->play_Backward_Button->setDown(false);
         _imp->play_Backward_Button->setChecked(false);
     }
-    if (_imp->gui && _imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-        _imp->gui->onFreezeUIButtonClicked(false);
+    if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        getGui()->onFreezeUIButtonClicked(false);
     }
 }
 
@@ -317,7 +327,7 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
-        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
+        getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionBackward);
 
     }
@@ -379,12 +389,12 @@ void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
                                  int /*reason*/)
 {
-    if (!_imp->gui) {
+    if (!getGui()) {
         return;
     }
     _imp->currentFrameBox->setValue(time);
     
-    if (_imp->timeLineGui->getTimeline() != _imp->gui->getApp()->getTimeLine()) {
+    if (_imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine()) {
         _imp->viewerNode->renderCurrentFrame(true);
     }
 }
@@ -402,7 +412,7 @@ ViewerTab::centerViewer()
     if ( _imp->viewer->displayingImage() ) {
         _imp->viewerNode->renderCurrentFrame(false);
     } else {
-        _imp->viewer->updateGL();
+        _imp->viewer->update();
     }
 }
 
@@ -427,7 +437,7 @@ ViewerTab::refresh()
 
 ViewerTab::~ViewerTab()
 {
-    if (_imp->gui) {
+    if (getGui()) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
             boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
@@ -440,15 +450,15 @@ ViewerTab::~ViewerTab()
                         assert(graph);
                     }
                 } else {
-                    graph = _imp->gui->getNodeGraph();
+                    graph = getGui()->getNodeGraph();
                 }
             }
             _imp->viewerNode->invalidateUiContext();
         } else {
-            graph = _imp->gui->getNodeGraph();
+            graph = getGui()->getNodeGraph();
         }
         assert(graph);
-        if ( _imp->app && !_imp->app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
+        if ( getGui()->getApp() && !getGui()->getApp()->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
     }
@@ -479,17 +489,30 @@ ViewerTab::previousLayer()
 }
 
 void
+ViewerTab::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
+void
+ViewerTab::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
+
+void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
+    
+    bool accept = true;
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
+    double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
 
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) { //< this shortcut is global
-        if ( parentWidget() ) {
-            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress,key, modifiers);
-            QCoreApplication::postEvent(parentWidget(),ev);
-        }
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);
@@ -603,10 +626,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         lastFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
-        _imp->app->getTimeLine()->goToPreviousKeyframe();
+        getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
-        _imp->app->getTimeLine()->goToNextKeyframe();
+        getGui()->getApp()->getTimeLine()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         centerViewer();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
@@ -634,8 +657,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
         _imp->zoomCombobox->setCurrentIndex_no_emit(4);
-    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
-        switchInputAAndB();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, modifiers, key) ) {
         zoomIn();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {
@@ -664,10 +685,74 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         connectToInput(8);
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectToInput(9);
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
+        _imp->viewer->toggleOverlays();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
+        _imp->viewer->toggleWipe();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDCenterWipe, modifiers, key)) {
+        _imp->viewer->centerWipe();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
+        hideAllToolbars();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, modifiers, key) ) {
+        showAllToolbars();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHidePlayer, modifiers, key) ) {
+        togglePlayerVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTimeline, modifiers, key) ) {
+        toggleTimelineVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideInfobar, modifiers, key) ) {
+        toggleInfobarVisbility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideLeft, modifiers, key) ) {
+        toggleLeftToolbarVisiblity();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideRight, modifiers, key) ) {
+        toggleRightToolbarVisibility();
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
+        toggleTopToolbarVisibility();
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
+        QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        wheelEvent(&e);
+    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(scale, scale, e) ) {
+        update();
+    } else if ( notifyOverlaysKeyDown(scale, scale, e) ) {
+        update();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
+        ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
+        switchInputAAndB();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowLeftView, modifiers, key) ) {
+        showView(0);
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowRightView, modifiers, key) ) {
+        showView(1);
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
     }
+    if (accept) {
+        takeClickFocus();
+        e->accept();
+    } else {
+        handleUnCaughtKeyPressEvent();
+    }
 } // keyPressEvent
+
+
+
+void
+ViewerTab::keyReleaseEvent(QKeyEvent* e)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    if (!getGui()) {
+        return QWidget::keyPressEvent(e);
+    }
+    double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
+    if ( notifyOverlaysKeyUp(scale, scale, e) ) {
+        _imp->viewer->redraw();
+    } else {
+        QWidget::keyReleaseEvent(e);
+    }
+}
 
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
@@ -711,11 +796,11 @@ ViewerTab::eventFilter(QObject *target,
                        QEvent* e)
 {
     if (e->type() == QEvent::MouseButtonPress) {
-        if (_imp->gui && _imp->app) {
+        if (getGui() && getGui()->getApp()) {
             boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
             assert(gui_i);
             boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            _imp->gui->selectNode(gui);
+            getGui()->selectNode(gui);
         }
     }
 

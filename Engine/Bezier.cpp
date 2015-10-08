@@ -2158,6 +2158,8 @@ Bezier::removeAnimation()
         }
      
         _imp->isClockwiseOriented.clear();
+        
+        copyInternalPointsToGuiPoints();
     }
     
     incrementNodesAge();
@@ -2209,6 +2211,8 @@ Bezier::moveKeyframe(int oldTime,int newTime)
             oldValue = 0;
         }
         _imp->isClockwiseOriented[newTime] = oldValue;
+        
+        copyInternalPointsToGuiPoints();
     }
     
     incrementNodesAge();

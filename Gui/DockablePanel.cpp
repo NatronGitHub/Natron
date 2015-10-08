@@ -74,8 +74,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-
-#define NATRON_VERTICAL_BAR_WIDTH 4
 using std::make_pair;
 using namespace Natron;
 
@@ -416,7 +414,8 @@ DockablePanel::DockablePanel(Gui* gui ,
     
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(NATRON_VERTICAL_BAR_WIDTH, 3, 3, 0);
+    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
+    _imp->_horizLayout->setSpacing(2);
     if (iseffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(currentColor);
@@ -432,11 +431,12 @@ DockablePanel::DockablePanel(Gui* gui ,
         tabWidget->getTabBar()->setObjectName("DockablePanelTabWidget");
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     }
+    QObject::connect(_imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)));
     _imp->_horizLayout->addWidget(_imp->_tabWidget);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
-        _imp->addPage(NULL,defaultPageName);
+        _imp->getOrCreatePage(NULL);
     }
 }
 
@@ -461,6 +461,24 @@ DockablePanel::~DockablePanel()
 }
 
 void
+DockablePanel::onPageIndexChanged(int index)
+{
+    assert(_imp->_tabWidget);
+    QString name = _imp->_tabWidget->tabText(index);
+    PageMap::iterator found = _imp->_pages.find(name);
+    if (found == _imp->_pages.end()) {
+        return;
+    }
+        
+    _imp->refreshPagesSecretness();
+    
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    if (isEffect && isEffect->getNode()->hasOverlay()) {
+        isEffect->getApp()->redrawAllViewers();
+    }
+}
+
+void
 DockablePanel::turnOffPages()
 {
     _imp->_pagesEnabled = false;
@@ -469,7 +487,7 @@ DockablePanel::turnOffPages()
     setFrameShape(QFrame::NoFrame);
     
     boost::shared_ptr<KnobPage> userPage = _imp->_holder->getOrCreateUserPageKnob();
-    _imp->addPage(userPage.get(), userPage->getDescription().c_str());
+    _imp->getOrCreatePage(userPage.get());
     
 }
 
@@ -532,6 +550,7 @@ DockablePanel::setUserPageActiveIndex()
     for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
         if (_imp->_tabWidget->tabText(i) == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _imp->_tabWidget->setCurrentIndex(i);
+            _imp->refreshPagesSecretness();
             break;
         }
     }
@@ -646,23 +665,22 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-//        boost::shared_ptr<KnobPage> page = _imp->ensureDefaultPageKnobCreated();
-//        assert(page);
-//        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
-//        assert(foundPage != _imp->_pages.end());
-//        
-//        QGridLayout* layout = 0;
-//        if (_imp->_useScrollAreasForTabs) {
-//            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
-//        } else {
-//            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
-//        }
-//        assert(layout);
-//        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
         _imp->_mainLayout->addWidget(roto);
     }
 
     initializeExtraGui(_imp->_mainLayout);
+    
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (isNodePanel) {
+        boost::shared_ptr<NodeCollection> collec = isNodePanel->getNode()->getNode()->getGroup();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collec.get());
+        if (isGroup) {
+            if (!isGroup->getNode()->hasPyPlugBeenEdited()) {
+                setEnabled(false);
+            }
+        }
+    }
+    _imp->refreshPagesSecretness();
     
 }
 
@@ -813,6 +831,10 @@ DockablePanel::setClosedInternal(bool c)
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
+        
+        nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(getGui()->getApp()->getTimeLine()->currentFrame());
+        
+        
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
         boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
@@ -990,6 +1012,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 int index = _imp->_tabWidget->indexOf(found->second.tab);
                 if (index != -1) {
                     _imp->_tabWidget->removeTab(index);
+                    _imp->refreshPagesSecretness();
                 }
             }
             found->second.tab->deleteLater();
@@ -1438,9 +1461,9 @@ DockablePanel::onCenterButtonClicked()
 }
 
 void
-DockablePanel::onSubGraphEditionChanged(bool editable)
+DockablePanel::onSubGraphEditionChanged(bool /*editable*/)
 {
-    _imp->_enterInGroupButton->setVisible(editable);
+   // _imp->_enterInGroupButton->setVisible(editable);
 }
 
 void

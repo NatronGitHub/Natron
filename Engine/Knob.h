@@ -217,6 +217,11 @@ public:
         Q_EMIT descriptionChanged();
     }
     
+    void s_evaluateOnChangeChanged(bool value)
+    {
+        Q_EMIT evaluateOnChangeChanged(value);
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -241,6 +246,8 @@ public Q_SLOTS:
 
     
 Q_SIGNALS:
+    
+    void evaluateOnChangeChanged(bool value);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -427,7 +434,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void evaluateValueChange(int dimension, int time, Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -629,6 +636,7 @@ public:
      **/
     virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
     virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -786,6 +794,11 @@ public:
      **/
     virtual bool getIsSecret() const = 0;
     virtual bool getDefaultIsSecret() const = 0;
+    
+    /**
+     * @brief Returns true if a knob is secret because it is either itself secret or one of its parent, recursively
+     **/
+    virtual bool getIsSecretRecursive() const = 0;
 
     /**
      * @biref This is called to notify the gui that the knob shouldn't be editable.
@@ -945,7 +958,10 @@ public:
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
+    
+private:
     virtual void removeListener(KnobI* knob) = 0;
+public:
 
     virtual bool useNativeOverlayHandle() const { return false; }
 
@@ -1116,7 +1132,7 @@ public:
     virtual void blockValueChanges() OVERRIDE FINAL;
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,int time, Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1192,6 +1208,7 @@ public:
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual void setSecretByDefault(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
@@ -1441,8 +1458,12 @@ private:
                          Natron::ValueChangedReasonEnum reason,
                          bool copyState) OVERRIDE FINAL;
 
+
     
-       /**
+public:
+    
+    
+    /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
@@ -1453,8 +1474,8 @@ private:
                         Natron::ValueChangedReasonEnum reason,
                         KeyFrame* newKey);
 
-public:
-
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
      * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
@@ -1973,7 +1994,7 @@ public:
     
     bool isEvaluationBlocked() const;
 
-    void appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason);
+    void appendValueChange(KnobI* knob,int time, Natron::ValueChangedReasonEnum reason);
     
     bool isSetValueCurrentlyPossible() const;
     
@@ -2053,6 +2074,8 @@ public:
      **/
     void beginChanges();
     void endChanges(bool discardEverything = false);
+    
+    ChangesList getKnobChanges() const;
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

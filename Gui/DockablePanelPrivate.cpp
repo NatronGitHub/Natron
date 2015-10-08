@@ -36,7 +36,6 @@
 #include <QDebug>
 #include <QScrollArea>
 
-#include "Engine/Knob.h" // KnobI
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h" // NATRON_PARAMETER_PAGE_NAME_INFO
 #include "Gui/ClickableLabel.h"
@@ -242,7 +241,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
     for (U32 i = 0; i < knobs.size(); ++i) {
         boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-            addPage(p.get(),  p->getDescription().c_str() );
+            getOrCreatePage(p.get());
             return p;
         }
     }
@@ -256,7 +255,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
         pk = boost::dynamic_pointer_cast<KnobPage>(knob);
     }
     assert(pk);
-    addPage(pk.get(), _defaultPageName);
+    getOrCreatePage(pk.get());
     return pk;
 }
 
@@ -269,7 +268,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobPage* p = dynamic_cast<KnobPage*>( knobs[i].get() );
         if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-            page = addPage(p,  p->getDescription().c_str() );
+            page = getOrCreatePage(p);
             p->addKnob(knob);
             break;
         }
@@ -288,7 +287,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
         
         ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
         if ( page == _pages.end() ) {
-            page = addPage(NULL, _defaultPageName);
+            page = getOrCreatePage(NULL);
         }
     }
     return page;
@@ -323,8 +322,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         if (isPage->getChildren().empty()) {
             return 0;
         }
-        QString pageName(isPage->getDescription().c_str());
-        addPage(isPage.get(), pageName);
+        getOrCreatePage(isPage.get());
 
     } else {
         
@@ -356,7 +354,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 if (!parentKnob) {
                     page = getDefaultPage(knob);
                 } else {
-                    page = addPage(parentIsPage, parentIsPage->getDescription().c_str() );
+                    page = getOrCreatePage(parentIsPage);
                 }
                 bool existed = true;
                 if (!page->second.groupAsTab) {
@@ -394,7 +392,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     assert(parentParentIsGroup || parentParentIsPage);
                     TabGroup* parentTabGroup = 0;
                     if (parentParentIsPage) {
-                        PageMap::iterator page = addPage(parentParentIsPage.get(),parentParentIsPage->getDescription().c_str());
+                        PageMap::iterator page = getOrCreatePage(parentParentIsPage.get());
                         assert(page != _pages.end());
                         parentTabGroup = page->second.groupAsTab;
                     } else {
@@ -411,7 +409,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     
                 } else {
                     KnobPage* topLevelPage = knob->getTopLevelPage();
-                    PageMap::iterator page = addPage(topLevelPage,topLevelPage->getDescription().c_str());
+                    PageMap::iterator page = getOrCreatePage(topLevelPage);
                     assert(page != _pages.end());
                     ///retrieve the form layout
                     QGridLayout* layout;
@@ -443,7 +441,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             KnobPage* isTopLevelParentAPage = dynamic_cast<KnobPage*>(parentKnobTmp);
             assert(isTopLevelParentAPage);
             
-            PageMap::iterator page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str());
+            PageMap::iterator page = getOrCreatePage(isTopLevelParentAPage);
             assert( page != _pages.end() );
 
             ///retrieve the form layout
@@ -535,7 +533,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
                     
                 } else if (parentParentIsPage) {
-                    PageMap::iterator page = addPage(parentParentIsPage, parentParentIsPage->getDescription().c_str());
+                    PageMap::iterator page = getOrCreatePage(parentParentIsPage);
                     assert(page != _pages.end());
                     assert(page->second.groupAsTab);
                     layout = page->second.groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
@@ -647,10 +645,17 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 } // findKnobGuiOrCreate
 
 PageMap::iterator
-DockablePanelPrivate::addPage(KnobPage* page,const QString & name)
+DockablePanelPrivate::getOrCreatePage(KnobPage* page)
 {
     if (!_pagesEnabled && _pages.size() > 0) {
         return _pages.begin();
+    }
+    
+    QString name;
+    if (!page) {
+        name = _defaultPageName;
+    } else {
+        name = page->getDescription().c_str();
     }
     
     PageMap::iterator found = _pages.find(name);
@@ -714,5 +719,28 @@ DockablePanelPrivate::addPage(KnobPage* page,const QString & name)
     return _pages.insert( make_pair(name,p) ).first;
 }
 
-
+void
+DockablePanelPrivate::refreshPagesSecretness()
+{
+    assert(_tabWidget);
+    std::string stdName = _tabWidget->tabText(_tabWidget->currentIndex()).toStdString();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _holder->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        if (!isPage) {
+            continue;
+        }
+        if (isPage->getDescription() == stdName) {
+            if (isPage->getIsSecret()) {
+                isPage->setSecret(false);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
+        } else {
+            if (!isPage->getIsSecret()) {
+                isPage->setSecret(true);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            }
+        }
+    }
+}
 

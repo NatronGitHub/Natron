@@ -57,12 +57,12 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: get()const
-    // 1: get(int)const
+    // 1: get(double)const
     if (numArgs == 0) {
         overloadId = 0; // get()const
     } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 1; // get(int)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        overloadId = 1; // get(double)const
     }
 
     // Function signature not found.
@@ -80,13 +80,13 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // get(int frame) const
+        case 1: // get(double frame) const
         {
-            int cppArg0;
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get(int)const
+                // get(double)const
                 Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
@@ -101,7 +101,7 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_Double2DParamFunc_get_TypeError:
-        const char* overloads[] = {"", "int", 0};
+        const char* overloads[] = {"", "float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.get", overloads);
         return 0;
 }

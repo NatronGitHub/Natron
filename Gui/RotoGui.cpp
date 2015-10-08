@@ -3383,7 +3383,6 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
             itemName = kRotoPaintBurnBaseName;
             break;
         default:
-            assert(false);
             return;
     }
     
@@ -3557,29 +3556,36 @@ RotoGui::keyDown(double /*time*/,
         didSomething = true;
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
         _imp->selectTool->handleSelection();
+        didSomething = true;
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
         if (_imp->bezierEditionTool) {
             _imp->bezierEditionTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
         if (_imp->pointsEditionTool) {
             _imp->pointsEditionTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
         if (_imp->paintBrushTool) {
             _imp->paintBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
         if (_imp->cloneBrushTool) {
             _imp->cloneBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
         if (_imp->effectBrushTool) {
             _imp->effectBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( _imp->state != eEventStateBuildingStroke && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
         if (_imp->mergeBrushTool) {
             _imp->mergeBrushTool->handleSelection();
+            didSomething = true;
         }
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, modifiers, key) ) {
         moveSelectedCpsWithKeyArrows(1,0);
@@ -3607,6 +3613,7 @@ RotoGui::keyDown(double /*time*/,
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, modifiers, key) ) {
         lockSelectedCurves();
+        didSomething = true;
     }
 
     return didSomething;
@@ -4799,6 +4806,7 @@ void
 RotoGui::onPressureOpacityClicked(bool isDown)
 {
     _imp->pressureOpacityButton->setDown(isDown);
+    _imp->pressureOpacityButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 
@@ -4806,6 +4814,7 @@ void
 RotoGui::onPressureSizeClicked(bool isDown)
 {
     _imp->pressureSizeButton->setDown(isDown);
+    _imp->pressureSizeButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 
@@ -4813,6 +4822,7 @@ void
 RotoGui::onPressureHardnessClicked(bool isDown)
 {
     _imp->pressureHardnessButton->setDown(isDown);
+    _imp->pressureHardnessButton->setChecked(isDown);
     onBreakMultiStrokeTriggered();
 }
 

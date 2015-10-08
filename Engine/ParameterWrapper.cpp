@@ -394,14 +394,14 @@ Int3DParam::get() const
 }
 
 int
-IntParam::get(int frame) const
+IntParam::get(double frame) const
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
     return knob->getValueAtTime(frame,0);
 }
 
 Int2DTuple
-Int2DParam::get(int frame) const
+Int2DParam::get(double frame) const
 {
     Int2DTuple ret;
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
@@ -412,7 +412,7 @@ Int2DParam::get(int frame) const
 
 
 Int3DTuple
-Int3DParam::get(int frame) const
+Int3DParam::get(double frame) const
 {
     Int3DTuple ret;
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
@@ -490,7 +490,7 @@ IntParam::setValue(int value,int dimension)
 }
 
 int
-IntParam::getValueAtTime(int time,int dimension) const
+IntParam::getValueAtTime(double time,int dimension) const
 {
     return _intKnob.lock()->getValueAtTime(time,dimension);
 }
@@ -623,13 +623,13 @@ Double3DParam::get() const
 }
 
 double
-DoubleParam::get(int frame) const
+DoubleParam::get(double frame) const
 {
     return _doubleKnob.lock()->getValueAtTime(frame, 0);
 }
 
 Double2DTuple
-Double2DParam::get(int frame) const
+Double2DParam::get(double frame) const
 {
     Double2DTuple ret;
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
@@ -639,7 +639,7 @@ Double2DParam::get(int frame) const
 }
 
 Double3DTuple
-Double3DParam::get(int frame) const
+Double3DParam::get(double frame) const
 {
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
     Double3DTuple ret;
@@ -727,7 +727,7 @@ DoubleParam::setValue(double value,int dimension)
 }
 
 double
-DoubleParam::getValueAtTime(int time,int dimension) const
+DoubleParam::getValueAtTime(double time,int dimension) const
 {
     return _doubleKnob.lock()->getValueAtTime(time,dimension);
 }
@@ -848,7 +848,7 @@ ColorParam::get() const
 
 
 ColorTuple
-ColorParam::get(int frame) const
+ColorParam::get(double frame) const
 {
     ColorTuple ret;
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
@@ -914,7 +914,7 @@ ColorParam::setValue(double value,int dimension)
 }
 
 double
-ColorParam::getValueAtTime(int time,int dimension) const
+ColorParam::getValueAtTime(double time,int dimension) const
 {
     return _colorKnob.lock()->getValueAtTime(time,dimension);
 }
@@ -1025,7 +1025,7 @@ ChoiceParam::get() const
 }
 
 int
-ChoiceParam::get(int frame) const
+ChoiceParam::get(double frame) const
 {
     return _choiceKnob.lock()->getValueAtTime(frame,0);
 }
@@ -1063,7 +1063,7 @@ ChoiceParam::setValue(int value)
 }
 
 int
-ChoiceParam::getValueAtTime(int time) const
+ChoiceParam::getValueAtTime(double time) const
 {
     return _choiceKnob.lock()->getValueAtTime(time, 0);
 }
@@ -1183,7 +1183,7 @@ BooleanParam::get() const
 }
 
 bool
-BooleanParam::get(int frame) const
+BooleanParam::get(double frame) const
 {
     return _boolKnob.lock()->getValueAtTime(frame,0);
 }
@@ -1214,7 +1214,7 @@ BooleanParam::setValue(bool value)
 }
 
 bool
-BooleanParam::getValueAtTime(int time) const
+BooleanParam::getValueAtTime(double time) const
 {
     return _boolKnob.lock()->getValueAtTime(time,0);
 }
@@ -1274,7 +1274,7 @@ StringParamBase::get() const
 }
 
 std::string
-StringParamBase::get(int frame) const
+StringParamBase::get(double frame) const
 {
     return _stringKnob.lock()->getValueAtTime(frame,0);
 }
@@ -1305,7 +1305,7 @@ StringParamBase::setValue(const std::string& value)
 }
 
 std::string
-StringParamBase::getValueAtTime(int time) const
+StringParamBase::getValueAtTime(double time) const
 {
     return _stringKnob.lock()->getValueAtTime(time,0);
 }
@@ -1492,6 +1492,12 @@ void
 ButtonParam::setIconFilePath(const std::string& icon)
 {
     _buttonKnob.lock()->setIconFilePath(icon);
+}
+
+void
+ButtonParam::trigger()
+{
+    _buttonKnob.lock()->trigger();
 }
 
 ///////////////////GroupParam

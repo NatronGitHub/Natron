@@ -166,7 +166,8 @@ public:
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
-                                            bool disableRenderScaleSupport) const;
+                                            bool disableRenderScaleSupport,
+                                                              bool *hasUsedFileDialog) const;
 
     void registerAppInstance(AppInstance* app);
 
@@ -305,7 +306,7 @@ public:
                                    bool mustCreateMutex,
                                    int major,
                                    int minor,
-                                   bool canBeUserCreated);
+                                   bool isDeprecated);
 
     bool isNCacheFilesOpenedCapped() const;
     size_t getNCacheFilesOpened() const;

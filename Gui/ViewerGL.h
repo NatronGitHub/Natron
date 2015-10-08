@@ -296,9 +296,14 @@ public:
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
 
     /**
-     * @brief Repaint
+     * @brief update()
      **/
     virtual void redraw() OVERRIDE FINAL;
+    
+    /**
+     * @brief updateGL();
+     **/
+    virtual void redrawNow() OVERRIDE FINAL;
 
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
@@ -418,10 +423,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
     
     /**

@@ -172,7 +172,7 @@ struct DockablePanelPrivate
                          const boost::shared_ptr<QUndoStack>& stack);
     
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator addPage(KnobPage* page,const QString & name);
+    PageMap::iterator getOrCreatePage(KnobPage* page);
 
     boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 
@@ -190,6 +190,8 @@ struct DockablePanelPrivate
                                  const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 
     PageMap::iterator getDefaultPage(const boost::shared_ptr<KnobI> &knob);
+    
+    void refreshPagesSecretness();
 };
 
 

@@ -27,7 +27,7 @@
 #include <QPainter>
 #include <QPen>
 
-#define NATRON_VERTICAL_BAR_WIDTH 4
+#define NATRON_VERTICAL_BAR_WIDTH 2
 
 VerticalColorBar::VerticalColorBar(QWidget* parent)
 : QWidget(parent)
@@ -47,7 +47,7 @@ QSize
 VerticalColorBar::sizeHint() const
 {
     return QWidget::sizeHint();
-    //return QSize(5,1000);
+    //return QSize(NATRON_VERTICAL_BAR_WIDTH,1000);
 }
 
 void
@@ -55,11 +55,11 @@ VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
 {
     QPainter p(this);
     QPen pen;
-    pen.setCapStyle(Qt::RoundCap);
+    pen.setCapStyle(Qt::FlatCap);
     pen.setWidth(NATRON_VERTICAL_BAR_WIDTH);
     pen.setColor(_color);
     p.setPen(pen);
-    p.drawLine( 0, NATRON_VERTICAL_BAR_WIDTH, 0, height() - NATRON_VERTICAL_BAR_WIDTH);
+    p.drawLine( NATRON_VERTICAL_BAR_WIDTH/2, NATRON_VERTICAL_BAR_WIDTH, NATRON_VERTICAL_BAR_WIDTH/2, height() - NATRON_VERTICAL_BAR_WIDTH);
 }
 
 

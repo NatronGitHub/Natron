@@ -31,12 +31,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
+#include <QToolTip>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
 
 #include "Gui/BackDropGui.h"
@@ -44,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Utils.h"
 
 #include "Global/QtCompat.h"
 
@@ -64,8 +67,30 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     
     bool mustUpdate = true;
     
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
+    bool isGroupEditable = true;
+    bool groupEdited = true;
+    if (isGroup) {
+        isGroupEditable = isGroup->isSubGraphEditable();
+        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+    }
+    if (!groupEdited && isGroupEditable) {
+        ///check if user is nearby unlock
+        int iw = _imp->unlockIcon.width();
+        int ih = _imp->unlockIcon.height();
+        int w = width();
+        if (e->x() >= (w - iw - 10 - 15) && e->x() <= (w - 10 + 15) &&
+            e->y() >= (10 - 15) && e->y() <= (10 + ih + 15)) {
+            assert(isGroup);
+            QPoint pos = mapToGlobal(e->pos());
+            QToolTip::showText(pos, Natron::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
+        }
+
+    }
+    
     QRectF sceneR = visibleSceneRect();
-    if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
+    if (groupEdited && _imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
         boost::shared_ptr<NodeGui> selected;
         Edge* selectedEdge = 0;
@@ -228,7 +253,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
                 boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
-                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader();
+                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
@@ -312,7 +337,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                                 if ( edge && !edge->isOutputEdge() ) {
                                     
-                                    if ((*it)->getNode()->getLiveInstance()->isReader()) {
+                                    if ((*it)->getNode()->getLiveInstance()->isReader() ||
+                                        (*it)->getNode()->getMaxInputCount() == 0) {
                                         edge = 0;
                                         continue;
                                     }
@@ -324,7 +350,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     
                                     Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
                                     if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeInternalNode->getLiveInstance()->isReader()) {
+                                        !selectedNodeIsReader) {
                                         ret = Natron::Node::eCanConnectInput_ok;
                                     }
                                     

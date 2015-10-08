@@ -76,8 +76,32 @@ static PyObject* Sbk_ButtonParamFunc_setIconFilePath(PyObject* self, PyObject* p
         return 0;
 }
 
+static PyObject* Sbk_ButtonParamFunc_trigger(PyObject* self)
+{
+    ButtonParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ButtonParamWrapper*)((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // trigger()
+            cppSelf->trigger();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef Sbk_ButtonParam_methods[] = {
     {"setIconFilePath", (PyCFunction)Sbk_ButtonParamFunc_setIconFilePath, METH_O},
+    {"trigger", (PyCFunction)Sbk_ButtonParamFunc_trigger, METH_NOARGS},
 
     {0} // Sentinel
 };

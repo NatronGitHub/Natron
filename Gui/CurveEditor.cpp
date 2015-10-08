@@ -51,6 +51,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/EffectInstance.h"
 #include "Engine/TimeLine.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/CurveGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
@@ -63,6 +64,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/TabWidget.h"
 
 using std::make_pair;
 using std::cout;
@@ -103,8 +105,6 @@ private:
 struct CurveEditorPrivate
 {
     
-    Gui* gui;
-    
     std::list<NodeCurveEditorContext*> nodes;
     std::list<RotoCurveEditorContext*> rotos;
     QVBoxLayout* mainLayout;
@@ -130,9 +130,8 @@ struct CurveEditorPrivate
     
     boost::weak_ptr<KnobCurveGui> selectedKnobCurve;
     
-    CurveEditorPrivate(Gui* gui)
-    : gui(gui)
-    , nodes()
+    CurveEditorPrivate()
+    : nodes()
     , rotos()
     , mainLayout(0)
     , splitter(0)
@@ -163,8 +162,8 @@ CurveEditor::CurveEditor(Gui* gui,
                          QWidget *parent)
 : QWidget(parent)
 , CurveSelection()
-, ScriptObject()
-, _imp(new CurveEditorPrivate(gui))
+, PanelWidget(this,gui)
+, _imp(new CurveEditorPrivate())
 {
     setObjectName("CurveEditor");
     _imp->undoAction = _imp->undoStack->createUndoAction( this,tr("&Undo") );
@@ -897,8 +896,8 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
         }
-        _imp->gui->putSettingsPanelFirst( node->getSettingPanel() );
-        _imp->gui->getApp()->redrawAllViewers();
+        getGui()->putSettingsPanelFirst( node->getSettingPanel() );
+        getGui()->getApp()->redrawAllViewers();
     }
 }
 
@@ -1535,11 +1534,42 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
 void
 CurveEditor::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_F && modCASIsControl(e)) {
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+    Qt::Key key = (Qt::Key)e->key();
+    
+    bool accept = true;
+    if (isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key)) {
         _imp->filterEdit->setFocus();
     } else {
+        accept = false;
         QWidget::keyPressEvent(e);
     }
+    if (accept) {
+        takeClickFocus();
+        e->accept();
+    } else {
+        handleUnCaughtKeyPressEvent();
+    }
+}
+
+void
+CurveEditor::enterEvent(QEvent* e)
+{
+    enterEventBase();
+    QWidget::enterEvent(e);
+}
+
+void
+CurveEditor::leaveEvent(QEvent* e)
+{
+    leaveEventBase();
+    QWidget::leaveEvent(e);
+}
+
+void
+CurveEditor::onInputEventCalled()
+{
+    takeClickFocus();
 }
 
 boost::shared_ptr<CurveGui>
@@ -1578,7 +1608,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
             std::string expr = knob->getExpression(knobCurve->getDimension());
             if (!expr.empty()) {
                 _imp->knobLineEdit->setText(expr.c_str());
-                double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
+                double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
                 _imp->resultLabel->setText("= " + QString::number(v));
             } else {
                 _imp->knobLineEdit->clear();
@@ -1608,7 +1638,7 @@ CurveEditor::refreshCurrentExpression()
     boost::shared_ptr<KnobI> knob = curve->getInternalKnob();
     
     std::string expr = knob->getExpression(curve->getDimension());
-    double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), curve->getDimension());
+    double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), curve->getDimension());
     _imp->knobLineEdit->setText(expr.c_str());
     _imp->resultLabel->setText("= " + QString::number(v));
 }

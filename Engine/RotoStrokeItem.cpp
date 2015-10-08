@@ -266,10 +266,11 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
        
     } // for (; xNext != xCurve.end() ;++xNext, ++yNext, ++pNext) {
     if (bbox) {
-        bbox->x1 -= halfBrushSize * pressure;
-        bbox->x2 += halfBrushSize * pressure;
-        bbox->y1 -= halfBrushSize * pressure;
-        bbox->y2 += halfBrushSize * pressure;
+        double padding = std::max(0.5,halfBrushSize) * pressure;
+        bbox->x1 -= padding;
+        bbox->x2 += padding;
+        bbox->y1 -= padding;
+        bbox->y2 += padding;
     }
 }
 
@@ -608,7 +609,8 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
                                                    std::list<std::pair<Natron::Point,double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
-                                                   int* newAge)
+                                                   int* newAge,
+                                                   int* strokeIndex)
 {
     
     Transform::Matrix3x3 transform;
@@ -625,6 +627,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
     QMutexLocker k(&itemMutex);
     assert(!_imp->strokes.empty());
     RotoStrokeItemPrivate::StrokeCurves& stroke = _imp->strokes.back();
+    *strokeIndex = (int)_imp->strokes.size() - 1;
     assert(stroke.xCurve->getKeyFramesCount() == stroke.yCurve->getKeyFramesCount() && stroke.xCurve->getKeyFramesCount() == stroke.pressureCurve->getKeyFramesCount());
     
   

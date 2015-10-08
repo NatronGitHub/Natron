@@ -47,7 +47,9 @@ using namespace Natron;
 
 
 void
-NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoConnect)
+NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
+                                     const boost::shared_ptr<NodeGui> &selected,
+                                     bool autoConnect)
 {
     BackDropGui* isBd = dynamic_cast<BackDropGui*>(node.get());
     if (isBd) {
@@ -61,15 +63,6 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     /// 1 = pop the node above the selected node and move the inputs of the selected node a little
     /// 2 = pop the node below the selected node and move the outputs of the selected node a little
     int behavior = 0;
-    boost::shared_ptr<NodeGui> selected;
-
-    if (_imp->_selection.size() == 1) {
-        selected = _imp->_selection.front();
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(selected.get());
-        if (isBd) {
-            selected.reset();
-        }
-    }
 
     if (!selected || !autoConnect) {
         behavior = 0;
@@ -239,7 +232,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                         QString(),
                                         CreateNodeArgs::DefaultValuesList(),
                                         createdNodeInternal->getGroup());
-                    boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                    boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                     assert(dotNodeGui_i);
@@ -354,7 +347,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     createdNodeInternal->getGroup());
-                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                 assert(dotNodeGui_i);

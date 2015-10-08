@@ -175,10 +175,8 @@ public:
 
     virtual ~AppInstance();
 
-    virtual void aboutToQuit()
-    {
-    }
-
+    virtual void aboutToQuit();
+    
     struct RenderRequest {
         QString writerName;
         int firstFrame,lastFrame;
@@ -217,7 +215,6 @@ public:
 
     ///Same as createNode but used when loading a project
     boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs & args);
-
   
     boost::shared_ptr<Natron::Node> getNodeByFullySpecifiedName(const std::string & name) const;
     
@@ -374,7 +371,7 @@ public:
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
     virtual void queueRedrawForAllViewers() {}
     
-    virtual void renderAllViewers() {}
+    virtual void renderAllViewers(bool /* canAbort*/) {}
     
     virtual void declareCurrentAppVariable_Python();
 
@@ -434,7 +431,7 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node);
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node, bool requestedByLoad);
 
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
                                const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,

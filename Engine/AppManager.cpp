@@ -149,23 +149,8 @@ AppManager::load(int &argc,
     }
     initializeQApp(argc, argv);
 
-#if defined(__NATRON_OSX__)
+    // set fontconfig path on all platforms
     if (qgetenv("FONTCONFIG_PATH").isNull()) {
-        // set FONTCONFIG_PATH to Natron.app/Contents/Resources/etc/fonts (required by plugins using fontconfig)
-        QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
-        QString pathcfg = path + "/fonts.conf";
-        // Note:
-        // a minimalist fonts.conf file for OS X is:
-        // <fontconfig><dir>/System/Library/Fonts</dir><dir>/Library/Fonts</dir><dir>~/Library/Fonts</dir></fontconfig>
-        if (!QFile(pathcfg).exists()) {
-            qWarning() << "Fontconfig configuration file" << pathcfg << "does not exist, not setting FONTCONFIG_PATH";
-        } else {
-            qDebug() << "Setting FONTCONFIG_PATH to" << path;
-            qputenv("FONTCONFIG_PATH", path.toUtf8());
-        }
-    }
-#elif defined(__NATRON_WIN32__)
-        if (qgetenv("FONTCONFIG_PATH").isNull()) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
         QString path = QCoreApplication::applicationDirPath() + "/../Resources/etc/fonts";
         QString pathcfg = path + "/fonts.conf";
@@ -176,10 +161,13 @@ AppManager::load(int &argc,
             qputenv("FONTCONFIG_PATH", path.toUtf8());
         }
     }
-#endif
 
-
-    initPython(argc, argv);
+    try {
+        initPython(argc, argv);
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
@@ -250,6 +238,8 @@ AppManager::~AppManager()
 
     delete qApp;
 }
+
+
 
 void
 AppManager::quit(AppInstance* instance)
@@ -594,7 +584,7 @@ AppManager::clearAllCaches()
     }
     
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        it->second.app->renderAllViewers();
+        it->second.app->renderAllViewers(true);
     }
     
     Project::clearAutoSavesDir();
@@ -729,59 +719,6 @@ AppManager::loadAllPlugins()
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
     
-    std::vector<Natron::Plugin*> ignoredPlugins;
-    _imp->_settings->populatePluginsTab(ignoredPlugins);
-    
-    ///Remove from the plug-ins the ignore plug-ins
-    for (std::vector<Natron::Plugin*>::iterator it = ignoredPlugins.begin(); it != ignoredPlugins.end(); ++it) {
-        (*it)->setIsUserCreatable(false);
-        
-        /*PluginsMap::iterator foundId = _imp->_plugins.find((*it)->getPluginID().toStdString());
-        if (foundId != _imp->_plugins.end()) {
-            PluginMajorsOrdered::iterator found = foundId->second.end();
-            
-            for (PluginMajorsOrdered::iterator it2 = foundId->second.begin() ; it2 != foundId->second.end() ; ++it2) {
-                if (*it2 == *it) {
-                    found = it2;
-                    break;
-                }
-            }
-            if (found != foundId->second.end()) {
-                
-                ignorePlugin(*it);
-                ///Remove it from the readersMap and writersMap
-                
-                std::string pluginId = (*it)->getPluginID().toStdString();
-                if ((*it)->isReader()) {
-                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = readersMap.begin(); it2 != readersMap.end(); ++it2) {
-                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                            if (it3->first == pluginId) {
-                                it2->second.erase(it3);
-                                break;
-                            }
-                        }
-                    }
-                }
-                if ((*it)->isWriter()) {
-                    for (std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it2 = writersMap.begin(); it2 != writersMap.end(); ++it2) {
-                        for (std::vector< std::pair<std::string,double> >::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                            if (it3->first == pluginId) {
-                                it2->second.erase(it3);
-                                break;
-                            }
-                        }
-                    }
-                    
-                }
-                delete *found;
-                foundId->second.erase(found);
-                if (foundId->second.empty()) {
-                    _imp->_plugins.erase(foundId);
-                }
-            }
-        }*/
-    }
-    
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
 
@@ -791,6 +728,9 @@ AppManager::loadAllPlugins()
     //Should be done after settings are declared
     loadPythonGroups();
 
+    _imp->_settings->populatePluginsTab();
+
+    
     onAllPluginsLoaded();
 }
 
@@ -813,7 +753,7 @@ AppManager::onAllPluginsLoaded()
     
         assert(!it->second.empty());
         PluginMajorsOrdered::iterator first = it->second.begin();
-        if (!(*first)->getIsUserCreatable() || (*first)->getIsForInternalUseOnly()) {
+        if (!(*first)->getIsUserCreatable()) {
             continue;
         }
         
@@ -825,7 +765,7 @@ AppManager::onAllPluginsLoaded()
                 continue;
             }
             PluginMajorsOrdered::iterator other = it2->second.begin();
-            if (!(*other)->getIsUserCreatable() || (*other)->getIsForInternalUseOnly()) {
+            if (!(*other)->getIsUserCreatable()) {
                 continue;
             }
             
@@ -870,7 +810,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -886,7 +826,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -902,7 +842,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -918,7 +858,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion(), true);
+        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -934,7 +874,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion(), true);
+        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -950,7 +890,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -967,7 +907,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
             qgrouping.push_back( it->c_str() );
         }
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+                       NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -984,7 +924,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
             qgrouping.push_back( it->c_str() );
         }
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "rotoNodeIcon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), true);
+                       NATRON_IMAGES_PATH "rotoNodeIcon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
     }
     {
         boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1007,7 +947,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
 
 }
 
-static void findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
+static bool findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
 {
     for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
         if (*it == script) {
@@ -1046,12 +986,14 @@ static void findAndRunScriptFile(const QString& path,const QStringList& files,co
                     message.append(error.c_str());
                     appPTR->writeToOfxLog_mt_safe(message);
                     std::cerr << message.toStdString() << std::endl;
+                    return false;
                 }
-
+                return true;
             }
             break;
         }
     }
+    return false;
 }
 
 QString
@@ -1117,6 +1059,77 @@ AppManager::getAllNonOFXPluginsPaths() const
     return templatesSearchPath;
 }
 
+typedef void (*NatronPathFunctor)(const QDir&);
+
+static void operateOnPathRecursive(NatronPathFunctor functor, const QDir& directory)
+{
+    if (!directory.exists()) {
+        return;
+    }
+    
+    functor(directory);
+    
+    QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+    for (int i = 0; i < subDirs.size(); ++i) {
+        QDir d(directory.absolutePath() + "/" + subDirs[i]);
+        operateOnPathRecursive(functor,d);
+    }
+}
+
+static void addToPythonPathFunctor(const QDir& directory)
+{
+    std::string addToPythonPath("sys.path.append(\"");
+    addToPythonPath += directory.absolutePath().toStdString();
+    addToPythonPath += "\")\n";
+    
+    std::string err;
+    bool ok  = Natron::interpretPythonScript(addToPythonPath, &err, 0);
+    if (!ok) {
+        std::string message = QObject::tr("Could not add").toStdString() + ' ' + directory.absolutePath().toStdString() + ' ' +
+         QObject::tr("to python path").toStdString() + ": " + err;
+        std::cerr << message << std::endl;
+        appPTR->writeToOfxLog_mt_safe(message.c_str());
+    }
+
+}
+
+static void findAllScriptsRecursive(const QDir& directory,
+                                    QStringList& allPlugins,
+                                    bool *foundInit,
+                                    bool *foundInitGui)
+{
+    if (!directory.exists()) {
+        return;
+    }
+    
+    QStringList filters;
+    filters << "*.py";
+    QStringList files = directory.entryList(filters,QDir::Files | QDir::NoDotAndDotDot);
+    bool ok = findAndRunScriptFile(directory.absolutePath() + '/', files,"init.py");
+    if (ok) {
+        *foundInit = true;
+    }
+    if (!appPTR->isBackground()) {
+        ok = findAndRunScriptFile(directory.absolutePath() + '/',files,"initGui.py");
+        if (ok) {
+            *foundInitGui = true;
+        }
+    }
+    
+    for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
+        if (it->endsWith(".py") && *it != QString("init.py") && *it != QString("initGui.py")) {
+            allPlugins.push_back(directory.absolutePath() + "/" + *it);
+        }
+    }
+    
+    QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+    for (int i = 0; i < subDirs.size(); ++i) {
+        QDir d(directory.absolutePath() + "/" + subDirs[i]);
+        findAllScriptsRecursive(d,allPlugins, foundInit, foundInitGui);
+    }
+
+}
+
 void
 AppManager::loadPythonGroups()
 {
@@ -1127,67 +1140,67 @@ AppManager::loadPythonGroups()
     
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
     
-    
-    
-    QStringList filters;
-    filters << "*.py";
-    
     std::string err;
     
     QStringList allPlugins;
     
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
-        
-        std::string addToPythonPath("sys.path.append(\"");
-        addToPythonPath += templatesSearchPath[i].toStdString();
-        addToPythonPath += "\")\n";
-        
-        bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
-        assert(ok);
-        if (!ok) {
-          throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+addToPythonPath+") failed!");
-        }
+        QDir d(templatesSearchPath[i]);
+        operateOnPathRecursive(&addToPythonPathFunctor,d);
     }
     
-    ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
+    ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
         std::string s = "import PySide.QtCore as QtCore";
         bool ok  = interpretPythonScript(s, &err, 0);
-        assert(ok);
         if (!ok) {
-            throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+s+") failed!");
+            std::string message = QObject::tr("Failed to import PySide.QtCore").toStdString();
+            std::cerr << message << std::endl;
+            appPTR->writeToOfxLog_mt_safe(message.c_str());
         }
     }
     
     if (!isBackground()) {
         std::string s = "import PySide.QtGui as QtGui";
         bool ok  = interpretPythonScript(s, &err, 0);
-        assert(ok);
         if (!ok) {
-            throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+s+") failed!");
+            std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();
+            std::cerr << message << std::endl;
+            appPTR->writeToOfxLog_mt_safe(message.c_str());
         }
     }
 
     
+    bool foundInit = false;
+    bool foundInitGui = false;
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         QDir d(templatesSearchPath[i]);
-        if (d.exists()) {
-            
-            QStringList files = d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot);
-            findAndRunScriptFile(d.absolutePath() + '/', files,"init.py");
-            if (!isBackground()) {
-                findAndRunScriptFile(d.absolutePath() + '/',files,"initGui.py");
-            }
-            
-            QStringList scripts = d.entryList(QStringList(QString("*.py")),QDir::Files | QDir::NoDotAndDotDot);
+        findAllScriptsRecursive(d,allPlugins,&foundInit, &foundInitGui);
+    }
+    if (!foundInit) {
+        QString message = QObject::tr("init.py script not loaded");
+        appPTR->setLoadingStatus(message);
+        std::cout << message.toStdString() << std::endl;
+    } else {
+        QString message = QObject::tr("init.py script loaded");
+        appPTR->setLoadingStatus(message);
+        std::cout << message.toStdString() << std::endl;
+    }
+    
+    if (!appPTR->isBackground()) {
+        
+        if (!foundInitGui) {
+            QString message = QObject::tr("initGui.py script not loaded");
+            appPTR->setLoadingStatus(message);
+            std::cout << message.toStdString() << std::endl;
 
-            for (QStringList::iterator it = scripts.begin(); it != scripts.end(); ++it) {
-                if (it->endsWith(".py") && *it != QString("init.py") && *it != QString("initGui.py")) {
-                    allPlugins.push_back(d.absolutePath() + "/" + *it);
-                }
-            }
+        } else {
+            QString message = QObject::tr("initGui.py script loaded");
+            appPTR->setLoadingStatus(message);
+            std::cout << message.toStdString() << std::endl;
         }
+        
     }
     
     // Now that init.py and InitGui.py have run, we need to set the search path again for the PyPlug
@@ -1204,16 +1217,8 @@ AppManager::loadPythonGroups()
         
         //Add only paths that did not exist so far
         for (int i = 0; i < diffSearch.size(); ++i) {
-            
-            std::string addToPythonPath("sys.path.append(\"");
-            addToPythonPath += diffSearch[i].toStdString();
-            addToPythonPath += "\")\n";
-            
-            bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
-            assert(ok);
-            if (!ok) {
-                throw std::runtime_error("AppManager::loadPythonGroups(): interpretPythonScript("+addToPythonPath+") failed!");
-            }
+            QDir d(diffSearch[i]);
+            operateOnPathRecursive(&addToPythonPathFunctor,d);
         }
     }
     
@@ -1239,7 +1244,7 @@ AppManager::loadPythonGroups()
         if (getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version)) {
             qDebug() << "Loading " << moduleName;
             QStringList grouping = QString(pluginGrouping.c_str()).split(QChar('/'));
-            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0, true);
+            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0, false);
             
             p->setPythonModule(modulePath + moduleName);
             
@@ -1260,7 +1265,7 @@ AppManager::registerPlugin(const QStringList & groups,
                            bool mustCreateMutex,
                            int major,
                            int minor,
-                           bool canBeUserCreated)
+                           bool isDeprecated)
 {
     QMutex* pluginMutex = 0;
 
@@ -1268,7 +1273,7 @@ AppManager::registerPlugin(const QStringList & groups,
         pluginMutex = new QMutex(QMutex::Recursive);
     }
     Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor,
-                                                isReader,isWriter, canBeUserCreated);
+                                                isReader,isWriter, isDeprecated);
     std::string stdID = pluginID.toStdString();
     PluginsMap::iterator found = _imp->_plugins.find(stdID);
     if (found != _imp->_plugins.end()) {
@@ -1476,9 +1481,10 @@ AppManager::createOFXEffect(boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                             bool allowFileDialogs,
-                            bool disableRenderScaleSupport) const
+                            bool disableRenderScaleSupport,
+                            bool *hasUsedFileDialog) const
 {
-    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);
 }
 
 void

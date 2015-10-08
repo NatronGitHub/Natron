@@ -34,6 +34,7 @@ timeline's time.
 
 .. method:: NatronEngine.Double3DParam.get(frame)
 	
+	:param frame: :class:`float<PySide.QtCore.float>`
 	:rtype: :class:`Double3DTuple`
 	
 Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the given *frame*.

@@ -61,11 +61,6 @@ else
     export LD_LIBRARY_PATH=$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH
 fi
 
-if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
-    echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
-    exit 1
-fi
-
 if [ "$NATRON_LICENSE" = "GPL" ]; then
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$INSTALL_PATH/ffmpeg-gpl/lib/pkgconfig
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/ffmpeg-gpl/lib

@@ -181,11 +181,14 @@ class Plugin
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
     ContextEnum _ofxContext;
     
-    //Can be activated/deactivated by the user
-    bool _isUserCreatable;
+    //Deprecated are by default Disabled in the Preferences.
+    bool _isDeprecated;
     
     //Is not visible by the user, just for internal use
     bool _isInternalOnly;
+    
+    mutable  bool _activatedSet;
+    mutable  bool _activated;
     
 public:
 
@@ -207,8 +210,10 @@ public:
     , _ofxPlugin(0)
     , _ofxDescriptor(0)
     , _ofxContext(eContextNone)
-    , _isUserCreatable(true)
+    , _isDeprecated(false)
     , _isInternalOnly(false)
+    , _activatedSet(false)
+    , _activated(true)
     {
     }
 
@@ -223,7 +228,7 @@ public:
            int minorVersion,
            bool isReader,
            bool isWriter,
-           bool isUserCreatable)
+           bool isDeprecated)
     : _binary(binary)
     , _id(id)
     , _label(label)
@@ -240,8 +245,10 @@ public:
     , _ofxPlugin(0)
     , _ofxDescriptor(0)
     , _ofxContext(eContextNone)
-    , _isUserCreatable(isUserCreatable)
+    , _isDeprecated(isDeprecated)
     , _isInternalOnly(false)
+    , _activatedSet(false)
+    , _activated(true)
     {
     }
     
@@ -251,9 +258,9 @@ public:
     
     void setForInternalUseOnly(bool b) { _isInternalOnly = b; }
 
-    bool getIsUserCreatable() const { return _isUserCreatable && !_isInternalOnly ; }
+    bool getIsDeprecated() const { return _isDeprecated; }
     
-    void setIsUserCreatable(bool f) { _isUserCreatable = f; }
+    bool getIsUserCreatable() const;
     
     void setPluginID(const QString & id);
     

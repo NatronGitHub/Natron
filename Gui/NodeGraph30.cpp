@@ -33,6 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QWheelEvent>
 #include <QToolButton>
 #include <QApplication>
+#include <QTabBar>
+#include <QTreeWidget>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -61,8 +63,32 @@ using namespace Natron;
 void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
-    if ( !getLastSelectedViewer() ) {
-        _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+    ViewerTab* lastUsedViewer =  getLastSelectedViewer();
+    
+    if (lastUsedViewer) {
+        boost::shared_ptr<NodeCollection> collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
+        if (collection && collection->getNodeGraph() != this) {
+            //somehow the group doesn't belong to this nodegraph , pick another one
+            const std::list<ViewerTab*>& tabs = getGui()->getViewersList();
+            lastUsedViewer = 0;
+            for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+                
+                boost::shared_ptr<NodeCollection> otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
+                if (otherCollection && otherCollection->getNodeGraph() == this) {
+                    lastUsedViewer = *it;
+                    break;
+                }
+            }
+        }
+    }
+    
+    
+    boost::shared_ptr<InspectorNode> v;
+    if ( lastUsedViewer ) {
+        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
+                                                       getInternalNode()->getNode() );
+    } else {
+        NodePtr viewerNode = getGui()->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           true,
@@ -73,12 +99,16 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
                                                           QString(),
                                                           CreateNodeArgs::DefaultValuesList(),
                                                           getGroup()) );
+        if (!viewerNode) {
+            return;
+        }
+        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
     }
 
-    ///get a pointer to the last user selected viewer
-    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( getLastSelectedViewer()->
-                                                                                     getInternalNode()->getNode() );
-
+    if (!v) {
+        return;
+    }
+    
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
     if ( !v->isActivated() ) {
         return;
@@ -120,24 +150,8 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 void
 NodeGraph::enterEvent(QEvent* e)
 {
+    enterEventBase();
     QGraphicsView::enterEvent(e);
-    
-    QWidget* currentFocus = qApp->focusWidget();
-    
-    bool canSetFocus = !currentFocus ||
-    dynamic_cast<ViewerGL*>(currentFocus) ||
-    dynamic_cast<CurveWidget*>(currentFocus) ||
-    dynamic_cast<Histogram*>(currentFocus) ||
-    dynamic_cast<NodeGraph*>(currentFocus) ||
-    dynamic_cast<QToolButton*>(currentFocus) ||
-    currentFocus->objectName() == "Properties" ||
-    currentFocus->objectName() == "SettingsPanel" ||
-    currentFocus->objectName() == "qt_tabwidget_tabbar";
-    
-    if (canSetFocus) {
-        setFocus();
-    }
-
     _imp->_nodeCreationShortcutEnabled = true;
    
 }
@@ -145,6 +159,7 @@ NodeGraph::enterEvent(QEvent* e)
 void
 NodeGraph::leaveEvent(QEvent* e)
 {
+    leaveEventBase();
     QGraphicsView::leaveEvent(e);
 
     _imp->_nodeCreationShortcutEnabled = false;
@@ -401,7 +416,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( n->getNode()->getLiveInstance() );
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
-        const std::list<ViewerTab*> & viewerTabs = _imp->_gui->getViewersList();
+        const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getViewer() == viewer ) {
                 setLastSelectedViewer( (*it) );

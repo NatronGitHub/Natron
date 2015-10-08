@@ -39,6 +39,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
@@ -133,8 +134,13 @@ Gui::setupUi()
 
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
-    QObject::connect( _imp->_appInstance->getProject().get(), SIGNAL( projectNameChanged(QString) ), this, SLOT( onProjectNameChanged(QString) ) );
-
+    
+    boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
+    QObject::connect( project.get(), SIGNAL( projectNameChanged(QString) ), this, SLOT( onProjectNameChanged(QString) ) );
+    
+    boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
+    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(),SIGNAL( frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()));
 
     /*Searches recursively for all child objects of the given object,
        and connects matching signals from them to slots of object that follow the following form:
@@ -165,12 +171,12 @@ Gui::onPropertiesScrolled()
             (*it)->redrawGLWidgets();
         }
     }
-    _imp->_curveEditor->getCurveWidget()->updateGL();
+    _imp->_curveEditor->getCurveWidget()->update();
 
     {
         QMutexLocker k (&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->updateGL();
+            (*it)->update();
         }
     }
 #endif

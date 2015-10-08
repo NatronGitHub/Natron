@@ -140,7 +140,9 @@ void KnobGuiButton::removeSpecificGui()
 void
 KnobGuiButton::emitValueChanged()
 {
-   _knob.lock()->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
+    boost::shared_ptr<KnobButton> k = _knob.lock();
+    assert(k);
+    k->trigger();
 }
 
 void

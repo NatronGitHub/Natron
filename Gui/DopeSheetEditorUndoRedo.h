@@ -360,6 +360,8 @@ private:
  */
 class DSPasteKeysCommand : public QUndoCommand
 {
+
+    
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                        DopeSheetEditor *model,
@@ -378,6 +380,9 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
+    
+    int _refTime;
+    int _refKeyindex;
     std::vector<DopeSheetKey> _keys;
     DopeSheetEditor *_model;
 };

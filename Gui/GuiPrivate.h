@@ -242,7 +242,7 @@ struct GuiPrivate
     ProjectGui* _projectGui;
 
     ///ptr to the currently dragged tab for d&d purpose.
-    QWidget* _currentlyDraggedPanel;
+    PanelWidget* _currentlyDraggedPanel;
     QSize _currentlyDraggedPanelInitialSize;
 
     ///The "About" window.
@@ -265,6 +265,14 @@ struct GuiPrivate
     std::map<ActionWithShortcut*, std::string> pythonCommands;
     
     RenderStatsDialog* statsDialog;
+    
+    PanelWidget* currentPanelFocus;
+    
+    //To prevent recursion when we forward an uncaught event to the click focus widget
+    int currentPanelFocusEventRecursion;
+    bool keyPressEventHasVisitedFocusWidget;
+    
+    bool wasLaskUserSeekDuringPlayback;
     
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);
