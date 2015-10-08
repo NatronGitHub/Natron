@@ -390,7 +390,10 @@ boost::shared_ptr<DSKnob> DopeSheet::mapNameItemToDSKnob(QTreeWidgetItem *knobTr
 {
     boost::shared_ptr<DSKnob> ret;
 
-    boost::shared_ptr<DSNode>dsNode = findParentDSNode(knobTreeItem);
+    boost::shared_ptr<DSNode> dsNode = findParentDSNode(knobTreeItem);
+    if (!dsNode) {
+        return ret;
+    }
     const DSTreeItemKnobMap& knobRows = dsNode->getItemKnobMap();
 
     DSTreeItemKnobMap::const_iterator clickedDSKnob = knobRows.find(knobTreeItem);
