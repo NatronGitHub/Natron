@@ -19,6 +19,7 @@ else
     exit 1
 fi
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
 
 
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
@@ -40,10 +41,10 @@ if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
 fi
 
 
-if [ -d $TMP_PATH ]; then
-  rm -rf $TMP_PATH || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+  rm -rf $TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $TMP_BUILD_DIR || exit 1
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
     FFMPEG_PATH=$INSTALL_PATH/ffmpeg-GPL
@@ -82,7 +83,7 @@ fi
 # MISC
 if [ "$BUILD_MISC" = "1" ]; then
 
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_MISC || exit 1
 cd openfx-misc || exit 1
@@ -124,7 +125,7 @@ fi
 # IO
 if [ "$BUILD_IO" = "1" ]; then
 
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_IO || exit 1
 cd openfx-io || exit 1
@@ -165,7 +166,7 @@ fi
 # ARENA
 if [ "$BUILD_ARENA" = "1" ]; then
 
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_ARENA || exit 1
 cd openfx-arena || exit 1
@@ -206,7 +207,7 @@ fi
 # OPENCV
 if [ "$BUILD_CV" = "1" ]; then
 
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_OPENCV || exit 1
 cd openfx-opencv || exit 1

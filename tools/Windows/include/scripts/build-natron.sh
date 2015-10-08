@@ -16,6 +16,9 @@ else
     INSTALL_PATH=$INSTALL64_PATH
 fi
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
+
+
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$2
 if [ -z "$NATRON_BRANCH" ]; then
@@ -32,10 +35,10 @@ if [ ! -d $INSTALL_PATH ]; then
     fi
 fi
 
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+    rm -rf $TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $TMP_BUILD_DIR || exit 1
 
 # Setup env
 BOOST_ROOT=$INSTALL_PATH
@@ -45,7 +48,7 @@ PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 export BOOST_ROOT PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Install natron
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
@@ -74,9 +77,9 @@ NATRON_REL_V="$REL_GIT_VERSION"
 
 sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" "$CWD/commits-hash.sh" || exit 1
 
-NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
-NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
-NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
 sed -i "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" "$CWD/commits-hash.sh" || exit 1
 
 echo

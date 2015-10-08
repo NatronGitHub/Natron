@@ -56,14 +56,15 @@ DATE=`date +%Y-%m-%d`
 PKGOS="Windows-x86_${BIT}bit"
 REPO_OS="Windows/$REPO_BRANCH/${BIT}bit/packages"
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
 
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+    rm -rf $TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $TMP_BUILD_DIR || exit 1
 
 # SETUP
-INSTALLER="$TMP_PATH/Natron-installer"
+INSTALLER="$TMP_BUILD_DIR/Natron-installer"
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
