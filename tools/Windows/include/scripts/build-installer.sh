@@ -233,9 +233,11 @@ if [ "$NO_ZIP" != "1" ]; then
 	mkdir -p $ARCHIVE_DATA_DIR/Resources
 	mkdir -p $ARCHIVE_DATA_DIR/lib
 	mkdir -p $ARCHIVE_DATA_DIR/bin
+	mkdir -p $ARCHIVE_DATA_DIR/Plugins
 	cp -r $CLIBS_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
 	cp -r $CLIBS_PATH/data/lib/* $ARCHIVE_DATA_DIR/lib || exit 1
 	cp -r $CLIBS_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
+	cp -r $CLIBS_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
 fi
 
 # OFX ARENA
