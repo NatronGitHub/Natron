@@ -57,6 +57,7 @@ fi
 if [ "$2" = "workshop" ]; then
     BRANCH=$2
     REPO_SUFFIX=snapshot
+	NO_ZIP=1
 else
     REPO_SUFFIX=release
 fi
@@ -91,7 +92,8 @@ if [ -z "$OFFLINE_INSTALLER" ]; then
     OFFLINE_INSTALLER=1
 fi
 
-REPO_DIR=$REPO_DIR_PREFIX$REPO_SUFFIX
+REPO_DIR=$REPO_DIR_PREFIX$REPO_SUFFIX$BIT
+
 
 #Make log directory
 LOGS=$REPO_DIR/logs
@@ -141,7 +143,7 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     echo -n "Building Packages ... "
-    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
@@ -163,6 +165,9 @@ if [ "$SYNC" = "1" ]; then
         echo "Syncing packages ... "
         rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
         rsync -avz --progress  --verbose -e ssh $REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
+		if [ "$NO_ZIP" != "1" ]; then
+			 rsync -avz --progress  --verbose -e ssh $REPO_DIR/archive/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files 
+		fi
     fi
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi

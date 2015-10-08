@@ -9,6 +9,7 @@ moc*.cpp
 build
 build32
 build64
+*build_*
 sed*
 *latex*
 DerivedData
