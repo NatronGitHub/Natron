@@ -90,7 +90,7 @@ CONFIG(custombuild) {
 }
 
 isEmpty(CONFIG_SET) {
-	message("You did not select a CONFIG option for the build. Defaulting to \"Devel\". You can choose among  (snapshot | alpha | beta | RC | stable | custombuild). For custombuild you need to define the environment variable BUILD_USER_NAME. Also you can give a revision number to the version of Natron with the environment variable BUILD_NUMBER (e.g: RC1, RC2 etc...)"
+        message("You did not select a config option for the build. Defaulting to Devel. You can choose among  (snapshot | alpha | beta | RC | stable | custombuild). For custombuild you need to define the environment variable BUILD_USER_NAME. Also you can give a revision number to the version of Natron with the environment variable BUILD_NUMBER (e.g: RC1, RC2 etc...)")
 }
 
 isEmpty(BUILD_NUMBER) {

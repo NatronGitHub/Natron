@@ -3387,6 +3387,14 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
             }
             
         }
+    } else if (modCASIsNone(e)) {
+        boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos().y());
+        if (dsKnob) {
+            double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+            _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
+                                      Natron::eTimelineChangeReasonDopeSheetEditorSeek);
+
+        }
     }
 }
 
