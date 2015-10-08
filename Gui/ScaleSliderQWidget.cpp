@@ -263,6 +263,15 @@ ScaleSliderQWidget::enterEvent(QEvent* e)
 }
 
 void
+ScaleSliderQWidget::leaveEvent(QEvent* e)
+{
+    if (hasFocus()) {
+        clearFocus();
+    }
+    QWidget::leaveEvent(e);
+}
+
+void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
