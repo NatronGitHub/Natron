@@ -5,7 +5,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
-# Usage: build-natron.sh BIT "branch"
+# Usage: BUILD_CONFIG=SNAPSHOT build-natron.sh BIT "branch"
 
 source `pwd`/common.sh || exit 1
 
