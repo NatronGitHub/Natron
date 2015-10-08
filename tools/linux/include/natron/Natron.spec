@@ -3,7 +3,7 @@
 Summary: open-source compositing software
 Name: Natron
 
-Version: 2.0.0
+Version: REPLACE_VERSION
 Release: 1
 License: GPLv2
 
@@ -25,8 +25,10 @@ cp -a /root/Natron/tools/linux/tmp/Natron-installer/packages/fr.inria.*/data/* $
 cat /root/Natron/tools/linux/include/natron/Natron2.desktop > $RPM_BUILD_ROOT/usr/share/applications/Natron2.desktop
 cp /root/Natron/tools/linux/include/config/icon.png $RPM_BUILD_ROOT/usr/share/pixmaps/Natron.png
 
-cd $RPM_BUILD_ROOT/usr/bin ; ln -sf ../../../opt/Natron2/Natron .
-cd $RPM_BUILD_ROOT/usr/bin; ln -sf ../../../opt/Natron2/NatronRenderer .
+cd $RPM_BUILD_ROOT/usr/bin ; ln -sf ../../opt/Natron2/Natron .
+cd $RPM_BUILD_ROOT/usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .
+
+%post -p /opt/Natron2/bin/postinstall.sh
 
 %files
 %defattr(-,root,root)

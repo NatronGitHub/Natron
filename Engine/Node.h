@@ -60,6 +60,9 @@ CLANG_DIAG_ON(deprecated)
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
 
+#define kOfxMaskInvertParamName "maskInvert"
+#define kOfxMixParamName "mix"
+
 class AppInstance;
 class NodeSettingsPanel;
 class KnobI;
@@ -543,7 +546,7 @@ public:
     
     bool isUserSelected() const;
     
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.

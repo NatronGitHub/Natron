@@ -469,27 +469,9 @@ DockablePanel::onPageIndexChanged(int index)
     if (found == _imp->_pages.end()) {
         return;
     }
+        
+    _imp->refreshPagesSecretness();
     
-    std::string stdName = name.toStdString();
-    
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
-        if (!isPage) {
-            continue;
-        }
-        if (isPage->getDescription() == stdName) {
-            if (isPage->getIsSecret()) {
-                isPage->setSecret(false);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
-            }
-        } else {
-            if (!isPage->getIsSecret()) {
-                isPage->setSecret(true);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
-            }
-        }
-    }
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (isEffect && isEffect->getNode()->hasOverlay()) {
         isEffect->getApp()->redrawAllViewers();
@@ -568,6 +550,7 @@ DockablePanel::setUserPageActiveIndex()
     for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
         if (_imp->_tabWidget->tabText(i) == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _imp->_tabWidget->setCurrentIndex(i);
+            _imp->refreshPagesSecretness();
             break;
         }
     }
@@ -682,19 +665,6 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-//        boost::shared_ptr<KnobPage> page = _imp->ensureDefaultPageKnobCreated();
-//        assert(page);
-//        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
-//        assert(foundPage != _imp->_pages.end());
-//        
-//        QGridLayout* layout = 0;
-//        if (_imp->_useScrollAreasForTabs) {
-//            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
-//        } else {
-//            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
-//        }
-//        assert(layout);
-//        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
         _imp->_mainLayout->addWidget(roto);
     }
 
@@ -710,6 +680,7 @@ DockablePanel::initializeKnobsInternal()
             }
         }
     }
+    _imp->refreshPagesSecretness();
     
 }
 
@@ -1041,6 +1012,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 int index = _imp->_tabWidget->indexOf(found->second.tab);
                 if (index != -1) {
                     _imp->_tabWidget->removeTab(index);
+                    _imp->refreshPagesSecretness();
                 }
             }
             found->second.tab->deleteLater();

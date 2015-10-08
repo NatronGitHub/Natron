@@ -35,8 +35,12 @@ elif [ -f /usr/lib/libstdc++.so.6 ]; then
   STDC_LIB=/usr/lib/libstdc++.so.6
 elif [ -f /usr/lib/$COMPAT_ARCH-linux-gnu/libstdc++.so.6 ]; then
   STDC_LIB=/usr/lib/$COMPAT_ARCH-linux-gnu/libstdc++.so.6
+elif [ -f /usr/lib/i386-linux-gnu/libstdc++.so.6 ]; then
+  STDC_LIB=/usr/lib/i386-linux-gnu/libstdc++.so.6
 fi
-COMPAT_GCC=`$DIR/bin/strings $STDC_LIB | grep GLIBCXX_${COMPAT_VERSION}`
+if [ "$STDC_LIB" != "" ]; then
+  COMPAT_GCC=`$DIR/bin/strings $STDC_LIB | grep GLIBCXX_${COMPAT_VERSION}`
+fi
 if [ "$COMPAT_GCC" = "GLIBCXX_${COMPAT_VERSION}" ]; then
   if [ -f "$DIR/lib/libstdc++.so.6" ]; then
     rm -f $DIR/lib/libstdc++.so.6 || echo "Failed to remove symlink, please run as root to fix."

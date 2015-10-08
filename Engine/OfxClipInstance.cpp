@@ -132,9 +132,9 @@ OfxClipInstance::getUnmappedComponents() const
     static const std::string alphaStr(kOfxImageComponentAlpha);
 
     EffectInstance* inputNode = getAssociatedNode();
-    if (!isOutput() && inputNode) {
+    /*if (!isOutput() && inputNode) {
         inputNode = inputNode->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
-    }
+    }*/
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         std::list<Natron::ImageComponents> comps;

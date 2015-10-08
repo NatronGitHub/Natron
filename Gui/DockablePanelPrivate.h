@@ -190,6 +190,8 @@ struct DockablePanelPrivate
                                  const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 
     PageMap::iterator getDefaultPage(const boost::shared_ptr<KnobI> &knob);
+    
+    void refreshPagesSecretness();
 };
 
 
