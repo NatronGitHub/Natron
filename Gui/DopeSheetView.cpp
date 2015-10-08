@@ -2894,7 +2894,9 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
     }
 
     assert(dsNode);
-
+    if (!dsNode) {
+        return;
+    }
     _imp->computeNodeRange(dsNode.get());
 
     //Since this function is called a lot, let a chance to Qt to concatenate events

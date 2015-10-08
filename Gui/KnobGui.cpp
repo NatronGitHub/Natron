@@ -632,6 +632,9 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     KnobHolder* holder = knob->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
+    if (!isEffect) {
+        return;
+    }
 
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
     KnobInt* isInt = dynamic_cast<KnobInt*>(knob.get());
@@ -735,6 +738,10 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newKnobName, knob->getDescription(), isParametric->getDimension());
         output = newKnob;
     }
+    if (!output) {
+        return;
+    }
+    
     output->cloneDefaultValues(knob.get());
     output->clone(knob.get());
     if (knob->canAnimate()) {
@@ -749,10 +756,8 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         effect->getNode()->declarePythonFields();
         
         boost::shared_ptr<NodeCollection> collec;
+        collec = isEffect->getNode()->getGroup();
         
-        if (isEffect) {
-            collec = isEffect->getNode()->getGroup();
-        }
         NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
         
         std::stringstream ss;

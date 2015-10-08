@@ -761,7 +761,7 @@ EffectInstance::getImage(int inputNb,
             *roiPixel = pixelRoI;
         }
 
-        if ( !pixelRoI.intersects( inputImg->getBounds() ) ) {
+        if ( inputImg && !pixelRoI.intersects( inputImg->getBounds() ) ) {
             //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
 #ifdef DEBUG
             qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image";
@@ -770,7 +770,7 @@ EffectInstance::getImage(int inputNb,
             return ImagePtr();
         }
 
-        if ( inputImagesThreadLocal.empty() ) {
+        if ( inputImg && inputImagesThreadLocal.empty() ) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
             _imp->addInputImageTempPointer(inputNb, inputImg);
         }

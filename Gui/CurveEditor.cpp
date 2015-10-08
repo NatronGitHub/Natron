@@ -886,7 +886,7 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
     }
     if (node && node->getParentMultiInstance()) {
         panel = node->getParentMultiInstance()->getSettingPanel();
-    } else {
+    } else if (node) {
         panel = node->getSettingPanel();
     }
     if (node && panel && node->isVisible()) {

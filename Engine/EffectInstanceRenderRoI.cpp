@@ -1256,6 +1256,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
             assert(components);
+            if (!components) {
+                continue;
+            }
 
             if (!it->second.fullscaleImage) {
                 ///The image is not cached

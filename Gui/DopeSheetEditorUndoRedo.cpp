@@ -902,9 +902,9 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                     if (isDouble) {
                         k.setValue(isDouble->getValueAtTime(keyTime));
                     } else if (isBool) {
-                        k.setValue(isDouble->getValueAtTime(keyTime));
+                        k.setValue(isBool->getValueAtTime(keyTime));
                     } else if (isInt) {
-                        k.setValue(isDouble->getValueAtTime(keyTime));
+                        k.setValue(isInt->getValueAtTime(keyTime));
                     } else if (isString) {
                         std::string v = isString->getValueAtTime(keyTime);
                         double keyFrameValue = 0.;
