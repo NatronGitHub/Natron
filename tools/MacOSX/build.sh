@@ -19,10 +19,12 @@
 
 # Options:
 # CONFIG=(debug,release,relwithdebinfo): the build type
-# WORKSHOP=(workhop,tag): If workshop, builds dev branch, otherwise uses tags from common.sh
-# OFXBRANCH=(master,git tag e.g: tags/Natron-1.0.0-RC1): the branch or tag to build OpenFX plug-ins from
+# BRANCH=(workhop,tag): If workshop, builds dev branch, otherwise uses tags from common.sh
 # MKJOBS=N: number of threads
 # NO_CLEAN=1: Do not remove build dir before building, useful for debugging and avoiding the cloning etc...
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 
 #Usage: CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
 
@@ -50,6 +52,12 @@ done
 if [ "$PORTSOK" = "no" ]; then
     echo "At least one port from macports is missing. Please install them."
     exit 1
+fi
+
+
+if [ -z "$BUILD_CONFIG" ]; then
+	echo "You must select a BUILD_CONFIG".
+	exit 1
 fi
 
 if [ "$COMPILER" = "gcc" ]; then
@@ -130,7 +138,7 @@ NATRONLOG="$LOGDIR/Natron-$TAG.log"
 
 echo "Building Natron..."
 echo
-env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
+env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER  BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
     echo OK
@@ -154,16 +162,50 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-if [ "$BRANCH" = "workshop" ]; then
-    NATRON_V=$NATRON_DEVEL_GIT
+
+if [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-alpha-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-beta-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	NATRON_VERSION="$CUSTOM_BUILD_USER_NAME"
+fi
+
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    NATRON_VERSION=$NATRON_DEVEL_GIT
     UPLOAD_BRANCH=snapshots
 else
-    NATRON_V=$NATRON_VERSION_NUMBER
     UPLOAD_BRANCH=releases
 fi
 
-INSTALLERLOG="$LOGDIR/Natron-$TAG-${NATRON_V}-installer.log"
-NATRONDMG="$CWD/build/Natron-$TAG-${NATRON_V}.dmg"
+
+
+INSTALLERLOG="$LOGDIR/Natron-$TAG-${NATRON_VERSION}-installer.log"
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+	NATRONDMG="$CWD/build/Natron-$TAG-${NATRON_VERSION}.dmg"
+else
+	NATRONDMG="$CWD/build/Natron-${NATRON_VERSION}.dmg"
+fi
 if [ "$FAIL" != "1" ]; then
     echo "Building installer..."
     echo
@@ -178,8 +220,8 @@ if [ "$FAIL" != "1" ]; then
     fi
 fi
 
-NATRONLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}.log"
-PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_V}-plugins.log"
+NATRONLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_VERSION}.log"
+PLUGINSLOGNEW="$LOGDIR/Natron-$TAG-${NATRON_VERSION}-plugins.log"
 mv "$NATRONLOG" "$NATRONLOGNEW"
 mv "$PLUGINSLOG" "$PLUGINSLOGNEW"
 
