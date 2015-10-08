@@ -29,6 +29,9 @@ else
 fi
 
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
+
+
 BINARIES_URL=$REPO_DEST/Third_Party_Binaries
 SDK=Windows-$OS-$BIT-SDK
 
@@ -49,10 +52,10 @@ if [ ! -z "$REBUILD" ]; then
         rm -rf $INSTALL_PATH || exit 1
     fi
 fi
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d $$TMP_BUILD_DIR ]; then
+    rm -rf $$TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $$TMP_BUILD_DIR || exit 1
 if [ ! -d $SRC_PATH ]; then
     mkdir -p $SRC_PATH || exit 1
 fi
@@ -78,7 +81,7 @@ if [ "$REBUILD_MAGICK" = "1" ]; then
     rm -rf $INSTALL_PATH/include/ImageMagick-6/ $INSTALL_PATH/lib/libMagick* $INSTALL_PATH/share/ImageMagick-6/ $INSTALL_PATH/lib/pkgconfig/{Image,Magick}*
 fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
-    cd $TMP_PATH || exit 1
+    cd $$TMP_BUILD_DIR || exit 1
     if [ ! -f $SRC_PATH/$MAGICK_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$MAGICK_TAR -O $SRC_PATH/$MAGICK_TAR || exit 1
     fi
@@ -97,7 +100,7 @@ if [ "$REBUILD_OCIO" = "1" ]; then
     rm -rf $INSTALL_PATH/lib/libOpenColorIO* rm -rf $INSTALL_PATH/share/ocio* $INSTALL_PATH/include/OpenColorIO*
 fi
 if [ ! -f $INSTALL_PATH/lib/libOpenColorIO.a ]; then
-    cd $TMP_PATH || exit 1
+    cd $$TMP_BUILD_DIR || exit 1
     if [ ! -f $SRC_PATH/$OCIO_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$OCIO_TAR -O $SRC_PATH/$OCIO_TAR || exit 1
     fi
@@ -122,7 +125,7 @@ if [ "$REBUILD_OIIO" = "1" ]; then
     rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/OpenImage*
 fi
 if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
-    cd $TMP_PATH || exit 1
+    cd $$TMP_BUILD_DIR || exit 1
     if [ ! -f $SRC_PATH/$OIIO_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$OIIO_TAR -O $SRC_PATH/$OIIO_TAR || exit 1
     fi
@@ -145,7 +148,7 @@ fi
 
 # Install opencv
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/opencv.pc ]; then
-    cd $TMP_PATH || exit 1
+    cd $$TMP_BUILD_DIR || exit 1
     if [ ! -f $CWD/src/$CV_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$CV_TAR -O $CWD/src/$CV_TAR || exit 1
     fi
@@ -194,7 +197,7 @@ if [ "$REBUILD_SEEXPR" = "1" ]; then
     rm -rf $INSTALL_PATH/lib/libSeExpr* $INSTALL_PATH/include/SeExpr*
 fi
 if [ ! -f $INSTALL_PATH/lib/libSeExpr.a ]; then
-    cd $TMP_PATH || exit 1
+    cd $$TMP_BUILD_DIR || exit 1
     if [ ! -f $SRC_PATH/$SEE_TAR ]; then
         wget $THIRD_PARTY_SRC_URL/$SEE_TAR -O $SRC_PATH/$SEE_TAR || exit 1
     fi
