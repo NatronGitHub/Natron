@@ -83,8 +83,12 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
     
     
-    if ( !lastUsedViewer ) {
-        getGui()->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+    boost::shared_ptr<InspectorNode> v;
+    if ( lastUsedViewer ) {
+        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
+                                                       getInternalNode()->getNode() );
+    } else {
+        NodePtr viewerNode = getGui()->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           true,
@@ -95,12 +99,16 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
                                                           QString(),
                                                           CreateNodeArgs::DefaultValuesList(),
                                                           getGroup()) );
+        if (!viewerNode) {
+            return;
+        }
+        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
     }
 
-    ///get a pointer to the last user selected viewer
-    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
-                                                                                     getInternalNode()->getNode() );
-
+    if (!v) {
+        return;
+    }
+    
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
     if ( !v->isActivated() ) {
         return;

@@ -369,11 +369,11 @@ EffectInstance::aborted() const
 } // EffectInstance::aborted
 
 bool
-EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
+EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,double time, int view) const
 {
     boost::shared_ptr<Node> n = _node.lock();
 
-    return n->shouldCacheOutput(isFrameVaryingOrAnimated);
+    return n->shouldCacheOutput(isFrameVaryingOrAnimated, time ,view);
 }
 
 U64
@@ -880,7 +880,7 @@ EffectInstance::getImage(int inputNb,
     getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
     assert(!prefComps.empty());
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult);
+    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
@@ -4209,7 +4209,17 @@ EffectInstance::abortAnyEvaluation()
     assert(node);
     node->incrementKnobsAge();
     std::list<Natron::OutputEffectInstance*> outputNodes;
-    node->hasOutputNodesConnected(&outputNodes);
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+    if (isGroup) {
+        std::list<Node*> inputOutputs;
+        isGroup->getInputsOutputs(&inputOutputs);
+        for (std::list<Node*>::iterator it = inputOutputs.begin(); it!=inputOutputs.end();++it) {
+            (*it)->hasOutputNodesConnected(&outputNodes);
+        }
+    } else {
+        node->hasOutputNodesConnected(&outputNodes);
+    }
     for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
         if (isViewer) {

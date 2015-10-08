@@ -285,7 +285,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         createGroupFromSelection();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, modifiers, key) ) {
         expandSelectedGroups();
-    } else if (key == Qt::Key_Control && modCASIsNone(e)) {
+    } else if (key == Qt::Key_Control && e->modifiers() == Qt::ControlModifier) {
         _imp->setNodesBendPointsVisible(true);
         accept = false;
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
