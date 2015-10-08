@@ -19,8 +19,16 @@
 
 #
 # Build packages and installer for Linux
-#
-
+# OFFLINE=1: Make offline installer
+# TAR_BUILD=1: Tar the build
+# RPM_BUILD:1: Make RPM
+# NO_INSTALLER=1: Do not build installer
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# NATRON_LICENSE=(GPL,COMMERCIAL)
+# Usage: 
+# OFFLINE=1 BUILD_CONFIG=SNAPSHOT sh build-installer.sh workshop 
 source $(pwd)/common.sh || exit 1
 source $(pwd)/commits-hash.sh || exit 1
 
@@ -37,13 +45,44 @@ if [ -f $TMP_DIR/natron-build-installer.pid ]; then
 fi
 echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
-if [ "$1" = "workshop" ]; then
+if [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-alpha-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-beta-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=stable"
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	NATRON_VERSION="$CUSTOM_BUILD_USER_NAME"
+fi
+
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     NATRON_VERSION=$NATRON_DEVEL_GIT
     REPO_BRANCH=snapshots
+	ONLINE_TAG=snapshot
 else
-    NATRON_VERSION=$NATRON_VERSION_NUMBER
     REPO_BRANCH=releases
+	ONLINE_TAG=release
 fi
+
 
 DATE=$(date +%Y-%m-%d)
 PKGOS=Linux-x86_${BIT}bit
@@ -319,11 +358,6 @@ chown root:root -R $INSTALLER/*
 
 # Build repo and packages
 
-if [ "$1" = "workshop" ]; then
-  ONLINE_TAG=snapshot
-else
-  ONLINE_TAG=release
-fi
 ONLINE_INSTALL=Natron-${PKGOS}-online-install-$ONLINE_TAG
 BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}
 REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
