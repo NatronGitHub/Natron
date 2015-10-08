@@ -121,8 +121,12 @@
 
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
-///Set this from qmake 
-//#define NATRON_CUSTOM_BUILD_USER_NAME 
+///Set this from qmake
+
+#define STRINGIZE_CPP_NAME_(token) #token
+#define STRINGIZE_CPP_NAME(token) STRINGIZE_CPP_NAME_(token)
+
+#define NATRON_CUSTOM_BUILD_USER_NAME STRINGIZE_CPP_NAME(NATRON_CUSTOM_BUILD_USER_TOKEN)
 
 #define NATRON_VERSION_ENCODE(major,minor,revision) ( \
 ( (major) * 10000 ) \

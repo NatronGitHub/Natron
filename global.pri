@@ -85,7 +85,7 @@ CONFIG(stable) {
 CONFIG(custombuild) {
 	message("Compiling Natron with a custom version for $$BUILD_USER_NAME")
 	#BUILD_USER_NAME should be defined reflecting the user name that should appear in Natron.
-	DEFINES += NATRON_CUSTOM_BUILD_USER_NAME=\\\"$$BUILD_USER_NAME\\\"
+        DEFINES += NATRON_CUSTOM_BUILD_USER_TOKEN=\"$$BUILD_USER_NAME\"
 	CONFIG_SET=1
 }
 
