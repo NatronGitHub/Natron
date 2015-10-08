@@ -23,18 +23,6 @@
 
 source `pwd`/common.sh || exit 1
 
-PID=$$
-if [ -f $TMP_DIR/natron-build.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build.pid || exit 1
 
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows

@@ -11,18 +11,6 @@
 source `pwd`/common.sh || exit 1
 source `pwd`/commits-hash.sh || exit 1
 
-PID=$$
-if [ -f $TMP_DIR/natron-build-installer.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-installer.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
 if [ "$1" = "32" ]; then
     BIT=32
@@ -407,9 +395,8 @@ fi
 
 if [ "$NO_ZIP" != "1" ]; then
 	mkdir -p $REPO_DIR/
-	mv $ARCHIVE_DATA_DIR $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE} || exit 1
-	zip -r $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE}.zip $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE} || exit 1
-	rm -rf $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE}
+    mv $ARCHIVE_DATA_DIR $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE} || exit 1
+    (cd $ARCHIVE_DIR; zip -r ${ZIP_ARCHIVE_BASE}.zip ${ZIP_ARCHIVE_BASE} || exit 1; rm -rf ${ZIP_ARCHIVE_BASE};)
 fi
 
 echo "All Done!!!"

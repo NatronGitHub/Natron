@@ -20,18 +20,6 @@ else
 fi
 
 
-PID=$$
-if [ -f $TMP_DIR/natron-build-plugins.pid ]; then
-  OLDPID=`cat $TMP_DIR/natron-build-plugins.pid`
-  PIDS=`ps aux|awk '{print $2}'`
-  for i in $PIDS;do
-    if [ "$i" = "$OLDPID" ]; then
-      echo "already running ..."
-      exit 1
-    fi
-  done
-fi
-echo $PID > $TMP_DIR/natron-build-plugins.pid || exit 1
 
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 IO_BRANCH=master
