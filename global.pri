@@ -58,8 +58,45 @@ CONFIG(noassertions) {
 }
 
 CONFIG(snapshot) {
-   #message("Compiling an official snapshot (should only be done on the Natron build farm)")
-   DEFINES += NATRON_SNAPSHOT
+   message("Compiling an official snapshot (should only be done on the Natron build farm).")
+   DEFINES += NATRON_CONFIG_SNAPSHOT
+   CONFIG_SET=1
+}
+CONFIG(alpha) {
+	message("Compiling Natron in alpha version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_ALPHA
+	CONFIG_SET=1
+}
+CONFIG(beta) {
+	message("Compiling Natron in beta version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_BETA
+	CONFIG_SET=1
+}
+CONFIG(RC) {
+	message("Compiling Natron in release candidate version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_RC
+	CONFIG_SET=1
+}
+CONFIG(stable) {
+	message("Compiling Natron in stable version (should only be done on the Natron build farm).")
+	DEFINES += NATRON_CONFIG_STABLE
+	CONFIG_SET=1
+}
+CONFIG(custombuild) {
+	message("Compiling Natron with a custom version for $$BUILD_USER_NAME")
+	#BUILD_USER_NAME should be defined reflecting the user name that should appear in Natron.
+	DEFINES += NATRON_CUSTOM_BUILD_USER_NAME=\\\"$$BUILD_USER_NAME\\\"
+	CONFIG_SET=1
+}
+
+isEmpty(CONFIG_SET) {
+	message("You did not select a CONFIG option for the build. Defaulting to \"Devel\". You can choose among  (snapshot | alpha | beta | RC | stable | custombuild). For custombuild you need to define the environment variable BUILD_USER_NAME. Also you can give a revision number to the version of Natron with the environment variable BUILD_NUMBER (e.g: RC1, RC2 etc...)"
+}
+
+isEmpty(BUILD_NUMBER) {
+	DEFINES += NATRON_BUILD_NUMBER=0
+} else {
+	DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
 }
 
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152

@@ -2,7 +2,9 @@
 #
 # Build Natron for Windows
 #
-# BUILD_SNAPSHOT=1: Tag Natron as a snapshot build
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # Usage: build-natron.sh BIT "branch"
 
 source `pwd`/common.sh || exit 1
@@ -100,13 +102,38 @@ rm -rf build
 mkdir build || exit 1
 cd build || exit 1
 
-if [ "$BUILD_SNAPSHOT" = "1" ]; then
-    SNAP="CONFIG+=snapshot"
-    #else
-    #SNAP="CONFIG+=gbreakpad" Enable when ready
-fi
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    EXTRA_QMAKE_FLAG="CONFIG+=snapshot"
+elif [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=alpha  BUILD_NUMBER=$BUILD_NUMBER"
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
 
-$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=beta  BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=RC BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=stable"
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
+fi
+#EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" Enable when ready
+$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${EXTRA_QMAKE_FLAG} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1

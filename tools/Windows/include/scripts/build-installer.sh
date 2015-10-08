@@ -4,9 +4,14 @@
 #
 # Options:
 # NATRON_LICENSE=(GPL,COMMERCIAL)
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # NO_ZIP=1: Do not produce a zip self-contained archive with Natron distribution.
+# OFFLINE=1 : Make the offline installer too
+# NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
 # Usage:
-# NO_ZIP=1 NATRON_LICENSE=GPL sh build-installer 64 workshop
+# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 workshop
 
 source `pwd`/common.sh || exit 1
 source `pwd`/commits-hash.sh || exit 1
@@ -31,13 +36,41 @@ elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
 fi
 
 
-if [ "$2" = "workshop" ]; then
+if [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-alpha-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-beta-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=stable"
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	NATRON_VERSION="$CUSTOM_BUILD_USER_NAME"
+fi
+
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     NATRON_VERSION=$NATRON_DEVEL_GIT
     REPO_BRANCH=snapshots
     APP_INSTALL_SUFFIX=INRIA/Natron-snapshots
 	ONLINE_TAG=snapshot
 else
-    NATRON_VERSION=$NATRON_VERSION_NUMBER
     REPO_BRANCH=releases
     APP_INSTALL_SUFFIX=INRIA/Natron-$NATRON_VERSION
 	ONLINE_TAG=release
@@ -62,6 +95,8 @@ if [ -d $TMP_BUILD_DIR ]; then
     rm -rf $TMP_BUILD_DIR || exit 1
 fi
 mkdir -p $TMP_BUILD_DIR || exit 1
+
+
 
 # SETUP
 INSTALLER="$TMP_BUILD_DIR/Natron-installer"
@@ -387,7 +422,7 @@ if [ "$NO_INSTALLER" != "1" ]; then
 
     $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
 
-    if [ "$OFFLINE" != "0" ]; then
+    if [ "$OFFLINE" == "1" ]; then
         $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
     fi
     cd $REPO_DIR/installers || exit 1
