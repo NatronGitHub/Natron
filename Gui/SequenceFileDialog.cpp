@@ -1080,6 +1080,7 @@ void
 SequenceFileDialog::setRootIndex(const QModelIndex & index)
 {
     _view->setRootIndex(index);
+    _view->update();
 }
 
 SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
