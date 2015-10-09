@@ -4218,7 +4218,13 @@ EffectInstance::abortAnyEvaluation()
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
     } else {
-        node->hasOutputNodesConnected(&outputNodes);
+        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        if (attachedStroke) {
+            ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
+            attachedStroke->getContext()->getNode()->hasOutputNodesConnected(&outputNodes);
+        } else {
+            node->hasOutputNodesConnected(&outputNodes);
+        }
     }
     for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
