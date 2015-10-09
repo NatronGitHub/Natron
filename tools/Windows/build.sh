@@ -16,25 +16,15 @@
 # ARENA=1 : Enable arena plug
 # CV=1 : Enable cv plug
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
-# SNAPSHOT=1 : Tag build as snapshot
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL): When GPL, GPL binaries are bundled with Natron
 # USAGE: NATRON_LICENSE=<license> build.sh BIT "branch" noThreads
 
 source `pwd`/common.sh || exit 1
 
-PID=$$
-if [ -f $TMP_DIR/natron-build.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build.pid || exit 1
 
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows
@@ -48,6 +38,11 @@ if [ "$NATRON_LICENSE" != "GPL" -a "$NATRON_LICENSE" != "COMMERCIAL" ]; then
     exit 1
 fi
 
+if [ -z "$BUILD_CONFIG" ]; then
+	echo "You must select a BUILD_CONFIG".
+	exit 1
+fi
+
 if [ "$1" = "32" ]; then
     BIT=32
 else
@@ -57,6 +52,7 @@ fi
 if [ "$2" = "workshop" ]; then
     BRANCH=$2
     REPO_SUFFIX=snapshot
+	NO_ZIP=1
 else
     REPO_SUFFIX=release
 fi
@@ -91,7 +87,8 @@ if [ -z "$OFFLINE_INSTALLER" ]; then
     OFFLINE_INSTALLER=1
 fi
 
-REPO_DIR=$REPO_DIR_PREFIX$REPO_SUFFIX
+REPO_DIR=$REPO_DIR_PREFIX$REPO_SUFFIX$BIT
+
 
 #Make log directory
 LOGS=$REPO_DIR/logs
@@ -117,7 +114,7 @@ fi
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         echo -n "Building Natron ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -141,7 +138,7 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     echo -n "Building Packages ... "
-    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
@@ -163,6 +160,9 @@ if [ "$SYNC" = "1" ]; then
         echo "Syncing packages ... "
         rsync -avz --progress --delete --verbose -e ssh  $REPO_DIR/packages/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages
         rsync -avz --progress  --verbose -e ssh $REPO_DIR/installers/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files
+		if [ "$NO_ZIP" != "1" ]; then
+			 rsync -avz --progress  --verbose -e ssh $REPO_DIR/archive/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files 
+		fi
     fi
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi

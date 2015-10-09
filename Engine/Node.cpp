@@ -1786,6 +1786,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             }
             
             assert(knob);
+            if (!knob) {
+                continue;
+            }
             knob->cloneDefaultValues(sKnob.get());
             knob->clone(sKnob.get());
             knob->setAsUserKnob();

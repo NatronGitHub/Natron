@@ -40,6 +40,8 @@
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
+#define NATRON_WEBSITE_URL "http://www.natron.fr"
+#define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets
@@ -84,9 +86,12 @@
 #define NATRON_VERSION_MINOR 0
 #define NATRON_VERSION_REVISION 0
 
+<<<<<<< HEAD
 ///For example RC 1, RC 2 etc...
 #define NATRON_BUILD_NUMBER 1
 
+=======
+>>>>>>> workshop
 #define NATRON_LAST_VERSION_URL "https://raw.githubusercontent.com/MrKepzie/Natron/workshop/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
@@ -97,20 +102,43 @@
 #define NATRON_DEVELOPMENT_BETA "Beta"
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
-
 // The snapshot build scripts should add '-DNATRON_SNAPSHOT' to the compile
 // options.
 #define NATRON_DEVELOPMENT_SNAPSHOT "Snapshot"
-#ifdef NATRON_SNAPSHOT
+
+
+#ifdef NATRON_CONFIG_SNAPSHOT
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_SNAPSHOT
+#elif defined(NATRON_CONFIG_ALPHA)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_ALPHA
+#elif defined(NATRON_CONFIG_BETA)
+#define NATRON_DEVELOPMENT_STATUS NATRON_CONFIG_BETA
+#elif defined(NATRON_CONFIG_RC)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
+#elif defined(NATRON_CONFIG_STABLE)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_STABLE
 #else
+<<<<<<< HEAD
 // Only modify the following line for actual releases, and revert it to its original state afterwards
 //#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
+=======
+//Fallback on "Devel" builds (most likely built from command line without passing to qmake the appropriate defines)
+#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
+>>>>>>> workshop
 #endif
 
+///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
+//#define NATRON_BUILD_NUMBER 0
+
+
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
-#define NATRON_CUSTOM_BUILD_USER_NAME ""
+///Set this from qmake
+
+#define STRINGIZE_CPP_NAME_(token) #token
+#define STRINGIZE_CPP_NAME(token) STRINGIZE_CPP_NAME_(token)
+
+#define NATRON_CUSTOM_BUILD_USER_NAME STRINGIZE_CPP_NAME(NATRON_CUSTOM_BUILD_USER_TOKEN)
 
 #define NATRON_VERSION_ENCODE(major,minor,revision) ( \
 ( (major) * 10000 ) \

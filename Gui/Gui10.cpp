@@ -218,6 +218,9 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             assert(mainWidget);
+            if (!mainWidget) {
+                continue;
+            }
             QWidget* window;
             if ( (*it)->isMainWindow ) {
                 // mainWidget->setParent(_imp->_leftRightSplitter);

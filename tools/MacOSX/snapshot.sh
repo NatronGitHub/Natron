@@ -141,7 +141,7 @@ while true; do
     cd $CWD || FAIL=1
     if [ "$FAIL" != 1 ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" ]; then
-            env CONFIG=relwithdebinfo BRANCH=workshop MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
+            env CONFIG=relwithdebinfo BRANCH=workshop BUILD_CONFIG=SNAPSHOT MKJOBS=$MKJOBS UPLOAD=1 NO_CLEAN=$NO_CLEAN ./build.sh || FAIL=1
             echo $FAIL
         fi
     fi

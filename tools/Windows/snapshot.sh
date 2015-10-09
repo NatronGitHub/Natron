@@ -11,19 +11,6 @@ set -x
 
 source `pwd`/common.sh || exit 1
 
-PID=$$
-if [ -f "$TMP_DIR/natron-build-snapshot.pid" ]; then
-    OLDPID=`cat "$TMP_DIR/natron-build-snapshot.pid"`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build-snapshot.pid || exit 1
-
 if [ "$1" = "32" ]; then
     BIT=32
 else
@@ -168,7 +155,7 @@ do
     cd $CWD || exit 1
     if [ "$FAIL" != "1" ]; then
         if [ "$BUILD_NATRON" = "1" -o "$BUILD_IO" = "1" -o "$BUILD_MISC" = "1" -o "$BUILD_ARENA" = "1" -o "$BUILD_CV" = "1" ]; then
-            NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 SNAPSHOT=1 sh build.sh $BIT workshop $JOBS
+            NATRON_LICENSE=GPL OFFLINE_INSTALLER=1 SYNC=1 NOCLEAN=1 BUILD_CONFIG=SNAPSHOT sh build.sh $BIT workshop $JOBS
         fi
     fi
 

@@ -3974,6 +3974,9 @@ KnobHolder::slaveAllKnobs(KnobHolder* other,bool restore)
                     }
                 }
                 assert(foundKnob);
+                if (!foundKnob) {
+                    continue;
+                }
                 int dims = foundKnob->getDimension();
                 for (int j = 0; j < dims; ++j) {
                     foundKnob->slaveTo(j, otherKnobs[i], j);
@@ -4362,7 +4365,12 @@ AnimatingKnobStringHelper::getStringAtTime(double time,
     std::string ret;
     
     if ( _animation->hasCustomInterp() ) {
-        bool succeeded = _animation->customInterpolation(time, &ret);
+        bool succeeded = false;
+        try {
+            succeeded = _animation->customInterpolation(time, &ret);
+        } catch (...) {
+            
+        }
         if (!succeeded) {
             return getValue(dimension);
         } else {

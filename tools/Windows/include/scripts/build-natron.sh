@@ -2,23 +2,13 @@
 #
 # Build Natron for Windows
 #
-# BUILD_SNAPSHOT=1: Tag Natron as a snapshot build
-# Usage: build-natron.sh BIT "branch"
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# Usage: BUILD_CONFIG=SNAPSHOT build-natron.sh BIT "branch"
 
 source `pwd`/common.sh || exit 1
 
-PID=$$
-if [ -f $TMP_DIR/natron-build-app.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-app.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build-app.pid || exit 1
 
 if [ "$1" = "32" ]; then
     BIT=32
@@ -27,6 +17,9 @@ else
     BIT=64
     INSTALL_PATH=$INSTALL64_PATH
 fi
+
+TMP_BUILD_DIR=$TMP_PATH$BIT
+
 
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$2
@@ -44,10 +37,10 @@ if [ ! -d $INSTALL_PATH ]; then
     fi
 fi
 
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+    rm -rf $TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $TMP_BUILD_DIR || exit 1
 
 # Setup env
 BOOST_ROOT=$INSTALL_PATH
@@ -57,7 +50,7 @@ PYTHON_INCLUDE=$INSTALL_PATH/include/python2.7
 export BOOST_ROOT PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Install natron
-cd $TMP_PATH || exit 1
+cd $TMP_BUILD_DIR || exit 1
 
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
@@ -86,9 +79,9 @@ NATRON_REL_V="$REL_GIT_VERSION"
 
 sed -i "s/NATRON_DEVEL_GIT=.*/NATRON_DEVEL_GIT=${NATRON_REL_V}/" "$CWD/commits-hash.sh" || exit 1
 
-NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
-NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
-NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_PATH/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_MAJOR=`grep "define NATRON_VERSION_MAJOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_MINOR=`grep "define NATRON_VERSION_MINOR" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
+NATRON_REVISION=`grep "define NATRON_VERSION_REVISION" $TMP_BUILD_DIR/Natron/Global/Macros.h | awk '{print $3}'`
 sed -i "s/NATRON_VERSION_NUMBER=.*/NATRON_VERSION_NUMBER=${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}/" "$CWD/commits-hash.sh" || exit 1
 
 echo
@@ -109,13 +102,38 @@ rm -rf build
 mkdir build || exit 1
 cd build || exit 1
 
-if [ "$BUILD_SNAPSHOT" = "1" ]; then
-    SNAP="CONFIG+=snapshot"
-    #else
-    #SNAP="CONFIG+=gbreakpad" Enable when ready
-fi
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    EXTRA_QMAKE_FLAG="CONFIG+=snapshot"
+elif [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=alpha  BUILD_NUMBER=$BUILD_NUMBER"
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
 
-$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${SNAP} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=beta  BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=RC BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=stable"
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
+fi
+#EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" Enable when ready
+$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${EXTRA_QMAKE_FLAG} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
