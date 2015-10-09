@@ -45,6 +45,7 @@
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
@@ -296,14 +297,25 @@ Gui::wipeLayout()
         panesCpy = _imp->_panes;
         _imp->_panes.clear();
     }
+    
+    std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
+    
+    for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it!=floatingWidgets.end(); ++it) {
+        (*it)->deleteLater();
+    }
+    {
+        QMutexLocker k(&_imp->_floatingWindowMutex);
+        _imp->_floatingWindows.clear();
+    }
+    
 
     for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
         ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
         while ( (*it)->count() > 0 ) {
             (*it)->removeTab(0, false);
         }
-        (*it)->setParent(NULL);
-        delete *it;
+    //(*it)->setParent(NULL);
+        (*it)->deleteLater();
     }
 
     std::list<Splitter*> splittersCpy;
@@ -317,10 +329,12 @@ Gui::wipeLayout()
             while ( (*it)->count() > 0 ) {
                 (*it)->widget(0)->setParent(NULL);
             }
-            (*it)->setParent(NULL);
-            delete *it;
+            //(*it)->setParent(NULL);
+            (*it)->deleteLater();
         }
     }
+    
+  
 
     Splitter *newSplitter = new Splitter(_imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
