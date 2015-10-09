@@ -123,7 +123,7 @@ AboutWindow::AboutWindow(Gui* gui,
     QString endAbout = (QString("<p>See <a href=\"%2\"><font color=\"orange\">%1 's website </font></a>"
                                 "for more information on this software.</p>")
                         .arg(NATRON_APPLICATION_NAME) // %1
-                        .arg("https://natron.fr")); // %2
+                        .arg(NATRON_WEBSITE_URL)); // %2
     aboutText.append(endAbout);
     QString gitStr = (QString("<p>This version was generated from the source "
                               "code branch %1 at commit %2.</p>")
@@ -137,25 +137,25 @@ AboutWindow::AboutWindow(Gui* gui,
         QString toAppend = QString("<p>Note: This is a development version, which probably contains bugs. "
                                    "If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg("https://github.com/MrKepzie/Natron/issues"); // %1
+        .arg(NATRON_ISSUE_TRACKER_URL); // %1
         ;
     } else if (status == NATRON_DEVELOPMENT_SNAPSHOT) {
         QString toAppend = QString("<p>Note: This is an official snapshot version, compiled on the Natron build "
                                    "farm, and it may still contain bugs. If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg("https://github.com/MrKepzie/Natron/issues"); // %1
+        .arg(NATRON_ISSUE_TRACKER_URL); // %1
         ;
     } else if (status == NATRON_DEVELOPMENT_ALPHA) {
         QString toAppend = QString("<p>Note: This software is currently in alpha version, meaning there are missing features,"
                                    " bugs and untested stuffs. If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-        .arg("https://github.com/MrKepzie/Natron/issues"); // %1
+        .arg(NATRON_ISSUE_TRACKER_URL); // %1
         ;
     } else if (status == NATRON_DEVELOPMENT_BETA) {
         QString toAppend = QString("<p>Note: This software is currently under beta testing, meaning there are "
                                    " bugs and untested stuffs. If you feel like reporting a bug, please do so "
                                    "on the <a href=\"%1\"><font color=\"orange\"> issue tracker.</font></a></p>")
-                           .arg("https://github.com/MrKepzie/Natron/issues"); // %1
+                           .arg(NATRON_ISSUE_TRACKER_URL); // %1
         ;
 
     } else if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {

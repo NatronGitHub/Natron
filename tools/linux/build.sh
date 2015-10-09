@@ -35,11 +35,13 @@
 # ARENA=1 : Enable arena plug
 # CV=1 : Enable cv plug
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
-# SNAPSHOT=1 : Tag build as snapshot
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 
-# USAGE example: NATRON_LICENSE=GPL build2.sh workshop<branch> 8<noThreads>
+# USAGE example: NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
 
 source `pwd`/common.sh || exit 1
 
@@ -80,6 +82,11 @@ fi
 if [ "$NATRON_LICENSE" != "GPL" -a "$NATRON_LICENSE" != "COMMERCIAL" ]; then
     echo "Please select a License with NATRON_LICENSE=(GPL,COMMERCIAL)"
     exit 1
+fi
+
+if [ -z "$BUILD_CONFIG" ]; then
+	echo "You must select a BUILD_CONFIG".
+	exit 1
 fi
 
 if [ "$NOCLEAN" != "1" ]; then
@@ -132,7 +139,7 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_SNAPSHOT=${SNAPSHOT} sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -144,7 +151,7 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
         log="$LOGS/plugins.$PKGOS$BIT.$TAG.log"
         echo -n "Building Plugins (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh "$INC_PATH/scripts/build-plugins.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else

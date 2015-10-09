@@ -442,6 +442,9 @@ computeHistogramStatic(const HistogramRequest & request,
         break;
     }
     assert(histo);
+    if (!histo) {
+        return;
+    }
 
     /// keep the mode parameter in sync with Histogram::DisplayModeEnum
 

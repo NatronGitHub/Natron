@@ -2,22 +2,20 @@
 #
 # Build packages and installer for Windows
 #
+# Options:
+# NATRON_LICENSE=(GPL,COMMERCIAL)
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# NO_ZIP=1: Do not produce a zip self-contained archive with Natron distribution.
+# OFFLINE=1 : Make the offline installer too
+# NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
+# Usage:
+# NO_ZIP=1 NATRON_LICENSE=GPL OFFLINE=1 BUILD_CONFIG=BETA BUILD_NUMBER=1 sh build-installer 64 workshop
 
 source `pwd`/common.sh || exit 1
 source `pwd`/commits-hash.sh || exit 1
 
-PID=$$
-if [ -f $TMP_DIR/natron-build-installer.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-installer.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
-fi
-echo $PID > $TMP_DIR/natron-build-installer.pid || exit 1
 
 if [ "$1" = "32" ]; then
     BIT=32
@@ -38,28 +36,69 @@ elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
 fi
 
 
-if [ "$2" = "workshop" ]; then
+if [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-alpha-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-beta-$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-RC$BUILD_NUMBER
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	NATRON_VERSION=$NATRON_VERSION_NUMBER-stable
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	NATRON_VERSION="$CUSTOM_BUILD_USER_NAME"
+fi
+
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     NATRON_VERSION=$NATRON_DEVEL_GIT
     REPO_BRANCH=snapshots
     APP_INSTALL_SUFFIX=INRIA/Natron-snapshots
+	ONLINE_TAG=snapshot
 else
-    NATRON_VERSION=$NATRON_VERSION_NUMBER
     REPO_BRANCH=releases
     APP_INSTALL_SUFFIX=INRIA/Natron-$NATRON_VERSION
+	ONLINE_TAG=release
 fi
+
+REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG$BIT
+ARCHIVE_DIR=$REPO_DIR/archive
+ARCHIVE_DATA_DIR=$ARCHIVE_DIR/data
+rm -rf $REPO_DIR/packages $REPO_DIR/installers $ARCHIVE_DATA_DIR
+mkdir -p $REPO_DIR/packages || exit 1
+mkdir -p $REPO_DIR/installers || exit 1
+mkdir -p $ARCHIVE_DATA_DIR || exit 1
+
 
 DATE=`date +%Y-%m-%d`
 PKGOS="Windows-x86_${BIT}bit"
 REPO_OS="Windows/$REPO_BRANCH/${BIT}bit/packages"
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
 
-if [ -d $TMP_PATH ]; then
-    rm -rf $TMP_PATH || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+    rm -rf $TMP_BUILD_DIR || exit 1
 fi
-mkdir -p $TMP_PATH || exit 1
+mkdir -p $TMP_BUILD_DIR || exit 1
+
+
 
 # SETUP
-INSTALLER="$TMP_PATH/Natron-installer"
+INSTALLER="$TMP_BUILD_DIR/Natron-installer"
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
@@ -84,6 +123,7 @@ if [ "$BUNDLE_IO" = "1" ]; then
     done
     cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
+	
 fi
 
 # OFX MISC
@@ -104,7 +144,7 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     done
     
     strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
-
+	
 fi
 
 # NATRON
@@ -129,6 +169,11 @@ cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pix
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 strip -s $NATRON_PATH/data/bin/*
 
+if [ "$NO_ZIP" != "1" ]; then
+	mkdir -p $ARCHIVE_DATA_DIR/bin
+	cp -r $NATRON_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
+fi
+
 # OCIO
 OCIO_VERSION=$COLOR_PROFILES_VERSION
 OCIO_PATH=$INSTALLER/packages/$PROFILES_PKG
@@ -136,6 +181,11 @@ mkdir -p $OCIO_PATH/meta $OCIO_PATH/data/Resources || exit 1
 cat $XML/ocio.xml | sed "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" > $OCIO_PATH/meta/package.xml || exit 1
 cat $QS/ocio.qs > $OCIO_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/share/OpenColorIO-Configs $OCIO_PATH/data/Resources/ || exit 1
+
+if [ "$NO_ZIP" != "1" ]; then
+	mkdir -p $ARCHIVE_DATA_DIR/Resources
+	cp -r $OCIO_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
+fi
 
 # CORE LIBS
 CLIBS_VERSION=$NATRON_VERSION_NUMBER
@@ -202,6 +252,17 @@ strip -s $CLIBS_PATH/data/Plugins/PySide/*
 strip -s $CLIBS_PATH/data/lib/python*/* 
 strip -s $CLIBS_PATH/data/lib/python*/*/*
 
+if [ "$NO_ZIP" != "1" ]; then
+	mkdir -p $ARCHIVE_DATA_DIR/Resources
+	mkdir -p $ARCHIVE_DATA_DIR/lib
+	mkdir -p $ARCHIVE_DATA_DIR/bin
+	mkdir -p $ARCHIVE_DATA_DIR/Plugins
+	cp -r $CLIBS_PATH/data/Resources/* $ARCHIVE_DATA_DIR/Resources || exit 1
+	cp -r $CLIBS_PATH/data/lib/* $ARCHIVE_DATA_DIR/lib || exit 1
+	cp -r $CLIBS_PATH/data/bin/* $ARCHIVE_DATA_DIR/bin || exit 1
+	cp -r $CLIBS_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+fi
+
 # OFX ARENA
 if [ "$BUNDLE_ARENA" = "1" ]; then 
     ARENA_DLL="LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
@@ -221,6 +282,8 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     strip -s $OFX_ARENA_PATH/data/Plugins/*/*/*/*
     echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
     cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
+	
+	
 fi
 
 #echo "LCMS License:" >>$OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
@@ -264,6 +327,11 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     echo "</assembly>" >> $CIMG_MANIFEST || exit 1
     cd $OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"CImg.ofx;2"
+	
+	if [ "$NO_ZIP" != "1" ]; then
+		mkdir -p $ARCHIVE_DATA_DIR/Plugins
+		cp -r $OFX_MISC_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+	fi
 fi
 
 if [ "$BUNDLE_IO" = "1" ]; then 
@@ -279,6 +347,11 @@ if [ "$BUNDLE_IO" = "1" ]; then
     echo "</assembly>" >> $IO_MANIFEST || exit 1
     cd $OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"IO.ofx;2"
+	
+	if [ "$NO_ZIP" != "1" ]; then
+		mkdir -p $ARCHIVE_DATA_DIR/Plugins
+		cp -r $OFX_IO_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+	fi
 fi
 
 if [ "$BUNDLE_ARENA" = "1" ]; then 
@@ -294,6 +367,11 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     echo "</assembly>" >> $ARENA_MANIFEST || exit 1
     cd $OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"Arena.ofx;2"
+	
+	if [ "$NO_ZIP" != "1" ]; then
+		mkdir -p $ARCHIVE_DATA_DIR/Plugins
+		cp -r $OFX_ARENA_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+	fi
 fi
 
 if [ "$BUNDLE_CV" = "1" ]; then 
@@ -323,6 +401,11 @@ if [ "$BUNDLE_CV" = "1" ]; then
     echo "</assembly>" >> $SEGMENT_MANIFEST || exit 1
     cd $OFX_CV_PATH/data/Plugins/segment.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"segment.ofx;2"
+	
+	if [ "$NO_ZIP" != "1" ]; then
+		mkdir -p $ARCHIVE_DATA_DIR/Plugins
+		cp -r $OFX_CV_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+	fi
 fi
 
 # Clean and perms
@@ -330,30 +413,25 @@ fi
 
 # Build repo and package
 if [ "$NO_INSTALLER" != "1" ]; then
-    if [ "$2" = "workshop" ]; then
-        ONLINE_TAG=snapshot
-    else
-        ONLINE_TAG=release
-    fi
+    
 
     ONLINE_INSTALL=Natron-${PKGOS}-online-$ONLINE_TAG-setup.exe
     BUNDLED_INSTALL=Natron-$NATRON_VERSION-${PKGOS}-setup.exe
-
-    REPO_DIR=$REPO_DIR_PREFIX$ONLINE_TAG
-    rm -rf $REPO_DIR/packages $REPO_DIR/installers
-
-    mkdir -p $REPO_DIR/packages || exit 1
+	ZIP_ARCHIVE_BASE=Natron-$NATRON_VERSION-${PKGOS}-no-installer
 
     $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
 
-    mkdir -p $REPO_DIR/installers || exit 1
-
-    if [ "$OFFLINE" != "0" ]; then
+    if [ "$OFFLINE" == "1" ]; then
         $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
     fi
     cd $REPO_DIR/installers || exit 1
     $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
 fi
 
+if [ "$NO_ZIP" != "1" ]; then
+	mkdir -p $REPO_DIR/
+    mv $ARCHIVE_DATA_DIR $ARCHIVE_DIR/${ZIP_ARCHIVE_BASE} || exit 1
+    (cd $ARCHIVE_DIR; zip -r ${ZIP_ARCHIVE_BASE}.zip ${ZIP_ARCHIVE_BASE} || exit 1; rm -rf ${ZIP_ARCHIVE_BASE};)
+fi
 
 echo "All Done!!!"

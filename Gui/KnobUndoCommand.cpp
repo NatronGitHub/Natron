@@ -295,6 +295,9 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
 
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
+    if (!copy) {
+        return boost::shared_ptr<KnobI>();
+    }
     copy->populate();
 
     ///make a clone of the original knob at that time and stash it
@@ -355,7 +358,10 @@ MultipleKnobEditsUndoCommand::redo()
     if (firstRedoCalled) {
         ///just clone
         std::set <KnobI*> knobsUnique;
-        int time = holder->getCurrentTime();
+        int time;
+        if (holder) {
+            time = holder->getCurrentTime();
+        }
         for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
             boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);

@@ -226,7 +226,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                     std::list<ImageComponents> componentsToRender;
                                     
                                     assert(compsNeeded);
-                                    
+                                    if (!compsNeeded) {
+                                        continue;
+                                    }
                                     for (U32 k = 0; k < compsNeeded->size(); ++k) {
                                         if (compsNeeded->at(k).getNumComponents() > 0) {
                                             componentsToRender.push_back(compsNeeded->at(k));

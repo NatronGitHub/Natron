@@ -66,6 +66,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraphUndoRedo.h" // RenameNodeUndoRedoCommand
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/PropertiesBinWrapper.h"
 #include "Gui/RotoPanel.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
@@ -960,7 +961,27 @@ DockablePanel::floatPanel()
     }
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
+        //If the property bin is not the current tab, force it to be the current to force an update of the size of this panel.
+        //We might have never seen so far this property panel, hence it might not have a good size at all.
+        PropertiesBinWrapper* pw = getGui()->getPropertiesBin();
+        assert(pw);
+        TabWidget* propertiesPane = 0;
+        int propertiesPaneLastIndex = -1;
+        if (pw) {
+            propertiesPane = pw->getParentPane();
+            assert(propertiesPane);
+            if (propertiesPane) {
+                propertiesPaneLastIndex = propertiesPane->activeIndex();
+                propertiesPane->setCurrentWidget(pw);
+            }
+        }
+        
         QSize curSize = size();
+        
+        if (propertiesPane && propertiesPaneLastIndex != -1) {
+            propertiesPane->makeCurrentTab(propertiesPaneLastIndex);
+        }
+        
         _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
         QObject::connect( _imp->_floatingWidget,SIGNAL( closed() ),this,SLOT( closePanel() ) );
         _imp->_container->removeWidget(this);

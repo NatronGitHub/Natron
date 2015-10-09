@@ -894,17 +894,17 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
             
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                if (dim == -1 || i == dim) {
+            for (int j = 0; j < knob->getDimension(); ++j) {
+                if (dim == -1 || j == dim) {
                     KeyFrame k = _keys[i].key;
                     k.setTime(setTime);
                     
                     if (isDouble) {
                         k.setValue(isDouble->getValueAtTime(keyTime));
                     } else if (isBool) {
-                        k.setValue(isDouble->getValueAtTime(keyTime));
+                        k.setValue(isBool->getValueAtTime(keyTime));
                     } else if (isInt) {
-                        k.setValue(isDouble->getValueAtTime(keyTime));
+                        k.setValue(isInt->getValueAtTime(keyTime));
                     } else if (isString) {
                         std::string v = isString->getValueAtTime(keyTime);
                         double keyFrameValue = 0.;
@@ -915,14 +915,14 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                         }
                         k.setValue(keyFrameValue);
                     }
-                    knob->setKeyFrame(k, i, Natron::eValueChangedReasonNatronGuiEdited);
+                    knob->setKeyFrame(k, j, Natron::eValueChangedReasonNatronGuiEdited);
                 }
             }
         }
         else {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                if (dim == -1 || i == dim) {
-                    knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,setTime, i);
+            for (int j = 0; j < knob->getDimension(); ++j) {
+                if (dim == -1 || j == dim) {
+                    knob->deleteValueAtTime(Natron::eCurveChangeReasonDopeSheet,setTime, j);
                 }
             }
         }

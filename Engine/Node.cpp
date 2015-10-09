@@ -1786,6 +1786,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             }
             
             assert(knob);
+            if (!knob) {
+                continue;
+            }
             knob->cloneDefaultValues(sKnob.get());
             knob->clone(sKnob.get());
             knob->setAsUserKnob();
@@ -7055,10 +7058,20 @@ Node::refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes)
         }
     }
     
-    
+
     markedNodes.push_back(this);
     
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
+    
+    if (isRotoPaintingNode()) {
+        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        assert(roto);
+        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+        if (bottomMerge) {
+            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
+        }
+        
+    }
     
     return hasChanged;
 }
@@ -7140,19 +7153,10 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedN
 {
     refreshInputRelatedDataInternal(markedNodes);
     
-    if (isRotoPaintingNode()) {
-        boost::shared_ptr<RotoContext> roto = getRotoContext();
-        assert(roto);
-        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
-        if (bottomMerge) {
-            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
-        }
-    }
-    
     /*
      If this node is the bottom node of the rotopaint tree, forward directly to the outputs of the Rotopaint node
      */
-    boost::shared_ptr<RotoDrawableItem> attachedItem = _imp->paintStroke.lock();
+   /* boost::shared_ptr<RotoDrawableItem> attachedItem = _imp->paintStroke.lock();
     if (attachedItem) {
         NodePtr rotoPaintNode = attachedItem->getContext()->getNode();
         assert(rotoPaintNode);
@@ -7167,7 +7171,7 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedN
             }
             return;
         }
-    }
+    }*/
     
     ///Now notify outputs we have changed
     std::list<Natron::Node*>  outputs;

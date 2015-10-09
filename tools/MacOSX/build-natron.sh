@@ -17,7 +17,10 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-#Usage MKJOBS=4 CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
+# BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
+# CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
+# BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+#Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
 
@@ -71,20 +74,43 @@ EOF
 #Copy OpenColorIO-Config in Natron root as the .pro expects them there to copy it to the application bundle
 cp -r $TMP/OpenColorIO-Configs . || exit 1
 
-# Add CONFIG+=snapshot to indicate the build is a snapshot
-if [ "$BRANCH" = "workshop" ]; then
-    QMAKEEXTRAFLAGS=CONFIG+=snapshot
-    #else
-    #    QMAKEEXTRAFLAGS=CONFIG+=gbreakpad Enable when ready
-fi
+if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
+    EXTRA_QMAKE_FLAG="CONFIG+=snapshot"
+elif [ "$BUILD_CONFIG" = "ALPHA" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=alpha  BUILD_NUMBER=$BUILD_NUMBER"
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=ALPHA"
+		exit 1
+	fi
 
+elif [ "$BUILD_CONFIG" = "BETA" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=BETA"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=beta  BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "RC" ]; then
+	if [ -z "$BUILD_NUMBER" ]; then
+		echo "You must supply a BUILD_NUMBER when BUILD_CONFIG=RC"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=RC BUILD_NUMBER=$BUILD_NUMBER"
+elif [ "$BUILD_CONFIG" = "STABLE" ]; then
+	EXTRA_QMAKE_FLAG="CONFIG+=stable"
+elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
+	if [ -z "$CUSTOM_BUILD_USER_NAME" ]; then
+		echo "You must supply a CUSTOM_BUILD_USER_NAME when BUILD_CONFIG=CUSTOM"
+		exit 1
+	fi
+	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
+fi
 
 if [ "$COMPILER" = "clang" ]; then
     SPEC=unsupported/macx-clang
 else
     SPEC=macx-g++
 fi
-qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
+qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 
 ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
