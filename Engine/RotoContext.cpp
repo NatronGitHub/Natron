@@ -3570,6 +3570,12 @@ RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const
 void
 RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
+    
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
+    if (isStroke) {
+        ///Strokes are unsupported in Python currently
+        return;
+    }
     std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
     std::string err;
@@ -3630,6 +3636,12 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
     std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
+    if (isStroke) {
+        ///Strokes are unsupported in Python currently
+        return;
+    }
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
     
     std::string err;
