@@ -216,7 +216,7 @@ KnobGuiBool::setEnabled()
 {
     boost::shared_ptr<KnobBool> knob = _knob.lock();
 
-    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
     _checkBox->setEnabled(b);
 }
@@ -225,7 +225,7 @@ void
 KnobGuiBool::setReadOnly(bool readOnly,
                           int /*dimension*/)
 {
-    _checkBox->setReadOnly(readOnly);
+    _checkBox->setEnabled(!readOnly);
 }
 
 void

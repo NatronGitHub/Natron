@@ -1897,8 +1897,6 @@ public:
     const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
     
     std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
-
-    void onGuiFrozenChange(bool frozen);
     
     void refreshAfterTimeChange(SequenceTime time);
 

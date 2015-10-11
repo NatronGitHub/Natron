@@ -83,6 +83,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
 using namespace Natron;
@@ -606,10 +607,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
             }
         }
     }
-    _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
-    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        (*it)->onGuiFrozenChanged(clicked);
-    }
+    _imp->_propertiesBin->setEnabled(!clicked);
 }
 
 bool
