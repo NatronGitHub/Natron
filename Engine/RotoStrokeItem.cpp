@@ -186,10 +186,11 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             bbox->y1 = p.y;
             bbox->y2 = p.y;
             double pressure = pressureAffectsSize ? pIt->getValue() : 1.;
-            bbox->x1 -= halfBrushSize * pressure;
-            bbox->x2 += halfBrushSize * pressure;
-            bbox->y1 -= halfBrushSize * pressure;
-            bbox->y2 += halfBrushSize * pressure;
+            double padding = std::max(0.5,halfBrushSize) * pressure;
+            bbox->x1 -= padding;
+            bbox->x2 += padding;
+            bbox->y1 -= padding;
+            bbox->y2 += padding;
         }
         return;
     }
