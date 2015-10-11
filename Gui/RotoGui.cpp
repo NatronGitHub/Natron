@@ -1501,63 +1501,6 @@ RotoGui::drawOverlays(double time,
                     glEnd();
                 }
                 
-#ifdef DEBUG
-                std::list<boost::shared_ptr<Curve> > xCurves = isStroke->getXControlPoints();
-                std::list<boost::shared_ptr<Curve> > yCurves = isStroke->getYControlPoints();
-                assert(xCurves.size() == yCurves.size());
-                std::list<boost::shared_ptr<Curve> >::iterator itY = yCurves.begin();
-                for (std::list<boost::shared_ptr<Curve> >::iterator itX = xCurves.begin() ;itX!=xCurves.end(); ++itX,++itY) {
-                    KeyFrameSet xSet = (*itX)->getKeyFrames_mt_safe();
-                    KeyFrameSet ySet = (*itY)->getKeyFrames_mt_safe();
-                    assert(xSet.size() == ySet.size());
-                    if (xSet.size() > 2) {
-                        KeyFrameSet::iterator xIt = xSet.begin();
-                        ++xIt;
-                        KeyFrameSet::iterator yIt = ySet.begin();
-                        ++yIt;
-                        KeyFrameSet::iterator xNext = xIt;
-                        ++xNext;
-                        KeyFrameSet::iterator yNext = yIt;
-                        ++yNext;
-                        KeyFrameSet::iterator xPrev = xSet.begin();
-                        KeyFrameSet::iterator yPrev = ySet.begin();
-                        for (; xNext != xSet.end(); ++xIt, ++yIt, ++xPrev, ++yPrev,++xNext, ++yNext) {
-                            
-                            double x = xIt->getValue();
-                            double y = yIt->getValue();
-                            
-                            double dtr = xNext->getTime() - xIt->getTime();
-                            double dtl = xIt->getTime() - xPrev->getTime();
-                            assert(dtr >= 0 && dtl >= 0);
-                            
-                            double lx = x - dtl * xIt->getLeftDerivative() / 3.;
-                            double ly = y - dtl * yIt->getLeftDerivative() / 3.;
-                            double rx = x + dtr * xIt->getRightDerivative() / 3.;
-                            double ry = y + dtr * yIt->getRightDerivative() / 3.;
-                            
-                            
-                            glBegin(GL_LINE_STRIP);
-                            glColor3f(0., 0.8, 0.8);
-                            glVertex2d(lx,ly);
-                            glVertex2d(x,y);
-                            glVertex2d(rx,ry);
-                            glEnd();
-                            glBegin(GL_POINTS);
-                            glColor3f(1., 1., 0.);
-                            glVertex2d(lx, ly);
-                            glColor3f(1., 0., 0.);
-                            glVertex2d(x,y);
-                            glColor3f(1., 1., 0.);
-                            glVertex2d(rx,ry);
-                            glEnd();
-                            
-                        }
-                    }
-                }
-                
-#endif
-                
-                
             } else if (isBezier) {
                 ///draw the bezier
                 // check if the bbox is visible
