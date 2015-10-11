@@ -221,7 +221,7 @@ OfxClipInstance::getPremult() const
     
     ///Input is not connected
     
-    const std::string& comps = getComponents();
+    const std::string& comps = getUnmappedComponents(); // warning: getComponents() returns None if the clip is not connected
     if (comps == kOfxImageComponentRGBA || comps == kOfxImageComponentAlpha) {
         return premultStr;
     }
