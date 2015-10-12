@@ -1,5 +1,5 @@
---- Portfile.orig	2015-04-07 09:15:04.000000000 +0200
-+++ Portfile	2015-04-07 09:15:45.000000000 +0200
+--- Portfile.orig	2015-10-12 10:52:10.000000000 +0200
++++ Portfile	2015-10-12 10:53:53.000000000 +0200
 @@ -19,8 +19,7 @@
  homepage            http://libcaca.zoy.org/wiki/libcaca
  platforms           darwin
@@ -15,8 +15,8 @@
                      --disable-win32 --disable-conio --disable-slang \
                      --disable-imlib2 --disable-doc \
 -                    --disable-x11 --enable-ncurses --enable-imlib2 \
-+                    --disable-x11 --enable-ncurses --disable-imlib2 \
-                     --disable-ruby
++                    --disable-x11 --enable-ncurses \
+                     --disable-ruby --disable-csharp
  
  # Disable silent rules
 @@ -52,6 +51,12 @@

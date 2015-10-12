@@ -12,7 +12,7 @@ PortGroup        conflicts_build 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.5.19 tags/Release-
+github.setup     OpenImageIO oiio 1.5.20 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -36,6 +36,7 @@ homepage         http://sites.google.com/site/openimageio/
 
 depends_lib      port:boost port:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib
 
+# can't compile openimageio when another version is installed, because the include path is wrong
 conflicts_build  ${name}
 
 depends_build    port:txt2man
@@ -128,12 +129,6 @@ variant qt4 description {Build the Qt-based image viewer.} {
     depends_lib-append port:qt4-mac
 }
 
-variant tbb description {Use Intel TBB.} {
-    configure.args-delete -DUSE_TBB:BOOL=FALSE
-    configure.args-append -DUSE_TBB:BOOL=TRUE
-    depends_lib-append port:tbb
-}
-
 variant field3d description {Use Field3D.} {
     configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
     configure.args-append -DUSE_FIELD3D:BOOL=TRUE
@@ -146,6 +141,8 @@ variant freetype description {Use FreeType.} {
     depends_lib-append port:freetype
 }
 
+variant natron require field3d description {Compile a version to be included in Natron} {
+}
 #configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
 #                 --without-lzmadec --without-lzma
 #use_autoreconf	yes
