@@ -386,7 +386,6 @@ private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
     
-    std::vector<std::string> _entries;
     boost::weak_ptr<KnobChoice> _knob;
 };
 

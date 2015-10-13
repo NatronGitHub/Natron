@@ -995,9 +995,13 @@ OfxChoiceInstance::get(OfxTime time,
 OfxStatus
 OfxChoiceInstance::set(int v)
 {
-    if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob.lock()->setValueFromPlugin(v,0);
-
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+        knob->setValueFromPlugin(v,0);
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -1008,8 +1012,13 @@ OfxStatus
 OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
-    if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob.lock()->setValueAtTimeFromPlugin(time, v, 0);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+        knob->setValueAtTimeFromPlugin(time, v, 0);
 
         return kOfxStatOK;
     } else {
@@ -1053,7 +1062,7 @@ OfxChoiceInstance::setOption(int /*num*/)
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
     
-    _entries.clear();
+    std::vector<std::string> entires;
     std::vector<std::string> helpStrings;
     bool hashelp = false;
     for (int i = 0; i < dim; ++i) {
@@ -1065,13 +1074,13 @@ OfxChoiceInstance::setOption(int /*num*/)
         if ( !help.empty() ) {
             hashelp = true;
         }
-        _entries.push_back(str);
+        entires.push_back(str);
         helpStrings.push_back(help);
     }
     if (!hashelp) {
         helpStrings.clear();
     }
-    _knob.lock()->populateChoices(_entries, helpStrings);
+    _knob.lock()->populateChoices(entires, helpStrings);
 }
 
 boost::shared_ptr<KnobI>
