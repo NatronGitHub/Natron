@@ -80,9 +80,7 @@ OfxClipInstance::getUnmappedBitDepth() const
     static const std::string floatStr(kOfxBitDepthFloat);
     static const std::string noneStr(kOfxBitDepthNone);
     EffectInstance* inputNode = getAssociatedNode();
-    if (!isOutput() && inputNode) {
-        inputNode = inputNode->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
-    }
+  
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
         std::list<Natron::ImageComponents> comp;
