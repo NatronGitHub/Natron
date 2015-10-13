@@ -422,7 +422,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     if (cl.isInterpreterMode()) {
         _imp->_appType = eAppTypeInterpreter;
     } else if ( isBackground() ) {
-        if ( !cl.getFilename().isEmpty() ) {
+        if ( !cl.getScriptFilename().isEmpty() ) {
             if (!cl.getIPCPipeName().isEmpty()) {
                 _imp->_appType = eAppTypeBackgroundAutoRunLaunchedFromGui;
             } else {
@@ -437,7 +437,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     
     //Now that the locale is set, re-parse the command line arguments because the filenames might have non UTF-8 encodings
     CLArgs args;
-    if (!cl.getFilename().isEmpty()) {
+    if (!cl.getScriptFilename().isEmpty()) {
         args = CLArgs(qApp->arguments(), cl.isBackgroundMode());
     } else{
         args = cl;
@@ -2570,6 +2570,19 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
     return uncPath;
 }
 #endif
+
+std::string
+AppManager::isImageFileSupportedByNatron(const std::string& ext)
+{
+    //*.264 *.265 *.302 *.3fr *.3g2 *.3gp *.669 *.722 *.aa3 *.aac *.abc *.ac3 *.adf *.adp *.adx *.aea *.afc *.al *.alaw *.amf *.ams *.ans *.ape *.apl *.aqt *.aqtitle *.art *.arw *.asc *.ast *.avc *.avi *.avr *.bay *.bin *.bit *.bmp *.bmq *.bmv *.brstm *.bw *.cap *.cdata *.cdg *.cdxl *.cgi *.cif *.cin *.cine *.cr2 *.crw *.cs1 *.daud *.dbm *.dc2 *.dcr *.dds *.dif *.diz *.dmf *.dng *.dpx *.drf *.dsc *.dsm *.dss *.dtk *.dts *.dtshd *.dv *.ea_cdata *.eac3 *.env *.epaf *.erf *.exr *.fap *.far *.fff *.filmstrip *.fits *.flac *.flm *.flv *.g722 *.g723_1 *.g729 *.gif *.gsm *.h261 *.h264 *.h265 *.h26l *.hdr *.hevc *.ia *.ice *.ico *.idf *.idx *.iff *.iiq *.ingenient *.int *.inta *.ircam *.it *.itgz *.itr *.itz *.jfi *.jfif *.jif *.jpe *.jpeg *.jpg *.k25 *.kc2 *.kdc *.latm *.libmodplug *.live_flv *.lvf *.m2a *.m2ts *.m4a *.m4v *.mac *.matroska *.mdc *.mdgz *.mdl *.mdr *.mdz *.med *.mef *.mid *.mj2 *.mjpeg *.mjpg *.mk3d *.mka *.mks *.mkv *.mlp *.mng *.mod *.mos *.mov *.mp2 *.mp3 *.mp4 *.mpa *.mpc *.mpg *.mpjpeg *.mpl2 *.mpo *.mpsub *.mrw *.mt2 *.mtm *.mulaw *.mvi *.mxf *.mxg *.mxr *.nc *.nef *.nfo *.nist *.nistsphere *.nrw *.nut *.ogg *.okt *.oma *.omg *.orf *.paf *.pbm *.pdd *.pef *.pfm *.pgm *.pic *.pjs *.png *.pnm *.ppm *.psb *.psd *.psm *.ptex *.ptm *.ptx *.pvf *.pxn *.qcif *.qtk *.raf *.raw *.rawvideo *.rco *.rdc *.realtext *.redspark *.rgb *.rgba *.rgbe *.rla *.rsd *.rso *.rt *.rw2 *.rwl *.rwz *.s16le *.s3gz *.s3m *.s3r *.s3z *.s8 *.sami *.sb *.sbg *.sdr2 *.sf *.sgi *.shn *.siff *.sln *.sm *.smi *.smjpeg *.socket *.son *.sph *.sr2 *.srf *.srw *.sti *.stl *.stm *.sub *.subviewer *.subviewer1 *.sup *.svg *.svgz *.sw *.sxr *.tak *.tco *.tga *.thd *.tif *.tiff *.tpic *.truehd *.tta *.tty *.tx *.txt *.u16le *.u8 *.ub *.ul *.ult *.umx *.uw *.v *.vb *.vc1 *.viv *.vivo *.vobsub *.vplayer *.vqe *.vqf *.vql *.vsm *.vt *.vtt *.webm *.webp *.webvtt *.x3f *.xbm *.xcf *.xl *.xm *.xmgz *.xmr *.xmz *.xpm *.y4m *.yop *.yuv *.yuv4mpegpipe *.z *.zfile
+    std::string readId;
+    try {
+        readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
+    } catch (...) {
+        return std::string();
+    }
+    return readId;
+}
 
 namespace Natron {
 void

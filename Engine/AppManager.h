@@ -422,6 +422,8 @@ public:
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const;
     
+    static std::string isImageFileSupportedByNatron(const std::string& ext);
+    
 public Q_SLOTS:
     
     void onNewCrashReporterConnectionPending();

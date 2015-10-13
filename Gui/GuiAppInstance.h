@@ -215,7 +215,7 @@ public:
     ///Opens a new window
     virtual AppInstance* newProject()  OVERRIDE FINAL;
     
-
+    void handleFileOpenEvent(const std::string& filename);
 
     
 private:

@@ -199,6 +199,8 @@ public:
     
     const std::list<PythonUserCommand>& getUserPythonCommands() const;
     
+    bool handleImageFileOpenRequest(const std::string& imageFile);
+    
 public Q_SLOTS:
 
 

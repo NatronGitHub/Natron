@@ -85,7 +85,17 @@ public:
     
     bool isInterpreterMode() const;
     
-    const QString& getFilename() const;
+    /*
+     * @brief Has a Natron project or Python script been passed to the command line ?
+     */
+    const QString& getScriptFilename() const;
+    
+    /*
+     * @brief Has a regular image/video file been passed to the command line ?
+     * Warning: This may only be called once that all the plug-ins have been loaded in Natron
+     * otherwise it will always return an empty string.
+     */
+    const QString& getImageFilename() const;
     
     const QString& getDefaultOnProjectLoadedScript() const;
     

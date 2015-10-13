@@ -423,13 +423,13 @@ AppInstance::load(const CLArgs& cl)
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
         
-        if (cl.getFilename().isEmpty()) {
+        if (cl.getScriptFilename().isEmpty()) {
             // cannot start a background process without a file
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
 
-        QFileInfo info(cl.getFilename());
+        QFileInfo info(cl.getScriptFilename());
         if (!info.exists()) {
             throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
         }
@@ -467,7 +467,7 @@ AppInstance::load(const CLArgs& cl)
         
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
-        QFileInfo info(cl.getFilename());
+        QFileInfo info(cl.getScriptFilename());
         if (info.exists() && info.suffix() == "py") {
             loadPythonScript(info);
         }

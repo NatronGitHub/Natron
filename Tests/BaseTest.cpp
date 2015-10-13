@@ -284,7 +284,7 @@ TEST_F(BaseTest,SimpleNodeConnections) {
 
     ///create the writer and set its output filename
     boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
-
+    ASSERT_TRUE(writer && generator);
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail
     disconnectNodes(generator, writer, true);

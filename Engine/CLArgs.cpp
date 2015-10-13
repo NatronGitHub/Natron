@@ -32,7 +32,7 @@
 #include <QFile>
 
 #include "Global/GitVersion.h"
-
+#include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
 
 
@@ -63,6 +63,8 @@ struct CLArgsPrivate
     
     bool isEmpty;
     
+    mutable QString imageFilename;
+    
     CLArgsPrivate()
     : args()
     , filename()
@@ -77,6 +79,7 @@ struct CLArgsPrivate
     , rangeSet(false)
     , enableRenderStats(false)
     , isEmpty(true)
+    , imageFilename()
     {
         
     }
@@ -166,6 +169,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->rangeSet = other._imp->rangeSet;
     _imp->enableRenderStats = other._imp->enableRenderStats;
     _imp->isEmpty = other._imp->isEmpty;
+    _imp->imageFilename = other._imp->imageFilename;
 }
 
 bool
@@ -344,9 +348,28 @@ CLArgs::isInterpreterMode() const
 }
 
 const QString&
-CLArgs::getFilename() const
+CLArgs::getScriptFilename() const
 {
     return _imp->filename;
+}
+
+const QString&
+CLArgs::getImageFilename() const
+{
+    if (_imp->imageFilename.isEmpty()) {
+        ///Check for image file passed to command line
+        for (QStringList::iterator it = _imp->args.begin(); it!=_imp->args.end(); ++it) {
+            QString fileCopy = *it;
+            QString ext = Natron::removeFileExtension(fileCopy);
+            std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+            if (!readerId.empty()) {
+                _imp->imageFilename = *it;
+                _imp->args.erase(it);
+                break;
+            }
+        }
+    }
+    return _imp->imageFilename;
 }
 
 const QString&
@@ -721,4 +744,5 @@ CLArgsPrivate::parse()
         error = 1;
         return;
     }
+  
 }
