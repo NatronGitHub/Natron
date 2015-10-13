@@ -4682,11 +4682,11 @@ Node::makePreviewImage(SequenceTime time,
                                              thisNode, // viewer requester
                                              &request,
                                              0, //texture index
-                                             getApp()->getTimeLine().get(),
-                                             NodePtr(),
-                                             false,
-                                             true,
-                                             false,
+                                             getApp()->getTimeLine().get(), // timeline
+                                             NodePtr(), //rotoPaint node
+                                             false, // isAnalysis
+                                             true, // isDraft
+                                             false, // enableProgress
                                              boost::shared_ptr<RenderStats>());
     
     std::list<ImageComponents> requestedComps;

@@ -344,7 +344,7 @@ EffectInstance::aborted() const
                         return true;
                     }
                     
-                    if (args.draftMode && args.treeRoot && args.time != args.treeRoot->getApp()->getTimeLine()->currentFrame()) {
+                    if (args.draftMode && args.timeline && args.time != args.timeline->currentFrame()) {
                         return true;
                     }
 
