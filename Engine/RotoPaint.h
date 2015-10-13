@@ -21,6 +21,7 @@
 
 #include "Engine/EffectInstance.h"
 
+struct RotoPaintPrivate;
 class RotoPaint : public Natron::EffectInstance
 {
 public:
@@ -34,9 +35,7 @@ public:
     
     virtual ~RotoPaint();
     
-    bool isDefaultBehaviourPaintContext() const {
-        return _isPaintByDefault;
-    }
+    bool isDefaultBehaviourPaintContext() const;
     
     virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
     
@@ -144,7 +143,7 @@ private:
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    bool _isPaintByDefault;
+    boost::scoped_ptr<RotoPaintPrivate> _imp;
 
 };
 

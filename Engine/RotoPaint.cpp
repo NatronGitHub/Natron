@@ -32,10 +32,24 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/TimeLine.h"
 
 using namespace Natron;
+
+struct RotoPaintPrivate
+{
+    bool isPaintByDefault;
+    boost::weak_ptr<KnobBool> premultKnob;
+    
+    RotoPaintPrivate(bool isPaintByDefault)
+    : isPaintByDefault(isPaintByDefault)
+    , premultKnob()
+    {
+        
+    }
+};
 
 std::string
 RotoPaint::getDescription() const
@@ -45,7 +59,7 @@ RotoPaint::getDescription() const
 
 RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault)
 : EffectInstance(node)
-, _isPaintByDefault(isPaintByDefault)
+, _imp(new RotoPaintPrivate(isPaintByDefault))
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -54,6 +68,11 @@ RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault
 RotoPaint::~RotoPaint()
 {
     
+}
+
+bool
+RotoPaint::isDefaultBehaviourPaintContext() const {
+    return _imp->isPaintByDefault;
 }
 
 std::string
@@ -147,6 +166,22 @@ RotoPaint::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) co
 void
 RotoPaint::initializeKnobs()
 {
+    //This page is created in the RotoContext, before initializeKnobs() is called.
+    boost::shared_ptr<KnobPage> generalPage = boost::dynamic_pointer_cast<KnobPage>(getKnobByName("General"));
+    assert(generalPage);
+
+    boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>(this, "Output", 1, false);
+    generalPage->addKnob(sep);
+    
+    boost::shared_ptr<KnobBool> premultKnob = Natron::createKnob<KnobBool>(this, "Premultiply", 1, false);
+    premultKnob->setName("premultiply");
+    premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha mask "
+                                "produced by the shapes and strokes. This will result in the pixels outside of the shapes and paint strokes "
+                                "being black and transparant.");
+    premultKnob->setDefaultValue(false);
+    premultKnob->setAnimationEnabled(false);
+    _imp->premultKnob = premultKnob;
+    generalPage->addKnob(premultKnob);
     
 }
 
@@ -169,6 +204,13 @@ RotoPaint::getOutputPremultiplication() const
 {
   
     EffectInstance* input = getInput(0);
+    
+    boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
+    assert(premultKnob);
+    bool premultiply = premultKnob->getValue();
+    if (premultiply) {
+        return eImagePremultiplicationPremultiplied;
+    }
     Natron::ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
     if (input) {
         srcPremult = input->getOutputPremultiplication();
@@ -300,7 +342,9 @@ RotoPaint::render(const RenderActionArgs& args)
         neededComps.push_back(plane->first);
     }
     
-    
+    boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
+    assert(premultKnob);
+    bool premultiply = premultKnob->getValueAtTime(args.time);
     
     if (items.empty()) {
         
@@ -312,6 +356,9 @@ RotoPaint::render(const RenderActionArgs& args)
             
             if (bgImg) {
                 plane->second->pasteFrom(*bgImg, args.roi, false);
+                if (premultiply && plane->second->getComponents() == Natron::ImageComponents::getRGBAComponents()) {
+                    plane->second->premultImage(args.roi);
+                }
             } else {
                 plane->second->fillZero(args.roi);
             }
@@ -446,6 +493,9 @@ RotoPaint::render(const RenderActionArgs& args)
                                                  , false, false, plane->second.get());
             } else {
                 plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+            }
+            if (premultiply && plane->second->getComponents() == Natron::ImageComponents::getRGBAComponents()) {
+                plane->second->premultImage(args.roi);
             }
         }
     }
