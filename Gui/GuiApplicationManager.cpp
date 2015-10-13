@@ -797,6 +797,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QString filename(NATRON_IMAGES_PATH "splashscreen.png");
 
     _imp->_splashScreen = new SplashScreen(filename);
+    _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
+    
     QCoreApplication::processEvents();
     QPixmap appIcPixmap;
     appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
@@ -972,7 +974,7 @@ void
 GuiApplicationManager::hideSplashScreen()
 {
     if (_imp->_splashScreen) {
-        _imp->_splashScreen->hide();
+        _imp->_splashScreen->close();
         delete _imp->_splashScreen;
         _imp->_splashScreen = 0;
     }

@@ -1053,8 +1053,9 @@ FileSystemModel::onWatchedFileChanged(const QString& file)
     QFileInfo info(file);
     
     boost::shared_ptr<FileSystemItem> parent = _imp->getItemFromPath( info.absolutePath() );
-    assert(parent);
-    cleanAndRefreshItem(parent);
+    if (parent) {
+        cleanAndRefreshItem(parent);
+    }
 }
 
 void

@@ -1017,6 +1017,7 @@ GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
         return;
     }
     _imp->loadProjectSplash = new LoadProjectSplashScreen(projectFile);
+    _imp->loadProjectSplash->setAttribute(Qt::WA_DeleteOnClose,0);
 }
 
 void
@@ -1032,8 +1033,8 @@ void
 GuiAppInstance::closeLoadPRojectSplashScreen()
 {
     if (_imp->loadProjectSplash) {
-        _imp->loadProjectSplash->hide();
-        _imp->loadProjectSplash->deleteLater();
+        _imp->loadProjectSplash->close();
+        delete _imp->loadProjectSplash;
         _imp->loadProjectSplash = 0;
     }
 }

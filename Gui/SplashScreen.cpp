@@ -125,7 +125,7 @@ LoadProjectSplashScreen::updateText(const QString & text)
 }
 
 void
-LoadProjectSplashScreen::paintEvent(QPaintEvent*)
+LoadProjectSplashScreen::paintEvent(QPaintEvent* e)
 {
     QStyleOption opt;
     
