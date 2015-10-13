@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/Node.h"
 
 #include "Global/QtCompat.h"
 
