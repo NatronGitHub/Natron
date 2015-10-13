@@ -127,8 +127,10 @@ KnobGuiBool::~KnobGuiBool()
 
 void KnobGuiBool::removeSpecificGui()
 {
-    _checkBox->setParent(0);
-    delete _checkBox;
+    _checkBox->hide();
+    _checkBox->deleteLater();
+    _checkBox = 0;
+    
 }
 
 void
@@ -246,7 +248,7 @@ KnobGuiBool::reflectExpressionState(int /*dimension*/,
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
     _checkBox->setAnimation(3);
-    _checkBox->setReadOnly(hasExpr || !isEnabled);
+    _checkBox->setEnabled(!hasExpr && isEnabled);
 }
 
 void
