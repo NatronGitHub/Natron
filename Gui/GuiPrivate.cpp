@@ -372,6 +372,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
+    _propertiesBin->setVisible(false);
     _gui->registerTab(_propertiesBin, _propertiesBin);
 } // createPropertiesBinGui
 
@@ -384,6 +385,7 @@ GuiPrivate::createNodeGraphGui()
     _nodeGraphArea = new NodeGraph(_gui, _appInstance->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
     _nodeGraphArea->setLabel( QObject::tr("Node Graph").toStdString() );
+    _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
 
@@ -393,6 +395,7 @@ GuiPrivate::createCurveEditorGui()
     _curveEditor = new CurveEditor(_gui, _appInstance->getTimeLine(), _gui);
     _curveEditor->setScriptName(kCurveEditorObjectName);
     _curveEditor->setLabel( QObject::tr("Curve Editor").toStdString() );
+    _curveEditor->setVisible(false);
     _gui->registerTab(_curveEditor, _curveEditor);
 }
 
@@ -402,6 +405,7 @@ GuiPrivate::createDopeSheetGui()
     _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
     _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _dopeSheetEditor->setVisible(false);
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
 
@@ -411,7 +415,7 @@ GuiPrivate::createScriptEditorGui()
     _scriptEditor = new ScriptEditor(_gui);
     _scriptEditor->setScriptName("scriptEditor");
     _scriptEditor->setLabel( QObject::tr("Script Editor").toStdString() );
-    _scriptEditor->hide();
+    _scriptEditor->setVisible(false);
     _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
