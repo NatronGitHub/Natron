@@ -601,42 +601,77 @@ KnobGuiColor::updateGUI(int dimension)
         }
         updateLabel(r, g, b, a);
     } else {
-        assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
-        double value = knob->getValue(dimension);
-        
-        if (!knob->areAllDimensionsEnabled()) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                
-                if (i == dimension) {
-                    continue;
-                }
-                if (knob->getValue(i) != value) {
-                    expandAllDimensions();
-                }
+        assert(dimension == -1 || (dimension < _dimension && dimension >= 0 && dimension <= 3));
+        double values[4];
+        double refValue;
+        if (dimension == -1) {
+            values[0] = knob->getValue(0);
+            refValue = values[0];
+        } else {
+            values[dimension] = knob->getValue(dimension);
+            refValue = values[dimension];
+        }
+        bool allValuesDifferent = false;
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            
+            if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
+                ///Already processed
+                continue;
             }
+            values[i] = knob->getValue(i);
+            if (values[i] != refValue) {
+                allValuesDifferent = true;
+            }
+        }
+        if (!knob->areAllDimensionsEnabled() && allValuesDifferent) {
+            expandAllDimensions();
+        } else if (knob->areAllDimensionsEnabled() && !allValuesDifferent) {
+            foldAllDimensions();
         }
         
         switch (dimension) {
             case 0: {
-                _rBox->setValue(value);
-                _slider->seekScalePosition(value);
+                _rBox->setValue(values[0]);
+                _slider->seekScalePosition(values[0]);
                 if ( !knob->areAllDimensionsEnabled() ) {
-                    _gBox->setValue(value);
-                    _bBox->setValue(value);
+                    _gBox->setValue(values[0]);
+                    _bBox->setValue(values[0]);
                     if (_dimension >= 4) {
-                        _aBox->setValue(value);
+                        _aBox->setValue(values[0]);
                     }
                 }
                 break;
             }
             case 1:
-                _gBox->setValue(value);
+                _gBox->setValue(values[1]);
                 break;
             case 2:
-                _bBox->setValue(value);
+                _bBox->setValue(values[2]);
                 break;
             case 3:
-                _aBox->setValue(value);
+                _aBox->setValue(values[3]);
+                break;
+            case -1:
+                if ( !knob->areAllDimensionsEnabled() ) {
+                    _rBox->setValue(values[0]);
+                    _slider->seekScalePosition(values[0]);
+                    if ( !knob->areAllDimensionsEnabled() ) {
+                        _gBox->setValue(values[0]);
+                        _bBox->setValue(values[0]);
+                        if (_dimension >= 4) {
+                            _aBox->setValue(values[0]);
+                        }
+                    }
+                } else {
+                    _rBox->setValue(values[0]);
+                    if (_dimension > 1) {
+                        _gBox->setValue(values[1]);
+                        _bBox->setValue(values[2]);
+                        if (_dimension >= 4) {
+                            _aBox->setValue(values[3]);
+                        }
+                    }
+                }
                 break;
             default:
                 throw std::logic_error("wrong dimension");

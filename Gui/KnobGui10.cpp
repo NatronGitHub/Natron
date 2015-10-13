@@ -225,11 +225,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                            toRemove) );
     //refresh the gui so it doesn't indicate the parameter is animated anymore
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (dim == -1 || dim == i) {
-            updateGUI(i);
-        }
-    }
+    updateGUI(dim);
 }
 
 void

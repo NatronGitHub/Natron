@@ -1031,8 +1031,11 @@ GuiAppInstance::updateProjectLoadStatus(const QString& str)
 void
 GuiAppInstance::closeLoadPRojectSplashScreen()
 {
-    _imp->loadProjectSplash->deleteLater();
-    _imp->loadProjectSplash = 0;
+    if (_imp->loadProjectSplash) {
+        _imp->loadProjectSplash->hide();
+        _imp->loadProjectSplash->deleteLater();
+        _imp->loadProjectSplash = 0;
+    }
 }
 
 void
