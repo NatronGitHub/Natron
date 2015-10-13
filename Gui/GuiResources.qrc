@@ -180,16 +180,6 @@
         <file>Resources/Images/locked.png</file>
         <file>Resources/Images/loopmode.png</file>
         <file>Resources/Images/maximize.png</file>
-        <file>Resources/Images/merge_difference.png</file>
-        <file>Resources/Images/merge_divide.png</file>
-        <file>Resources/Images/merge_matte.png</file>
-        <file>Resources/Images/merge_max.png</file>
-        <file>Resources/Images/merge_min.png</file>
-        <file>Resources/Images/merge_minus.png</file>
-        <file>Resources/Images/merge_multiply.png</file>
-        <file>Resources/Images/merge_over.png</file>
-        <file>Resources/Images/merge_plus.png</file>
-        <file>Resources/Images/merge_screen.png</file>
         <file>Resources/Images/minimize.png</file>
         <file>Resources/Images/natronIcon256_linux.png</file>
         <file>Resources/Images/natronProjectIcon_linux.png</file>
@@ -301,5 +291,39 @@
         <file>Resources/Images/rotoToolPencil.png</file>
         <file>Resources/Images/AutoContrast.png</file>
         <file>Resources/Images/AutoContrastON.png</file>
+        <file>Resources/Images/merge_average.png</file>
+        <file>Resources/Images/merge_color_burn.png</file>
+        <file>Resources/Images/merge_color_dodge.png</file>
+        <file>Resources/Images/merge_color.png</file>
+        <file>Resources/Images/merge_copy.png</file>
+        <file>Resources/Images/merge_difference.png</file>
+        <file>Resources/Images/merge_divide.png</file>
+        <file>Resources/Images/merge_exclusion.png</file>
+        <file>Resources/Images/merge_from.png</file>
+        <file>Resources/Images/merge_geometric.png</file>
+        <file>Resources/Images/merge_grain_extract.png</file>
+        <file>Resources/Images/merge_grain_merge.png</file>
+        <file>Resources/Images/merge_hardlight.png</file>
+        <file>Resources/Images/merge_hue.png</file>
+        <file>Resources/Images/merge_hypot.png</file>
+        <file>Resources/Images/merge_in.png</file>
+        <file>Resources/Images/merge_luminosity.png</file>
+        <file>Resources/Images/merge_mask.png</file>
+        <file>Resources/Images/merge_matte.png</file>
+        <file>Resources/Images/merge_max.png</file>
+        <file>Resources/Images/merge_min.png</file>
+        <file>Resources/Images/merge_minus.png</file>
+        <file>Resources/Images/merge_multiply.png</file>
+        <file>Resources/Images/merge_out.png</file>
+        <file>Resources/Images/merge_over.png</file>
+        <file>Resources/Images/merge_overlay.png</file>
+        <file>Resources/Images/merge_pinlight.png</file>
+        <file>Resources/Images/merge_plus.png</file>
+        <file>Resources/Images/merge_saturation.png</file>
+        <file>Resources/Images/merge_screen.png</file>
+        <file>Resources/Images/merge_softlight.png</file>
+        <file>Resources/Images/merge_stencil.png</file>
+        <file>Resources/Images/merge_under.png</file>
+        <file>Resources/Images/merge_xor.png</file>
     </qresource>
 </RCC>

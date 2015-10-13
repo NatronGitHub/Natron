@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/BackDrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
+#include "Engine/MergingEnum.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
@@ -121,74 +122,14 @@ replaceLineBreaksWithHtmlParagraph(QString txt)
 
 static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
 {
-    if (op == "atop") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_ATOP, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "average") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_AVERAGE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "color-burn") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COLOR_BURN, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "color-dodge") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COLOR_DODGE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "conjoint-over") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_CONJOINT_OVER, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "copy") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COPY, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "difference") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DIFFERENCE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "disjoint-over") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DISJOINT_OVER, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "divide") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DIVIDE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "exclusion") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_EXCLUSION, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "freeze") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_FREEZE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "from") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_FROM, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "geometric") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GEOMETRIC, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "hard-light") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_HARD_LIGHT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "hypot") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_HYPOT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "in") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_IN, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "interpolated") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_INTERPOLATED, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "mask") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MASK, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "matte") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MATTE, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "max") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MAX, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "min") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MIN, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "minus") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MINUS, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "multiply") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MULTIPLY, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "out") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OUT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "over") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OVER, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "overlay") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OVERLAY, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "pinlight") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_PINLIGHT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "plus") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_PLUS, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "reflect") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_REFLECT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "screen") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_SCREEN, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "soft-light") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_SOFT_LIGHT, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "stencil") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_STENCIL, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "under") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_UNDER, NATRON_PLUGIN_ICON_SIZE, pix);
-    } else if (op == "xor") {
-        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_XOR, NATRON_PLUGIN_ICON_SIZE, pix);
+    std::string opstd = op.toStdString();
+    for (int i = 0; i <= (int)Natron::eMergeXOR; ++i) {
+        std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
+        if (opStr == opstd) {
+            Natron::PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
+            appPTR->getIcon(pixEnum, NATRON_PLUGIN_ICON_SIZE, pix);
+            return;
+        }
     }
 }
 
