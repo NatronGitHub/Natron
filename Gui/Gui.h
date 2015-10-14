@@ -729,9 +729,16 @@ public Q_SLOTS:
     
     void onFocusChanged(QWidget* old, QWidget*);
 
+#ifdef __NATRON_WIN32__
+    
+    void onShowApplicationConsoleActionTriggered();
+    
+#endif
     
 private:
-
+#ifdef __NATRON_WIN32__
+    void setApplicationConsoleActionVisible(bool visible);
+#endif
     
     void setCurrentPanelFocus(PanelWidget* widget);
     

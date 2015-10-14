@@ -167,6 +167,9 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionShortcutEditor(0)
 , actionNewViewer(0)
 , actionFullScreen(0)
+#ifdef __NATRON_WIN32__
+, actionShowWindowsConsole(0)
+#endif
 , actionClearDiskCache(0)
 , actionClearPlayBackCache(0)
 , actionClearNodeCache(0)
@@ -220,7 +223,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , menuEdit(0)
 , menuLayout(0)
 , menuDisplay(0)
-, menuOptions(0)
 , menuRender(0)
 , viewersMenu(0)
 , viewerInputsMenu(0)
@@ -252,6 +254,9 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , currentPanelFocusEventRecursion(0)
 , keyPressEventHasVisitedFocusWidget(false)
 , wasLaskUserSeekDuringPlayback(false)
+#ifdef __NATRON_WIN32__
+, applicationConsoleVisible(true)
+#endif
 {
 }
 
@@ -644,6 +649,15 @@ GuiPrivate::restoreGuiGeometry()
     if ( settings.contains("LastPluginDir") ) {
         _lastPluginDir = settings.value("LastPluginDir").toString();
     }
+    
+#ifdef __NATRON_WIN32__
+    if (settings.contains("ApplicationConsoleVisible")) {
+        bool visible = settings.value("ApplicationConsoleVisible").toBool();
+        _gui->setApplicationConsoleActionVisible(visible);
+    } else {
+        _gui->setApplicationConsoleActionVisible(false);
+    }
+#endif
 } // GuiPrivate::restoreGuiGeometry
 
 void
@@ -663,6 +677,9 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
     settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
     settings.setValue("LastPluginDir", _lastPluginDir);
+#ifdef __NATRON_WIN32__
+    settings.setValue("ApplicationConsoleVisible",applicationConsoleVisible);
+#endif
 }
 
 

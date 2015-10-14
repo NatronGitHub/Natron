@@ -1088,7 +1088,10 @@ static void addToPythonPathFunctor(const QDir& directory)
         std::string message = QObject::tr("Could not add").toStdString() + ' ' + directory.absolutePath().toStdString() + ' ' +
          QObject::tr("to python path").toStdString() + ": " + err;
         std::cerr << message << std::endl;
-        appPTR->writeToOfxLog_mt_safe(message.c_str());
+        AppInstance* topLevel = appPTR->getTopLevelInstance();
+        if (topLevel) {
+            topLevel->appendToScriptEditor(message.c_str());
+        }
     }
 
 }

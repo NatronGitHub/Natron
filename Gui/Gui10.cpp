@@ -56,6 +56,12 @@
 
 #include "Global/QtCompat.h" // removeFileExtension
 
+#ifdef __NATRON_WIN32__
+#if _WIN32_WINNT < 0x0500
+#define _WIN32_WINNT 0x0500
+#endif
+#endif
+
 using namespace Natron;
 
 void
@@ -343,4 +349,27 @@ Gui::updateLastPluginDirectory(const QString & str)
 {
     _imp->_lastPluginDir = str;
 }
+
+#ifdef __NATRON_WIN32__
+
+void
+Gui::onShowApplicationConsoleActionTriggered()
+{
+    setApplicationConsoleActionVisible(!_imp->applicationConsoleVisible);
+}
+
+void
+Gui::setApplicationConsoleActionVisible(bool visible)
+{
+    if (visible == _imp->applicationConsoleVisible) {
+        return;
+    }
+    _imp->applicationConsoleVisible = visible;
+    HWND hWnd = GetConsoleWindow();
+    if (hWnd) {
+        ShowWindow(hWnd, _imp->applicationConsoleVisible ? SW_SHOW : SW_HIDE );
+    }
+
+}
+#endif
 

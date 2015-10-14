@@ -83,19 +83,22 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionQuit "Quit"
 
 #define kShortcutIDActionProjectSettings "projectSettings"
-#define kShortcutDescActionProjectSettings "Project Settings..."
+#define kShortcutDescActionProjectSettings "Show Project Settings..."
 
 #define kShortcutIDActionShowOFXLog "showOFXLog"
-#define kShortcutDescActionShowOFXLog "Error Log..."
+#define kShortcutDescActionShowOFXLog "Show Project Errors Log..."
 
 #define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
-#define kShortcutDescActionShowShortcutEditor "Shortcuts Editor..."
+#define kShortcutDescActionShowShortcutEditor "Show Shortcuts Editor..."
 
 #define kShortcutIDActionNewViewer "newViewer"
 #define kShortcutDescActionNewViewer "New Viewer"
 
 #define kShortcutIDActionFullscreen "fullScreen"
 #define kShortcutDescActionFullscreen "Enter Full Screen"
+
+#define kShortcutIDActionShowWindowsConsole "showApplicationConsole"
+#define kShortcutDescActionShowWindowsConsole "Show/Hide Application Console"
 
 #define kShortcutIDActionClearDiskCache "clearDiskCache"
 #define kShortcutDescActionClearDiskCache "Clear Disk Cache"
