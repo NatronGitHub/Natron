@@ -234,8 +234,12 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            window->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
-            window->move( QPoint( (*it)->x, (*it)->y ) );
+            int w = std::min((*it)->w,screen.width());
+            int h = std::min((*it)->h,screen.height());
+            window->resize(w, h);
+            int x = std::min(std::max((*it)->x,screen.x()),screen.right());
+            int y = std::min(std::max((*it)->y,screen.y()),screen.bottom());
+            window->move(QPoint(x,y));
         }
 
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
