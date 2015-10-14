@@ -83,9 +83,9 @@ static void addSpacer(QBoxLayout* layout)
     line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Raised);
     //line->setObjectName("LayoutSeparator");
-    QPalette* palette = new QPalette();
-    palette->setColor(QPalette::Foreground,Qt::black);
-    line->setPalette(*palette);
+    QPalette palette;
+    palette.setColor(QPalette::Foreground,Qt::black);
+    line->setPalette(palette);
     layout->addWidget(line);
     layout->addSpacing(5);
     
