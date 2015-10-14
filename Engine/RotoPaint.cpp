@@ -36,6 +36,8 @@
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/TimeLine.h"
 
+#define ROTOPAINT_MASK_INPUT_INDEX 10
+
 using namespace Natron;
 
 struct RotoPaintPrivate
@@ -128,7 +130,7 @@ RotoNode::isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* de
 std::string
 RotoPaint::getInputLabel (int inputNb) const
 {
-    if (inputNb == 10) {
+    if (inputNb == ROTOPAINT_MASK_INPUT_INDEX) {
         return "Mask";
     } else if (inputNb == 0) {
         return "Bg";
@@ -142,14 +144,14 @@ RotoPaint::getInputLabel (int inputNb) const
 bool
 RotoPaint::isInputMask(int inputNb) const
 {
-    return inputNb == 10;
+    return inputNb == ROTOPAINT_MASK_INPUT_INDEX;
 }
 
 void
 RotoPaint::addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps)
 {
     
-    if (inputNb != 10) {
+    if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
         comps->push_back(ImageComponents::getRGBAComponents());
         comps->push_back(ImageComponents::getRGBComponents());
         comps->push_back(ImageComponents::getXYComponents());
@@ -190,7 +192,7 @@ void
 RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
 
-    if (inputNb != 10) {
+    if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
         comp->push_back(ImageComponents::getRGBAComponents());
     } else {
         comp->push_back(ImageComponents::getAlphaComponents());
@@ -275,11 +277,11 @@ RotoPaint::getFramesNeeded(double time, int view)
 }
 
 void
-RotoPaint::getRegionsOfInterest(double /*time*/,
-                          const RenderScale & /*scale*/,
-                          const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
+RotoPaint::getRegionsOfInterest(double time,
+                          const RenderScale & scale,
+                          const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                           const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                          int /*view*/,
+                          int view,
                           RoIMap* ret)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
@@ -287,6 +289,7 @@ RotoPaint::getRegionsOfInterest(double /*time*/,
     if (bottomMerge) {
         ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
     }
+    EffectInstance::getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
 }
 
 bool
@@ -298,7 +301,7 @@ RotoPaint::isIdentity(double time,
                       int* inputNb)
 {
     boost::shared_ptr<Node> node = getNode();
-    EffectInstance* maskInput = getInput(10);
+    EffectInstance* maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
     if (maskInput) {
         
         RectD maskRod;
