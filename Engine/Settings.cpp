@@ -63,6 +63,8 @@
 
 #define NATRON_DEFAULT_APPEARANCE_VERSION 1
 
+#define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
+
 using namespace Natron;
 
 
@@ -304,36 +306,72 @@ Settings::initializeKnobsGeneral()
     _activateTransformConcatenationSupport->setName("transformCatSupport");
     _generalTab->addKnob(_activateTransformConcatenationSupport);
     
+    _hostName = Natron::createKnob<KnobChoice>(this, "Appear to plug-ins as");
+    _hostName->setName("pluginHostName");
+    _hostName->setHintToolTip(NATRON_APPLICATION_NAME " will appear with the name of the selected application to the OpenFX plug-ins. "
+                              "Changing it to the name of another application can help loading plugins which "
+                              "restrict their usage to specific OpenFX host(s). "
+                              "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name. Changing this requires "
+                              "a restart of the application and requires clearing "
+                              "the OpenFX plugins cache from the Cache menu.");
+    _knownHostNames.clear();
+    std::vector<std::string> visibleHostEntries,hostEntriesHelp;
+    _knownHostNames.push_back(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    visibleHostEntries.push_back(NATRON_APPLICATION_NAME);
+    _knownHostNames.push_back("uk.co.thefoundry.nuke");
+    visibleHostEntries.push_back("Nuke");
+    _knownHostNames.push_back("com.eyeonline.Fusion");
+    visibleHostEntries.push_back("Fusion");
+    _knownHostNames.push_back("com.sonycreativesoftware.vegas");
+    visibleHostEntries.push_back("Sony Vegas");
+    _knownHostNames.push_back("Autodesk Toxik");
+    visibleHostEntries.push_back("Toxik");
+    _knownHostNames.push_back("Assimilator");
+    visibleHostEntries.push_back("Assimilator");
+    _knownHostNames.push_back("Dustbuster");
+    visibleHostEntries.push_back("DustBuster");
+    _knownHostNames.push_back("DaVinciResolve");
+    visibleHostEntries.push_back("Da Vinci Resolve");
+    _knownHostNames.push_back("DaVinciResolveLite");
+    visibleHostEntries.push_back("Da Vinci Resolve Lite");
+    _knownHostNames.push_back("Mistika");
+    visibleHostEntries.push_back("Mistika");
+    _knownHostNames.push_back("com.apple.shake");
+    visibleHostEntries.push_back("Shake");
+    _knownHostNames.push_back("Baselight");
+    visibleHostEntries.push_back("Baselight");
+    _knownHostNames.push_back("IRIDAS Framecycler");
+    visibleHostEntries.push_back("Framecycler");
+    _knownHostNames.push_back("Ramen");
+    visibleHostEntries.push_back("Ramen");
+    _knownHostNames.push_back("TuttleOfx");
+    visibleHostEntries.push_back("TuttleOfx");
     
-    _hostName = Natron::createKnob<KnobString>(this, "Host name");
-    _hostName->setName("hostName");
-#pragma message WARN("TODO: make a choice menu out of these host names (with a 'custom host' entry), and tell the user to restart Natron when it is changed.")
-    _hostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
+    
+    assert(visibleHostEntries.size() == _knownHostNames.size());
+    hostEntriesHelp = _knownHostNames;
+    
+    visibleHostEntries.push_back(NATRON_CUSTOM_HOST_NAME_ENTRY);
+    hostEntriesHelp.push_back("Custom host name");
+    
+    _hostName->populateChoices(visibleHostEntries,hostEntriesHelp);
+    _hostName->setAnimationEnabled(false);
+    _hostName->setAddNewLine(false);
+    _generalTab->addKnob(_hostName);
+    
+    _customHostName = Natron::createKnob<KnobString>(this, "Custom Host name");
+    _customHostName->setName("customHostName");
+    _customHostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                               "Changing it to the name of another application can help loading some plugins which "
                               "restrict their usage to specific OpenFX hosts. You shoud leave "
                               "this to its default value, unless a specific plugin refuses to load or run. "
                               "Changing this takes effect upon the next application launch, and requires clearing "
                               "the OpenFX plugins cache from the Cache menu. "
-                              "Here is a list of known OpenFX hosts: \n"
-                              "uk.co.thefoundry.nuke\n"
-                              "com.eyeonline.Fusion\n"
-                              "com.sonycreativesoftware.vegas\n"
-                              "Autodesk Toxik\n"
-                              "Assimilator\n"
-                              "Dustbuster\n"
-                              "DaVinciResolve\n"
-                              "DaVinciResolveLite\n"
-                              "Mistika\n"
-                              "com.apple.shake\n"
-                              "Baselight\n"
-                              "IRIDAS Framecycler\n"
-                              "Ramen\n"
-                              "TuttleOfx\n"
-                              "\n"
                               "The default host name is: \n"
                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
-    _hostName->setAnimationEnabled(false);
-    _generalTab->addKnob(_hostName);
+    _customHostName->setAnimationEnabled(false);
+    _customHostName->setSecretByDefault(true);
+    _generalTab->addKnob(_customHostName);
 }
 
 void
@@ -1172,7 +1210,8 @@ void
 Settings::setDefaultValues()
 {
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
-    _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    _hostName->setDefaultValue(0);
+    _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
@@ -1851,6 +1890,14 @@ Settings::onKnobValueChanged(KnobI* k,
                 }
     else if (k == _qssFile.get()) {
         appPTR->reloadStylesheets();
+    } else if (k == _hostName.get()) {
+        std::string hostName = _hostName->getActiveEntryText_mt_safe();
+        bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
+        _customHostName->setSecret(!isCustom);
+    }
+    if ((k == _hostName.get() || k == _customHostName.get()) && !_restoringSettings) {
+        Natron::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
+                                                                       " and clearing the OpenFX plug-ins load cache from the Cache menu.").toStdString());
     }
 } // onKnobValueChanged
 
@@ -2584,7 +2631,12 @@ Settings::getDisconnectedArrowLength() const
 std::string
 Settings::getHostName() const
 {
-    return _hostName->getValue();
+    std::string activeEntry =  _hostName->getActiveEntryText_mt_safe();
+    if (activeEntry == NATRON_CUSTOM_HOST_NAME_ENTRY) {
+        return _customHostName->getValue();
+    } else {
+        return activeEntry;
+    }
 }
 
 bool

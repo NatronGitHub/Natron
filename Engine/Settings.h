@@ -359,7 +359,10 @@ private:
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;
     boost::shared_ptr<KnobBool> _activateRGBSupport;
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
-    boost::shared_ptr<KnobString> _hostName;
+    boost::shared_ptr<KnobChoice> _hostName;
+    boost::shared_ptr<KnobString> _customHostName;
+    
+    
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;
     boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;
     boost::shared_ptr<KnobBool> _ocioStartupCheck;
@@ -509,6 +512,7 @@ private:
     bool _ocioRestored;
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
+    std::vector<std::string> _knownHostNames;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H
