@@ -303,6 +303,11 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filters.push_back(filters[i].c_str());
     }
     
+    std::string directoryArgs = currentDirectory;
+    if (!directoryArgs.empty()) {
+        gui->getApp()->getProject()->canonicalizePath(directoryArgs);
+    }
+    
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
@@ -603,12 +608,12 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-
+    
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(),currentDirectory.empty() );
+    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(),directoryArgs.empty() );
 
-    if ( !currentDirectory.empty() ) {
-        setDirectory( currentDirectory.c_str() );
+    if ( !directoryArgs.empty() ) {
+        setDirectory( directoryArgs.c_str() );
     }
 
 
