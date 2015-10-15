@@ -565,9 +565,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
     
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
-    if (layoutHint == 2) {
+    if (layoutHint == kOfxParamPropLayoutHintNoNewLine) {
         knob->setAddNewLine(false);
-    } else if (layoutHint == 1) {
+    } else if (layoutHint == kOfxParamPropLayoutHintDivider) {
         knob->setAddSeparator(true);
     }
     knob->setOfxParamHandle( (void*)instance->getHandle() );
@@ -638,7 +638,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             }
             
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
-            if (layoutHint == 1) {
+            if (layoutHint == kOfxParamPropLayoutHintDivider) {
                 
                 boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                 sep->setName((*it)->getName() + "_separator");
