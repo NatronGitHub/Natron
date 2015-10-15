@@ -208,6 +208,8 @@ public:
 
 	static bool isDriveName(const QString& name);
     
+    static bool startsWithDriveName(const QString& name);
+    
     virtual QVariant headerData(int section, Qt::Orientation orientation,int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;

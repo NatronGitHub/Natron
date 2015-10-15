@@ -995,6 +995,8 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 void
 SequenceFileDialog::setDirectory(const QString &directory)
 {
+
+    
     QDir dir(directory);
     if (!dir.exists()) {
         return;
@@ -1018,6 +1020,10 @@ SequenceFileDialog::setDirectory(const QString &directory)
 	newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
 	
+    if (!FileSystemModel::startsWithDriveName(newDirectory)) {
+        return;
+    }
+    
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
     _createDirButton->setEnabled(_dialogMode != eFileDialogModeOpen);

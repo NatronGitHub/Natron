@@ -427,12 +427,23 @@ FileSystemModel::~FileSystemModel()
 }
 
 
-bool FileSystemModel::isDriveName(const QString& name)
+bool
+FileSystemModel::isDriveName(const QString& name)
 {
 #ifdef __NATRON_WIN32__
-	return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && name.at(2) == QLatin1Char('/');
+	return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && (name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\'));
 #else
 	return name == "/";
+#endif
+}
+
+bool
+FileSystemModel::startsWithDriveName(const QString& name)
+{
+#ifdef __NATRON_WIN32__
+    return name.size() >= 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && (name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\'));
+#else
+    return name.startsWith("/");
 #endif
 }
 
