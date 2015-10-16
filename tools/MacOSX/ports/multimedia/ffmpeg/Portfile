@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 141085 2015-10-09 22:26:32Z ionic@macports.org $
+# $Id: Portfile 141220 2015-10-13 03:18:15Z ionic@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -11,7 +11,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             2.8
-revision            1
+revision            2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -99,7 +99,7 @@ minimum_xcodeversions {9 3.1}
 if {[lsearch [get_canonical_archs] i386] != -1} {
     # clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
     # clang-139 hits https://trac.macports.org/ticket/38141
-    compiler.blacklist-append {clang < 422.1.7} macports-clang-3.1
+    compiler.blacklist-append {clang < 422.1.7}
 }
 
 # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
@@ -151,7 +151,10 @@ platform darwin {
     }
 
     # VDA (video hardware acceleration, mostly H264) is only supported on 10.6.3+ up to (excluding) 10.11.
-    if {(${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)) && (${os.major} < 15)} {
+    #if {(${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)) && (${os.major} < 15)}
+    # Due to a bug in ffmpeg(?), we have to enable VDA on 10.11 as well, even though it shouldn't be supported.
+    # More information: https://github.com/mpv-player/mpv/issues/2299
+    if {${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)} {
         configure.args-delete --disable-vda
         configure.args-append --enable-vda
     }
