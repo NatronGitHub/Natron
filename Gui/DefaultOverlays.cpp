@@ -35,6 +35,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Global/KeySymbols.h"
 
