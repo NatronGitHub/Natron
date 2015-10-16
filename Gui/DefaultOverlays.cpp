@@ -32,6 +32,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
