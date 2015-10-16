@@ -25,6 +25,8 @@
 #include "OfxImageEffectInstance.h"
 
 #include <cassert>
+#include <cstdarg>
+#include <memory>
 #include <string>
 #include <map>
 #include <locale>
@@ -59,6 +61,33 @@
 #include "Engine/Project.h"
 
 using namespace Natron;
+
+// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+static
+std::string
+string_format(const std::string fmt, ...)
+{
+    int size = ((int)fmt.size()) * 2 + 50;   // Use a rubric appropriate for your code
+    std::string str;
+    va_list ap;
+    while (1) {     // Maximum two passes on a POSIX system...
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.data(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {  // Everything worked
+            str.resize(n);
+            return str;
+        }
+        if (n > -1) { // Needed size returned
+            size = n + 1;   // For null char
+        } else {
+            size *= 2;      // Guess at a larger size (OS specific)
+        }
+    }
+    return str;
+}
+
 
 OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor & desc,
@@ -122,6 +151,7 @@ OfxImageEffectInstance::newClipInstance(OFX::Host::ImageEffect::Instance* plugin
     return new OfxClipInstance(getOfxEffectInstance(), this, index, descriptor);
 }
 
+
 OfxStatus
 OfxImageEffectInstance::setPersistentMessage(const char* type,
                                              const char* /*id*/,
@@ -130,9 +160,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 {
     assert(type);
     assert(format);
-    char buf[10000];
-    sprintf(buf, format,args);
-    std::string message(buf);
+    std::string message = string_format(format, args);
 
     if (strcmp(type, kOfxMessageError) == 0) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeError, message);
@@ -153,6 +181,7 @@ OfxImageEffectInstance::clearPersistentMessage()
     return kOfxStatOK;
 }
 
+
 OfxStatus
 OfxImageEffectInstance::vmessage(const char* msgtype,
                                  const char* /*id*/,
@@ -161,9 +190,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    char buf[10000];
-    sprintf(buf, format,args);
-    std::string message(buf);
+    std::string message = string_format(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
@@ -565,9 +592,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
     
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
-    if (layoutHint == 2) {
+    if (layoutHint == kOfxParamPropLayoutHintNoNewLine) {
         knob->setAddNewLine(false);
-    } else if (layoutHint == 1) {
+    } else if (layoutHint == kOfxParamPropLayoutHintDivider) {
         knob->setAddSeparator(true);
     }
     knob->setOfxParamHandle( (void*)instance->getHandle() );
@@ -638,7 +665,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             }
             
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
-            if (layoutHint == 1) {
+            if (layoutHint == kOfxParamPropLayoutHintDivider) {
                 
                 boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                 sep->setName((*it)->getName() + "_separator");

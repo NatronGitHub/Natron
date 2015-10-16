@@ -5,6 +5,7 @@ PortSystem 1.0
 PortGroup        github 1.0
 PortGroup        cmake 1.0
 PortGroup        conflicts_build 1.0
+PortGroup        qt4 1.0
 # gcc-4.8 cannot compile universal
 # The internal yaml-cpp is not compiled with multiple archs in universal mode
 #PortGroup        muniversal 1.0

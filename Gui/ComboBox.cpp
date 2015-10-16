@@ -908,6 +908,8 @@ void
 ComboBox::clear()
 {
     _rootNode->children.clear();
+    _rootNode->isMenu->clear();
+    _cascadingIndex = 0;
     _separators.clear();
     _currentIndex = 0;
     updateLabel();

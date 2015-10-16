@@ -25,6 +25,8 @@
 #include "OfxHost.h"
 
 #include <cassert>
+#include <cstdarg>
+#include <memory>
 #include <fstream>
 #include <new> // std::bad_alloc
 #include <stdexcept> // std::exception
@@ -95,6 +97,32 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/ThreadStorage.h"
+
+// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+static
+std::string
+string_format(const std::string fmt, ...)
+{
+    int size = ((int)fmt.size()) * 2 + 50;   // Use a rubric appropriate for your code
+    std::string str;
+    va_list ap;
+    while (1) {     // Maximum two passes on a POSIX system...
+        str.reserve(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.data(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {  // Everything worked
+            str.resize(n);
+            return str;
+        }
+        if (n > -1)  // Needed size returned
+            size = n + 1;   // For null char
+        else
+            size *= 2;      // Guess at a larger size (OS specific)
+    }
+    return str;
+}
+
 
 using namespace Natron;
 
@@ -311,6 +339,7 @@ Natron::OfxHost::makeDescriptor(const std::string &bundlePath,
     return desc;
 }
 
+
 /// message
 OfxStatus
 Natron::OfxHost::vmessage(const char* msgtype,
@@ -320,9 +349,7 @@ Natron::OfxHost::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    char buf[10000];
-    sprintf(buf, format,args);
-    std::string message(buf);
+    std::string message = string_format(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
