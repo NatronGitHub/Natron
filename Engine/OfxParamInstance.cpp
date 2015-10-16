@@ -1644,8 +1644,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     setDisplayRange();
     dblKnob->setIncrement(increment);
     dblKnob->setDecimals(decimals);
-    
-    if (properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
+
+    // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!_node->effectInstance()->getOverlayInteractMainEntry() || properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
         dblKnob->setHasNativeOverlayHandle(true);
     }
 

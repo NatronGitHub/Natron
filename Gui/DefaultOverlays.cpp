@@ -174,16 +174,13 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
     QFontMetrics fm(font);
     // draw in reverse order
     for (PositionInteracts::reverse_iterator it = _imp->positions.rbegin(); it != _imp->positions.rend(); ++it) {
-        
         boost::shared_ptr<KnobDouble> knob = it->param.lock();
-        if (!knob) {
+        // do not show interact if knob is secret or not enabled
+        // see https://github.com/MrKepzie/Natron/issues/932
+        if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
             continue;
         }
-        if (knob->getIsSecretRecursive()) {
-            continue;
-        }
-    
-        
+
         float pR = 1.f;
         float pG = 1.f;
         float pB = 1.f;
@@ -239,6 +236,13 @@ DefaultOverlay::penMotion(double time,
                           double /*pressure*/,
                           PositionInteract* it)
 {
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
 
@@ -324,6 +328,13 @@ DefaultOverlay::penUp(double time,
                       double  pressure,
                       PositionInteract* it)
 {
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
     
@@ -374,6 +385,13 @@ DefaultOverlay::penDown(double time,
                         double  pressure,
                         PositionInteract* it)
 {
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
     bool motion = penMotion(time,renderScale,penPos,penPosViewport,pressure, it);
     Q_UNUSED(motion);
     if (it->state == ePositionInteractStatePoised) {
@@ -506,8 +524,18 @@ DefaultOverlay::loseFocus(double  /*time*/,
                           const RenderScale &/*renderScale*/,
                           PositionInteract* it)
 {
-    it->state = ePositionInteractStateInactive;
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
 
+    if (it->state != ePositionInteractStateInactive) {
+        it->state = ePositionInteractStateInactive;
+        // state changed, must redraw
+        getNode()->getNode()->getApp()->queueRedrawForAllViewers();
+    }
     return false;
 }
 

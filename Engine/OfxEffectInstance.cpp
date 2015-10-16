@@ -454,6 +454,10 @@ void
 OfxEffectInstance::tryInitializeOverlayInteracts()
 {
     assert(_context != eContextNone);
+    if (_overlayInteract) {
+        // already created
+        return;
+    }
     /*create overlay instance if any*/
     OfxPluginEntryPoint *overlayEntryPoint = _effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
