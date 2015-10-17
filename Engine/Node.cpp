@@ -8230,7 +8230,7 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
 
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,bool fromViewer)
+InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     
