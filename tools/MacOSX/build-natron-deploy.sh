@@ -33,8 +33,8 @@ HOMEBREW="/brew2/local"
 LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
-
-/opt/local/libexec/qt4/bin/macdeployqt "${package}" || exit 1
+QTDIR="${MACPORTS}/libexec/qt4"
+"$QTDIR"/bin/macdeployqt "${package}" || exit 1
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
@@ -125,6 +125,7 @@ fi
 if [ -d "${package}/Contents/PlugIns" ]; then
     mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
 fi
+
 rm "${package}/Contents/Resources/qt.conf" || exit 1
 
 #Make a qt.conf file in Contents/Resources/
@@ -144,7 +145,8 @@ for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 
     install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
 done
 for f in QtNetwork QtCore; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+    #install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+    install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
 done
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 stdc++.6; do
