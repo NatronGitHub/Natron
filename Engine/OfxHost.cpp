@@ -579,22 +579,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     _imp->imageEffectPluginCache->registerInCache( *OFX::Host::PluginCache::getPluginCache() );
 
 
-#if defined(WINDOWS)
-#ifdef UNICODE
-    std::wstring wpath = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
-    std::string path = OFX::wideStringToString(wpath);
-#else
-    std::string path = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
-#endif
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
-#endif
-#if defined(__linux__) || defined(__FreeBSD__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
-#endif
-#if defined(__APPLE__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
-#endif
+    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath(NATRON_APPLICATION_NAME);
+    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath("Nuke");
 
     std::list<std::string> extraPluginsSearchPaths;
     appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
@@ -604,8 +590,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         }
     }
 
+    // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
     QDir dir( QCoreApplication::applicationDirPath() );
     dir.cdUp();
+#pragma message WARN("TODO: (before 2.0) should use \"/OFX/\"NATRON_APPLICATION_NAME instead of /Plugins in the following line")
     std::string natronBundledPluginsPath = QString(dir.absolutePath() +  "/Plugins").toStdString();
     try {
         if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {
