@@ -2538,7 +2538,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
     int inputsCount = getMaxInputCount();
     
     if (!isDot && !isViewer) {
-        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         if (!isBd) {
             
@@ -2785,6 +2784,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
             
         } // !isBd
+        
+        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
+
         boost::shared_ptr<KnobString> nodeLabel = Natron::createKnob<KnobString>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(nodeLabel);
