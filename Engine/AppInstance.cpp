@@ -1142,16 +1142,16 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
         getProject()->getWriters(&writers);
         
         for (std::list<Natron::OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
-            RenderWork w;
-            w.writer = *it2;
-            assert(w.writer);
-            if (w.writer) {
-                double f,l;
+            assert(*it2);
+            if (*it2) {
+                RenderWork w;
+                w.writer = *it2;
+                double f, l;
                 w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
                 w.firstFrame = std::floor(f);
                 w.lastFrame = std::ceil(l);
+                renderers.push_back(w);
             }
-            renderers.push_back(w);
         }
     }
     
