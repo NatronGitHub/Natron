@@ -122,7 +122,9 @@ if otool -L "${package}/Contents/MacOS/Natron"  |fgrep "${MACPORTS}"; then
     exit 1
 fi
 
-mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
+if [ -d "${package}/Contents/PlugIns" ]; then
+    mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
+fi
 rm "${package}/Contents/Resources/qt.conf" || exit 1
 
 #Make a qt.conf file in Contents/Resources/
