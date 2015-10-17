@@ -1008,9 +1008,12 @@ AppManager::getAllNonOFXPluginsPaths() const
 {
     QStringList templatesSearchPath;
     
+#pragma message WARN("please comment what the following directory is for? Plugins are not data!!")
+    // Plugins are not data! data is for architecture-independant data. Why use eStandardLocationData, and what architecture/os uses it? Please explain/comment
     QString dataLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData);
     QString mainPath = dataLocation + QDir::separator() + "Plugins";
-    
+
+#pragma message WARN("why create a directory here? is it really a directory wher OFX plugins are stored? the directory name is probably wrong")
     QDir mainPathDir(mainPath);
     if (!mainPathDir.exists()) {
         QDir dataDir(dataLocation);
@@ -1024,8 +1027,10 @@ AppManager::getAllNonOFXPluginsPaths() const
     std::list<std::string> userSearchPaths;
     _imp->_settings->getPythonGroupsSearchPaths(&userSearchPaths);
     
+    // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
     QDir cwd( QCoreApplication::applicationDirPath() );
     cwd.cdUp();
+#pragma message WARN("TODO: (before 2.0) should use \"/OFX/\"NATRON_APPLICATION_NAME instead of /Plugins in the following line")
     QString natronBundledPluginsPath = QString(cwd.absolutePath() +  "/Plugins");
 
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
