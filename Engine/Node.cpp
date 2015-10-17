@@ -7927,9 +7927,9 @@ Node::refreshChannelSelectors(bool setValues)
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
-        for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-            if (it->second == -1) {
-                choices.push_back(it->first);
+        for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+            if (itl->second == -1) {
+                choices.push_back(itl->first);
             }
         }
 
@@ -7952,14 +7952,15 @@ Node::refreshChannelSelectors(bool setValues)
  
         if (setValues) {
 
-            if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+            if (it->second.hasAllChoice &&
+                _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
                 it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
                 int defaultIndex = -1;
-                for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-                    if (it->second != -1) {
-                        defaultIndex = it->second;
+                for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+                    if (itl->second != -1) {
+                        defaultIndex = itl->second;
                         break;
                     }
                 }
