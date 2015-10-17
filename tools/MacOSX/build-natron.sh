@@ -33,7 +33,9 @@ if [ "$BRANCH" = "workshop" ]; then
 else
     NATRON_BRANCH=$NATRON_GIT_TAG
 fi
-
+<<EOF
+<<<<<<<<<<<<
+EOF
 git clone $GIT_NATRON
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
@@ -113,7 +115,7 @@ else
     SPEC=macx-g++
 fi
 
-$QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
+$QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 
 ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
