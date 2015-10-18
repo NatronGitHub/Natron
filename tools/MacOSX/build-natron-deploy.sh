@@ -122,17 +122,13 @@ if otool -L "${package}/Contents/MacOS/Natron"  |fgrep "${MACPORTS}"; then
     exit 1
 fi
 
-if [ -d "${package}/Contents/PlugIns" ]; then
-    mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
+# qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt Natron.app -verbose=2 gives:
+# Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
+
+if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
+    cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
 fi
 
-rm "${package}/Contents/Resources/qt.conf" || exit 1
-
-#Make a qt.conf file in Contents/Resources/
-cat > "${package}/Contents/Resources/qt.conf" <<EOF
-[Paths]
-Plugins = Plugins
-EOF
 
 cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/" || exit 1
 
@@ -232,6 +228,11 @@ for qtlib in $QT_LIBS ;do
     fi
 done
 
+# generate a pseudo-random string which has the same length as $MACPORTS
+RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
+MACRAND=${RANDSTR:0:${#MACPORTS}}
+HOMEBREWRAND=${RANDSTR:0:${#HOMEBREW}}
+LOCALRAND=${RANDSTR:0:${#LOCAL}}
 
 
 for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
@@ -329,17 +330,12 @@ for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter
                 fi
             done
         fi
-
-        # and now, obfuscate all the default paths in dynamic libraries
-        # and ImageMagick modules and config files
-
-        # generate a pseudo-random string which has the same length as $MACPORTS
-        RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
-        MACRAND=${RANDSTR:0:${#MACPORTS}}
-        HOMEBREWRAND=${RANDSTR:0:${#HOMEBREW}}
-        LOCALRAND=${RANDSTR:0:${#LOCAL}}
-        find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
         sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" "$binary"
-
     fi
 done
+
+
+# and now, obfuscate all the default paths in dynamic libraries
+# and ImageMagick modules and config files
+
+find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
