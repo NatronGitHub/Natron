@@ -33,8 +33,8 @@ HOMEBREW="/brew2/local"
 LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
-
-/opt/local/libexec/qt4/bin/macdeployqt "${package}" || exit 1
+QTDIR="${MACPORTS}/libexec/qt4"
+"$QTDIR"/bin/macdeployqt "${package}" || exit 1
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
@@ -122,14 +122,14 @@ if otool -L "${package}/Contents/MacOS/Natron"  |fgrep "${MACPORTS}"; then
     exit 1
 fi
 
-mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
-rm "${package}/Contents/Resources/qt.conf" || exit 1
+# qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt Natron.app -verbose=2 gives:
+# Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
+# see https://trac.macports.org/ticket/49344
+if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
+    echo "Warning: Qt plugins not copied by macdeployqt, see https://trac.macports.org/ticket/49344. Copying them now."
+    cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
+fi
 
-#Make a qt.conf file in Contents/Resources/
-cat > "${package}/Contents/Resources/qt.conf" <<EOF
-[Paths]
-Plugins = Plugins
-EOF
 
 cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/" || exit 1
 
@@ -142,7 +142,8 @@ for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 
     install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
 done
 for f in QtNetwork QtCore; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+    #install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+    install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
 done
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 stdc++.6; do
@@ -228,6 +229,11 @@ for qtlib in $QT_LIBS ;do
     fi
 done
 
+# generate a pseudo-random string which has the same length as $MACPORTS
+RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
+MACRAND=${RANDSTR:0:${#MACPORTS}}
+HOMEBREWRAND=${RANDSTR:0:${#HOMEBREW}}
+LOCALRAND=${RANDSTR:0:${#LOCAL}}
 
 
 for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
@@ -325,17 +331,12 @@ for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter
                 fi
             done
         fi
-
-        # and now, obfuscate all the default paths in dynamic libraries
-        # and ImageMagick modules and config files
-
-        # generate a pseudo-random string which has the same length as $MACPORTS
-        RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
-        MACRAND=${RANDSTR:0:${#MACPORTS}}
-        HOMEBREWRAND=${RANDSTR:0:${#HOMEBREW}}
-        LOCALRAND=${RANDSTR:0:${#LOCAL}}
-        find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
         sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" "$binary"
-
     fi
 done
+
+
+# and now, obfuscate all the default paths in dynamic libraries
+# and ImageMagick modules and config files
+
+find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;

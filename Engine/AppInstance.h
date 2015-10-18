@@ -184,7 +184,8 @@ public:
     
     struct RenderWork {
         Natron::OutputEffectInstance* writer;
-        int firstFrame,lastFrame;
+        int firstFrame;
+        int lastFrame;
     };
     
     virtual void load(const CLArgs& cl);
