@@ -260,13 +260,23 @@ Gui::restoreLayout(bool wipePrevious,
                 DockablePanel* panel = 0;
                 for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                     if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
-                        ( (*it2)->getSettingPanel()->floatPanel() );
-                        panel = (*it2)->getSettingPanel();
+                        (*it2)->ensurePanelCreated();
+                        NodeSettingsPanel* nodeSettings = (*it2)->getSettingPanel();
+                        if (nodeSettings) {
+                            nodeSettings->floatPanel();
+                            panel = nodeSettings;
+                        }
                         break;
                     }
                 }
                 if (panel) {
-                    FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
+                    FloatingWidget* fWindow = 0;
+                    QWidget* w = panel->parentWidget();
+                    while (!fWindow && w) {
+                        fWindow = dynamic_cast<FloatingWidget*>(w);
+                        w = w->parentWidget();
+                    }
+                    
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
                     fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));

@@ -481,6 +481,7 @@ public:
     void removeVisibleDockablePanel(DockablePanel* panel);
 
     const std::list<DockablePanel*>& getVisiblePanels() const;
+    std::list<DockablePanel*> getVisiblePanels_mt_safe() const;
 
     std::list<ToolButton*> getToolButtonsOrdered() const;
 

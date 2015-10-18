@@ -292,10 +292,119 @@ Gui::updateViewsActions(int viewsCount)
 void
 Gui::putSettingsPanelFirst(DockablePanel* panel)
 {
-    _imp->_layoutPropertiesBin->removeWidget(panel);
-    _imp->_layoutPropertiesBin->insertWidget(0, panel);
-    _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
-    buildTabFocusOrderPropertiesBin();
+    if (!panel) {
+        return;
+    }
+    {
+        QMutexLocker k(&_imp->openedPanelsMutex);
+        std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
+        if ( it != _imp->openedPanels.end()) {
+            if (!(*it)->isFloating()) {
+                _imp->openedPanels.erase(it);
+                _imp->openedPanels.push_front(panel);
+                
+                panel->setParent(_imp->_layoutPropertiesBin->parentWidget());
+                _imp->_layoutPropertiesBin->removeWidget(panel);
+                _imp->_layoutPropertiesBin->insertWidget(0, panel);
+                _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+                if (!panel->isVisible()) {
+                    panel->setVisible(true);
+                }
+                buildTabFocusOrderPropertiesBin();
+
+            } else {
+                (*it)->activateWindow();
+            }
+        } else {
+            return;
+        }
+    }
+}
+
+
+void
+Gui::addVisibleDockablePanel(DockablePanel* panel)
+{
+    DockablePanel* found = 0;
+    int nbDockedPanels = 0;
+    {
+        QMutexLocker k(&_imp->openedPanelsMutex);
+        
+        for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it!= _imp->openedPanels.end(); ++it) {
+            if (*it == panel) {
+                found = *it;
+            }
+            if (!(*it)->isFloating()) {
+                ++nbDockedPanels;
+            }
+        }
+    }
+    
+    assert(panel);
+    int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+    while ((nbDockedPanels >= maxPanels) && (maxPanels != 0)) {
+        
+        nbDockedPanels = 0;
+        DockablePanel* first = 0;
+        {
+            QMutexLocker k(&_imp->openedPanelsMutex);
+            for (std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin(); it != _imp->openedPanels.rend();++it) {
+                if (!(*it)->isFloating()) {
+                    if (!first && *it != panel) {
+                        first = *it;
+                    }
+                    ++nbDockedPanels;
+                }
+            }
+            
+        }
+        if (first) {
+            first->closePanel();
+        } else {
+            break;
+        }
+    }
+
+    
+    if (found) {
+        putSettingsPanelFirst(panel);
+    } else {
+        
+        panel->setParent(_imp->_layoutPropertiesBin->parentWidget());
+        _imp->_layoutPropertiesBin->insertWidget(0, panel);
+        _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+        if (!panel->isVisible()) {
+            panel->setVisible(true);
+        }
+        
+        QMutexLocker k(&_imp->openedPanelsMutex);
+        _imp->openedPanels.push_front(panel);
+    }
+}
+
+void
+Gui::removeVisibleDockablePanel(DockablePanel* panel)
+{
+    QMutexLocker k(&_imp->openedPanelsMutex);
+    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
+    
+    if ( it != _imp->openedPanels.end() ) {
+        _imp->openedPanels.erase(it);
+    }
+}
+
+const std::list<DockablePanel*>&
+Gui::getVisiblePanels() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->openedPanels;
+}
+
+std::list<DockablePanel*>
+Gui::getVisiblePanels_mt_safe() const
+{
+    QMutexLocker k(&_imp->openedPanelsMutex);
+    return _imp->openedPanels;
 }
 
 void

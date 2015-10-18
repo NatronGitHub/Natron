@@ -168,6 +168,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_headerWidget->setFrameShape(QFrame::Box);
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->_headerWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _imp->_headerLayout->setSpacing(2);
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
         
@@ -801,11 +802,7 @@ DockablePanel::setClosedInternal(bool c)
     if (!_imp->_gui) {
         return;
     }
-    
-    if (_imp->_floating) {
-        floatPanel();
-        return;
-    }
+   
     {
         QMutexLocker l(&_imp->_isClosedMutex);
         if (c == _imp->_isClosed) {
@@ -813,6 +810,12 @@ DockablePanel::setClosedInternal(bool c)
             
         }
         _imp->_isClosed = c;
+    }
+    
+    
+    if (_imp->_floating) {
+        floatPanel();
+        return;
     }
     
     if (!c) {
@@ -939,6 +942,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
         Q_EMIT maximized();
     }
     _imp->_tabWidget->setVisible(!_imp->_minimized);
+    _imp->_verticalColorBar->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {
         if ( QWidget * myItem = dynamic_cast <QWidget*>( _imp->_container->itemAt(i) ) ) {
@@ -963,26 +967,9 @@ DockablePanel::floatPanel()
     }
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
-        //If the property bin is not the current tab, force it to be the current to force an update of the size of this panel.
-        //We might have never seen so far this property panel, hence it might not have a good size at all.
-        PropertiesBinWrapper* pw = getGui()->getPropertiesBin();
-        assert(pw);
-        TabWidget* propertiesPane = 0;
-        int propertiesPaneLastIndex = -1;
-        if (pw) {
-            propertiesPane = pw->getParentPane();
-            assert(propertiesPane);
-            if (propertiesPane) {
-                propertiesPaneLastIndex = propertiesPane->activeIndex();
-                propertiesPane->setCurrentWidget(pw);
-            }
-        }
-        
-        QSize curSize = size();
-        
-        if (propertiesPane && propertiesPaneLastIndex != -1) {
-            propertiesPane->makeCurrentTab(propertiesPaneLastIndex);
-        }
+
+        QSize curSize = sizeHint();
+   
         
         _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
         QObject::connect( _imp->_floatingWidget,SIGNAL( closed() ),this,SLOT( closePanel() ) );
@@ -994,8 +981,8 @@ DockablePanel::floatPanel()
         assert(_imp->_floatingWidget);
         _imp->_gui->unregisterFloatingWindow(_imp->_floatingWidget);
         _imp->_floatingWidget->removeEmbeddedWidget();
-        setParent( _imp->_container->parentWidget() );
-        _imp->_container->insertWidget(0, this);
+        //setParent( _imp->_container->parentWidget() );
+        //_imp->_container->insertWidget(0, this);
         _imp->_gui->addVisibleDockablePanel(this);
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
