@@ -1647,7 +1647,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
 
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
-    if (!_node->effectInstance()->getOverlayInteractMainEntry() || properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
+    // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute
+    if ((!_node->effectInstance()->getOverlayInteractMainEntry() && getDoubleType() == kOfxParamDoubleTypeXYAbsolute) ||
+        properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
         dblKnob->setHasNativeOverlayHandle(true);
     }
 
