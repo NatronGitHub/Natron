@@ -561,11 +561,6 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
     return hostSideEffect;
 }
 
-void
-Natron::OfxHost::addPathToLoadOFXPlugins(const std::string path)
-{
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
-}
 
 void
 Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
@@ -786,15 +781,7 @@ bool
 Natron::OfxHost::pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin */*plugin*/,
                                  std::string & /*reason*/) const
 {
-    ///Update: we support all bit depths and all components.
-
-
-    // check that the plugin supports kOfxBitDepthFloat
-//    if (plugin->getDescriptor().getParamSetProps().findStringPropValueIndex(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat) == -1) {
-//        reason = "32-bits floating-point bit depth not supported by plugin";
-//        return false;
-//    }
-
+    //We support all OpenFX plug-ins.
     return true;
 }
 
