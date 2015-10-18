@@ -122,9 +122,10 @@ make -j${MKJOBS} || exit 1
 
 ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
 
-if [ "$PLUGINDIR" = "$CWD/build/Natron/App/Natron.app/Contents/Plugins" ]; then
-    echo "HACK: moving Qt plugins from $CWD/build/Natron/App/Natron.app/Contents/PlugIns to $CWD/build/Natron/App/Natron.app/Contents/Plugins (should not be necessary when the OFX Plugins dir is $CWD/build/Natron/App/Natron.app/Contents/OFX/Natron)"
-    mv "$CWD/build/Natron/App/Natron.app/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
+package="$CWD/build/Natron/App/Natron.app"
+if [ "$PLUGINDIR" = "${package}/Contents/Plugins" ]; then
+    echo "HACK: moving Qt plugins from ${package}/Contents/PlugIns to ${package}/Contents/Plugins (should not be necessary when the OFX Plugins dir is ${package}/Contents/OFX/Natron)"
+    mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
 
     ## the original qt.conf points to PlugIns (not Plugins)
     rm "${package}/Contents/Resources/qt.conf" || exit 1
