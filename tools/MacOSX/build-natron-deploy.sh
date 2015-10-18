@@ -124,8 +124,9 @@ fi
 
 # qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt Natron.app -verbose=2 gives:
 # Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
-
+# see https://trac.macports.org/ticket/49344
 if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
+    echo "Warning: Qt plugins not copied by macdeployqt, see https://trac.macports.org/ticket/49344. Copying them now."
     cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
 fi
 
