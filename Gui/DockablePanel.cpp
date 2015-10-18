@@ -446,7 +446,9 @@ DockablePanel::~DockablePanel()
 //    if (_imp->_holder) {
 //        _imp->_holder->discardPanelPointer();
 //    }
-    getGui()->removeVisibleDockablePanel(this);
+    if (getGui()) {
+        getGui()->removeVisibleDockablePanel(this);
+    }
 
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them

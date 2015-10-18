@@ -83,6 +83,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
 using namespace Natron;
@@ -133,8 +134,13 @@ Gui::onRotoSelectedToolChanged(int tool)
     if (!roto) {
         return;
     }
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->updateRotoSelectedTool(tool, roto);
     }
 }
@@ -601,10 +607,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
             }
         }
     }
-    _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
-    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        (*it)->onGuiFrozenChanged(clicked);
-    }
+    _imp->_propertiesBin->setEnabled(!clicked);
 }
 
 bool
@@ -887,8 +890,7 @@ void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
 void
 Gui::ddeOpenFile(const QString& filePath)
 {
-    openProject(filePath.toStdString());
-#pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
+    _imp->_appInstance->handleFileOpenEvent(filePath.toStdString());
 }
 #endif
 

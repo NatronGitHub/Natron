@@ -109,27 +109,19 @@ ImageComponents::operator==(const ImageComponents& other) const
 bool
 ImageComponents::operator<(const ImageComponents& other) const
 {
-    if (_layerName != other._layerName && isColorPlane()) {
-        return true;
-    }
-
-    if (_layerName < other._layerName) {
-        return true;
-    }
-    
-    if (_componentNames.size() < other._componentNames.size()) {
-        return true;
-    } else if (_componentNames.size() > other._componentNames.size()) {
-        return false;
-    }
-    
+    std::string hash,otherHash;
+    hash.append(_layerName);
     for (std::size_t i = 0; i < _componentNames.size(); ++i) {
-        if (_componentNames[i] < other._componentNames[i]) {
-            return true;
-        }
+        hash.append(_componentNames[i]);
     }
     
-    return false;
+    otherHash.append(other._layerName);
+    for (std::size_t i = 0; i < other._componentNames.size(); ++i) {
+        otherHash.append(other._componentNames[i]);
+    }
+    
+    return hash < otherHash;
+
 }
 
 int

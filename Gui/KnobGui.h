@@ -419,6 +419,7 @@ protected:
      * @brief Called when the internal value held by the knob is changed, you must implement
      * it to update the interface to reflect the new value. You can query the new value
      * by calling knob->getValue()
+     * The dimension is either -1 indicating that all dimensions should be updated or the dimension index.
      **/
     virtual void updateGUI(int dimension) = 0;
 

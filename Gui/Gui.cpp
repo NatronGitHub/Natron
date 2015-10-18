@@ -76,9 +76,15 @@ Gui::Gui(GuiAppInstance* app,
 
 {
     
+    
 #ifdef __NATRON_WIN32
     //Register file types
     registerFileType(NATRON_PROJECT_FILE_MIME_TYPE, "Natron Project file", "." NATRON_PROJECT_FILE_EXT, 0, true);
+    std::map<std::string,std::string> formats;
+    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&formats);
+    for (std::map<std::string,std::string>::iterator it = formats.begin(); it!=formats.end(); ++it) {
+        registerFileType(QString("image/") + QString(it->first.c_str()), it->first.c_str(), QString(".") + QString(it->first.c_str()), 0, true);
+    }
     enableShellOpen();
 #endif
     
@@ -363,7 +369,6 @@ Gui::createMenuActions()
     _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
     _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
     _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuOptions = new Menu(QObject::tr("Options"), _imp->menubar);
     _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
     _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
     _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
@@ -420,6 +425,13 @@ Gui::createMenuActions()
     _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, this);
     QObject::connect( _imp->actionNewViewer, SIGNAL( triggered() ), this, SLOT( createNewViewer() ) );
 
+
+#ifdef __NATRON_WIN32__
+    _imp->actionShowWindowsConsole = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowWindowsConsole, kShortcutDescActionShowWindowsConsole, this);
+    _imp->actionShowWindowsConsole->setShortcutContext(Qt::ApplicationShortcut);
+    QObject::connect( _imp->actionShowWindowsConsole, SIGNAL( triggered() ), this, SLOT( onShowApplicationConsoleActionTriggered() ) );
+#endif
+    
     _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
     _imp->actionFullScreen->setShortcutContext(Qt::ApplicationShortcut);
@@ -516,7 +528,6 @@ Gui::createMenuActions()
     _imp->menubar->addAction( _imp->menuEdit->menuAction() );
     _imp->menubar->addAction( _imp->menuLayout->menuAction() );
     _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
-    _imp->menubar->addAction( _imp->menuOptions->menuAction() );
     _imp->menubar->addAction( _imp->menuRender->menuAction() );
     _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
@@ -546,9 +557,6 @@ Gui::createMenuActions()
     _imp->menuLayout->addAction(_imp->actionNextTab);
     _imp->menuLayout->addAction(_imp->actionCloseTab);
 
-    _imp->menuOptions->addAction(_imp->actionProject_settings);
-    _imp->menuOptions->addAction(_imp->actionShowOfxLog);
-    _imp->menuOptions->addAction(_imp->actionShortcutEditor);
     _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
@@ -556,6 +564,13 @@ Gui::createMenuActions()
     for (int i = 0; i < 10; ++i) {
         _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
     }
+    
+    _imp->menuDisplay->addAction(_imp->actionProject_settings);
+    _imp->menuDisplay->addAction(_imp->actionShowOfxLog);
+    _imp->menuDisplay->addAction(_imp->actionShortcutEditor);
+#ifdef __NATRON_WIN32__
+    _imp->menuDisplay->addAction(_imp->actionShowWindowsConsole);
+#endif
 
     _imp->menuDisplay->addSeparator();
     _imp->menuDisplay->addAction(_imp->actionFullScreen);

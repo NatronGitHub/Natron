@@ -1,0 +1,128 @@
+--- Portfile.orig	2015-10-12 10:58:56.000000000 +0200
++++ Portfile	2015-10-12 11:00:39.000000000 +0200
+@@ -7,7 +7,7 @@
+ # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
+ 
+ name                        ImageMagick
+-version                     6.9.2-3
++version                     6.9.1-10
+ set reasonable_version      [lindex [split ${version} -] 0]
+ homepage                    http://www.imagemagick.org/
+ categories                  graphics devel
+@@ -63,6 +63,8 @@
+                             port:expat \
+                             port:libxml2
+ 
++patchfiles noclparser.patch
++
+ # Magick-config etc. use pkg-config
+ depends_lib-append          port:pkgconfig
+ 
+@@ -89,11 +91,14 @@
+                             --with-dps \
+                             --with-bzlib \
+                             --with-djvu \
++                            --with-fftw \
+                             --with-fontconfig \
+                             --with-gslib \
+                             --with-jbig \
+                             --with-jpeg \
+-                            --with-lcms \
++                            --without-lcms \
++                            --with-lcms2 \
++                            --without-lzma \
+                             --with-openjp2 \
+                             --with-png \
+                             --with-tiff \
+@@ -111,6 +116,64 @@
+                             --without-x \
+                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
+ 
++variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
++    #patchfiles-append magick-seed.diff magick-svg.diff
++    depends_lib-delete      port:ghostscript
++    configure.args-replace  --with-dps --without-dps
++    configure.args-replace  --with-gslib --without-gslib
++    depends_lib-delete       port:djvulibre
++    configure.args-replace  --with-djvu --without-djvu
++    depends_lib-delete       port:fftw-3
++    configure.args-replace  --with-fftw --without-fftw
++    depends_lib-delete       port:jbigkit
++    configure.args-replace  --with-jbig --without-jbig
++    depends_lib-delete       port:jbigkit
++    configure.args-replace  --with-jbig --without-jbig
++    depends_lib-delete       port:jpeg
++    configure.args-replace  --with-jpeg --without-jpeg
++    # why not remove png support? maybe because freetype depends on png anyway?
++    depends_lib-delete       port:png
++    configure.args-replace  --with-png --without-png
++    depends_lib-delete       port:openjpeg
++    configure.args-replace  --with-openjp2 --without-openjp2
++    depends_lib-delete       port:openexr
++    configure.args-replace  --with-openexr --without-openexr
++    depends_lib-delete       port:tiff
++    configure.args-replace  --with-tiff --without-tiff
++    depends_lib-delete       port:webp
++    configure.args-replace  --with-webp --without-webp
++    depends_lib-delete       port:zlib
++    configure.args-replace  --with-zlib --without-zlib
++    depends_lib-delete       port:bzip2
++    configure.args-replace  --with-bzlib --without-bzlib
++    configure.args-replace  --enable-shared --disable-shared
++    configure.args-replace  --with-modules --without-modules
++    pre-extract {
++        if {${version} != "6.9.1-10"} {
++            ui_msg "Natron variant requires ImageMagick version 6.9.1-10 (this is ${version}), please modify the Portfile."
++            return -code error "incompatible ImageMagick version"
++        }
++    }
++}
++
++# OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):
++# http://sourceforge.net/tracker/index.php?func=detail&aid=1964341&group_id=170962&atid=856209
++# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36242
++# clang has proper OpenMP support
++#   -- Frederic.Devernay@inria.fr
++if {${configure.compiler} == "llvm-gcc-4.2" || ${configure.compiler} == "gcc-4.2" || ${configure.compiler} == "gcc-4.0"} {
++    configure.args-append --disable-openmp
++}
++
++post-configure {
++    reinplace -E {s|-arch [a-z0-9_]+||g} \
++        ${worksrcpath}/magick/Magick-config \
++        ${worksrcpath}/magick/MagickCore-config \
++        ${worksrcpath}/Magick++/bin/Magick++-config \
++        ${worksrcpath}/wand/MagickWand-config \
++        ${worksrcpath}/wand/Wand-config
++}
++
+ test.run                    yes
+ test.target                 check
+ test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
+@@ -118,6 +181,14 @@
+ # ImageMagick uses .la files at runtime to find its coder modules.
+ destroot.delete_la_files    no
+ 
++variant q32 description {Use Q32 quantum depth} {
++    configure.args-append   --with-quantum-depth=32
++}
++
++variant hdri description {High Dynamic Range Imagery} {
++    configure.args-replace  --disable-hdri --enable-hdri
++}
++
+ variant graphviz description {Support Graphviz} {
+     depends_lib-append      path:bin/dot:graphviz
+     configure.args-replace  --without-gvc --with-gvc
+@@ -152,6 +223,11 @@
+ 
+ default_variants            +x11
+ 
++variant xquartz {
++    configure.args-append   --with-x --x-includes=/opt/X11/include --x-librari=/opt/X11/lib
++    configure.args-delete   --without-x
++}
++
+ livecheck.version           ${reasonable_version}
+ livecheck.type              regex
+ livecheck.url               [lindex ${master_sites} 0]

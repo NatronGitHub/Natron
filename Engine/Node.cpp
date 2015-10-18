@@ -2538,7 +2538,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
     int inputsCount = getMaxInputCount();
     
     if (!isDot && !isViewer) {
-        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         if (!isBd) {
             
@@ -2785,6 +2784,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
             
         } // !isBd
+        
+        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
+
         boost::shared_ptr<KnobString> nodeLabel = Natron::createKnob<KnobString>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(nodeLabel);
@@ -4682,11 +4684,11 @@ Node::makePreviewImage(SequenceTime time,
                                              thisNode, // viewer requester
                                              &request,
                                              0, //texture index
-                                             getApp()->getTimeLine().get(),
-                                             NodePtr(),
-                                             false,
-                                             true,
-                                             false,
+                                             getApp()->getTimeLine().get(), // timeline
+                                             NodePtr(), //rotoPaint node
+                                             false, // isAnalysis
+                                             true, // isDraft
+                                             false, // enableProgress
                                              boost::shared_ptr<RenderStats>());
     
     std::list<ImageComponents> requestedComps;
@@ -7925,9 +7927,9 @@ Node::refreshChannelSelectors(bool setValues)
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
-        for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-            if (it->second == -1) {
-                choices.push_back(it->first);
+        for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+            if (itl->second == -1) {
+                choices.push_back(itl->first);
             }
         }
 
@@ -7950,14 +7952,15 @@ Node::refreshChannelSelectors(bool setValues)
  
         if (setValues) {
 
-            if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+            if (it->second.hasAllChoice &&
+                _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
                 it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
                 int defaultIndex = -1;
-                for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-                    if (it->second != -1) {
-                        defaultIndex = it->second;
+                for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+                    if (itl->second != -1) {
+                        defaultIndex = itl->second;
                         break;
                     }
                 }
@@ -8227,7 +8230,7 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
 
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,bool fromViewer)
+InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     

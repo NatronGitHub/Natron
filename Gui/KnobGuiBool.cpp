@@ -127,8 +127,10 @@ KnobGuiBool::~KnobGuiBool()
 
 void KnobGuiBool::removeSpecificGui()
 {
-    _checkBox->setParent(0);
-    delete _checkBox;
+    _checkBox->hide();
+    _checkBox->deleteLater();
+    _checkBox = 0;
+    
 }
 
 void
@@ -216,7 +218,7 @@ KnobGuiBool::setEnabled()
 {
     boost::shared_ptr<KnobBool> knob = _knob.lock();
 
-    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
     _checkBox->setEnabled(b);
 }
@@ -225,7 +227,7 @@ void
 KnobGuiBool::setReadOnly(bool readOnly,
                           int /*dimension*/)
 {
-    _checkBox->setReadOnly(readOnly);
+    _checkBox->setEnabled(!readOnly);
 }
 
 void
@@ -246,7 +248,7 @@ KnobGuiBool::reflectExpressionState(int /*dimension*/,
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
     _checkBox->setAnimation(3);
-    _checkBox->setReadOnly(hasExpr || !isEnabled);
+    _checkBox->setEnabled(!hasExpr && isEnabled);
 }
 
 void

@@ -414,9 +414,10 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
             
             fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
             
+            int inputView = (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) ? 0 : view;
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
-                                                   view,
+                                                   inputView,
                                                    originalMipMapLevel,
                                                    node,
                                                    treeRoot,

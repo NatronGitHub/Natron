@@ -3867,15 +3867,6 @@ KnobHolder::initializeKnobsPublic()
 }
 
 void
-KnobHolder::onGuiFrozenChange(bool frozen)
-{
-    ///The issue with this is if the user toggles off the global frozen mode
-    ///and the knobs are already frozen because for instance they are already rendering something
-    ///that would unfrozen them, though this is very unlikely that the user does it.
-    setKnobsFrozen(frozen);
-}
-
-void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());

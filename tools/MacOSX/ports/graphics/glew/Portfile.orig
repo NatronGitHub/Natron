@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 139308 2015-08-12 02:46:18Z jmr@macports.org $
+# $Id: Portfile 140798 2015-10-03 03:25:01Z jmr@macports.org $
 
 PortSystem 1.0
 
@@ -34,7 +34,7 @@ post-patch {
 use_configure      no
 build.env          GLEW_PREFIX=${prefix} GLEW_DEST=${prefix}
 build.args         CC=${configure.cc} LD=${configure.cc} \
-                   STRIP=
+                   POPT="${configure.optflags}" STRIP=
 destroot.env       GLEW_PREFIX=${prefix} GLEW_DEST=${prefix}
 destroot.target    install.all
 

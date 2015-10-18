@@ -423,13 +423,13 @@ AppInstance::load(const CLArgs& cl)
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
           appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
         
-        if (cl.getFilename().isEmpty()) {
+        if (cl.getScriptFilename().isEmpty()) {
             // cannot start a background process without a file
             throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
         
 
-        QFileInfo info(cl.getFilename());
+        QFileInfo info(cl.getScriptFilename());
         if (!info.exists()) {
             throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
         }
@@ -467,7 +467,7 @@ AppInstance::load(const CLArgs& cl)
         
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
-        QFileInfo info(cl.getFilename());
+        QFileInfo info(cl.getScriptFilename());
         if (info.exists() && info.suffix() == "py") {
             loadPythonScript(info);
         }
@@ -1142,16 +1142,16 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
         getProject()->getWriters(&writers);
         
         for (std::list<Natron::OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
-            RenderWork w;
-            w.writer = *it2;
-            assert(w.writer);
-            if (w.writer) {
-                double f,l;
+            assert(*it2);
+            if (*it2) {
+                RenderWork w;
+                w.writer = *it2;
+                double f, l;
                 w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
                 w.firstFrame = std::floor(f);
                 w.lastFrame = std::ceil(l);
+                renderers.push_back(w);
             }
-            renderers.push_back(w);
         }
     }
     

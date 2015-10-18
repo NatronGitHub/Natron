@@ -1,0 +1,19 @@
+--- Portfile.orig	2015-09-20 17:49:53.000000000 +0200
++++ Portfile	2015-09-20 17:49:53.000000000 +0200
+@@ -7,7 +7,7 @@
+ 
+ name            boost
+ version         1.59.0
+-revision        1
++revision        2
+ license         Boost-1
+ categories      devel
+ platforms       darwin
+@@ -46,6 +46,7 @@
+ patchfiles      patch-tools-build-src-engine-build.sh.diff \
+                 patch-tools-build-src-engine-build.jam.diff \
+                 patch-apple-clang-no-libcxx.diff \
++                patch-serialization-visibility.diff \
+                 patch-log-setup-link.diff
+                 # patch-apple-clang-no-libcxx.diff fixes a clang configuration
+                 # error that occurs on OS X 10.7 and 10.8 due to the assumption

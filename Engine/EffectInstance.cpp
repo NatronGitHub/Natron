@@ -343,6 +343,10 @@ EffectInstance::aborted() const
                     if ( isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge) ) {
                         return true;
                     }
+                    
+                    if (args.draftMode && args.timeline && args.time != args.timeline->currentFrame()) {
+                        return true;
+                    }
 
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = !getNode()->isActivated();

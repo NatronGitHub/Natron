@@ -32,9 +32,11 @@
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiAppInstance.h"
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
+#include "Engine/Node.h"
 
 #include "Global/KeySymbols.h"
 
@@ -49,7 +51,6 @@ CLANG_DIAG_ON(deprecated)
 #include <QColor>
 #include <QApplication>
 
-namespace {
 enum PositionInteractState
 {
     ePositionInteractStateInactive,
@@ -76,7 +77,8 @@ struct PositionInteract
     
     
 };
-   
+namespace {
+
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier
 // pscale is args.pixelScale.x / args.renderScale.x;
@@ -172,17 +174,15 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
     
     QFont font(appFont,appFontSize);
     QFontMetrics fm(font);
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        
+    // draw in reverse order
+    for (PositionInteracts::reverse_iterator it = _imp->positions.rbegin(); it != _imp->positions.rend(); ++it) {
         boost::shared_ptr<KnobDouble> knob = it->param.lock();
-        if (!knob) {
+        // do not show interact if knob is secret or not enabled
+        // see https://github.com/MrKepzie/Natron/issues/932
+        if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
             continue;
         }
-        if (knob->getIsSecretRecursive()) {
-            continue;
-        }
-    
-        
+
         float pR = 1.f;
         float pG = 1.f;
         float pB = 1.f;
@@ -232,64 +232,88 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
 
 bool
 DefaultOverlay::penMotion(double time,
-               const RenderScale &/*renderScale*/,
-               const QPointF &penPos,
-               const QPoint &/*penPosViewport*/,
-               double /*pressure*/)
+                          const RenderScale &/*renderScale*/,
+                          const QPointF &penPos,
+                          const QPoint &/*penPosViewport*/,
+                          double /*pressure*/,
+                          PositionInteract* it)
+{
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
+    OfxPointD pscale;
+    n_getPixelScale(pscale.x, pscale.y);
+
+    QPointF pos;
+    if (it->state == ePositionInteractStatePicked) {
+        pos = _imp->lastPenPos;
+    } else {
+        boost::shared_ptr<KnobDouble> param = it->param.lock();
+        if (param) {
+            pos.rx() = param->getValueAtTime(time, 0);
+            pos.ry() = param->getValueAtTime(time, 1);
+        }
+    }
+
+    bool didSomething = false;
+    bool valuesChanged = false;
+
+    switch (it->state) {
+        case ePositionInteractStateInactive:
+        case ePositionInteractStatePoised: {
+            // are we in the box, become 'poised'
+            PositionInteractState newState;
+            if ( ( std::fabs(penPos.x() - pos.x()) <= it->pointTolerance() * pscale.x) &&
+                ( std::fabs(penPos.y() - pos.y()) <= it->pointTolerance() * pscale.y) ) {
+                newState = ePositionInteractStatePoised;
+            } else   {
+                newState = ePositionInteractStateInactive;
+            }
+
+            if (it->state != newState) {
+                // state changed, must redraw
+                getNode()->getNode()->getApp()->queueRedrawForAllViewers();
+            }
+            it->state = newState;
+            //}
+        }
+            break;
+
+        case ePositionInteractStatePicked: {
+            _imp->lastPenPos = penPos;
+            valuesChanged = true;
+        }
+            break;
+    }
+    didSomething = (it->state == ePositionInteractStatePoised) || (it->state == ePositionInteractStatePicked);
+
+    if (it->state != ePositionInteractStateInactive && _imp->interactiveDrag && valuesChanged) {
+        double x = fround(_imp->lastPenPos.x(), pscale.x);
+        double y = fround(_imp->lastPenPos.y(), pscale.y);
+        boost::shared_ptr<KnobDouble> param = it->param.lock();
+        if (param) {
+            param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+        }
+    }
+    return (didSomething || valuesChanged);
+}
+
+bool
+DefaultOverlay::penMotion(double time,
+                          const RenderScale &renderScale,
+                          const QPointF &penPos,
+                          const QPoint &penPosViewport,
+                          double pressure)
 {
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
     
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        QPointF pos;
-        if (it->state == ePositionInteractStatePicked) {
-            pos = _imp->lastPenPos;
-        } else {
-            boost::shared_ptr<KnobDouble> param = it->param.lock();
-            if (param) {
-                pos.rx() = param->getValueAtTime(time, 0);
-                pos.ry() = param->getValueAtTime(time, 1);
-            }
-        }
-        
-        bool didSomething = false;
-        bool valuesChanged = false;
-        
-        switch (it->state) {
-            case ePositionInteractStateInactive:
-            case ePositionInteractStatePoised: {
-                // are we in the box, become 'poised'
-                PositionInteractState newState;
-                if ( ( std::fabs(penPos.x() - pos.x()) <= it->pointTolerance() * pscale.x) &&
-                    ( std::fabs(penPos.y() - pos.y()) <= it->pointTolerance() * pscale.y) ) {
-                    newState = ePositionInteractStatePoised;
-                } else   {
-                    newState = ePositionInteractStateInactive;
-                }
-                
-                //if (it->state != newState) { //< causes the viewer not to redraw if pressed twice while poised
-                    it->state = newState;
-                    didSomething = true;
-                //}
-            }
-                break;
-                
-            case ePositionInteractStatePicked: {
-                _imp->lastPenPos = penPos;
-                valuesChanged = true;
-            }
-                break;
-        }
-        
-        if (it->state != ePositionInteractStateInactive && _imp->interactiveDrag && valuesChanged) {
-            double x = fround(_imp->lastPenPos.x(), pscale.x);
-            double y = fround(_imp->lastPenPos.y(), pscale.y);
-            boost::shared_ptr<KnobDouble> param = it->param.lock();
-            if (param) {
-                param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
-            }
-        }
-        if (didSomething || valuesChanged) {
+        if (penMotion(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
             return true;
         }
     }
@@ -300,58 +324,127 @@ DefaultOverlay::penMotion(double time,
 
 bool
 DefaultOverlay::penUp(double time,
-           const RenderScale &renderScale,
-           const QPointF &penPos,
-           const QPoint &penPosViewport,
-           double  pressure)
+                      const RenderScale &renderScale,
+                      const QPointF &penPos,
+                      const QPoint &penPosViewport,
+                      double  pressure,
+                      PositionInteract* it)
 {
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
     
     bool didSomething = false;
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->state == ePositionInteractStatePicked) {
-            if (!_imp->interactiveDrag) {
-                double x = fround(_imp->lastPenPos.x(), pscale.x);
-                double y = fround(_imp->lastPenPos.y(), pscale.y);
-                boost::shared_ptr<KnobDouble> param = it->param.lock();
-                if (param) {
-                    param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
-                }
+    if (it->state == ePositionInteractStatePicked) {
+        if (!_imp->interactiveDrag) {
+            double x = fround(_imp->lastPenPos.x(), pscale.x);
+            double y = fround(_imp->lastPenPos.y(), pscale.y);
+            boost::shared_ptr<KnobDouble> param = it->param.lock();
+            if (param) {
+                param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
             }
-
-            it->state = ePositionInteractStateInactive;
-            penMotion(time,renderScale,penPos,penPosViewport,pressure);
-            didSomething = true;
         }
+
+        it->state = ePositionInteractStateInactive;
+        bool motion = penMotion(time, renderScale, penPos, penPosViewport, pressure, it);
+        Q_UNUSED(motion);
+        didSomething = true;
     }
-    
+
+    return didSomething;
+}
+
+bool
+DefaultOverlay::penUp(double time,
+                      const RenderScale &renderScale,
+                      const QPointF &penPos,
+                      const QPoint &penPosViewport,
+                      double  pressure)
+{
+    OfxPointD pscale;
+    n_getPixelScale(pscale.x, pscale.y);
+
+    bool didSomething = false;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        didSomething |= penUp(time, renderScale, penPos, penPosViewport, pressure, &(*it));
+    }
+
     return didSomething;
 }
 
 
 bool
 DefaultOverlay::penDown(double time,
-             const RenderScale &renderScale,
-             const QPointF &penPos,
-             const QPoint &penPosViewport,
-             double  pressure)
+                        const RenderScale &renderScale,
+                        const QPointF &penPos,
+                        const QPoint &penPosViewport,
+                        double  pressure,
+                        PositionInteract* it)
 {
-  
-    bool didSomething = false;
-    
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
+    bool motion = penMotion(time,renderScale,penPos,penPosViewport,pressure, it);
+    Q_UNUSED(motion);
+    if (it->state == ePositionInteractStatePoised) {
+        it->state = ePositionInteractStatePicked;
+        _imp->lastPenPos = penPos;
+        if (_imp->interactiveDrag) {
+            _imp->interactiveDrag = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        }
+        return true;
+    }
+
+    return false;
+}
+
+
+bool
+DefaultOverlay::penDown(double time,
+                        const RenderScale &renderScale,
+                        const QPointF &penPos,
+                        const QPoint &penPosViewport,
+                        double  pressure)
+{
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        penMotion(time,renderScale,penPos,penPosViewport,pressure);
-        if (it->state == ePositionInteractStatePoised) {
-            it->state = ePositionInteractStatePicked;
-            _imp->lastPenPos = penPos;
-            if (_imp->interactiveDrag) {
-                _imp->interactiveDrag = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            }
-            didSomething = true;
+        if (penDown(time, renderScale, penPos, penPosViewport, pressure, &(*it))) {
+            return true;
         }
         
-        if (didSomething) {
+    }
+    return false;
+}
+
+
+bool
+DefaultOverlay::keyDown(double /*time*/,
+                        const RenderScale &/*renderScale*/,
+                        int     /*key*/,
+                        char*   /*keyString*/,
+                        PositionInteract* /*it*/)
+{
+    return false;
+}
+
+
+bool
+DefaultOverlay::keyDown(double time,
+                        const RenderScale &renderScale,
+                        int     key,
+                        char*   keyString)
+{
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        if (keyDown(time, renderScale, key, keyString, &(*it))) {
             return true;
         }
 
@@ -361,51 +454,102 @@ DefaultOverlay::penDown(double time,
 
 
 bool
-DefaultOverlay::keyDown(double /*time*/,
-             const RenderScale &/*renderScale*/,
-             int     /*key*/,
-             char*   /*keyString*/)
+DefaultOverlay::keyUp(double /*time*/,
+                      const RenderScale &/*renderScale*/,
+                      int     /*key*/,
+                      char*   /*keyString*/,
+                      PositionInteract* /*it*/)
 {
     return false;
 }
 
-
 bool
-DefaultOverlay::keyUp(double /*time*/,
-           const RenderScale &/*renderScale*/,
-           int     /*key*/,
-           char*   /*keyString*/)
+DefaultOverlay::keyUp(double time,
+                      const RenderScale &renderScale,
+                      int     key,
+                      char*   keyString)
 {
-    return false;
+    bool didSomething = false;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        didSomething |= keyUp(time, renderScale, key, keyString, &(*it));
+    }
+    return didSomething;
 }
 
 
 bool
 DefaultOverlay::keyRepeat(double /*time*/,
-               const RenderScale &/*renderScale*/,
-               int     /*key*/,
-               char*   /*keyString*/)
+                          const RenderScale &/*renderScale*/,
+                          int     /*key*/,
+                          char*   /*keyString*/,
+                          PositionInteract* /*it*/)
 {
     return false;
+}
+
+bool
+DefaultOverlay::keyRepeat(double time,
+               const RenderScale &renderScale,
+               int     key,
+               char*   keyString)
+{
+    bool didSomething = false;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        didSomething |= keyRepeat(time, renderScale, key, keyString, &(*it));
+    }
+    return didSomething;
 }
 
 
 bool
 DefaultOverlay::gainFocus(double /*time*/,
-               const RenderScale &/*renderScale*/)
+                          const RenderScale &/*renderScale*/,
+                          PositionInteract* /*it*/)
 {
     return false;
+}
+
+bool
+DefaultOverlay::gainFocus(double time,
+                          const RenderScale &renderScale)
+{
+    bool didSomething = false;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        didSomething |= gainFocus(time, renderScale, &(*it));
+    }
+    return didSomething;
 }
 
 
 bool
 DefaultOverlay::loseFocus(double  /*time*/,
-               const RenderScale &/*renderScale*/)
+                          const RenderScale &/*renderScale*/,
+                          PositionInteract* it)
 {
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+    boost::shared_ptr<KnobDouble> knob = it->param.lock();
+    // do not show interact if knob is secret or not enabled
+    // see https://github.com/MrKepzie/Natron/issues/932
+    if (!knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1)) {
+        return false;
+    }
+
+    if (it->state != ePositionInteractStateInactive) {
         it->state = ePositionInteractStateInactive;
+        // state changed, must redraw
+        getNode()->getNode()->getApp()->queueRedrawForAllViewers();
     }
     return false;
+}
+
+bool
+DefaultOverlay::loseFocus(double  time,
+                          const RenderScale &renderScale)
+{
+    bool didSomething = false;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        didSomething |= loseFocus(time, renderScale, &(*it));
+    }
+    return didSomething;
 }
 
 bool

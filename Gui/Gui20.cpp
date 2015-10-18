@@ -1167,7 +1167,7 @@ Gui::saveAndIncrVersion()
 
     _imp->_appInstance->getProject()->saveProject(path, name, 0);
 
-    QString filename = path = name;
+    QString filename = path + "/" + name;
     updateRecentFiles(filename);
 } // Gui::saveAndIncrVersion
 

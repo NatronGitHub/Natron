@@ -25,6 +25,8 @@
 #include "OfxHost.h"
 
 #include <cassert>
+#include <cstdarg>
+#include <memory>
 #include <fstream>
 #include <new> // std::bad_alloc
 #include <stdexcept> // std::exception
@@ -95,6 +97,32 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/ThreadStorage.h"
+
+// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+static
+std::string
+string_format(const std::string fmt, ...)
+{
+    int size = ((int)fmt.size()) * 2 + 50;   // Use a rubric appropriate for your code
+    std::string str;
+    va_list ap;
+    while (1) {     // Maximum two passes on a POSIX system...
+        str.reserve(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.data(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {  // Everything worked
+            str.resize(n);
+            return str;
+        }
+        if (n > -1)  // Needed size returned
+            size = n + 1;   // For null char
+        else
+            size *= 2;      // Guess at a larger size (OS specific)
+    }
+    return str;
+}
+
 
 using namespace Natron;
 
@@ -311,6 +339,7 @@ Natron::OfxHost::makeDescriptor(const std::string &bundlePath,
     return desc;
 }
 
+
 /// message
 OfxStatus
 Natron::OfxHost::vmessage(const char* msgtype,
@@ -320,9 +349,7 @@ Natron::OfxHost::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    char buf[10000];
-    sprintf(buf, format,args);
-    std::string message(buf);
+    std::string message = string_format(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
@@ -552,22 +579,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     _imp->imageEffectPluginCache->registerInCache( *OFX::Host::PluginCache::getPluginCache() );
 
 
-#if defined(WINDOWS)
-#ifdef UNICODE
-    std::wstring wpath = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
-    std::string path = OFX::wideStringToString(wpath);
-#else
-    std::string path = OFX::Host::PluginCache::getStdOFXPluginPath("Nuke");
-#endif
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
-#endif
-#if defined(__linux__) || defined(__FreeBSD__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
-#endif
-#if defined(__APPLE__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
-#endif
+    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath(NATRON_APPLICATION_NAME);
+    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath("Nuke");
 
     std::list<std::string> extraPluginsSearchPaths;
     appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
@@ -577,8 +590,10 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         }
     }
 
+    // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
     QDir dir( QCoreApplication::applicationDirPath() );
     dir.cdUp();
+#pragma message WARN("TODO: (before 2.0) should use \"/OFX/\"NATRON_APPLICATION_NAME instead of /Plugins in the following line")
     std::string natronBundledPluginsPath = QString(dir.absolutePath() +  "/Plugins").toStdString();
     try {
         if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {

@@ -796,9 +796,17 @@ namespace Natron {
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
         
+        template <typename PIX, bool doPremult>
+        void premultInternal(const RectI& roi);
+        template <bool doPremult>
+        void premultForDepth(const RectI& roi);
+
+        
     public:
         
         
+        void premultImage(const RectI& roi);
+        void unpremultImage(const RectI& roi);
         
         void copyUnProcessedChannels(const RectI& roi,
                                      Natron::ImagePremultiplicationEnum outputPremult,

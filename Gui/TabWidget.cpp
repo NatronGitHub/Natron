@@ -1229,8 +1229,9 @@ TabWidget::makeCurrentTab(int index)
     
     _imp->mainLayout->addWidget(tabW);
     QObject::connect(tabW, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
-    
-    tabW->setVisible(true);
+    if (!tabW->isVisible()) {
+        tabW->setVisible(true);
+    }
     //tab->setParent(this);
     _imp->modifyingTabBar = true;
     _imp->tabBar->setCurrentIndex(index);

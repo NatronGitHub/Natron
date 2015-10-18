@@ -373,7 +373,11 @@ RotoItem::setScriptName(const std::string & name)
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
     if (c) {
         if (!oldNameEmpty) {
-            c->changeItemScriptName(oldFullName, newFullName);
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+            ///Strokes are unsupported in Python currently
+            if (!isStroke) {
+                c->changeItemScriptName(oldFullName, newFullName);
+            }
         }
         c->onItemScriptNameChanged(shared_from_this());
     }

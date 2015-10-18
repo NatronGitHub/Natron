@@ -137,14 +137,6 @@ NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
 }
 
 void
-NodeGraph::onGuiFrozenChanged(bool frozen)
-{
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        (*it)->onGuiFrozenChanged(frozen);
-    }
-}
-
-void
 NodeGraph::refreshAllKnobsGui()
 {
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {

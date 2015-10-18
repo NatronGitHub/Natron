@@ -260,7 +260,6 @@ $$PWD/../OpenColorIO-Configs/spi-vfx
 
 # ACES 1.0.1 also has baked luts and python files which we don't want to bundle
 OCIO_aces_101.files = \
-$$PWD/../OpenColorIO-Configs/aces_1.0.1/README.md \
 $$PWD/../OpenColorIO-Configs/aces_1.0.1/config.ocio \
 $$PWD/../OpenColorIO-Configs/aces_1.0.1/luts
 

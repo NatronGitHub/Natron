@@ -171,7 +171,7 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1
@@ -183,7 +183,7 @@ fi
 
 #For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
 #if [ -z "$NODEBUG" ]; then
-#  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug ../Project.pro || exit 1
+#  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug CONDIF+=silent ../Project.pro || exit 1
 #  make -j${MKJOBS} || exit 1
 #  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1
 #  cp Renderer/NatronRenderer $INSTALL_PATH/bin/NatronRenderer.debug || exit 1

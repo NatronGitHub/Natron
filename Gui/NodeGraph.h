@@ -227,8 +227,6 @@ public Q_SLOTS:
     
     void toggleAutoHideInputs(bool setSettings = true);
         
-    void onGuiFrozenChanged(bool frozen);
-
     void onNodeCreationDialogFinished();
 
     void popFindDialog(const QPoint& pos = QPoint(0,0));

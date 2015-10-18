@@ -31,6 +31,7 @@
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoStrokeItem.h"
 
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)
@@ -493,8 +494,20 @@ ItemBase*
 Roto::getItemByName(const std::string& name) const
 {
     boost::shared_ptr<RotoItem> item =  _ctx->getItemByName(name);
-    if (item) {
-        return new ItemBase(item);
+    if (!item) {
+        return 0;
+    }
+    RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
+    if (isLayer) {
+        return new Layer(item);
+    }
+    Bezier* isBezier = dynamic_cast<Bezier*>(item.get());
+    if (isBezier) {
+        return new BezierCurve(item);
+    }
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
+    if (isStroke) {
+        std::cerr << "Roto::getItemByName: RotoPaint strokes are currently unsupported in the Python API." << std::endl;
     }
     return 0;
 }
