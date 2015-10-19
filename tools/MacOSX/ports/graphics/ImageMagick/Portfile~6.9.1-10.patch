@@ -1,14 +1,25 @@
---- Portfile.orig	2015-10-12 10:58:56.000000000 +0200
-+++ Portfile	2015-10-12 11:00:39.000000000 +0200
+--- Portfile.orig	2015-10-19 10:51:06.000000000 +0200
++++ Portfile	2015-10-19 10:52:42.000000000 +0200
 @@ -7,7 +7,7 @@
  # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
  
  name                        ImageMagick
--version                     6.9.2-3
+-version                     6.9.2-4
 +version                     6.9.1-10
  set reasonable_version      [lindex [split ${version} -] 0]
  homepage                    http://www.imagemagick.org/
  categories                  graphics devel
+@@ -39,8 +39,8 @@
+                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
+                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
+ 
+-checksums                   rmd160  0d674a2e6bbccbef4f7dcdce4965d1130aca4f60 \
+-                            sha256  05b1c499415048099a1464ebd03f0cfaae8d0994c681bcf7e0319b26e5e8d848
++checksums           rmd160  2de5e8a6c828254860e4eda5e522bcc4edd3b173 \
++                    sha256  22565464059376513869b6626982e0726a33788ccc7e19a08e55ff1683d4ff92
+ 
+ depends_lib                 port:bzip2 \
+                             port:djvulibre \
 @@ -63,6 +63,8 @@
                              port:expat \
                              port:libxml2

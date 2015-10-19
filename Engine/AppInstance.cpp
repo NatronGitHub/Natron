@@ -860,6 +860,22 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 settings->setNumberOfParallelRenders(1);
             }
         }
+        
+        ///If this is a stereo plug-in, check that the project has been set for multi-view
+        if (userEdited && !requestedByLoad) {
+            const QStringList& grouping = plugin->getGrouping();
+            if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
+                int nbViews = getProject()->getProjectViewsCount();
+                if (nbViews < 2) {
+                    Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Multi-View").toStdString(),
+                                                                              tr("Using a multi-view node requires the project settings to be setup "
+                                                                                 "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
+                    if (reply == Natron::eStandardButtonYes) {
+                        getProject()->setupProjectForStereo();
+                    }
+                }
+            }
+        }
     }
     
     

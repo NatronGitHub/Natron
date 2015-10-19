@@ -238,6 +238,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _currentlyDraggedPanelInitialSize()
 , _aboutWindow(0)
 , _progressBars()
+, openedPanelsMutex()
 , openedPanels()
 , _openGLVersion()
 , _glewVersion()

@@ -252,6 +252,7 @@ struct GuiPrivate
     std::map<KnobHolder*, QProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
+    mutable QMutex openedPanelsMutex;
     std::list<DockablePanel*> openedPanels;
     QString _openGLVersion;
     QString _glewVersion;

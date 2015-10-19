@@ -145,7 +145,6 @@ public:
                                                 bool disableRenderScaleSupport,
                                                                  bool *hasUsedFileDialog);
 
-    void addPathToLoadOFXPlugins(const std::string path);
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/

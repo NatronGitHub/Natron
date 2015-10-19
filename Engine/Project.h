@@ -136,6 +136,8 @@ public:
 
     void getAdditionalFormats(std::list<Format> *formats) const;
 
+    void setupProjectForStereo();
+    
     int getProjectViewsCount() const;
 
     int getProjectMainView() const;

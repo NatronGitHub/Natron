@@ -2446,6 +2446,7 @@ void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
     _maxPanelsOpened->setValue(maxPanels, 0);
+    saveSetting(_maxPanelsOpened.get());
 }
 
 void

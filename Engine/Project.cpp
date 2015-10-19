@@ -1105,6 +1105,13 @@ Project::getProjectViewsCount() const
 {
     return _imp->viewsCount->getValue();
 }
+    
+void
+Project::setupProjectForStereo()
+{
+    _imp->viewsCount->setValue(2, 0);
+    _imp->mainView->setValue(0,0);
+}
 
 int
 Project::getProjectMainView() const
