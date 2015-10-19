@@ -960,7 +960,29 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     boost::shared_ptr<KnobChoice> choice = Natron::createKnob<KnobChoice>( node, getParamLabel(this) );
     _knob = choice;
 
-    setOption(0); // this actually sets all the options
+    
+    int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
+    int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+    
+    std::vector<std::string> entires;
+    std::vector<std::string> helpStrings;
+    bool hashelp = false;
+    for (int i = 0; i < dim; ++i) {
+        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
+        std::string help;
+        if (i < labelOptionDim) {
+            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        }
+        if ( !help.empty() ) {
+            hashelp = true;
+        }
+        entires.push_back(str);
+        helpStrings.push_back(help);
+    }
+    if (!hashelp) {
+        helpStrings.clear();
+    }
+    choice->populateChoices(entires,helpStrings);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->setDefaultValue(def,0);
@@ -1057,30 +1079,27 @@ OfxChoiceInstance::setEvaluateOnChange()
 }
 
 void
-OfxChoiceInstance::setOption(int /*num*/)
+OfxChoiceInstance::setOption(int num)
 {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (dim == 0) {
+        knob->resetChoices();
+        return;
+    }
+    //Only 2 kind of behaviours are supported: either resetOptions (dim == 0) or
+    //appendOption, hence num == dim -1
+    assert(num == dim - 1);
+    if (num != (dim -1)) {
+        return;
+    }
+    std::string entry = getProperties().getStringProperty(kOfxParamPropChoiceOption,num);
+    std::string help;
     int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-    
-    std::vector<std::string> entires;
-    std::vector<std::string> helpStrings;
-    bool hashelp = false;
-    for (int i = 0; i < dim; ++i) {
-        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help;
-        if (i < labelOptionDim) {
-            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
-        }
-        if ( !help.empty() ) {
-            hashelp = true;
-        }
-        entires.push_back(str);
-        helpStrings.push_back(help);
+    if (num < labelOptionDim) {
+        help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,num);
     }
-    if (!hashelp) {
-        helpStrings.clear();
-    }
-    _knob.lock()->populateChoices(entires, helpStrings);
+    knob->appendChoice(entry,help);
 }
 
 boost::shared_ptr<KnobI>

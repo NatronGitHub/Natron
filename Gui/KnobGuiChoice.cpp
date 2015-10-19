@@ -91,8 +91,9 @@ KnobGuiChoice::KnobGuiChoice(boost::shared_ptr<KnobI> knob,
     , _comboBox(0)
 {
     boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    _entries = k->getEntries_mt_safe();
     QObject::connect( k.get(), SIGNAL( populated() ), this, SLOT( onEntriesPopulated() ) );
+    QObject::connect( k.get(), SIGNAL( entryAppended(QString,QString) ), this, SLOT( onEntryAppended(QString,QString) ) );
+    QObject::connect( k.get(), SIGNAL( entriesReset() ), this, SLOT( onEntriesReset() ) );
     _knob = k;
 }
 
@@ -128,20 +129,45 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
 }
 
 void
+KnobGuiChoice::onEntryAppended(const QString& entry, const QString& help)
+{
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (knob->getHostCanAddOptions() &&
+        (knob->getName() == kNatronOfxParamOutputChannels || knob->getName() == kOutputChannelsKnobName)) {
+        _comboBox->insertItem(_comboBox->count() - 1, entry, QIcon(), QKeySequence(), help);
+    } else {
+        _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
+    }
+    int activeIndex = knob->getValue();
+    _comboBox->setCurrentIndex_no_emit(activeIndex);
+}
+
+void
+KnobGuiChoice::onEntriesReset()
+{
+    _comboBox->clear();
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (knob->getHostCanAddOptions() &&
+        (knob->getName() == kNatronOfxParamOutputChannels || knob->getName() == kOutputChannelsKnobName)) {
+        _comboBox->addItemNew();
+    }
+}
+
+void
 KnobGuiChoice::onEntriesPopulated()
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
     int activeIndex = knob->getValue();
 
     _comboBox->clear();
-    _entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
     const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
-    for (U32 i = 0; i < _entries.size(); ++i) {
+    for (U32 i = 0; i < entries.size(); ++i) {
         std::string helpStr;
         if ( !help.empty() && !help[i].empty() ) {
             helpStr = help[i];
         }
-        _comboBox->addItem( _entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
+        _comboBox->addItem( entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if (knob->getHostCanAddOptions() &&
@@ -152,7 +178,6 @@ KnobGuiChoice::onEntriesPopulated()
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 
-    updateToolTip();
 }
 
 void

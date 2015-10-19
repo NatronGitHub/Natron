@@ -636,9 +636,9 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
     }
     if (!curEntry.empty()) {
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == curEntry) {
+            if (entries[i] == curEntry && cur_i != (int)i) {
                 blockValueChanges();
-                setValue(cur_i, 0);
+                setValue((int)i, 0);
                 unblockValueChanges();
                 break;
             }
@@ -648,6 +648,36 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
         _signalSlotHandler->s_helpChanged();
     }
     Q_EMIT populated();
+}
+
+void
+KnobChoice::resetChoices()
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        _entries.clear();
+        _entriesHelp.clear();
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+    Q_EMIT entriesReset();
+}
+
+void
+KnobChoice::appendChoice(const std::string& entry, const std::string& help)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        if (!_entriesHelp.empty()) {
+            _entriesHelp.push_back(help);
+        }
+        _entries.push_back(entry);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+    Q_EMIT entryAppended(QString(entry.c_str()), QString(help.c_str()));
 }
 
 std::vector<std::string>
