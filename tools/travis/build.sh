@@ -59,12 +59,14 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
         # compiling Natron overrides the 3GB limit on travis if building parallel
-        export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
-        make $J;# -k; # -k: continue building even if compiler is killed because of the 3GB limit
-    else
-        export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
-        make $J;
+        J=1
     fi
+    export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
+    make $J -C HostSupport;
+    make $J -C Engine;
+    make $J -C Gui;
+    make -C App; # linking Natron may break the 3Gb limit
+    make $J
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
@@ -73,6 +75,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT"; else qmake -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT"; fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
+    make $J -C HostSupport;
+    make $J -C Engine;
+    make $J -C Gui;
+    make -C App; # linking Natron may break the 3Gb limit
     make $J
     if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
