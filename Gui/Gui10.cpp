@@ -243,8 +243,8 @@ Gui::restoreLayout(bool wipePrevious,
             int w = std::min((*it)->w,screen.width());
             int h = std::min((*it)->h,screen.height());
             window->resize(w, h);
-            int x = std::min(std::max((*it)->x,screen.x()),screen.right());
-            int y = std::min(std::max((*it)->y,screen.y()),screen.bottom());
+            int x = std::min(std::max((*it)->x,screen.x()),screen.right() - 50);
+            int y = std::min(std::max((*it)->y,screen.y() + 50),screen.bottom());
             window->move(QPoint(x,y));
         }
 
