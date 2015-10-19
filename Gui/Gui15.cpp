@@ -344,7 +344,6 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
     int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
     while ((nbDockedPanels >= maxPanels) && (maxPanels != 0)) {
         
-        nbDockedPanels = 0;
         DockablePanel* first = 0;
         {
             QMutexLocker k(&_imp->openedPanelsMutex);
@@ -352,8 +351,8 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
                 if (!(*it)->isFloating()) {
                     if (!first && *it != panel) {
                         first = *it;
+                        break;
                     }
-                    ++nbDockedPanels;
                 }
             }
             
@@ -362,6 +361,17 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
             first->closePanel();
         } else {
             break;
+        }
+        
+        nbDockedPanels = 0;
+
+        {
+            QMutexLocker k(&_imp->openedPanelsMutex);
+            for (std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin(); it != _imp->openedPanels.rend();++it) {
+                if (!(*it)->isFloating()) {
+                    ++nbDockedPanels;
+                }
+            }
         }
     }
 
@@ -426,7 +436,11 @@ Gui::buildTabFocusOrderPropertiesBin()
 void
 Gui::setVisibleProjectSettingsPanel()
 {
-    addVisibleDockablePanel( _imp->_projectGui->getPanel() );
+    if (_imp->_projectGui->getPanel()->isClosed()) {
+        _imp->_projectGui->getPanel()->setClosed(false);
+    } else {
+        addVisibleDockablePanel( _imp->_projectGui->getPanel() );
+    }
     if ( !_imp->_projectGui->isVisible() ) {
         _imp->_projectGui->setVisible(true);
     }
