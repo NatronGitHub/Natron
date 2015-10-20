@@ -209,7 +209,7 @@ PYSIDE="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-pa
 rm -rf "${package}/Contents/${PYSIDE}"
 cp -r "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}" || exit 1
 
-QT_LIBS="QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtXml QtWebKit QtXmlPatterns"
+QT_LIBS="QtCore QtGui QtNetwork QtOpenGL QtDeclarative QtHelp QtMultimedia QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtXml QtWebKit QtXmlPatterns QtDesigner"
 
 for qtlib in $QT_LIBS ;do
     binary="${package}/Contents/${PYSIDE}/${qtlib}.so"
