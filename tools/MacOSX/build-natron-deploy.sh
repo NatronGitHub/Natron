@@ -142,7 +142,6 @@ for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 
     install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
 done
 for f in QtNetwork QtCore; do
-    #install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
 done
 if [ "$LIBGCC" = "1" ]; then
@@ -169,7 +168,7 @@ if [ -f "CrashReporter/NatronCrashReporter" ]; then
     binary="${package}/Contents/MacOS/NatronCrashReporter"
     cp "CrashReporter/NatronCrashReporter" "$binary"
     for f in QtGui QtNetwork QtCore; do
-        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+        install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
     if [ "$LIBGCC" = "1" ]; then
         for l in gcc_s.1 gomp.1 stdc++.6; do
@@ -188,7 +187,7 @@ if [ -f "CrashReporterCLI/NatronRendererCrashReporter" ]; then
     binary="${package}/Contents/MacOS/NatronRendererCrashReporter"
     cp "CrashReporterCLI/NatronRendererCrashReporter" "$binary"
     for f in QtNetwork QtCore; do
-        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+        install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
     if [ "$LIBGCC" = "1" ]; then
         for l in gcc_s.1 gomp.1 stdc++.6; do
@@ -214,7 +213,7 @@ for qtlib in $QT_LIBS ;do
     binary="${package}/Contents/${PYSIDE}/${qtlib}.so"
     install_name_tool -id "@executable_path/../${PYSIDE}/${qtlib}.so" "$binary"
     for f in $QT_LIBS; do
-        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+        install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
 
     for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
@@ -226,6 +225,11 @@ for qtlib in $QT_LIBS ;do
             lib="lib${l}.dylib"
             install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
+    fi
+    
+    if otool -L "$binary" |fgrep "${MACPORTS}"; then
+        echo "Error: MacPorts libraries remaining in $binary, please check"
+        exit 1
     fi
 done
 
