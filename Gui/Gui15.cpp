@@ -32,6 +32,7 @@
 
 #include "Global/Macros.h"
 
+#include <QtCore/QApplication>
 #include <QVBoxLayout>
 #include <QScrollBar>
 #include <QScrollArea>
