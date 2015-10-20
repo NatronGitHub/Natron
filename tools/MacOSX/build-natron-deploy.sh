@@ -34,7 +34,7 @@ LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
-"$QTDIR"/bin/macdeployqt "${package}" || exit 1
+"$QTDIR"/bin/macdeployqt -no-strip "${package}" || exit 1
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
