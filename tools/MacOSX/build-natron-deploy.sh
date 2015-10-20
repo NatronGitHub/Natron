@@ -34,7 +34,9 @@ LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
-"$QTDIR"/bin/macdeployqt -no-strip "${package}" || exit 1
+STRIP=1
+
+"$QTDIR"/bin/macdeployqt "${package}" -no-strip || exit 1
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
@@ -344,3 +346,30 @@ done
 # and ImageMagick modules and config files
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
+
+if [ "$STRIP" = 1 ]; then
+    for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
+        binary="$package/Contents/MacOS/$bin";
+        if [ -x "$binary" ]; then
+            echo "* stripping $binary";
+            # Extract each arch into a "thin" binary for stripping
+            lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+            lipo "$binary" -thin i386   -output "${binary}_i386";
+
+            # Retain the original binary for QA and use with the util 'atos'
+            #mv -f "$binary" "${binary}_FULL";
+
+            # Perform desired stripping on each thin binary.  
+            strip -S -x -r "${binary}_i386";
+            strip -S -x -r "${binary}_x86_64";
+
+            # Make the new universal binary from our stripped thin pieces.
+            lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
+            # We're now done with the temp thin binaries, so chuck them.
+            rm -f "${binary}_i386";
+            rm -f "${binary}_x86_64";
+            #rm -f "${binary}_FULL";
+        fi
+    done
+fi
