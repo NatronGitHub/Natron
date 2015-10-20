@@ -176,6 +176,12 @@ Natron::OfxHost::~OfxHost()
 }
 
 void
+Natron::OfxHost::setOfxHostOSHandle(void* handle)
+{
+    _properties.setPointerProperty(kOfxPropHostOSHandle, handle);
+}
+
+void
 Natron::OfxHost::setProperties()
 {
     /* Known OpenFX host names:

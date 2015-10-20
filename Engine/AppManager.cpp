@@ -1328,10 +1328,15 @@ AppManager::setAsTopLevelInstance(int appID)
             }
         } else {
             if ( !isBackground() ) {
-                it->second.app->connectViewersToViewerCache();
+                if (it->second.app) {
+                    it->second.app->connectViewersToViewerCache();
+                    _imp->ofxHost->setOfxHostOSHandle(it->second.app->getOfxHostOSHandle());
+                }
+
             }
         }
     }
+    
 }
 
 void

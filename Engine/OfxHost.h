@@ -64,6 +64,8 @@ public:
     virtual ~OfxHost();
 
     void setProperties();
+    
+    void setOfxHostOSHandle(void* handle);
 
     /// Create a new instance of an image effect plug-in.
     ///

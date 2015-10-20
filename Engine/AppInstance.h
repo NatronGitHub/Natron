@@ -410,6 +410,8 @@ public:
     ///Opens a new window
     virtual AppInstance* newProject();
     
+    virtual void* getOfxHostOSHandle() const { return NULL; }
+    
 public Q_SLOTS:
     
     void quit();

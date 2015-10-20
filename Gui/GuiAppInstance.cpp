@@ -1200,3 +1200,13 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
         appPTR->handleImageFileOpenRequest(filename);
     }
 }
+
+void*
+GuiAppInstance::getOfxHostOSHandle() const
+{
+    if (!_imp->_gui) {
+        return (void*)0;
+    }
+    WId ret = _imp->_gui->winId();
+    return (void*)ret;
+}
