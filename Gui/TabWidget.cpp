@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QThread>
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
