@@ -1017,44 +1017,6 @@ OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
     return std::string();
 }
 
-std::string
-OfxEffectInstance::getOfxComponentsFromUserChannels(OfxClipInstance* clip, int inputNb) const
-{
-    assert(!isMultiPlanar());
-    
-    bool processChannels[4];
-    Natron::ImageComponents layer;
-    bool isAll;
-    if (getNode()->getUserComponents(inputNb, processChannels,&isAll, &layer) && !isAll) {
-        if (layer.isColorPlane()) {
-            if (layer.getComponentsGlobalName() == kNatronRGBAComponentsName) {
-                return clip->findSupportedComp(kOfxImageComponentRGBA);
-            } else if (layer.getComponentsGlobalName() == kNatronAlphaComponentsName) {
-                return clip->findSupportedComp(kOfxImageComponentAlpha);
-            } else {
-                return clip->findSupportedComp(kOfxImageComponentRGB);
-            }
-        } else if (layer == ImageComponents::getForwardMotionComponents() || layer == ImageComponents::getBackwardMotionComponents()) {
-            return clip->findSupportedComp(kFnOfxImageComponentMotionVectors);
-        } else if (layer == ImageComponents::getDisparityLeftComponents() || layer == ImageComponents::getDisparityRightComponents()) {
-            return clip->findSupportedComp(kFnOfxImageComponentStereoDisparity);
-        } else {
-            //Custom comp, pass-it for a color plane
-            int nComp = layer.getNumComponents();
-            if (nComp == 4 && processChannels[3]) {
-                return clip->findSupportedComp(kOfxImageComponentRGBA);
-            } else if (nComp == 3) {
-                return clip->findSupportedComp(kOfxImageComponentRGB);
-            } else if (nComp == 2) {
-                return clip->findSupportedComp(kNatronOfxImageComponentXY);
-            } else if (nComp == 1) {
-                return clip->findSupportedComp(kOfxImageComponentAlpha);
-            }
-        }
-    }
-    return std::string();
-}
-
 /**
  * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
  * by the plugin so that we can minimize the amount of Natron::Image::convertToFormat calls.
@@ -1112,14 +1074,7 @@ clipPrefsProxy(OfxEffectInstance* self,
         foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
         outputModified = true;
     }
-    
-//    if (!self->isMultiPlanar()) {
-//        std::string userComp = self->getOfxComponentsFromUserChannels(outputClip,-1);
-//        if (!userComp.empty()) {
-//            foundOutputPrefs->second.components = userComp;
-//            outputModified = true;
-//        }
-//    }
+
     
     ///Adjust output premultiplication if needed
     if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
@@ -1144,15 +1099,7 @@ clipPrefsProxy(OfxEffectInstance* self,
         std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
         assert(foundClipPrefs != clipPrefs.end());
         
-        ///Set the clip to have the same components as the output components if it is supported
-        /*if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
-            ///we only take into account non mask clips for the most components
-            if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
-                foundClipPrefs->second.components = foundOutputPrefs->second.components;
-                hasChanged = true;
-            }
-        }*/
-        
+ 
         if (instance) {
             
             
@@ -1160,17 +1107,7 @@ clipPrefsProxy(OfxEffectInstance* self,
             
             ///This is the output clip of the input node
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-            
-//            if (!self->isMultiPlanar()) {
-//                std::string userComp = self->getOfxComponentsFromUserChannels(clip, i);
-//                if (!userComp.empty()) {
-//                    foundClipPrefs->second.components = userComp;
-//                    hasChanged = true;
-//                }
-//            } else {
-            
-         //   }
-            
+
             ///Try to remap the clip's bitdepth to be the same as
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
             Natron::ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);

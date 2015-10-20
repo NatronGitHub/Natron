@@ -3387,7 +3387,7 @@ EffectInstance::getNonMaskInputsAvailableComponents(double time,
             EffectInstance* input = getInput(i);
             if (input) {
                 ComponentsAvailableMap inputAvailComps;
-                input->getComponentsAvailableRecursive(time, view, &inputAvailComps, markedNodes);
+                input->getComponentsAvailableRecursive(true, time, view, &inputAvailComps, markedNodes);
                 for (ComponentsAvailableMap::iterator it = inputAvailComps.begin(); it != inputAvailComps.end(); ++it) {
                     //If the component is already present in the 'comps' map, only add it if we are the preferred input
                     ComponentsAvailableMap::iterator colorMatch = comps->end();
@@ -3418,7 +3418,8 @@ EffectInstance::getNonMaskInputsAvailableComponents(double time,
 }
 
 void
-EffectInstance::getComponentsAvailableRecursive(double time,
+EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice, 
+                                                double time,
                                                 int view,
                                                 ComponentsAvailableMap* comps,
                                                 std::list<Natron::EffectInstance*>* markedNodes)
@@ -3427,7 +3428,7 @@ EffectInstance::getComponentsAvailableRecursive(double time,
         return;
     }
 
-    {
+    if (useLayerChoice) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
             comps->insert( _imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end() );
@@ -3447,7 +3448,7 @@ EffectInstance::getComponentsAvailableRecursive(double time,
     NodePtr ptInput;
     bool processAll;
     bool processChannels[4];
-    getComponentsNeededAndProduced_public(time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
+    getComponentsNeededAndProduced_public(useLayerChoice, time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
 
 
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
@@ -3467,7 +3468,7 @@ EffectInstance::getComponentsAvailableRecursive(double time,
             getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
         } else {
             if (ptInput) {
-                ptInput->getLiveInstance()->getComponentsAvailableRecursive(time, view, comps, markedNodes);
+                ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
             }
         }
     }
@@ -3525,7 +3526,7 @@ EffectInstance::getComponentsAvailableRecursive(double time,
 
 
         std::list<ImageComponents> userComps;
-        node->getUserComponents(&userComps);
+        node->getUserCreatedComponents(&userComps);
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
         for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
@@ -3571,7 +3572,7 @@ EffectInstance::getComponentsAvailableRecursive(double time,
     markedNodes->push_back(this);
 
 
-    {
+    if (useLayerChoice) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         _imp->componentsAvailableDirty = false;
         _imp->outputComponentsAvailable = *comps;
@@ -3579,15 +3580,17 @@ EffectInstance::getComponentsAvailableRecursive(double time,
 } // EffectInstance::getComponentsAvailableRecursive
 
 void
-EffectInstance::getComponentsAvailable(double time,
+EffectInstance::getComponentsAvailable(bool useLayerChoice,
+                                       double time,
                                        ComponentsAvailableMap* comps,
                                        std::list<Natron::EffectInstance*>* markedNodes)
 {
-    getComponentsAvailableRecursive(time, 0, comps, markedNodes);
+    getComponentsAvailableRecursive(useLayerChoice, time, 0, comps, markedNodes);
 }
 
 void
-EffectInstance::getComponentsAvailable(double time,
+EffectInstance::getComponentsAvailable(bool useLayerChoice,
+                                       double time,
                                        ComponentsAvailableMap* comps)
 {
     //int nViews = getApp()->getProject()->getProjectViewsCount();
@@ -3597,7 +3600,7 @@ EffectInstance::getComponentsAvailable(double time,
     ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
     std::list<Natron::EffectInstance*> marks;
 
-    getComponentsAvailableRecursive(time, 0, comps, &marks);
+    getComponentsAvailableRecursive(useLayerChoice, time, 0, comps, &marks);
 
     //}
 }
@@ -3657,7 +3660,8 @@ EffectInstance::getComponentsNeededAndProduced(double time,
 }
 
 void
-EffectInstance::getComponentsNeededAndProduced_public(double time,
+EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
+                                                      double time,
                                                       int view,
                                                       ComponentsNeededMap* comps,
                                                       bool* processAllRequested,
@@ -3682,31 +3686,20 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         {
             ImageComponents layer;
             std::vector<ImageComponents> compVec;
-            bool ok = getNode()->getUserComponents(-1, processChannels, processAllRequested, &layer);
+            bool ok = false;
+            if (useLayerChoice) {
+                ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
+            }
             ImageBitDepthEnum depth;
             std::list<ImageComponents> clipPrefsComps;
             getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
 
-            if (ok && layer.getNumComponents() != 0) {
-                if (!layer.isColorPlane()) {
-                    
-                    bool found = false;
-                    for (std::size_t i = 0; i < compVec.size(); ++i) {
-                        if (compVec[i] == layer) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        compVec.push_back(layer);
-                    }
-                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
-                        if (!(*it).isColorPlane()) {
-                            compVec.push_back(*it);
-                        }
-                    }
-                } else {
-                    for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+            if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
+                
+                compVec.push_back(layer);
+                
+                for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                    if (!(*it).isColorPlane()) {
                         compVec.push_back(*it);
                     }
                 }
@@ -3715,12 +3708,7 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
                 for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
                     compVec.push_back(*it);
                 }
-            }
-
-           
-            
-            
-            
+            } 
            
             comps->insert( std::make_pair(-1, compVec) );
         }
@@ -3737,7 +3725,7 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
                 bool inputProcChannels[4];
                 ImageComponents layer;
                 bool isAll;
-                bool ok = getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer);
+                bool ok = getNode()->getSelectedLayer(i, inputProcChannels, &isAll, &layer);
                 ImageComponents maskComp;
                 NodePtr maskInput;
                 int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);

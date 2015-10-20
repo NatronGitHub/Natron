@@ -359,7 +359,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         SequenceTime ptTime;
         int ptView;
         boost::shared_ptr<Natron::Node> ptInput;
-        getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
+        getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
         
         foundOutputNeededComps = neededComps.find(-1);
         if ( foundOutputNeededComps == neededComps.end() ) {
@@ -393,7 +393,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ComponentsAvailableMap componentsAvailables;
     
     //Available planes/components is view agnostic
-    getComponentsAvailable(args.time, &componentsAvailables);
+    getComponentsAvailable(true, args.time, &componentsAvailables);
     
     const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
     

@@ -1411,8 +1411,8 @@ public:
     /**
      * @brief Returns the components available on each input for this effect at the given time.
      **/
-    void getComponentsAvailable(double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes);
+    void getComponentsAvailable(bool useLayerChoice, double time, ComponentsAvailableMap* comps);
+    void getComponentsAvailable(bool useLayerChoice, double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes);
 
 
     /**
@@ -1460,12 +1460,13 @@ public:
 
 private:
 
-    void getComponentsAvailableRecursive(double time, int view, ComponentsAvailableMap* comps,
+    void getComponentsAvailableRecursive(bool useLayerChoice, double time, int view, ComponentsAvailableMap* comps,
                                          std::list<Natron::EffectInstance*>* markedNodes);
 
 public:
 
-    void getComponentsNeededAndProduced_public(double time, int view,
+    void getComponentsNeededAndProduced_public(bool useLayerChoice,
+                                               double time, int view,
                                                ComponentsNeededMap* comps,
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,

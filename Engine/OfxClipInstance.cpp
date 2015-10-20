@@ -253,7 +253,7 @@ OfxClipInstance::getComponentsPresent() const
                 EffectInstance::ComponentsAvailableMap comps;
                 EffectInstance* input = _nodeInstance->getInput(i);
                 if (input) {
-                    input->getComponentsAvailable(time,&comps);
+                    input->getComponentsAvailable(true, time,&comps);
                 }
                 
                 
@@ -285,7 +285,7 @@ OfxClipInstance::getComponentsPresent() const
             }
         } 
         std::list<ImageComponents> userComps;
-        _nodeInstance->getNode()->getUserComponents(&userComps);
+        _nodeInstance->getNode()->getUserCreatedComponents(&userComps);
         
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
@@ -328,7 +328,7 @@ OfxClipInstance::getComponentsPresent() const
         }
         double time = effect->getCurrentTime();
         
-        effect->getComponentsAvailable(time, &compsAvailable);
+        effect->getComponentsAvailable(true, time, &compsAvailable);
     }
     
     for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
@@ -822,7 +822,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
             ///We are in analysis or the effect does not have any input
             bool processChannels[4];
             bool isAll;
-            bool hasUserComps = _nodeInstance->getNode()->getUserComponents(inputnb, processChannels, &isAll,&comp);
+            bool hasUserComps = _nodeInstance->getNode()->getSelectedLayer(inputnb, processChannels, &isAll,&comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());

@@ -209,7 +209,7 @@ public:
         return _children;
     }
     
-    const std::list<Natron::ImageComponents>& getUserComponents() const
+    const std::list<Natron::ImageComponents>& getUserCreatedComponents() const
     {
         return _userComponents;
     }

@@ -2605,7 +2605,7 @@ NodeGui::setNameItemHtml(const QString & name,
     QString extraLayerStr;
     
     std::string selectedLayer;
-    bool foundLayer = getNode()->getSelectedLayer(-1,selectedLayer);
+    bool foundLayer = getNode()->getSelectedLayerChoiceRaw(-1,selectedLayer);
     if (foundLayer) {
         if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
             selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&

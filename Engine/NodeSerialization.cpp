@@ -158,7 +158,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             }
         }
         
-        n->getUserComponents(&_userComponents);
+        n->getUserCreatedComponents(&_userComponents);
         
         _isNull = false;
     }
