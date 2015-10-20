@@ -2311,6 +2311,19 @@ AppManager::initPython(int argc,char* argv[])
     //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
+#ifdef DEBUG
+    /// print info about python lib
+    {
+        printf("Py_GetProgramName is %s\n", Py_GetProgramName());
+        printf("Py_GetPrefix is %s\n", Py_GetPrefix());
+        printf("Py_GetExecPrefix is %s\n", Py_GetPrefix());
+        printf("Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath());
+        printf("Py_GetPath is %s\n", Py_GetPath());
+        printf("Py_GetPythonHome is %s\n", Py_GetPythonHome());
+        bool ok = interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
+        assert(ok);
+    }
+#endif
     bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     if (!ok) {
