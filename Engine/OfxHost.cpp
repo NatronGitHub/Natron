@@ -649,9 +649,13 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
+        for (int i = 0; i < groups.size(); ++i) {
+            groups[i] = groups[i].trimmed();
+        }
 
         assert( p->getBinary() );
-        QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
+        QString iconPath = QString( bundlePath.c_str() ) + "/Contents/Resources/";
+        QString iconFileName;
         std::string pngIcon;
         try {
             // kOfxPropIcon is normally only defined for parameter desctriptors
@@ -664,10 +668,11 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             // no icon defined by kOfxPropIcon, use the default value
             pngIcon = openfxId + ".png";
         }
-        iconFilename.append( pngIcon.c_str() );
+        iconFileName.append(iconPath);
+        iconFileName.append( pngIcon.c_str() );
         QString groupIconFilename;
         if (groups.size() > 0) {
-            groupIconFilename = QString( p->getBinary()->getBundlePath().c_str() ) + "/Contents/Resources/";
+            groupIconFilename = iconPath;
             // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
@@ -675,7 +680,20 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
             //Use default Misc group when the plug-in doesn't belong to a group
             groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
-
+        QStringList groupIcons;
+        groupIcons << groupIconFilename;
+        for (int i = 1; i < groups.size(); ++i) {
+            QString groupIconPath = iconPath;
+            for (int j = 0; j <= i; ++j) {
+                groupIconPath += groups[j];
+                if (j < i) {
+                    groupIconPath += '/';
+                } else {
+                    groupIconPath.append(".png");
+                }
+            }
+            groupIcons << groupIconPath;
+        }
         
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
@@ -685,8 +703,8 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
                                                               pluginLabel.c_str(),
-                                                              iconFilename,
-                                                              groupIconFilename,
+                                                              iconFileName,
+                                                              groupIcons,
                                                               foundReader != contexts.end(),
                                                               foundWriter != contexts.end(),
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),

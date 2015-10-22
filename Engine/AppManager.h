@@ -299,7 +299,7 @@ public:
                                    const QString & pluginID,
                                    const QString & pluginLabel,
                                    const QString & pluginIconPath,
-                                   const QString & groupIconPath,
+                                   const QStringList & groupIconPath,
                                    bool isReader,
                                    bool isWriter,
                                    Natron::LibraryBinary* binary,
