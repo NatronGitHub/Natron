@@ -1175,7 +1175,13 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     OfxImageEffectInstance::EffectPrefs effectPrefs;
     {
         RECURSIVE_ACTION();
-        SET_CAN_SET_VALUE(false);
+        /*
+         We allow parameters values changes within the getClipPreference action because some parameters may only be updated
+         reliably in this action. For example a choice parameter tracking all available components upstream in each clip needs
+         to be refreshed in getClipPreferences since it may change due to a param change in a plug-in upstream.
+         It is then up to the plug-in to avoid infinite recursions in getClipPreference.
+         */
+        SET_CAN_SET_VALUE(true);
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QWriteLocker preferencesLocker(_preferencesLock);
