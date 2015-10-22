@@ -2632,11 +2632,15 @@ Settings::getDisconnectedArrowLength() const
 std::string
 Settings::getHostName() const
 {
-    std::string activeEntry =  _hostName->getActiveEntryText_mt_safe();
-    if (activeEntry == NATRON_CUSTOM_HOST_NAME_ENTRY) {
+    int entry_i =  _hostName->getValue();
+    std::vector<std::string> entries = _hostName->getEntries_mt_safe();
+    if (entry_i >= 0 && entry_i < (int)entries.size() && entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) {
         return _customHostName->getValue();
     } else {
-        return activeEntry;
+        if (entry_i >= 0 && entry_i < (int)_knownHostNames.size()) {
+            return _knownHostNames[entry_i];
+        }
+        return std::string();
     }
 }
 
