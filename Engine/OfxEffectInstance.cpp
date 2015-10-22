@@ -641,10 +641,12 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     s.replace( QChar('\\'),QChar('/') );
 
     QStringList out;
-    if ( pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || str.startsWith(" Sapphire ") ) {
+    if ((pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || s.startsWith(" Sapphire ")) &&
+        !s.startsWith("Sapphire/")) {
         out.push_back("Sapphire");
 
-    } else if ( pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || str.startsWith(" Monsters ") ) {
+    } else if ((pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || s.startsWith(" Monsters ")) &&
+               !s.startsWith("Monsters/")) {
         out.push_back("Monsters");
 
     } else if ((pluginIdentifier == "uk.co.thefoundry.keylight.keylight") ||

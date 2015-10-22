@@ -188,6 +188,7 @@ optimizeRectsToRender(Natron::EffectInstance* self,
 
 ImagePtr
 EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                             bool targetIsMultiPlanar,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImageComponents& targetComponents,
@@ -196,7 +197,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
                                              ImagePremultiplicationEnum outputPremult,
                                              int channelForAlpha)
 {
-    bool imageConversionNeeded = targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents() || targetDepth != inputImage->getBitDepth();
+    bool imageConversionNeeded = (!targetIsMultiPlanar && targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents()) || targetDepth != inputImage->getBitDepth();
     if (!imageConversionNeeded) {
         return inputImage;
     } else {
@@ -541,10 +542,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
-                
+                inputArgs.components = requestedComponents;
                 
                 ///Use the user selected requested components
-                ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
+               /* ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
                 if (foundCompsNeeded != neededComps.end()) {
                     inputArgs.components.clear();
                     for (std::size_t i = 0; i < foundCompsNeeded->second.size(); ++i) {
@@ -552,17 +553,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                             inputArgs.components.push_back(foundCompsNeeded->second[i]);
                         }
                     }
-                }
+                }*/
                 
                 
                 
                 
-
-                RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
+                ImageList identityPlanes;
+                RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(inputArgs, &identityPlanes);
                 if (ret == eRenderRoIRetCodeOk) {
+                    outputPlanes->insert(outputPlanes->end(), identityPlanes.begin(),identityPlanes.end());
                     ImageList convertedPlanes;
                     AppInstance* app = getApp();
-                    assert(inputArgs.components.size() == outputPlanes->size() || outputPlanes->empty());
+                    assert(args.components.size() == outputPlanes->size() || outputPlanes->empty());
                     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
                     std::list<Natron::ImageComponents>::const_iterator compIt = args.components.begin();
@@ -577,7 +579,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                             premult = eImagePremultiplicationOpaque;
                         }
                         
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs.bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
+                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, isMultiPlanar(), *it, args.roi, *compIt, inputArgs.bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
                         assert(tmp);
                         convertedPlanes.push_back(tmp);
                     }
@@ -742,32 +744,32 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             assert(components);
             
-            int nLookups = draftModeSupported && frameRenderArgs.draftMode ? 2 : 1;
-            
-            for (int n = 0; n < nLookups; ++n) {
-                getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? nonDraftKey : key, renderMappedMipMapLevel,
-                                                    renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
-                                                    &rod,
-                                                    args.bitdepth, *it,
-                                                    outputDepth,
-                                                    *components,
-                                                    args.inputImagesList,
-                                                    frameRenderArgs.stats,
-                                                    &plane.fullscaleImage);
-                if (plane.fullscaleImage) {
-                    break;
+            //For writers, we always want to call the render action when doing a sequential render, but we still want to use the cache for nodes upstream
+            bool doCacheLookup = !isWriter() || !frameRenderArgs.isSequentialRender;
+            if (doCacheLookup) {
+     
+                int nLookups = draftModeSupported && frameRenderArgs.draftMode ? 2 : 1;
+                
+                for (int n = 0; n < nLookups; ++n) {
+                    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? nonDraftKey : key, renderMappedMipMapLevel,
+                                                        renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
+                                                        &rod,
+                                                        args.bitdepth, *it,
+                                                        outputDepth,
+                                                        *components,
+                                                        args.inputImagesList,
+                                                        frameRenderArgs.stats,
+                                                        &plane.fullscaleImage);
+                    if (plane.fullscaleImage) {
+                        break;
+                    }
                 }
             }
-            
             
             if (byPassCache) {
                 if (plane.fullscaleImage) {
                     appPTR->removeFromNodeCache( key.getHash() );
                     plane.fullscaleImage.reset();
-                }
-                //For writers, we always want to call the render action, but we still want to use the cache for nodes upstream
-                if ( isWriter() ) {
-                    byPassCache = false;
                 }
             }
             if (plane.fullscaleImage) {
@@ -1506,7 +1508,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
 
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
-
+    //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
         
         //If we have worked on a local swaped image, swap it in the cache
@@ -1540,7 +1542,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         
         ///The image might need to be converted to fit the original requested format
-        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult, -1);
+        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), false, it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult, -1);
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);
@@ -1551,6 +1553,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
     ///// Termination, update last rendered planes
+#ifdef DEBUG
+    if (outputPlanes->size() != args.components.size()) {
+        qDebug() << "Requested:";
+        for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it!=args.components.end(); ++it) {
+            qDebug() << it->getLayerName().c_str();
+        }
+        qDebug() << "But rendered:";
+        for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
+            if (*it) {
+                qDebug() << (*it)->getComponents().getLayerName().c_str();
+            }
+        }
+    }
+#endif
+    assert(outputPlanes->size() == args.components.size());
     assert( !outputPlanes->empty() );
 
     return eRenderRoIRetCodeOk;
