@@ -1354,7 +1354,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     assert(holder);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
-    isEffect->getNode()->declarePythonFields();
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
 }
 
 KnobGroup*

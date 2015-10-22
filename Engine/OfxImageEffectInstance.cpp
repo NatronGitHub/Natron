@@ -606,6 +606,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     
     OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
     assert(ptk);
+    if (!ptk) {
+        throw std::logic_error("");
+    }
     ptk->connectDynamicProperties();
     
     OfxPluginEntryPoint* interact =
