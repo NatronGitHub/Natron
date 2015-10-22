@@ -2552,16 +2552,17 @@ Node::initializeKnobs(int renderScaleSupportPref)
         
         if (!isBd) {
             
-            bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+            bool disableNatronKnobs = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get()) || dynamic_cast<GroupInput*>(_imp->liveInstance.get()) ||
+            dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
             
             
-            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !isReaderOrWriterOrTrackerOrGroup && !isDiskCache;
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
             
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<KnobPage> mainPage;
             const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
             
-            if (!isReaderOrWriterOrTrackerOrGroup) {
+            if (!disableNatronKnobs) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
                     if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
@@ -2768,7 +2769,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             } // for (int i = 0; i < inputsCount; ++i) {
     
             //Create the host mix if needed
-            if (!isReaderOrWriterOrTrackerOrGroup && _imp->liveInstance->isHostMixingEnabled()) {
+            if (!disableNatronKnobs && _imp->liveInstance->isHostMixingEnabled()) {
                 boost::shared_ptr<KnobDouble> mixKnob = Natron::createKnob<KnobDouble>(_imp->liveInstance.get(), "Mix", 1, false);
                 mixKnob->setName("hostMix");
                 mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
