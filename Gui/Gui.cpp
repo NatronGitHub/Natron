@@ -25,6 +25,7 @@
 #include "Gui.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 
@@ -258,6 +259,9 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     } else {
         graph = _imp->_nodeGraphArea;
     }
+    if (!graph) {
+        throw std::logic_error("");
+    }
     boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,pushUndoRedoCommand);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
@@ -320,6 +324,9 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
         graph = getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     graph->setLastSelectedViewer(tab);
 }
 

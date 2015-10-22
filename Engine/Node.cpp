@@ -921,7 +921,7 @@ Node::getPaintStrokeRoD_duringPainting() const
 }
 
 void
-Node::getPaintStrokeRoD(int time,RectD* bbox) const
+Node::getPaintStrokeRoD(int time, RectD* bbox) const
 {
     bool duringPaintStroke = _imp->liveInstance->isDuringPaintStrokeCreationThreadLocal();
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
@@ -930,6 +930,9 @@ Node::getPaintStrokeRoD(int time,RectD* bbox) const
     } else {
         boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
+        if (!stroke) {
+            throw std::logic_error("");
+        }
         *bbox = stroke->getBoundingBox(time);
     }
     
@@ -959,7 +962,9 @@ Node::clearLastPaintStrokeRoD()
 }
 
 void
-Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes,int* strokeIndex) const
+Node::getLastPaintStrokePoints(int time,
+                               std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
+                               int* strokeIndex) const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (_imp->duringPaintStrokeCreation) {
@@ -969,6 +974,9 @@ Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Po
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
+        if (!stroke) {
+            throw std::logic_error("");
+        }
         stroke->evaluateStroke(0, time, strokes);
         *strokeIndex = 0;
     }
@@ -1009,6 +1017,9 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
     boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     assert(stroke);
+    if (!stroke) {
+        throw std::logic_error("");
+    }
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
     _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);

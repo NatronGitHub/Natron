@@ -455,6 +455,9 @@ Gui::removeViewerTab(ViewerTab* tab,
         graph = getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
 
     ViewerTab* lastSelectedViewer = graph->getLastSelectedViewer();
 
@@ -1177,6 +1180,10 @@ Gui::createNewViewer()
     NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
 
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
+
     ignore_result( _imp->_appInstance->createNode( CreateNodeArgs( PLUGINID_NATRON_VIEWER,
                                                                    "",
                                                                    -1, -1,

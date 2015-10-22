@@ -250,6 +250,9 @@ GuiApp::getSelectedNodes(Group* group) const
                 if (graph_i) {
                     graph = dynamic_cast<NodeGraph*>(graph_i);
                     assert(graph);
+                    if (!graph) {
+                        throw std::logic_error("");
+                    }
                 }
             }
         }
@@ -258,13 +261,14 @@ GuiApp::getSelectedNodes(Group* group) const
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
-    if (graph) {
-        const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            NodePtr node = (*it)->getNode();
-            if (node->isActivated() && !node->getParentMultiInstance()) {
-                ret.push_back(new Effect(node));
-            }
+    if (!graph) {
+        throw std::logic_error("");
+    }
+    const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodePtr node = (*it)->getNode();
+        if (node->isActivated() && !node->getParentMultiInstance()) {
+            ret.push_back(new Effect(node));
         }
     }
     return ret;
@@ -294,6 +298,9 @@ GuiApp::selectNode(Effect* effect, bool clearPreviousSelection)
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     graph->selectNode(nodeUi, !clearPreviousSelection);
 }
 
@@ -333,6 +340,9 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
             graph = _app->getGui()->getNodeGraph();
         }
         assert(graph);
+        if (!graph) {
+            throw std::logic_error("");
+        }
         graph->setSelection(selection);
     }
     
@@ -359,6 +369,9 @@ GuiApp::selectAllNodes(Group* group)
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     graph->selectAllNodes(false);
 }
 
@@ -386,6 +399,9 @@ GuiApp::deselectNode(Effect* effect)
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     graph->deselectNode(nodeUi);
 }
 
@@ -411,6 +427,9 @@ GuiApp::clearSelection(Group* group)
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     graph->clearSelection();
     
 }

@@ -409,7 +409,10 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
         }
         stroke = &_imp->strokes.back();
         assert(stroke);
-        
+        if (!stroke) {
+            throw std::logic_error("");
+        }
+
         assert(stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() &&
                stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount());
         int nk = stroke->xCurve->getKeyFramesCount();
