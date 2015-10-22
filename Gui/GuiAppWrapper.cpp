@@ -24,6 +24,8 @@
 
 #include "GuiAppWrapper.h"
 
+#include <stdexcept>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
