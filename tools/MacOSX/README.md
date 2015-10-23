@@ -150,7 +150,7 @@ env MKJOBS=4 ./snapshot.sh
 * To do a single build, modify TAGS in the begining of common.sh and then call the following:
 ```
 cd Natron/tools/MacOSX
-env CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 ./build.sh
+env BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=4 UPLOAD=1 ./build.sh
 ```
 
 The server will now auto build from the workshop branch on changes.

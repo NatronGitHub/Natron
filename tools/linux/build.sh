@@ -41,7 +41,7 @@
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL)
 
-# USAGE example: NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
+# USAGE example: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=GPL BUILD_CONFIG=SNAPSHOT build2.sh workshop<branch> 8<noThreads>
 
 source `pwd`/common.sh || exit 1
 
