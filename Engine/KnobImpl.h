@@ -344,9 +344,15 @@ template <>
 std::string
 Knob<std::string>::pyObjectToType(PyObject* o) const
 {
+#ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
         return Natron::PY3String_asString(o);
     }
+#else
+    if (PyString_Check(o)) {
+        return std::string(PyString_AsString(o));
+    }
+#endif
     
     int index = 0;
     if (PyFloat_Check(o)) {
