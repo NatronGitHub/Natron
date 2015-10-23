@@ -3525,47 +3525,50 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         }
 
 
-        std::list<ImageComponents> userComps;
-        node->getUserCreatedComponents(&userComps);
-        ///Foreach user component, add it as an available component, but use this node only if it is also
-        ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
-            bool found = false;
-            for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
-                 it2 != foundOutput->second.end(); ++it2) {
-                if (*it2 == *it) {
-                    found = true;
-                    break;
-                }
-            }
-
-
-            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
-
-            if ( it->isColorPlane() ) {
-                ComponentsAvailableMap::iterator colorMatch = comps->end();
-
-                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                    if (it2->first == *it) {
-                        alreadyExisting = it2;
+        ///If the user has selected "All", do not add created components as they will not be available
+        if (!processAll) {
+            std::list<ImageComponents> userComps;
+            node->getUserCreatedComponents(&userComps);
+            ///Foreach user component, add it as an available component, but use this node only if it is also
+            ///in the "needed components" list
+            for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
+                bool found = false;
+                for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
+                     it2 != foundOutput->second.end(); ++it2) {
+                    if (*it2 == *it) {
+                        found = true;
                         break;
-                    } else if ( it2->first.isColorPlane() ) {
-                        colorMatch = it2;
                     }
                 }
-
-                if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
-                    comps->erase(colorMatch);
+                
+                
+                ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+                
+                if ( it->isColorPlane() ) {
+                    ComponentsAvailableMap::iterator colorMatch = comps->end();
+                    
+                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                        if (it2->first == *it) {
+                            alreadyExisting = it2;
+                            break;
+                        } else if ( it2->first.isColorPlane() ) {
+                            colorMatch = it2;
+                        }
+                    }
+                    
+                    if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
+                        comps->erase(colorMatch);
+                    }
+                } else {
+                    alreadyExisting = comps->find(*it);
                 }
-            } else {
-                alreadyExisting = comps->find(*it);
-            }
-
-            //If the component already exists from above in the tree, do not add it
-            if ( alreadyExisting == comps->end() ) {
-                comps->insert( std::make_pair( *it, found ? node : NodePtr() ) );
-            } else {
-                alreadyExisting->second = node;
+                
+                //If the component already exists from above in the tree, do not add it
+                if ( alreadyExisting == comps->end() ) {
+                    comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
+                } else {
+                    alreadyExisting->second = node;
+                }
             }
         }
     }

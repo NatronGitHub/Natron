@@ -542,18 +542,38 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // Make sure we do not hold the RoD for this effect
                 inputArgs.preComputedRoD.clear();
-                inputArgs.components = requestedComponents;
                 
-                ///Use the user selected requested components
-               /* ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
-                if (foundCompsNeeded != neededComps.end()) {
-                    inputArgs.components.clear();
-                    for (std::size_t i = 0; i < foundCompsNeeded->second.size(); ++i) {
-                        if (foundCompsNeeded->second[i].getNumComponents() != 0) {
-                            inputArgs.components.push_back(foundCompsNeeded->second[i]);
+                
+                /*
+                 When the effect is identity, we can make 2 different requests upstream:
+                 A) If they do not exist upstream, then this will result in a black image
+                 B) If instead we request what this node (the identity node) has set to the corresponding layer
+                 selector for the identity input, we may end-up with something different.
+                 
+                 So we have to use option B), but for some cases it requires behaviour A), e.g:
+                 1 - A Dot node does not have any channel selector and is expected to be a pass-through for layers.
+                 2 - A node's Output Layer choice set on All is expected to act as a Dot (because it is identity).
+                  This second case is already covered above in the code when choice is All, so we only have to worry
+                 about case 1
+                 */
+                
+                bool fetchUserSelectedComponentsUpstream = inputEffectIdentity->getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
+                
+                if (fetchUserSelectedComponentsUpstream) {
+                    /// This corresponds to choice B)
+                    ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
+                    if (foundCompsNeeded != neededComps.end()) {
+                        inputArgs.components.clear();
+                        for (std::size_t i = 0; i < foundCompsNeeded->second.size(); ++i) {
+                            if (foundCompsNeeded->second[i].getNumComponents() != 0) {
+                                inputArgs.components.push_back(foundCompsNeeded->second[i]);
+                            }
                         }
                     }
-                }*/
+                } else {
+                    /// This corresponds to choice A)
+                    inputArgs.components = requestedComponents;
+                }
                 
                 
                 

@@ -70,6 +70,11 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
     assert(_effect);
 }
 
+OfxClipInstance::~OfxClipInstance()
+{
+    
+}
+
 const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {

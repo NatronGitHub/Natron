@@ -76,10 +76,7 @@ public:
                     ,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
-    virtual ~OfxClipInstance()
-    {
-    }
-
+    virtual ~OfxClipInstance();
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
