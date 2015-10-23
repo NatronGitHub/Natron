@@ -118,14 +118,8 @@
 #elif defined(NATRON_CONFIG_STABLE)
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_STABLE
 #else
-<<<<<<< HEAD
-// Only modify the following line for actual releases, and revert it to its original state afterwards
-//#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
-#define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_RELEASE_CANDIDATE
-=======
 //Fallback on "Devel" builds (most likely built from command line without passing to qmake the appropriate defines)
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
->>>>>>> workshop
 #endif
 
 ///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
