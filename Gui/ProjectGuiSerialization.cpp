@@ -118,11 +118,11 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     }
 
     ///save opened panels by order
-    QVBoxLayout* propLayout = projectGui->getGui()->getPropertiesLayout();
-    for (int i = 0; i < propLayout->count(); ++i) {
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>( propLayout->itemAt(i)->widget() );
-        if ( isPanel && isPanel->isVisible() ) {
-            KnobHolder* holder = isPanel->getHolder();
+    
+    std::list<DockablePanel*> panels = projectGui->getGui()->getVisiblePanels_mt_safe();
+    for (std::list<DockablePanel*>::iterator it = panels.begin(); it!=panels.end(); ++it) {
+        if ((*it)->isVisible() ) {
+            KnobHolder* holder = (*it)->getHolder();
             assert(holder);
             
             Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);

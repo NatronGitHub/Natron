@@ -70,6 +70,11 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
     assert(_effect);
 }
 
+OfxClipInstance::~OfxClipInstance()
+{
+    
+}
+
 const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {
@@ -253,7 +258,7 @@ OfxClipInstance::getComponentsPresent() const
                 EffectInstance::ComponentsAvailableMap comps;
                 EffectInstance* input = _nodeInstance->getInput(i);
                 if (input) {
-                    input->getComponentsAvailable(time,&comps);
+                    input->getComponentsAvailable(true, time,&comps);
                 }
                 
                 
@@ -285,7 +290,7 @@ OfxClipInstance::getComponentsPresent() const
             }
         } 
         std::list<ImageComponents> userComps;
-        _nodeInstance->getNode()->getUserComponents(&userComps);
+        _nodeInstance->getNode()->getUserCreatedComponents(&userComps);
         
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
@@ -328,7 +333,7 @@ OfxClipInstance::getComponentsPresent() const
         }
         double time = effect->getCurrentTime();
         
-        effect->getComponentsAvailable(time, &compsAvailable);
+        effect->getComponentsAvailable(true, time, &compsAvailable);
     }
     
     for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
@@ -822,7 +827,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
             ///We are in analysis or the effect does not have any input
             bool processChannels[4];
             bool isAll;
-            bool hasUserComps = _nodeInstance->getNode()->getUserComponents(inputnb, processChannels, &isAll,&comp);
+            bool hasUserComps = _nodeInstance->getNode()->getSelectedLayer(inputnb, processChannels, &isAll,&comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
@@ -1024,7 +1029,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
      ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
      appPTR->debugImage(image.get(), renderWindow, filename);*/
 
-    return new OfxImage(image,true,renderWindow,transform, components, nComps, *this);
+    return new OfxImage(NULL, image,true,renderWindow,transform, components, nComps, *this);
 }
 
 
@@ -1127,7 +1132,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
     }
     
     //The output clip doesn't have any transform matrix
-    OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, *this);
+    OfxImage* ret =  new OfxImage(&tls->imagesBeingRendered,outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, *this);
     tls->imagesBeingRendered.push_back(ret);
     return ret;
 }
@@ -1240,7 +1245,8 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
 
 
 
-OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+OfxImage::OfxImage(std::list<OfxImage*>* tlsImages,
+                   boost::shared_ptr<Natron::Image> internalImage,
                    bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -1250,6 +1256,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
 : OFX::Host::ImageEffect::Image(clip)
 , _floatImage(internalImage)
 , _imgAccess()
+, tlsImages(tlsImages)
 {
     
     assert(internalImage);
@@ -1345,6 +1352,12 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
 
 OfxImage::~OfxImage()
 {
+    if (tlsImages) {
+        std::list<OfxImage*>::iterator found = std::find(tlsImages->begin(), tlsImages->end(), this);
+        if (found != tlsImages->end()) {
+            tlsImages->erase(found);
+        }
+    }
 }
 
 int

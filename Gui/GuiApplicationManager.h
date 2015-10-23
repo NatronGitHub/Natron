@@ -96,7 +96,7 @@ public:
     const std::list<boost::shared_ptr<PluginGroupNode> > & getTopLevelPluginsToolButtons() const;
     boost::shared_ptr<PluginGroupNode>  findPluginToolButtonOrCreate(const QStringList & grouping,
                                                                      const QString & name,
-                                                                     const QString& groupIconPath,
+                                                                     const QStringList& groupIconPath,
                                                                      const QString & iconPath,
                                                                      int major,
                                                                      int minor,

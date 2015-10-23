@@ -1450,76 +1450,88 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
             for (U32 i = 0; i < knobs.size(); ++i) {
                 if ( knobs[i]->isInstanceSpecific() ) {
                     if (knobs[i] == knob) {
-                        colIndex += dim;
-                        TableItem* item = _imp->model->item(rowIndex, colIndex);
-                        if (!item) {
-                            continue;
+                        for (int k = 0; k < knob->getDimension(); ++k) {
+                            if (k == dim || dim == 1) {
+                                if (dim != -1) {
+                                    colIndex += dim;
+                                } else {
+                                    ++colIndex;
+                                }
+                                TableItem* item = _imp->model->item(rowIndex, colIndex);
+                                if (!item) {
+                                    continue;
+                                }
+                                QVariant data;
+                                KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
+                                KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
+                                KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
+                                KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
+                                KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
+                                if (isInt) {
+                                    data.setValue<int>( isInt->getValue(k) );
+                                } else if (isBool) {
+                                    data.setValue<bool>( isBool->getValue(k) );
+                                } else if (isDouble) {
+                                    data.setValue<double>( isDouble->getValue(k) );
+                                } else if (isColor) {
+                                    data.setValue<double>( isColor->getValue(k) );
+                                } else if (isString) {
+                                    data.setValue<QString>( isString->getValue(k).c_str() );
+                                }
+                                _imp->executingKnobValueChanged = true;
+                                item->setData(Qt::DisplayRole,data);
+                                _imp->executingKnobValueChanged = false;
+                            }
                         }
-                        QVariant data;
-                        KnobInt* isInt = dynamic_cast<KnobInt*>( knobs[i].get() );
-                        KnobBool* isBool = dynamic_cast<KnobBool*>( knobs[i].get() );
-                        KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knobs[i].get() );
-                        KnobColor* isColor = dynamic_cast<KnobColor*>( knobs[i].get() );
-                        KnobString* isString = dynamic_cast<KnobString*>( knobs[i].get() );
-                        if (isInt) {
-                            data.setValue<int>( isInt->getValue(dim) );
-                        } else if (isBool) {
-                            data.setValue<bool>( isBool->getValue(dim) );
-                        } else if (isDouble) {
-                            data.setValue<double>( isDouble->getValue(dim) );
-                        } else if (isColor) {
-                            data.setValue<double>( isColor->getValue(dim) );
-                        } else if (isString) {
-                            data.setValue<QString>( isString->getValue(dim).c_str() );
-                        }
-                        _imp->executingKnobValueChanged = true;
-                        item->setData(Qt::DisplayRole,data);
-                        _imp->executingKnobValueChanged = false;
-
                         return;
                     }
                     colIndex += knobs[i]->getDimension();
                 } else if ( (knobs[i] == knob) && !_imp->knobValueRecursion ) {
                     ///If the knob is slaved to a knob used only for GUI, unslave it before updating value and reslave back
-                    std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dim);
-                    if (master.second) {
-                        ++_imp->knobValueRecursion;
-                        knob->unSlave(dim, false);
-                        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-                        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
-                        if (isInt) {
-                            Knob<int>* masterKnob = dynamic_cast<Knob<int>*>( master.second.get() );
-                            assert(masterKnob);
-                            if (masterKnob) {
-                                masterKnob->clone( knob.get() );
-                            }
-                        } else if (isBool) {
-                            Knob<bool>* masterKnob = dynamic_cast<Knob<bool>*>( master.second.get() );
-                            assert(masterKnob);
-                            if (masterKnob) {
-                                masterKnob->clone( knob.get() );
-                            }
-                        } else if (isDouble) {
-                            Knob<double>* masterKnob = dynamic_cast<Knob<double>*>( master.second.get() );
-                            assert(masterKnob);
-                            if (masterKnob) {
-                                masterKnob->clone( knob.get() );
-                            }
-                        } else if (isString) {
-                            Knob<std::string>* masterKnob = dynamic_cast<Knob<std::string>*>( master.second.get() );
-                            assert(masterKnob);
-                            if (masterKnob) {
-                                masterKnob->clone( knob.get() );
+                    
+                    for (int k = 0; k < knob->getDimension(); ++k) {
+                        if (k == dim || dim == 1) {
+                            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(k);
+                            if (master.second) {
+                                ++_imp->knobValueRecursion;
+                                knob->unSlave(k, false);
+                                Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+                                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+                                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+                                if (isInt) {
+                                    Knob<int>* masterKnob = dynamic_cast<Knob<int>*>( master.second.get() );
+                                    assert(masterKnob);
+                                    if (masterKnob) {
+                                        masterKnob->clone( knob.get() );
+                                    }
+                                } else if (isBool) {
+                                    Knob<bool>* masterKnob = dynamic_cast<Knob<bool>*>( master.second.get() );
+                                    assert(masterKnob);
+                                    if (masterKnob) {
+                                        masterKnob->clone( knob.get() );
+                                    }
+                                } else if (isDouble) {
+                                    Knob<double>* masterKnob = dynamic_cast<Knob<double>*>( master.second.get() );
+                                    assert(masterKnob);
+                                    if (masterKnob) {
+                                        masterKnob->clone( knob.get() );
+                                    }
+                                } else if (isString) {
+                                    Knob<std::string>* masterKnob = dynamic_cast<Knob<std::string>*>( master.second.get() );
+                                    assert(masterKnob);
+                                    if (masterKnob) {
+                                        masterKnob->clone( knob.get() );
+                                    }
+                                }
+                                knob->slaveTo(k, master.second, master.first,true);
+                                --_imp->knobValueRecursion;
                             }
                         }
-                        knob->slaveTo(dim, master.second, master.first,true);
-                        --_imp->knobValueRecursion;
                     }
                 }
             }
-
+            
             return;
         }
     }

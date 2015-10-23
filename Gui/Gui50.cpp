@@ -273,38 +273,6 @@ Gui::progressUpdate(KnobHolder* effect,
     return true;
 }
 
-void
-Gui::addVisibleDockablePanel(DockablePanel* panel)
-{
-    
-    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-    putSettingsPanelFirst(panel);
-    if ( it == _imp->openedPanels.end() ) {
-        assert(panel);
-        int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-        if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
-            std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-            (*it)->closePanel();
-        }
-        _imp->openedPanels.push_back(panel);
-    }
-}
-
-void
-Gui::removeVisibleDockablePanel(DockablePanel* panel)
-{
-    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-
-    if ( it != _imp->openedPanels.end() ) {
-        _imp->openedPanels.erase(it);
-    }
-}
-
-const std::list<DockablePanel*>&
-Gui::getVisiblePanels() const
-{
-    return _imp->openedPanels;
-}
 
 void
 Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
@@ -314,7 +282,7 @@ Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
         return;
     }
     while ( (int)_imp->openedPanels.size() > maxPanels ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+        std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin();
         (*it)->closePanel();
     }
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
@@ -626,11 +594,15 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & nodes) const
 {
-    int layoutItemsCount = _imp->_layoutPropertiesBin->count();
-
-    for (int i = 0; i < layoutItemsCount; ++i) {
-        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
-        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>( item->widget() );
+    std::list<DockablePanel*> panels;
+    {
+        QMutexLocker k(&_imp->openedPanelsMutex);
+        panels = _imp->openedPanels;
+    }
+    
+    for (std::list<DockablePanel*>::const_iterator it = panels.begin();
+         it != panels.end(); ++it) {
+        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!panel) {
             continue;
         }

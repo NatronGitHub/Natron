@@ -168,7 +168,7 @@ class Plugin
     QString _id;
     QString _label;
     QString _iconFilePath;
-    QString _groupIconFilePath;
+    QStringList _groupIconFilePath;
     QStringList _grouping;
     QString _labelWithoutSuffix;
     QMutex* _lock;
@@ -221,7 +221,7 @@ public:
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
-           const QString & groupIconFilePath,
+           const QStringList & groupIconFilePath,
            const QStringList & grouping,
            QMutex* lock,
            int majorVersion,
@@ -292,7 +292,7 @@ public:
     
     void setIconFilePath(const QString& filePath);
 
-    const QString & getGroupIconFilePath() const;
+    const QStringList & getGroupIconFilePath() const;
 
     const QStringList & getGrouping() const;
     

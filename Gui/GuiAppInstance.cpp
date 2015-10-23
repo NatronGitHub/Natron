@@ -416,6 +416,9 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
     } else {
         graph = _imp->_gui->getNodeGraph();
     }
+    if (!graph) {
+        throw std::logic_error("");
+    }
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
@@ -1090,6 +1093,9 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
             graph = _imp->_gui->getNodeGraph();
         }
         assert(graph);
+        if (!graph) {
+            throw std::logic_error("");
+        }
         std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
         boost::shared_ptr<NodeGui> selectedNode;
         if (!selectedNodes.empty()) {
@@ -1199,4 +1205,14 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     } else {
         appPTR->handleImageFileOpenRequest(filename);
     }
+}
+
+void*
+GuiAppInstance::getOfxHostOSHandle() const
+{
+    if (!_imp->_gui) {
+        return (void*)0;
+    }
+    WId ret = _imp->_gui->winId();
+    return (void*)ret;
 }

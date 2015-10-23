@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 140920 2015-10-05 17:03:44Z michaelld@macports.org $
+# $Id: Portfile 141249 2015-10-13 14:20:12Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -55,12 +55,12 @@ if {${subport} eq ${name}} {
 } else {
 
     # devel
-    version         20151004
-    set dist_branch 3.3
-    set dist_date   20151002
-    set dist_hash   g5106b
-    checksums       rmd160 6ae659d11853619ba0e0059332983c55b06c8e79 \
-                    sha256 a445e75bc248e0654b186ecf298d3f0b46e4bcda202fa4b5d506c57868a7b0bf
+    version         20151012
+    set dist_branch 3.4
+    set dist_date   20151010
+    set dist_hash   gf4172
+    checksums       rmd160 1dcfb79ca59ea048f213e94c4c5f0b4f189d357d \
+                    sha256 b9be2905c6706a49235d76f5789efc0ec4ba48862d99ff1602da34f6cb9b813b
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}

@@ -184,7 +184,8 @@ public:
     
     struct RenderWork {
         Natron::OutputEffectInstance* writer;
-        int firstFrame,lastFrame;
+        int firstFrame;
+        int lastFrame;
     };
     
     virtual void load(const CLArgs& cl);
@@ -408,6 +409,8 @@ public:
     
     ///Opens a new window
     virtual AppInstance* newProject();
+    
+    virtual void* getOfxHostOSHandle() const { return NULL; }
     
 public Q_SLOTS:
     

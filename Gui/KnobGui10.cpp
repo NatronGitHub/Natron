@@ -39,6 +39,9 @@ KnobGui::onCreateMasterOnGroupActionTriggered()
     KnobHolder* holder = getKnob()->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
+    if (!isEffect) {
+        throw std::logic_error("");
+    }
     boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     assert(isCollecGroup);

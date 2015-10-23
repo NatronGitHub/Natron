@@ -64,6 +64,8 @@ public:
     virtual ~OfxHost();
 
     void setProperties();
+    
+    void setOfxHostOSHandle(void* handle);
 
     /// Create a new instance of an image effect plug-in.
     ///
@@ -145,7 +147,6 @@ public:
                                                 bool disableRenderScaleSupport,
                                                                  bool *hasUsedFileDialog);
 
-    void addPathToLoadOFXPlugins(const std::string path);
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/

@@ -2464,7 +2464,7 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM(r) + ", " + NUM(g) + ", " + NUM(b) +  ")");
         
         std::list<Natron::ImageComponents> userComps;
-        (*it)->getUserComponents(&userComps);
+        (*it)->getUserCreatedComponents(&userComps);
         for (std::list<Natron::ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->getComponentsNames();

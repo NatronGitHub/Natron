@@ -317,8 +317,6 @@ public:
     static Natron::ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(Natron::ContextEnum ctx);
     
-    std::string getOfxComponentsFromUserChannels(OfxClipInstance* clip, int inputNb) const;
-
     static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason);
 
     int getClipInputNumber(const OfxClipInstance* clip) const;

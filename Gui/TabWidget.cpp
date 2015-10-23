@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QThread>
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
@@ -706,6 +707,9 @@ TabWidget::addNewViewer()
     NodeGraph* lastFocusedGraph = _imp->gui->getLastSelectedGraph();
     NodeGraph* graph = lastFocusedGraph ? lastFocusedGraph : _imp->gui->getNodeGraph();
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
     _imp->gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                      "",
                                                      -1,-1,

@@ -454,6 +454,10 @@ void
 OfxEffectInstance::tryInitializeOverlayInteracts()
 {
     assert(_context != eContextNone);
+    if (_overlayInteract) {
+        // already created
+        return;
+    }
     /*create overlay instance if any*/
     OfxPluginEntryPoint *overlayEntryPoint = _effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
@@ -637,10 +641,12 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     s.replace( QChar('\\'),QChar('/') );
 
     QStringList out;
-    if ( pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || str.startsWith(" Sapphire ") ) {
+    if ((pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || s.startsWith(" Sapphire ")) &&
+        !s.startsWith("Sapphire/")) {
         out.push_back("Sapphire");
 
-    } else if ( pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || str.startsWith(" Monsters ") ) {
+    } else if ((pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || s.startsWith(" Monsters ")) &&
+               !s.startsWith("Monsters/")) {
         out.push_back("Monsters");
 
     } else if ((pluginIdentifier == "uk.co.thefoundry.keylight.keylight") ||
@@ -1013,44 +1019,6 @@ OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
     return std::string();
 }
 
-std::string
-OfxEffectInstance::getOfxComponentsFromUserChannels(OfxClipInstance* clip, int inputNb) const
-{
-    assert(!isMultiPlanar());
-    
-    bool processChannels[4];
-    Natron::ImageComponents layer;
-    bool isAll;
-    if (getNode()->getUserComponents(inputNb, processChannels,&isAll, &layer) && !isAll) {
-        if (layer.isColorPlane()) {
-            if (layer.getComponentsGlobalName() == kNatronRGBAComponentsName) {
-                return clip->findSupportedComp(kOfxImageComponentRGBA);
-            } else if (layer.getComponentsGlobalName() == kNatronAlphaComponentsName) {
-                return clip->findSupportedComp(kOfxImageComponentAlpha);
-            } else {
-                return clip->findSupportedComp(kOfxImageComponentRGB);
-            }
-        } else if (layer == ImageComponents::getForwardMotionComponents() || layer == ImageComponents::getBackwardMotionComponents()) {
-            return clip->findSupportedComp(kFnOfxImageComponentMotionVectors);
-        } else if (layer == ImageComponents::getDisparityLeftComponents() || layer == ImageComponents::getDisparityRightComponents()) {
-            return clip->findSupportedComp(kFnOfxImageComponentStereoDisparity);
-        } else {
-            //Custom comp, pass-it for a color plane
-            int nComp = layer.getNumComponents();
-            if (nComp == 4 && processChannels[3]) {
-                return clip->findSupportedComp(kOfxImageComponentRGBA);
-            } else if (nComp == 3) {
-                return clip->findSupportedComp(kOfxImageComponentRGB);
-            } else if (nComp == 2) {
-                return clip->findSupportedComp(kNatronOfxImageComponentXY);
-            } else if (nComp == 1) {
-                return clip->findSupportedComp(kOfxImageComponentAlpha);
-            }
-        }
-    }
-    return std::string();
-}
-
 /**
  * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
  * by the plugin so that we can minimize the amount of Natron::Image::convertToFormat calls.
@@ -1108,14 +1076,7 @@ clipPrefsProxy(OfxEffectInstance* self,
         foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
         outputModified = true;
     }
-    
-//    if (!self->isMultiPlanar()) {
-//        std::string userComp = self->getOfxComponentsFromUserChannels(outputClip,-1);
-//        if (!userComp.empty()) {
-//            foundOutputPrefs->second.components = userComp;
-//            outputModified = true;
-//        }
-//    }
+
     
     ///Adjust output premultiplication if needed
     if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
@@ -1140,15 +1101,7 @@ clipPrefsProxy(OfxEffectInstance* self,
         std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
         assert(foundClipPrefs != clipPrefs.end());
         
-        ///Set the clip to have the same components as the output components if it is supported
-        /*if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
-            ///we only take into account non mask clips for the most components
-            if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
-                foundClipPrefs->second.components = foundOutputPrefs->second.components;
-                hasChanged = true;
-            }
-        }*/
-        
+ 
         if (instance) {
             
             
@@ -1156,17 +1109,7 @@ clipPrefsProxy(OfxEffectInstance* self,
             
             ///This is the output clip of the input node
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-            
-//            if (!self->isMultiPlanar()) {
-//                std::string userComp = self->getOfxComponentsFromUserChannels(clip, i);
-//                if (!userComp.empty()) {
-//                    foundClipPrefs->second.components = userComp;
-//                    hasChanged = true;
-//                }
-//            } else {
-            
-         //   }
-            
+
             ///Try to remap the clip's bitdepth to be the same as
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
             Natron::ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
@@ -1232,7 +1175,13 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     OfxImageEffectInstance::EffectPrefs effectPrefs;
     {
         RECURSIVE_ACTION();
-        SET_CAN_SET_VALUE(false);
+        /*
+         We allow parameters values changes within the getClipPreference action because some parameters may only be updated
+         reliably in this action. For example a choice parameter tracking all available components upstream in each clip needs
+         to be refreshed in getClipPreferences since it may change due to a param change in a plug-in upstream.
+         It is then up to the plug-in to avoid infinite recursions in getClipPreference.
+         */
+        SET_CAN_SET_VALUE(true);
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QWriteLocker preferencesLocker(_preferencesLock);

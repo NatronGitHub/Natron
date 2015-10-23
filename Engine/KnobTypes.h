@@ -428,6 +428,10 @@ public:
     /*Must be called right away after the constructor.*/
     void populateChoices( const std::vector<std::string> &entries, const std::vector<std::string> &entriesHelp = std::vector<std::string>() );
     
+    void resetChoices();
+    
+    void appendChoice(const std::string& entry, const std::string& help = std::string());
+    
     std::vector<std::string> getEntries_mt_safe() const;
     const std::string& getEntry(int v) const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
@@ -475,6 +479,8 @@ public:
 Q_SIGNALS:
 
     void populated();
+    void entriesReset();
+    void entryAppended(QString,QString);
 
 private:
 

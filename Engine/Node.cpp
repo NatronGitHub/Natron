@@ -330,7 +330,7 @@ struct Node::Implementation
     
     void onMaskSelectorChanged(int inputNb,const MaskSelector& selector);
     
-    bool getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const;
+    bool getSelectedLayerInternal(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const;
     
     
     Node* _publicInterface;
@@ -921,7 +921,7 @@ Node::getPaintStrokeRoD_duringPainting() const
 }
 
 void
-Node::getPaintStrokeRoD(int time,RectD* bbox) const
+Node::getPaintStrokeRoD(int time, RectD* bbox) const
 {
     bool duringPaintStroke = _imp->liveInstance->isDuringPaintStrokeCreationThreadLocal();
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
@@ -930,6 +930,9 @@ Node::getPaintStrokeRoD(int time,RectD* bbox) const
     } else {
         boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
         assert(stroke);
+        if (!stroke) {
+            throw std::logic_error("");
+        }
         *bbox = stroke->getBoundingBox(time);
     }
     
@@ -959,7 +962,9 @@ Node::clearLastPaintStrokeRoD()
 }
 
 void
-Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes,int* strokeIndex) const
+Node::getLastPaintStrokePoints(int time,
+                               std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
+                               int* strokeIndex) const
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     if (_imp->duringPaintStrokeCreation) {
@@ -969,6 +974,9 @@ Node::getLastPaintStrokePoints(int time,std::list<std::list<std::pair<Natron::Po
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
         assert(stroke);
+        if (!stroke) {
+            throw std::logic_error("");
+        }
         stroke->evaluateStroke(0, time, strokes);
         *strokeIndex = 0;
     }
@@ -1009,6 +1017,9 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
     boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     assert(stroke);
+    if (!stroke) {
+        throw std::logic_error("");
+    }
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
     _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
@@ -1363,7 +1374,7 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        _imp->createdComponents = serialization.getUserComponents();
+        _imp->createdComponents = serialization.getUserCreatedComponents();
     }
     
     const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
@@ -2468,7 +2479,7 @@ Node::makeInfoForInput(int inputNumber) const
     double time = getApp()->getTimeLine()->currentFrame();
 
     EffectInstance::ComponentsAvailableMap availableComps;
-    input->getComponentsAvailable(time, &availableComps);
+    input->getComponentsAvailable(true, time, &availableComps);
     
     RenderScale scale;
     scale.x = scale.y = 1.;
@@ -2538,20 +2549,20 @@ Node::initializeKnobs(int renderScaleSupportPref)
     int inputsCount = getMaxInputCount();
     
     if (!isDot && !isViewer) {
-        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         if (!isBd) {
             
-            bool isReaderOrWriterOrTrackerOrGroup = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+            bool disableNatronKnobs = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get()) || dynamic_cast<GroupInput*>(_imp->liveInstance.get()) ||
+            dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
             
             
-            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !isReaderOrWriterOrTrackerOrGroup && !isDiskCache;
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
             
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<KnobPage> mainPage;
             const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
             
-            if (!isReaderOrWriterOrTrackerOrGroup) {
+            if (!disableNatronKnobs) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
                     if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
@@ -2758,7 +2769,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             } // for (int i = 0; i < inputsCount; ++i) {
     
             //Create the host mix if needed
-            if (!isReaderOrWriterOrTrackerOrGroup && _imp->liveInstance->isHostMixingEnabled()) {
+            if (!disableNatronKnobs && _imp->liveInstance->isHostMixingEnabled()) {
                 boost::shared_ptr<KnobDouble> mixKnob = Natron::createKnob<KnobDouble>(_imp->liveInstance.get(), "Mix", 1, false);
                 mixKnob->setName("hostMix");
                 mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
@@ -2785,6 +2796,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
             
         } // !isBd
+        
+        _imp->nodeSettingsPage = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
+
         boost::shared_ptr<KnobString> nodeLabel = Natron::createKnob<KnobString>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(nodeLabel);
@@ -6029,7 +6043,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
 }
 
 bool
-Node::getSelectedLayer(int inputNb,std::string& layer) const
+Node::getSelectedLayerChoiceRaw(int inputNb,std::string& layer) const
 {
     std::map<int,ChannelSelector>::iterator found = _imp->channelsSelectors.find(inputNb);
     if (found == _imp->channelsSelectors.end()) {
@@ -6041,7 +6055,7 @@ Node::getSelectedLayer(int inputNb,std::string& layer) const
 }
 
 bool
-Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const
+Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const
 {
     Node* node = 0;
     if (inputNb == -1) {
@@ -6142,7 +6156,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     }
     
     Natron::ImageComponents comp ;
-    if (!getSelectedLayer(inputNb, selector, &comp)) {
+    if (!getSelectedLayerInternal(inputNb, selector, &comp)) {
         for (int i = 0; i < 4; ++i) {
             enabledChan[i].lock()->setSecret(true);
         }
@@ -6213,7 +6227,7 @@ Node::getProcessChannel(int channelIndex) const
 }
 
 bool
-Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
+Node::getSelectedLayer(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
 {
     //If the effect is multi-planar, it is expected to handle itself all the planes
     assert(!_imp->liveInstance->isMultiPlanar());
@@ -6242,7 +6256,7 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
         }
     }
     if (hasChannelSelector) {
-        *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
+        *isAll = !_imp->getSelectedLayerInternal(inputNb, foundSelector->second, layer);
     } else {
         *isAll = false;
     }
@@ -7869,7 +7883,7 @@ Node::refreshChannelSelectors(bool setValues)
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable);
+            node->getLiveInstance()->getComponentsAvailable(it->first != -1, time, &compsAvailable);
             {
                 QMutexLocker k(&it->second.compsMutex);
                 it->second.compsAvailable = compsAvailable;
@@ -7925,9 +7939,9 @@ Node::refreshChannelSelectors(bool setValues)
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
-        for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-            if (it->second == -1) {
-                choices.push_back(it->first);
+        for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+            if (itl->second == -1) {
+                choices.push_back(itl->first);
             }
         }
 
@@ -7950,14 +7964,15 @@ Node::refreshChannelSelectors(bool setValues)
  
         if (setValues) {
 
-            if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+            if (it->second.hasAllChoice &&
+                _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
                 it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
                 int defaultIndex = -1;
-                for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
-                    if (it->second != -1) {
-                        defaultIndex = it->second;
+                for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+                    if (itl->second != -1) {
+                        defaultIndex = itl->second;
                         break;
                     }
                 }
@@ -8020,7 +8035,7 @@ Node::refreshChannelSelectors(bool setValues)
         EffectInstance::ComponentsAvailableMap compsAvailable;
         std::list<EffectInstance*> markedNodes;
         if (node) {
-            node->getLiveInstance()->getComponentsAvailable(time, &compsAvailable,&markedNodes);
+            node->getLiveInstance()->getComponentsAvailable(true, time, &compsAvailable,&markedNodes);
         }
         
         ///Also inject in masks available components from all non mask inputs
@@ -8158,7 +8173,7 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
 }
 
 void
-Node::getUserComponents(std::list<Natron::ImageComponents>* comps)
+Node::getUserCreatedComponents(std::list<Natron::ImageComponents>* comps)
 {
     QMutexLocker k(&_imp->createdComponentsMutex);
     *comps = _imp->createdComponents;
@@ -8227,7 +8242,7 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
 
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,bool fromViewer)
+InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
 {
     assert(QThread::currentThread() == qApp->thread());
     

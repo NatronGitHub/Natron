@@ -2010,7 +2010,6 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
         }
-        getHolder()->updateHasAnimation();
     }
     
     //Notify the expr. has changed
@@ -2114,7 +2113,7 @@ KnobHelper::expressionChanged(int dimension)
     if (_imp->holder) {
         _imp->holder->updateHasAnimation();
     }
-    
+
     if (_signalSlotHandler) {
         _signalSlotHandler->s_expressionChanged(dimension);
     }

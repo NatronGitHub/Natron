@@ -864,7 +864,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & pluginID = plugin->getPluginID();
     const QString  pluginLabel = plugin->getLabelWithoutSuffix();
     const QString & pluginIconPath = plugin->getIconFilePath();
-    const QString & groupIconPath = plugin->getGroupIconFilePath();
+    const QStringList & groupIconPath = plugin->getGroupIconFilePath();
 
     QStringList groupingWithID = groups;
     groupingWithID.push_back(pluginID);
@@ -925,43 +925,15 @@ GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
 boost::shared_ptr<PluginGroupNode>
 GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
-                                                    const QString& groupIconPath,
+                                                    const QStringList& groupIconPath,
                                                     const QString & iconPath,
                                                     int major,
                                                     int minor,
                                                     bool isUserCreatable)
 {
     assert(grouping.size() > 0);
-    
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _imp->_topLevelToolButtons.begin(); it != _imp->_topLevelToolButtons.end(); ++it) {
-        if ((*it)->getID() == grouping[0]) {
-            
-            if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
-                    newGrouping.push_back(grouping[i]);
-                }
-                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor, isUserCreatable);
-            }
-            if (major == (*it)->getMajorVersion()) {
-                return *it;
-            } else {
-                (*it)->setNotHighestMajorVersion(true);
-            }
-        }
-    }
-    
-    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor, isUserCreatable));
-    _imp->_topLevelToolButtons.push_back(ret);
-    if (grouping.size() > 1) {
-        ret->setIconPath(groupIconPath);
-        QStringList newGrouping;
-        for (int i = 1; i < grouping.size(); ++i) {
-            newGrouping.push_back(grouping[i]);
-        }
-        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor, isUserCreatable);
-    }
-    return ret;
+    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+
 }
 
 bool

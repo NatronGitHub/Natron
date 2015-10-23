@@ -38,9 +38,10 @@ GCC_DIAG_OFF(sign-compare)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
-GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/vector.hpp>
 GCC_DIAG_ON(sign-compare)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 #endif
 
 using namespace Natron;

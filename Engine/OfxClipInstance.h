@@ -76,10 +76,7 @@ public:
                     ,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
-    virtual ~OfxClipInstance()
-    {
-    }
-
+    virtual ~OfxClipInstance();
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
@@ -352,7 +349,8 @@ public:
     };
 
 
-    explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+    explicit OfxImage(std::list<OfxImage*>* tlsImages,
+                      boost::shared_ptr<Natron::Image> internalImage,
                       bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -371,6 +369,7 @@ private:
 
     boost::shared_ptr<Natron::Image> _floatImage;
     boost::shared_ptr<Natron::GenericAccess> _imgAccess;
+    std::list<OfxImage*>* tlsImages;
 };
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

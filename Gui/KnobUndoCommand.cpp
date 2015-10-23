@@ -358,7 +358,7 @@ MultipleKnobEditsUndoCommand::redo()
     if (firstRedoCalled) {
         ///just clone
         std::set <KnobI*> knobsUnique;
-        int time;
+        int time = -1;
         if (holder) {
             time = holder->getCurrentTime();
         }
@@ -376,7 +376,9 @@ MultipleKnobEditsUndoCommand::redo()
 
             
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-                (*it)->evaluateValueChange(0, time, _reason);
+                if (holder) {
+                    (*it)->evaluateValueChange(0, time, _reason);
+                }
             }
         }
     } else {

@@ -147,6 +147,9 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
 
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
     assert(isEffect);
+    if (!isEffect) {
+        throw std::logic_error("");
+    }
     boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());

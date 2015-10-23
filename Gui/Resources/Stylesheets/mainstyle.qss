@@ -597,31 +597,6 @@ LineEdit[altered="true"] {
     color: %10;
 }
 
-AnimatingTextEdit[animation="0"] {
-    background-color: %3;
-}
-AnimatingTextEdit[animation="1"] {
-    background-color: %6;
-}
-AnimatingTextEdit[animation="2"] {
-    background-color: %7;
-}
-AnimatingTextEdit[animation="3"] {
-    background-color: %9;
-    color: black;
-}
-AnimatingTextEdit[readOnlyNatron="true"]{
-    background-color: %3;
-    color:%8;
-}
-AnimatingTextEdit:read-only{
-    background-color: %3;
-    color:%8;
-}
-AnimatingTextEdit[dirty="true"] {
-    background-color: black;
-}
-
 QTextEdit{
     color: %5;
     background-color: %3;
@@ -640,6 +615,26 @@ QTextEdit:focus {
     padding: 2px 4px;
 }
 
+AnimatingTextEdit[animation="0"] {
+    background-color: %3;
+}
+AnimatingTextEdit[animation="1"] {
+    background-color: %6;
+}
+AnimatingTextEdit[animation="2"] {
+    background-color: %7;
+}
+AnimatingTextEdit[animation="3"] {
+    background-color: %9;
+    color: black;
+}
+AnimatingTextEdit[readOnlyNatron="true"]{
+    color:%8;
+}
+
+AnimatingTextEdit[dirty="true"] {
+    background-color: black;
+}
 
 /*AnimatedCheckBox[animation="1"]::indicator:unchecked {
     image: url(:/Resources/Images/checkbox_animation1_unchecked.png);

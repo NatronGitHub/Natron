@@ -969,7 +969,7 @@ void
 KnobGuiString::setEnabled()
 {
     boost::shared_ptr<KnobString> knob = _knob.lock();
-    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(0)  &&  knob->getExpression(0).empty();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -1059,7 +1059,7 @@ KnobGuiString::reflectExpressionState(int /*dimension*/,
     bool isEnabled = _knob.lock()->isEnabled(0);
     if (_textEdit) {
         _textEdit->setAnimation(3);
-        _textEdit->setReadOnly(hasExpr || !isEnabled);
+        _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
     } else if (_lineEdit) {
         _lineEdit->setAnimation(3);
         _lineEdit->setReadOnly(hasExpr || !isEnabled);

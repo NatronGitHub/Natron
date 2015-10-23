@@ -481,6 +481,7 @@ public:
     void removeVisibleDockablePanel(DockablePanel* panel);
 
     const std::list<DockablePanel*>& getVisiblePanels() const;
+    std::list<DockablePanel*> getVisiblePanels_mt_safe() const;
 
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
@@ -600,6 +601,9 @@ public:
     
     void setLastKeyPressVisitedClickFocus(bool visited);
 
+#ifdef __NATRON_WIN32__
+    void setApplicationConsoleActionVisible(bool visible);
+#endif
     
 Q_SIGNALS:
 
@@ -736,9 +740,7 @@ public Q_SLOTS:
 #endif
     
 private:
-#ifdef __NATRON_WIN32__
-    void setApplicationConsoleActionVisible(bool visible);
-#endif
+
     
     void setCurrentPanelFocus(PanelWidget* widget);
     
