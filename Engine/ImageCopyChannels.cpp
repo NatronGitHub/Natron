@@ -166,6 +166,115 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
 
 }
 
+template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+void
+Image::copyUnProcessedChannelsForPremult(bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult,
+                                         const RectI& roi,
+                                         const ImagePtr& originalImage)
+{
+    ReadAccess acc(originalImage.get());
+
+    int dstRowElements = dstNComps * _bounds.width();
+
+    PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
+    assert(dst_pixels);
+    if (doR) {
+        assert(dstNComps >= 2);
+    }
+    if (doG) {
+        assert(dstNComps >= 2);
+    }
+    if (doB) {
+        assert(dstNComps >= 3);
+    }
+    if (doA) {
+        assert(dstNComps == 1 || dstNComps == 4);
+    }
+    assert(srcNComps == 4 || !originalPremult); // only RGBA can be premult
+    assert(dstNComps == 4 || !premult); // only RGBA can be premult
+
+    for (int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps)) {
+        for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
+            const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
+            PIX srcA = src_pixels ? maxValue : 0; /* be opaque for anything that doesn't contain alpha */
+            if ((srcNComps == 1 || srcNComps == 4) && src_pixels) {
+#             ifdef DEBUG
+                assert(src_pixels[srcNComps - 1] == src_pixels[srcNComps - 1]); // check for NaN
+#             endif
+                srcA = src_pixels[srcNComps - 1];
+            }
+            PIX dstAorig = maxValue;
+            if (dstNComps == 1 || dstNComps == 4) {
+#             ifdef DEBUG
+                assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
+#             endif
+                dstAorig = dst_pixels[dstNComps - 1];
+            }
+            if (doR) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[0] == src_pixels[0]); // check for NaN
+                assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#             endif
+                DOCHANNEL(0);
+#             ifdef DEBUG
+                assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#             endif
+            }
+            if (doG) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[1] == src_pixels[1]); // check for NaN
+                assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#             endif
+                DOCHANNEL(1);
+#             ifdef DEBUG
+                assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#             endif
+            }
+            if (doB) {
+#             ifdef DEBUG
+                assert(!src_pixels || src_pixels[2] == src_pixels[2]); // check for NaN
+                assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#             endif
+                DOCHANNEL(2);
+#             ifdef DEBUG
+                assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#             endif
+            }
+            if (doA) {
+                if (premult) {
+                    if (dstAorig != 0) {
+                        // unpremult, then premult
+                        if (dstNComps >= 2 && !doR) {
+                            dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
+#                         ifdef DEBUG
+                            assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+#                         endif
+                        }
+                        if (dstNComps >= 2 && !doG) {
+                            dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
+#                         ifdef DEBUG
+                            assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+#                         endif
+                        }
+                        if (dstNComps >= 2 && !doB) {
+                            dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
+#                         ifdef DEBUG
+                            assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+#                         endif
+                        }
+                    }
+                }
+                if (dstNComps == 1 || dstNComps == 4) {
+                    dst_pixels[dstNComps - 1] = srcA;
+#                 ifdef DEBUG
+                    assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
+#                 endif
+                }
+            }
+        }
+    }
+}
+
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
 void
 Image::copyUnProcessedChannelsForChannels(bool premult,
@@ -177,15 +286,26 @@ Image::copyUnProcessedChannelsForChannels(bool premult,
         if (originalPremult) {
             copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, true, true>(roi, originalImage);
         } else {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, true, false>(roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(doR, doG, doB, doA, true, false, roi, originalImage);
         }
     } else {
         if (originalPremult) {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, false, true>(roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(doR, doG, doB, doA, false, true, roi, originalImage);
         } else {
             copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, false, false>(roi, originalImage);
         }
     }
+}
+
+template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+void
+Image::copyUnProcessedChannelsForChannels(bool doR, bool doG, bool doB, bool doA,
+                                          bool premult,
+                                          const RectI& roi,
+                                          const ImagePtr& originalImage,
+                                          bool originalPremult)
+{
+    copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(doR, doG, doB, doA, premult, originalPremult, roi, originalImage);
 }
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
@@ -201,9 +321,9 @@ Image::copyUnProcessedChannelsForComponents(bool premult,
 {
     if (dstNComps == 1) {
             if (doA) {
-                copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(premult, roi, originalImage, originalPremult);
+                copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(premult, roi, originalImage, originalPremult); // RGB were processed, copy A
             } else {
-                copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(premult, roi, originalImage, originalPremult);
+                copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(premult, roi, originalImage, originalPremult); // RGBA were processed, only do premult
             }
     } else {
         assert(2 <= dstNComps && dstNComps <= 4);
@@ -211,29 +331,29 @@ Image::copyUnProcessedChannelsForComponents(bool premult,
             if (doG) {
                 if (dstNComps >= 3 && doB) {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, true, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, true, true>(premult, roi, originalImage, originalPremult); // none were processed, only do premult
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, true, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, true, false>(premult, roi, originalImage, originalPremult); // A was processed
                     }
                 } else {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, false, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, false, true>(premult, roi, originalImage, originalPremult); // B was processed
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, true, false, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(true, true, false, false, premult, roi, originalImage, originalPremult); // BA were processed (rare)
                     }
                 }
             } else {
                 if (dstNComps >= 3 && doB) {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, false, true, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, false, true, true>(premult, roi, originalImage, originalPremult); // G was processed
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, false, true, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(true, false, true, false, premult, roi, originalImage, originalPremult); // GA were processed (rare)
                     }
                 } else {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, false, false, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(true, false, false, true, premult, roi, originalImage, originalPremult); // GB were processed (rare)
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, true, false, false, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(true, false, false, false, premult, roi, originalImage, originalPremult); // GBA were processed (rare)
                     }
                 }
             }
@@ -241,29 +361,29 @@ Image::copyUnProcessedChannelsForComponents(bool premult,
             if (doG) {
                 if (dstNComps >= 3 && doB) {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, true, true, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, true, true, true>(premult, roi, originalImage, originalPremult); // R was processed
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, true, true, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(false, true, true, false, premult, roi, originalImage, originalPremult); // RA were processed (rare)
                     }
                 } else {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, true, false, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(false, true, false, true, premult, roi, originalImage, originalPremult); // RB were processed (rare)
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, true, false, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(false, true, false, false, premult, roi, originalImage, originalPremult); // RBA were processed (rare)
                     }
                 }
             } else {
                 if (dstNComps >= 3 && doB) {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, true, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(false, false, true, true, premult, roi, originalImage, originalPremult); // RG were processed (rare)
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, true, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(false, false, true, false, premult, roi, originalImage, originalPremult); // RGA were processed (rare)
                     }
                 } else {
                     if (dstNComps >= 4 && doA) {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(premult, roi, originalImage, originalPremult); // RGB were processed
                     } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(premult, roi, originalImage, originalPremult);
+                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, false>(premult, roi, originalImage, originalPremult); // RGBA were processed
                     }
                 }
             }

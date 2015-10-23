@@ -497,12 +497,16 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
                 path = NATRON_IMAGES_PATH "saveScript.png";
                 break;
+                
 
             case NATRON_PIXMAP_MERGE_ATOP:
                 path = NATRON_IMAGES_PATH "merge_atop.png";
                 break;
             case NATRON_PIXMAP_MERGE_AVERAGE:
                 path = NATRON_IMAGES_PATH "merge_average.png";
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR:
+                path = NATRON_IMAGES_PATH "merge_color.png";
                 break;
             case NATRON_PIXMAP_MERGE_COLOR_BURN:
                 path = NATRON_IMAGES_PATH "merge_color_burn.png";
@@ -537,8 +541,17 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_MERGE_GEOMETRIC:
                 path = NATRON_IMAGES_PATH "merge_geometric.png";
                 break;
+            case NATRON_PIXMAP_MERGE_GRAIN_EXTRACT:
+                path = NATRON_IMAGES_PATH "merge_grain_extract.png";
+                break;
+            case NATRON_PIXMAP_MERGE_GRAIN_MERGE:
+                path = NATRON_IMAGES_PATH "merge_grain_merge.png";
+                break;
             case NATRON_PIXMAP_MERGE_HARD_LIGHT:
                 path = NATRON_IMAGES_PATH "merge_hard_light.png";
+                break;
+            case NATRON_PIXMAP_MERGE_HUE:
+                path = NATRON_IMAGES_PATH "merge_hue.png";
                 break;
             case NATRON_PIXMAP_MERGE_HYPOT:
                 path = NATRON_IMAGES_PATH "merge_hypot.png";
@@ -546,8 +559,8 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_MERGE_IN:
                 path = NATRON_IMAGES_PATH "merge_in.png";
                 break;
-            case NATRON_PIXMAP_MERGE_INTERPOLATED:
-                path = NATRON_IMAGES_PATH "merge_interpolated.png";
+            case NATRON_PIXMAP_MERGE_LUMINOSITY:
+                path = NATRON_IMAGES_PATH "merge_luminosity.png";
                 break;
             case NATRON_PIXMAP_MERGE_MASK:
                 path = NATRON_IMAGES_PATH "merge_mask.png";
@@ -585,6 +598,9 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_MERGE_REFLECT:
                 path = NATRON_IMAGES_PATH "merge_reflect.png";
                 break;
+            case NATRON_PIXMAP_MERGE_SATURATION:
+                path = NATRON_IMAGES_PATH "merge_saturation.png";
+                break;
             case NATRON_PIXMAP_MERGE_SCREEN:
                 path = NATRON_IMAGES_PATH "merge_screen.png";
                 break;
@@ -600,6 +616,8 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_MERGE_XOR:
                 path = NATRON_IMAGES_PATH "merge_xor.png";
                 break;
+                
+                
             case NATRON_PIXMAP_LINK_CURSOR:
                 path = NATRON_IMAGES_PATH "linkCursor.png";
                 break;
@@ -779,6 +797,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QString filename(NATRON_IMAGES_PATH "splashscreen.png");
 
     _imp->_splashScreen = new SplashScreen(filename);
+    _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
+    
     QCoreApplication::processEvents();
     QPixmap appIcPixmap;
     appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
@@ -844,7 +864,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & pluginID = plugin->getPluginID();
     const QString  pluginLabel = plugin->getLabelWithoutSuffix();
     const QString & pluginIconPath = plugin->getIconFilePath();
-    const QString & groupIconPath = plugin->getGroupIconFilePath();
+    const QStringList & groupIconPath = plugin->getGroupIconFilePath();
 
     QStringList groupingWithID = groups;
     groupingWithID.push_back(pluginID);
@@ -905,43 +925,15 @@ GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
 boost::shared_ptr<PluginGroupNode>
 GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
-                                                    const QString& groupIconPath,
+                                                    const QStringList& groupIconPath,
                                                     const QString & iconPath,
                                                     int major,
                                                     int minor,
                                                     bool isUserCreatable)
 {
     assert(grouping.size() > 0);
-    
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _imp->_topLevelToolButtons.begin(); it != _imp->_topLevelToolButtons.end(); ++it) {
-        if ((*it)->getID() == grouping[0]) {
-            
-            if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
-                    newGrouping.push_back(grouping[i]);
-                }
-                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor, isUserCreatable);
-            }
-            if (major == (*it)->getMajorVersion()) {
-                return *it;
-            } else {
-                (*it)->setNotHighestMajorVersion(true);
-            }
-        }
-    }
-    
-    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor, isUserCreatable));
-    _imp->_topLevelToolButtons.push_back(ret);
-    if (grouping.size() > 1) {
-        ret->setIconPath(groupIconPath);
-        QStringList newGrouping;
-        for (int i = 1; i < grouping.size(); ++i) {
-            newGrouping.push_back(grouping[i]);
-        }
-        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor, isUserCreatable);
-    }
-    return ret;
+    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+
 }
 
 bool
@@ -954,7 +946,7 @@ void
 GuiApplicationManager::hideSplashScreen()
 {
     if (_imp->_splashScreen) {
-        _imp->_splashScreen->hide();
+        _imp->_splashScreen->close();
         delete _imp->_splashScreen;
         _imp->_splashScreen = 0;
     }

@@ -40,7 +40,12 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
+#include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/Node.h"
+
+#include "Global/QtCompat.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
@@ -127,6 +132,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
 
 # ifdef DEBUG
     {
+        QStringList pgrp = grouping;
+        pgrp.push_back("Readers");
         std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
@@ -134,7 +141,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         
-        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
+        registerPlugin(pgrp, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", QStringList(), false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
  
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
@@ -152,6 +159,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     }
 
     {
+        QStringList pgrp = grouping;
+        pgrp.push_back("Writers");
         std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
@@ -159,7 +168,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         
-        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
+        registerPlugin(pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
         
 
 
@@ -190,7 +199,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         
-        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion(), false);
+        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", QStringList(), false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion(), false);
 
     }
 
@@ -340,6 +349,74 @@ GuiApplicationManager::setFileToOpen(const QString & str)
     }
 }
 
+bool
+GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
+{
+    QString fileCopy(filename.c_str());
+    QString ext = Natron::removeFileExtension(fileCopy);
+    std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+    AppInstance* mainInstance = appPTR->getTopLevelInstance();
+    bool instanceCreated = false;
+    if (!mainInstance || !mainInstance->getProject()->isGraphWorthLess()) {
+        CLArgs cl;
+        mainInstance = appPTR->newAppInstance(cl);
+        instanceCreated = true;
+    }
+    if (!mainInstance) {
+        return false;
+    }
+    
+    CreateNodeArgs::DefaultValuesList defaultValues;
+    defaultValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+    CreateNodeArgs args(readerFileType.c_str(),
+                        "",
+                        -1, -1,
+                        true,
+                        INT_MIN, INT_MIN,
+                        true,
+                        true,
+                        true,
+                        QString(),
+                        defaultValues,
+                        mainInstance->getProject());
+    NodePtr readerNode = mainInstance->createNode(args);
+    if (!readerNode && instanceCreated) {
+        mainInstance->quit();
+        return false;
+    }
+    
+    ///Find and connect the viewer
+    NodeList allNodes = mainInstance->getProject()->getNodes();
+    NodePtr viewerFound ;
+    for (NodeList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if (dynamic_cast<ViewerInstance*>((*it)->getLiveInstance())) {
+            viewerFound = *it;
+            break;
+        }
+    }
+    
+    ///If no viewer is found, create it
+    if (!viewerFound) {
+        viewerFound = mainInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+                                             "",
+                                             -1,-1,
+                                             true,
+                                             INT_MIN,INT_MIN,
+                                             false,
+                                             true,
+                                             false,
+                                             QString(),
+                                             CreateNodeArgs::DefaultValuesList(),
+                                             mainInstance->getProject()));
+    }
+    if (viewerFound) {
+        viewerFound->connectInput(readerNode, 0);
+    } else {
+        return false;
+    }
+    return true;
+}
+
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
@@ -351,11 +428,8 @@ GuiApplicationManager::handleOpenFileRequest()
     if (guiApp) {
         ///Called when double-clicking a file from desktop
         std::string filename = _imp->_openFileRequest.toStdString();
-        AppInstance* app = guiApp->getGui()->openProject(filename);
         _imp->_openFileRequest.clear();
-        if (!app) {
-            throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + filename);
-        }
+        guiApp->handleFileOpenEvent(filename);
     }
 }
 

@@ -476,6 +476,9 @@ ViewerTab::nextLayer()
     int currentIndex = _imp->layerChoice->activeIndex();
     int nChoices = _imp->layerChoice->count();
     currentIndex = (currentIndex + 1) % nChoices;
+    if (currentIndex == 0 && nChoices > 1) {
+        currentIndex = 1;
+    }
     _imp->layerChoice->setCurrentIndex(currentIndex);
 }
 
@@ -484,8 +487,14 @@ ViewerTab::previousLayer()
 {
     int currentIndex = _imp->layerChoice->activeIndex();
     int nChoices = _imp->layerChoice->count();
-    currentIndex = (currentIndex - 1) % nChoices;
-    _imp->layerChoice->setCurrentIndex(currentIndex);
+    if (currentIndex <= 1) {
+        currentIndex = nChoices - 1;
+    } else {
+        --currentIndex;
+    }
+    if (currentIndex >= 0) {
+        _imp->layerChoice->setCurrentIndex(currentIndex);
+    }
 }
 
 void

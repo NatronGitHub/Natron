@@ -2010,7 +2010,6 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
         }
-        getHolder()->updateHasAnimation();
     }
     
     //Notify the expr. has changed
@@ -2114,7 +2113,7 @@ KnobHelper::expressionChanged(int dimension)
     if (_imp->holder) {
         _imp->holder->updateHasAnimation();
     }
-    
+
     if (_signalSlotHandler) {
         _signalSlotHandler->s_expressionChanged(dimension);
     }
@@ -3864,15 +3863,6 @@ KnobHolder::initializeKnobsPublic()
 {
     initializeKnobs();
     _imp->knobsInitialized = true;
-}
-
-void
-KnobHolder::onGuiFrozenChange(bool frozen)
-{
-    ///The issue with this is if the user toggles off the global frozen mode
-    ///and the knobs are already frozen because for instance they are already rendering something
-    ///that would unfrozen them, though this is very unlikely that the user does it.
-    setKnobsFrozen(frozen);
 }
 
 void

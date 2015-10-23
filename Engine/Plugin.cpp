@@ -140,7 +140,7 @@ Plugin::setIconFilePath(const QString& filePath)
     _iconFilePath = filePath;
 }
 
-const QString&
+const QStringList&
 Plugin::getGroupIconFilePath() const
 {
     return _groupIconFilePath;

@@ -960,7 +960,29 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     boost::shared_ptr<KnobChoice> choice = Natron::createKnob<KnobChoice>( node, getParamLabel(this) );
     _knob = choice;
 
-    setOption(0); // this actually sets all the options
+    
+    int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
+    int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+    
+    std::vector<std::string> entires;
+    std::vector<std::string> helpStrings;
+    bool hashelp = false;
+    for (int i = 0; i < dim; ++i) {
+        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
+        std::string help;
+        if (i < labelOptionDim) {
+            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        }
+        if ( !help.empty() ) {
+            hashelp = true;
+        }
+        entires.push_back(str);
+        helpStrings.push_back(help);
+    }
+    if (!hashelp) {
+        helpStrings.clear();
+    }
+    choice->populateChoices(entires,helpStrings);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->setDefaultValue(def,0);
@@ -995,9 +1017,13 @@ OfxChoiceInstance::get(OfxTime time,
 OfxStatus
 OfxChoiceInstance::set(int v)
 {
-    if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob.lock()->setValueFromPlugin(v,0);
-
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+        knob->setValueFromPlugin(v,0);
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -1008,8 +1034,13 @@ OfxStatus
 OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
-    if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
-        _knob.lock()->setValueAtTimeFromPlugin(time, v, 0);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+        knob->setValueAtTimeFromPlugin(time, v, 0);
 
         return kOfxStatOK;
     } else {
@@ -1048,30 +1079,27 @@ OfxChoiceInstance::setEvaluateOnChange()
 }
 
 void
-OfxChoiceInstance::setOption(int /*num*/)
+OfxChoiceInstance::setOption(int num)
 {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (dim == 0) {
+        knob->resetChoices();
+        return;
+    }
+    //Only 2 kind of behaviours are supported: either resetOptions (dim == 0) or
+    //appendOption, hence num == dim -1
+    assert(num == dim - 1);
+    if (num != (dim -1)) {
+        return;
+    }
+    std::string entry = getProperties().getStringProperty(kOfxParamPropChoiceOption,num);
+    std::string help;
     int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-    
-    _entries.clear();
-    std::vector<std::string> helpStrings;
-    bool hashelp = false;
-    for (int i = 0; i < dim; ++i) {
-        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help;
-        if (i < labelOptionDim) {
-            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
-        }
-        if ( !help.empty() ) {
-            hashelp = true;
-        }
-        _entries.push_back(str);
-        helpStrings.push_back(help);
+    if (num < labelOptionDim) {
+        help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,num);
     }
-    if (!hashelp) {
-        helpStrings.clear();
-    }
-    _knob.lock()->populateChoices(_entries, helpStrings);
+    knob->appendChoice(entry,help);
 }
 
 boost::shared_ptr<KnobI>
@@ -1635,8 +1663,12 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     setDisplayRange();
     dblKnob->setIncrement(increment);
     dblKnob->setDecimals(decimals);
-    
-    if (properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
+
+    // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
+    // see https://github.com/MrKepzie/Natron/issues/932
+    // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute
+    if ((!_node->effectInstance()->getOverlayInteractMainEntry() && getDoubleType() == kOfxParamDoubleTypeXYAbsolute) ||
+        properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
         dblKnob->setHasNativeOverlayHandle(true);
     }
 

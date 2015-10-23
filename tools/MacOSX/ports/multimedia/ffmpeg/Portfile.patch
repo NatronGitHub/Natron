@@ -1,6 +1,6 @@
---- Portfile.orig	2015-09-23 13:58:52.000000000 +0200
-+++ Portfile	2015-09-23 16:46:52.000000000 +0200
-@@ -88,6 +88,7 @@
+--- Portfile.orig	2015-10-16 07:52:35.000000000 +0200
++++ Portfile	2015-10-16 07:55:52.000000000 +0200
+@@ -89,6 +89,7 @@
  build.cmd           ${prefix}/bin/gmake
  build.env-append    V=1
  
@@ -8,11 +8,12 @@
  #
  # enable auto configure of asm optimizations
  # requires Xcode 3.1 or better on Leopard
-@@ -130,9 +131,11 @@
+@@ -131,10 +132,12 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
 +                    --disable-xlib \
+                     --disable-videotoolbox \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
 -                    --cc=${configure.cc}
@@ -21,7 +22,7 @@
  
  # disable asm on Tiger
  # libblueray doesn't build on Tiger so disable for now (#39442)
-@@ -152,8 +155,12 @@
+@@ -169,8 +172,12 @@
      }
  
      # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
@@ -36,7 +37,7 @@
      }
  }
  
-@@ -163,6 +170,17 @@
+@@ -180,6 +187,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -54,7 +55,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -187,6 +205,15 @@
+@@ -204,6 +222,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -70,7 +71,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -212,11 +239,55 @@
+@@ -229,11 +256,55 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -126,7 +127,7 @@
  }
  
  default_variants +x11
-@@ -279,6 +350,12 @@
+@@ -296,6 +367,12 @@
                              port:samba3
  
      license                 GPL-3+

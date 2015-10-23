@@ -327,8 +327,6 @@ public:
 
     void refreshKnobsAfterTimeChange(SequenceTime time);
     
-    void onGuiFrozenChanged(bool frozen);
-
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);

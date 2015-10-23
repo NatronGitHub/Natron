@@ -83,6 +83,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
 using namespace Natron;
@@ -133,8 +134,13 @@ Gui::onRotoSelectedToolChanged(int tool)
     if (!roto) {
         return;
     }
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->updateRotoSelectedTool(tool, roto);
     }
 }
@@ -267,38 +273,6 @@ Gui::progressUpdate(KnobHolder* effect,
     return true;
 }
 
-void
-Gui::addVisibleDockablePanel(DockablePanel* panel)
-{
-    
-    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-    putSettingsPanelFirst(panel);
-    if ( it == _imp->openedPanels.end() ) {
-        assert(panel);
-        int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-        if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
-            std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-            (*it)->closePanel();
-        }
-        _imp->openedPanels.push_back(panel);
-    }
-}
-
-void
-Gui::removeVisibleDockablePanel(DockablePanel* panel)
-{
-    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-
-    if ( it != _imp->openedPanels.end() ) {
-        _imp->openedPanels.erase(it);
-    }
-}
-
-const std::list<DockablePanel*>&
-Gui::getVisiblePanels() const
-{
-    return _imp->openedPanels;
-}
 
 void
 Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
@@ -308,7 +282,7 @@ Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
         return;
     }
     while ( (int)_imp->openedPanels.size() > maxPanels ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+        std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin();
         (*it)->closePanel();
     }
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
@@ -601,10 +575,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
             }
         }
     }
-    _imp->_nodeGraphArea->onGuiFrozenChanged(clicked);
-    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        (*it)->onGuiFrozenChanged(clicked);
-    }
+    _imp->_propertiesBin->setEnabled(!clicked);
 }
 
 bool
@@ -623,11 +594,15 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & nodes) const
 {
-    int layoutItemsCount = _imp->_layoutPropertiesBin->count();
-
-    for (int i = 0; i < layoutItemsCount; ++i) {
-        QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
-        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>( item->widget() );
+    std::list<DockablePanel*> panels;
+    {
+        QMutexLocker k(&_imp->openedPanelsMutex);
+        panels = _imp->openedPanels;
+    }
+    
+    for (std::list<DockablePanel*>::const_iterator it = panels.begin();
+         it != panels.end(); ++it) {
+        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!panel) {
             continue;
         }
@@ -887,8 +862,7 @@ void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
 void
 Gui::ddeOpenFile(const QString& filePath)
 {
-    openProject(filePath.toStdString());
-#pragma message WARN("CONTROL FLOW ERROR: should check the return value of openProject, raise an error...")
+    _imp->_appInstance->handleFileOpenEvent(filePath.toStdString());
 }
 #endif
 

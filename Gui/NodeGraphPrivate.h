@@ -31,6 +31,8 @@
 
 #include "Global/Macros.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTimer>
 #include <QtCore/QMutex>
 
@@ -42,6 +44,9 @@
 #include <QColor>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Gui/NodeGraphUndoRedo.h" // NodeGuiPtr
 
 class NodeGraph;

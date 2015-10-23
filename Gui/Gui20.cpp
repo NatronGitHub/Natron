@@ -455,6 +455,9 @@ Gui::removeViewerTab(ViewerTab* tab,
         graph = getNodeGraph();
     }
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
 
     ViewerTab* lastSelectedViewer = graph->getLastSelectedViewer();
 
@@ -798,10 +801,11 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         if ( !plugin->hasParent() ) {
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
             QStringList grouping(PLUGIN_GROUP_DEFAULT);
+            QStringList iconGrouping(PLUGIN_GROUP_DEFAULT_ICON_PATH);
             boost::shared_ptr<PluginGroupNode> othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
                                                      PLUGIN_GROUP_DEFAULT,
-                                                     PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                     iconGrouping,
                                                      PLUGIN_GROUP_DEFAULT_ICON_PATH,
                                                      1,
                                                      0,
@@ -831,31 +835,32 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
+        menu->setIcon(menuIcon);
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
     }
 
-    if (pluginsToolButton->getLabel() == PLUGIN_GROUP_IMAGE) {
+    if (!plugin->getParent() && pluginsToolButton->getLabel() == PLUGIN_GROUP_IMAGE) {
         ///create 2 special actions to create a reader and a writer so the user doesn't have to guess what
         ///plugin to choose for reading/writing images, let Natron deal with it. THe user can still change
         ///the behavior of Natron via the Preferences Readers/Writers tabs.
         QMenu* imageMenu = pluginsToolButton->getMenu();
         assert(imageMenu);
-        QAction* createReaderAction = new QAction(imageMenu);
+        QAction* createReaderAction = new QAction(this);
         QObject::connect( createReaderAction, SIGNAL( triggered() ), this, SLOT( createReader() ) );
         createReaderAction->setText( tr("Read") );
         QPixmap readImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, &readImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &readImagePix);
         createReaderAction->setIcon( QIcon(readImagePix) );
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
         imageMenu->addAction(createReaderAction);
 
-        QAction* createWriterAction = new QAction(imageMenu);
+        QAction* createWriterAction = new QAction(this);
         QObject::connect( createWriterAction, SIGNAL( triggered() ), this, SLOT( createWriter() ) );
         createWriterAction->setText( tr("Write") );
         QPixmap writeImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
         createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
@@ -1167,7 +1172,7 @@ Gui::saveAndIncrVersion()
 
     _imp->_appInstance->getProject()->saveProject(path, name, 0);
 
-    QString filename = path = name;
+    QString filename = path + "/" + name;
     updateRecentFiles(filename);
 } // Gui::saveAndIncrVersion
 
@@ -1177,6 +1182,10 @@ Gui::createNewViewer()
     NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
 
     assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
+
     ignore_result( _imp->_appInstance->createNode( CreateNodeArgs( PLUGINID_NATRON_VIEWER,
                                                                    "",
                                                                    -1, -1,

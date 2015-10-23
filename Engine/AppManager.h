@@ -299,7 +299,7 @@ public:
                                    const QString & pluginID,
                                    const QString & pluginLabel,
                                    const QString & pluginIconPath,
-                                   const QString & groupIconPath,
+                                   const QStringList & groupIconPath,
                                    bool isReader,
                                    bool isWriter,
                                    Natron::LibraryBinary* binary,
@@ -421,6 +421,8 @@ public:
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const;
+    
+    static std::string isImageFileSupportedByNatron(const std::string& ext);
     
 public Q_SLOTS:
     

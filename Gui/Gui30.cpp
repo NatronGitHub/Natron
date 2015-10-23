@@ -251,8 +251,9 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
+    QWidget* currentActiveWindow = qApp->activeWindow();
+    
     QString msg = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
-
 
     if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -297,9 +298,14 @@ Gui::onDoDialog(int type,
         }
     }
 
-    QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
-    _imp->_uiUsingMainThread = false;
-    _imp->_uiUsingMainThreadCond.wakeOne();
+    {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        _imp->_uiUsingMainThread = false;
+        _imp->_uiUsingMainThreadCond.wakeOne();
+    }
+    if (currentActiveWindow) {
+        currentActiveWindow->activateWindow();
+    }
 }
 
 Natron::StandardButtonEnum

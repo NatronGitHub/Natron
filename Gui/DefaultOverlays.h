@@ -41,6 +41,7 @@ class KnobI;
 class QPoint;
 class QPointF;
 class NodeGui;
+struct PositionInteract;
 struct DefaultOverlayPrivate;
 class DefaultOverlay : public Natron::NatronOverlayInteractSupport
 {
@@ -61,49 +62,102 @@ public:
                    const RenderScale &renderScale,
                    const QPointF &penPos,
                    const QPoint &penPosViewport,
-                   double pressure) ;
+                   double pressure,
+                   PositionInteract* it);
+
+    bool penUp(double time,
+               const RenderScale &renderScale,
+               const QPointF &penPos,
+               const QPoint &penPosViewport,
+               double  pressure,
+               PositionInteract* it);
+
+
+    bool penDown(double time,
+                 const RenderScale &renderScale,
+                 const QPointF &penPos,
+                 const QPoint &penPosViewport,
+                 double  pressure,
+                 PositionInteract* it);
+
+
+    bool keyDown(double time,
+                 const RenderScale &renderScale,
+                 int     key,
+                 char*   keyString,
+                 PositionInteract* it);
+
+
+    bool keyUp(double time,
+               const RenderScale &renderScale,
+               int     key,
+               char*   keyString,
+               PositionInteract* it);
+
+
+    bool keyRepeat(double time,
+                   const RenderScale &renderScale,
+                   int     key,
+                   char*   keyString,
+                   PositionInteract* it);
+
+
+    bool gainFocus(double time,
+                   const RenderScale &renderScale,
+                   PositionInteract* it);
+
+
+    bool loseFocus(double  time,
+                   const RenderScale &renderScale,
+                   PositionInteract* it);
+
+    bool penMotion(double time,
+                   const RenderScale &renderScale,
+                   const QPointF &penPos,
+                   const QPoint &penPosViewport,
+                   double pressure);
     
     
     bool penUp(double time,
                const RenderScale &renderScale,
                const QPointF &penPos,
                const QPoint &penPosViewport,
-               double  pressure)  ;
+               double  pressure);
     
     
     bool penDown(double time,
                  const RenderScale &renderScale,
                  const QPointF &penPos,
                  const QPoint &penPosViewport,
-                 double  pressure)  ;
+                 double  pressure);
     
     
     bool keyDown(double time,
                  const RenderScale &renderScale,
                  int     key,
-                 char*   keyString)  ;
+                 char*   keyString);
     
     
     bool keyUp(double time,
                const RenderScale &renderScale,
                int     key,
-               char*   keyString)  ;
+               char*   keyString);
     
     
     bool keyRepeat(double time,
                    const RenderScale &renderScale,
                    int     key,
-                   char*   keyString)  ;
+                   char*   keyString);
     
     
     bool gainFocus(double time,
-                   const RenderScale &renderScale)  ;
+                   const RenderScale &renderScale);
     
     
     bool loseFocus(double  time,
-                   const RenderScale &renderScale)  ;
+                   const RenderScale &renderScale);
     
-    bool hasDefaultOverlayForParam(const KnobI* param) ;
+    bool hasDefaultOverlayForParam(const KnobI* param);
     
     void removeDefaultOverlay(KnobI* knob);
     

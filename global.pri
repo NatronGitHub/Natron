@@ -105,7 +105,7 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wmissing-declarations -Wno-multichar
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
@@ -162,9 +162,11 @@ macx {
 }
 
 # CONFIG+=nopch disables precompiled headers
-!nopch:!macx|!universal {
-  # precompiled headers don't work with multiple archs
-  CONFIG += precompile_header
+!nopch {
+  !macx|!universal {
+    # precompiled headers don't work with multiple archs
+    CONFIG += precompile_header
+  }
 }
 
 !macx {
@@ -286,7 +288,7 @@ unix {
          # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
          # qtextdocument.h in the QtGui module.
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-         INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
          LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
        }
      }

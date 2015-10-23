@@ -2245,3 +2245,70 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
     }
 }
 
+template <typename PIX, bool doPremult>
+void
+Image::premultInternal(const RectI& roi)
+{
+
+    
+    WriteAccess acc(this);
+    
+    RectI renderWindow;
+    roi.intersect(_bounds, &renderWindow);
+    
+    assert(getComponentsCount() == 4);
+    
+    int srcRowElements = 4 * _bounds.width();
+    
+    PIX* dstPix = (PIX*)acc.pixelAt(renderWindow.x1, renderWindow.y1);
+    for (int y = renderWindow.y1; y < renderWindow.y2; ++y, dstPix += (srcRowElements - (renderWindow.x2 - renderWindow.x1) * 4)) {
+        for (int x = renderWindow.x1; x < renderWindow.x2; ++x, dstPix += 4) {
+            for (int c = 0; c < 3; ++c) {
+                if (doPremult) {
+                    dstPix[c] = PIX(float(dstPix[c]) * dstPix[3]);
+                } else {
+                    if (dstPix[3] != 0) {
+                        dstPix[c] = PIX(dstPix[c] / float(dstPix[3]));
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+template <bool doPremult>
+void
+Image::premultForDepth(const RectI& roi)
+{
+    if (getComponentsCount() != 4) {
+        return;
+    }
+    Natron::ImageBitDepthEnum depth = getBitDepth();
+    switch (depth) {
+        case Natron::eImageBitDepthByte:
+            premultInternal<unsigned char, doPremult>(roi);
+            break;
+        case Natron::eImageBitDepthShort:
+            premultInternal<unsigned short, doPremult>(roi);
+            break;
+        case Natron::eImageBitDepthFloat:
+            premultInternal<float, doPremult>(roi);
+            break;
+        default:
+            break;
+    }
+}
+
+
+void
+Image::premultImage(const RectI& roi)
+{
+    premultForDepth<true>(roi);
+}
+
+void
+Image::unpremultImage(const RectI& roi)
+{
+    premultForDepth<false>(roi);
+}

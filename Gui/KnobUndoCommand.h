@@ -117,7 +117,7 @@ private:
         for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
           
-            _knob->setValue(dimension,*it,NULL,true,Natron::eValueChangedReasonUserEdited);
+            _knob->setValue(dimension,*it,NULL,false,Natron::eValueChangedReasonUserEdited);
             if ( _knob->getKnob()->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
@@ -134,6 +134,9 @@ private:
             ++i;
     
         }
+        
+        ///This will refresh all dimensions
+        _knob->onInternalValueChanged(-1, Natron::eValueChangedReasonNatronGuiEdited);
         
         _knob->getKnob()->endChanges();
         if (modifiedKeyFrame) {
@@ -168,13 +171,8 @@ private:
                 Q_UNUSED(found); // we don't care if it existed or not
             }
 
-            bool refreshGui;
-            if (_firstRedoCalled) {
-                refreshGui = true;
-            } else {
-                refreshGui = _refreshGuiFirstTime;
-            }
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,Natron::eValueChangedReasonUserEdited);
+ 
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],false,Natron::eValueChangedReasonUserEdited);
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
@@ -186,6 +184,14 @@ private:
             ++i;
         
         }
+        
+        
+        ///This will refresh all dimensions
+        if (_firstRedoCalled || _refreshGuiFirstTime) {
+            _knob->onInternalValueChanged(-1, Natron::eValueChangedReasonNatronGuiEdited);
+        }
+
+        
         _knob->getKnob()->endChanges();
 
         if (modifiedKeyFrames) {

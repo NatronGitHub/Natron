@@ -167,6 +167,9 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionShortcutEditor(0)
 , actionNewViewer(0)
 , actionFullScreen(0)
+#ifdef __NATRON_WIN32__
+, actionShowWindowsConsole(0)
+#endif
 , actionClearDiskCache(0)
 , actionClearPlayBackCache(0)
 , actionClearNodeCache(0)
@@ -220,7 +223,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , menuEdit(0)
 , menuLayout(0)
 , menuDisplay(0)
-, menuOptions(0)
 , menuRender(0)
 , viewersMenu(0)
 , viewerInputsMenu(0)
@@ -236,6 +238,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _currentlyDraggedPanelInitialSize()
 , _aboutWindow(0)
 , _progressBars()
+, openedPanelsMutex()
 , openedPanels()
 , _openGLVersion()
 , _glewVersion()
@@ -252,6 +255,9 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , currentPanelFocusEventRecursion(0)
 , keyPressEventHasVisitedFocusWidget(false)
 , wasLaskUserSeekDuringPlayback(false)
+#ifdef __NATRON_WIN32__
+, applicationConsoleVisible(true)
+#endif
 {
 }
 
@@ -372,6 +378,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
+    _propertiesBin->setVisible(false);
     _gui->registerTab(_propertiesBin, _propertiesBin);
 } // createPropertiesBinGui
 
@@ -384,6 +391,7 @@ GuiPrivate::createNodeGraphGui()
     _nodeGraphArea = new NodeGraph(_gui, _appInstance->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
     _nodeGraphArea->setLabel( QObject::tr("Node Graph").toStdString() );
+    _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
 
@@ -393,6 +401,7 @@ GuiPrivate::createCurveEditorGui()
     _curveEditor = new CurveEditor(_gui, _appInstance->getTimeLine(), _gui);
     _curveEditor->setScriptName(kCurveEditorObjectName);
     _curveEditor->setLabel( QObject::tr("Curve Editor").toStdString() );
+    _curveEditor->setVisible(false);
     _gui->registerTab(_curveEditor, _curveEditor);
 }
 
@@ -402,6 +411,7 @@ GuiPrivate::createDopeSheetGui()
     _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
     _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _dopeSheetEditor->setVisible(false);
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
 
@@ -411,7 +421,7 @@ GuiPrivate::createScriptEditorGui()
     _scriptEditor = new ScriptEditor(_gui);
     _scriptEditor->setScriptName("scriptEditor");
     _scriptEditor->setLabel( QObject::tr("Script Editor").toStdString() );
-    _scriptEditor->hide();
+    _scriptEditor->setVisible(false);
     _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
@@ -640,6 +650,15 @@ GuiPrivate::restoreGuiGeometry()
     if ( settings.contains("LastPluginDir") ) {
         _lastPluginDir = settings.value("LastPluginDir").toString();
     }
+    
+#ifdef __NATRON_WIN32__
+    if (settings.contains("ApplicationConsoleVisible")) {
+        bool visible = settings.value("ApplicationConsoleVisible").toBool();
+        _gui->setApplicationConsoleActionVisible(visible);
+    } else {
+        _gui->setApplicationConsoleActionVisible(false);
+    }
+#endif
 } // GuiPrivate::restoreGuiGeometry
 
 void
@@ -659,6 +678,9 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
     settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
     settings.setValue("LastPluginDir", _lastPluginDir);
+#ifdef __NATRON_WIN32__
+    settings.setValue("ApplicationConsoleVisible",applicationConsoleVisible);
+#endif
 }
 
 

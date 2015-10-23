@@ -455,48 +455,79 @@ void
 KnobGuiDouble::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    double v = knob->getValue(dimension);
-    valueAccordingToType(false, dimension, &v);
     
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            
-            if (i == dimension) {
-                continue;
-            }
-            if (knob->getValue(i) != v) {
-                expandAllDimensions();
-            }
+    assert(dimension == -1 || (dimension >= 0 && dimension < knob->getDimension()));
+    
+    double values[3];
+    double refValue;
+    if (dimension == -1) {
+        values[0] = knob->getValue(0);
+        valueAccordingToType(false, dimension, &values[0]);
+        refValue = values[0];
+    } else {
+        values[dimension] = knob->getValue(dimension);
+        valueAccordingToType(false, dimension, &values[dimension]);
+        refValue = values[dimension];
+    }
+    bool allValuesDifferent = false;
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        
+        if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
+            ///Already processed
+            continue;
+        }
+        values[i] = knob->getValue(i);
+        valueAccordingToType(false, dimension, &values[i]);
+        if (values[i] != refValue) {
+            allValuesDifferent = true;
         }
     }
-    
-    if (_slider) {
-        _slider->seekScalePosition(v);
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && allValuesDifferent) {
+        expandAllDimensions();
+    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !allValuesDifferent) {
+        foldAllDimensions();
     }
     
     
-    _spinBoxes[dimension].first->setValue(v);
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-        if (dimension == 0) {
+    if (dimension != -1) {
+        switch (dimension) {
+            case 0:
+                
+                if (_slider) {
+                    _slider->seekScalePosition(values[0]);
+                }
+                _spinBoxes[dimension].first->setValue(values[dimension]);
+                if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+                    for (int i = 1; i < knob->getDimension(); ++i) {
+                        _spinBoxes[i].first->setValue(values[dimension]);
+                    }
+                }
+                break;
+            case 1:
+            case 2:
+                _spinBoxes[dimension].first->setValue(values[dimension]);
+                break;
+            default:
+                break;
+        }
+        
+    } else {
+        
+        if (_slider) {
+            _slider->seekScalePosition(values[0]);
+        }
+        _spinBoxes[0].first->setValue(values[0]);
+        if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
             for (int i = 1; i < knob->getDimension(); ++i) {
-                _spinBoxes[i].first->setValue(v);
+                _spinBoxes[i].first->setValue(values[0]);
+            }
+        } else {
+            for (int i = 1; i < knob->getDimension(); ++i) {
+                _spinBoxes[i].first->setValue(values[i]);
             }
         }
     }
-//    bool valuesEqual = true;
-//    double v0 = _spinBoxes[0].first->value();
-//    
-//    for (int i = 1; i < _knob->getDimension(); ++i) {
-//        if (_spinBoxes[i].first->value() != v0) {
-//            valuesEqual = false;
-//            break;
-//        }
-//    }
-//    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && !valuesEqual) {
-//        expandAllDimensions();
-//    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && valuesEqual) {
-//        foldAllDimensions();
-//    }
+
 }
 
 void

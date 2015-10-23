@@ -264,7 +264,7 @@ RotoSmear::render(const RenderActionArgs& args)
     SequenceTime ptTime;
     int ptView;
     boost::shared_ptr<Node> ptInput;
-    getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
+    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
     
     ComponentsNeededMap::iterator foundBg = neededComps.find(0);
     assert(foundBg != neededComps.end() && !foundBg->second.empty());

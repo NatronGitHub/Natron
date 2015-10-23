@@ -43,6 +43,8 @@
 #include "Engine/KnobFile.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Global/QtCompat.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
 #include "Gui/BackDropGui.h"
@@ -274,7 +276,7 @@ GuiAppInstance::load(const CLArgs& cl)
     }
 
     /// If this is the first instance of the software, try to load an autosave
-    if ( (getAppID() == 0) && cl.getFilename().isEmpty() ) {
+    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
         if (findAndTryLoadUntitledAutoSave()) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
@@ -282,19 +284,24 @@ GuiAppInstance::load(const CLArgs& cl)
     }
 
 
-    QFileInfo info(cl.getFilename());
+    QFileInfo info(cl.getScriptFilename());
 
-    if (cl.getFilename().isEmpty() || !info.exists()) {
+    if (cl.getScriptFilename().isEmpty() || !info.exists()) {
 
         getProject()->createViewer();
         execOnProjectCreatedCallback();
+        
+        const QString& imageFile = cl.getImageFilename();
+        if (!imageFile.isEmpty()) {
+            handleFileOpenEvent(imageFile.toStdString());
+        }
 
     } else {
 
 
         if (info.suffix() == "py") {
 
-            appPTR->setLoadingStatus(tr("Loading script: ") + cl.getFilename());
+            appPTR->setLoadingStatus(tr("Loading script: ") + cl.getScriptFilename());
 
             ///If this is a Python script, execute it
             loadPythonScript(info);
@@ -408,6 +415,9 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
         assert(graph);
     } else {
         graph = _imp->_gui->getNodeGraph();
+    }
+    if (!graph) {
+        throw std::logic_error("");
     }
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
@@ -1010,6 +1020,7 @@ GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
         return;
     }
     _imp->loadProjectSplash = new LoadProjectSplashScreen(projectFile);
+    _imp->loadProjectSplash->setAttribute(Qt::WA_DeleteOnClose,0);
 }
 
 void
@@ -1024,8 +1035,11 @@ GuiAppInstance::updateProjectLoadStatus(const QString& str)
 void
 GuiAppInstance::closeLoadPRojectSplashScreen()
 {
-    _imp->loadProjectSplash->deleteLater();
-    _imp->loadProjectSplash = 0;
+    if (_imp->loadProjectSplash) {
+        _imp->loadProjectSplash->close();
+        delete _imp->loadProjectSplash;
+        _imp->loadProjectSplash = 0;
+    }
 }
 
 void
@@ -1079,6 +1093,9 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
             graph = _imp->_gui->getNodeGraph();
         }
         assert(graph);
+        if (!graph) {
+            throw std::logic_error("");
+        }
         std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
         boost::shared_ptr<NodeGui> selectedNode;
         if (!selectedNodes.empty()) {
@@ -1173,4 +1190,29 @@ AppInstance*
 GuiAppInstance::newProject()
 {
     return _imp->_gui->createNewProject();
+}
+
+void
+GuiAppInstance::handleFileOpenEvent(const std::string &filename)
+{
+    QString fileCopy(filename.c_str());
+    QString ext = Natron::removeFileExtension(fileCopy);
+    if (ext == NATRON_PROJECT_FILE_EXT) {
+        AppInstance* app = getGui()->openProject(filename);
+        if (!app) {
+            Natron::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
+        }
+    } else {
+        appPTR->handleImageFileOpenRequest(filename);
+    }
+}
+
+void*
+GuiAppInstance::getOfxHostOSHandle() const
+{
+    if (!_imp->_gui) {
+        return (void*)0;
+    }
+    WId ret = _imp->_gui->winId();
+    return (void*)ret;
 }

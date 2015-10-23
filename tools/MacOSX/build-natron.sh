@@ -23,8 +23,14 @@
 #Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
+MACPORTS="/opt/local"
+QTDIR="${MACPORTS}/libexec/qt4"
 
 cd "$CWD/build" || exit 1
+
+if [ "$PLUGINDIR" = "$CWD/build/Natron/App/Natron.app/Contents/Plugins" ]; then
+    echo "Warning: PLUGINDIR is $PLUGINDIR (should *really* be .../OFX/Natron)"
+fi
 
 if [ "$BRANCH" = "workshop" ]; then
     NATRON_BRANCH=$BRANCH
@@ -61,13 +67,13 @@ sed -i "" -e "s#__BRANCH__#${NATRON_BRANCH}#;s#__COMMIT__#${REL_GIT_VERSION}#"  
 #Generate config.pri
 cat > config.pri <<EOF
 boost {
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt
+    INCLUDEPATH += $MACPORTS/include
+    LIBS += -L$MACPORTS/lib -lboost_serialization-mt
 }
 shiboken {
     PKGCONFIG -= shiboken
-    INCLUDEPATH += /opt/local/include/shiboken-2.7
-    LIBS += -L/opt/local/lib -lshiboken-python2.7.1.2
+    INCLUDEPATH += $MACPORTS/include/shiboken-2.7
+    LIBS += -L$MACPORTS/lib -lshiboken-python2.7.1.2
 }
 EOF
 
@@ -110,7 +116,24 @@ if [ "$COMPILER" = "clang" ]; then
 else
     SPEC=macx-g++
 fi
-qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions $QMAKEEXTRAFLAGS || exit 1
+
+$QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent $QMAKEEXTRAFLAGS || exit 1
 make -j${MKJOBS} || exit 1
 
 ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
+
+package="$CWD/build/Natron/App/Natron.app"
+if [ "$PLUGINDIR" = "${package}/Contents/Plugins" ]; then
+    echo "HACK: moving Qt plugins from ${package}/Contents/PlugIns to ${package}/Contents/Plugins (should not be necessary when the OFX Plugins dir is ${package}/Contents/OFX/Natron)"
+    mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
+
+    ## the original qt.conf points to PlugIns (not Plugins)
+    rm "${package}/Contents/Resources/qt.conf" || exit 1
+
+    #Make a qt.conf file in Contents/Resources/
+    cat > "${package}/Contents/Resources/qt.conf" <<EOF
+[Paths]
+Plugins = Plugins
+EOF
+fi
+

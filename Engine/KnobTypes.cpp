@@ -568,6 +568,8 @@ KnobButton::trigger()
 
 /******************************KnobChoice**************************************/
 
+#define KNOBCHOICE_MAX_ENTRIES_HELP 40 // don't show help in the tootlip if there are more entries that this
+
 KnobChoice::KnobChoice(KnobHolder* holder,
                          const std::string &description,
                          int dimension,
@@ -634,9 +636,9 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
     }
     if (!curEntry.empty()) {
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == curEntry) {
+            if (entries[i] == curEntry && cur_i != (int)i) {
                 blockValueChanges();
-                setValue(cur_i, 0);
+                setValue((int)i, 0);
                 unblockValueChanges();
                 break;
             }
@@ -646,6 +648,36 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
         _signalSlotHandler->s_helpChanged();
     }
     Q_EMIT populated();
+}
+
+void
+KnobChoice::resetChoices()
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        _entries.clear();
+        _entriesHelp.clear();
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+    Q_EMIT entriesReset();
+}
+
+void
+KnobChoice::appendChoice(const std::string& entry, const std::string& help)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        if (!_entriesHelp.empty()) {
+            _entriesHelp.push_back(help);
+        }
+        _entries.push_back(entry);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
+    Q_EMIT entryAppended(QString(entry.c_str()), QString(help.c_str()));
 }
 
 std::vector<std::string>
@@ -709,22 +741,36 @@ trim(std::string const & str)
     return str.substr(first, last - first + 1);
 }
 
+static void
+whitespacify(std::string & str)
+{
+    std::replace( str.begin(), str.end(), '\t', ' ');
+    std::replace( str.begin(), str.end(), '\f', ' ');
+    std::replace( str.begin(), str.end(), '\v', ' ');
+    std::replace( str.begin(), str.end(), '\n', ' ');
+    std::replace( str.begin(), str.end(), '\r', ' ');
+}
+
 std::string
 KnobChoice::getHintToolTipFull() const
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    bool gothelp = false;
+    int gothelp = 0;
     
     if ( !_entriesHelp.empty() ) {
         assert( _entriesHelp.size() == _entries.size() );
         for (U32 i = 0; i < _entries.size(); ++i) {
             if ( !_entriesHelp.empty() && !_entriesHelp[i].empty() ) {
-                gothelp = true;
+                ++gothelp;
             }
         }
     }
-    
+
+    if (gothelp > KNOBCHOICE_MAX_ENTRIES_HELP) {
+        // too many entries
+        gothelp = 0;
+    }
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << trim( getHintToolTip() );
@@ -737,9 +783,13 @@ KnobChoice::getHintToolTipFull() const
     if (gothelp) {
         for (U32 i = 0; i < _entriesHelp.size(); ++i) {
             if ( !_entriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
-                ss << trim(_entries[i]);
+                std::string entry = trim(_entries[i]);
+                whitespacify(entry);
+                std::string help = trim(_entriesHelp[i]);
+                whitespacify(help);
+                ss << entry;
                 ss << ": ";
-                ss << trim(_entriesHelp[i]);
+                ss << help;
                 if (i < _entriesHelp.size() - 1) {
                     ss << '\n';
                 }

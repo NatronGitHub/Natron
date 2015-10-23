@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 140052 2015-09-08 02:47:33Z ryandesign@macports.org $
+# $Id: Portfile 141450 2015-10-19 03:24:23Z ryandesign@macports.org $
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -7,7 +7,7 @@ PortGroup                   conflicts_build 1.0
 # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
 
 name                        ImageMagick
-version                     6.9.2-0
+version                     6.9.2-4
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -39,8 +39,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  f1c8b519040dbeefb0d071b4f5672b632361c33c \
-                            sha256  07a2de28f7f9ab888ef47c02eb7e10cc3e0dd0e9797c5d71d6e71d19f842399e
+checksums                   rmd160  0d674a2e6bbccbef4f7dcdce4965d1130aca4f60 \
+                            sha256  05b1c499415048099a1464ebd03f0cfaae8d0994c681bcf7e0319b26e5e8d848
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \

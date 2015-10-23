@@ -121,6 +121,10 @@ public Q_SLOTS:
 
     void onEntriesPopulated();
     
+    void onEntryAppended(const QString& entry, const QString& help);
+    
+    void onEntriesReset();
+    
     void onItemNewSelected();
 
 private:
@@ -137,7 +141,6 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     
-    std::vector<std::string> _entries;
     ComboBox *_comboBox;
     boost::weak_ptr<KnobChoice> _knob;
 };

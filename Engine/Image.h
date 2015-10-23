@@ -796,9 +796,17 @@ namespace Natron {
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
         
+        template <typename PIX, bool doPremult>
+        void premultInternal(const RectI& roi);
+        template <bool doPremult>
+        void premultForDepth(const RectI& roi);
+
+        
     public:
         
         
+        void premultImage(const RectI& roi);
+        void unpremultImage(const RectI& roi);
         
         void copyUnProcessedChannels(const RectI& roi,
                                      Natron::ImagePremultiplicationEnum outputPremult,
@@ -868,8 +876,20 @@ namespace Natron {
         void copyUnProcessedChannelsForPremult(const RectI& roi,
                                                const boost::shared_ptr<Image>& originalImage);
 
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+        void copyUnProcessedChannelsForPremult(bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult,
+                                               const RectI& roi,
+                                               const boost::shared_ptr<Image>& originalImage);
+
         template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
         void copyUnProcessedChannelsForChannels(bool premult,
+                                                const RectI& roi,
+                                                const boost::shared_ptr<Image>& originalImage,
+                                                bool originalPremult);
+
+        template <typename PIX, int maxValue, int srcNComps, int dstNComps>
+        void copyUnProcessedChannelsForChannels(bool doR, bool doG, bool doB, bool doA,
+                                                bool premult,
                                                 const RectI& roi,
                                                 const boost::shared_ptr<Image>& originalImage,
                                                 bool originalPremult);

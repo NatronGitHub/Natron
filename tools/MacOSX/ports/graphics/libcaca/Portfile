@@ -1,11 +1,11 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 139469 2015-08-18 01:10:17Z jmr@macports.org $
+# $Id: Portfile 140827 2015-10-04 18:51:44Z mcalhoun@macports.org $
 
 PortSystem          1.0
 
 name                libcaca
 version             0.99.beta19
-revision            2
+revision            3
 categories          graphics
 license             WTFPL-2 LGPL-2+
 maintainers         nomaintainer
@@ -37,8 +37,8 @@ autoreconf.args     -fvi
 configure.args      --mandir=${prefix}/share/man \
                     --disable-win32 --disable-conio --disable-slang \
                     --disable-imlib2 --disable-doc \
-                    --disable-x11 --enable-ncurses --disable-imlib2 \
-                    --disable-ruby
+                    --disable-x11 --enable-ncurses \
+                    --disable-ruby --disable-csharp
 
 # Disable silent rules
 build.args-append   V=1

@@ -39,6 +39,9 @@ KnobGui::onCreateMasterOnGroupActionTriggered()
     KnobHolder* holder = getKnob()->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
+    if (!isEffect) {
+        throw std::logic_error("");
+    }
     boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     assert(isCollecGroup);
@@ -225,11 +228,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
                                            toRemove) );
     //refresh the gui so it doesn't indicate the parameter is animated anymore
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (dim == -1 || dim == i) {
-            updateGUI(i);
-        }
-    }
+    updateGUI(dim);
 }
 
 void

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 136285 2015-05-14 03:21:00Z ionic@macports.org $
+# $Id: Portfile 141450 2015-10-19 03:24:23Z ryandesign@macports.org $
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -7,14 +7,13 @@ PortGroup                   conflicts_build 1.0
 # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
 
 name                        ImageMagick
-version                     6.8.9-10
-#revision                    1
+version                     6.9.1-10
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
 maintainers                 ryandesign
 license                     Apache-2
-use_bzip2                   yes
+use_xz                      yes
 platforms                   darwin
 use_parallel_build          yes
 
@@ -40,9 +39,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-# checksums for 6.8.9-10:
-checksums           rmd160  3f3efb2acbe1353d11a64e707e8f618d6ca11f35 \
-                    sha256  4e702c1c3b4632fde2a93af33dcd3d013a9ebfa598060aca11f06d80676ecbf4
+checksums           rmd160  2de5e8a6c828254860e4eda5e522bcc4edd3b173 \
+                    sha256  22565464059376513869b6626982e0726a33788ccc7e19a08e55ff1683d4ff92
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -119,7 +117,7 @@ configure.args              --enable-shared \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
 
 variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-    patchfiles-append magick-seed.diff magick-svg.diff
+    #patchfiles-append magick-seed.diff magick-svg.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
     configure.args-replace  --with-gslib --without-gslib
@@ -134,8 +132,8 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     depends_lib-delete       port:jpeg
     configure.args-replace  --with-jpeg --without-jpeg
     # why not remove png support? maybe because freetype depends on png anyway?
-    #depends_lib-delete       port:png
-    #configure.args-replace  --with-png --without-png
+    depends_lib-delete       port:png
+    configure.args-replace  --with-png --without-png
     depends_lib-delete       port:openjpeg
     configure.args-replace  --with-openjp2 --without-openjp2
     depends_lib-delete       port:openexr
@@ -151,8 +149,8 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --enable-shared --disable-shared
     configure.args-replace  --with-modules --without-modules
     pre-extract {
-        if {${version} != "6.8.9-10"} {
-            ui_msg "Natron variant requires ImageMagick version 6.8.9-10 (this is ${version}), please modify the Portfile."
+        if {${version} != "6.9.1-10"} {
+            ui_msg "Natron variant requires ImageMagick version 6.9.1-10 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
         }
     }

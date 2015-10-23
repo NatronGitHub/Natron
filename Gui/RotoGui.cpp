@@ -61,6 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
@@ -407,6 +408,8 @@ struct RotoGui::RotoGuiPrivate
     void toggleToolsSelection(QToolButton* selected);
     
     void makeStroke(bool prepareForLater,const RotoPoint& p);
+    
+    void checkViewersAreDirectlyConnected();
 };
 
 
@@ -1497,63 +1500,6 @@ RotoGui::drawOverlays(double time,
                     }
                     glEnd();
                 }
-                
-#ifdef DEBUG
-                std::list<boost::shared_ptr<Curve> > xCurves = isStroke->getXControlPoints();
-                std::list<boost::shared_ptr<Curve> > yCurves = isStroke->getYControlPoints();
-                assert(xCurves.size() == yCurves.size());
-                std::list<boost::shared_ptr<Curve> >::iterator itY = yCurves.begin();
-                for (std::list<boost::shared_ptr<Curve> >::iterator itX = xCurves.begin() ;itX!=xCurves.end(); ++itX,++itY) {
-                    KeyFrameSet xSet = (*itX)->getKeyFrames_mt_safe();
-                    KeyFrameSet ySet = (*itY)->getKeyFrames_mt_safe();
-                    assert(xSet.size() == ySet.size());
-                    if (xSet.size() > 2) {
-                        KeyFrameSet::iterator xIt = xSet.begin();
-                        ++xIt;
-                        KeyFrameSet::iterator yIt = ySet.begin();
-                        ++yIt;
-                        KeyFrameSet::iterator xNext = xIt;
-                        ++xNext;
-                        KeyFrameSet::iterator yNext = yIt;
-                        ++yNext;
-                        KeyFrameSet::iterator xPrev = xSet.begin();
-                        KeyFrameSet::iterator yPrev = ySet.begin();
-                        for (; xNext != xSet.end(); ++xIt, ++yIt, ++xPrev, ++yPrev,++xNext, ++yNext) {
-                            
-                            double x = xIt->getValue();
-                            double y = yIt->getValue();
-                            
-                            double dtr = xNext->getTime() - xIt->getTime();
-                            double dtl = xIt->getTime() - xPrev->getTime();
-                            assert(dtr >= 0 && dtl >= 0);
-                            
-                            double lx = x - dtl * xIt->getLeftDerivative() / 3.;
-                            double ly = y - dtl * yIt->getLeftDerivative() / 3.;
-                            double rx = x + dtr * xIt->getRightDerivative() / 3.;
-                            double ry = y + dtr * yIt->getRightDerivative() / 3.;
-                            
-                            
-                            glBegin(GL_LINE_STRIP);
-                            glColor3f(0., 0.8, 0.8);
-                            glVertex2d(lx,ly);
-                            glVertex2d(x,y);
-                            glVertex2d(rx,ry);
-                            glEnd();
-                            glBegin(GL_POINTS);
-                            glColor3f(1., 1., 0.);
-                            glVertex2d(lx, ly);
-                            glColor3f(1., 0., 0.);
-                            glVertex2d(x,y);
-                            glColor3f(1., 1., 0.);
-                            glVertex2d(rx,ry);
-                            glEnd();
-                            
-                        }
-                    }
-                }
-                
-#endif
-                
                 
             } else if (isBezier) {
                 ///draw the bezier
@@ -2741,6 +2687,12 @@ RotoGui::penDown(double time,
                 _imp->state = eEventStateDraggingBrushOpacity;
                 _imp->mouseCenterOnSizeChange = pos;
             } else {
+                
+                /*
+                 Check that all viewers downstream are connected directly to the RotoPaint to avoid glitches and bugs
+                 */
+                _imp->checkViewersAreDirectlyConnected();
+                
                 _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
                 if (_imp->rotoData->strokeBeingPaint &&
                     _imp->rotoData->strokeBeingPaint->getParentLayer() && 
@@ -3338,6 +3290,63 @@ void
 RotoGui::onBreakMultiStrokeTriggered()
 {
     _imp->makeStroke(true, RotoPoint());
+}
+
+static bool isBranchConnectedToRotoNodeRecursive(Node* node,
+                                                 const Node* rotoNode,
+                                                 int* recursion,
+                                                 std::list<Node*>& markedNodes)
+{
+    assert(recursion);
+    if (!node) {
+        return false;
+    }
+    if (rotoNode == node) {
+        return true;
+    }
+    markedNodes.push_back(node);
+    int maxInputs = node->getMaxInputCount();
+    *recursion = *recursion + 1;
+    for (int i = 0; i < maxInputs; ++i) {
+        NodePtr inp = node->getInput(i);
+        if (inp) {
+            if (isBranchConnectedToRotoNodeRecursive(inp.get(),rotoNode,recursion,markedNodes)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void
+RotoGui::RotoGuiPrivate::checkViewersAreDirectlyConnected()
+{
+    boost::shared_ptr<Node> rotoNode = context->getNode();
+    std::list<ViewerInstance*> viewers;
+    rotoNode->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        NodePtr viewerNode = (*it)->getNode();
+        int maxInputs = viewerNode->getMaxInputCount();
+        int hasBranchConnectedToRoto = -1;
+        for (int i = 0; i < maxInputs; ++i) {
+            NodePtr input = viewerNode->getInput(i);
+            if (input) {
+                std::list<Node*> markedNodes;
+                int recursion = 0;
+                if (isBranchConnectedToRotoNodeRecursive(input.get(), rotoNode.get(), &recursion, markedNodes)) {
+                    if (recursion == 0) {
+                        //This viewer is already connected to the Roto node directly.
+                        break;
+                    }
+                    viewerNode->disconnectInput(i);
+                    if (hasBranchConnectedToRoto == -1) {
+                        viewerNode->connectInput(rotoNode, i);
+                        hasBranchConnectedToRoto = i;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void

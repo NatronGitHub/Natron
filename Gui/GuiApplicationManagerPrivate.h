@@ -137,9 +137,11 @@ struct GuiApplicationManagerPrivate
                           const QString & description,
                           const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
     
-    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& parent,
+    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
+                                                                     const boost::shared_ptr<PluginGroupNode>& parent,
                                                                      const QStringList & grouping,
                                                                      const QString & name,
+                                                                     const QStringList & groupingIcon,
                                                                      const QString & iconPath,
                                                                      int major,
                                                                      int minor,

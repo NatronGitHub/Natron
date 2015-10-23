@@ -56,6 +56,12 @@
 
 #include "Global/QtCompat.h" // removeFileExtension
 
+#ifdef __NATRON_WIN32__
+#if _WIN32_WINNT < 0x0500
+#define _WIN32_WINNT 0x0500
+#endif
+#endif
+
 using namespace Natron;
 
 void
@@ -234,8 +240,12 @@ Gui::restoreLayout(bool wipePrevious,
             }
 
             ///Restore geometry
-            window->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
-            window->move( QPoint( (*it)->x, (*it)->y ) );
+            int w = std::min((*it)->w,screen.width());
+            int h = std::min((*it)->h,screen.height());
+            window->resize(w, h);
+            int x = std::min(std::max((*it)->x,screen.x()),screen.right() - 50);
+            int y = std::min(std::max((*it)->y,screen.y() + 50),screen.bottom());
+            window->move(QPoint(x,y));
         }
 
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
@@ -250,13 +260,23 @@ Gui::restoreLayout(bool wipePrevious,
                 DockablePanel* panel = 0;
                 for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                     if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
-                        ( (*it2)->getSettingPanel()->floatPanel() );
-                        panel = (*it2)->getSettingPanel();
+                        (*it2)->ensurePanelCreated();
+                        NodeSettingsPanel* nodeSettings = (*it2)->getSettingPanel();
+                        if (nodeSettings) {
+                            nodeSettings->floatPanel();
+                            panel = nodeSettings;
+                        }
                         break;
                     }
                 }
                 if (panel) {
-                    FloatingWidget* fWindow = dynamic_cast<FloatingWidget*>( panel->parentWidget() );
+                    FloatingWidget* fWindow = 0;
+                    QWidget* w = panel->parentWidget();
+                    while (!fWindow && w) {
+                        fWindow = dynamic_cast<FloatingWidget*>(w);
+                        w = w->parentWidget();
+                    }
+                    
                     assert(fWindow);
                     fWindow->move( QPoint( (*it)->x, (*it)->y ) );
                     fWindow->resize(std::min((*it)->w,screen.width()), std::min((*it)->h,screen.height()));
@@ -339,4 +359,27 @@ Gui::updateLastPluginDirectory(const QString & str)
 {
     _imp->_lastPluginDir = str;
 }
+
+#ifdef __NATRON_WIN32__
+
+void
+Gui::onShowApplicationConsoleActionTriggered()
+{
+    setApplicationConsoleActionVisible(!_imp->applicationConsoleVisible);
+}
+
+void
+Gui::setApplicationConsoleActionVisible(bool visible)
+{
+    if (visible == _imp->applicationConsoleVisible) {
+        return;
+    }
+    _imp->applicationConsoleVisible = visible;
+    HWND hWnd = GetConsoleWindow();
+    if (hWnd) {
+        ShowWindow(hWnd, _imp->applicationConsoleVisible ? SW_SHOW : SW_HIDE );
+    }
+
+}
+#endif
 

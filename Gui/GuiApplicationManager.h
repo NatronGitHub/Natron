@@ -96,7 +96,7 @@ public:
     const std::list<boost::shared_ptr<PluginGroupNode> > & getTopLevelPluginsToolButtons() const;
     boost::shared_ptr<PluginGroupNode>  findPluginToolButtonOrCreate(const QStringList & grouping,
                                                                      const QString & name,
-                                                                     const QString& groupIconPath,
+                                                                     const QStringList& groupIconPath,
                                                                      const QString & iconPath,
                                                                      int major,
                                                                      int minor,
@@ -198,6 +198,8 @@ public:
     virtual void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers) OVERRIDE;
     
     const std::list<PythonUserCommand>& getUserPythonCommands() const;
+    
+    bool handleImageFileOpenRequest(const std::string& imageFile);
     
 public Q_SLOTS:
 

@@ -1435,6 +1435,9 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_AVERAGE", (long) Natron::NATRON_PIXMAP_MERGE_AVERAGE))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_COLOR", (long) Natron::NATRON_PIXMAP_MERGE_COLOR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_COLOR_BURN", (long) Natron::NATRON_PIXMAP_MERGE_COLOR_BURN))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
@@ -1468,7 +1471,16 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_GEOMETRIC", (long) Natron::NATRON_PIXMAP_MERGE_GEOMETRIC))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_GRAIN_EXTRACT", (long) Natron::NATRON_PIXMAP_MERGE_GRAIN_EXTRACT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_GRAIN_MERGE", (long) Natron::NATRON_PIXMAP_MERGE_GRAIN_MERGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_HARD_LIGHT", (long) Natron::NATRON_PIXMAP_MERGE_HARD_LIGHT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_HUE", (long) Natron::NATRON_PIXMAP_MERGE_HUE))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_HYPOT", (long) Natron::NATRON_PIXMAP_MERGE_HYPOT))
@@ -1477,7 +1489,7 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_IN", (long) Natron::NATRON_PIXMAP_MERGE_IN))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
-        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_INTERPOLATED", (long) Natron::NATRON_PIXMAP_MERGE_INTERPOLATED))
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_LUMINOSITY", (long) Natron::NATRON_PIXMAP_MERGE_LUMINOSITY))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MASK", (long) Natron::NATRON_PIXMAP_MERGE_MASK))
@@ -1514,6 +1526,9 @@ void init_Natron(PyObject* module)
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_REFLECT", (long) Natron::NATRON_PIXMAP_MERGE_REFLECT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_SATURATION", (long) Natron::NATRON_PIXMAP_MERGE_SATURATION))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_SCREEN", (long) Natron::NATRON_PIXMAP_MERGE_SCREEN))
