@@ -83,6 +83,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/OfxMemory.h"
@@ -809,9 +810,7 @@ Natron::OfxHost::clearPluginsLoadedCache()
     if (QFile::exists(oldOfxCache)) {
         QFile::remove(oldOfxCache);
     }
-    QDir cacheDir(Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache));
-    cacheDir.rmdir("OFXLoadCache");
-    
+    Natron::removeRecursively(getOFXCacheDirPath());
 }
 
 void
