@@ -567,6 +567,31 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
     return hostSideEffect;
 }
 
+///Return the xml cache file used before Natron 2 RC2
+static QString getOldCacheFilePath()
+{
+    QString cachePath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + '/';
+    QString oldOfxCache = cachePath + "OFXCache.xml";
+    return oldOfxCache;
+}
+
+static QString getOFXCacheDirPath()
+{
+    QString cachePath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + '/';
+    QString ofxCachePath = cachePath + "OFXLoadCache";
+    return ofxCachePath;
+}
+
+///Return the xml cache file used after Natron 2 RC2
+static QString getCacheFilePath()
+{
+    QString ofxCachePath = getOFXCacheDirPath() + '/';
+    QString ofxCacheFilePath = ofxCachePath + "OFXCache_" +
+    QString(NATRON_VERSION_STRING) + QString("_") +
+    QString(NATRON_DEVELOPMENT_STATUS) + QString("_") +
+    QString::number(NATRON_BUILD_NUMBER) + QString(".xml");
+    return ofxCacheFilePath;
+}
 
 void
 Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
@@ -608,14 +633,14 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         // ignore
     }
 
-    /// now read an old cache
     // The cache location depends on the OS.
-    // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
-    //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
-    //on windows:
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + QDir::separator() + "OFXCache.xml";
-    std::ifstream ifs( ofxcachename.toStdString().c_str() );
-    if ( ifs.is_open() ) {
+    // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXLoadCache/
+    //on Linux ~/.cache/<organization>/<application>/OFXLoadCache/
+    //on windows: C:\Users\<username>\App Data\Local\<organization>\<application>\Caches\OFXLoadCache
+    QString ofxCacheFilePath = getCacheFilePath();
+    
+    std::ifstream ifs(ofxCacheFilePath.toStdString().c_str());
+    if (ifs.is_open()) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
         ifs.close();
     }
@@ -767,12 +792,10 @@ void
 Natron::OfxHost::writeOFXCache()
 {
     /// and write a new cache, long version with everything in there
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
-
-    QDir().mkpath(ofxcachename);
-    ofxcachename +=  QDir::separator();
-    ofxcachename += "OFXCache.xml";
-    std::ofstream of( ofxcachename.toStdString().c_str() );
+    QString ofxCachePath = getOFXCacheDirPath();
+    QDir().mkpath(ofxCachePath);
+    QString ofxCacheFilePath = getCacheFilePath();
+    std::ofstream of( ofxCacheFilePath.toStdString().c_str() );
     assert( of.is_open() );
     assert( OFX::Host::PluginCache::getPluginCache() );
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
@@ -782,15 +805,13 @@ Natron::OfxHost::writeOFXCache()
 void
 Natron::OfxHost::clearPluginsLoadedCache()
 {
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
-
-    QDir().mkpath(ofxcachename);
-    ofxcachename +=  QDir::separator();
-    ofxcachename += "OFXCache.xml";
-
-    if ( QFile::exists(ofxcachename) ) {
-        QFile::remove(ofxcachename);
+    QString oldOfxCache = getOldCacheFilePath();
+    if (QFile::exists(oldOfxCache)) {
+        QFile::remove(oldOfxCache);
     }
+    QDir cacheDir(Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache));
+    cacheDir.rmdir("OFXLoadCache");
+    
 }
 
 void
