@@ -167,7 +167,13 @@ AppInstance::checkForNewVersion() const
 static
 int compareDevStatus(const QString& a,const QString& b)
 {
-    if (a == NATRON_DEVELOPMENT_ALPHA) {
+    if (a == NATRON_DEVELOPMENT_DEVEL || a == NATRON_DEVELOPMENT_SNAPSHOT) {
+        //Do not try updates when update available is a dev build
+        return -1;
+    } else if (b == NATRON_DEVELOPMENT_DEVEL || b == NATRON_DEVELOPMENT_SNAPSHOT) {
+        //This is a dev build, do not try updates
+        return -1;
+    } else if (a == NATRON_DEVELOPMENT_ALPHA) {
         if (b == NATRON_DEVELOPMENT_ALPHA) {
             return 0;
         } else {
@@ -305,8 +311,8 @@ AppInstance::newVersionCheckDownloaded()
                 .arg(NATRON_DEVELOPMENT_STATUS)
                 .arg(extractedSoftwareVersionStr)
                 .arg(extractedDevStatusStr) +
-                QObject::tr("<p>You can download it from ") + QString("<a href='http://sourceforge.net/projects/natron/'>"
-                                                                    "<font color=\"orange\">Sourceforge</a>. </p>");
+                QObject::tr("<p>You can download it from ") + QString("<a href='www.natron.fr/download'>"
+                                                                    "<font color=\"orange\">www.natron.fr</a>. </p>");
 
             }
         
