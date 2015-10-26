@@ -1330,13 +1330,19 @@ AppManager::setAsTopLevelInstance(int appID)
             if ( !isBackground() ) {
                 if (it->second.app) {
                     it->second.app->connectViewersToViewerCache();
-                    _imp->ofxHost->setOfxHostOSHandle(it->second.app->getOfxHostOSHandle());
+                    setOFXHostHandle(it->second.app->getOfxHostOSHandle());
                 }
 
             }
         }
     }
     
+}
+
+void
+AppManager::setOFXHostHandle(void* handle)
+{
+    _imp->ofxHost->setOfxHostOSHandle(handle);
 }
 
 void

@@ -424,6 +424,8 @@ public:
     
     static std::string isImageFileSupportedByNatron(const std::string& ext);
     
+    void setOFXHostHandle(void* handle);
+    
 public Q_SLOTS:
     
     void onNewCrashReporterConnectionPending();
