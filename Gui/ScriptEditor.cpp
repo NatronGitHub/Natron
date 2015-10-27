@@ -530,8 +530,20 @@ ScriptEditor::getAutoSavedScript() const
 }
 
 void
+ScriptEditor::doAppendToScriptEditorOnMainThread(const QString& str)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    appendToScriptEditor(str);
+}
+
+void
 ScriptEditor::appendToScriptEditor(const QString& str)
 {
+    if (QThread::currentThread() != qApp->thread()) {
+        appendToScriptEditorOnMainThread(str);
+        return;
+    }
+    
     _imp->outputEdit->append(str + "\n");
     if (_imp->outputAtBottom) {
         _imp->outputEdit->verticalScrollBar()->setValue(_imp->outputEdit->verticalScrollBar()->maximum());

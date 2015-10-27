@@ -233,9 +233,6 @@ struct OutputSchedulerThreadPrivate
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
 
-    bool runningCallback;
-    QMutex runningCallbackMutex;
-    QWaitCondition runningCallbackCond;
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
     : buf()
@@ -279,9 +276,6 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     , engine(engine)
-    , runningCallback(false)
-    , runningCallbackMutex()
-    , runningCallbackCond()
     {
        
     }
@@ -464,7 +458,6 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
     
     QObject::connect(this, SIGNAL(s_abortRenderingOnMainThread(bool,bool)), this, SLOT(abortRendering(bool,bool)));
     
-    QObject::connect(this, SIGNAL(s_executeCallbackOnMainThread(QString)), this, SLOT(onExecuteCallbackOnMainThread(QString)));
     
     setObjectName("Scheduler thread");
 }
@@ -1393,7 +1386,12 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::stringstream ss;
             ss << cb << "(" << frame << ",";
             std::string script = ss.str();
-            runCallbackWithVariables(script.c_str());
+            try {
+                runCallbackWithVariables(script.c_str());
+            } catch (const std::exception& e) {
+                notifyRenderFailure(e.what());
+                return;
+            }
             
         }
     }
@@ -1552,12 +1550,7 @@ OutputSchedulerThread::abortRendering(bool autoRestart,bool blocking)
                 _imp->processRunning = false;
                 _imp->processCondition.wakeOne();
             }
-            
-            {
-                QMutexLocker l3(&_imp->runningCallbackMutex);
-                _imp->runningCallback = false;
-                _imp->runningCallbackCond.wakeAll();
-            }
+
             
         } // QMutexLocker l2(&_imp->processMutex);
         ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
@@ -1729,7 +1722,11 @@ void
 OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
 {
     ///Abort all ongoing rendering
-    doAbortRenderingOnMainThread(false);
+    if (!appPTR->isBackground()) {
+        doAbortRenderingOnMainThread(false);
+    } else {
+        abortRendering(false, false);
+    }
     
     ///Handle failure: for viewers we make it black and don't display the error message which is irrelevant
     handleRenderFailure(errorMessage);
@@ -1814,34 +1811,7 @@ OutputSchedulerThread::getEngine() const
     return _imp->engine;
 }
 
-void
-OutputSchedulerThread::onExecuteCallbackOnMainThread(QString callback)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    std::string err,output;
-    if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
-        _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
-    } else if (!output.empty()) {
-        _imp->outputEffect->getApp()->appendToScriptEditor(output);
-    }
-    
-    QMutexLocker k(&_imp->runningCallbackMutex);
-    _imp->runningCallback = false;
-    _imp->runningCallbackCond.wakeAll();
-}
 
-void
-OutputSchedulerThread::runCallback(const QString& callback)
-{
-    QMutexLocker k(&_imp->runningCallbackMutex);
-    _imp->runningCallback = true;
-    Q_EMIT s_executeCallbackOnMainThread(callback);
-    
-    while (_imp->runningCallback) {
-        _imp->runningCallbackCond.wait(&_imp->runningCallbackMutex);
-    }
-
-}
 void
 OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
 {
@@ -1853,7 +1823,14 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         script.append(",");
         script.append(appID.c_str());
         script.append(")\n");
-        Q_EMIT s_executeCallbackOnMainThread(script);
+        
+        std::string err,output;
+        if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
+            _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
+            throw std::runtime_error(err);
+        } else if (!output.empty()) {
+            _imp->outputEffect->getApp()->appendToScriptEditor(output);
+        }
     }
 }
 
@@ -2053,7 +2030,12 @@ private:
             std::stringstream ss;
             ss << cb << "(" << time << ",";
             std::string script = ss.str();
-            _imp->scheduler->runCallbackWithVariables(script.c_str());
+            try {
+                _imp->scheduler->runCallbackWithVariables(script.c_str());
+            } catch (const std::exception &e) {
+                _imp->scheduler->notifyRenderFailure(e.what());
+                return;
+            }
 
         }
         
@@ -2380,7 +2362,7 @@ DefaultScheduler::aboutToStartRender()
         }
         
         std::string signatureError;
-        signatureError.append("The after render callback supports the following signature(s):\n");
+        signatureError.append("The beforeRender callback supports the following signature(s):\n");
         signatureError.append("- callback(thisNode, app)");
         if (args.size() != 2) {
             _effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
@@ -2394,7 +2376,11 @@ DefaultScheduler::aboutToStartRender()
         
         
         std::string script(cb + "(");
-        runCallbackWithVariables(script.c_str());
+        try {
+            runCallbackWithVariables(script.c_str());
+        } catch (const std::exception &e) {
+            notifyRenderFailure(e.what());
+        }
     }
 }
 
@@ -2445,7 +2431,11 @@ DefaultScheduler::onRenderStopped(bool aborted)
         } else {
             script += "False,";
         }
-        runCallbackWithVariables(script.c_str());
+        try {
+            runCallbackWithVariables(script.c_str());
+        } catch (...) {
+            //Ignore expcetions in callback since the render is finished anyway
+        }
     }
 
 }
