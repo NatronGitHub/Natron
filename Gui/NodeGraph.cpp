@@ -317,7 +317,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     
     if (drawLockedMode) {
         ///Show a semi-opaque forground indicating the PyPlug has not been edited
-        QPainter p(this);
+        QPainter p(viewport());
         p.setBrush(QColor(120,120,120));
         p.setOpacity(0.7);
         p.drawRect(rect());
