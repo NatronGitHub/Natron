@@ -34,7 +34,10 @@ LOCAL="/usr/local"
 PYVER="2.7"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
-QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+## all Qt frameworks:
+#QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+## Qt frameworks used by Natron + PySide:
+QT_LIBS="QtCore QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
 STRIP=1
 
 "$QTDIR"/bin/macdeployqt "${package}" -no-strip || exit 1
@@ -89,42 +92,6 @@ for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; 
     done
 done
 
-
-# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
-LIBGCC=0
-if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
-    LIBGCC=1
-fi
-if [ "$LIBGCC" = "1" ]; then
-    for l in gcc_s.1 gomp.1 stdc++.6; do
-        lib=lib${l}.dylib
-        cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
-        install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
-    done
-    for l in gcc_s.1 gomp.1 stdc++.6; do
-        lib=lib${l}.dylib
-        install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-        for deplib in "$pkglib/"*.dylib; do
-            install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
-        done
-    done
-    # use gcc's libraries everywhere
-    for l in gcc_s.1 gomp.1 stdc++.6; do
-        lib="lib${l}.dylib"
-        for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
-            test -f "$deplib" && install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
-        done
-    done
-fi
-for f in Python; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
-done
-
-if otool -L "$binary" | fgrep "${MACPORTS}"; then
-    echo "Error: MacPorts libraries remaining in $binary, please check"
-    exit 1
-fi
-
 # qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt Natron.app -verbose=2 gives:
 # Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
 # see https://trac.macports.org/ticket/49344
@@ -145,6 +112,64 @@ if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
         fi
     done
 fi
+# Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
+# their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
+# Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
+for qtlib in $QT_LIBS; do
+    if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
+        mkdir -p "${package}/Contents/Frameworks/${qtlib}.framework/Versions/4"
+        binary="${package}/Contents/Frameworks/${qtlib}.framework"
+        cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
+        chmod +w "${binary}"
+        for f in $QT_LIBS; do
+            install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+        done
+        for lib in libcrypto.1.0.0.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.1.0.0.dylib libz.1.dylib; do
+            install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+        done
+    fi
+done
+
+# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
+LIBGCC=0
+if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
+    LIBGCC=1
+fi
+if [ "$LIBGCC" = "1" ]; then
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+        lib=lib${l}.dylib
+        cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
+        install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
+    done
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+        lib=lib${l}.dylib
+        install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+        for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+            install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+        done
+    done
+    # use gcc's libraries everywhere
+    for l in gcc_s.1 gomp.1 stdc++.6; do
+        lib="lib${l}.dylib"
+        for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
+            test -f "$deplib" && install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+        done
+    done
+fi
+for f in Python; do
+    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
+done
+
+if otool -L "$binary" | fgrep "${MACPORTS}"; then
+    echo "Error: MacPorts libraries remaining in $binary, please check"
+    exit 1
+fi
+for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
+    if otool -L "$deplib" | fgrep "${MACPORTS}"; then
+        echo "Error: MacPorts libraries remaining in $deplib, please check"
+        exit 1
+    fi
+done
 
 
 cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/" || exit 1
