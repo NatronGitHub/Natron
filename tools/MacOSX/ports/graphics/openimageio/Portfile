@@ -19,7 +19,7 @@ github.setup     OpenImageIO oiio 1.5.20 tags/Release-
 
 name             openimageio
 #version          1.4.5.91
-revision         0
+revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -65,6 +65,9 @@ compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-
 #    0002-Fix_IlmBase_issue.patch \
 #    0003-Fix_multiarch_paths.patch \
 #    0004-Fix_FTBFS_on_atomic_operations.patch \
+
+patch.pre_args	-p1
+patchfiles pre-1.5.21.patch
 
 configure.args-append \
     -DBOOST_ROOT=${prefix} \
