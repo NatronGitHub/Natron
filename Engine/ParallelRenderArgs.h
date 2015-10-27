@@ -195,6 +195,7 @@ struct FrameViewRequestGlobalData
     FramesNeededMap frameViewsNeeded;
     
     //Identity data, set on first request
+    bool isIdentity;
     int identityInputNb;
     double inputIdentityTime;
 };
@@ -253,12 +254,6 @@ struct NodeFrameRequest
     ///Set on first request
     U64 nodeHash;
     RenderScale mappedScale;
-    
-    bool getFrameViewRoD(double time, int view, RectD* rod, bool* isProjectFormat) const;
-    
-    bool getFrameViewIdentity(double time, int view, double* inputIdentityTime, int* inputIdentityNb) const;
-    
-    bool getFrameViewFramesViewsNeeded(double time, int view, FramesNeededMap* framesNeeded) const;
     
     bool getFrameViewCanonicalRoI(double time, int view, RectD* roi) const;
     

@@ -41,6 +41,8 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             const std::map<int, Natron::EffectInstance*>& reroutesMap,
                                                                             bool useTransforms, // roi functor specific
                                                                             unsigned int originalMipMapLevel, // roi functor specific
+                                                                            double time,
+                                                                            int view,
                                                                             const boost::shared_ptr<Natron::Node>& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
                                                                             EffectInstance::InputImagesMap* inputImages, // render functor specific
@@ -48,12 +50,17 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             bool useScaleOneInputs, // render functor specific
                                                                             bool byPassCache) // render functor specific
 {
+    ///For all frames/views needed, call recursively on inputs with the appropriate RoI
+
     EffectInstance* effect = node->getLiveInstance();
     bool isRoto = node->isRotoPaintingNode();
     
-    ///For all frames/views needed, call recursively on inputs with the appropriate RoI
+    //Same as FramesNeededMap but we also get a pointer to EffectInstance* as key
+    typedef std::map<EffectInstance*, std::pair<int,std::map<int, std::vector<OfxRangeD> > > > PreRenderFrames;
+    
+    PreRenderFrames framesToRender;
+    //Add frames needed to the frames to render
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
-        
         int inputNb = it->first;
         
         bool inputIsMask = effect->isInputMask(inputNb);
@@ -80,9 +87,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         if (foundReroute != reroutesMap.end()) {
             inputEffect = foundReroute->second->getInput(inputNb);
         } else {
-            if (!isRoto || isRenderFunctor) {
+            //if (!isRoto || isRenderFunctor) {
                 inputEffect = node->getLiveInstance()->getInput(inputNb);
-            } else {
+            /*} else {
                 //For the roto, propagate the request to the internal tree when not rendering
                 boost::shared_ptr<RotoContext> roto = node->getRotoContext();
                 std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
@@ -93,8 +100,8 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                     assert(bottomMerge);
                     inputEffect = bottomMerge->getLiveInstance();
                 }
- 
-            }
+                
+            }*/
         }
         
         //Redirect the mask input
@@ -108,186 +115,216 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         if (inputEffect) {
-            
-            boost::shared_ptr<Node> inputNode = inputEffect->getNode();
-            assert(inputNode);
-            
-            ImageList* inputImagesList = 0;
-            if (isRenderFunctor) {
-                EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
-                if (foundInputImages == inputImages->end()) {
-                    std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
-                    inputImagesList = &ret.first->second;
-                    assert(ret.second);
-                }
+            framesToRender[inputEffect] = std::make_pair(inputNb, it->second);
+        }
+    }
+    
+    if (isRoto && !isRenderFunctor) {
+        //Also add internal rotopaint tree RoIs
+        boost::shared_ptr<Node> btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
+        if (btmMerge) {
+            std::map<int,std::vector<OfxRangeD> > frames;
+            std::vector<OfxRangeD> vec;
+            OfxRangeD r;
+            r.min = r.max = time;
+            vec.push_back(r);
+            frames[view] = vec;
+            framesToRender[btmMerge->getLiveInstance()] = std::make_pair(-1, frames);
+        }
+    }
+    
+    for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
+        
+        EffectInstance* inputEffect = it->first;
+        
+        boost::shared_ptr<Node> inputNode = inputEffect->getNode();
+        assert(inputNode);
+        
+        int inputNb = it->second.first;
+        if (inputNb == -1 && isRenderFunctor) {
+            /*
+             We use inputNb=-1 for the RotoPaint node to recurse the RoI computations on the internal rotopaint tree.
+             Note that when we are in the render functor, we do not pre-render the rotopaint tree, instead we wait for
+             the getImage() call on the bottom Merge node from the RotoPaint::render function
+             */
+            continue;
+        }
+        
+        ImageList* inputImagesList = 0;
+        if (isRenderFunctor) {
+            EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
+            if (foundInputImages == inputImages->end()) {
+                std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
+                inputImagesList = &ret.first->second;
+                assert(ret.second);
+            }
+        }
+        
+        ///What region are we interested in for this input effect ? (This is in Canonical coords)
+        RectD roi;
+        
+        bool roiIsInRequestPass = false;
+        const ParallelRenderArgs* frameArgs = 0;
+        if (isRenderFunctor) {
+            frameArgs = inputEffect->getParallelRenderArgsTLS();
+            if (frameArgs && frameArgs->request) {
+                roiIsInRequestPass = true;
             }
             
-            ///What region are we interested in for this input effect ? (This is in Canonical coords)
-            RectD roi;
-            
-            bool roiIsInRequestPass = false;
-            const ParallelRenderArgs* frameArgs = 0;
-            if (isRenderFunctor) {
-                frameArgs = inputEffect->getParallelRenderArgsTLS();
-                if (frameArgs && frameArgs->request) {
-                    roiIsInRequestPass = true;
-                }
-                
+        }
+        
+        if (!roiIsInRequestPass) {
+            RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
+            if(foundInputRoI == inputRois.end()) {
+                continue;
+            }
+            if (foundInputRoI->second.isInfinite()) {
+                std::stringstream ss;
+                ss << node->getScriptName_mt_safe();
+                ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
+                effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
+                return EffectInstance::eRenderRoIRetCodeFailed;
             }
             
-            if (!roiIsInRequestPass) {
-                RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
-                if(foundInputRoI == inputRois.end()) {
-                    continue;
-                }
-                if (foundInputRoI->second.isInfinite()) {
-                    std::stringstream ss;
-                    ss << node->getScriptName_mt_safe();
-                    ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
-                    effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
-                    return EffectInstance::eRenderRoIRetCodeFailed;
-                }
-                
-                if (foundInputRoI->second.isNull()) {
-                    continue;
-                }
-                roi = foundInputRoI->second;
+            if (foundInputRoI->second.isNull()) {
+                continue;
             }
-            
-            ///There cannot be frames needed without components needed.
-            const std::vector<Natron::ImageComponents>* compsNeeded = 0;
-            
-            if (neededComps) {
-                EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
-                if (foundCompsNeeded == neededComps->end()) {
-                    continue;
-                } else {
-                    compsNeeded = &foundCompsNeeded->second;
-                }
+            roi = foundInputRoI->second;
+        }
+        
+        ///There cannot be frames needed without components needed.
+        const std::vector<Natron::ImageComponents>* compsNeeded = 0;
+        
+        if (neededComps) {
+            EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
+            if (foundCompsNeeded == neededComps->end()) {
+                continue;
+            } else {
+                compsNeeded = &foundCompsNeeded->second;
             }
-
-            
-            const double inputPar = inputEffect->getPreferredAspectRatio();
-            
-            
+        }
+        
+        
+        const double inputPar = inputEffect->getPreferredAspectRatio();
+        
+        
+        
+        {
             ///Notify the node that we're going to render something with the input
-            assert(it->first != -1); //< see getInputNumber
+            boost::shared_ptr<EffectInstance::NotifyInputNRenderingStarted_RAII> inputNIsRendering_RAII;
+            if (isRenderFunctor) {
+                assert(it->second.first != -1); //< see getInputNumber
+                inputNIsRendering_RAII.reset(new EffectInstance::NotifyInputNRenderingStarted_RAII(node.get(),inputNb));
+            }
             
-            {
-                boost::shared_ptr<EffectInstance::NotifyInputNRenderingStarted_RAII> inputNIsRendering_RAII;
-                if (isRenderFunctor) {
-                    inputNIsRendering_RAII.reset(new EffectInstance::NotifyInputNRenderingStarted_RAII(node.get(),inputNb));
-                }
+            ///For all views requested in input
+            for (std::map<int, std::vector<OfxRangeD> >::const_iterator viewIt = it->second.second.begin(); viewIt != it->second.second.end(); ++viewIt) {
                 
-                ///For all views requested in input
-                for (std::map<int, std::vector<OfxRangeD> >::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+                ///For all frames in this view
+                for (U32 range = 0; range < viewIt->second.size(); ++range) {
                     
-                    ///For all frames in this view
-                    for (U32 range = 0; range < viewIt->second.size(); ++range) {
-                        
-                        int nbFramesPreFetched = 0;
-                        
-                        // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
-                        if (viewIt->second[range].min == (int)viewIt->second[range].min &&
-                            viewIt->second[range].max == (int)viewIt->second[range].max) {
-                            for (double f = viewIt->second[range].min;
-                                 f <= viewIt->second[range].max  && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
-                                 f += 1.) {
+                    int nbFramesPreFetched = 0;
+                    
+                    // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
+                    if (viewIt->second[range].min == (int)viewIt->second[range].min &&
+                        viewIt->second[range].max == (int)viewIt->second[range].max) {
+                        for (double f = viewIt->second[range].min;
+                             f <= viewIt->second[range].max  && nbFramesPreFetched < NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING;
+                             f += 1.) {
+                            
+                            if (!isRenderFunctor) {
+                                Natron::StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
+                                                                                               f,
+                                                                                               viewIt->first,
+                                                                                               originalMipMapLevel,
+                                                                                               inputNode,
+                                                                                               treeRoot,
+                                                                                               roi,
+                                                                                               *requests);
                                 
-                                if (!isRenderFunctor) {
-                                    Natron::StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
-                                                                                                   f,
-                                                                                                   viewIt->first,
-                                                                                                   originalMipMapLevel,
-                                                                                                   inputNode,
-                                                                                                   treeRoot,
-                                                                                                   roi,
-                                                                                                   *requests);
-                                    
-                                    if (stat == eStatusFailed) {
-                                        return EffectInstance::eRenderRoIRetCodeFailed;
-                                    }
-                                    
-                                    ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
-                                    ///limit calculations that will be done later on anyway.
-                                    
-                                } else {
-                                    
-                                    RenderScale scaleOne;
-                                    scaleOne.x = scaleOne.y = 1.;
-                                    
-                                    RenderScale scale;
-                                    scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
-                                    
-                                    ///Render the input image with the bit depth of its preference
-                                    std::list<Natron::ImageComponents> inputPrefComps;
-                                    Natron::ImageBitDepthEnum inputPrefDepth;
-                                    inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
-                                    std::list<ImageComponents> componentsToRender;
-                                    
-                                    assert(compsNeeded);
-                                    if (!compsNeeded) {
-                                        continue;
-                                    }
-                                    for (U32 k = 0; k < compsNeeded->size(); ++k) {
-                                        if (compsNeeded->at(k).getNumComponents() > 0) {
-                                            componentsToRender.push_back(compsNeeded->at(k));
-                                        }
-                                    }
-                                    
-                                    if (roiIsInRequestPass) {
-                                        frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
-                                    }
-                                    
-                                    RectI inputRoIPixelCoords;
-                                    roi.toPixelEnclosing(useScaleOneInputs ? 0 : originalMipMapLevel, inputPar, &inputRoIPixelCoords);
-                                    
-                                    EffectInstance::RenderRoIArgs inArgs(f, //< time
-                                                                         useScaleOneInputs ? scaleOne : scale, //< scale
-                                                                         useScaleOneInputs ? 0 : originalMipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                                         viewIt->first, //< view
-                                                                         byPassCache,
-                                                                         inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                         RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                                         componentsToRender, //< requested comps
-                                                                         inputPrefDepth,
-                                                                         false,
-                                                                         effect);
-                                    
-                                    
-                                    
-                                    ImageList inputImgs;
-                                    EffectInstance::RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
-                                    if (ret != EffectInstance::eRenderRoIRetCodeOk) {
-                                        return ret;
-                                    }
-                                    
-                                    for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
-                                        if (inputImagesList && *it3) {
-                                            inputImagesList->push_back(*it3);
-                                        }
-                                    }
-                                    
-                                    if (effect->aborted()) {
-                                        return EffectInstance::eRenderRoIRetCodeAborted;
-                                    }
-                                    
-                                    if (!inputImgs.empty()) {
-                                        ++nbFramesPreFetched;
-                                    }
-                                } // if (!isRenderFunctor) {
+                                if (stat == eStatusFailed) {
+                                    return EffectInstance::eRenderRoIRetCodeFailed;
+                                }
                                 
-                            } // for all frames
-                        }
-                        
-                    } // for all ranges
-                } // for all views
-            } // EffectInstance::NotifyInputNRenderingStarted_RAII
-            
-        } // if (inputEffect) {
+                                ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
+                                ///limit calculations that will be done later on anyway.
+                                
+                            } else {
+                                
+                                RenderScale scaleOne;
+                                scaleOne.x = scaleOne.y = 1.;
+                                
+                                RenderScale scale;
+                                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
+                                
+                                ///Render the input image with the bit depth of its preference
+                                std::list<Natron::ImageComponents> inputPrefComps;
+                                Natron::ImageBitDepthEnum inputPrefDepth;
+                                inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
+                                std::list<ImageComponents> componentsToRender;
+                                
+                                assert(compsNeeded);
+                                if (!compsNeeded) {
+                                    continue;
+                                }
+                                for (U32 k = 0; k < compsNeeded->size(); ++k) {
+                                    if (compsNeeded->at(k).getNumComponents() > 0) {
+                                        componentsToRender.push_back(compsNeeded->at(k));
+                                    }
+                                }
+                                
+                                if (roiIsInRequestPass) {
+                                    frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
+                                }
+                                
+                                RectI inputRoIPixelCoords;
+                                roi.toPixelEnclosing(useScaleOneInputs ? 0 : originalMipMapLevel, inputPar, &inputRoIPixelCoords);
+                                
+                                EffectInstance::RenderRoIArgs inArgs(f, //< time
+                                                                     useScaleOneInputs ? scaleOne : scale, //< scale
+                                                                     useScaleOneInputs ? 0 : originalMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                     viewIt->first, //< view
+                                                                     byPassCache,
+                                                                     inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                     RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                                     componentsToRender, //< requested comps
+                                                                     inputPrefDepth,
+                                                                     false,
+                                                                     effect);
+                                
+                                
+                                
+                                ImageList inputImgs;
+                                EffectInstance::RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
+                                if (ret != EffectInstance::eRenderRoIRetCodeOk) {
+                                    return ret;
+                                }
+                                
+                                for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
+                                    if (inputImagesList && *it3) {
+                                        inputImagesList->push_back(*it3);
+                                    }
+                                }
+                                
+                                if (effect->aborted()) {
+                                    return EffectInstance::eRenderRoIRetCodeAborted;
+                                }
+                                
+                                if (!inputImgs.empty()) {
+                                    ++nbFramesPreFetched;
+                                }
+                            } // if (!isRenderFunctor) {
+                            
+                        } // for all frames
+                    }
+                    
+                } // for all ranges
+            } // for all views
+        } // EffectInstance::NotifyInputNRenderingStarted_RAII
+        
         
     } // for all inputs
-    return EffectInstance::eRenderRoIRetCodeOk;
+        return EffectInstance::eRenderRoIRetCodeOk;
 }
 
 Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
@@ -373,18 +410,17 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         fvRequest->globalData.identityInputNb = -1;
         fvRequest->globalData.inputIdentityTime = 0.;
         
-        bool identity;
         RectI pixelRod;
         fvRequest->globalData.rod.toPixelEnclosing(mappedLevel, par, &pixelRod);
         
         
         if (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) {
-            identity = true;
+            fvRequest->globalData.isIdentity = true;
             fvRequest->globalData.identityInputNb = -2;
             fvRequest->globalData.inputIdentityTime = time;
         } else {
             try {
-                identity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityInputNb);
+                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, nodeRequest->nodeHash, time, nodeRequest->mappedScale, pixelRod, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityInputNb);
             } catch (...) {
                 return eStatusFailed;
             }
@@ -457,7 +493,11 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,&fvRequest->globalData.reroutesMap);
     }
     
-    
+    /*qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
+    qDebug() << "Input RoIs:";
+    for (RoIMap::iterator it = fvPerRequestData.inputsRoi.begin(); it!=fvPerRequestData.inputsRoi.end(); ++it) {
+        qDebug() << it->first->getNode()->getFullyQualifiedName().c_str()<<"x1="<<it->second.x1<<"y1="<<it->second.y1<<"x2="<<it->second.x2<<"y2"<<it->second.y2;
+    }*/
     ///Append the request
     fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, fvPerRequestData));
     
@@ -468,6 +508,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                               fvRequest->globalData.reroutesMap,
                                                               useTransforms,
                                                               originalMipMapLevel,
+                                                              time,
+                                                              view,
                                                               treeRoot,
                                                               &requests,
                                                               0,
@@ -541,40 +583,8 @@ NodeFrameRequest::getFrameViewRequest(double time, int view) const
     return &found->second;
 }
 
-bool
-NodeFrameRequest::getFrameViewRoD(double time, int view, RectD* rod, bool* isProjectFormat) const
-{
-    const FrameViewRequest* fv = getFrameViewRequest(time, view);
-    if (!fv) {
-        return false;
-    }
-    *rod = fv->globalData.rod;
-    *isProjectFormat = fv->globalData.isProjectFormat;
-    return true;
-}
 
-bool
-NodeFrameRequest::getFrameViewIdentity(double time, int view, double* inputIdentityTime, int* inputIdentityNb) const
-{
-    const FrameViewRequest* fv = getFrameViewRequest(time, view);
-    if (!fv) {
-        return false;
-    }
-    *inputIdentityTime = fv->globalData.inputIdentityTime;
-    *inputIdentityNb = fv->globalData.identityInputNb;
-    return true;
-}
 
-bool
-NodeFrameRequest::getFrameViewFramesViewsNeeded(double time, int view, FramesNeededMap* framesNeeded) const
-{
-    const FrameViewRequest* fv = getFrameViewRequest(time, view);
-    if (!fv) {
-        return false;
-    }
-    *framesNeeded = fv->globalData.frameViewsNeeded;
-    return true;
-}
 
 bool
 NodeFrameRequest::getFrameViewCanonicalRoI(double time, int view, RectD* roi) const
