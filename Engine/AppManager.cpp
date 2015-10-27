@@ -1189,9 +1189,15 @@ AppManager::loadPythonGroups()
     if (!foundInit) {
         QString message = QObject::tr("init.py script not loaded");
         appPTR->setLoadingStatus(message);
+        if (!appPTR->isBackground()) {
+            std::cout << message.toStdString() << std::endl;
+        }
     } else {
         QString message = QObject::tr("init.py script loaded");
         appPTR->setLoadingStatus(message);
+        if (!appPTR->isBackground()) {
+            std::cout << message.toStdString() << std::endl;
+        }
     }
     
     if (!appPTR->isBackground()) {
@@ -1199,10 +1205,16 @@ AppManager::loadPythonGroups()
         if (!foundInitGui) {
             QString message = QObject::tr("initGui.py script not loaded");
             appPTR->setLoadingStatus(message);
+            if (!appPTR->isBackground()) {
+                std::cout << message.toStdString() << std::endl;
+            }
 
         } else {
             QString message = QObject::tr("initGui.py script loaded");
             appPTR->setLoadingStatus(message);
+            if (!appPTR->isBackground()) {
+                std::cout << message.toStdString() << std::endl;
+            }
         }
         
     }
