@@ -483,7 +483,7 @@ KnobHelper::deleteKnob()
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            if (useNativeOverlayHandle()) {
+            if (useHostOverlayHandle()) {
                 effect->getNode()->removeHostOverlay(this);
             }
             effect->getNode()->removeParameterFromPython(getName());

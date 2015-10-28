@@ -1649,7 +1649,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (isRegular->getUseHostOverlayHandle()) {
                     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                     if (isDbl) {
-                        isDbl->setHasNativeOverlayHandle(true);
+                        isDbl->setHasHostOverlayHandle(true);
                     }
                 }
                 

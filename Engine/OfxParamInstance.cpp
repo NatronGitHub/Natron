@@ -1669,7 +1669,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute
     if ((!_node->effectInstance()->getOverlayInteractMainEntry() && getDoubleType() == kOfxParamDoubleTypeXYAbsolute) ||
         properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
-        dblKnob->setHasNativeOverlayHandle(true);
+        dblKnob->setHasHostOverlayHandle(true);
     }
 
     if (coordSystem == kOfxParamCoordinatesNormalised) {

@@ -1184,7 +1184,7 @@ OFX::Host::Param::Descriptor *
 OfxImageEffectDescriptor::paramDefine(const char *paramType,
                                         const char *name)
 {
-    static const OFX::Host::Property::PropSpec nativeOverlaysProps[] = {
+    static const OFX::Host::Property::PropSpec hostOverlaysProps[] = {
         { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
         { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
         OFX::Host::Property::propSpecEnd
@@ -1192,7 +1192,7 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     
     OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
     OFX::Host::Property::Set& props = ret->getProperties();
-    props.addProperties(nativeOverlaysProps);
+    props.addProperties(hostOverlaysProps);
     
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         

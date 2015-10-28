@@ -182,7 +182,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
 , _disableSlider(false)
 , _normalizationXY()
 , _defaultStoredNormalized(false)
-, _hasNativeOverlayHandle(false)
+, _hasHostOverlayHandle(false)
 {
     _normalizationXY.first = eNormalizedStateNone;
     _normalizationXY.second = eNormalizedStateNone;
@@ -194,7 +194,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
 }
 
 void
-KnobDouble::setHasNativeOverlayHandle(bool handle)
+KnobDouble::setHasHostOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
     if (holder) {
@@ -214,15 +214,15 @@ KnobDouble::setHasNativeOverlayHandle(bool handle)
         } else {
             effect->getNode()->removeHostOverlay(this);
         }
-       _hasNativeOverlayHandle = handle;
+       _hasHostOverlayHandle = handle;
     }
     
 }
 
 bool
-KnobDouble::getHasNativeOverlayHandle() const
+KnobDouble::getHasHostOverlayHandle() const
 {
-    return _hasNativeOverlayHandle;
+    return _hasHostOverlayHandle;
 }
 
 void
