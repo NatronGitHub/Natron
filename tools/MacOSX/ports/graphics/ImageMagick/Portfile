@@ -63,7 +63,7 @@ depends_lib                 port:bzip2 \
                             port:expat \
                             port:libxml2
 
-patchfiles noclparser.patch
+patchfiles noclparser.patch pango-align-hack.diff
 
 # Magick-config etc. use pkg-config
 depends_lib-append          port:pkgconfig
@@ -96,8 +96,7 @@ configure.args              --enable-shared \
                             --with-gslib \
                             --with-jbig \
                             --with-jpeg \
-                            --without-lcms \
-                            --with-lcms2 \
+                            --with-lcms \
                             --without-lzma \
                             --with-openjp2 \
                             --with-png \
