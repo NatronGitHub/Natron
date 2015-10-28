@@ -97,7 +97,10 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 
 NodeSettingsPanel::~NodeSettingsPanel()
 {
-    getNode()->removeSettingsPanel();
+    boost::shared_ptr<NodeGui> node = getNode();
+    if (node) {
+        node->removeSettingsPanel();
+    }
 }
 
 void

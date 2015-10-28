@@ -25,6 +25,7 @@
 #include <csignal>
 #include <cstdio>  // perror
 #include <cstdlib> // exit
+#include <iostream>
 
 #if defined(Q_OS_UNIX)
 #include <sys/signal.h>
@@ -82,6 +83,9 @@ setShutDownSignal(int signalId)
 static void
 handleShutDownSignal( int /*signalId*/ )
 {
-    QCoreApplication::exit(0);
+    if (appPTR) {
+        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
+        appPTR->quitApplication();
+    }
 }
 

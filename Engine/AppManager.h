@@ -270,6 +270,11 @@ public:
      * @brief Called when the instance is exited
      **/
     void quit(AppInstance* instance);
+    
+    /*
+     @brief Calls quit() on all AppInstance's
+     */
+    void quitApplication();
 
     /**
      * @brief Starts the event loop and doesn't return until

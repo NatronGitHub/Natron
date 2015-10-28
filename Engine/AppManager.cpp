@@ -258,6 +258,15 @@ AppManager::quit(AppInstance* instance)
 }
 
 void
+AppManager::quitApplication()
+{
+    while (!_imp->_appInstances.empty()) {
+        std::map<int, AppInstanceRef>::iterator begin = _imp->_appInstances.begin();
+        quit(begin->second.app);
+    }
+}
+
+void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
