@@ -122,7 +122,7 @@ fi
 
 # Install oiio
 if [ "$REBUILD_OIIO" = "1" ]; then
-    rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/OpenImage*
+    rm -rf $INSTALL_PATH/lib/libOpenImage* $INSTALL_PATH/include/OpenImage* $INSTALL_PATH/bin/libOpenImage*
 fi
 if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     cd $$TMP_BUILD_DIR || exit 1

@@ -228,3 +228,5 @@ PortIndex
 PortIndex.quick
 *.7z*
 *.exe*
+tools/Windows/src/*
+tools/linux/src/*
