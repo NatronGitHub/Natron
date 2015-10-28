@@ -661,8 +661,8 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
         s = PLUGIN_GROUP_PAINT;
 
     } else if (pluginIdentifier.startsWith("com.FXHOME.HitFilm")) {
-        // HitFilm uses grouping such as "HitFilm - Generate"
-        s.replace("HitFilm - ", "HitFilm/");
+        // HitFilm uses grouping such as "HitFilm - Keying - Matte Enhancement"
+        s.replace(" - ", "/");
 
     } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe")) {
         // Red Giant Universe uses grouping such as "Universe Blur"
