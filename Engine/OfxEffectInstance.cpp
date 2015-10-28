@@ -664,9 +664,10 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
         // HitFilm uses grouping such as "HitFilm - Keying - Matte Enhancement"
         s.replace(" - ", "/");
 
-    } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe")) {
+    } else if ((pluginIdentifier.startsWith("com.redgiantsoftware.Universe") || s.startsWith("Universe ")) &&
+               !s.startsWith("Universe/")) {
         // Red Giant Universe uses grouping such as "Universe Blur"
-        s.replace("Universe ", "Universe/");
+        out.push_back("Universe");
 
     } else if ( (pluginIdentifier == "tuttle.avreader") ||
                (pluginIdentifier == "tuttle.avwriter") ||
