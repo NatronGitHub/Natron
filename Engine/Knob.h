@@ -963,7 +963,7 @@ private:
     virtual void removeListener(KnobI* knob) = 0;
 public:
 
-    virtual bool useNativeOverlayHandle() const { return false; }
+    virtual bool useHostOverlayHandle() const { return false; }
 
     
 protected:

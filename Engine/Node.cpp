@@ -1649,7 +1649,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (isRegular->getUseHostOverlayHandle()) {
                     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                     if (isDbl) {
-                        isDbl->setHasNativeOverlayHandle(true);
+                        isDbl->setHasHostOverlayHandle(true);
                     }
                 }
                 
@@ -1898,7 +1898,7 @@ Node::hasOverlay() const
     
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        if (nodeGui->hasDefaultOverlay()) {
+        if (nodeGui->hasHostOverlay()) {
             return true;
         }
     }
@@ -5761,11 +5761,11 @@ Node::shouldDrawOverlay() const
 }
 
 void
-Node::drawDefaultOverlay(double time, double scaleX, double scaleY)
+Node::drawHostOverlay(double time, double scaleX, double scaleY)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->drawDefaultOverlay(time, scaleX, scaleY);
+        nodeGui->drawHostOverlay(time, scaleX, scaleY);
     }
 }
 
@@ -5850,11 +5850,11 @@ Node::onOverlayFocusLostDefault(double scaleX,double scaleY)
 }
 
 void
-Node::removeDefaultOverlay(KnobI* knob)
+Node::removeHostOverlay(KnobI* knob)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->removeDefaultOverlay(knob);
+        nodeGui->removeHostOverlay(knob);
     }
 }
 
@@ -5874,7 +5874,7 @@ Node::addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position)
 }
 
 void
-Node::initializeDefaultOverlays()
+Node::initializeHostOverlays()
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
@@ -5963,10 +5963,10 @@ Node::getPluginPythonModuleVersion() const
 }
 
 bool
-Node::hasDefaultOverlayForParam(const KnobI* knob) const
+Node::hasHostOverlayForParam(const KnobI* knob) const
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-    if (nodeGui && nodeGui->hasDefaultOverlayForParam(knob)) {
+    if (nodeGui && nodeGui->hasHostOverlayForParam(knob)) {
         return true;
     }
     return false;
@@ -5974,21 +5974,21 @@ Node::hasDefaultOverlayForParam(const KnobI* knob) const
 }
 
 bool
-Node::hasDefaultOverlay() const
+Node::hasHostOverlay() const
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-    if (nodeGui && nodeGui->hasDefaultOverlay()) {
+    if (nodeGui && nodeGui->hasHostOverlay()) {
         return true;
     }
     return false;
 }
 
 void
-Node::setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort)
+Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-    if (nodeGui && nodeGui->hasDefaultOverlay()) {
-        nodeGui->setCurrentViewportForDefaultOverlays(viewPort);
+    if (nodeGui && nodeGui->hasHostOverlay()) {
+        nodeGui->setCurrentViewportForHostOverlays(viewPort);
     }
 }
 

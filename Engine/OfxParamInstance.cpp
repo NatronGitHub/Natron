@@ -1671,7 +1671,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
          (getDoubleType() == kOfxParamDoubleTypeXYAbsolute ||
           getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute)) ||
         properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
-        dblKnob->setHasNativeOverlayHandle(true);
+        dblKnob->setHasHostOverlayHandle(true);
     }
 
     dblKnob->setSpatial(doubleType == kOfxParamDoubleTypeNormalisedXY ||

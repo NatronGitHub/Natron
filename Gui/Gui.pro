@@ -84,7 +84,7 @@ SOURCES += \
     CurveWidgetDialogs.cpp \
     CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
-    DefaultOverlays.cpp \
+    HostOverlay.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
@@ -234,7 +234,7 @@ HEADERS += \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \
     CustomParamInteract.h \
-    DefaultOverlays.h \
+    HostOverlay.h \
     DockablePanel.h \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \

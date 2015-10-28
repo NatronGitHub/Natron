@@ -1,6 +1,3 @@
-#ifndef ACTIONSHORTCUTS_H
-#define ACTIONSHORTCUTS_H
-
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
@@ -18,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
+
+#ifndef ACTIONSHORTCUTS_H
+#define ACTIONSHORTCUTS_H
 
 /**
  * @brief In this file all Natron's actions that can have their shortcut edited should be listed.

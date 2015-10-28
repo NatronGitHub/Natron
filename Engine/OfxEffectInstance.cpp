@@ -661,8 +661,8 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
         s = PLUGIN_GROUP_PAINT;
 
     } else if (pluginIdentifier.startsWith("com.FXHOME.HitFilm")) {
-        // HitFilm uses grouping such as "HitFilm - Generate"
-        s.replace("HitFilm - ", "HitFilm/");
+        // HitFilm uses grouping such as "HitFilm - Keying - Matte Enhancement"
+        s.replace(" - ", "/");
 
     } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe")) {
         // Red Giant Universe uses grouping such as "Universe Blur"
@@ -2486,7 +2486,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
-        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasDefaultOverlayForParam(k)) {
+        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasHostOverlayForParam(k)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {

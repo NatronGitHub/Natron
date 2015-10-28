@@ -182,7 +182,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
 , _disableSlider(false)
 , _valueIsNormalized(dimension)
 , _defaultValuesAreNormalized(false)
-, _hasNativeOverlayHandle(false)
+, _hasHostOverlayHandle(false)
 {
     for (int i = 0; i < dimension; ++i) {
         _increments[i] = 1.;
@@ -192,7 +192,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
 }
 
 void
-KnobDouble::setHasNativeOverlayHandle(bool handle)
+KnobDouble::setHasHostOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
     if (holder) {
@@ -210,17 +210,17 @@ KnobDouble::setHasNativeOverlayHandle(bool handle)
         if (handle) {
             effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
         } else {
-            effect->getNode()->removeDefaultOverlay(this);
+            effect->getNode()->removeHostOverlay(this);
         }
-       _hasNativeOverlayHandle = handle;
+       _hasHostOverlayHandle = handle;
     }
     
 }
 
 bool
-KnobDouble::getHasNativeOverlayHandle() const
+KnobDouble::getHasHostOverlayHandle() const
 {
-    return _hasNativeOverlayHandle;
+    return _hasHostOverlayHandle;
 }
 
 void

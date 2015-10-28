@@ -984,7 +984,7 @@ public:
     bool shouldDrawOverlay() const;
     
     
-    void drawDefaultOverlay(double time, double scaleX,double scaleY);
+    void drawHostOverlay(double time, double scaleX,double scaleY);
     
     bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
@@ -1004,15 +1004,15 @@ public:
     
     void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     
-    void removeDefaultOverlay(KnobI* knob);
+    void removeHostOverlay(KnobI* knob);
     
-    void initializeDefaultOverlays();
+    void initializeHostOverlays();
     
-    bool hasDefaultOverlay() const;
+    bool hasHostOverlay() const;
     
-    void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort);
+    void setCurrentViewportForHostOverlays(OverlaySupport* viewPort);
     
-    bool hasDefaultOverlayForParam(const KnobI* knob) const;
+    bool hasHostOverlayForParam(const KnobI* knob) const;
 
     void setPluginIconFilePath(const std::string& iconFilePath);
     

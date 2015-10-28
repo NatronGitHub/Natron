@@ -286,11 +286,11 @@ public:
 
     void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
 
-    void setHasNativeOverlayHandle(bool handle);
+    void setHasHostOverlayHandle(bool handle);
     
-    bool getHasNativeOverlayHandle() const;
+    bool getHasHostOverlayHandle() const;
     
-    virtual bool useNativeOverlayHandle() const OVERRIDE { return getHasNativeOverlayHandle(); }
+    virtual bool useHostOverlayHandle() const OVERRIDE { return getHasHostOverlayHandle(); }
     
 public Q_SLOTS:
 
@@ -333,7 +333,7 @@ private:
     ///This tells us that only the default value is stored normalized.
     ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
     bool _defaultValuesAreNormalized;
-    bool _hasNativeOverlayHandle;
+    bool _hasHostOverlayHandle;
     static const std::string _typeNameStr;
 };
 
