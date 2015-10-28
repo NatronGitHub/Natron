@@ -1853,7 +1853,10 @@ OfxEffectInstance::beginSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        stat = effectInstance()->beginRenderAction(first, last, step,
+                                                   interactive, scale,
+                                                   isSequentialRender, isRenderResponseToUserInteraction,
+                                                   /*openGLRender=*/false, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1899,7 +1902,10 @@ OfxEffectInstance::endSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        stat = effectInstance()->endRenderAction(first, last, step,
+                                                 interactive, scale,
+                                                 isSequentialRender, isRenderResponseToUserInteraction,
+                                                 /*openGLRender=*/false, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1997,6 +2003,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                      args.mappedScale,
                                      args.isSequentialRender,
                                      args.isRenderResponseToUserInteraction,
+                                     /*openGLRender=*/false,
                                      args.draftMode,
                                      args.view,
                                      viewsCount,
