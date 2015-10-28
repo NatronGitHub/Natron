@@ -199,9 +199,15 @@ HostOverlay::draw(double time,const RenderScale& /*renderScale*/)
         if (it->state == ePositionInteractStatePicked) {
             pos = _imp->lastPenPos;
         } else {
-            pos.rx() = knob->getValueAtTime(time, 0);
-            pos.ry() = knob->getValueAtTime(time, 1);
-            
+            double p[2];
+            for (int i = 0; i < 2; ++i) {
+                p[i] = knob->getValueAtTime(time, i);
+                if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                    knob->denormalize(i, time, &p[i]);
+                }
+            }
+            pos.setX(p[0]);
+            pos.setY(p[1]);
         }
         //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
         glPointSize( (GLfloat)it->pointSize() );
@@ -252,10 +258,17 @@ HostOverlay::penMotion(double time,
     if (it->state == ePositionInteractStatePicked) {
         pos = _imp->lastPenPos;
     } else {
-        boost::shared_ptr<KnobDouble> param = it->param.lock();
-        if (param) {
-            pos.rx() = param->getValueAtTime(time, 0);
-            pos.ry() = param->getValueAtTime(time, 1);
+        boost::shared_ptr<KnobDouble> knob = it->param.lock();
+        if (knob) {
+            double p[2];
+            for (int i = 0; i < 2; ++i) {
+                p[i] = knob->getValueAtTime(time, i);
+                if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                    knob->denormalize(i, time, &p[i]);
+                }
+            }
+            pos.setX(p[0]);
+            pos.setY(p[1]);
         }
     }
 
@@ -292,11 +305,18 @@ HostOverlay::penMotion(double time,
     didSomething = (it->state == ePositionInteractStatePoised) || (it->state == ePositionInteractStatePicked);
 
     if (it->state != ePositionInteractStateInactive && _imp->interactiveDrag && valuesChanged) {
-        double x = fround(_imp->lastPenPos.x(), pscale.x);
-        double y = fround(_imp->lastPenPos.y(), pscale.y);
-        boost::shared_ptr<KnobDouble> param = it->param.lock();
-        if (param) {
-            param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+        boost::shared_ptr<KnobDouble> knob = it->param.lock();
+        if (knob) {
+            double p[2];
+            p[0] = fround(_imp->lastPenPos.x(), pscale.x);
+            p[1] = fround(_imp->lastPenPos.y(), pscale.y);
+            for (int i = 0; i < 2; ++i) {
+                if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                    knob->normalize(i, time, &p[i]);
+                }
+            }
+
+            knob->setValues(p[0], p[1], Natron::eValueChangedReasonNatronGuiEdited);
         }
     }
     return (didSomething || valuesChanged);
@@ -343,11 +363,18 @@ HostOverlay::penUp(double time,
     bool didSomething = false;
     if (it->state == ePositionInteractStatePicked) {
         if (!_imp->interactiveDrag) {
-            double x = fround(_imp->lastPenPos.x(), pscale.x);
-            double y = fround(_imp->lastPenPos.y(), pscale.y);
-            boost::shared_ptr<KnobDouble> param = it->param.lock();
-            if (param) {
-                param->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
+            boost::shared_ptr<KnobDouble> knob = it->param.lock();
+            if (knob) {
+                double p[2];
+                p[0] = fround(_imp->lastPenPos.x(), pscale.x);
+                p[1] = fround(_imp->lastPenPos.y(), pscale.y);
+                for (int i = 0; i < 2; ++i) {
+                    if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                        knob->normalize(i, time, &p[i]);
+                    }
+                }
+
+                knob->setValues(p[0], p[1], Natron::eValueChangedReasonNatronGuiEdited);
             }
         }
 

@@ -1197,10 +1197,11 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         
         const std::string& type = ret->getDoubleType() ;
-        if (type == kOfxParamDoubleTypePlain ||
+        // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
+        if (//type == kOfxParamDoubleTypePlain ||
             type == kOfxParamDoubleTypeNormalisedXYAbsolute ||
-            type == kOfxParamDoubleTypeNormalisedXY ||
-            type == kOfxParamDoubleTypeXY ||
+            //type == kOfxParamDoubleTypeNormalisedXY ||
+            //type == kOfxParamDoubleTypeXY ||
             type == kOfxParamDoubleTypeXYAbsolute) {
             props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
         }

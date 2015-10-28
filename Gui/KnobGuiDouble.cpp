@@ -101,15 +101,28 @@ using std::make_pair;
  */
 void
 KnobGuiDouble::valueAccordingToType(bool normalize,
-                                     int dimension,
-                                     double* value)
+                                    int dimension,
+                                    double* value)
 {
     if ( (dimension != 0) && (dimension != 1) ) {
         return;
     }
     
-    KnobDouble::NormalizedStateEnum state = _knob.lock()->getNormalizedState(dimension);
-    if (state == KnobDouble::eNormalizedStateX) {
+    KnobDouble::ValueIsNormalizedEnum state = _knob.lock()->getValueIsNormalized(dimension);
+#if 1
+#pragma message WARN("Alex please check that the following is right")
+    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    if (state != KnobDouble::eValueIsNormalizedNone) {
+        if (normalize) {
+            knob->normalize(dimension, time, value);
+        } else {
+            knob->denormalize(dimension, time, value);
+        }
+    }
+#else
+    // this code is duplicated from KnobDouble::normalize and KnobDouble::denormalize
+    if (state == KnobDouble::eValueIsNormalizedX) {
         Format f;
         getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         if (normalize) {
@@ -117,7 +130,7 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
         } else {
             *value *= f.width();
         }
-    } else if (state == KnobDouble::eNormalizedStateY) {
+    } else if (state == KnobDouble::eValueIsNormalizedY) {
         Format f;
         getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         if (normalize) {
@@ -126,7 +139,7 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
             *value *= f.height();
         }
     }
-    
+#endif
 }
 
 bool
@@ -303,9 +316,16 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_dimensionSwitchButton);
         
         bool showSlider = true;
-        double firstDimensionValue = knob->getValue(0);
+        double firstDimensionValue;
+        SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
         for (int i = 0; i < dim ; ++i) {
-            if (knob->getValue(i) != firstDimensionValue) {
+            double v = knob->getValue(i);
+            if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                knob->denormalize(i, time, &v);
+            }
+            if (i == 0) {
+                firstDimensionValue = v;
+            } else if (v != firstDimensionValue) {
                 showSlider = false;
                 break;
             }
@@ -336,10 +356,18 @@ KnobGuiDouble::onDimensionSwitchClicked()
         boost::shared_ptr<KnobDouble> knob = _knob.lock();
         int dim = knob->getDimension();
         if (dim > 1) {
-            double value(_spinBoxes[0].first->value());
+            SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+            double firstDimensionValue = _spinBoxes[0].first->value();
+            if (knob->getValueIsNormalized(0) != KnobDouble::eValueIsNormalizedNone) {
+                knob->denormalize(0, time, &firstDimensionValue);
+            }
             knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                knob->setValue(value,i);
+                double v = firstDimensionValue;
+                if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+                    knob->normalize(i, time, &v);
+                }
+                knob->setValue(v, i);
             }
             knob->endChanges();
         }
@@ -469,7 +497,8 @@ KnobGuiDouble::updateGUI(int dimension)
         valueAccordingToType(false, dimension, &values[dimension]);
         refValue = values[dimension];
     }
-    bool allValuesDifferent = false;
+    bool valuesDifferent = false;
+    /*
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
@@ -479,12 +508,29 @@ KnobGuiDouble::updateGUI(int dimension)
         values[i] = knob->getValue(i);
         valueAccordingToType(false, dimension, &values[i]);
         if (values[i] != refValue) {
-            allValuesDifferent = true;
+            valuesDifferent = true;
         }
     }
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && allValuesDifferent) {
+     */
+    double firstDimensionValue;
+    int dim = knob->getDimension();
+    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+    for (int i = 0; i < dim ; ++i) {
+        double v = knob->getValue(i);
+        if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
+            knob->denormalize(i, time, &v);
+        }
+        if (i == 0) {
+            firstDimensionValue = v;
+        } else if (v != firstDimensionValue) {
+            valuesDifferent = true;
+        }
+        values[i] = v;
+    }
+
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && valuesDifferent) {
         expandAllDimensions();
-    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !allValuesDifferent) {
+    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !valuesDifferent) {
         foldAllDimensions();
     }
     
@@ -619,7 +665,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
             double v = _spinBoxes[i].first->value();
-            valueAccordingToType(true, 0, &v);
+            valueAccordingToType(true, i, &v);
             newValues.push_back(v);
         }
     } else {
