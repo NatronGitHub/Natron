@@ -313,7 +313,6 @@ public Q_SLOTS:
      **/
     void abortRendering(bool autoRestart, bool blocking);
     
-    void onExecuteCallbackOnMainThread(QString callback);
     
 Q_SIGNALS:
     
@@ -408,7 +407,6 @@ protected:
     
     RenderEngine* getEngine() const;
     
-    void runCallback(const QString& callback);
     
 
 private:

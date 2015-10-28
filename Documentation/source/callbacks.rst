@@ -455,6 +455,10 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 
 This function can be used to communicate with external programs for example.
 
+.. warning::
+
+	Any exception thrown in this callback will abort the render
+
 The After frame rendered callback:
 -----------------------------------
 
@@ -483,6 +487,9 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 
 This function can be used to communicate with external programs for example.
 
+.. warning::
+
+	Any exception thrown in this callback will abort the render
 
 The Before render callback:
 ---------------------------
@@ -509,6 +516,10 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 	:align: center
 
 This function can be used to communicate with external programs for example.
+
+.. warning::
+
+	Any exception thrown in this callback will abort the render
 
 .. _afterRenderCallback:
 

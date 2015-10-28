@@ -258,6 +258,15 @@ AppManager::quit(AppInstance* instance)
 }
 
 void
+AppManager::quitApplication()
+{
+    while (!_imp->_appInstances.empty()) {
+        std::map<int, AppInstanceRef>::iterator begin = _imp->_appInstances.begin();
+        quit(begin->second.app);
+    }
+}
+
+void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
@@ -1189,11 +1198,15 @@ AppManager::loadPythonGroups()
     if (!foundInit) {
         QString message = QObject::tr("init.py script not loaded");
         appPTR->setLoadingStatus(message);
-        std::cout << message.toStdString() << std::endl;
+        if (!appPTR->isBackground()) {
+            std::cout << message.toStdString() << std::endl;
+        }
     } else {
         QString message = QObject::tr("init.py script loaded");
         appPTR->setLoadingStatus(message);
-        std::cout << message.toStdString() << std::endl;
+        if (!appPTR->isBackground()) {
+            std::cout << message.toStdString() << std::endl;
+        }
     }
     
     if (!appPTR->isBackground()) {
@@ -1201,12 +1214,16 @@ AppManager::loadPythonGroups()
         if (!foundInitGui) {
             QString message = QObject::tr("initGui.py script not loaded");
             appPTR->setLoadingStatus(message);
-            std::cout << message.toStdString() << std::endl;
+            if (!appPTR->isBackground()) {
+                std::cout << message.toStdString() << std::endl;
+            }
 
         } else {
             QString message = QObject::tr("initGui.py script loaded");
             appPTR->setLoadingStatus(message);
-            std::cout << message.toStdString() << std::endl;
+            if (!appPTR->isBackground()) {
+                std::cout << message.toStdString() << std::endl;
+            }
         }
         
     }
@@ -1330,13 +1347,19 @@ AppManager::setAsTopLevelInstance(int appID)
             if ( !isBackground() ) {
                 if (it->second.app) {
                     it->second.app->connectViewersToViewerCache();
-                    _imp->ofxHost->setOfxHostOSHandle(it->second.app->getOfxHostOSHandle());
+                    setOFXHostHandle(it->second.app->getOfxHostOSHandle());
                 }
 
             }
         }
     }
     
+}
+
+void
+AppManager::setOFXHostHandle(void* handle)
+{
+    _imp->ofxHost->setOfxHostOSHandle(handle);
 }
 
 void

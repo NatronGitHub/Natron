@@ -270,6 +270,11 @@ public:
      * @brief Called when the instance is exited
      **/
     void quit(AppInstance* instance);
+    
+    /*
+     @brief Calls quit() on all AppInstance's
+     */
+    void quitApplication();
 
     /**
      * @brief Starts the event loop and doesn't return until
@@ -423,6 +428,8 @@ public:
                                            std::size_t* diskOccupied) const;
     
     static std::string isImageFileSupportedByNatron(const std::string& ext);
+    
+    void setOFXHostHandle(void* handle);
     
 public Q_SLOTS:
     

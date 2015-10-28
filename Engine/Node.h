@@ -771,6 +771,14 @@ public:
     void refreshPreviewsRecursivelyUpstream(int time);
 
     void incrementKnobsAge();
+    
+private:
+    
+    void incrementKnobsAge_internal();
+    
+public:
+    
+    
 
     U64 getKnobsAge() const;
 
