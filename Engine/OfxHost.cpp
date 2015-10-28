@@ -199,10 +199,11 @@ Natron::OfxHost::setProperties()
        Baselight
        IRIDAS Framecycler
        com.chinadigitalvideo.dx
+       com.newblue.titlerpro
        Ramen
        TuttleOfx
        fr.inria.Natron
-     
+
      Other possible names:
      Nuke
      Autodesk Toxik Render Utility

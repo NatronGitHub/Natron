@@ -342,6 +342,10 @@ Settings::initializeKnobsGeneral()
     visibleHostEntries.push_back("Baselight");
     _knownHostNames.push_back("IRIDAS Framecycler");
     visibleHostEntries.push_back("Framecycler");
+    _knownHostNames.push_back("com.chinadigitalvideo.dx");
+    visibleHostEntries.push_back("China Digital Video DX");
+    _knownHostNames.push_back("com.newblue.titlerpro");
+    visibleHostEntries.push_back("NewBlueFX Titler Pro");
     _knownHostNames.push_back("Ramen");
     visibleHostEntries.push_back("Ramen");
     _knownHostNames.push_back("TuttleOfx");
