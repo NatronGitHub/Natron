@@ -1943,14 +1943,26 @@ Knob<double>::resetToDefaultValue(int dimension)
     }
 
     resetExtraToDefaultValue(dimension);
-    
-    if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
-        double time = getCurrentTime();
-        isDouble->denormalize(dimension, time, &def);
+
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    if (isDouble) {
+        if (isDouble->getDefaultValuesAreNormalized()) {
+            if (isDouble->getValueIsNormalized(dimension) == KnobDouble::eValueIsNormalizedNone) {
+                // default is normalized, value is non-normalized: denormalize it!
+                double time = getCurrentTime();
+                isDouble->denormalize(dimension, time, &def);
+            }
+        } else {
+            if (isDouble->getValueIsNormalized(dimension) != KnobDouble::eValueIsNormalizedNone) {
+                // default is non-normalized, value is normalized: normalize it!
+                double time = getCurrentTime();
+                isDouble->normalize(dimension, time, &def);
+            }
+        }
     }
-    ignore_result(setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
+    ignore_result(setValue(def, dimension, Natron::eValueChangedReasonRestoreDefault, NULL));
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
+        _signalSlotHandler->s_valueChanged(dimension, Natron::eValueChangedReasonRestoreDefault);
     }
     setSecret(getDefaultIsSecret());
     setEnabled(dimension, isDefaultEnabled(dimension));

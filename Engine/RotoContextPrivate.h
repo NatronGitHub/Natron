@@ -1457,8 +1457,9 @@ struct RotoContextPrivate
             center->setHintToolTip(kRotoBrushCenterParamHint);
             center->setDefaultAllDimensionsEnabled(false);
             center->setAnimationEnabled(false);
-            double defCenter[2] = {.5,.5};
-            center->setDefaultValuesNormalized(2, defCenter);
+            center->setDefaultValuesAreNormalized(true);
+            center->setDefaultValue(0.5, 0);
+            center->setDefaultValue(0.5, 1);
             clonePage->addKnob(center);
             cloneKnobs.push_back(center);
             knobs.push_back(center);
@@ -1758,8 +1759,9 @@ struct RotoContextPrivate
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
         center->setDefaultAllDimensionsEnabled(false);
         center->setAnimationEnabled(false);
-        double defCenter[2] = {.5,.5};
-        center->setDefaultValuesNormalized(2, defCenter);
+        center->setDefaultValuesAreNormalized(true);
+        center->setDefaultValue(0.5, 0);
+        center->setDefaultValue(0.5, 1);
         transformPage->addKnob(center);
         knobs.push_back(center);
         centerKnob = center;
