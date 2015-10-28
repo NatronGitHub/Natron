@@ -1197,7 +1197,7 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         
         const std::string& type = ret->getDoubleType() ;
-#pragma message WARN("are all these double types really supported? only kOfxParamDoubleTypeXYAbsolute (and may be kOfxParamDoubleTypeNormalisedXYAbsolute) should be supported")
+        // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
         if (//type == kOfxParamDoubleTypePlain ||
             type == kOfxParamDoubleTypeNormalisedXYAbsolute ||
             //type == kOfxParamDoubleTypeNormalisedXY ||

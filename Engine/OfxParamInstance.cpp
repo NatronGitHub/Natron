@@ -635,8 +635,6 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     } else if (doubleType == kOfxParamDoubleTypeNormalisedY ||
               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
-    } else {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedNone);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
     dblKnob->setDefaultValue(def, 0);
@@ -1682,9 +1680,6 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
         dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
-    } else {
-        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedNone);
-        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedNone);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
     for (int i = 0; i < dims; ++i) {
