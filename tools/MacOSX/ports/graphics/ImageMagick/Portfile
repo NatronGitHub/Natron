@@ -8,6 +8,7 @@ PortGroup                   conflicts_build 1.0
 
 name                        ImageMagick
 version                     6.9.1-10
+revision                    1
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -63,7 +64,7 @@ depends_lib                 port:bzip2 \
                             port:expat \
                             port:libxml2
 
-patchfiles noclparser.patch pango-align-hack.diff
+patchfiles noclparser.patch
 
 # Magick-config etc. use pkg-config
 depends_lib-append          port:pkgconfig
@@ -96,7 +97,8 @@ configure.args              --enable-shared \
                             --with-gslib \
                             --with-jbig \
                             --with-jpeg \
-                            --with-lcms \
+                            --without-lcms \
+                            --with-lcms2 \
                             --without-lzma \
                             --with-openjp2 \
                             --with-png \
@@ -116,7 +118,7 @@ configure.args              --enable-shared \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
 
 variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-    #patchfiles-append magick-seed.diff magick-svg.diff
+    patchfiles-append pango-align-hack.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
     configure.args-replace  --with-gslib --without-gslib
@@ -130,9 +132,13 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --with-jbig --without-jbig
     depends_lib-delete       port:jpeg
     configure.args-replace  --with-jpeg --without-jpeg
-    # why not remove png support? maybe because freetype depends on png anyway?
     depends_lib-delete       port:png
     configure.args-replace  --with-png --without-png
+    # [FD] why LCMS and not LCMS2?
+    depends_lib-delete       port:lcms2
+    configure.args-replace  --with-lcms2 --without-lcms2
+    depends_lib-append       port:lcms
+    configure.args-replace  --without-lcms --with-lcms
     depends_lib-delete       port:openjpeg
     configure.args-replace  --with-openjp2 --without-openjp2
     depends_lib-delete       port:openexr

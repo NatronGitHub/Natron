@@ -1,15 +1,16 @@
---- Portfile.orig	2015-10-19 10:51:06.000000000 +0200
-+++ Portfile	2015-10-19 10:52:42.000000000 +0200
-@@ -7,7 +7,7 @@
+--- Portfile.orig	2015-10-19 14:07:19.000000000 +0200
++++ Portfile	2015-10-28 17:19:48.000000000 +0100
+@@ -7,7 +7,8 @@
  # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
  
  name                        ImageMagick
 -version                     6.9.2-4
 +version                     6.9.1-10
++revision                    1
  set reasonable_version      [lindex [split ${version} -] 0]
  homepage                    http://www.imagemagick.org/
  categories                  graphics devel
-@@ -39,8 +39,8 @@
+@@ -39,8 +40,8 @@
                              ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                              ftp://sunsite.icm.edu.pl/packages/ImageMagick
  
@@ -20,7 +21,7 @@
  
  depends_lib                 port:bzip2 \
                              port:djvulibre \
-@@ -63,6 +63,8 @@
+@@ -63,6 +64,8 @@
                              port:expat \
                              port:libxml2
  
@@ -29,7 +30,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -89,11 +91,14 @@
+@@ -89,11 +92,14 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -45,12 +46,12 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -111,6 +116,64 @@
+@@ -111,6 +117,68 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
 +variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-+    #patchfiles-append magick-seed.diff magick-svg.diff
++    patchfiles-append pango-align-hack.diff
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
 +    configure.args-replace  --with-gslib --without-gslib
@@ -64,9 +65,13 @@
 +    configure.args-replace  --with-jbig --without-jbig
 +    depends_lib-delete       port:jpeg
 +    configure.args-replace  --with-jpeg --without-jpeg
-+    # why not remove png support? maybe because freetype depends on png anyway?
 +    depends_lib-delete       port:png
 +    configure.args-replace  --with-png --without-png
++    # [FD] why LCMS and not LCMS2?
++    depends_lib-delete       port:lcms2
++    configure.args-replace  --with-lcms2 --without-lcms2
++    depends_lib-append       port:lcms
++    configure.args-replace  --without-lcms --with-lcms
 +    depends_lib-delete       port:openjpeg
 +    configure.args-replace  --with-openjp2 --without-openjp2
 +    depends_lib-delete       port:openexr
@@ -110,7 +115,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -118,6 +181,14 @@
+@@ -118,6 +186,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -125,7 +130,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -152,6 +223,11 @@
+@@ -152,6 +228,11 @@
  
  default_variants            +x11
  
