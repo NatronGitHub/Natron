@@ -117,8 +117,8 @@ fi
 # Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
 for qtlib in $QT_LIBS; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
-        mkdir -p "${package}/Contents/Frameworks/${qtlib}.framework/Versions/4"
-        binary="${package}/Contents/Frameworks/${qtlib}.framework"
+        binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
+        mkdir -p `dirname "${binary}"`
         cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
         chmod +w "${binary}"
         for f in $QT_LIBS; do
