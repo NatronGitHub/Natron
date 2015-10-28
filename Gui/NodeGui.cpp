@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/BackDropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DefaultOverlays.h"
+#include "Gui/HostOverlays.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/Edge.h"
@@ -182,7 +182,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _mtSafeSizeMutex()
 , _mtSafeWidth(0)
 , _mtSafeHeight(0)
-, _defaultOverlay()
+, _hostOverlay()
 , _undoStack(new QUndoStack())
 , _overlayLocked(false)
 {
@@ -347,7 +347,7 @@ NodeGui::initialize(NodeGraph* dag,
         refreshPosition(p.x(), p.y(),true);
     }
 
-    getNode()->initializeDefaultOverlays();
+    getNode()->initializeHostOverlays();
 
 } // initialize
 
@@ -3384,59 +3384,59 @@ void
 NodeGui::addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (!_defaultOverlay) {
-        _defaultOverlay.reset(new DefaultOverlay(shared_from_this()));
+    if (!_hostOverlay) {
+        _hostOverlay.reset(new HostOverlay(shared_from_this()));
     }
-    if (_defaultOverlay->addPositionParam(point)) {
+    if (_hostOverlay->addPositionParam(point)) {
         getDagGui()->getGui()->redrawAllViewers();
     }
 }
 
 
-boost::shared_ptr<DefaultOverlay>
-NodeGui::getDefaultOverlay() const
+boost::shared_ptr<HostOverlay>
+NodeGui::getHostOverlay() const
 {
-    return _defaultOverlay;
+    return _hostOverlay;
 }
 
 bool
-NodeGui::hasDefaultOverlay() const
+NodeGui::hasHostOverlay() const
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         return true;
     }
     return false;
 }
 
 void
-NodeGui::setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort)
+NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
-    if (_defaultOverlay) {
-        _defaultOverlay->setCallingViewport(viewPort);
+    if (_hostOverlay) {
+        _hostOverlay->setCallingViewport(viewPort);
     }
 }
 
 void
-NodeGui::drawDefaultOverlay(double time, double scaleX,double scaleY)
+NodeGui::drawHostOverlay(double time, double scaleX,double scaleY)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
-        NatronOverlayInteractSupport::OGLContextSaver s(_defaultOverlay->getLastCallingViewport());
-        _defaultOverlay->draw(time , rs);
+        NatronOverlayInteractSupport::OGLContextSaver s(_hostOverlay->getLastCallingViewport());
+        _hostOverlay->draw(time , rs);
     }
 }
 
 bool
 NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
 
-       return _defaultOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+       return _hostOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
@@ -3444,12 +3444,12 @@ NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & vie
 bool
 NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         
-        return _defaultOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
@@ -3457,12 +3457,12 @@ NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF &
 bool
 NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         
-        return _defaultOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
@@ -3470,12 +3470,12 @@ NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewp
 bool
 NodeGui::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         QByteArray keyStr;
-        return _defaultOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
     }
     return false;
 }
@@ -3483,12 +3483,12 @@ NodeGui::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Nat
 bool
 NodeGui::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         QByteArray keyStr;
-        return _defaultOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
 
     }
     return false;
@@ -3497,12 +3497,12 @@ NodeGui::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natro
 bool
 NodeGui::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         QByteArray keyStr;
-        return _defaultOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
 
     }
     return false;
@@ -3511,12 +3511,12 @@ NodeGui::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,N
 bool
 NodeGui::onOverlayFocusGainedDefault(double scaleX,double scaleY)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         QByteArray keyStr;
-        return _defaultOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
 
     }
     return false;
@@ -3525,32 +3525,32 @@ NodeGui::onOverlayFocusGainedDefault(double scaleX,double scaleY)
 bool
 NodeGui::onOverlayFocusLostDefault(double scaleX,double scaleY)
 {
-    if (_defaultOverlay) {
+    if (_hostOverlay) {
         RenderScale rs;
         rs.x = scaleX;
         rs.y = scaleY;
         QByteArray keyStr;
-        return _defaultOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
     }
     return false;
 }
 
 bool
-NodeGui::hasDefaultOverlayForParam(const KnobI* param)
+NodeGui::hasHostOverlayForParam(const KnobI* param)
 {
-    if (_defaultOverlay) {
-        return _defaultOverlay->hasDefaultOverlayForParam(param);
+    if (_hostOverlay) {
+        return _hostOverlay->hasHostOverlayForParam(param);
     }
     return false;
 }
 
 void
-NodeGui::removeDefaultOverlay(KnobI* knob)
+NodeGui::removeHostOverlay(KnobI* knob)
 {
-    if (_defaultOverlay) {
-        _defaultOverlay->removeDefaultOverlay(knob);
-        if (_defaultOverlay->isEmpty()) {
-            _defaultOverlay.reset();
+    if (_hostOverlay) {
+        _hostOverlay->removeHostOverlay(knob);
+        if (_hostOverlay->isEmpty()) {
+            _hostOverlay.reset();
         }
     }
 }

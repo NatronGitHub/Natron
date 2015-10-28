@@ -142,7 +142,7 @@ public:
     
     bool hasOverlayColor() const;
     
-    void resetDefaultOverlayColor();
+    void resetHostOverlayColor();
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
     {

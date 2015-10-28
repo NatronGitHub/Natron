@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Engine/NodeGuiI.h"
 
-class DefaultOverlay;
+class HostOverlay;
 class Edge;
 class QPainterPath;
 class QScrollArea;
@@ -373,9 +373,9 @@ public:
     
     virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
     
-    boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
+    boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     
-    virtual void drawDefaultOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
+    virtual void drawHostOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
     
     virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -393,13 +393,13 @@ public:
     
     virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool hasDefaultOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
+    virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
 
-    virtual bool hasDefaultOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void removeDefaultOverlay(KnobI* knob) OVERRIDE FINAL;
+    virtual void removeHostOverlay(KnobI* knob) OVERRIDE FINAL;
     
     virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
     
@@ -649,7 +649,7 @@ private:
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth,_mtSafeHeight;
     
-    boost::shared_ptr<DefaultOverlay> _defaultOverlay;
+    boost::shared_ptr<HostOverlay> _hostOverlay;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
 
     bool _overlayLocked;

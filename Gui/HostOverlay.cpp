@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "DefaultOverlays.h"
+#include "HostOverlay.h"
 
 #include <list>
 #include <cmath>
@@ -95,7 +95,7 @@ typedef std::list<PositionInteract> PositionInteracts;
     
 }
 
-struct DefaultOverlayPrivate
+struct HostOverlayPrivate
 {
     PositionInteracts positions;
     boost::weak_ptr<NodeGui> node;
@@ -106,7 +106,7 @@ struct DefaultOverlayPrivate
     
     bool interactiveDrag;
     
-    DefaultOverlayPrivate(const boost::shared_ptr<NodeGui>& node)
+    HostOverlayPrivate(const boost::shared_ptr<NodeGui>& node)
     : positions()
     , node(node)
     , lastPenPos()
@@ -118,24 +118,24 @@ struct DefaultOverlayPrivate
     
 };
 
-DefaultOverlay::DefaultOverlay(const boost::shared_ptr<NodeGui>& node)
-: _imp(new DefaultOverlayPrivate(node))
+HostOverlay::HostOverlay(const boost::shared_ptr<NodeGui>& node)
+: _imp(new HostOverlayPrivate(node))
 {
 }
 
-DefaultOverlay::~DefaultOverlay()
+HostOverlay::~HostOverlay()
 {
     
 }
 
 boost::shared_ptr<NodeGui>
-DefaultOverlay::getNode() const
+HostOverlay::getNode() const
 {
     return _imp->node.lock();
 }
 
 bool
-DefaultOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
+HostOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -154,7 +154,7 @@ DefaultOverlay::addPositionParam(const boost::shared_ptr<KnobDouble>& position)
 
 
 void
-DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
+HostOverlay::draw(double time,const RenderScale& /*renderScale*/)
 {
     double r,g,b;
     if (!getNode()->getOverlayColor(&r, &g, &b)) {
@@ -231,7 +231,7 @@ DefaultOverlay::draw(double time,const RenderScale& /*renderScale*/)
 }
 
 bool
-DefaultOverlay::penMotion(double time,
+HostOverlay::penMotion(double time,
                           const RenderScale &/*renderScale*/,
                           const QPointF &penPos,
                           const QPoint &/*penPosViewport*/,
@@ -303,7 +303,7 @@ DefaultOverlay::penMotion(double time,
 }
 
 bool
-DefaultOverlay::penMotion(double time,
+HostOverlay::penMotion(double time,
                           const RenderScale &renderScale,
                           const QPointF &penPos,
                           const QPoint &penPosViewport,
@@ -323,7 +323,7 @@ DefaultOverlay::penMotion(double time,
 
 
 bool
-DefaultOverlay::penUp(double time,
+HostOverlay::penUp(double time,
                       const RenderScale &renderScale,
                       const QPointF &penPos,
                       const QPoint &penPosViewport,
@@ -361,7 +361,7 @@ DefaultOverlay::penUp(double time,
 }
 
 bool
-DefaultOverlay::penUp(double time,
+HostOverlay::penUp(double time,
                       const RenderScale &renderScale,
                       const QPointF &penPos,
                       const QPoint &penPosViewport,
@@ -380,7 +380,7 @@ DefaultOverlay::penUp(double time,
 
 
 bool
-DefaultOverlay::penDown(double time,
+HostOverlay::penDown(double time,
                         const RenderScale &renderScale,
                         const QPointF &penPos,
                         const QPoint &penPosViewport,
@@ -410,7 +410,7 @@ DefaultOverlay::penDown(double time,
 
 
 bool
-DefaultOverlay::penDown(double time,
+HostOverlay::penDown(double time,
                         const RenderScale &renderScale,
                         const QPointF &penPos,
                         const QPoint &penPosViewport,
@@ -427,7 +427,7 @@ DefaultOverlay::penDown(double time,
 
 
 bool
-DefaultOverlay::keyDown(double /*time*/,
+HostOverlay::keyDown(double /*time*/,
                         const RenderScale &/*renderScale*/,
                         int     /*key*/,
                         char*   /*keyString*/,
@@ -438,7 +438,7 @@ DefaultOverlay::keyDown(double /*time*/,
 
 
 bool
-DefaultOverlay::keyDown(double time,
+HostOverlay::keyDown(double time,
                         const RenderScale &renderScale,
                         int     key,
                         char*   keyString)
@@ -454,7 +454,7 @@ DefaultOverlay::keyDown(double time,
 
 
 bool
-DefaultOverlay::keyUp(double /*time*/,
+HostOverlay::keyUp(double /*time*/,
                       const RenderScale &/*renderScale*/,
                       int     /*key*/,
                       char*   /*keyString*/,
@@ -464,7 +464,7 @@ DefaultOverlay::keyUp(double /*time*/,
 }
 
 bool
-DefaultOverlay::keyUp(double time,
+HostOverlay::keyUp(double time,
                       const RenderScale &renderScale,
                       int     key,
                       char*   keyString)
@@ -478,7 +478,7 @@ DefaultOverlay::keyUp(double time,
 
 
 bool
-DefaultOverlay::keyRepeat(double /*time*/,
+HostOverlay::keyRepeat(double /*time*/,
                           const RenderScale &/*renderScale*/,
                           int     /*key*/,
                           char*   /*keyString*/,
@@ -488,7 +488,7 @@ DefaultOverlay::keyRepeat(double /*time*/,
 }
 
 bool
-DefaultOverlay::keyRepeat(double time,
+HostOverlay::keyRepeat(double time,
                const RenderScale &renderScale,
                int     key,
                char*   keyString)
@@ -502,7 +502,7 @@ DefaultOverlay::keyRepeat(double time,
 
 
 bool
-DefaultOverlay::gainFocus(double /*time*/,
+HostOverlay::gainFocus(double /*time*/,
                           const RenderScale &/*renderScale*/,
                           PositionInteract* /*it*/)
 {
@@ -510,7 +510,7 @@ DefaultOverlay::gainFocus(double /*time*/,
 }
 
 bool
-DefaultOverlay::gainFocus(double time,
+HostOverlay::gainFocus(double time,
                           const RenderScale &renderScale)
 {
     bool didSomething = false;
@@ -522,7 +522,7 @@ DefaultOverlay::gainFocus(double time,
 
 
 bool
-DefaultOverlay::loseFocus(double  /*time*/,
+HostOverlay::loseFocus(double  /*time*/,
                           const RenderScale &/*renderScale*/,
                           PositionInteract* it)
 {
@@ -542,7 +542,7 @@ DefaultOverlay::loseFocus(double  /*time*/,
 }
 
 bool
-DefaultOverlay::loseFocus(double  time,
+HostOverlay::loseFocus(double  time,
                           const RenderScale &renderScale)
 {
     bool didSomething = false;
@@ -553,7 +553,7 @@ DefaultOverlay::loseFocus(double  time,
 }
 
 bool
-DefaultOverlay::hasDefaultOverlayForParam(const KnobI* param)
+HostOverlay::hasHostOverlayForParam(const KnobI* param)
 {
     assert(QThread::currentThread() == qApp->thread());
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
@@ -565,7 +565,7 @@ DefaultOverlay::hasDefaultOverlayForParam(const KnobI* param)
 }
 
 void
-DefaultOverlay::removeDefaultOverlay(KnobI* knob)
+HostOverlay::removeHostOverlay(KnobI* knob)
 {
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
         if (it->param.lock().get() == knob) {
@@ -576,7 +576,7 @@ DefaultOverlay::removeDefaultOverlay(KnobI* knob)
 }
 
 bool
-DefaultOverlay::isEmpty() const
+HostOverlay::isEmpty() const
 {
     if (_imp->positions.empty()) {
         return true;

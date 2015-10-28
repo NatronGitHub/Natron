@@ -212,7 +212,7 @@ KnobDouble::setHasNativeOverlayHandle(bool handle)
         if (handle) {
             effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
         } else {
-            effect->getNode()->removeDefaultOverlay(this);
+            effect->getNode()->removeHostOverlay(this);
         }
        _hasNativeOverlayHandle = handle;
     }

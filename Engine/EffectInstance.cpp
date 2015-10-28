@@ -2703,7 +2703,7 @@ EffectInstance::onKnobSlaved(KnobI* slave,
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 {
-    getNode()->setCurrentViewportForDefaultOverlays(viewport);
+    getNode()->setCurrentViewportForHostOverlays(viewport);
     setCurrentViewportForOverlays(viewport);
 }
 
@@ -2714,7 +2714,7 @@ EffectInstance::drawOverlay_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return;
     }
 
@@ -2722,7 +2722,7 @@ EffectInstance::drawOverlay_public(double time,
 
     _imp->setDuringInteractAction(true);
     drawOverlay(time, scaleX, scaleY);
-    getNode()->drawDefaultOverlay(time, scaleX, scaleY);
+    getNode()->drawHostOverlay(time, scaleX, scaleY);
     _imp->setDuringInteractAction(false);
 }
 
@@ -2736,7 +2736,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2765,7 +2765,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2793,7 +2793,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
     bool ret;
@@ -2820,7 +2820,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2848,7 +2848,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2877,7 +2877,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2903,7 +2903,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2929,7 +2929,7 @@ EffectInstance::onOverlayFocusLost_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return false;
     }
     bool ret;
