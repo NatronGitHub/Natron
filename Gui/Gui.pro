@@ -84,7 +84,6 @@ SOURCES += \
     CurveWidgetDialogs.cpp \
     CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
-    HostOverlay.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
@@ -113,6 +112,7 @@ SOURCES += \
     GuiAppWrapper.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
+    HostOverlay.cpp \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
@@ -234,7 +234,6 @@ HEADERS += \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \
     CustomParamInteract.h \
-    HostOverlay.h \
     DockablePanel.h \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
@@ -260,6 +259,7 @@ HEADERS += \
     GuiPrivate.h \
     GlobalGuiWrapper.h \
     Histogram.h \
+    HostOverlay.h \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiFactory.h \
