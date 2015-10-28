@@ -629,6 +629,8 @@ public:
                                                                        const std::map<int, Natron::EffectInstance*> & reroutesMap,
                                                                        bool useTransforms, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
+                                                                       double time,
+                                                                       int view,
                                                                        const boost::shared_ptr<Natron::Node> & treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific
                                                                        EffectInstance::InputImagesMap* inputImages, // render functor specific

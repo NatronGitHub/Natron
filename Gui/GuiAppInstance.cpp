@@ -166,6 +166,11 @@ GuiAppInstance::aboutToQuit()
 {
     deletePreviewProvider();
     
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    _imp->_gui->setGuiAboutToClose(true);
+    
+    _imp->_gui->notifyGuiClosing();
+    
     AppInstance::aboutToQuit();
     
     _imp->_isClosing = true;

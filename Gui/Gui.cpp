@@ -160,6 +160,24 @@ Gui::closeProject()
     //_imp->_appInstance->execOnProjectCreatedCallback();
 }
 
+void
+Gui::setGuiAboutToClose(bool about)
+{
+    ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
+    {
+        QMutexLocker l(&_imp->aboutToCloseMutex);
+        _imp->_aboutToClose = about;
+    }
+
+}
+
+void
+Gui::notifyGuiClosing()
+{
+    //Invalidates the Gui* pointer on most widgets to avoid attempts to dereference it in most events
+    _imp->notifyGuiClosing();
+}
+
 bool
 Gui::abortProject(bool quitApp)
 {
@@ -177,30 +195,15 @@ Gui::abortProject(bool quitApp)
     
     _imp->setUndoRedoActions(0,0);
     if (quitApp) {
-        ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
-        {
-            QMutexLocker l(&_imp->aboutToCloseMutex);
-            _imp->_aboutToClose = true;
-        }
-
         assert(_imp->_appInstance);
-
-       // _imp->_appInstance->getProject()->closeProject(true);
-        _imp->notifyGuiClosing();
         _imp->_appInstance->quit();
     } else {
-        {
-            QMutexLocker l(&_imp->aboutToCloseMutex);
-            _imp->_aboutToClose = true;
-        }
+        setGuiAboutToClose(true);
         _imp->_appInstance->resetPreviewProvider();
         _imp->_appInstance->getProject()->closeProject(false);
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
-        {
-            QMutexLocker l(&_imp->aboutToCloseMutex);
-            _imp->_aboutToClose = false;
-        }
+        setGuiAboutToClose(false);
     }
 
     ///Reset current undo/reso actions

@@ -26,7 +26,7 @@
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 
-#Usage: CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
+#Usage: BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
 
 source `pwd`/common.sh || exit 1
 (cd ports; portindex)

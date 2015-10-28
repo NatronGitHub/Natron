@@ -1243,7 +1243,6 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     marked.push_back(this);
-    
     if (oldHash != newHash) {
         /*
          * We changed the node hash. That means all cache entries for this node with a different hash
@@ -1288,7 +1287,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         NodeList nodes = group->getNodes();
         for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             assert(*it);
-            (*it)->incrementKnobsAge();
+            (*it)->incrementKnobsAge_internal();
             (*it)->computeHashInternal(marked);
         }
     }
@@ -1834,6 +1833,22 @@ Node::setKnobsAge(U64 newAge)
         l.unlock();
         computeHash();
         l.relock();
+    }
+}
+
+void
+Node::incrementKnobsAge_internal()
+{
+    {
+        QWriteLocker l(&_imp->knobsAgeMutex);
+        ++_imp->knobsAge;
+        
+        ///if the age of an effect somehow reaches the maximum age (will never happen)
+        ///handle it by clearing the cache and resetting the age to 0.
+        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
+            appPTR->clearAllCaches();
+            _imp->knobsAge = 0;
+        }
     }
 }
 
@@ -3790,7 +3805,7 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
         std::list<Natron::Node* > inputsOutputs;
         isGrp->getInputsOutputs(&inputsOutputs);
         for (std::list<Natron::Node* >::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
-            (*it)->incrementKnobsAge();
+            (*it)->incrementKnobsAge_internal();
             (*it)->computeHash();
         }
     }
@@ -5559,7 +5574,9 @@ Node::endInputEdition(bool triggerRender)
         _imp->inputsModified.clear();
 
         if (hasChanged) {
-            forceRefreshAllInputRelatedData();
+            if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+                forceRefreshAllInputRelatedData();
+            }
             refreshDynamicProperties();
         }
         
@@ -5632,6 +5649,38 @@ Node::onInputChanged(int inputNb)
         _imp->inputsModified.insert(inputNb);
     }
    
+    /*
+     If this is a group, also notify the output nodes of the GroupInput node inside the Group corresponding to
+     the this inputNb
+     */
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+    if (isGroup) {
+        std::vector<NodePtr> groupInputs;
+        isGroup->getInputs(&groupInputs);
+        if (inputNb >= 0 && inputNb < (int)groupInputs.size() && groupInputs[inputNb]) {
+            std::map<Node*,int> inputOutputs;
+            groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
+            for (std::map<Node*,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
+                it->first->onInputChanged(it->second);
+            }
+        }
+    }
+    
+    /*
+     If this is an output node, notify the Group output nodes that their input have changed.
+     */
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
+    if (isOutput) {
+        NodeGroup* containerGroup = dynamic_cast<NodeGroup*>(isOutput->getNode()->getGroup().get());
+        assert(containerGroup);
+        if (containerGroup) {
+            std::map<Node*,int> groupOutputs;
+            containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
+            for (std::map<Node*,int> ::iterator it = groupOutputs.begin(); it!=groupOutputs.end(); ++it) {
+                it->first->onInputChanged(it->second);
+            }
+        }
+    }
     
     if (mustCallEndInputEdition) {
         endInputEdition(true);

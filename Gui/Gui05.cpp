@@ -156,6 +156,9 @@ Gui::setupUi()
        If object itself has a properly set object name, its own signals are also connected to its respective slots.
      */
     QMetaObject::connectSlotsByName(this);
+    
+    appPTR->setOFXHostHandle(_imp->_appInstance->getOfxHostOSHandle());
+    
 } // setupUi
 
 

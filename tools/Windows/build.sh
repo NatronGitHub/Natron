@@ -21,7 +21,7 @@
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
 # TARSRC=1 : tar sources
 # NATRON_LICENSE=(GPL,COMMERCIAL): When GPL, GPL binaries are bundled with Natron
-# USAGE: NATRON_LICENSE=<license> build.sh BIT "branch" noThreads
+# USAGE: BUILD_CONFIG=STABLE BUILD_NUMBER=1 NATRON_LICENSE=<license> build.sh BIT "branch" noThreads
 
 source `pwd`/common.sh || exit 1
 

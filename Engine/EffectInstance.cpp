@@ -768,7 +768,9 @@ EffectInstance::getImage(int inputNb,
         if ( inputImg && !pixelRoI.intersects( inputImg->getBounds() ) ) {
             //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
 #ifdef DEBUG
-            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image";
+            RectI inputBounds = inputImg->getBounds();
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to the roto mask does not intersect with the bounds of the input image: Pixel RoI x1=" << pixelRoI.x1 << "y1=" << pixelRoI.y1 << "x2=" << pixelRoI.x2 << "y2=" << pixelRoI.y2 <<
+            "Bounds x1=" << inputBounds.x1 << "y1=" << inputBounds.y1 << "x2=" << inputBounds.x2 << "y2=" << inputBounds.y2;
 #endif
 
             return ImagePtr();
@@ -1647,6 +1649,8 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                               reroutesMap,
                               useTransforms,
                               mipMapLevel,
+                              time,
+                              view,
                               NodePtr(),
                               0,
                               inputImages,
@@ -3013,7 +3017,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     bool ret = false;
     boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
-    if ( rotoItem && !rotoItem->isActivated(time) ) {
+    if ((rotoItem && !rotoItem->isActivated(time)) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
         *inputTime = time;
@@ -3021,11 +3025,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         ret = true;
         *inputNb = 0;
         *inputTime = time;
-    } else if ( getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
-        ret = true;
-        *inputTime = time;
-        *inputNb = -1;
-        *inputNb = getNode()->getPreferredInput();
     } else {
         /// Don't call isIdentity if plugin is sequential only.
         if (getSequentialPreference() != Natron::eSequentialPreferenceOnlySequential) {

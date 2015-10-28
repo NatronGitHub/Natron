@@ -2526,10 +2526,11 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     }
     
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
+    bool hasConnected = false;
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
         QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
-        bool hasConnected = false;
+        
         if (!(*it)->getParentMultiInstance()) {
             for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
@@ -2541,9 +2542,22 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
                 }
             }
         }
-        if (exportKnobLinks(indentLevel,*it,nodeQualifiedName, ts) || hasConnected) {
-            WRITE_STATIC_LINE("");
+        
+    }
+    if (hasConnected) {
+        WRITE_STATIC_LINE("");
+    }
+    
+    bool hasExported = false;
+    
+    for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
+        QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
+        if (exportKnobLinks(indentLevel,*it,nodeQualifiedName, ts)) {
+            hasExported = true;
         }
+    }
+    if (hasExported) {
+        WRITE_STATIC_LINE("");
     }
     
 }

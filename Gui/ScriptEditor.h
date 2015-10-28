@@ -68,6 +68,8 @@ public:
     
 public Q_SLOTS:
     
+    void doAppendToScriptEditorOnMainThread(const QString& str);
+    
     void onUserScrollChanged(bool atBottom);
 
     void onShowHideOutputClicked(bool clicked);
@@ -95,6 +97,10 @@ public Q_SLOTS:
     
     void onAutoSaveTimerTimedOut();
 
+Q_SIGNALS:
+    
+    void appendToScriptEditorOnMainThread(QString);
+    
 private:
     
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;

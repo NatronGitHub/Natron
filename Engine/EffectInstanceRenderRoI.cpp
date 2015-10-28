@@ -480,7 +480,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (requestPassData) {
                     inputTimeIdentity = requestPassData->globalData.inputIdentityTime;
                     inputNbIdentity = requestPassData->globalData.identityInputNb;
-                    identity = inputNbIdentity != -1;
+                    identity = requestPassData->globalData.isIdentity;
                 } else {
                     identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
                 }

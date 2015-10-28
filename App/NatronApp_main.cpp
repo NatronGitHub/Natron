@@ -27,6 +27,7 @@
 #include <cstdlib> // exit
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 #include "Global/Macros.h"
 
@@ -98,6 +99,9 @@ setShutDownSignal(int signalId)
 void
 handleShutDownSignal( int /*signalId*/ )
 {
-    QCoreApplication::exit(0);
+    if (appPTR) {
+        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
+        appPTR->quitApplication();
+    }
 }
 
