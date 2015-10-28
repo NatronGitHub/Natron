@@ -660,6 +660,14 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     } else if (pluginIdentifier.startsWith("com.NewBlue.Titler")) {
         s = PLUGIN_GROUP_PAINT;
 
+    } else if (pluginIdentifier.startsWith("com.FXHOME.HitFilm")) {
+        // HitFilm uses grouping such as "HitFilm - Generate"
+        s.replace("HitFilm - ", "HitFilm/");
+
+    } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe")) {
+        // Red Giant Universe uses grouping such as "Universe Blur"
+        s.replace("Universe ", "Universe/");
+
     } else if ( (pluginIdentifier == "tuttle.avreader") ||
                (pluginIdentifier == "tuttle.avwriter") ||
                (pluginIdentifier == "tuttle.dpxwriter") ||
