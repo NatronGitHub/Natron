@@ -36,8 +36,8 @@ SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
 ## all Qt frameworks:
 #QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
-## Qt frameworks used by Natron + PySide:
-QT_LIBS="QtCore QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+## Qt frameworks used by Natron + PySide + Qt plugins:
+QT_LIBS="Qt3Support QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
 STRIP=1
 
 "$QTDIR"/bin/macdeployqt "${package}" -no-strip || exit 1
