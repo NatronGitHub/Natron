@@ -78,7 +78,8 @@ if [ ! -d "${DYNLOAD}" ]; then
     echo "lib-dynload not present"
     exit 1
 fi
-for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; done |sort|uniq |awk '{print $1}'`; do
+MPLIBS=`for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}/lib"; done |sort|uniq |awk '{print $1}'`
+for mplib in $MPLIBS; do
     if [ ! -f "$mplib" ]; then
         echo "missing python lib-dynload depend $mplib"
         exit 1
@@ -92,6 +93,16 @@ for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; 
     done
 done
 
+# also fix newly-installed libs
+for mplib in $MPLIBS; do
+    lib=`echo $mplib | awk -F / '{print $NF}'`
+    install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
+    for mplibsub in $MPLIBS; do
+	deplib=`echo $mplibsub | awk -F / '{print $NF}'`
+        install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$pkglib/$deplib"
+    done
+done
+
 # qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt Natron.app -verbose=2 gives:
 # Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
 # see https://trac.macports.org/ticket/49344
@@ -100,7 +111,7 @@ if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
     cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
     for binary in "${package}/Contents/PlugIns"/*/*.dylib; do
         chmod +w "$binary"
-        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib; do
+        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
         for f in $QT_LIBS; do
@@ -160,6 +171,13 @@ fi
 for f in Python; do
     install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
 done
+
+# fix library ids
+pushd "$pkglib"
+for deplib in *.framework/Versions/*/* lib*.dylib; do
+    install_name_tool -id "@executable_path/../Frameworks/${deplib}" "$deplib"
+done
+popd
 
 if otool -L "$binary" | fgrep "${MACPORTS}"; then
     echo "Error: MacPorts libraries remaining in $binary, please check"
