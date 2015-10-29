@@ -121,6 +121,7 @@ for qtlib in $QT_LIBS; do
         mkdir -p `dirname "${binary}"`
         cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
         chmod +w "${binary}"
+        install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "$binary"
         for f in $QT_LIBS; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
