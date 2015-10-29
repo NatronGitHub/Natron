@@ -51,6 +51,12 @@ if [ ! -x "$binary" ]; then
    exit 1
 fi
 
+# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
+LIBGCC=0
+if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
+    LIBGCC=1
+fi
+
 #Copy and change exec_path of the whole Python framework with libraries
 rm -rf "$pkglib/Python.framework"
 mkdir -p "$pkglib/Python.framework/Versions/${PYVER}/lib"
@@ -94,6 +100,8 @@ for mplib in $MPLIBS; do
 done
 
 # also fix newly-installed libs
+# also add first-level dependencies 
+MPLIBS=`for i in $MPLIBS; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib"; done |sort|uniq |awk '{print $1}'`
 for mplib in $MPLIBS; do
     lib=`echo $mplib | awk -F / '{print $NF}'`
     install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
@@ -142,11 +150,6 @@ for qtlib in $QT_LIBS; do
     fi
 done
 
-# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
-LIBGCC=0
-if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
-    LIBGCC=1
-fi
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
@@ -411,23 +414,25 @@ if [ "$STRIP" = 1 ]; then
         binary="$package/Contents/MacOS/$bin";
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
-            # Extract each arch into a "thin" binary for stripping
-            lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
-            lipo "$binary" -thin i386   -output "${binary}_i386";
-
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
+            if lipo "$binary" -verify_arch i386 x86_64; then
+                # Extract each arch into a "thin" binary for stripping
+		lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+		lipo "$binary" -thin i386   -output "${binary}_i386";
 
-            # Perform desired stripping on each thin binary.  
-            strip -S -x -r "${binary}_i386";
-            strip -S -x -r "${binary}_x86_64";
 
-            # Make the new universal binary from our stripped thin pieces.
-            lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+                # Perform desired stripping on each thin binary.  
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
 
-            # We're now done with the temp thin binaries, so chuck them.
-            rm -f "${binary}_i386";
-            rm -f "${binary}_x86_64";
+                # Make the new universal binary from our stripped thin pieces.
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
+                # We're now done with the temp thin binaries, so chuck them.
+                rm -f "${binary}_i386";
+                rm -f "${binary}_x86_64";
+	    fi
             #rm -f "${binary}_FULL";
         fi
     done
