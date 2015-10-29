@@ -84,7 +84,11 @@ if [ ! -d "${DYNLOAD}" ]; then
     echo "lib-dynload not present"
     exit 1
 fi
-MPLIBS=`for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}/lib"; done |sort|uniq |awk '{print $1}'`
+
+MPLIBS0=`for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
+# also add first-level and second-level dependencies 
+MPLIBS1=`for i in $MPLIBS0; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
+MPLIBS=`for i in $MPLIBS1; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
 for mplib in $MPLIBS; do
     if [ ! -f "$mplib" ]; then
         echo "missing python lib-dynload depend $mplib"
@@ -93,18 +97,17 @@ for mplib in $MPLIBS; do
     lib=`echo $mplib | awk -F / '{print $NF}'`
     if [ ! -f "$pkglib/${lib}" ]; then
         cp "$mplib" "$pkglib/${lib}"
+        chmod +w "$pkglib/${lib}"
     fi
+    install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     for deplib in "${DYNLOAD}"/*.so; do
         install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
     done
 done
 
 # also fix newly-installed libs
-# also add first-level dependencies 
-MPLIBS=`for i in $MPLIBS; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib"; done |sort|uniq |awk '{print $1}'`
 for mplib in $MPLIBS; do
     lib=`echo $mplib | awk -F / '{print $NF}'`
-    install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     for mplibsub in $MPLIBS; do
 	deplib=`echo $mplibsub | awk -F / '{print $NF}'`
         install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$pkglib/$deplib"
