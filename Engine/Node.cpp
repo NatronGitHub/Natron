@@ -521,6 +521,9 @@ struct Node::Implementation
     int inputModifiedRecursion;
     std::set<int> inputsModified;
     
+    //For readers, this is the name of the views in the file
+    std::vector<std::string> createdViews;
+    
 };
 
 /**
@@ -5992,6 +5995,43 @@ Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
     }
 }
 
+const std::vector<std::string>&
+Node::getCreatedViews() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->createdViews;
+}
+
+void
+Node::refreshCreatedViews()
+{
+    boost::shared_ptr<KnobI> knob = getKnobByName(kReadOIIOAvailableViewsKnobName);
+    if (knob) {
+        refreshCreatedViews(knob.get());
+    }
+}
+
+void
+Node::refreshCreatedViews(KnobI* knob)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    KnobString* availableViewsKnob = dynamic_cast<KnobString*>(knob);
+    if (!availableViewsKnob) {
+        return;
+    }
+    QString value(availableViewsKnob->getValue().c_str());
+    QStringList views = value.split(',');
+    
+    _imp->createdViews.clear();
+    for (QStringList::Iterator it = views.begin(); it!=views.end(); ++it) {
+        _imp->createdViews.push_back(it->toStdString());
+    }
+    
+    Q_EMIT availableViewsChanged();
+    
+}
+
 void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
@@ -6026,7 +6066,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
             replaceCustomDataInlabel(operation);
         }
-    } else if ( (what->getName() == kOfxImageEffectFileParamName) && _imp->liveInstance->isReader() ) {
+    } else if (_imp->liveInstance->isReader() && what->getName() == kOfxImageEffectFileParamName) {
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
@@ -6045,6 +6085,8 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
         }
         
+    } else if (_imp->liveInstance->isReader() && what->getName() == kReadOIIOAvailableViewsKnobName) {
+        refreshCreatedViews(what);
     } else if ( what == _imp->refreshInfoButton.lock().get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {

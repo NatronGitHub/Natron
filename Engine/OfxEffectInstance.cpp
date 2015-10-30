@@ -316,6 +316,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
                 getNode()->loadKnobs(*serialization);
+                if (isReader()) {
+                    getNode()->refreshCreatedViews();
+                }
             }
             
             if (!paramValues.empty()) {

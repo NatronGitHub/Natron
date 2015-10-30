@@ -153,7 +153,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _persistentMessage(NULL)
 , _stateIndicator(NULL)
 , _mergeHintActive(false)
-, _bitDepthWarning(NULL)
+, _bitDepthWarning()
 , _disabledTopLeftBtmRight(NULL)
 , _disabledBtmLeftTopRight(NULL)
 , _inputEdges()
@@ -169,7 +169,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _slaveMasterLink(NULL)
 , _masterNodeGui()
 , _knobsLinks()
-, _expressionIndicator(NULL)
+, _expressionIndicator()
 , _magnecEnabled()
 , _magnecDistance()
 , _updateDistanceSinceLastMagnec()
@@ -185,6 +185,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _hostOverlay()
 , _undoStack(new QUndoStack())
 , _overlayLocked(false)
+, _availableViewsIndicator()
 {
 }
 
@@ -192,8 +193,6 @@ NodeGui::~NodeGui()
 {
     deleteReferences();
 
-    delete _bitDepthWarning;
-    delete _expressionIndicator;
 }
 
 void
@@ -569,8 +568,9 @@ NodeGui::createGui()
     bitDepthGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     bitDepthGrad.push_back( qMakePair( 0.3, QColor(Qt::yellow) ) );
     bitDepthGrad.push_back( qMakePair( 1., QColor(243,137,0) ) );
-    _bitDepthWarning = new NodeGuiIndicator(depth + 2, "C",bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
-                                            bitDepthGrad,QColor(0,0,0,255),this);
+    _bitDepthWarning.reset(new NodeGuiIndicator(depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
+                                                NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                            bitDepthGrad,QColor(0,0,0,255),this));
     _bitDepthWarning->setActive(false);
 
 
@@ -578,11 +578,17 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator = new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
-                                                exprGrad,QColor(255,255,255),this);
+    _expressionIndicator.reset(new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                                exprGrad,QColor(255,255,255),this));
     _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
+    
+    _availableViewsIndicator.reset(new NodeGuiIndicator(depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                                        exprGrad, QColor(255,255,255), this));
+    _availableViewsIndicator->setActive(false);
+    
+    onAvailableViewsChanged();
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
@@ -821,6 +827,7 @@ NodeGui::resize(int width,
     _bitDepthWarning->refreshPosition(bitDepthPos);
 
     _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
+    _availableViewsIndicator->refreshPosition(topLeft);
 
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
@@ -3625,4 +3632,44 @@ NodeGui::setOverlayLocked(bool locked)
 {
     assert(QThread::currentThread() == qApp->thread());
     _overlayLocked = locked;
+}
+
+void
+NodeGui::onAvailableViewsChanged()
+{
+    const std::vector<std::string>& views = getNode()->getCreatedViews();
+    if (views.empty()) {
+        if (_availableViewsIndicator->isActive()) {
+            _availableViewsIndicator->setActive(false);
+        }
+        return;
+    }
+    
+    const std::vector<std::string>& projectViews = getDagGui()->getGui()->getApp()->getProject()->getProjectViewNames();
+    QStringList qProjectViews;
+    for (std::size_t i = 0; i < projectViews.size(); ++i) {
+        qProjectViews.push_back(projectViews[i].c_str());
+    }
+    
+    QString toolTip(getNode()->getLabel().c_str());
+    toolTip.append(" ");
+    toolTip.append(tr("has the following views available:"));
+    toolTip.append(" ");
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        
+        ///Try to find a match in the project views to have the same case sensitivity
+        QString qView(views[i].c_str());
+        for (QStringList::Iterator it = qProjectViews.begin(); it!=qProjectViews.end(); ++it) {
+            if (it->size() == qView.size() && it->startsWith(qView,Qt::CaseInsensitive)) {
+                qView = *it;
+                break;
+            }
+        }
+        toolTip.append(qView);
+        if (i < views.size() -1) {
+            toolTip.push_back(',');
+        }
+    }
+    _availableViewsIndicator->setToolTip(toolTip);
+    _availableViewsIndicator->setActive(true);
 }

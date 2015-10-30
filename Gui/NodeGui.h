@@ -369,6 +369,13 @@ public:
     
     void checkOptionalEdgesVisibility();
     
+    
+    bool wasBeginEditCalled()
+    {
+        return _wasBeginEditCalled;
+    }
+
+    
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
     
     virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
@@ -425,7 +432,12 @@ protected:
     
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
     
+    
+
+    
 public Q_SLOTS:
+    
+    void onAvailableViewsChanged();
 
     void onOutputLayerChanged();
 
@@ -492,11 +504,6 @@ public Q_SLOTS:
     void onInputNRenderingFinished(int input);
 
     void beginEditKnobs();
-
-    bool wasBeginEditCalled()
-    {
-        return _wasBeginEditCalled;
-    }
 
     void centerGraphOnIt();
 
@@ -595,7 +602,7 @@ private:
     QGraphicsRectItem* _stateIndicator;    
     
     bool _mergeHintActive;
-    NodeGuiIndicator* _bitDepthWarning;
+    boost::shared_ptr<NodeGuiIndicator> _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -631,7 +638,7 @@ private:
 
     typedef std::map<boost::shared_ptr<Natron::Node>,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
-    NodeGuiIndicator* _expressionIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
     QPoint _updateDistanceSinceLastMagnec; //for x and for y
@@ -653,6 +660,8 @@ private:
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
 
     bool _overlayLocked;
+    
+    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
 };
 
 

@@ -63,6 +63,8 @@ CLANG_DIAG_ON(deprecated)
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"
 
+#define kReadOIIOAvailableViewsKnobName "availableViews"
+
 class AppInstance;
 class NodeSettingsPanel;
 class KnobI;
@@ -1060,7 +1062,13 @@ public:
     
     bool getSelectedLayerChoiceRaw(int inputNb,std::string& layer) const;
     
+    const std::vector<std::string>& getCreatedViews() const;
+    
+    void refreshCreatedViews();
+    
 private:
+    
+    void refreshCreatedViews(KnobI* knob);
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
     
@@ -1126,6 +1134,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void availableViewsChanged();
     
     void outputLayerChanged();
     
