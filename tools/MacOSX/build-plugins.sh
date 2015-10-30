@@ -77,7 +77,7 @@ make -C CImg CImg.h || exit 1
 if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
     make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
-else if [ -n "$GXX" ]; then
+elif [ -n "$GXX" ]; then
     # GCC is available too!
     # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
     make -C CImg CXX="$GXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD="-fopenmp -static-libgcc"
