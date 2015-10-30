@@ -2587,6 +2587,13 @@ AppManager::getCurrentThreadTLS()
     return _imp->ofxHost->getCurrentThreadTLS();
 }
 
+OFX::Host::ImageEffect::Descriptor*
+AppManager::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                Natron::ContextEnum* ctx)
+{
+    return _imp->ofxHost->getPluginContextAndDescribe(plugin, ctx);
+}
+
 std::list<std::string>
 AppManager::getNatronPath()
 {
