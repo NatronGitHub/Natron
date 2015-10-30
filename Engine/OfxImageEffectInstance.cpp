@@ -164,9 +164,9 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 
     if (strcmp(type, kOfxMessageError) == 0) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeError, message);
-    } else if ( strcmp(type, kOfxMessageWarning) ) {
+    } else if ( strcmp(type, kOfxMessageWarning) == 0 ) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, message);
-    } else if ( strcmp(type, kOfxMessageMessage) ) {
+    } else if ( strcmp(type, kOfxMessageMessage) == 0 ) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeInfo, message);
     }
 

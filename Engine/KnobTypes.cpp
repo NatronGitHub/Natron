@@ -643,9 +643,7 @@ KnobChoice::appendChoice(const std::string& entry, const std::string& help)
 {
     {
         QMutexLocker l(&_entriesMutex);
-        if (!_entriesHelp.empty()) {
-            _entriesHelp.push_back(help);
-        }
+        _entriesHelp.push_back(help);
         _entries.push_back(entry);
     }
     if (_signalSlotHandler) {
