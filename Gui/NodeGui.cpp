@@ -3651,9 +3651,8 @@ NodeGui::onAvailableViewsChanged()
         qProjectViews.push_back(projectViews[i].c_str());
     }
     
-    QString toolTip(getNode()->getLabel().c_str());
-    toolTip.append(" ");
-    toolTip.append(tr("has the following views available:"));
+    QString toolTip;
+    toolTip.append(tr("The following views are available in this node:"));
     toolTip.append(" ");
     for (std::size_t i = 0; i < views.size(); ++i) {
         
