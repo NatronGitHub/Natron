@@ -144,8 +144,10 @@ struct Natron::OfxHostPrivate
     std::list<QMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
+    std::string loadingPluginID; // ID of the plugin being loaded
+    int loadingPluginVersionMajor;
+    int loadingPluginVersionMinor;
 
-    
     OfxHostPrivate()
     : imageEffectPluginCache()
     , globalTLS()
@@ -153,6 +155,9 @@ struct Natron::OfxHostPrivate
     , pluginsMutexes()
     , pluginsMutexesLock(0)
 #endif
+    , loadingPluginID()
+    , loadingPluginVersionMajor(0)
+    , loadingPluginVersionMinor(0)
     {
         
     }
@@ -228,7 +233,8 @@ Natron::OfxHost::setProperties()
 
     // see hostStuffs in ofxhImageEffect.cpp
 
-    _properties.setStringProperty( kOfxPropName,appPTR->getCurrentSettings()->getHostName() );
+    _properties.setStringProperty( kOfxPropName, appPTR->getCurrentSettings()->getHostName() );
+    _properties.setGetHook(kOfxPropName, this);
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.4
     _properties.setIntProperty(kOfxPropAPIVersion, 4, 1);
@@ -301,6 +307,68 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 #endif
     
+}
+
+static
+Settings::KnownHostNameEnum getHostNameForPlugin(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor)
+{
+#ifdef DEBUG
+    if(pluginID.empty()) {
+        printf("@MrKepzie please fix me - move function to non-static and fetch pluginid from TLS\n");
+        return Settings::eKnownHostNameNone;
+    }
+    printf("asking host name for plugin %s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
+#endif
+    static const std::string neatvideo("com.absoft.neatvideo");
+    static const std::string hitfilm("com.FXHOME.HitFilm.");
+    static const std::string redgiant("com.redgiantsoftware.Universe_");
+
+    if (!pluginID.compare(0, neatvideo.size(), neatvideo)) {
+        // Neat Video plugins work with Nuke, Resolve and Mistika
+        // https://www.neatvideo.com/download.html
+        // tested with neat video 4.0.9, maj=4,min=0
+        return Settings::eKnownHostNameNuke;
+    } else if (!pluginID.compare(0, hitfilm.size(), hitfilm)) {
+        // HitFilm plugins (work with Vegas, Resolve and TitlerPro,
+        // Vegas and TitlerPro support more plugins than Resolve
+        // tested with HitFilm 3.1.0113
+        // maj=1 or 2 (depends on plugin), min=0
+        return Settings::eKnownHostNameVegas;
+    } else if (!pluginID.compare(0, redgiant.size(), redgiant)) {
+        // Red Giant Universe plugins 1.5 work with Vegas and Resolve
+        return Settings::eKnownHostNameVegas;
+    }
+    return Settings::eKnownHostNameNone;
+}
+
+const std::string &
+Natron::OfxHost::getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC
+{
+    if (name == kOfxPropName && n == 0) {
+        // depending on the current plugin ID and version, return a compatible host name.
+        std::string pluginID;
+        int pluginVersionMajor;
+        int pluginVersionMinor;
+        if (!_imp->loadingPluginID.empty()) {
+            // plugin is not yet created: we are loading or describing it
+            pluginID = _imp->loadingPluginID;
+            pluginVersionMajor = _imp->loadingPluginVersionMajor;
+            pluginVersionMinor = _imp->loadingPluginVersionMinor;
+        } else {
+#pragma message WARN("TODO: @MrKepzie fetch plugin ID and versions from thread-local storage")
+        }
+
+        Settings::KnownHostNameEnum e = getHostNameForPlugin(pluginID, pluginVersionMajor, pluginVersionMinor);
+        if (e != Settings::eKnownHostNameNone) {
+            return appPTR->getCurrentSettings()->getKnownHostName(e);
+        }
+
+        // kOfxPropName was set at host creation
+        return _properties.getStringPropertyRaw(kOfxPropName);
+    }
+    else {
+        throw OFX::Host::Property::Exception(kOfxStatErrValue);
+    }
 }
 
 OFX::Host::ImageEffect::Instance*
@@ -489,6 +557,12 @@ OFX::Host::ImageEffect::Descriptor*
 Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                              Natron::ContextEnum* ctx)
 {
+#pragma message WARN("getPluginContextAndDescribe should be non-static")
+#pragma message WARN("set the pluginID here")
+    //_imp->loadingPluginID = plugin->getRawIdentifier();
+    //_imp->loadingPluginVersionMajor = plugin->getVersionMajor();
+    //_imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
@@ -539,6 +613,8 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
 
     
     *ctx = OfxEffectInstance::mapToContextEnum(context);
+#pragma message WARN("clear the pluginID here")
+    //_imp->loadingPluginID.clead();
     return desc;
 }
 
@@ -647,6 +723,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         ifs.close();
     }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
+    _imp->loadingPluginID.clear(); // finished loading plugins
 
     // write the cache NOW (it won't change anyway)
     /// flush out the current cache
@@ -815,10 +892,14 @@ Natron::OfxHost::clearPluginsLoadedCache()
 }
 
 void
-Natron::OfxHost::loadingStatus(const std::string & pluginId)
+Natron::OfxHost::loadingStatus(const std::string & pluginId, int versionMajor, int versionMinor)
 {
+    // set the pluginID
+    _imp->loadingPluginID = pluginId;
+    _imp->loadingPluginVersionMajor = versionMajor;
+    _imp->loadingPluginVersionMinor = versionMinor;
     if (appPTR) {
-        appPTR->setLoadingStatus( "OpenFX: " + QString( pluginId.c_str() ) );
+        appPTR->setLoadingStatus( "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor) );
     }
 }
 

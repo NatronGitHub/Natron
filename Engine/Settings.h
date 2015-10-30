@@ -85,6 +85,7 @@ public:
         eKnownHostNameTitlerPro,
         eKnownHostNameRamen,
         eKnownHostNameTuttleOfx,
+        eKnownHostNameNone,
     };
 
     Settings(AppInstance* appInstance);
