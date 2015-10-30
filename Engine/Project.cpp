@@ -1238,6 +1238,10 @@ Project::onKnobValueChanged(KnobI* knob,
     if ( knob == _imp->viewsList.get() ) {
         std::vector<std::string> viewNames = getProjectViewNames();
         getApp()->setupViewersForViews(viewNames);
+        if (reason == Natron::eValueChangedReasonUserEdited) {
+            ///views change, notify all OneView nodes via getClipPreferences
+            forceComputeInputDependentDataOnAllTrees();
+        }
 
     } else if (knob == _imp->setupForStereoButton.get()) {
         setupProjectForStereo();

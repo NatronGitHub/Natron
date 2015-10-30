@@ -316,9 +316,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
                 getNode()->loadKnobs(*serialization);
-                if (isReader()) {
-                    getNode()->refreshCreatedViews();
-                }
             }
             
             if (!paramValues.empty()) {
@@ -394,7 +391,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
         
         
-        
+        if (isReader() && serialization && !serialization->isNull()) {
+            getNode()->refreshCreatedViews();
+        }
         // Check here that bitdepth and components given by getClipPreferences are supported by the effect.
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
