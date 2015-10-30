@@ -310,19 +310,15 @@ Natron::OfxHost::setProperties()
 }
 
 static
-Settings::KnownHostNameEnum getHostNameForPlugin(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor)
+Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int /*pluginVersionMajor*/, int /*pluginVersionMinor*/)
 {
-#ifdef DEBUG
-    if(pluginID.empty()) {
-        printf("@MrKepzie please fix me - move function to non-static and fetch pluginid from TLS\n");
-        return Settings::eKnownHostNameNone;
-    }
-    printf("asking host name for plugin %s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
-#endif
+    assert(!pluginID.empty());
+    
     static const std::string neatvideo("com.absoft.neatvideo");
     static const std::string hitfilm("com.FXHOME.HitFilm.");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
-
+    static const std::string digitalfilmtools("com.digitalfilmtools.");
+    
     if (!pluginID.compare(0, neatvideo.size(), neatvideo)) {
         // Neat Video plugins work with Nuke, Resolve and Mistika
         // https://www.neatvideo.com/download.html
@@ -337,6 +333,10 @@ Settings::KnownHostNameEnum getHostNameForPlugin(const std::string& pluginID, in
     } else if (!pluginID.compare(0, redgiant.size(), redgiant)) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
         return Settings::eKnownHostNameVegas;
+    } else if (!pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools)) {
+        //Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
+        //http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
+        return Settings::eKnownHostNameNuke;
     }
     return Settings::eKnownHostNameNone;
 }
@@ -355,15 +355,27 @@ Natron::OfxHost::getStringProperty(const std::string &name, int n) const OFX_EXC
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
         } else {
-#pragma message WARN("TODO: @MrKepzie fetch plugin ID and versions from thread-local storage")
+            const GlobalOFXTLS& tls = _imp->globalTLS.localData();
+            if (tls.lastEffectCallingMainEntry) {
+                pluginID = tls.lastEffectCallingMainEntry->getPlugin()->getIdentifier();
+                pluginVersionMajor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
+                pluginVersionMinor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+            } else {
+                //_imp->loadingPluginID not set and tls not set, unknown situation
+                pluginVersionMajor = pluginVersionMinor = 0;
+            }
         }
-
-        Settings::KnownHostNameEnum e = getHostNameForPlugin(pluginID, pluginVersionMajor, pluginVersionMinor);
-        if (e != Settings::eKnownHostNameNone) {
-            return appPTR->getCurrentSettings()->getKnownHostName(e);
+        
+        ///Proxy known plug-ins that filter hostnames
+        if (!pluginID.empty()) {
+            Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
+            if (e != Settings::eKnownHostNameNone) {
+                const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
+                return ret;
+            }
         }
-
-        // kOfxPropName was set at host creation
+        
+        // kOfxPropName was set at host creation, let the value decided by the user
         return _properties.getStringPropertyRaw(kOfxPropName);
     }
     else {
@@ -557,15 +569,13 @@ OFX::Host::ImageEffect::Descriptor*
 Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                              Natron::ContextEnum* ctx)
 {
-#pragma message WARN("getPluginContextAndDescribe should be non-static")
-#pragma message WARN("set the pluginID here")
-    //_imp->loadingPluginID = plugin->getRawIdentifier();
-    //_imp->loadingPluginVersionMajor = plugin->getVersionMajor();
-    //_imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+    _imp->loadingPluginID = plugin->getRawIdentifier();
+    _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
+    _imp->loadingPluginVersionMinor = plugin->getVersionMajor();
 
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
-    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
+    // it calls kOfxActionLoad on the plugin and kOfxActionDescribe, which may set properties (including supported contexts)
     try {
         pluginHandle = plugin->getPluginHandle();
     } catch (...) {
@@ -589,6 +599,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
     assert(ph->getOfxPlugin()->mainEntry);
     Q_UNUSED(ph);
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
+    //This will call kOfxImageEffectActionDescribeInContext
     desc = plugin->getContext(context);
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
@@ -613,8 +624,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
 
     
     *ctx = OfxEffectInstance::mapToContextEnum(context);
-#pragma message WARN("clear the pluginID here")
-    //_imp->loadingPluginID.clead();
+    _imp->loadingPluginID.clear();
     return desc;
 }
 
@@ -894,7 +904,7 @@ Natron::OfxHost::clearPluginsLoadedCache()
 void
 Natron::OfxHost::loadingStatus(const std::string & pluginId, int versionMajor, int versionMinor)
 {
-    // set the pluginID
+    // set the pluginID in case the plug-in tries to fetch the hostname property
     _imp->loadingPluginID = pluginId;
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;

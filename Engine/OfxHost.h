@@ -158,8 +158,8 @@ public:
 
     void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
     
-    static OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                           Natron::ContextEnum* ctx);
+    OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                    Natron::ContextEnum* ctx);
     
     GlobalOFXTLS& getCurrentThreadTLS();
 

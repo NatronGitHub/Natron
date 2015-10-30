@@ -832,10 +832,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
         if (ofxPlugin) {
             
             try {
-#pragma message WARN("@MrKepzie Natron::OfxHost::getPluginContextAndDescribe should be a non-static member of OfxHost because it has to set data members, but how do we reach the OfxHost?")
                 //  Should this method be in AppManager?
                 // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
-                ofxDesc = Natron::OfxHost::getPluginContextAndDescribe(ofxPlugin,&ctx);
+                ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin,&ctx);
             } catch (const std::exception& e) {
                 errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
                             + pluginID.toStdString() + ": " + e.what(), false);
