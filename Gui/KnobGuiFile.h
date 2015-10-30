@@ -242,6 +242,9 @@ public Q_SLOTS:
     void onMakeRelativeTriggered();
     
     void onSimplifyTriggered();
+    
+    void onItemAboutToDrop();
+    void onItemDropped();
 
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
@@ -292,6 +295,7 @@ private:
     boost::weak_ptr<KnobPath> _knob;
     bool _isInsertingItem;
     Variables _items;
+    bool _dragAndDropping;
 };
 
 #endif // Gui_KnobGuiFile_h

@@ -762,9 +762,11 @@ TableModel::flags(const QModelIndex &index) const
 struct TableViewPrivate
 {
     TableModel* model;
-
+    std::list<TableItem*> draggedItems;
+    
     TableViewPrivate()
         : model(0)
+        , draggedItems()
     {
     }
 };
@@ -1074,3 +1076,110 @@ TableView::setItemSelected(const TableItem *item,
     selectionModel()->select(index, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }
 
+void
+TableView::rebuildDraggedItemsFromSelection()
+{
+    _imp->draggedItems.clear();
+    QModelIndexList indexes = selectionModel()->selectedIndexes();
+    for (QModelIndexList::Iterator it = indexes.begin(); it!=indexes.end(); ++it) {
+        TableItem* i = item(it->row(), it->column());
+        if (i) {
+            _imp->draggedItems.push_back(i);
+        }
+    }
+}
+
+void
+TableView::startDrag(Qt::DropActions supportedActions)
+{
+    rebuildDraggedItemsFromSelection();
+    QTreeView::startDrag(supportedActions);
+}
+
+void
+TableView::dragLeaveEvent(QDragLeaveEvent *e)
+{
+    _imp->draggedItems.clear();
+    QTreeView::dragLeaveEvent(e);
+}
+
+void
+TableView::dragEnterEvent(QDragEnterEvent *e)
+{
+    rebuildDraggedItemsFromSelection();
+    QTreeView::dragEnterEvent(e);
+}
+
+void
+TableView::dropEvent(QDropEvent* e)
+{
+    
+  //  QTreeView::dropEvent(e);
+    
+    DropIndicatorPosition position = dropIndicatorPosition();
+    switch (position) {
+        case QAbstractItemView::OnItem:
+        case QAbstractItemView::OnViewport:
+        default:
+            return;
+        
+        case QAbstractItemView::AboveItem:
+        case QAbstractItemView::BelowItem:
+            break;
+    }
+    TableItem* into = itemAt(e->pos());
+
+    if (!into || _imp->draggedItems.empty()) {
+        return ;
+    }
+    Q_EMIT aboutToDrop();
+    int targetRow = into->row();
+    
+    //We only support full rows
+    assert(selectionBehavior() == QAbstractItemView::SelectRows);
+    
+    ///Remove the items
+    std::map<int,std::map<int,TableItem*> > rowMoved;
+    for (std::list<TableItem*>::iterator it = _imp->draggedItems.begin(); it!= _imp->draggedItems.end(); ++it) {
+        rowMoved[(*it)->row()][(*it)->column()] = *it;
+        TableItem* taken = _imp->model->takeItem((*it)->row(),(*it)->column());
+        assert(taken == *it);
+    }
+    /// remove the rows in reverse order so that indexes are still valid
+    for (std::map<int,std::map<int,TableItem*> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
+        _imp->model->removeRows(it->first);
+        if (it->first <= targetRow) {
+            --targetRow;
+        }
+    }
+    _imp->draggedItems.clear();
+    ///insert back at the correct position
+    
+    int nRows = _imp->model->rowCount();
+    switch (position) {
+        case QAbstractItemView::AboveItem: {
+            _imp->model->insertRows(targetRow, rowMoved.size());
+            break;
+        }
+        case QAbstractItemView::BelowItem: {
+            ++targetRow;
+            if (targetRow > nRows) {
+                targetRow = nRows;
+            }
+            _imp->model->insertRows(targetRow, rowMoved.size());
+            break;
+        }
+        default:
+            assert(false);
+            return;
+    };
+    
+    int rowIndex = targetRow;
+    for (std::map<int,std::map<int,TableItem*> >::iterator it = rowMoved.begin(); it!=rowMoved.end(); ++it,++rowIndex) {
+        for (std::map<int,TableItem*>::iterator it2 = it->second.begin();it2!=it->second.end();++it2) {
+            _imp->model->setItem(rowIndex, it2->first, it2->second);
+        }
+    }
+    
+    Q_EMIT itemDropped();
+}

@@ -762,7 +762,14 @@ AppManager::onAllPluginsLoaded()
     
         assert(!it->second.empty());
         PluginMajorsOrdered::iterator first = it->second.begin();
-        if (!(*first)->getIsUserCreatable()) {
+        bool isUserCreatable = false;
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if ((*it2)->getIsUserCreatable()) {
+                isUserCreatable = true;
+                break;
+            }
+        }
+        if (!isUserCreatable) {
             continue;
         }
         
@@ -773,11 +780,21 @@ AppManager::onAllPluginsLoaded()
             if (it->first == it2->first) {
                 continue;
             }
+            
+            
             PluginMajorsOrdered::iterator other = it2->second.begin();
-            if (!(*other)->getIsUserCreatable()) {
+            bool isOtherUserCreatable = false;
+            for (PluginMajorsOrdered::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                if ((*it3)->getIsUserCreatable()) {
+                    isOtherUserCreatable = true;
+                    break;
+                }
+            }
+
+            if (!isOtherUserCreatable) {
                 continue;
             }
-            
+        
             QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
                 QString otherGrouping = (*other)->getGrouping().join("/");
@@ -793,10 +810,13 @@ AppManager::onAllPluginsLoaded()
         
         
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
+            if ((*it2)->getIsUserCreatable()) {
+                (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
+                onPluginLoaded(*it2);
+            }
         }
         
-        onPluginLoaded(*first);
+        
         
     }
 }

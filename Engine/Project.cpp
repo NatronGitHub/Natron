@@ -762,24 +762,25 @@ Project::initializeKnobs()
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
-    _imp->viewsCount = Natron::createKnob<KnobInt>(this, "Number of Views");
-    _imp->viewsCount->setName("noViews");
-    _imp->viewsCount->setAnimationEnabled(false);
-    _imp->viewsCount->setMinimum(1);
-    _imp->viewsCount->setDisplayMinimum(1);
-    _imp->viewsCount->setDefaultValue(1,0);
-    _imp->viewsCount->disableSlider();
-    _imp->viewsCount->setEvaluateOnChange(false);
-    _imp->viewsCount->setAddNewLine(false);
-    page->addKnob(_imp->viewsCount);
-
-    _imp->mainView = Natron::createKnob<KnobInt>(this, "Main View");
-    _imp->mainView->setName("mainView");
-    _imp->mainView->disableSlider();
-    _imp->mainView->setDefaultValue(0);
-    _imp->mainView->setMinimum(0);
-    _imp->mainView->setAnimationEnabled(false);
-    page->addKnob(_imp->mainView);
+    boost::shared_ptr<KnobPage> viewsPage = Natron::createKnob<KnobPage>(this, "Views");
+    
+    _imp->viewsList = Natron::createKnob<KnobPath>(this, "Views List");
+    _imp->viewsList->setName("viewsList");
+    _imp->viewsList->setHintToolTip("The list of the views in the project");
+    _imp->viewsList->setAnimationEnabled(false);
+    _imp->viewsList->setEvaluateOnChange(false);
+    _imp->viewsList->setAsStringList(true);
+    std::list<std::pair<std::string,std::string> > defaultViews;
+    defaultViews.push_back(std::make_pair("Main",""));
+    std::string encodedDefaultViews = KnobPath::encodeToMultiPathFormat(defaultViews);
+    _imp->viewsList->setDefaultValue(encodedDefaultViews);
+    viewsPage->addKnob(_imp->viewsList);
+    
+    _imp->setupForStereoButton = Natron::createKnob<KnobButton>(this, "Setup views for stereo");
+    _imp->setupForStereoButton->setName("setupForStereo");
+    _imp->setupForStereoButton->setHintToolTip("Quickly setup the views list for stereo");
+    _imp->setupForStereoButton->setEvaluateOnChange(false);
+    viewsPage->addKnob(_imp->setupForStereoButton);
 
     _imp->previewMode = Natron::createKnob<KnobBool>(this, "Auto Previews");
     _imp->previewMode->setName("autoPreviews");
@@ -1103,21 +1104,38 @@ Project::setProjectDefaultFormat(const Format & f)
 int
 Project::getProjectViewsCount() const
 {
-    return _imp->viewsCount->getValue();
+    std::list<std::pair<std::string,std::string> > pairs;
+    _imp->viewsList->getVariables(&pairs);
+    return (int)pairs.size();
+}
+    
+const std::vector<std::string>&
+Project::getProjectViewNames() const
+{
+
+    ///Tls is needed to implement getViewName in the multi-plane suite
+    std::vector<std::string>& tls = _imp->viewNamesTLS.localData();
+    tls.clear();
+    
+    std::list<std::pair<std::string,std::string> > pairs;
+    _imp->viewsList->getVariables(&pairs);
+    for (std::list<std::pair<std::string,std::string> >::iterator it = pairs.begin();
+         it != pairs.end(); ++it) {
+        tls.push_back(it->first);
+    }
+    return tls;
 }
     
 void
 Project::setupProjectForStereo()
 {
-    _imp->viewsCount->setValue(2, 0);
-    _imp->mainView->setValue(0,0);
+    std::list<std::pair<std::string,std::string> > pairs;
+    pairs.push_back(std::make_pair("Left",""));
+    pairs.push_back(std::make_pair("Right",""));
+    std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
+    _imp->viewsList->setValue(encoded,0);
 }
 
-int
-Project::getProjectMainView() const
-{
-    return _imp->mainView->getValue();
-}
 
 QString
 Project::getProjectName() const
@@ -1217,16 +1235,12 @@ Project::onKnobValueChanged(KnobI* knob,
                             SequenceTime /*time*/,
                             bool /*originatedFromMainThread*/)
 {
-    if ( knob == _imp->viewsCount.get() ) {
-        int viewsCount = _imp->viewsCount->getValue();
-        getApp()->setupViewersForViews(viewsCount);
+    if ( knob == _imp->viewsList.get() ) {
+        std::vector<std::string> viewNames = getProjectViewNames();
+        getApp()->setupViewersForViews(viewNames);
 
-        int mainView = _imp->mainView->getValue();
-        if (mainView >= viewsCount) {
-            ///reset view to 0
-            _imp->mainView->setValue(0, 0);
-        }
-        _imp->mainView->setMaximum(viewsCount - 1);
+    } else if (knob == _imp->setupForStereoButton.get()) {
+        setupProjectForStereo();
     } else if ( knob == _imp->formatKnob.get() ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
@@ -1694,7 +1708,7 @@ Project::unescapeXML(const std::string &istr)
 }
 
 void
-Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
+    Project::makeEnvMapUnordered(const std::string& encoded,std::vector<std::pair<std::string,std::string> >& variables)
 {
     std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
     std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
@@ -1722,16 +1736,26 @@ Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>
         
         size_t endValuePos = encoded.find(endValueTag,i);
         assert(endValuePos != std::string::npos && endValuePos < encoded.size());
-
+        
         while (endValuePos != std::string::npos && endValuePos < encoded.size() && i < endValuePos) {
             value.push_back(encoded.at(i));
             ++i;
         }
         
         // In order to use XML tags, the text inside the tags has to be unescaped.
-        variables.insert(std::make_pair(unescapeXML(name), unescapeXML(value)));
+        variables.push_back(std::make_pair(unescapeXML(name), unescapeXML(value)));
         
         i = encoded.find(startNameTag,i);
+    }
+}
+    
+void
+Project::makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables)
+{
+    std::vector<std::pair<std::string,std::string> > pairs;
+    makeEnvMapUnordered(encoded,pairs);
+    for (std::size_t i = 0; i < pairs.size(); ++i) {
+        variables[pairs[i].first] = pairs[i].second;
     }
 }
 

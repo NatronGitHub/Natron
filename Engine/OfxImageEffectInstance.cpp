@@ -350,8 +350,12 @@ OfxImageEffectInstance::getViewCount(int *nViews) const
 OfxStatus
 OfxImageEffectInstance::getViewName(int viewIndex, const char** name) const
 {
-#pragma message WARN("TODO")
-    return kOfxStatFailed;
+    const std::vector<std::string>& views = getOfxEffectInstance()->getApp()->getProject()->getProjectViewNames();
+    if (viewIndex >= 0 && viewIndex < (int)views.size()) {
+        *name = views[viewIndex].data();
+        return kOfxStatOK;
+    }
+    return kOfxStatErrBadIndex;
 }
 
 ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor

@@ -274,7 +274,7 @@ public:
     {
     }
 
-    virtual void setupViewersForViews(int /*viewsCount*/)
+    virtual void setupViewersForViews(const std::vector<std::string>& /*viewNames*/)
     {
     }
 
@@ -322,8 +322,6 @@ public:
     }
 
     Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
-
-    int getMainView() const;
     
     double getProjectFrameRate() const;
 
