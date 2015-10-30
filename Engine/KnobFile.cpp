@@ -157,8 +157,9 @@ KnobPath::KnobPath(KnobHolder* holder,
                      const std::string &description,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder,description,dimension,declaredByPlugin)
-      , _isMultiPath(false)
+: Knob<std::string>(holder,description,dimension,declaredByPlugin)
+, _isMultiPath(false)
+, _isStringList(false)
 {
 }
 
@@ -191,6 +192,19 @@ bool
 KnobPath::isMultiPath() const
 {
     return _isMultiPath;
+}
+
+void
+KnobPath::setAsStringList(bool b)
+{
+    setMultiPath(b);
+    _isStringList = b;
+}
+
+bool
+KnobPath::getIsStringList() const
+{
+    return _isStringList;
 }
 
 void
@@ -258,16 +272,12 @@ KnobPath::getPaths(std::list<std::string> *paths) const
     
 }
 
-void
-KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
+std::string
+KnobPath::encodeToMultiPathFormat(const std::list<std::pair<std::string,std::string> >& paths)
 {
-    if (!_isMultiPath) {
-        return;
-    }
-    
     std::string path;
     
-
+    
     for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
         // In order to use XML tags, the text inside the tags has to be escaped.
         path += NATRON_ENV_VAR_NAME_START_TAG;
@@ -277,7 +287,16 @@ KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
         path += Project::escapeXML(it->second);
         path += NATRON_ENV_VAR_VALUE_END_TAG;
     }
-    setValue(path, 0);
+    return path;
+}
+
+void
+KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
+{
+    if (!_isMultiPath) {
+        return;
+    }
+    setValue(encodeToMultiPathFormat(paths), 0);
 }
 
 std::string

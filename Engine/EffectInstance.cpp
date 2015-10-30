@@ -2499,8 +2499,10 @@ EffectInstance::evaluate(KnobI* knob,
                                                                                  "OpenFX standard, %1"
                                                                                  " will not be able "
                                                                                  "to render all the views of the project. "
-                                                                                 "Only the main view of the project will be rendered. You can "
-                                                                                 "change the main view in the project settings. Would you like "
+                                                                                 "Only the main view (the first) of the project "
+                                                                                 "will be rendered. You can use a OneView node to "
+                                                                                 "shuffle a specific view to the main view.\n"
+                                                                                 "Would you like "
                                                                                  "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(), false );
                         if (answer != Natron::eStandardButtonYes) {
                             return;

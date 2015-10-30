@@ -100,39 +100,40 @@ ViewerTab::onCreateNewRoIPressed()
 }
 
 void
-ViewerTab::updateViewsMenu(int count)
+ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 {
     int currentIndex = _imp->viewsComboBox->activeIndex();
 
     _imp->viewsComboBox->clear();
-    if (count == 1) {
-        _imp->viewsComboBox->hide();
-        _imp->viewsComboBox->addItem(tr("Main"));
-    } else if (count >= 2) {
-        _imp->viewsComboBox->show();
-        ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                             kShortcutIDShowLeftView,
-                                                             kShortcutDescShowLeftView,
-                                                             _imp->viewsComboBox);
-        _imp->viewsComboBox->addAction(leftAct);
-        ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
-                                                             kShortcutIDShowRightView,
-                                                             kShortcutDescShowRightView,
-                                                             _imp->viewsComboBox);
-        _imp->viewsComboBox->addAction(rightAct);
-        for (int i = 2; i < count; ++i) {
-            _imp->viewsComboBox->addItem( QString( tr("View ") ) + QString::number(i + 1));
+    for (std::size_t i = 0;  i < viewNames.size(); ++i) {
+        if (viewNames[i] == "Left") {
+            ActionWithShortcut* leftAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                                 kShortcutIDShowLeftView,
+                                                                 kShortcutDescShowLeftView,
+                                                                 _imp->viewsComboBox);
+            _imp->viewsComboBox->addAction(leftAct);
+
+        } else if (viewNames[i] == "Right") {
+            ActionWithShortcut* rightAct = new ActionWithShortcut(kShortcutGroupViewer,
+                                                                  kShortcutIDShowRightView,
+                                                                  kShortcutDescShowRightView,
+                                                                  _imp->viewsComboBox);
+            _imp->viewsComboBox->addAction(rightAct);
+        } else {
+            _imp->viewsComboBox->addItem(viewNames[i].c_str());
         }
+    }
+    if (viewNames.size() == 1) {
+        _imp->viewsComboBox->hide();
     } else {
         _imp->viewsComboBox->show();
-        
     }
     if ( ( currentIndex < _imp->viewsComboBox->count() ) && (currentIndex != -1) ) {
         _imp->viewsComboBox->setCurrentIndex(currentIndex);
     } else {
         _imp->viewsComboBox->setCurrentIndex(0);
     }
-    getGui()->updateViewsActions(count);
+    getGui()->updateViewsActions(viewNames.size());
 }
 
 void

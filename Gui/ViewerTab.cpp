@@ -485,8 +485,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                           "Tells the viewer what view should be displayed.") );
     _imp->secondRowLayout->addWidget(_imp->viewsComboBox);
     _imp->viewsComboBox->hide();
-    int viewsCount = getGui()->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
-    updateViewsMenu(viewsCount);
+
+    updateViewsMenu(gui->getApp()->getProject()->getProjectViewNames());
 
     _imp->secondRowLayout->addStretch();
 

@@ -382,7 +382,7 @@ public:
 
     void initProjectGuiKnobs();
 
-    void updateViewersViewsMenu(int viewsCount);
+    void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
 
     void setViewersCurrentView(int view);
 

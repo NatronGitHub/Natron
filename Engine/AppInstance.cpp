@@ -1278,12 +1278,6 @@ AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth)
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }
 
-int
-AppInstance::getMainView() const
-{
-    return _imp->_currentProject->getProjectMainView();
-}
-
 void
 AppInstance::onOCIOConfigPathChanged(const std::string& path)
 {

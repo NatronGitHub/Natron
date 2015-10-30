@@ -851,7 +851,7 @@ OutputSchedulerThread::startRender()
                                                                scaleOne, true,
                                                                true,
                                                                false,
-                                                               _imp->outputEffect->getApp()->getMainView()) == eStatusFailed) {
+                                                               /*mainView*/0) == eStatusFailed) {
                 l.unlock();
                 abortRendering(false,false);
                 return;
@@ -899,7 +899,7 @@ OutputSchedulerThread::stopRender()
                                                            scaleOne, true,
                                                            !appPTR->isBackground(),
                                                                 false,
-                                                           _imp->outputEffect->getApp()->getMainView()));
+                                                           0 /*mainView*/));
            
         
     }
@@ -2057,11 +2057,7 @@ private:
             ///We pick the user defined main view in the project settings
             
             bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
-            if (canOnlyHandleOneView) {
-                mainView = _imp->output->getApp()->getMainView();
-            }
-       
-            
+                        
             
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
