@@ -310,15 +310,19 @@ Natron::OfxHost::setProperties()
 }
 
 static
-Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int /*pluginVersionMajor*/, int /*pluginVersionMinor*/)
+Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor)
 {
+    Q_UNUSED(pluginVersionMajor);
+    Q_UNUSED(pluginVersionMinor);
+
     assert(!pluginID.empty());
-    
+
     static const std::string neatvideo("com.absoft.neatvideo");
     static const std::string hitfilm("com.FXHOME.HitFilm.");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
     static const std::string digitalfilmtools("com.digitalfilmtools.");
-    
+    //static const std::string digitalanarchy("com.digitalanarchy.");
+
     if (!pluginID.compare(0, neatvideo.size(), neatvideo)) {
         // Neat Video plugins work with Nuke, Resolve and Mistika
         // https://www.neatvideo.com/download.html
@@ -334,10 +338,16 @@ Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int /*
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
         return Settings::eKnownHostNameVegas;
     } else if (!pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools)) {
-        //Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
-        //http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
+        // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
+        // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
         return Settings::eKnownHostNameNuke;
+    //} else if (!pluginID.compare(0, digitalanarchy.size(), digitalanarchy)) {
+    //    // Digital Anarchy plug-ins work with Scratch, Resolve, and any OFX host, but they are tested with Scratch.
+    //    // http://digitalanarchy.com/demos/psd_mac.html
+    //    return Settings::eKnownHostNameScratch;
     }
+    //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
+    
     return Settings::eKnownHostNameNone;
 }
 
@@ -347,27 +357,26 @@ Natron::OfxHost::getStringProperty(const std::string &name, int n) const OFX_EXC
     if (name == kOfxPropName && n == 0) {
         // depending on the current plugin ID and version, return a compatible host name.
         std::string pluginID;
-        int pluginVersionMajor;
-        int pluginVersionMinor;
+        int pluginVersionMajor = 0;
+        int pluginVersionMinor = 0;
         if (!_imp->loadingPluginID.empty()) {
             // plugin is not yet created: we are loading or describing it
             pluginID = _imp->loadingPluginID;
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
-        } else {
+        } else if (_imp->globalTLS.hasLocalData()) {
             const GlobalOFXTLS& tls = _imp->globalTLS.localData();
             if (tls.lastEffectCallingMainEntry) {
                 pluginID = tls.lastEffectCallingMainEntry->getPlugin()->getIdentifier();
                 pluginVersionMajor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
                 pluginVersionMinor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
-            } else {
-                //_imp->loadingPluginID not set and tls not set, unknown situation
-                pluginVersionMajor = pluginVersionMinor = 0;
             }
         }
         
         ///Proxy known plug-ins that filter hostnames
-        if (!pluginID.empty()) {
+        if (pluginID.empty()) {
+            qDebug() << "OfxHost::getStringProperty("kOfxPropName"): Error: no plugin ID! (ignoring)";
+        } else {
             Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
             if (e != Settings::eKnownHostNameNone) {
                 const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
@@ -902,13 +911,13 @@ Natron::OfxHost::clearPluginsLoadedCache()
 }
 
 void
-Natron::OfxHost::loadingStatus(const std::string & pluginId, int versionMajor, int versionMinor)
+Natron::OfxHost::loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor)
 {
     // set the pluginID in case the plug-in tries to fetch the hostname property
     _imp->loadingPluginID = pluginId;
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;
-    if (appPTR) {
+    if (loading && appPTR) {
         appPTR->setLoadingStatus( "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor) );
     }
 }

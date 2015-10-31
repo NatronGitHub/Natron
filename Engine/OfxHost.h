@@ -106,7 +106,7 @@ public:
                                            va_list args) OVERRIDE;
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
-    virtual void loadingStatus(const std::string & pluginId, int versionMajor, int versionMinor) OVERRIDE;
+    virtual void loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor) OVERRIDE;
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
     ///fetch the parametric parameters suite or returns the base class version
