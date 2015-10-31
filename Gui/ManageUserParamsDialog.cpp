@@ -128,7 +128,8 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->items.push_back(userPageItem);
     
     QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()),this,SLOT(onSelectionChanged()));
-    
+    QObject::connect(_imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
+
     std::list<KnobI*> markedKnobs;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -343,10 +344,8 @@ ManageUserParamsDialog::onDeleteClicked()
 }
 
 void
-ManageUserParamsDialog::onEditClicked()
+ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &selection)
 {
-    
-    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
@@ -380,6 +379,14 @@ ManageUserParamsDialog::onEditClicked()
             }
         }
     }
+}
+
+void
+ManageUserParamsDialog::onEditClicked()
+{
+    
+    QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
+    onEditClickedInternal(selection);
     
 }
 
@@ -522,6 +529,16 @@ void
 ManageUserParamsDialog::onCloseClicked()
 {
     accept();
+}
+
+void
+ManageUserParamsDialog::onItemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
+{
+    QList<QTreeWidgetItem*> selection;
+    if (item) {
+        selection.push_back(item);
+    }
+    onEditClickedInternal(selection);
 }
 
 void
