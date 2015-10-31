@@ -76,11 +76,13 @@ sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $
 make -C CImg CImg.h || exit 1
 if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
-    make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
+    make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp || exit 1
 elif [ -n "$GXX" ]; then
     # GCC is available too!
     # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
-    make -C CImg CXX="$GXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD="-fopenmp -static-libgcc"
+    make -C CImg CXX="$GXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD="-fopenmp -static-libgcc" || exit 1
+    # libSupport was compiled by gcc, now clean it to build it again with clang (but don't clean the CImg plugin)
+    make -C openfx/Support/Plugins/Basic CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} clean || exit 1
 fi
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
