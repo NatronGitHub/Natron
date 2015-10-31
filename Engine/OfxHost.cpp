@@ -919,6 +919,9 @@ Natron::OfxHost::loadingStatus(bool loading, const std::string & pluginId, int v
     _imp->loadingPluginVersionMinor = versionMinor;
     if (loading && appPTR) {
         appPTR->setLoadingStatus( "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor) );
+#     ifdef DEBUG
+        qDebug() << "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor);
+#     endif
     }
 }
 
