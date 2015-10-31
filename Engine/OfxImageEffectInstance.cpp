@@ -688,7 +688,12 @@ OfxImageEffectInstance::addParamsToTheirParents()
         int nChildren = (*it)->getProperties().getDimension(kOfxParamPropPageChild);
         for (int i = 0; i < nChildren; ++i) {
             std::string childName = (*it)->getProperties().getStringProperty(kOfxParamPropPageChild,i);
-            
+            if (childName == kOfxParamPageSkipRow ||
+                childName == kOfxParamPageSkipColumn) {
+                // Pseudo parameter names used to skip a row/column in a page layout.
+                continue;
+            }
+
             boost::shared_ptr<KnobI> child;
             for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 if ((*it2)->getOriginalName() == childName) {
