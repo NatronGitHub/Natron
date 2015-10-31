@@ -345,7 +345,13 @@ Settings::initializeKnobsGeneral()
     visibleHostEntries.push_back("Da Vinci Resolve Lite");
     assert(_knownHostNames.size() == (int)eKnownHostNameMistika);
     _knownHostNames.push_back("Mistika");
-    visibleHostEntries.push_back("Mistika");
+    visibleHostEntries.push_back("SGO Mistika");
+    assert(_knownHostNames.size() == (int)eKnownHostNamePablo);
+    _knownHostNames.push_back("com.quantel.genq");
+    visibleHostEntries.push_back("Quantel Pablo Rio");
+    assert(_knownHostNames.size() == (int)eKnownHostNameMotionStudio);
+    _knownHostNames.push_back("com.idtvision.MotionStudio");
+    visibleHostEntries.push_back("IDT Motion Studio");
     assert(_knownHostNames.size() == (int)eKnownHostNameShake);
     _knownHostNames.push_back("com.apple.shake");
     visibleHostEntries.push_back("Shake");
@@ -355,6 +361,12 @@ Settings::initializeKnobsGeneral()
     assert(_knownHostNames.size() == (int)eKnownHostNameFrameCycler);
     _knownHostNames.push_back("IRIDAS Framecycler");
     visibleHostEntries.push_back("FrameCycler");
+    assert(_knownHostNames.size() == (int)eKnownHostNameNucoda);
+    _knownHostNames.push_back("Nucoda");
+    visibleHostEntries.push_back("Nucoda Film Master");
+    assert(_knownHostNames.size() == (int)eKnownHostNameAvidDS);
+    _knownHostNames.push_back("DS OFX HOST");
+    visibleHostEntries.push_back("Avid DS");
     assert(_knownHostNames.size() == (int)eKnownHostNameDX);
     _knownHostNames.push_back("com.chinadigitalvideo.dx");
     visibleHostEntries.push_back("China Digital Video DX");
