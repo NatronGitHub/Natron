@@ -50,12 +50,12 @@ public:
     /// Do *not* use this to check if there is *valid* local data. You must store a flag in the local data for that purpose.
     inline bool hasLocalData() const
     {
-        return QThread::currentThread() == qApp->thread() || QThreadStorage<T>::hasLocalData();
+        return (qApp && QThread::currentThread() == qApp->thread()) || QThreadStorage<T>::hasLocalData();
     }
 
     inline T & localData()
     {
-        if ( QThread::currentThread() == qApp->thread() ) {
+        if ( qApp && QThread::currentThread() == qApp->thread() ) {
             return mainData;
         } else {
             return QThreadStorage<T>::localData();
@@ -64,7 +64,7 @@ public:
 
     inline T localData() const
     {
-        if ( QThread::currentThread() == qApp->thread() ) {
+        if ( qApp && QThread::currentThread() == qApp->thread() ) {
             return mainData;
         } else {
             return QThreadStorage<T>::localData();
@@ -73,7 +73,7 @@ public:
 
     inline void setLocalData(const T& t)
     {
-        if ( QThread::currentThread() == qApp->thread() ) {
+        if ( qApp && QThread::currentThread() == qApp->thread() ) {
             mainData = t;
         } else {
             return QThreadStorage<T>::setLocalData(t);
