@@ -96,12 +96,15 @@ git checkout "$ARENA_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
 if [ "$ARENA_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
-    if false; then
+    if true; then
         git submodule foreach git pull origin master
     else
        echo "Warning: openfx-arena submodules not updated..."
     fi
 fi
+# ImageMagick on OSX is usually compiled without openmp
+echo "Warning: removing -lgomp from MAGICK_LINKFLAGS, since ImageMagick on OSX is compiled without OMP support"
+sed -e s/-lgomp// -i.orig Makefile.master
 
 #Always bump git commit, it is only used to version-stamp binaries
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`

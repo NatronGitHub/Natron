@@ -184,7 +184,7 @@ if [ "$BUILD_ARENA" = "1" ]; then
     git submodule update -i --recursive || exit 1
     if [ "$ARENA_BRANCH" = "master" ]; then
         # the snapshots are always built with the latest version of submodules
-        if false; then
+        if true; then
             git submodule foreach git pull origin master
         else
            echo "Warning: openfx-arena submodules not updated..."

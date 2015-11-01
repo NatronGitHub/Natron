@@ -174,7 +174,7 @@ git checkout ${ARENA_BRANCH} || exit 1
 git submodule update -i --recursive || exit 1
 if [ "$ARENA_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
-    if false; then
+    if true; then
         git submodule foreach git pull origin master
     else
        echo "Warning: openfx-arena submodules not updated..."
