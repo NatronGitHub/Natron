@@ -319,9 +319,12 @@ RotoPaint::isIdentity(double time,
     
     std::list<boost::shared_ptr<RotoDrawableItem> > items = node->getRotoContext()->getCurvesByRenderOrder();
     if (items.empty()) {
-        *inputNb = 0;
-        *inputTime = time;
-        return true;
+        NodePtr input = node->getInput(0);
+        if (input) {
+            *inputNb = 0;
+            *inputTime = time;
+            return true;
+        }
     }
     return false;
 }
