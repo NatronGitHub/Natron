@@ -226,7 +226,7 @@ public:
      **/
     void notifyFrameRendered(int frame,
                              int viewIndex,
-                             int viewsCount,
+                             const std::vector<int>& viewsToRender,
                              const RenderStatsPtr& stats,
                              Natron::SchedulingPolicyEnum policy);
 

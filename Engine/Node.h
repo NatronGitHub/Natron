@@ -64,6 +64,8 @@ CLANG_DIAG_ON(deprecated)
 #define kOfxMixParamName "mix"
 
 #define kReadOIIOAvailableViewsKnobName "availableViews"
+#define kWriteOIIOParamViewsSelector "viewsSelector"
+
 
 class AppInstance;
 class NodeSettingsPanel;

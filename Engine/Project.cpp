@@ -1135,7 +1135,50 @@ Project::setupProjectForStereo()
     std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
     _imp->viewsList->setValue(encoded,0);
 }
+   
 
+static std::string toLowerString(const std::string& str)
+{
+    std::string ret;
+    std::locale loc;
+    for (std::size_t i = 0; i < str.size(); ++i) {
+        ret.push_back(std::tolower(str[i],loc));
+    }
+    return ret;
+}
+    
+static bool caseInsensitiveCompare(const std::string& lhs, const std::string& rhs)
+{
+    std::string lowerLhs = toLowerString(lhs);
+    std::string lowerRhs = toLowerString(rhs);
+    return lowerLhs == lowerRhs;
+}
+
+void
+Project::createProjectViews(const std::vector<std::string>& views)
+{
+    std::list<std::pair<std::string,std::string> > pairs;
+    _imp->viewsList->getVariables(&pairs);
+    
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        bool found = false;
+        for (std::list<std::pair<std::string,std::string> >::iterator it = pairs.begin(); it != pairs.end(); ++it) {
+            if (caseInsensitiveCompare(it->first,views[i])) {
+                found = true;
+                break;
+            }
+        }
+        if (found || views[i].empty()) {
+            continue;
+        }
+        std::string view = views[i];
+        view[0] = std::toupper(view[0]);
+        pairs.push_back(std::make_pair(view,std::string()));
+    }
+    std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
+    _imp->viewsList->setValue(encoded,0);
+
+}
 
 QString
 Project::getProjectName() const

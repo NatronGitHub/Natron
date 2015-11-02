@@ -2489,26 +2489,7 @@ EffectInstance::evaluate(KnobI* knob,
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
         if (button) {
             if ( button->isRenderButton() ) {
-                std::string sequentialNode;
-                if ( node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
-                    if (node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButtonEnum answer =
-                            Natron::questionDialog( QObject::tr("Render").toStdString(),
-                                                    sequentialNode + QObject::tr(" can only "
-                                                                                 "render in sequential mode. Due to limitations in the "
-                                                                                 "OpenFX standard, %1"
-                                                                                 " will not be able "
-                                                                                 "to render all the views of the project. "
-                                                                                 "Only the main view (the first) of the project "
-                                                                                 "will be rendered. You can use a OneView node to "
-                                                                                 "shuffle a specific view to the main view.\n"
-                                                                                 "Would you like "
-                                                                                 "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(), false );
-                        if (answer != Natron::eStandardButtonYes) {
-                            return;
-                        }
-                    }
-                }
+                
                 AppInstance::RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>(this);
                 w.firstFrame = INT_MIN;

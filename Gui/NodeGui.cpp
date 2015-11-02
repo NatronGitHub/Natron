@@ -3638,7 +3638,7 @@ void
 NodeGui::onAvailableViewsChanged()
 {
     const std::vector<std::string>& views = getNode()->getCreatedViews();
-    if (views.empty()) {
+    if (views.empty() || views.size() == 1) {
         if (_availableViewsIndicator->isActive()) {
             _availableViewsIndicator->setActive(false);
         }

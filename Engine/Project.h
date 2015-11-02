@@ -138,6 +138,8 @@ public:
 
     void setupProjectForStereo();
     
+    void createProjectViews(const std::vector<std::string>& views);
+    
     const std::vector<std::string>& getProjectViewNames() const;
     
     int getProjectViewsCount() const;

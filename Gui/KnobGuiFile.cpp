@@ -862,12 +862,16 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
         _addPathButton = new Button( tr("Add"),buttonsContainer );
-        _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+        if (!knob->getIsStringList()) {
+            _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+        }
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
-        _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+        if (!knob->getIsStringList()) {
+            _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+        }
         
         _editPathButton = new Button( tr("Edit"), buttonsContainer);
         QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );

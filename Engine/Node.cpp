@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
@@ -6024,14 +6025,63 @@ Node::refreshCreatedViews(KnobI* knob)
     QStringList views = value.split(',');
     
     _imp->createdViews.clear();
+    
+    const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
+    QStringList qProjectViews;
+    for (std::size_t i = 0; i < projectViews.size(); ++i) {
+        qProjectViews.push_back(projectViews[i].c_str());
+    }
+    
+    QStringList missingViews;
     for (QStringList::Iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!qProjectViews.contains(*it,Qt::CaseInsensitive)) {
+            missingViews.push_back(*it);
+        }
         _imp->createdViews.push_back(it->toStdString());
+    }
+    
+    if (!missingViews.isEmpty()) {
+        
+        
+        boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+        KnobFile* inputFileKnob = dynamic_cast<KnobFile*>(fileKnob.get());
+        if (inputFileKnob) {
+            
+            std::string filename = inputFileKnob->getValue();
+            
+            std::stringstream ss;
+            for (std::size_t i = 0; i < missingViews.size(); ++i) {
+                ss << missingViews[i].toStdString();
+                if (i < missingViews.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << std::endl;
+            ss << std::endl;
+            ss << QObject::tr("These views are in").toStdString() << ' ' << filename << ' '
+            << QObject::tr("but are not present in the project.").toStdString() << std::endl;
+            ss << QObject::tr("Would you like to create them?").toStdString();
+            std::string question  = ss.str();
+            Natron::StandardButtonEnum rep = Natron::questionDialog("Views available", question, false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
+            if (rep == Natron::eStandardButtonYes) {
+                std::vector<std::string> viewsToCreate;
+                for (QStringList::Iterator it = missingViews.begin(); it!=missingViews.end(); ++it) {
+                    viewsToCreate.push_back(it->toStdString());
+                }
+                getApp()->getProject()->createProjectViews(viewsToCreate);
+            }
+        }
+        
+     
     }
     
     Q_EMIT availableViewsChanged();
     
 }
 
+/*
+ This is called AFTER the instanceChanged action has been called on the plug-in
+ */
 void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
@@ -6066,25 +6116,49 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
             replaceCustomDataInlabel(operation);
         }
-    } else if (_imp->liveInstance->isReader() && what->getName() == kOfxImageEffectFileParamName) {
-        ///Refresh the preview automatically if the filename changed
-        incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+    } else if (what->getName() == kOfxImageEffectFileParamName) {
         
-        ///union the project frame range if not locked with the reader frame range
-        bool isLocked = getApp()->getProject()->isFrameRangeLocked();
-        if (!isLocked) {
-            double leftBound = INT_MIN,rightBound = INT_MAX;
-            _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
-    
-            if (leftBound != INT_MIN && rightBound != INT_MAX) {
-                bool isFileDialogPreviewReader = getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos;
-                if (!isFileDialogPreviewReader) {
-                    getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+        if (_imp->liveInstance->isReader()) {
+            ///Refresh the preview automatically if the filename changed
+            incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
+            //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+            
+            ///union the project frame range if not locked with the reader frame range
+            bool isLocked = getApp()->getProject()->isFrameRangeLocked();
+            if (!isLocked) {
+                double leftBound = INT_MIN,rightBound = INT_MAX;
+                _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
+                
+                if (leftBound != INT_MIN && rightBound != INT_MAX) {
+                    bool isFileDialogPreviewReader = getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos;
+                    if (!isFileDialogPreviewReader) {
+                        getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+                    }
+                }
+            }
+        } else if (_imp->liveInstance->isWriter()) {
+            /*
+             Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
+             */
+            KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(what);
+            if (fileParam) {
+                std::string pattern = fileParam->getValue();
+                std::size_t foundViewPattern = pattern.find_first_of("%v");
+                if (foundViewPattern == std::string::npos) {
+                    foundViewPattern = pattern.find_first_of("%V");
+                }
+                if (foundViewPattern != std::string::npos) {
+                    //We found view pattern
+                    boost::shared_ptr<KnobI> viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                    if (viewsKnob) {
+                        KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>(viewsKnob.get());
+                        if (viewsSelector) {
+                            viewsSelector->setSecret(true);
+                        }
+                    }
                 }
             }
         }
-        
     } else if (_imp->liveInstance->isReader() && what->getName() == kReadOIIOAvailableViewsKnobName) {
         refreshCreatedViews(what);
     } else if ( what == _imp->refreshInfoButton.lock().get() ) {
