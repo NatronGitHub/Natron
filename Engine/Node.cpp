@@ -6059,7 +6059,7 @@ Node::refreshCreatedViews(KnobI* knob)
             ss << std::endl;
             ss << std::endl;
             ss << QObject::tr("These views are in").toStdString() << ' ' << filename << ' '
-            << QObject::tr("but are not present in the project.").toStdString() << std::endl;
+            << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
             ss << QObject::tr("Would you like to create them?").toStdString();
             std::string question  = ss.str();
             Natron::StandardButtonEnum rep = Natron::questionDialog("Views available", question, false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);

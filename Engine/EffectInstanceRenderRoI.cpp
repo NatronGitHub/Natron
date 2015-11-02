@@ -557,7 +557,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                  about case 1
                  */
                 
-                bool fetchUserSelectedComponentsUpstream = inputEffectIdentity->getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
+                bool fetchUserSelectedComponentsUpstream = getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
                 
                 if (fetchUserSelectedComponentsUpstream) {
                     /// This corresponds to choice B)
