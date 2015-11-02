@@ -3275,10 +3275,10 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
-        if ((int)oldInputs.size() == inputCount) {
+        /*if ((int)oldInputs.size() == inputCount) {
             _imp->inputsInitialized = true;
             return;
-        }
+        }*/
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
         _imp->inputLabels.resize(inputCount);
