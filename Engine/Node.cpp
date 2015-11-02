@@ -6034,7 +6034,7 @@ Node::refreshCreatedViews(KnobI* knob)
     
     QStringList missingViews;
     for (QStringList::Iterator it = views.begin(); it!=views.end(); ++it) {
-        if (!qProjectViews.contains(*it,Qt::CaseInsensitive) && it->isEmpty()) {
+        if (!qProjectViews.contains(*it,Qt::CaseInsensitive) && !it->isEmpty()) {
             missingViews.push_back(*it);
         }
         _imp->createdViews.push_back(it->toStdString());

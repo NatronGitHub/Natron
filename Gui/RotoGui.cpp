@@ -4532,19 +4532,28 @@ RotoGui::smoothSelectedCurve()
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
-    for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
-        
-        boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        if (bezier) {
+    if (!_imp->rotoData->selectedCps.empty()) {
+        for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             SmoothCuspUndoCommand::SmoothCuspCurveData data;
-            data.curve = bezier;
-            const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
-                data.newPoints.push_back( std::make_pair(*it, *itFp) );
-            }
+            data.curve = it->first->getBezier();
+            data.newPoints.push_back(*it);
             datas.push_back(data);
+        }
+    } else {
+        for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
+            
+            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            if (bezier) {
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = bezier;
+                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
+                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                    data.newPoints.push_back( std::make_pair(*it, *itFp) );
+                }
+                datas.push_back(data);
+            }
         }
     }
     if (!datas.empty()) {
@@ -4561,18 +4570,27 @@ RotoGui::cuspSelectedCurve()
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
-    for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
-        boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        if (bezier) {
+    if (!_imp->rotoData->selectedCps.empty()) {
+        for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             SmoothCuspUndoCommand::SmoothCuspCurveData data;
-            data.curve = bezier;
-            const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
-                data.newPoints.push_back( std::make_pair(*it, *itFp) );
-            }
+            data.curve = it->first->getBezier();
+            data.newPoints.push_back(*it);
             datas.push_back(data);
+        }
+    } else {
+        for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
+            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            if (bezier) {
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = bezier;
+                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
+                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                    data.newPoints.push_back( std::make_pair(*it, *itFp) );
+                }
+                datas.push_back(data);
+            }
         }
     }
     if (!datas.empty()) {
