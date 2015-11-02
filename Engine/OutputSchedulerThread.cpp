@@ -2110,13 +2110,15 @@ private:
                                 }
                             }
                             if (!hasViewChoice) {
-                                QString message = QString(_imp->output->getNode()->getLabel_mt_safe().c_str()) + ' ' +
-                                QObject::tr("does not support multi-view, only the first view in the project settings will be rendered.\n"
-                                            "Would you like to continue?");
-                                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
-                                if (rep != Natron::eStandardButtonOk) {
-                                    _imp->scheduler->notifyRenderFailure("");
-                                    return;
+                                if (viewsToRender.size() > 1) {
+                                    QString message = QString(_imp->output->getNode()->getLabel_mt_safe().c_str()) + ' ' +
+                                    QObject::tr("does not support multi-view, only the first view in the project settings will be rendered.\n"
+                                                "Would you like to continue?");
+                                    Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
+                                    if (rep != Natron::eStandardButtonOk) {
+                                        _imp->scheduler->notifyRenderFailure("");
+                                        return;
+                                    }
                                 }
                                 //Render the main-view only...
                                 viewsToRender.clear();
