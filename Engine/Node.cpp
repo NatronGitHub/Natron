@@ -6079,6 +6079,30 @@ Node::refreshCreatedViews(KnobI* knob)
     
 }
 
+void
+Node::refreshIdentityState()
+{
+    double time = _imp->liveInstance->getCurrentTime();
+    RenderScale scale;
+    scale.x = scale.y = 1;
+    
+    double inputTime;
+    int inputNb;
+    
+    U64 hash = getHashValue();
+    RectD rod;
+    bool isProj;
+    (void)_imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProj);
+    
+    RectI pixelRod;
+    rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
+    bool isIdentity = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, 0, &inputTime, &inputNb);
+    
+    
+    Q_EMIT identityChanged(isIdentity ? inputNb : -1);
+
+}
+
 /*
  This is called AFTER the instanceChanged action has been called on the plug-in
  */

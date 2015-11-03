@@ -186,6 +186,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _undoStack(new QUndoStack())
 , _overlayLocked(false)
 , _availableViewsIndicator()
+, _passThroughIndicator()
 {
 }
 
@@ -229,6 +230,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( bitDepthWarningToggled(bool,QString) ),this,SLOT( toggleBitDepthIndicator(bool,QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
+    QObject::connect( internalNode.get(), SIGNAL( identityChanged(int) ),this,SLOT( onIdentityStateChanged(int) ) );
     
     setCacheMode(DeviceCoordinateCache);
 
@@ -578,17 +580,23 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator.reset(new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
-                                                exprGrad,QColor(255,255,255),this));
+    _expressionIndicator.reset(new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
     _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
-    _availableViewsIndicator.reset(new NodeGuiIndicator(depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
-                                                        exprGrad, QColor(255,255,255), this));
+    _availableViewsIndicator.reset(new NodeGuiIndicator(depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,exprGrad, QColor(255,255,255), this));
     _availableViewsIndicator->setActive(false);
     
     onAvailableViewsChanged();
+    
+    QGradientStops ptGrad;
+    ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
+    ptGrad.push_back(qMakePair(0.5, QColor(0,100,150)));
+    ptGrad.push_back(qMakePair(1., QColor(0,150,100)));
+    _passThroughIndicator.reset(new NodeGuiIndicator(depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
+    _passThroughIndicator->setActive(false);
+
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
@@ -809,9 +817,9 @@ NodeGui::resize(int width,
         height = std::max((double)height, nameFrameBox.height());
     }
 
+    QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
     if (mustAddResizeHandle()) {
         QPolygonF poly;
-        QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
         poly.push_back( QPointF( bottomRight.x() - 20,bottomRight.y() ) );
         poly.push_back(bottomRight);
         poly.push_back( QPointF(bottomRight.x(), bottomRight.y() - 20) );
@@ -828,7 +836,8 @@ NodeGui::resize(int width,
 
     _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
     _availableViewsIndicator->refreshPosition(topLeft);
-
+    _passThroughIndicator->refreshPosition(bottomRight - QPointF(NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER));
+    
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
                              width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
@@ -3671,4 +3680,39 @@ NodeGui::onAvailableViewsChanged()
     }
     _availableViewsIndicator->setToolTip(toolTip);
     _availableViewsIndicator->setActive(true);
+}
+
+void
+NodeGui::onIdentityStateChanged(int inputNb)
+{
+    NodePtr ptInput;
+    NodePtr node = getNode();
+    if (node == _identityInput.lock()) {
+        return;
+    }
+    _identityInput = node;
+    
+    if (inputNb >= 0) {
+        ptInput = node->getInput(inputNb);
+    }
+    _passThroughIndicator->setActive(inputNb >= 0);
+    if (ptInput) {
+    
+        QString tooltip = tr("This node is a pass-through and will yield identical results as");
+        tooltip += ' ';
+        tooltip += QString(ptInput->getLabel().c_str());
+        if (ptInput)
+        _passThroughIndicator->setToolTip(tooltip);
+        for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
+            if ((int)i != inputNb) {
+                _inputEdges[i]->setDashed(true);
+            } else {
+                _inputEdges[i]->setDashed(false);
+            }
+        }
+    } else {
+        for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
+            _inputEdges[i]->setDashed(node->getLiveInstance()->isInputMask(i));
+        }
+    }
 }

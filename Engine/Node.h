@@ -1068,6 +1068,8 @@ public:
     
     void refreshCreatedViews();
     
+    void refreshIdentityState();
+    
 private:
     
     void refreshCreatedViews(KnobI* knob);
@@ -1136,6 +1138,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void identityChanged(int inputNb);
     
     void availableViewsChanged();
     

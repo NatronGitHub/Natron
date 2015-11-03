@@ -437,6 +437,8 @@ protected:
     
 public Q_SLOTS:
     
+    void onIdentityStateChanged(int inputNb);
+    
     void onAvailableViewsChanged();
 
     void onOutputLayerChanged();
@@ -662,6 +664,8 @@ private:
     bool _overlayLocked;
     
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    boost::weak_ptr<Natron::Node> _identityInput;
 };
 
 
