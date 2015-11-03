@@ -111,8 +111,8 @@
         PyObject* %out = PyDict_New();
         %INTYPE::const_iterator it = %in.begin();
         for (; it != %in.end(); ++it) {
-        %INTYPE_0 key = it.key();
-        %INTYPE_1 value = it.value();
+        %INTYPE_0 key = it->first;
+        %INTYPE_1 value = it->second;
         PyObject* pyKey = %CONVERTTOPYTHON[%INTYPE_0](key);
         PyObject* pyValue = %CONVERTTOPYTHON[%INTYPE_1](value);
         PyDict_SetItem(%out, pyKey, pyValue);
@@ -128,7 +128,7 @@
         while (PyDict_Next(%in, &amp;pos, &amp;key, &amp;value)) {
         %OUTTYPE_0 cppKey = %CONVERTTOCPP[%OUTTYPE_0](key);
         %OUTTYPE_1 cppValue = %CONVERTTOCPP[%OUTTYPE_1](value);
-        %out.insert(cppKey, cppValue);
+        %out.insert(std::make_pair(cppKey, cppValue));
         }
     </template>
 
@@ -303,6 +303,9 @@
        </modify-function>
        
    </object-type>
+   
+   <value-type name="ImageLayer" copyable="true" hash-function="ImageLayer::getHash">
+   </value-type>
 
     <object-type name="Group" copyable="false">
         <inject-documentation format="target">
@@ -653,6 +656,26 @@
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+        </modify-function>
+        <modify-function signature="getAvailableLayers()const">
+            <inject-code class="target" position="beginning">
+                std::map&lt;ImageLayer,Effect*&gt; comps = %CPPSELF.%FUNCTION_NAME();
+                
+                PyObject* ret = PyDict_New();
+                std::map&lt;ImageLayer,Effect*&gt;::iterator it = comps.begin();
+                for (; it != comps.end(); ++it) {
+                    const ImageLayer&amp; key = it->first;
+                    Effect* value = it->second;
+                    PyObject* pyKey = %CONVERTTOPYTHON[ImageLayer](key);
+                    PyObject* pyValue = %CONVERTTOPYTHON[Effect*](value);
+                    // Ownership transferences.
+                    Shiboken::Object::getOwnership(pyValue);
+                    PyDict_SetItem(ret, pyKey, pyValue);
+                    Py_DECREF(pyKey);
+                    Py_DECREF(pyValue);
+                }
+                return ret;
+            </inject-code>
         </modify-function>
     </object-type>
 
@@ -1135,7 +1158,7 @@
             </modify-argument>
         </modify-function>
     </object-type>
-    
+   
     
 
 </typesystem>

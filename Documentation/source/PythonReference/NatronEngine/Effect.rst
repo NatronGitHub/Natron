@@ -23,6 +23,7 @@ Functions
 *    def :meth:`createChild<NatronEngine.Effect.createChild>` ()
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
+*    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
 *    def :meth:`getColor<NatronEngine.Effect.getColor>` ()
 *    def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 *    def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
@@ -212,7 +213,18 @@ their input to the input of this node instead.
 Removes any input Effect connected to the given *inputNumber* of this node.
 
 
+.. method:: NatronEngine.Effect.getAvailableLayers()
 
+	:rtype: :class:`dict`
+	
+	Returns the layer available on this node. This is a dict with a :ref:`ImageLayer<NatronEngine.ImageLayer>`
+	as key and :ref:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
+	the upstream tree (including this node) that produced that layer.
+	
+	For example, in a simple graph Read --> Blur, if the Read node has a layer available
+	named "RenderLayer.combined" but Blur is set to process only the color layer (RGBA), then
+	calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
+	the Read node, whereas the dict will have for the key "RGBA" the Blur node.
 
 .. method:: NatronEngine.Effect.getColor()
 
