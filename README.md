@@ -7,7 +7,7 @@ Natron is a free open-source (GPLv2 license) video compositing
 software, similar in functionality to Adobe After Effects, Nuke by The
 Foundry, or Blackmagic Fusion.
 
-It is portable and cross-platform (Linux, OS X, Microsoft Windows).
+It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
 The project home page is http://natron.fr
 
@@ -92,7 +92,7 @@ to work with any layer (or plane) on any node. New custom layers can also be cre
 Requirements
 ------------
 
-A machine running one of the supported operating systems (Linux, OS X,
+A machine running one of the supported operating systems (GNU/Linux, OS X,
 Microsoft Windows), and a 32-bits x86 or 64-bits x86-64 processor.
 
 If your OpenGL version is not supported or does not implement the
@@ -106,10 +106,41 @@ The system must support one of these OpenGL configurations:
   `GL_ARB_pixel_buffer_object`
 
 
+Installing
+----------
+
+### Binary distribution ###
+
+Standalone binary distributions of Natron are available for [GNU/Linux](http://downloads.natron.fr/Linux/),
+[Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/). These distributions contain Natron and three basic sets of OpenFX plugins:
+* [openfx-io](https://github.com/MrKepzie/openfx-io/),
+* [openfx-misc](https://github.com/devernay/openfx-misc),
+* [openfx-arena](https://github.com/olear/openfx-arena).
+
+For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
+
+### Building and installing from source ###
+
+There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
+* [GNU/Linux](INSTALL_LINUX.md)
+* [OS X](INSTALL_OSX.md)
+* [FreeBSD](INSTALL_FREEBSD.md)
+* [Windows](INSTALL_WINDOWS.md)
+
+This documentation may be slightly outdated, so do not hesitate to submit updated build instructions, especially for the various GNU/Linux distributions.
+
+### Automatic build scripts ###
+
+There are automatic build scripts for [GNU/Linux](tools/linux), [OS X](tools/MacOSX), and [Windows](tools/Windows), which are used to build the binary distributions and the snapshots.
+
+These scripts are run on virtual machines running a specific version of each operating system, and setting these up is more complicated than for the basic builds described above.
+
+There is some documentation, which is probably outdated, for [GNU/Linux](tools/linux/README.md), [OS X](tools/MacOSX/README.md), and [Windows](tools/WindowsREADME.md).
+
 Planned features
 ----------------
 
-### Features planned for Next major version
+### Features planned for the next major version
     
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
