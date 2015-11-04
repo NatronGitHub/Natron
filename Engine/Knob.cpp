@@ -3869,12 +3869,14 @@ void
 KnobHolder::refreshAfterTimeChange(SequenceTime time)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (!getApp() || getApp()->isGuiFrozen()) {
+    AppInstance* app = getApp();
+    if (!app || app->isGuiFrozen()) {
         return;
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         _imp->knobs[i]->onTimeChanged(time);
     }
+    refreshExtraStateAfterTimeChanged(time);
 }
 
 void
@@ -4213,14 +4215,15 @@ KnobHolder::areKnobsFrozen() const
     return _imp->knobsFrozen;
 }
 
-void
+bool
 KnobHolder::dequeueValuesSet()
 {
     assert(QThread::currentThread() == qApp->thread());
-    
+    bool ret = false;
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        _imp->knobs[i]->dequeueValuesSet(false);
+        ret |= _imp->knobs[i]->dequeueValuesSet(false);
     }
+    return ret;
 }
 
 double

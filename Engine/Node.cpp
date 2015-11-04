@@ -6229,6 +6229,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             isGrp->getNode()->initializeInputs();
         }
     }
+    
 }
 
 bool
@@ -6871,9 +6872,9 @@ Node::dequeueActions()
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = true;
     }
-    
+    bool hasChanged = false;
     if (_imp->liveInstance) {
-        _imp->liveInstance->dequeueValuesSet();
+        hasChanged |= _imp->liveInstance->dequeueValuesSet();
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
         if (isGroup) {
             isGroup->dequeueConnexions();
@@ -6902,10 +6903,15 @@ Node::dequeueActions()
     }
     
     beginInputEdition();
+    hasChanged |= !inputChanges.empty();
     for (std::set<int>::iterator it = inputChanges.begin(); it!=inputChanges.end(); ++it) {
         onInputChanged(*it);
     }
     endInputEdition(true);
+    
+    if (hasChanged) {
+        refreshIdentityState();
+    }
 
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -7225,6 +7231,8 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
     }
     
     hasChanged |= refreshChannelSelectors(canChangeValues);
+    
+    refreshIdentityState();
 
     {
         QMutexLocker k(&_imp->pluginsPropMutex);

@@ -2506,6 +2506,7 @@ EffectInstance::evaluate(KnobI* knob,
     ///increments the knobs age following a change
     if (!button && isSignificant) {
         node->incrementKnobsAge();
+        node->refreshIdentityState();
     }
 
 
@@ -2522,7 +2523,7 @@ EffectInstance::evaluate(KnobI* knob,
         }
     }
 
-    getNode()->refreshPreviewsRecursivelyDownstream(time);
+    node->refreshPreviewsRecursivelyDownstream(time);
 } // evaluate
 
 bool
@@ -4371,4 +4372,11 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
+}
+
+void
+EffectInstance::refreshExtraStateAfterTimeChanged(SequenceTime time)
+{
+    KnobHolder::refreshExtraStateAfterTimeChanged(time);
+    getNode()->refreshIdentityState();
 }

@@ -937,8 +937,9 @@ public:
 
     /**
      * @brief Dequeues any setValue/setValueAtTime calls that were queued in the queue.
+     * @returns true if any value was dequeued
      **/
-    virtual void dequeueValuesSet(bool disableEvaluation) = 0;
+    virtual bool dequeueValuesSet(bool disableEvaluation) = 0;
     
     /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
@@ -1634,7 +1635,7 @@ public:
     virtual void cloneDefaultValues(KnobI* other) OVERRIDE FINAL;
     virtual bool cloneAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
+    virtual bool dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
     ///MT-safe
     void setMinimum(const T& mini, int dimension = 0);
@@ -1899,6 +1900,12 @@ public:
     std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
     
     void refreshAfterTimeChange(SequenceTime time);
+    
+protected:
+    
+    virtual void refreshExtraStateAfterTimeChanged(SequenceTime /*time*/) {}
+    
+public:
 
     void refreshInstanceSpecificKnobsOnly(SequenceTime time);
 
@@ -1931,7 +1938,7 @@ public:
     /**
      * @brief Dequeues all values set in the queues for all knobs
      **/
-    void dequeueValuesSet();
+    bool dequeueValuesSet();
     
     void discardAppPointer();
     

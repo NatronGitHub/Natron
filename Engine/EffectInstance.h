@@ -1497,6 +1497,8 @@ public:
 
 protected:
 
+    virtual void refreshExtraStateAfterTimeChanged(SequenceTime time)  OVERRIDE;
+
     /**
      * @brief Must be implemented to initialize any knob using the
      * KnobFactory.

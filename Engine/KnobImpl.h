@@ -2473,12 +2473,12 @@ Knob<T>::cloneDefaultValues(KnobI* other)
 }
 
 template <typename T>
-void
+bool
 Knob<T>::dequeueValuesSet(bool disableEvaluation)
 {
     
     std::map<int,Natron::ValueChangedReasonEnum> dimensionChanged;
-    
+    bool ret = false;
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
         QMutexLocker kql(&_setValuesQueueMutex);
@@ -2532,8 +2532,9 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 
     clearExpressionsResultsIfNeeded(dimensionChanged);
     
+    ret |= !dimensionChanged.empty();
+    
     if (!disableEvaluation && !dimensionChanged.empty()) {
-        
         beginChanges();
         int time = getCurrentTime();
         for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
@@ -2541,7 +2542,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         }
         endChanges();
     }
-    
+    return ret;
 }
 
 template <typename T>

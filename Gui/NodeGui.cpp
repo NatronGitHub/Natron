@@ -366,6 +366,7 @@ NodeGui::restoreStateAfterCreation()
     }
     ///Refresh the name in the line edit
     onInternalNameChanged( internalNode->getLabel().c_str() );
+    internalNode->refreshIdentityState();
 }
 
 void
@@ -592,8 +593,8 @@ NodeGui::createGui()
     
     QGradientStops ptGrad;
     ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
-    ptGrad.push_back(qMakePair(0.5, QColor(0,100,150)));
-    ptGrad.push_back(qMakePair(1., QColor(0,150,100)));
+    ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
+    ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
     _passThroughIndicator.reset(new NodeGuiIndicator(depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
     _passThroughIndicator->setActive(false);
 
@@ -836,7 +837,7 @@ NodeGui::resize(int width,
 
     _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
     _availableViewsIndicator->refreshPosition(topLeft);
-    _passThroughIndicator->refreshPosition(bottomRight - QPointF(NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER));
+    _passThroughIndicator->refreshPosition(bottomRight - QPointF(NATRON_ELLIPSE_WARN_DIAMETER / 2,NATRON_ELLIPSE_WARN_DIAMETER / 2));
     
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
@@ -3687,21 +3688,23 @@ NodeGui::onIdentityStateChanged(int inputNb)
 {
     NodePtr ptInput;
     NodePtr node = getNode();
-    if (node == _identityInput.lock()) {
-        return;
-    }
-    _identityInput = node;
+    
     
     if (inputNb >= 0) {
         ptInput = node->getInput(inputNb);
     }
-    _passThroughIndicator->setActive(inputNb >= 0);
+    if (ptInput && ptInput == _identityInput.lock()) {
+        return;
+    }
+    _identityInput = ptInput;
+
+    
+    _passThroughIndicator->setActive(ptInput.get() != 0);
     if (ptInput) {
     
         QString tooltip = tr("This node is a pass-through and will yield identical results as");
         tooltip += ' ';
         tooltip += QString(ptInput->getLabel().c_str());
-        if (ptInput)
         _passThroughIndicator->setToolTip(tooltip);
         for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
             if ((int)i != inputNb) {
@@ -3715,4 +3718,5 @@ NodeGui::onIdentityStateChanged(int inputNb)
             _inputEdges[i]->setDashed(node->getLiveInstance()->isInputMask(i));
         }
     }
+    getDagGui()->update();
 }
