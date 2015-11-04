@@ -1585,7 +1585,7 @@ NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) cons
 void
 NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
-                 SequenceTime /*time*/,
+                 double /*time*/,
                  bool /*originatedFromMainThread*/)
 {
     if (k == _imp->exportAsTemplate.get()) {

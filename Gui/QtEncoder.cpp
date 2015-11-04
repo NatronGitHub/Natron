@@ -166,7 +166,7 @@ void
 QtWriter::knobChanged(KnobI* k,
                       Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
-                      SequenceTime /*time*/,
+                      double /*time*/,
                       bool/* originatedFromMainThread*/)
 {
     if ( k == _frameRangeChoosal.get() ) {

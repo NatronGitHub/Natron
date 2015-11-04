@@ -1199,23 +1199,19 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
     }
     
     QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(),_dragStartPoint.y() );
-    bool clampToIntegers = ( *_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
     bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     
     QPointF totalMovement(newClick_opengl.x() - dragStartPointOpenGL.x(), newClick_opengl.y() - dragStartPointOpenGL.y());
-    /// round to the nearest integer the keyframes total motion (in X only)
-    ///Only for the curve editor, parametric curves are not affected by the following
-    if (clampToIntegers) {
-        totalMovement.rx() = std::floor(totalMovement.x() + 0.5);
-        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
-            if ( (*it)->curve->areKeyFramesValuesClampedToBooleans() ) {
-                totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
-                break;
-            } else if ( (*it)->curve->areKeyFramesValuesClampedToIntegers() ) {
-                totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
-            }
+
+    for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+        if ( (*it)->curve->areKeyFramesValuesClampedToBooleans() ) {
+            totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
+            break;
+        } else if ( (*it)->curve->areKeyFramesValuesClampedToIntegers() ) {
+            totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
         }
     }
+    
     
     double dt;
     dt = totalMovement.x() - _keyDragLastMovement.x();
@@ -1245,7 +1241,6 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,c
         
         double sx = 1.,sy = 1.;
         double tx = 0., ty = 0.;
-        
         double oldX = newClick_opengl.x() - dt;
         double oldY = newClick_opengl.y() - dv;
         // the scale ratio is the ratio of distances to the center

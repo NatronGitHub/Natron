@@ -648,7 +648,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, Natron::ValueChangedReasonEnum reason, SequenceTime time, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k, Natron::ValueChangedReasonEnum reason, double time, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1330,7 +1330,7 @@ protected:
     virtual void knobChanged(KnobI* /*k*/,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/)
     {
     }
@@ -1364,7 +1364,7 @@ protected:
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, SequenceTime time,
+    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
     Natron::StatusEnum beginSequenceRender_public(double first, double last,
                                                   double step, bool interactive, const RenderScale & scale,
@@ -1497,7 +1497,7 @@ public:
 
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(SequenceTime time)  OVERRIDE;
+    virtual void refreshExtraStateAfterTimeChanged(double time)  OVERRIDE;
 
     /**
      * @brief Must be implemented to initialize any knob using the

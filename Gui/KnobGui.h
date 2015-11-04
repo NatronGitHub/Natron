@@ -179,7 +179,7 @@ public:
 
     void removeAllKeyframeMarkersOnTimeline(int dim);
     void setAllKeyframeMarkersOnTimeline(int dim);
-    void setKeyframeMarkerOnTimeline(int time);
+    void setKeyframeMarkerOnTimeline(double time);
 
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
        signal/slot sequence can cause an infinite loop.*/
@@ -288,18 +288,18 @@ public Q_SLOTS:
      **/
     void onInternalValueChanged(int dimension,int reason);
 
-    void onInternalKeySet(SequenceTime time,int dimension,int reason,bool added);
+    void onInternalKeySet(double time,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(SequenceTime time,int dimension,int reason);
+    void onInternalKeyRemoved(double time,int dimension,int reason);
     
-    void onMultipleKeySet(const std::list<SequenceTime>& keys,int dimension, int reason);
+    void onMultipleKeySet(const std::list<double>& keys,int dimension, int reason);
 
     void onInternalAnimationAboutToBeRemoved(int dimension);
     
     void onInternalAnimationRemoved();
     
     ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(int dimension,int oldTime,int newTime);
+    void onKeyFrameMoved(int dimension,double oldTime,double newTime);
 
     void setSecret();
 
@@ -361,7 +361,7 @@ public Q_SLOTS:
 
     void onAnimationLevelChanged(int dim,int level);
 
-    void onAppendParamEditChanged(int reason,const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v,int dim,double time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

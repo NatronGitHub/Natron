@@ -70,14 +70,13 @@ public:
 
     void decrementCurrentFrame();
 
+    /*
+     * @brief Timeline keyframes indicators are integers 
+     */
     void removeAllKeyframesIndicators();
-
     void addKeyframeIndicator(SequenceTime time);
-
     void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal);
-
     void removeKeyFrameIndicator(SequenceTime time);
-
     void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal);
 
     /**

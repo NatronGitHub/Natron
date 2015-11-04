@@ -64,7 +64,7 @@ private:
     
     virtual void onKnobValueChanged(KnobI* /*k*/,
                                     Natron::ValueChangedReasonEnum /*reason*/,
-                                    SequenceTime /*time*/,
+                                    double /*time*/,
                                     bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;

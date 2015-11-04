@@ -213,6 +213,11 @@ public:
     bool getNextKeyframeTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    
+    /*
+     * @brief Returns the number of keyframes in the range [first,last[
+     */
+    int getNKeyFramesInRange(double first, double last) const WARN_UNUSED_RETURN;
 
     bool getKeyFrameWithIndex(int index, KeyFrame* k) const WARN_UNUSED_RETURN;
 

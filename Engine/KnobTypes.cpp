@@ -1666,7 +1666,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension) {
 
 void
 KnobParametric::cloneExtraData(KnobI* other,
-                                SequenceTime offset,
+                                double offset,
                                 const RangeD* range,
                                 int dimension)
 {

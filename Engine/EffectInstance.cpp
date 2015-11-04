@@ -3768,7 +3768,7 @@ EffectInstance::isMaskEnabled(int inputNb) const
 void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    Natron::ValueChangedReasonEnum /*reason*/,
-                                   SequenceTime /*time*/,
+                                   double /*time*/,
                                    bool /*originatedFromMainThread*/)
 {
 }
@@ -3849,7 +3849,7 @@ EffectInstance::getCurrentThreadSafetyThreadLocal() const
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           Natron::ValueChangedReasonEnum reason,
-                                          SequenceTime time,
+                                          double time,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
@@ -4375,7 +4375,7 @@ EffectInstance::checkOFXClipPreferences_public(double time,
 }
 
 void
-EffectInstance::refreshExtraStateAfterTimeChanged(SequenceTime time)
+EffectInstance::refreshExtraStateAfterTimeChanged(double time)
 {
     KnobHolder::refreshExtraStateAfterTimeChanged(time);
     getNode()->refreshIdentityState();

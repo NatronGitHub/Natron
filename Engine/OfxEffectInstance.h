@@ -213,7 +213,7 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

@@ -76,7 +76,7 @@ private:
     virtual void knobChanged(KnobI* k,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;

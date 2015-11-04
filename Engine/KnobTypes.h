@@ -902,7 +902,7 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 

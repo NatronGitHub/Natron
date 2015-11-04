@@ -1819,7 +1819,7 @@ Settings::tryLoadOpenColorIOConfig()
 void
 Settings::onKnobValueChanged(KnobI* k,
                              Natron::ValueChangedReasonEnum reason,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/)
 {
     

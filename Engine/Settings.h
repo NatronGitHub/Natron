@@ -104,7 +104,7 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     Natron::ImageBitDepthEnum getViewersBitDepth() const;
