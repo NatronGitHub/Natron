@@ -1399,8 +1399,8 @@ Knob<T>::unSlave(int dimension,
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)) );
         
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,int,int) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,double,double) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int) ),
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
     }
