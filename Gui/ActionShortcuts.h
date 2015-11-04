@@ -198,6 +198,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionLuminanceA "luminanceA"
 #define kShortcutDescActionLuminanceA "Display Luminance on input A only"
 
+#define kShortcutIDActionMatteOverlay "matteOverlay"
+#define kShortcutDescActionMatteOverlay "Overlay the channel alpha channel"
+
 #define kShortcutIDActionRedA "channelRA"
 #define kShortcutDescActionRedA "Display Red Channel on input A only"
 

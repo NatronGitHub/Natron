@@ -1217,7 +1217,7 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(SequenceTime,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
                                         this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }

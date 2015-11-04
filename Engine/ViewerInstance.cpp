@@ -1293,7 +1293,8 @@ ViewerInstance::renderViewer_internal(int view,
     std::list<ImageComponents> requestedComponents;
     
     int alphaChannelIndex = -1;
-    if ((Natron::DisplayChannelsEnum)inArgs.key->getChannels() != Natron::eDisplayChannelsA) {
+    if (inArgs.channels != Natron::eDisplayChannelsA &&
+        inArgs.channels != Natron::eDisplayChannelsMatte) {
         ///We fetch the Layer specified in the gui
         if (inArgs.params->layer.getNumComponents() > 0) {
             requestedComponents.push_back(inArgs.params->layer);
@@ -1310,6 +1311,12 @@ ViewerInstance::renderViewer_internal(int view,
                 }
             }
             assert(alphaChannelIndex != -1);
+        }
+        if (inArgs.channels == Natron::eDisplayChannelsMatte) {
+            //For the matte overlay also display the alpha mask on top of the red channel of the image
+            if (inArgs.params->layer.getNumComponents() > 0 && inArgs.params->layer != inArgs.params->alphaLayer) {
+                requestedComponents.push_back(inArgs.params->layer);
+            }
         }
     }
     
@@ -1353,6 +1360,7 @@ ViewerInstance::renderViewer_internal(int view,
     if (stats && stats->isInDepthProfilingEnabled()) {
         bool channelsRendered[4];
         switch (inArgs.channels) {
+            case Natron::eDisplayChannelsMatte:
             case Natron::eDisplayChannelsRGB:
             case Natron::eDisplayChannelsY:
                 channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = true;
@@ -1391,12 +1399,13 @@ ViewerInstance::renderViewer_internal(int view,
         bool reportProgress = false;
 
         
+        //AlphaImage will only be set when displaying the Matte overlay
+        ImagePtr alphaImage,colorImage;
+
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
         // by the HostSupport library.
         // We catch it  and rethrow it just to notify the rendering is done.
-        ImagePtr image;
-
         try {
             
             ImageList planes;
@@ -1410,12 +1419,37 @@ ViewerInstance::renderViewer_internal(int view,
                                                                                 inArgs.params->rod,
                                                                                 requestedComponents,
                                                                                 imageDepth, false, this),&planes);
-            assert(planes.size() == 0 || planes.size() == 1);
+            //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
+            assert(planes.size() == 0 || planes.size() <= 2);
             if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
-                image = planes.front();
-                inArgs.params->tiles.push_back(image);
+                if (planes.size() == 2) {
+                    ImageList::iterator firstPlane = planes.begin();
+                    if ((*firstPlane)->getComponents() == inArgs.params->layer) {
+                        colorImage = *firstPlane;
+                        ++firstPlane;
+                        alphaImage = *firstPlane;
+                    } else {
+                        assert((*firstPlane)->getComponents() == inArgs.params->alphaLayer);
+                        alphaImage = *firstPlane;
+                        ++firstPlane;
+                        colorImage = *firstPlane;
+                    }
+                } else {
+                    //only 1 plane, figure out if the alpha layer is the same as the color layer
+                    if (inArgs.params->alphaLayer == inArgs.params->layer) {
+                        if (inArgs.channels == eDisplayChannelsMatte) {
+                            alphaImage = colorImage = planes.front();
+                        } else {
+                            colorImage = planes.front();
+                        }
+                    } else {
+                        colorImage = planes.front();
+                    }
+                }
+                assert(colorImage);
+                inArgs.params->tiles.push_back(colorImage);
             }
-            if (!image) {
+            if (!colorImage) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
@@ -1466,13 +1500,14 @@ ViewerInstance::renderViewer_internal(int view,
         abortCheck(inArgs.activeInputToRender);
  
         
-        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( image->getBitDepth() );
+        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
-        assert(alphaChannelIndex < (int)image->getComponentsCount());
+        assert((inArgs.channels != Natron::eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
+               (inArgs.channels == Natron::eDisplayChannelsMatte && alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()));
         
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
-        splitRoi[rectIndex].intersect(image->getBounds(), &viewerRenderRoI);
+        splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
         
         //If we are painting, only render the portion needed
         if (!lastPaintBboxPixel.isNull()) {
@@ -1487,7 +1522,7 @@ ViewerInstance::renderViewer_internal(int view,
         if (singleThreaded) {
             if (inArgs.autoContrast) {
                 double vmin, vmax;
-                std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, inArgs.channels, viewerRenderRoI);
+                std::pair<double,double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
                 vmin = vMinMax.first;
                 vmax = vMinMax.second;
                 
@@ -1500,7 +1535,8 @@ ViewerInstance::renderViewer_internal(int view,
                 inArgs.params->offset = -vmin / ( vmax - vmin);
             }
             
-            const RenderViewerArgs args(image,
+            const RenderViewerArgs args(colorImage,
+                                        alphaImage,
                                         inArgs.params->textureRect,
                                         inArgs.channels,
                                         inArgs.params->srcPremult,
@@ -1538,7 +1574,7 @@ ViewerInstance::renderViewer_internal(int view,
                     
                     QFuture<std::pair<double,double> > future = QtConcurrent::mapped( splitRects,
                                                                                      boost::bind(findAutoContrastVminVmax,
-                                                                                                 image,
+                                                                                                 colorImage,
                                                                                                  inArgs.channels,
                                                                                                  _1) );
                     future.waitForFinished();
@@ -1553,7 +1589,7 @@ ViewerInstance::renderViewer_internal(int view,
                         }
                     }
                 } else { //!runInCurrentThread
-                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(image, inArgs.channels, viewerRenderRoI);
+                    std::pair<double,double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
                     vmin = vMinMax.first;
                     vmax = vMinMax.second;
                 }
@@ -1571,7 +1607,8 @@ ViewerInstance::renderViewer_internal(int view,
                 }
             }
             
-            const RenderViewerArgs args(image,
+            const RenderViewerArgs args(colorImage,
+                                        alphaImage,
                                         inArgs.params->textureRect,
                                         inArgs.channels,
                                         inArgs.params->srcPremult,
@@ -1604,12 +1641,12 @@ ViewerInstance::renderViewer_internal(int view,
                 }
             }
         } // if (singleThreaded)
-        if (inArgs.params->cachedFrame && image) {
-            inArgs.params->cachedFrame->addOriginalTile(image);
+        if (inArgs.params->cachedFrame && colorImage) {
+            inArgs.params->cachedFrame->addOriginalTile(colorImage);
         }
         
         if (stats && stats->isInDepthProfilingEnabled()) {
-            stats->addRenderInfosForNode(getNode(), NodePtr(), image->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation());
+            stats->addRenderInfosForNode(getNode(), NodePtr(), colorImage->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation());
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
     
@@ -1825,7 +1862,7 @@ findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
     
 } // findAutoContrastVminVmax
 
-template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque, bool applyMatte,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture8bits_generic(const RectI& roi,
                             const RenderViewerArgs & args,
@@ -1848,6 +1885,11 @@ scaleToTexture8bits_generic(const RectI& roi,
     
     const PIX* src_pixels = (const PIX*)acc.pixelAt(roi.x1, roi.y1);
     const int srcRowElements = (int)args.inputImage->getRowElements();
+    
+    boost::shared_ptr<Natron::Image::ReadAccess> matteAcc;
+    if (applyMatte) {
+        matteAcc.reset(new Natron::Image::ReadAccess(args.matteImage.get()));
+    }
     
     for (int y = roi.y1; y < roi.y2;
          ++y,
@@ -1872,16 +1914,18 @@ scaleToTexture8bits_generic(const RectI& roi,
                 double r = 0.;
                 double g = 0.;
                 double b = 0.;
-                int a = 0;
-
+                int uA = 0;
+                double a = 0;
                 if (nComps >= 4) {
                     r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
                     g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
                     b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
                     if (opaque) {
-                        a = 255;
+                        a = 1;
+                        uA = 255;
                     } else {
-                        a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
+                        a = src_pixels ? src_pixels[index * nComps + 3] : 0;
+                        uA = Color::floatToInt<256>(a);
                     }
                 } else if (nComps == 3) {
                     // coverity[dead_error_line]
@@ -1890,23 +1934,25 @@ scaleToTexture8bits_generic(const RectI& roi,
                     g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                     // coverity[dead_error_line]
                     b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
-                    a = (src_pixels ? 255 : 0);
+                    a = (src_pixels ? 1 : 0);
+                    uA = a * 255;
                 } else if (nComps == 2) {
                     // coverity[dead_error_line]
                     r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
                     // coverity[dead_error_line]
                     g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                     b = 0;
-                    a = (src_pixels ? 255 : 0);
+                    a = (src_pixels ? 1 : 0);
+                    uA = a * 255;
                 } else if (nComps == 1) {
                     // coverity[dead_error_line]
                     r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
                     g = b = r;
-                    a = src_pixels ? 255 : 0;
+                    a = (src_pixels ? 1 : 0);
+                    uA = a * 255;
                 } else {
                     assert(false);
                 }
-
 
                 
                 switch ( pixelSize ) {
@@ -1964,22 +2010,70 @@ scaleToTexture8bits_generic(const RectI& roi,
                     g = r;
                     b = r;
                 }
+            
                 
+                U8 uR,uG,uB;
                 if (!args.colorSpace) {
-                    dst_pixels[index] = toBGRA(Color::floatToInt<256>(r),
-                                               Color::floatToInt<256>(g),
-                                               Color::floatToInt<256>(b),
-                                               a);
+                    uR = Color::floatToInt<256>(r);
+                    uG = Color::floatToInt<256>(g);
+                    uB = Color::floatToInt<256>(b);
+                    
                 } else {
                     error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
                     error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
                     error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
                     assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-                    dst_pixels[index] = toBGRA((U8)(error_r >> 8),
-                                               (U8)(error_g >> 8),
-                                               (U8)(error_b >> 8),
-                                               a);
+                    uR = (U8)(error_r >> 8);
+                    uG = (U8)(error_g >> 8);
+                    uB = (U8)(error_b >> 8);
                 }
+                
+                if (applyMatte) {
+                    double alphaMatteValue = 0;
+                    if (args.matteImage == args.inputImage) {
+                        switch (args.alphaChannelIndex) {
+                            case 0:
+                                alphaMatteValue = r;
+                                break;
+                            case 1:
+                                alphaMatteValue = g;
+                                break;
+                            case 2:
+                                alphaMatteValue = b;
+                                break;
+                            case 3:
+                                alphaMatteValue = a;
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(roi.x1 + index, y);
+                        if (src_pixels) {
+                            alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
+                            switch ( pixelSize ) {
+                                case sizeof(unsigned char): //byte
+                                    alphaMatteValue = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                                    break;
+                                case sizeof(unsigned short): //short
+                                    alphaMatteValue = (double)convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    U8 matteA;
+                    if (args.colorSpace) {
+                        matteA = args.colorSpace->toColorSpaceUint8FromLinearFloatFast(alphaMatteValue) / 2;
+                    } else {
+                        matteA = Color::floatToInt<256>(alphaMatteValue) / 2;
+                    }
+                    uR = clampIfInt<U8>((double)uR + matteA);
+                    
+                }
+                
+                dst_pixels[index] = toBGRA(uR,uG,uB,uA);
                 
                 if (backward) {
                     --index;
@@ -1997,15 +2091,33 @@ scaleToTexture8bits_generic(const RectI& roi,
 } // scaleToTexture8bits_generic
 
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,bool matteOverlay,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture8bits_internal(const RectI& roi,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
                              U32* output)
 {
-    scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+    scaleToTexture8bits_generic<PIX, maxValue, opaque, matteOverlay, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
 }
+
+
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture8bitsForMatte(const RectI& roi,
+                             const RenderViewerArgs & args,
+                             ViewerInstance* viewer,
+                             U32* output)
+{
+    bool applyMate = args.matteImage.get() && args.alphaChannelIndex >= 0;
+    if (applyMate) {
+        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+    } else {
+        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+    }
+    
+}
+
 
 template <typename PIX,int maxValue, bool opaque, int rOffset, int gOffset, int bOffset>
 void
@@ -2017,19 +2129,24 @@ scaleToTexture8bitsForDepthForComponents(const RectI& roi,
     int nComps = args.inputImage->getComponents().getNumComponents();
     switch (nComps) {
         case 4:
-            scaleToTexture8bits_internal<PIX,maxValue,4 , opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
+            scaleToTexture8bitsForMatte<PIX,maxValue,4 , opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
             break;
         case 3:
-            scaleToTexture8bits_internal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
+            scaleToTexture8bitsForMatte<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
             break;
         case 2:
-            scaleToTexture8bits_internal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
+            scaleToTexture8bitsForMatte<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
             break;
         case 1:
-            scaleToTexture8bits_internal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
+            scaleToTexture8bitsForMatte<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(roi,args,viewer,output);
             break;
         default:
-            scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+            bool applyMate = args.matteImage.get() && args.alphaChannelIndex >= 0;
+            if (applyMate) {
+                scaleToTexture8bits_generic<PIX, maxValue, opaque, true, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+            } else {
+                scaleToTexture8bits_generic<PIX, maxValue, opaque, false, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+            }
             break;
     }
 }
@@ -2045,6 +2162,7 @@ scaleToTexture8bitsForPremult(const RectI& roi,
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
+        case Natron::eDisplayChannelsMatte:
             
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args,viewer, output);
             break;
@@ -2149,7 +2267,7 @@ ViewerInstance::markAllOnRendersAsAborted()
     }
 }
 
-template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque, bool applyMatte, int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsGeneric(const RectI& roi,
                             const RenderViewerArgs & args,
@@ -2164,7 +2282,11 @@ scaleToTexture32bitsGeneric(const RectI& roi,
 
     
     Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
-
+    boost::shared_ptr<Natron::Image::ReadAccess> matteAcc;
+    if (applyMatte) {
+        matteAcc.reset(new Natron::Image::ReadAccess(args.matteImage.get()));
+    }
+    
     float* dst_pixels =  output + (roi.y1 - args.texRect.y1) * dstRowElements + (roi.x1 - args.texRect.x1) * 4;
     const float* src_pixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
 
@@ -2258,6 +2380,46 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 g = r;
                 b = r;
             }
+            
+            if (applyMatte) {
+                double alphaMatteValue = 0;
+                if (args.matteImage == args.inputImage) {
+                    switch (args.alphaChannelIndex) {
+                        case 0:
+                            alphaMatteValue = r;
+                            break;
+                        case 1:
+                            alphaMatteValue = g;
+                            break;
+                        case 2:
+                            alphaMatteValue = b;
+                            break;
+                        case 3:
+                            alphaMatteValue = a;
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(x, y);
+                    if (src_pixels) {
+                        alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
+                        switch ( pixelSize ) {
+                            case sizeof(unsigned char): //byte
+                                alphaMatteValue = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                                break;
+                            case sizeof(unsigned short): //short
+                                alphaMatteValue = (double)convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                r += alphaMatteValue * 0.5;
+            }
+
+            
             dst_pixels[x * 4] = Natron::clamp(r, 0., 1.);
             dst_pixels[x * 4 + 1] = Natron::clamp(g, 0., 1.);
             dst_pixels[x * 4 + 2] = Natron::clamp(b, 0., 1.);
@@ -2270,12 +2432,26 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     }
 } // scaleToTexture32bitsGeneric
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque, bool applyMatte, int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsInternal(const RectI& roi,
                              const RenderViewerArgs & args,
                              float *output) {
-    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(roi, args, nComps, output);
+    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, applyMatte, rOffset, gOffset, bOffset>(roi, args, nComps, output);
+}
+
+template <typename PIX,int maxValue,int nComps,bool opaque, int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture32bitsForMatte(const RectI& roi,
+                             const RenderViewerArgs & args,
+                             float *output) {
+    bool applyMatte = args.matteImage.get() && args.alphaChannelIndex >= 0;
+    if (applyMatte) {
+        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, output);
+    } else {
+        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, output);
+    }
+    
 }
 
 template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
@@ -2287,19 +2463,24 @@ scaleToTexture32bitsForDepthForComponents(const RectI& roi,
     int  nComps = args.inputImage->getComponents().getNumComponents();
     switch (nComps) {
         case 4:
-            scaleToTexture32bitsInternal<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(roi,args,output);
+            scaleToTexture32bitsForMatte<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(roi,args,output);
             break;
         case 3:
-            scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(roi,args,output);
+            scaleToTexture32bitsForMatte<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(roi,args,output);
             break;
         case 2:
-            scaleToTexture32bitsInternal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(roi,args,output);
+            scaleToTexture32bitsForMatte<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(roi,args,output);
             break;
         case 1:
-            scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(roi,args,output);
+            scaleToTexture32bitsForMatte<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(roi,args,output);
             break;
         default:
-            scaleToTexture32bitsGeneric<PIX,maxValue, opaque, rOffset,gOffset,bOffset>(roi,args,nComps,output);
+            bool applyMatte = args.matteImage.get() && args.alphaChannelIndex >= 0;
+            if (applyMatte) {
+                scaleToTexture32bitsGeneric<PIX,maxValue, opaque, true, rOffset,gOffset,bOffset>(roi,args,nComps,output);
+            } else {
+                scaleToTexture32bitsGeneric<PIX,maxValue, opaque, false, rOffset,gOffset,bOffset>(roi,args,nComps,output);
+            }
             break;
     }
 }
@@ -2316,6 +2497,7 @@ scaleToTexture32bitsForPremultForComponents(const RectI& roi,
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
+        case Natron::eDisplayChannelsMatte:
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, output);
             break;
         case Natron::eDisplayChannelsG:

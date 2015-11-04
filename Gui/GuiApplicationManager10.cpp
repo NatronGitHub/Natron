@@ -90,7 +90,7 @@ CLANG_DIAG_ON(uninitialized)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 6
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 7
 
 using namespace Natron;
 
@@ -818,6 +818,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionGreen, kShortcutDescActionGreen, Qt::NoModifier, Qt::Key_G);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionBlue, kShortcutDescActionBlue, Qt::NoModifier, Qt::Key_B);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionAlpha, kShortcutDescActionAlpha, Qt::NoModifier, Qt::Key_A);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDActionMatteOverlay, kShortcutDescActionMatteOverlay, Qt::NoModifier, Qt::Key_M);
     
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminanceA, kShortcutDescActionLuminanceA, Qt::ShiftModifier, Qt::Key_Y);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionRedA, kShortcutDescActionRedA, Qt::ShiftModifier, Qt::Key_R);

@@ -612,6 +612,15 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
             _imp->viewerChannels->setCurrentIndex_no_emit(5);
             setDisplayChannels(5, false);
         }
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionMatteOverlay, modifiers, key) ) {
+        int currentIndex = _imp->viewerChannels->activeIndex();
+        if (currentIndex == 6) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(1);
+            setDisplayChannels(1, false);
+        } else {
+            _imp->viewerChannels->setCurrentIndex_no_emit(6);
+            setDisplayChannels(6, false);
+        }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         previousFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
@@ -787,6 +796,9 @@ ViewerTab::setDisplayChannels(int i, bool setBothInputs)
             break;
         case 5:
             channels = Natron::eDisplayChannelsA;
+            break;
+        case 6:
+            channels = Natron::eDisplayChannelsMatte;
             break;
         default:
             channels = Natron::eDisplayChannelsRGB;

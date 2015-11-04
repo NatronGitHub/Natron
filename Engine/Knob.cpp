@@ -2532,8 +2532,8 @@ KnobHelper::slaveTo(int dimension,
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double,int,int) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)) );
         
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,int,int) ) );
+        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,double,double) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL(animationRemoved(int) ),
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
         

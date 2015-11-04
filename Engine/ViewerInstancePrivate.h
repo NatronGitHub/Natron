@@ -67,7 +67,8 @@ typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
+    RenderViewerArgs(const boost::shared_ptr<const Natron::Image> &inputImage_,
+                     const boost::shared_ptr<const Natron::Image> &matteImage_,
                      const TextureRect & texRect_,
                      Natron::DisplayChannelsEnum channels_,
                      Natron::ImagePremultiplicationEnum srcPremult_,
@@ -79,6 +80,7 @@ struct RenderViewerArgs
                      const Natron::Color::Lut* colorSpace_,
                      int alphaChannelIndex_)
     : inputImage(inputImage_)
+    , matteImage(matteImage_)
     , texRect(texRect_)
     , channels(channels_)
     , srcPremult(srcPremult_)
@@ -93,6 +95,7 @@ struct RenderViewerArgs
     }
 
     boost::shared_ptr<const Natron::Image> inputImage;
+    boost::shared_ptr<const Natron::Image> matteImage;
     TextureRect texRect;
     Natron::DisplayChannelsEnum channels;
     Natron::ImagePremultiplicationEnum srcPremult;

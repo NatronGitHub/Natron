@@ -170,13 +170,15 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QAction* gAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionGreen, tr("Green"), _imp->viewerChannels);
     QAction* bAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionBlue, tr("Blue"), _imp->viewerChannels);
     QAction* aAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionAlpha, tr("Alpha"), _imp->viewerChannels);
-
+    QAction* matteAction = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionMatteOverlay, tr("Matte"), _imp->viewerChannels);
+    
     _imp->viewerChannels->addAction(lumiAction);
     _imp->viewerChannels->addAction(rgbAction);
     _imp->viewerChannels->addAction(rAction);
     _imp->viewerChannels->addAction(gAction);
     _imp->viewerChannels->addAction(bAction);
     _imp->viewerChannels->addAction(aAction);
+    _imp->viewerChannels->addAction(matteAction);
     _imp->viewerChannels->setCurrentIndex(1);
     QObject::connect( _imp->viewerChannels, SIGNAL( currentIndexChanged(int) ), this, SLOT( onViewerChannelsChanged(int) ) );
 

@@ -1572,7 +1572,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////
 
 
-    ///// Termination, update last rendered planes
+    ///// Termination
 #ifdef DEBUG
     if (outputPlanes->size() != args.components.size()) {
         qDebug() << "Requested:";
