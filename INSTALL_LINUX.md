@@ -46,7 +46,7 @@ Please download `Qt 4.*`, Natron is known to be buggy when running with Qt 5.
 
 ### Boost
 
-Natron requires `boost serialzation` to compile.
+Natron requires `boost serialization` to compile.
 You can download boost with your package manager.
 Alternatively you can install boost from [boost download](http://www.boost.org/users/download/)
 
@@ -225,15 +225,17 @@ shiboken {
 Installing dependencies using `apt-get` should work on
 any Debian-based distribution (e.g. Ubuntu).
 
+If your version of Ubuntu does not provide cairo 1.12 (required for rotoscoping), use the xorg-edger PPA:
 ```
-sudo apt-get install expat
-sudo apt-get install libglew-dev
+sudo add-apt-repository -y ppa:xorg-edgers/ppa 
 ```
-
-On Ubuntu 12.04 LTS the package can be added with the following ppa:
+If your version of Ubuntu does not provide boost 1.49, the irie PPA can be used:
 ```
-sudo add-apt-repository -y ppa:xorg-edgers/ppa
-sudo apt-get install libcairo2-dev
+sudo add-apt-repository -y ppa:irie/boost 
+```
+Install the required packages:
+```
+sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
 ```
 
 For the config.pri use:
