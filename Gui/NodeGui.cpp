@@ -3409,6 +3409,25 @@ NodeGui::addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point)
     }
 }
 
+void
+NodeGui::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                          const boost::shared_ptr<KnobDouble>& scale,
+                          const boost::shared_ptr<KnobBool>& scaleUniform,
+                          const boost::shared_ptr<KnobDouble>& rotate,
+                          const boost::shared_ptr<KnobDouble>& skewX,
+                          const boost::shared_ptr<KnobDouble>& skewY,
+                          const boost::shared_ptr<KnobChoice>& skewOrder,
+                          const boost::shared_ptr<KnobDouble>& center)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (!_hostOverlay) {
+        _hostOverlay.reset(new HostOverlay(shared_from_this()));
+    }
+    if (_hostOverlay->addTransformInteract(translate,scale,scaleUniform,rotate,skewX,skewY, skewOrder,center)) {
+        getDagGui()->getGui()->redrawAllViewers();
+    }
+
+}
 
 boost::shared_ptr<HostOverlay>
 NodeGui::getHostOverlay() const
@@ -3562,10 +3581,10 @@ NodeGui::hasHostOverlayForParam(const KnobI* param)
 }
 
 void
-NodeGui::removeHostOverlay(KnobI* knob)
+NodeGui::removePositionHostOverlay(KnobI* knob)
 {
     if (_hostOverlay) {
-        _hostOverlay->removeHostOverlay(knob);
+        _hostOverlay->removePositionHostOverlay(knob);
         if (_hostOverlay->isEmpty()) {
             _hostOverlay.reset();
         }
@@ -3686,6 +3705,9 @@ NodeGui::onAvailableViewsChanged()
 void
 NodeGui::onIdentityStateChanged(int inputNb)
 {
+    if (!_passThroughIndicator) {
+        return;
+    }
     NodePtr ptInput;
     NodePtr node = getNode();
     
@@ -3697,7 +3719,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
         return;
     }
     _identityInput = ptInput;
-
+    
     
     _passThroughIndicator->setActive(ptInput.get() != 0);
     if (ptInput) {

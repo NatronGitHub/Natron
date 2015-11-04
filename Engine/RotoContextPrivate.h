@@ -1766,6 +1766,8 @@ struct RotoContextPrivate
         knobs.push_back(center);
         centerKnob = center;
         
+        node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+        
     }
 
     /**

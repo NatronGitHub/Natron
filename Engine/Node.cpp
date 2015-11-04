@@ -162,9 +162,20 @@ namespace { // protect local classes in anonymous namespace
             QMutexLocker k(&compsMutex);
             compsAvailable = other.compsAvailable;
         }
-
+        
     };
     
+    struct NativeTransformOverlayKnobs
+    {
+        boost::shared_ptr<KnobDouble> translate;
+        boost::shared_ptr<KnobDouble> scale;
+        boost::shared_ptr<KnobBool> scaleUniform;
+        boost::shared_ptr<KnobDouble> rotate;
+        boost::shared_ptr<KnobDouble> skewX;
+        boost::shared_ptr<KnobDouble> skewY;
+        boost::shared_ptr<KnobChoice> skewOrder;
+        boost::shared_ptr<KnobDouble> center;
+    };
 }
 
 
@@ -258,6 +269,7 @@ struct Node::Implementation
     , persistentMessageMutex()
     , guiPointer()
     , nativePositionOverlays()
+    , nativeTransformOverlays()
     , pluginPythonModuleMutex()
     , pluginPythonModule()
     , pluginPythonModuleVersion(0)
@@ -476,6 +488,7 @@ struct Node::Implementation
     boost::weak_ptr<NodeGuiI> guiPointer;
     
     std::list<boost::shared_ptr<KnobDouble> > nativePositionOverlays;
+    std::list<NativeTransformOverlayKnobs> nativeTransformOverlays;
     
     mutable QMutex pluginPythonModuleMutex;
     std::string pluginPythonModule;
@@ -5855,11 +5868,11 @@ Node::onOverlayFocusLostDefault(double scaleX,double scaleY)
 }
 
 void
-Node::removeHostOverlay(KnobI* knob)
+Node::removePositionHostOverlay(KnobI* knob)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->removeHostOverlay(knob);
+        nodeGui->removePositionHostOverlay(knob);
     }
 }
 
@@ -5879,6 +5892,38 @@ Node::addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position)
 }
 
 void
+Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                          const boost::shared_ptr<KnobDouble>& scale,
+                          const boost::shared_ptr<KnobBool>& scaleUniform,
+                          const boost::shared_ptr<KnobDouble>& rotate,
+                          const boost::shared_ptr<KnobDouble>& skewX,
+                          const boost::shared_ptr<KnobDouble>& skewY,
+                          const boost::shared_ptr<KnobChoice>& skewOrder,
+                          const boost::shared_ptr<KnobDouble>& center)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (appPTR->isBackground()) {
+        return;
+    }
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        NativeTransformOverlayKnobs t;
+        t.translate = translate;
+        t.scale = scale;
+        t.scaleUniform = scaleUniform;
+        t.rotate = rotate;
+        t.skewX = skewX;
+        t.skewY = skewY;
+        t.skewOrder = skewOrder;
+        t.center = center;
+        _imp->nativeTransformOverlays.push_back(t);
+    } else {
+        nodeGui->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+    }
+
+}
+
+void
 Node::initializeHostOverlays()
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
@@ -5890,6 +5935,11 @@ Node::initializeHostOverlays()
         nodeGui->addDefaultPositionInteract(*it);
     }
     _imp->nativePositionOverlays.clear();
+    for (std::list<NativeTransformOverlayKnobs> ::iterator it = _imp->nativeTransformOverlays.begin(); it != _imp->nativeTransformOverlays.end(); ++it)
+    {
+        nodeGui->addTransformInteract(it->translate, it->scale, it->scaleUniform, it->rotate, it->skewX, it->skewY, it->skewOrder, it->center);
+    }
+    _imp->nativeTransformOverlays.clear();
 }
 
 void

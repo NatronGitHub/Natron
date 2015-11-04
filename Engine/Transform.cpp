@@ -37,27 +37,11 @@
 
 #include "Engine/RectD.h"
 
-#ifndef M_PI
-#define M_PI        3.14159265358979323846264338327950288   /* pi             */
-#endif
+
 
 using namespace Transform;
 namespace Transform {
-double
-toDegrees(double rad)
-{
-    rad = rad * 180.0 / M_PI;
 
-    return rad;
-}
-
-double
-toRadians(double deg)
-{
-    deg = deg * M_PI / 180.0;
-
-    return deg;
-}
 
 Point3D::Point3D()
     : x(0), y(0), z(0)
@@ -367,7 +351,7 @@ matInverse(const Matrix3x3 & M,
 }
 
 
-static
+
 Matrix3x3
 matRotation(double rads)
 {
@@ -377,7 +361,7 @@ matRotation(double rads)
     return Matrix3x3(c,s,0,-s,c,0,0,0,1);
 }
 
-static
+
 Matrix3x3
 matTranslation(double x,
                double y)
@@ -399,7 +383,6 @@ matRotationAroundPoint(double rads,
 
 #endif
 
-static
 Matrix3x3
 matScale(double x,
          double y)
@@ -429,7 +412,7 @@ matScaleAroundPoint(double scaleX,
 
 #endif
 
-static
+
 Matrix3x3
 matSkewXY(double skewX,
           double skewY,
@@ -440,9 +423,7 @@ matSkewXY(double skewX,
                      0., 0., 1.);
 }
 
-#if 0
 // matrix transform from destination to source
-static
 Matrix3x3
 matInverseTransformCanonical(double translateX,
                              double translateY,
@@ -471,7 +452,6 @@ matInverseTransformCanonical(double translateX,
                    matTranslation(-centerX,-centerY) );
 }
 
-#endif
 
 // matrix transform from source to destination
 Matrix3x3

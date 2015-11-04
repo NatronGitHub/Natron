@@ -1008,7 +1008,16 @@ public:
     
     void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     
-    void removeHostOverlay(KnobI* knob);
+    void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                              const boost::shared_ptr<KnobDouble>& scale,
+                              const boost::shared_ptr<KnobBool>& scaleUniform,
+                              const boost::shared_ptr<KnobDouble>& rotate,
+                              const boost::shared_ptr<KnobDouble>& skewX,
+                              const boost::shared_ptr<KnobDouble>& skewY,
+                              const boost::shared_ptr<KnobChoice>& skewOrder,
+                              const boost::shared_ptr<KnobDouble>& center);
+    
+    void removePositionHostOverlay(KnobI* knob);
     
     void initializeHostOverlays();
     

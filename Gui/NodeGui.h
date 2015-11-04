@@ -380,6 +380,15 @@ public:
     
     virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
     
+    virtual void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                                      const boost::shared_ptr<KnobDouble>& scale,
+                                      const boost::shared_ptr<KnobBool>& scaleUniform,
+                                      const boost::shared_ptr<KnobDouble>& rotate,
+                                      const boost::shared_ptr<KnobDouble>& skewX,
+                                      const boost::shared_ptr<KnobDouble>& skewY,
+                                      const boost::shared_ptr<KnobChoice>& skewOrder,
+                                      const boost::shared_ptr<KnobDouble>& center) OVERRIDE FINAL;
+    
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     
     virtual void drawHostOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
@@ -406,7 +415,7 @@ public:
 
     virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void removeHostOverlay(KnobI* knob) OVERRIDE FINAL;
+    virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
     
     virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
     

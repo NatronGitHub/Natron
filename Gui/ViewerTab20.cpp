@@ -738,7 +738,6 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     }
 
 
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     
     /*
      Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
@@ -756,6 +755,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         return false;
     }
     
+    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;

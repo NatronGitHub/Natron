@@ -30,6 +30,8 @@
 
 class QPointF;
 class KnobDouble;
+class KnobChoice;
+class KnobBool;
 class KnobI;
 class OverlaySupport;
 namespace Natron {
@@ -98,6 +100,18 @@ public :
      **/
     virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) = 0;
     
+    /**
+     * @brief Add a default viewer transform overlay for this set of parameters
+     **/
+    virtual void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                                      const boost::shared_ptr<KnobDouble>& scale,
+                                      const boost::shared_ptr<KnobBool>& scaleUniform,
+                                      const boost::shared_ptr<KnobDouble>& rotate,
+                                      const boost::shared_ptr<KnobDouble>& skewX,
+                                      const boost::shared_ptr<KnobDouble>& skewY,
+                                      const boost::shared_ptr<KnobChoice>& skewOrder,
+                                      const boost::shared_ptr<KnobDouble>& center) = 0;
+    
     virtual void drawHostOverlay(double time, double scaleX, double scaleY)  = 0;
     
     virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
@@ -122,7 +136,7 @@ public :
     
     virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
     
-    virtual void removeHostOverlay(KnobI* knob) = 0;
+    virtual void removePositionHostOverlay(KnobI* knob) = 0;
     
     virtual void setPluginIconFilePath(const std::string& filePath) = 0;
     

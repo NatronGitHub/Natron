@@ -210,7 +210,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if (handle) {
             effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
         } else {
-            effect->getNode()->removeHostOverlay(this);
+            effect->getNode()->removePositionHostOverlay(this);
         }
        _hasHostOverlayHandle = handle;
     }
