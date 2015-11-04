@@ -2665,6 +2665,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 if (foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3]) {
                     for (int i = 0; i < 4; ++i) {
                         if (foundEnabled[i]->getParentKnob() == mainPage) {
+                            foundEnabled[i]->setAddNewLine(i == 3);
                             mainPage->removeKnob(foundEnabled[i].get());
                             mainPage->addKnob(foundEnabled[i]);
                         }
