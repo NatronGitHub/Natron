@@ -1798,6 +1798,7 @@ struct RotoContextPrivate
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
         center->setDefaultAllDimensionsEnabled(false);
         center->setDefaultValuesAreNormalized(true);
+        center->setAddNewLine(false);
         center->setDefaultValue(0.5, 0);
         center->setDefaultValue(0.5, 1);
         transformPage->addKnob(center);

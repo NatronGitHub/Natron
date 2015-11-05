@@ -1392,8 +1392,8 @@ Knob<T>::unSlave(int dimension,
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
-                             SLOT( onMasterChanged(int,int) ) );
+        //QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
+        //                     SLOT( onMasterChanged(int,int) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
