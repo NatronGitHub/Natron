@@ -1354,8 +1354,8 @@ KnobHelper::evaluateValueChange(int dimension,
         computeHasModifications();
         if (!app || time == app->getTimeLine()->currentFrame()) {
             _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-            _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
         }
+        _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
         checkAnimationLevel(dimension);
     }
 }
@@ -2926,9 +2926,9 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,int thisDimensio
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     
+    bool alreadyListening = false;
     if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
         // If this knob is already a dependency of the knob, don't reconnec
-        bool alreadyListening = false;
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
             if (it->lock() == knob) {
                 alreadyListening = true;
@@ -2948,7 +2948,7 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,int thisDimensio
             slave->_imp->expressions[fromExprDimension].dependencies.push_back(std::make_pair(this,thisDimension));
         }
     }
-    if (knob.get() != this) {
+    if (knob.get() != this && !alreadyListening) {
         QWriteLocker l(&_imp->mastersMutex);
         
         _imp->listeners.push_back(knob);

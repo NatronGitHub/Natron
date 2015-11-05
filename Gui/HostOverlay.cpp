@@ -36,6 +36,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
+#include "Engine/Curve.h"
 #include "Engine/Node.h"
 #include "Engine/Transform.h"
 
@@ -1671,31 +1672,38 @@ HostOverlayPrivate::penUp(double /*time*/,
     if (!it->_interactiveDrag && it->_mouseState != TransformInteract::eReleased) {
         // no need to redraw overlay since it is slave to the paramaters
         
+        /*
+         Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
+         see Knob::setValue
+         */
         KnobHolder* holder = node.lock()->getNode()->getLiveInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, Natron::eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, Natron::eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, Natron::eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
-            knob->setValue(it->_rotateDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_rotateDrag, 0, Natron::eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
-            knob->setValue(it->_skewXDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_skewXDrag, 0, Natron::eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
-            knob->setValue(it->_skewYDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_skewYDrag, 0, Natron::eValueChangedReasonPluginEdited,&k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         

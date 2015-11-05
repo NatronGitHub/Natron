@@ -730,52 +730,67 @@ RotoContext::onRippleEditChanged(bool enabled)
 }
 
 void
-RotoContext::getMaskRegionOfDefinition(double time,
-                                       int /*view*/,
-                                       RectD* rod) // rod is in canonical coordinates
-const
+RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int /*view*/, RectD* rod) const
 {
     
     QMutexLocker l(&_imp->rotoContextMutex);
     bool first = true;
 
-    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
-        RotoItems items = (*it)->getItems_mt_safe();
-        for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-            Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
-            if (isBezier && !isStroke) {
-                if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
-                    RectD splineRoD = isBezier->getBoundingBox(time);
-                    if ( splineRoD.isNull() ) {
-                        continue;
-                    }
-                    
-                    if (first) {
-                        first = false;
-                        *rod = splineRoD;
-                    } else {
-                        rod->merge(splineRoD);
-                    }
+    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+        Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
+        if (isBezier && !isStroke) {
+            if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
+                RectD splineRoD = isBezier->getBoundingBox(time);
+                if ( splineRoD.isNull() ) {
+                    continue;
                 }
-            } else if (isStroke) {
-                RectD strokeRod;
-                if (isStroke->isActivated(time)) {
-                    if (isStroke == _imp->strokeBeingPainted.get()) {
-                        strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
-                    } else {
-                        strokeRod = isStroke->getBoundingBox(time);
-                    }
-                    if (first) {
-                        first = false;
-                        *rod = strokeRod;
-                    } else {
-                        rod->merge(strokeRod);
-                    }
+                
+                if (first) {
+                    first = false;
+                    *rod = splineRoD;
+                } else {
+                    rod->merge(splineRoD);
+                }
+            }
+        } else if (isStroke) {
+            RectD strokeRod;
+            if (isStroke->isActivated(time)) {
+                if (isStroke == _imp->strokeBeingPainted.get()) {
+                    strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
+                } else {
+                    strokeRod = isStroke->getBoundingBox(time);
+                }
+                if (first) {
+                    first = false;
+                    *rod = strokeRod;
+                } else {
+                    rod->merge(strokeRod);
                 }
             }
         }
     }
+
+}
+
+void
+RotoContext::getMaskRegionOfDefinition(double time,
+                                       int view,
+                                       RectD* rod) // rod is in canonical coordinates
+const
+{
+    std::list<boost::shared_ptr<RotoItem> > allItems;
+    {
+        QMutexLocker l(&_imp->rotoContextMutex);
+        
+        for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+            RotoItems items = (*it)->getItems_mt_safe();
+            for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+                allItems.push_back(*it2);
+            }
+        }
+    }
+    getItemsRegionOfDefinition(allItems, time, view, rod);
 }
 
 bool
@@ -1252,6 +1267,117 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     
 } // deselectInternal
 
+void
+RotoContext::resetTransformsCenter(bool doClone, bool doTransform)
+{
+    double time = getNode()->getApp()->getTimeLine()->currentFrame();
+    RectD bbox;
+    getItemsRegionOfDefinition(getSelectedItems(),time, 0, &bbox);
+    if (doTransform) {
+        boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
+        centerKnob->beginChanges();
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., Natron::eValueChangedReasonNatronInternalEdited);
+        centerKnob->endChanges();
+    }
+    if (doClone) {
+        boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
+        centerKnob->beginChanges();
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., Natron::eValueChangedReasonNatronInternalEdited);
+        centerKnob->endChanges();
+    }
+}
+
+void
+RotoContext::resetTransformCenter()
+{
+    resetTransformsCenter(false, true);
+}
+
+void
+RotoContext::resetCloneTransformCenter()
+{
+    resetTransformsCenter(true, false);
+}
+
+void
+RotoContext::resetTransformInternal(const boost::shared_ptr<KnobDouble>& translate,
+                                    const boost::shared_ptr<KnobDouble>& scale,
+                                    const boost::shared_ptr<KnobDouble>& center,
+                                    const boost::shared_ptr<KnobDouble>& rotate,
+                                    const boost::shared_ptr<KnobDouble>& skewX,
+                                    const boost::shared_ptr<KnobDouble>& skewY,
+                                    const boost::shared_ptr<KnobBool>& scaleUniform,
+                                    const boost::shared_ptr<KnobChoice>& skewOrder)
+{
+    std::list<KnobI*> knobs;
+    knobs.push_back(translate.get());
+    knobs.push_back(scale.get());
+    knobs.push_back(center.get());
+    knobs.push_back(rotate.get());
+    knobs.push_back(skewX.get());
+    knobs.push_back(skewY.get());
+    knobs.push_back(scaleUniform.get());
+    knobs.push_back(skewOrder.get());
+    bool wasEnabled = translate->isEnabled(0);
+    for (std::list<KnobI*>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (int i = 0; i < (*it)->getDimension(); ++i) {
+            (*it)->resetToDefaultValue(i);
+        }
+        (*it)->setAllDimensionsEnabled(wasEnabled);
+    }
+    
+}
+
+void
+RotoContext::resetTransform()
+{
+    boost::shared_ptr<KnobDouble> translate = _imp->translateKnob.lock();
+    boost::shared_ptr<KnobDouble> center = _imp->centerKnob.lock();
+    boost::shared_ptr<KnobDouble> scale = _imp->scaleKnob.lock();
+    boost::shared_ptr<KnobDouble> rotate = _imp->rotateKnob.lock();
+    boost::shared_ptr<KnobBool> uniform = _imp->scaleUniformKnob.lock();
+    boost::shared_ptr<KnobDouble> skewX = _imp->skewXKnob.lock();
+    boost::shared_ptr<KnobDouble> skewY = _imp->skewYKnob.lock();
+    boost::shared_ptr<KnobChoice> skewOrder = _imp->skewOrderKnob.lock();
+    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
+
+}
+
+void
+RotoContext::resetCloneTransform()
+{
+    boost::shared_ptr<KnobDouble> translate = _imp->cloneTranslateKnob.lock();
+    boost::shared_ptr<KnobDouble> center = _imp->cloneCenterKnob.lock();
+    boost::shared_ptr<KnobDouble> scale = _imp->cloneScaleKnob.lock();
+    boost::shared_ptr<KnobDouble> rotate = _imp->cloneRotateKnob.lock();
+    boost::shared_ptr<KnobBool> uniform = _imp->cloneUniformKnob.lock();
+    boost::shared_ptr<KnobDouble> skewX = _imp->cloneSkewXKnob.lock();
+    boost::shared_ptr<KnobDouble> skewY = _imp->cloneSkewYKnob.lock();
+    boost::shared_ptr<KnobChoice> skewOrder = _imp->cloneSkewOrderKnob.lock();
+    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
+}
+
+void
+RotoContext::knobChanged(KnobI* k,
+                 Natron::ValueChangedReasonEnum /*reason*/,
+                 int /*view*/,
+                 double /*time*/,
+                 bool /*originatedFromMainThread*/)
+{
+    if (k == _imp->resetCenterKnob.lock().get()) {
+        resetTransformCenter();
+    } else if (k == _imp->resetCloneCenterKnob.lock().get()) {
+        resetCloneTransformCenter();
+    } else if (k == _imp->resetTransformKnob.lock().get()) {
+        resetTransform();
+    } else if (k == _imp->resetCloneTransformKnob.lock().get()) {
+        resetCloneTransform();
+    }
+}
 
 boost::shared_ptr<RotoItem>
 RotoContext::getLastItemLocked() const

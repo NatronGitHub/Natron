@@ -1393,8 +1393,8 @@ Knob<T>::unSlave(int dimension,
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
-                             SLOT( onMasterChanged(int,int) ) );
+        //QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
+        //                     SLOT( onMasterChanged(int,int) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
@@ -2312,6 +2312,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
     }
     cloneExtraData(other,dimension);
     if (getHolder()) {
@@ -2353,6 +2354,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     if (hasChanged) {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+            _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
         }
     }
     hasChanged |= cloneExtraDataAndCheckIfChanged(other);
@@ -2395,6 +2397,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
     }
     cloneExtraData(other,offset,range,dimension);
     if (getHolder()) {
@@ -2439,6 +2442,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 }
                 if (!keysList.empty()) {
                     _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)Natron::eValueChangedReasonNatronInternalEdited);
+                    _signalSlotHandler->s_updateDependencies(i, Natron::eValueChangedReasonPluginEdited);
                 }
             }
             checkAnimationLevel(i);

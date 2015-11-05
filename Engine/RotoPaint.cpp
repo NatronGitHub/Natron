@@ -187,6 +187,19 @@ RotoPaint::initializeKnobs()
     
 }
 
+void
+RotoPaint::knobChanged(KnobI* k,
+                 Natron::ValueChangedReasonEnum reason,
+                 int view,
+                 double time,
+                 bool originatedFromMainThread)
+{
+    boost::shared_ptr<RotoContext> ctx = getNode()->getRotoContext();
+    if (!ctx) {
+        return;
+    }
+    ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+}
 
 void
 RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const

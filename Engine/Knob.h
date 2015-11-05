@@ -126,7 +126,7 @@ public:
         Q_EMIT knobSlaved(dim,slaved);
     }
     
-    void s_setValueWithUndoStack(Variant v,
+    void s_setValueWithUndoStack(const Variant& v,
                                  int dim)
     {
         Q_EMIT setValueWithUndoStack(v, dim);

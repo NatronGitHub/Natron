@@ -193,7 +193,6 @@ public:
     void setCurveFinished(bool finished);
     bool isCurveFinished() const;
     
-    void resetCenterKnob();
 
     /**
      * @brief Removes the control point at the given index if any. The feather point will also be removed , at the same position.

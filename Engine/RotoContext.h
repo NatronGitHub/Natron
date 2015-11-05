@@ -215,6 +215,12 @@ public:
                                    int view,
                                    RectD* rod) const; //!< rod in canonical coordinates
 
+private:
+    
+    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int view, RectD* rod) const;
+    
+public:
+    
     
    
     boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
@@ -339,6 +345,29 @@ public:
 #endif
     boost::shared_ptr<KnobColor> getColorKnob() const;
 
+    void resetTransformCenter();
+    
+    void resetCloneTransformCenter();
+    
+    void resetTransformsCenter(bool doClone, bool doTransform);
+    
+    void resetTransform();
+    
+    void resetCloneTransform();
+    
+private:
+    
+    void resetTransformInternal(const boost::shared_ptr<KnobDouble>& translate,
+                                const boost::shared_ptr<KnobDouble>& scale,
+                                const boost::shared_ptr<KnobDouble>& center,
+                                const boost::shared_ptr<KnobDouble>& rotate,
+                                const boost::shared_ptr<KnobDouble>& skewX,
+                                const boost::shared_ptr<KnobDouble>& skewY,
+                                const boost::shared_ptr<KnobBool>& scaleUniform,
+                                const boost::shared_ptr<KnobChoice>& skewOrder);
+    
+public:
+    
 
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
@@ -408,6 +437,12 @@ public:
     bool isDoingNeatRender() const;
     
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
+    
+    void knobChanged(KnobI* k,
+                     Natron::ValueChangedReasonEnum reason,
+                     int view,
+                     double time,
+                     bool originatedFromMainThread);
     
 Q_SIGNALS:
 
