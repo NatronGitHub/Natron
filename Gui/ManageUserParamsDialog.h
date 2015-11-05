@@ -36,7 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(uninitialized)
 
 class DockablePanel;
-
+class QTreeWidgetItem;
 
 struct ManageUserParamsDialogPrivate;
 class ManageUserParamsDialog : public QDialog
@@ -68,7 +68,11 @@ public Q_SLOTS:
     
     void onSelectionChanged();
     
+    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    
 private:
+    
+    void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
     
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };

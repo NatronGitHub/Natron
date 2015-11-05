@@ -34,9 +34,8 @@
 #include <QtCore/QReadWriteLock>
 
 #include "Engine/Curve.h"
+#include "Engine/EngineFwd.h"
 
-class KnobDouble;
-class Bezier;
 
 struct BezierCPPrivate
 {

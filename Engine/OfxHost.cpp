@@ -144,8 +144,10 @@ struct Natron::OfxHostPrivate
     std::list<QMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
+    std::string loadingPluginID; // ID of the plugin being loaded
+    int loadingPluginVersionMajor;
+    int loadingPluginVersionMinor;
 
-    
     OfxHostPrivate()
     : imageEffectPluginCache()
     , globalTLS()
@@ -153,6 +155,9 @@ struct Natron::OfxHostPrivate
     , pluginsMutexes()
     , pluginsMutexesLock(0)
 #endif
+    , loadingPluginID()
+    , loadingPluginVersionMajor(0)
+    , loadingPluginVersionMinor(0)
     {
         
     }
@@ -199,10 +204,11 @@ Natron::OfxHost::setProperties()
        Baselight
        IRIDAS Framecycler
        com.chinadigitalvideo.dx
+       com.newblue.titlerpro
        Ramen
        TuttleOfx
        fr.inria.Natron
-     
+
      Other possible names:
      Nuke
      Autodesk Toxik Render Utility
@@ -227,7 +233,8 @@ Natron::OfxHost::setProperties()
 
     // see hostStuffs in ofxhImageEffect.cpp
 
-    _properties.setStringProperty( kOfxPropName,appPTR->getCurrentSettings()->getHostName() );
+    _properties.setStringProperty( kOfxPropName, appPTR->getCurrentSettings()->getHostName() );
+    _properties.setGetHook(kOfxPropName, this);
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.4
     _properties.setIntProperty(kOfxPropAPIVersion, 4, 1);
@@ -300,6 +307,89 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 #endif
     
+}
+
+static
+Settings::KnownHostNameEnum getHostNameProxy(const std::string& pluginID, int pluginVersionMajor, int pluginVersionMinor)
+{
+    Q_UNUSED(pluginVersionMajor);
+    Q_UNUSED(pluginVersionMinor);
+
+    assert(!pluginID.empty());
+
+    static const std::string neatvideo("com.absoft.neatvideo");
+    static const std::string hitfilm("com.FXHOME.HitFilm.");
+    static const std::string redgiant("com.redgiantsoftware.Universe_");
+    static const std::string digitalfilmtools("com.digitalfilmtools.");
+    //static const std::string digitalanarchy("com.digitalanarchy.");
+
+    if (!pluginID.compare(0, neatvideo.size(), neatvideo)) {
+        // Neat Video plugins work with Nuke, Resolve and Mistika
+        // https://www.neatvideo.com/download.html
+        // tested with neat video 4.0.9, maj=4,min=0
+        return Settings::eKnownHostNameNuke;
+    } else if (!pluginID.compare(0, hitfilm.size(), hitfilm)) {
+        // HitFilm plugins (work with Vegas, Resolve and TitlerPro,
+        // Vegas and TitlerPro support more plugins than Resolve
+        // tested with HitFilm 3.1.0113
+        // maj=1 or 2 (depends on plugin), min=0
+        return Settings::eKnownHostNameVegas;
+    } else if (!pluginID.compare(0, redgiant.size(), redgiant)) {
+        // Red Giant Universe plugins 1.5 work with Vegas and Resolve
+        return Settings::eKnownHostNameVegas;
+    } else if (!pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools)) {
+        // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
+        // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
+        return Settings::eKnownHostNameNuke;
+    //} else if (!pluginID.compare(0, digitalanarchy.size(), digitalanarchy)) {
+    //    // Digital Anarchy plug-ins work with Scratch, Resolve, and any OFX host, but they are tested with Scratch.
+    //    // http://digitalanarchy.com/demos/psd_mac.html
+    //    return Settings::eKnownHostNameScratch;
+    }
+    //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
+    
+    return Settings::eKnownHostNameNone;
+}
+
+const std::string &
+Natron::OfxHost::getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC
+{
+    if (name == kOfxPropName && n == 0) {
+        // depending on the current plugin ID and version, return a compatible host name.
+        std::string pluginID;
+        int pluginVersionMajor = 0;
+        int pluginVersionMinor = 0;
+        if (!_imp->loadingPluginID.empty()) {
+            // plugin is not yet created: we are loading or describing it
+            pluginID = _imp->loadingPluginID;
+            pluginVersionMajor = _imp->loadingPluginVersionMajor;
+            pluginVersionMinor = _imp->loadingPluginVersionMinor;
+        } else if (_imp->globalTLS.hasLocalData()) {
+            const GlobalOFXTLS& tls = _imp->globalTLS.localData();
+            if (tls.lastEffectCallingMainEntry) {
+                pluginID = tls.lastEffectCallingMainEntry->getPlugin()->getIdentifier();
+                pluginVersionMajor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
+                pluginVersionMinor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+            }
+        }
+        
+        ///Proxy known plug-ins that filter hostnames
+        if (pluginID.empty()) {
+            qDebug() << "OfxHost::getStringProperty("kOfxPropName"): Error: no plugin ID! (ignoring)";
+        } else {
+            Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
+            if (e != Settings::eKnownHostNameNone) {
+                const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
+                return ret;
+            }
+        }
+        
+        // kOfxPropName was set at host creation, let the value decided by the user
+        return _properties.getStringPropertyRaw(kOfxPropName);
+    }
+    else {
+        throw OFX::Host::Property::Exception(kOfxStatErrValue);
+    }
 }
 
 OFX::Host::ImageEffect::Instance*
@@ -488,9 +578,13 @@ OFX::Host::ImageEffect::Descriptor*
 Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                              Natron::ContextEnum* ctx)
 {
+    _imp->loadingPluginID = plugin->getRawIdentifier();
+    _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
+    _imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
-    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
+    // it calls kOfxActionLoad on the plugin and kOfxActionDescribe, which may set properties (including supported contexts)
     try {
         pluginHandle = plugin->getPluginHandle();
     } catch (...) {
@@ -514,6 +608,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
     assert(ph->getOfxPlugin()->mainEntry);
     Q_UNUSED(ph);
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
+    //This will call kOfxImageEffectActionDescribeInContext
     desc = plugin->getContext(context);
     if (!desc) {
         throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
@@ -538,6 +633,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
 
     
     *ctx = OfxEffectInstance::mapToContextEnum(context);
+    _imp->loadingPluginID.clear();
     return desc;
 }
 
@@ -646,6 +742,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         ifs.close();
     }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
+    _imp->loadingPluginID.clear(); // finished loading plugins
 
     // write the cache NOW (it won't change anyway)
     /// flush out the current cache
@@ -814,10 +911,17 @@ Natron::OfxHost::clearPluginsLoadedCache()
 }
 
 void
-Natron::OfxHost::loadingStatus(const std::string & pluginId)
+Natron::OfxHost::loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor)
 {
-    if (appPTR) {
-        appPTR->setLoadingStatus( "OpenFX: " + QString( pluginId.c_str() ) );
+    // set the pluginID in case the plug-in tries to fetch the hostname property
+    _imp->loadingPluginID = pluginId;
+    _imp->loadingPluginVersionMajor = versionMajor;
+    _imp->loadingPluginVersionMinor = versionMinor;
+    if (loading && appPTR) {
+        appPTR->setLoadingStatus( "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor) );
+#     ifdef DEBUG
+        qDebug() << "OpenFX: loading " + QString( pluginId.c_str() ) + " v" + QString::number(versionMajor) + '.' + QString::number(versionMinor);
+#     endif
     }
 }
 

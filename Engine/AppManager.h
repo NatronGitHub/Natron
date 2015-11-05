@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/EngineFwd.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -50,29 +51,6 @@ CLANG_DIAG_ON(deprecated)
 class QMutex;
 class QChar;
 
-class CacheEntryHolder;
-class AppInstance;
-class Format;
-class Settings;
-class KnobHolder;
-class NodeSerialization;
-class KnobSerialization;
-class RectI;
-class CLArgs;
-namespace Natron {
-class OfxImageEffectInstance;
-class Node;
-class EffectInstance;
-class LibraryBinary;
-class ImageKey;
-class FrameKey;
-class Image;
-class ImageParams;
-class FrameParams;
-class FrameEntry;
-class Plugin;
-class CacheSignalEmitter;
-}
 
 namespace Natron {
 enum AppInstanceStatusEnum
@@ -80,6 +58,15 @@ enum AppInstanceStatusEnum
     eAppInstanceStatusInactive = 0,     //< the app has not been loaded yet or has been closed already
     eAppInstanceStatusActive     //< the app is active and can be used
 };
+}
+
+namespace OFX {
+    namespace Host {
+        namespace ImageEffect {
+            class ImageEffectPlugin;
+            class Descriptor;
+        }
+    }
 }
 
 struct AppInstanceRef
@@ -430,6 +417,9 @@ public:
     static std::string isImageFileSupportedByNatron(const std::string& ext);
     
     void setOFXHostHandle(void* handle);
+    
+    OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                    Natron::ContextEnum* ctx);
     
 public Q_SLOTS:
     

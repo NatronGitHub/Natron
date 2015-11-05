@@ -57,6 +57,7 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
 #include "Global/MemoryInfo.h"
+#include "Engine/EngineFwd.h"
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries
 #define NATRON_CACHE_LIMIT_PERCENT 0.9

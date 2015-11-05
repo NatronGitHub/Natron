@@ -30,6 +30,7 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+#include "Engine/EngineFwd.h"
 
 class GroupInput
 : public NoOpBase
@@ -81,7 +82,7 @@ public:
     virtual void knobChanged(KnobI* k,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
     

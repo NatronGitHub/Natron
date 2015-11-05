@@ -29,6 +29,8 @@
 
 #include "Global/Macros.h"
 #include "Engine/Singleton.h"
+#include "Engine/EngineFwd.h"
+
 
 namespace Natron {
 class LogPrivate;

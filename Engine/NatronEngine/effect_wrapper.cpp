@@ -22,6 +22,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include <RectD.h>
 #include <RotoWrapper.h>
 #include <list>
+#include <map>
 #include <vector>
 
 
@@ -425,6 +426,52 @@ static PyObject* Sbk_EffectFunc_endChanges(PyObject* self)
         return 0;
     }
     Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getAvailableLayers()const
+            // Begin code injection
+
+            std::map<ImageLayer,Effect*> comps = cppSelf->getAvailableLayers();
+
+            PyObject* ret = PyDict_New();
+            std::map<ImageLayer,Effect*>::iterator it = comps.begin();
+            for (; it != comps.end(); ++it) {
+                const ImageLayer& key = it->first;
+                Effect* value = it->second;
+                PyObject* pyKey = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &key);
+                PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(pyValue);
+                PyDict_SetItem(ret, pyKey, pyValue);
+                Py_DECREF(pyKey);
+                Py_DECREF(pyValue);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_EffectFunc_getColor(PyObject* self)
@@ -1307,6 +1354,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
+    {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},

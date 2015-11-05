@@ -26,6 +26,9 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
+
+
 namespace Natron {
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)

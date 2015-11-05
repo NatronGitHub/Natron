@@ -32,10 +32,10 @@
 
 #include "Engine/RectI.h"
 #include "Engine/NonKeyParams.h"
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 
-class Image;
 class FrameParams
         : public NonKeyParams
 {

@@ -33,6 +33,7 @@
 
 
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
 
 template<typename EntryType>

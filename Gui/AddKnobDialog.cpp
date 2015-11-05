@@ -1446,7 +1446,10 @@ AddKnobDialog::onOkClicked()
                     }
                 }
             } else {
-                std::vector<boost::shared_ptr<KnobI> > children = oldParentPage->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children;
+                if (oldParentPage) {
+                    children = oldParentPage->getChildren();
+                }
                 for (U32 i = 0; i < children.size(); ++i) {
                     if (children[i] == _imp->knob) {
                         oldIndexInGroup = i;

@@ -722,6 +722,7 @@ KnobGuiPath::KnobGuiPath(boost::shared_ptr<KnobI> knob,
     , _removePathButton(0)
     , _editPathButton(0)
     , _isInsertingItem(false)
+    , _dragAndDropping(false)
 {
     _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
     assert(_knob.lock());
@@ -742,19 +743,20 @@ class PathKnobTableItemDelegate
 : public QStyledItemDelegate
 {
     TableView* _view;
-    
+    bool _isStringList;
 public:
     
-    explicit PathKnobTableItemDelegate(TableView* view);
+    explicit PathKnobTableItemDelegate(TableView* view, bool isStringList);
     
 private:
     
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
 };
 
-PathKnobTableItemDelegate::PathKnobTableItemDelegate(TableView* view)
+PathKnobTableItemDelegate::PathKnobTableItemDelegate(TableView* view,bool isStringList)
 : QStyledItemDelegate(view)
 , _view(view)
+, _isStringList(isStringList)
 {
 }
 
@@ -801,7 +803,7 @@ PathKnobTableItemDelegate::paint(QPainter * painter,
     }
     QRect r;
     QString str = item->data(Qt::DisplayRole).toString();
-    if (index.column() == 0) {
+    if (!_isStringList && index.column() == 0) {
         ///Env vars are used between brackets
         str.prepend('[');
         str.append(']');
@@ -820,6 +822,8 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         
         _table = new TableView( _mainContainer );
+        QObject::connect( _table,SIGNAL( aboutToDrop() ),this,SLOT( onItemAboutToDrop() ) );
+        QObject::connect( _table,SIGNAL( itemDropped() ),this,SLOT( onItemDropped() ) );
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         //    QObject::connect( _table, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
   
@@ -831,15 +835,21 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
 #else
         _table->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 #endif
+        _table->setDragDropMode(QAbstractItemView::InternalMove);
         _table->header()->setStretchLastSection(true);
-        _table->setItemDelegate(new PathKnobTableItemDelegate(_table));
+        _table->setUniformRowHeights(true);
+        _table->setItemDelegate(new PathKnobTableItemDelegate(_table, knob->getIsStringList()));
         
         _model = new TableModel(0,0,_table);
         QObject::connect( _model,SIGNAL( s_itemChanged(TableItem*) ),this,SLOT( onItemDataChanged(TableItem*) ) );
         
-        _table->setTableModel(_model);
         
+        _table->setTableModel(_model);
         _table->setColumnCount(2);
+        if (knob->getIsStringList()) {
+            _table->setColumnHidden(1, true);
+            _table->header()->hide();
+        }
         QStringList headers;
         headers << tr("Variable name") << tr("Value");
         _table->setHorizontalHeaderLabels(headers);
@@ -852,16 +862,22 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         buttonsLayout->setContentsMargins(0, 0, 0, 0);
         
         _addPathButton = new Button( tr("Add"),buttonsContainer );
-        _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+        if (!knob->getIsStringList()) {
+            _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+        }
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
-        _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+        if (!knob->getIsStringList()) {
+            _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+        }
         
         _editPathButton = new Button( tr("Edit"), buttonsContainer);
         QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
         _editPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
+        
+        
         
         buttonsLayout->addWidget(_addPathButton);
         buttonsLayout->addWidget(_removePathButton);
@@ -870,6 +886,10 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         
         mainLayout->addWidget(_table);
         mainLayout->addWidget(buttonsContainer);
+        
+        if (knob->getIsStringList()) {
+            _editPathButton->hide();
+        }
         
     } else { // _knob->isMultiPath()
         QHBoxLayout* mainLayout = new QHBoxLayout(_mainContainer);
@@ -889,6 +909,8 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         
         mainLayout->addWidget(_lineEdit);
         mainLayout->addWidget(_openFileButton);
+        
+       
     }
     
     layout->addWidget(_mainContainer);
@@ -897,30 +919,50 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
 void
 KnobGuiPath::onAddButtonClicked()
 {
-    std::vector<std::string> filters;
-    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(),getGui(),true );
-    
-    if ( dialog.exec() ) {
-        std::string dirPath = dialog.selectedDirectory();
-        if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
-            dirPath.erase(dirPath.size() - 1, 1);
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (knob->getIsStringList()) {
+        QStringList existingEntries;
+        for (Variables::iterator it = _items.begin(); it!=_items.end(); ++it) {
+            existingEntries.push_back(it->second.varName->text());
         }
-        updateLastOpened(dirPath.c_str());
         
+        QString newItemName = "Placeholder";
+        int i = 1;
+        while (existingEntries.contains(newItemName)) {
+            newItemName = "Placeholder" + QString::number(i);
+            ++i;
+        }
         
-        std::string oldValue = _knob.lock()->getValue();
-        
+        std::string oldValue = knob->getValue();
         int rowCount = (int)_items.size();
-        
-        QString varName = QString(tr("Path") + "%1").arg(rowCount);
-        createItem(rowCount, dirPath.c_str(), varName);
+        createItem(rowCount, QString(), newItemName);
         std::string newPath = rebuildPath();
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath));
+    } else {
+        std::vector<std::string> filters;
+        SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(),getGui(),true);
         
-       
-        
-        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+        if (dialog.exec()) {
+            std::string dirPath = dialog.selectedDirectory();
+            if (!dirPath.empty() && dirPath[dirPath.size() - 1] == '/') {
+                dirPath.erase(dirPath.size() - 1, 1);
+            }
+            updateLastOpened(dirPath.c_str());
+            
+            
+            std::string oldValue = knob->getValue();
+            
+            int rowCount = (int)_items.size();
+            
+            QString varName = QString(tr("Path") + "%1").arg(rowCount);
+            createItem(rowCount, dirPath.c_str(), varName);
+            std::string newPath = rebuildPath();
+            
+            
+            
+            pushUndoCommand( new KnobUndoCommand<std::string>( this,oldValue,newPath ) );
+        }
     }
-
 }
 
 void
@@ -1054,14 +1096,14 @@ KnobGuiPath::updateGUI(int /*dimension*/)
     QString path(_knob.lock()->getValue().c_str());
     
     if (_knob.lock()->isMultiPath()) {
-        std::map<std::string,std::string> variables;
-        Natron::Project::makeEnvMap(path.toStdString(), variables);
+        std::vector<std::pair<std::string,std::string> > variables;
+        Natron::Project::makeEnvMapUnordered(path.toStdString(), variables);
         
         
         _model->clear();
         _items.clear();
         int i = 0;
-        for (std::map<std::string,std::string> ::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
+        for (std::vector<std::pair<std::string,std::string> >::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
             createItem(i, it->second.c_str(), it->first.c_str());
         }
     } else {
@@ -1076,9 +1118,14 @@ KnobGuiPath::createItem(int row,const QString& value,const QString& varName)
     
     Qt::ItemFlags flags;
     
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    
     ///Project env var is disabled and uneditable and set automatically by the project
     if (varName != NATRON_PROJECT_ENV_VAR_NAME && varName != NATRON_OCIO_ENV_VAR_NAME) {
         flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+        if (knob->getIsStringList()) {
+            flags |= Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsUserCheckable;
+        }
     }
     TableItem* cell0 = new TableItem;
     cell0->setText(varName);
@@ -1157,9 +1204,35 @@ boost::shared_ptr<KnobI> KnobGuiPath::getKnob() const
 }
 
 void
+KnobGuiPath::onItemAboutToDrop()
+{
+    _dragAndDropping = true;
+}
+
+void
+KnobGuiPath::onItemDropped()
+{
+    _items.clear();
+    
+    ///Rebuild the mapping
+    int rowCount = _table->rowCount();
+    int colCount = _table->columnCount();
+    assert(colCount == 2);
+    for (int i = 0; i < rowCount; ++i) {
+        Row& r = _items[i];
+        r.varName = _table->item(i, 0);
+        r.value = _table->item(i, 1);
+    }
+    _dragAndDropping = false;
+    
+    //Now refresh the knob balue
+    onItemDataChanged(0);
+}
+
+void
 KnobGuiPath::onItemDataChanged(TableItem* /*item*/)
 {
-    if (_isInsertingItem) {
+    if (_isInsertingItem || _dragAndDropping) {
         return;
     }
     boost::shared_ptr<KnobPath> knob = _knob.lock();

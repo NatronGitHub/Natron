@@ -272,6 +272,7 @@ CurveWidget::onCurveChanged()
         }
     }
     _imp->_selectedKeyFrames = copy;
+    refreshSelectedKeysBbox();
     update();
 }
 
@@ -608,9 +609,13 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
             return;
         }
         std::vector<KeyFrame> keys(1);
-        if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesTimeClampedToIntegers()) {
+        boost::shared_ptr<Curve> curve = (*foundCurveNearby)->getInternalCurve();
+        if (!curve) {
+            return;
+        }
+        if (curve->areKeyFramesTimeClampedToIntegers()) {
             xCurve = std::floor(xCurve + 0.5);
-        } else if ((*foundCurveNearby)->getInternalCurve()->areKeyFramesValuesClampedToBooleans()) {
+        } else if (curve->areKeyFramesValuesClampedToBooleans()) {
             xCurve = double((bool)xCurve);
         }
         keys[0] = KeyFrame(xCurve,yCurve);

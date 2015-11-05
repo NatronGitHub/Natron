@@ -557,7 +557,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                  about case 1
                  */
                 
-                bool fetchUserSelectedComponentsUpstream = inputEffectIdentity->getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
+                bool fetchUserSelectedComponentsUpstream = getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
                 
                 if (fetchUserSelectedComponentsUpstream) {
                     /// This corresponds to choice B)
@@ -1572,7 +1572,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////
 
 
-    ///// Termination, update last rendered planes
+    ///// Termination
 #ifdef DEBUG
     if (outputPlanes->size() != args.components.size()) {
         qDebug() << "Requested:";

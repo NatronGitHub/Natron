@@ -54,9 +54,9 @@ public:
 
     bool customInterpolation(double time,std::string* ret) const;
 
-    void insertKeyFrame(int time,const std::string & v,double* index);
+    void insertKeyFrame(double time,const std::string & v,double* index);
 
-    void removeKeyFrame(int time);
+    void removeKeyFrame(double time);
 
     void clearKeyFrames();
 

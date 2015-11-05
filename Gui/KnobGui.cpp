@@ -48,11 +48,11 @@ KnobGui::KnobGui(const boost::shared_ptr<KnobI>& knob,
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
         QObject::connect( handler,SIGNAL( redrawGuiCurve(int,int)),this,SLOT( onRedrawGuiCurve(int,int) ) );
         QObject::connect( handler,SIGNAL( valueChanged(int,int) ),this,SLOT( onInternalValueChanged(int,int) ) );
-        QObject::connect( handler,SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),this,SLOT( onInternalKeySet(SequenceTime,int,int,bool) ) );
-        QObject::connect( handler,SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),this,SLOT( onInternalKeyRemoved(SequenceTime,int,int) ) );
-        QObject::connect( handler,SIGNAL( keyFrameMoved(int,int,int)), this, SLOT( onKeyFrameMoved(int,int,int)));
-        QObject::connect( handler,SIGNAL( multipleKeyFramesSet(std::list<SequenceTime>,int,int)), this,
-                         SLOT(onMultipleKeySet(std::list<SequenceTime> , int, int)));
+        QObject::connect( handler,SIGNAL( keyFrameSet(double,int,int,bool) ),this,SLOT( onInternalKeySet(double,int,int,bool) ) );
+        QObject::connect( handler,SIGNAL( keyFrameRemoved(double,int,int) ),this,SLOT( onInternalKeyRemoved(double,int,int) ) );
+        QObject::connect( handler,SIGNAL( keyFrameMoved(int,double,double)), this, SLOT( onKeyFrameMoved(int,double,double)));
+        QObject::connect( handler,SIGNAL( multipleKeyFramesSet(std::list<double>,int,int)), this,
+                         SLOT(onMultipleKeySet(std::list<double> , int, int)));
         QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
         QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
         QObject::connect( handler,SIGNAL( knobSlaved(int,bool) ),this,SLOT( onKnobSlavedChanged(int,bool) ) );
@@ -61,8 +61,8 @@ KnobGui::KnobGui(const boost::shared_ptr<KnobI>& knob,
         QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,int) ),this,SLOT( onSetValueUsingUndoStack(Variant,int) ) );
         QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
         QObject::connect( handler,SIGNAL( animationLevelChanged(int,int) ),this,SLOT( onAnimationLevelChanged(int,int) ) );
-        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant,int,int,bool,bool) ),this,
-                         SLOT( onAppendParamEditChanged(int,Variant,int,int,bool,bool) ) );
+        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant,int,double,bool,bool) ),this,
+                         SLOT( onAppendParamEditChanged(int,Variant,int,double,bool,bool) ) );
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );

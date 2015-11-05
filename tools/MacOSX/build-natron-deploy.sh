@@ -35,9 +35,9 @@ PYVER="2.7"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
 ## all Qt frameworks:
-#QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
 ## Qt frameworks used by Natron + PySide + Qt plugins:
-QT_LIBS="Qt3Support QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+#QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
 STRIP=1
 
 "$QTDIR"/bin/macdeployqt "${package}" -no-strip || exit 1
@@ -49,6 +49,12 @@ pkglib="$package/Contents/$libdir"
 if [ ! -x "$binary" ]; then
    echo "Error: $binary does not exist or is not an executable"
    exit 1
+fi
+
+# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
+LIBGCC=0
+if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
+    LIBGCC=1
 fi
 
 #Copy and change exec_path of the whole Python framework with libraries
@@ -78,7 +84,12 @@ if [ ! -d "${DYNLOAD}" ]; then
     echo "lib-dynload not present"
     exit 1
 fi
-for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; done |sort|uniq |awk '{print $1}'`; do
+
+MPLIBS0=`for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
+# also add first-level and second-level dependencies 
+MPLIBS1=`for i in $MPLIBS0; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
+MPLIBS=`for i in $MPLIBS1; do echo $i; otool -L $i | fgrep "${MACPORTS}/lib" |fgrep -v ':'; done |sort|uniq |awk '{print $1}'`
+for mplib in $MPLIBS; do
     if [ ! -f "$mplib" ]; then
         echo "missing python lib-dynload depend $mplib"
         exit 1
@@ -86,9 +97,20 @@ for mplib in `for i in "${DYNLOAD}"/*.so; do otool -L $i | fgrep "${MACPORTS}"; 
     lib=`echo $mplib | awk -F / '{print $NF}'`
     if [ ! -f "$pkglib/${lib}" ]; then
         cp "$mplib" "$pkglib/${lib}"
+        chmod +w "$pkglib/${lib}"
     fi
+    install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     for deplib in "${DYNLOAD}"/*.so; do
         install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
+    done
+done
+
+# also fix newly-installed libs
+for mplib in $MPLIBS; do
+    lib=`echo $mplib | awk -F / '{print $NF}'`
+    for mplibsub in $MPLIBS; do
+	deplib=`echo $mplibsub | awk -F / '{print $NF}'`
+        install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$pkglib/$deplib"
     done
 done
 
@@ -100,7 +122,7 @@ if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
     cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
     for binary in "${package}/Contents/PlugIns"/*/*.dylib; do
         chmod +w "$binary"
-        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib; do
+        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
         for f in $QT_LIBS; do
@@ -117,10 +139,11 @@ fi
 # Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
 for qtlib in $QT_LIBS; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
-        mkdir -p "${package}/Contents/Frameworks/${qtlib}.framework/Versions/4"
-        binary="${package}/Contents/Frameworks/${qtlib}.framework"
+        binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
+        mkdir -p `dirname "${binary}"`
         cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
         chmod +w "${binary}"
+        install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "$binary"
         for f in $QT_LIBS; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
@@ -130,11 +153,6 @@ for qtlib in $QT_LIBS; do
     fi
 done
 
-# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
-LIBGCC=0
-if otool -L "$binary" |fgrep "${MACPORTS}/lib/libgcc"; then
-    LIBGCC=1
-fi
 if [ "$LIBGCC" = "1" ]; then
     for l in gcc_s.1 gomp.1 stdc++.6; do
         lib=lib${l}.dylib
@@ -159,6 +177,13 @@ fi
 for f in Python; do
     install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
 done
+
+# fix library ids
+pushd "$pkglib"
+for deplib in *.framework/Versions/*/* lib*.dylib; do
+    install_name_tool -id "@executable_path/../Frameworks/${deplib}" "$deplib"
+done
+popd
 
 if otool -L "$binary" | fgrep "${MACPORTS}"; then
     echo "Error: MacPorts libraries remaining in $binary, please check"
@@ -392,23 +417,25 @@ if [ "$STRIP" = 1 ]; then
         binary="$package/Contents/MacOS/$bin";
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
-            # Extract each arch into a "thin" binary for stripping
-            lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
-            lipo "$binary" -thin i386   -output "${binary}_i386";
-
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
+            if lipo "$binary" -verify_arch i386 x86_64; then
+                # Extract each arch into a "thin" binary for stripping
+		lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+		lipo "$binary" -thin i386   -output "${binary}_i386";
 
-            # Perform desired stripping on each thin binary.  
-            strip -S -x -r "${binary}_i386";
-            strip -S -x -r "${binary}_x86_64";
 
-            # Make the new universal binary from our stripped thin pieces.
-            lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+                # Perform desired stripping on each thin binary.  
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
 
-            # We're now done with the temp thin binaries, so chuck them.
-            rm -f "${binary}_i386";
-            rm -f "${binary}_x86_64";
+                # Make the new universal binary from our stripped thin pieces.
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
+                # We're now done with the temp thin binaries, so chuck them.
+                rm -f "${binary}_i386";
+                rm -f "${binary}_x86_64";
+	    fi
             #rm -f "${binary}_FULL";
         fi
     done

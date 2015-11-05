@@ -30,6 +30,7 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+#include "Engine/EngineFwd.h"
 
 
 class Dot

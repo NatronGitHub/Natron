@@ -33,6 +33,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
+#include "Engine/EngineFwd.h"
 
 /*This class is used to hold the format of a frame (its resolution).
  * Some formats have a name , e.g : 1920*1080 is full HD, etc...

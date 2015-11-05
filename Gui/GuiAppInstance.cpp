@@ -735,9 +735,9 @@ GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
 }
 
 void
-GuiAppInstance::setupViewersForViews(int viewsCount)
+GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 {
-    _imp->_gui->updateViewersViewsMenu(viewsCount);
+    _imp->_gui->updateViewersViewsMenu(viewNames);
 }
 
 void

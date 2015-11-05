@@ -34,6 +34,8 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QNetworkReply>
 CLANG_DIAG_ON(deprecated-register)
 
+#include "Engine/EngineFwd.h"
+
 class QTimer;
 
 /**

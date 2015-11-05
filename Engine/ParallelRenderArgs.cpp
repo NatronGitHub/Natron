@@ -401,7 +401,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         ///Get the RoD
         Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
         //If failed it should have failed earlier
-        if (stat == eStatusFailed) {
+        if (stat == eStatusFailed && !fvRequest->globalData.rod.isNull()) {
             return stat;
         }
         

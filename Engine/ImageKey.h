@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/KeyHelper.h"
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 class ImageKey

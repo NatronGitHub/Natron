@@ -37,10 +37,8 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-class KnobDouble;
-class Curve;
-class Bezier;
 
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point

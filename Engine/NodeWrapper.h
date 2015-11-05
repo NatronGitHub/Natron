@@ -35,34 +35,60 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/ImageComponents.h"
 #include "Engine/Knob.h" // KnobI
 #include "Engine/NodeGroupWrapper.h" // Goup
 #include "Engine/RectD.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class Node;
-}
 
-class Roto;
-class Param;
-class IntParam;
-class Int2DParam;
-class Int3DParam;
-class BooleanParam;
-class DoubleParam;
-class Double2DParam;
-class Double3DParam;
-class ChoiceParam;
-class ColorParam;
-class StringParam;
-class FileParam;
-class OutputFileParam;
-class PathParam;
-class ButtonParam;
-class GroupParam;
-class PageParam;
-class ParametricParam;
-class KnobHolder;
+class ImageLayer
+{
+    Natron::ImageComponents _comps;
+public:
+    
+    ImageLayer(const std::string& layerName,
+               const std::string& componentsPrettyName,
+               const std::vector<std::string>& componentsName);
+    
+    ImageLayer(const Natron::ImageComponents& internalComps);
+    
+    
+    ~ImageLayer() {}
+    
+    static int getHash(const ImageLayer& layer);
+    
+    bool isColorPlane() const;
+    
+    int getNumComponents() const;
+    
+    const std::string& getLayerName() const;
+    
+    const std::vector<std::string>& getComponentsNames() const;
+    
+    const std::string& getComponentsPrettyName() const;
+
+    bool operator==(const ImageLayer& other) const;
+    
+    bool operator!=(const ImageLayer& other) const {
+        return !(*this == other);
+    }
+    
+    //For std::map
+    bool operator<(const ImageLayer& other) const;
+    
+    /*
+     * These are default presets image components
+     */
+    static ImageLayer getNoneComponents();
+    static ImageLayer getRGBAComponents();
+    static ImageLayer getRGBComponents();
+    static ImageLayer getAlphaComponents();
+    static ImageLayer getBackwardMotionComponents();
+    static ImageLayer getForwardMotionComponents();
+    static ImageLayer getDisparityLeftComponents();
+    static ImageLayer getDisparityRightComponents();
+};
 
 class UserParamHolder
 {
@@ -328,6 +354,8 @@ public:
     void setSubGraphEditable(bool editable);
     
     bool addUserPlane(const std::string& planeName, const std::vector<std::string>& channels);
+    
+    std::map<ImageLayer,Effect*> getAvailableLayers() const;
 };
 
 #endif // NODEWRAPPER_H

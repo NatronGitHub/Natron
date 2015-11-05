@@ -1245,7 +1245,7 @@ std::vector<DopeSheetKey> DopeSheetSelectionModel::getKeyframesSelectionCopy() c
 }
 
 bool
-DopeSheetSelectionModel::hasSingleKeyFrameTimeSelected(int* time) const
+DopeSheetSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
 {
     bool timeSet = false;
     KnobGui * knob = 0;

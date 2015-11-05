@@ -34,28 +34,18 @@
 #endif
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
+
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
 
 typedef boost::shared_ptr<Natron::Node> NodePtr;
+
 typedef std::list<NodePtr> NodeList;
 
-
-
-
-
-
-namespace Natron {
-class Node;
-class EffectInstance;
-}
-class TimeLine;
-class NodeGraphI;
-class KnobI;
-class ViewerInstance;
-class RenderStats;
 struct NodeCollectionPrivate;
+
 class NodeCollection
 {
     
@@ -449,7 +439,7 @@ private:
     
     virtual void knobChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,
                              int /*view*/,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
     boost::scoped_ptr<NodeGroupPrivate> _imp;

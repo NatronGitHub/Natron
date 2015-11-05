@@ -39,8 +39,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/EngineFwd.h"
 
-class RectI;
 
 namespace Natron {
 namespace Color {

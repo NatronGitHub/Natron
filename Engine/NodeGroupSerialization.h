@@ -43,6 +43,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/EngineFwd.h"
+
 
 #define NODE_COLLECTION_SERIALIZATION_VERSION 1
 

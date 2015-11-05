@@ -26,8 +26,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
 
 struct DiskCacheNodePrivate;
+
 class DiskCacheNode : public Natron::OutputEffectInstance
 {
 public:
@@ -130,7 +132,7 @@ public:
 
 private:
 
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

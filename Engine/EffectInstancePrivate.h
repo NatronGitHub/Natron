@@ -38,6 +38,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 

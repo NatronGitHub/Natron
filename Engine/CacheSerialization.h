@@ -47,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/ImageParamsSerialization.h"
 #include "Engine/FrameEntrySerialization.h"
 #include "Engine/FrameParamsSerialization.h"
+#include "Engine/EngineFwd.h"
 
 #define SERIALIZED_ENTRY_INTRODUCES_SIZE 2
 #define SERIALIZED_ENTRY_VERSION SERIALIZED_ENTRY_INTRODUCES_SIZE

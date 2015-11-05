@@ -684,6 +684,27 @@ Curve::getNextKeyframeTime(double time,
     }
 }
 
+int
+Curve::getNKeyFramesInRange(double first, double last) const
+{
+    int ret = 0;
+    QMutexLocker k(&_imp->_lock);
+    KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        if (it->getTime() >= first) {
+            upper = it;
+            break;
+        }
+    }
+    for (; upper != _imp->keyFrames.end(); ++upper) {
+        if (upper->getTime() >= last) {
+            break;
+        }
+        ++ret;
+    }
+    return ret;
+}
+
 bool
 Curve::getKeyFrameWithTime(double time,
                            KeyFrame* k) const

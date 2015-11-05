@@ -32,12 +32,11 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class Image;
-}
-class RectI;
+
 struct HistogramCPUPrivate;
+
 class HistogramCPU
     : public QThread
 {

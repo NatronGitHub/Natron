@@ -107,7 +107,7 @@ private:
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);
             if (rep == Natron::eStandardButtonYes) {
-                _panel->resetDefaultOverlayColor();
+                _panel->resetHostOverlayColor();
             }
         } else {
             Button::mousePressEvent(e);
@@ -317,7 +317,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             }
             
             
-            if (isEffect && isEffect->hasOverlay()) {
+            if (isEffect && isEffect->getNode()->hasOverlay()) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
                 _imp->_overlayColor.setRgbF(1., 1., 1.);
@@ -1303,7 +1303,7 @@ DockablePanel::setCurrentColor(const QColor & c)
 }
 
 void
-DockablePanel::resetDefaultOverlayColor()
+DockablePanel::resetHostOverlayColor()
 {
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (!nodePanel) {

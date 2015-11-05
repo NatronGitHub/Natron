@@ -29,9 +29,26 @@
 
 class RectD;
 
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
 namespace Transform {
-inline double toDegrees(double rad);
-inline double toRadians(double deg);
+inline double toDegrees(double rad)
+{
+    rad = rad * 180.0 / M_PI;
+    
+    return rad;
+}
+    
+inline double toRadians(double deg)
+{
+        
+    deg = deg * M_PI / 180.0;
+    
+    return deg;
+}
+    
 struct Point3D
 {
     double x,y,z;
@@ -104,19 +121,19 @@ struct Matrix3x3
  Matrix3x3 matInverse(const Matrix3x3& M);
  Matrix3x3 matInverse(const Matrix3x3& M,double det);
 
-// Matrix3x3 matRotation(double rads);
+ Matrix3x3 matRotation(double rads);
 // Matrix3x3 matRotationAroundPoint(double rads, double pointX, double pointY);
 
 // Matrix3x3 matTranslation(double translateX, double translateY);
 
-// Matrix3x3 matScale(double scaleX, double scaleY);
+ Matrix3x3 matScale(double scaleX, double scaleY);
 // Matrix3x3 matScale(double scale);
 // Matrix3x3 matScaleAroundPoint(double scaleX, double scaleY, double pointX, double pointY);
 
-// Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
+ Matrix3x3 matSkewXY(double skewX, double skewY, bool skewOrderYX);
 
 // matrix transform from destination to source, in canonical coordinates
-// Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
+ Matrix3x3 matInverseTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);
 
 // matrix transform from source to destination in canonical coordinates
 Matrix3x3 matTransformCanonical(double translateX, double translateY, double scaleX, double scaleY, double skewX, double skewY, bool skewOrderYX, double rads, double centerX, double centerY);

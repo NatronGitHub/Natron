@@ -47,13 +47,17 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
-KnobGui::onMultipleKeySet(const std::list<SequenceTime>& keys,int /*dimension*/, int reason)
+KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int reason)
 {
     
     if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         boost::shared_ptr<KnobI> knob = getKnob();
         if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
-            knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, true);
+            std::list<SequenceTime> intKeys;
+            for (std::list<double>::const_iterator it = keys.begin() ; it != keys.end(); ++it) {
+                intKeys.push_back(*it);
+            }
+            knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(intKeys, true);
         }
     }
     
@@ -62,7 +66,7 @@ KnobGui::onMultipleKeySet(const std::list<SequenceTime>& keys,int /*dimension*/,
 }
 
 void
-KnobGui::onInternalKeySet(SequenceTime time,
+KnobGui::onInternalKeySet(double time,
                           int /*dimension*/,
                           int reason,
                           bool added )
@@ -81,7 +85,7 @@ KnobGui::onInternalKeySet(SequenceTime time,
 }
 
 void
-KnobGui::onInternalKeyRemoved(SequenceTime time,
+KnobGui::onInternalKeyRemoved(double time,
                               int /*dimension*/,
                               int /*reason*/)
 {
@@ -611,7 +615,7 @@ KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 }
 
 void
-KnobGui::setKeyframeMarkerOnTimeline(int time)
+KnobGui::setKeyframeMarkerOnTimeline(double time)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     if (knob->isDeclaredByPlugin()) {
@@ -621,8 +625,8 @@ KnobGui::setKeyframeMarkerOnTimeline(int time)
 
 void
 KnobGui::onKeyFrameMoved(int /*dimension*/,
-                         int oldTime,
-                         int newTime)
+                         double oldTime,
+                         double newTime)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
 
@@ -631,8 +635,8 @@ KnobGui::onKeyFrameMoved(int /*dimension*/,
     }
     if (knob->isDeclaredByPlugin()) {
         boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
-        timeline->removeKeyFrameIndicator(oldTime);
-        timeline->addKeyframeIndicator(newTime);
+        timeline->removeKeyFrameIndicator(oldTime + 0.5);
+        timeline->addKeyframeIndicator(newTime + 0.5);
     }
 }
 
@@ -653,7 +657,7 @@ void
 KnobGui::onAppendParamEditChanged(int reason,
                                   const Variant & v,
                                   int dim,
-                                  int time,
+                                  double time,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {

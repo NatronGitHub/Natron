@@ -28,6 +28,7 @@
 
 #include <vector>
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
 
 /**

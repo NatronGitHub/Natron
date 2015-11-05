@@ -106,7 +106,7 @@ public:
     }
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {

@@ -41,27 +41,12 @@
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
+#include "Engine/EngineFwd.h"
+
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
-class KnobPage;
-class Curve;
-class KeyFrame;
-class KnobHolder;
-class AppInstance;
-class KnobSerialization;
-class StringAnimationManager;
-namespace Transform {
-struct Matrix3x3;
-}
-namespace Natron {
-class OfxParamOverlayInteract;
-}
-
-class DockablePanelI;
-
-class KnobI;
 class KnobSignalSlotHandler
 : public QObject
 {
@@ -99,7 +84,7 @@ public:
         Q_EMIT enabledChanged();
     }
     
-    void s_keyFrameSet(SequenceTime time,
+    void s_keyFrameSet(double time,
                        int dimension,
                        int reason,
                        bool added)
@@ -107,14 +92,14 @@ public:
         Q_EMIT keyFrameSet(time,dimension,reason,added);
     }
     
-    void s_keyFrameRemoved(SequenceTime time,
+    void s_keyFrameRemoved(double time,
                            int dimension,
                            int reason)
     {
         Q_EMIT keyFrameRemoved(time,dimension,reason);
     }
     
-    void s_multipleKeyFramesSet(const std::list<SequenceTime>& keys, int dimension, int reason)
+    void s_multipleKeyFramesSet(const std::list<double>& keys, int dimension, int reason)
     {
         Q_EMIT multipleKeyFramesSet(keys, dimension, reason);
     }
@@ -141,7 +126,7 @@ public:
         Q_EMIT knobSlaved(dim,slaved);
     }
     
-    void s_setValueWithUndoStack(Variant v,
+    void s_setValueWithUndoStack(const Variant& v,
                                  int dim)
     {
         Q_EMIT setValueWithUndoStack(v, dim);
@@ -150,7 +135,7 @@ public:
     void s_appendParamEditChange(Natron::ValueChangedReasonEnum reason,
                                  Variant v,
                                  int dim,
-                                 int time,
+                                 double time,
                                  bool createNewCommand,
                                  bool setKeyFrame)
     {
@@ -167,7 +152,7 @@ public:
         Q_EMIT frozenChanged(f);
     }
     
-    void s_keyFrameMoved(int dimension,int oldTime,int newTime)
+    void s_keyFrameMoved(int dimension,double oldTime,double newTime)
     {
         Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
     }
@@ -197,12 +182,12 @@ public:
         Q_EMIT expressionChanged(dimension);
     }
     
-    void s_derivativeMoved(SequenceTime time,int dimension)
+    void s_derivativeMoved(double time,int dimension)
     {
         Q_EMIT derivativeMoved(time,dimension);
     }
     
-    void s_keyFrameInterpolationChanged(SequenceTime time,int dimension)
+    void s_keyFrameInterpolationChanged(double time,int dimension)
     {
         Q_EMIT keyFrameInterpolationChanged(time,dimension);
     }
@@ -236,11 +221,11 @@ public Q_SLOTS:
     
     void onExprDependencyChanged(int,int);
 
-    void onMasterKeyFrameSet(SequenceTime time,int dimension,int reason,bool added);
+    void onMasterKeyFrameSet(double time,int dimension,int reason,bool added);
     
-    void onMasterKeyFrameRemoved(SequenceTime time,int dimension,int reason);
+    void onMasterKeyFrameRemoved(double time,int dimension,int reason);
     
-    void onMasterKeyFrameMoved(int dimension,int oldTime,int newTime);
+    void onMasterKeyFrameMoved(int dimension,double oldTime,double newTime);
     
     void onMasterAnimationRemoved(int dimension);
 
@@ -270,19 +255,19 @@ Q_SIGNALS:
     
     ///Emitted whenever a keyframe is set with a reason different of eValueChangedReasonUserEdited
     ///@param added True if this is the first time that the keyframe was set
-    void keyFrameSet(SequenceTime time,int dimension,int reason,bool added);
+    void keyFrameSet(double time,int dimension,int reason,bool added);
     
     /// Called when a curve is cloned
-    void multipleKeyFramesSet(std::list<SequenceTime>, int dimension, int reason);
+    void multipleKeyFramesSet(std::list<double>, int dimension, int reason);
     
     ///Emitted whenever a keyframe is removed with a reason different of eValueChangedReasonUserEdited
-    void keyFrameRemoved(SequenceTime,int dimension,int reason);
+    void keyFrameRemoved(double,int dimension,int reason);
     
-    void keyFrameMoved(int dimension,int oldTime,int newTime);
+    void keyFrameMoved(int dimension,double oldTime,double newTime);
     
-    void derivativeMoved(SequenceTime time,int dimension);
+    void derivativeMoved(double time,int dimension);
     
-    void keyFrameInterpolationChanged(SequenceTime time,int dimension);
+    void keyFrameInterpolationChanged(double time,int dimension);
     
     /// Emitted when the gui curve has been cloned
     void redrawGuiCurve(int reason, int dimension);
@@ -308,7 +293,7 @@ Q_SIGNALS:
     
     ///Same as setValueWithUndoStack except that the value change will be compressed
     ///in a multiple edit undo/redo action
-    void appendParamEditChange(int reason,Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void appendParamEditChange(int reason,Variant v,int dim,double time,bool createNewCommand,bool setKeyFrame);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -434,7 +419,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension, int time, Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void evaluateValueChange(int dimension, double time, Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -473,9 +458,9 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) = 0;
+    virtual void clone(KnobI* other, double offset, const RangeD* range,int dimension = -1) = 0;
     virtual void clone(const boost::shared_ptr<KnobI> & other,
-                       SequenceTime offset,
+                       double offset,
                        const RangeD* range,
                        int dimension = -1)
     {
@@ -517,18 +502,18 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,int time,int dimension) = 0;
+    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) = 0;
     
     
     /**
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
     
     /**
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
      **/
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
      * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
@@ -538,25 +523,25 @@ public:
     /**
      * @brief Changes the interpolation type for the given keyframe
      **/
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
+    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
     
     /**
      * @brief Set the left/right derivatives of the control point at the given time.
      **/
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,int time,double left,double right) = 0;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,int time,double derivative,bool isLeft) = 0;
+    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right) = 0;
+    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void deleteAnimationBeforeTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonPluginEdited.
@@ -566,7 +551,7 @@ public:
     /**
      * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonUserEdited
      **/
-    virtual void onKeyFrameRemoved(SequenceTime time,int dimension) = 0;
+    virtual void onKeyFrameRemoved(double time,int dimension) = 0;
 
     /**
      * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
@@ -634,8 +619,8 @@ public:
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonUserEdited.
      **/
-    virtual bool onKeyFrameSet(SequenceTime time,int dimension) = 0;
-    virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) = 0;
+    virtual bool onKeyFrameSet(double time,int dimension) = 0;
+    virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) = 0;
     virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
@@ -643,7 +628,7 @@ public:
      * It must get the value at the given time and notify  the gui it must
      * update the value displayed.
      **/
-    virtual void onTimeChanged(SequenceTime time) = 0;
+    virtual void onTimeChanged(double time) = 0;
 
     /**
      * @brief Compute the derivative at time as a double
@@ -937,8 +922,9 @@ public:
 
     /**
      * @brief Dequeues any setValue/setValueAtTime calls that were queued in the queue.
+     * @returns true if any value was dequeued
      **/
-    virtual void dequeueValuesSet(bool disableEvaluation) = 0;
+    virtual bool dequeueValuesSet(bool disableEvaluation) = 0;
     
     /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
@@ -963,7 +949,7 @@ private:
     virtual void removeListener(KnobI* knob) = 0;
 public:
 
-    virtual bool useNativeOverlayHandle() const { return false; }
+    virtual bool useHostOverlayHandle() const { return false; }
 
     
 protected:
@@ -1132,7 +1118,7 @@ public:
     virtual void blockValueChanges() OVERRIDE FINAL;
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void evaluateValueChange(int dimension,int time, Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,double time, Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1147,24 +1133,24 @@ private:
     
     
     virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,int time,int dimension) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) OVERRIDE FINAL;
 
 public:
 
-    virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual void onKeyFrameRemoved(double time,int dimension) OVERRIDE FINAL;
+    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
-    virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteAnimationBeforeTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
 private:
     
-    void deleteAnimationConditional(int time,int dimension,Natron::ValueChangedReasonEnum reason,bool before);
+    void deleteAnimationConditional(double time,int dimension,Natron::ValueChangedReasonEnum reason,bool before);
 public:
     
     
@@ -1330,7 +1316,7 @@ protected:
     }
     
     virtual void cloneExtraData(KnobI* /*other*/,
-                                SequenceTime /*offset*/,
+                                double /*offset*/,
                                 const RangeD* /*range*/,
                                 int dimension = -1)
     {
@@ -1468,7 +1454,7 @@ public:
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(int time,
+    bool setValueAtTime(double time,
                         const T & v,
                         int dimension,
                         Natron::ValueChangedReasonEnum reason,
@@ -1540,29 +1526,29 @@ public:
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
-    void setValueAtTime(int time,
+    void setValueAtTime(double time,
                         const T & v,
                         int dimension);
     
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
-    void setValueAtTimeFromPlugin(int time,
+    void setValueAtTimeFromPlugin(double time,
                                   const T & v,
                                   int dimension);
     
-    void setValuesAtTime(int time,
+    void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          Natron::ValueChangedReasonEnum reason);
 
-    void setValuesAtTime(int time,
+    void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          const T& value2,
                          Natron::ValueChangedReasonEnum reason);
 
-    void setValuesAtTime(int time,
+    void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          const T& value2,
@@ -1615,11 +1601,11 @@ public:
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
-    virtual bool onKeyFrameSet(SequenceTime time,int dimension) OVERRIDE FINAL;
-    virtual bool onKeyFrameSet(SequenceTime time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
+    virtual bool onKeyFrameSet(double time,int dimension) OVERRIDE FINAL;
+    virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
-    virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;
+    virtual void onTimeChanged(double time) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1629,12 +1615,12 @@ public:
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual void clone(KnobI* other,int dimension = -1)  OVERRIDE FINAL;
-    virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
+    virtual void clone(KnobI* other,double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneDefaultValues(KnobI* other) OVERRIDE FINAL;
     virtual bool cloneAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
+    virtual bool dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
     ///MT-safe
     void setMinimum(const T& mini, int dimension = 0);
@@ -1790,7 +1776,7 @@ public:
 
     virtual ~AnimatingKnobStringHelper();
 
-    void stringToKeyFrameValue(int time,const std::string & v,double* returnValue);
+    void stringToKeyFrameValue(double time,const std::string & v,double* returnValue);
 
     //for integration of openfx custom params
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
@@ -1817,7 +1803,7 @@ protected:
 
     virtual void cloneExtraData(KnobI* other,int dimension = -1) OVERRIDE;
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension = -1) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 
@@ -1827,19 +1813,6 @@ private:
     StringAnimationManager* _animation;
 };
 
-class KnobInt;
-class KnobDouble;
-class KnobBool;
-class KnobChoice;
-class KnobColor;
-class KnobButton;
-class KnobString;
-class KnobFile;
-class KnobOutputFile;
-class KnobPath;
-class KnobParametric;
-class KnobGroup;
-class KnobPage;
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.
@@ -1898,9 +1871,15 @@ public:
     
     std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
     
-    void refreshAfterTimeChange(SequenceTime time);
+    void refreshAfterTimeChange(double time);
+    
+protected:
+    
+    virtual void refreshExtraStateAfterTimeChanged(double /*time*/) {}
+    
+public:
 
-    void refreshInstanceSpecificKnobsOnly(SequenceTime time);
+    void refreshInstanceSpecificKnobsOnly(double time);
 
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
     
@@ -1931,7 +1910,7 @@ public:
     /**
      * @brief Dequeues all values set in the queues for all knobs
      **/
-    void dequeueValuesSet();
+    bool dequeueValuesSet();
     
     void discardAppPointer();
     
@@ -1992,7 +1971,7 @@ public:
     
     bool isEvaluationBlocked() const;
 
-    void appendValueChange(KnobI* knob,int time, Natron::ValueChangedReasonEnum reason);
+    void appendValueChange(KnobI* knob,double time, Natron::ValueChangedReasonEnum reason);
     
     bool isSetValueCurrentlyPossible() const;
     
@@ -2096,7 +2075,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
                                            bool originatedFromMainThread);
 
 
@@ -2186,7 +2165,7 @@ protected:
      **/
     virtual void onKnobValueChanged(KnobI* /*k*/,
                                     Natron::ValueChangedReasonEnum /*reason*/,
-                                    SequenceTime /*time*/,
+                                    double /*time*/,
                                     bool /*originatedFromMainThread*/)
     {
     }
@@ -2226,7 +2205,7 @@ public Q_SLOTS:
 
     void onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
     
-    void onDoValueChangeOnMainThread(KnobI* knob, int reason, int time, bool originatedFromMT);
+    void onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, bool originatedFromMT);
     
 Q_SIGNALS:
     
@@ -2234,7 +2213,7 @@ Q_SIGNALS:
     
     void doEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
     
-    void doValueChangeOnMainThread(KnobI* knob, int reason, int time, bool originatedFromMT);
+    void doValueChangeOnMainThread(KnobI* knob, int reason, double time, bool originatedFromMT);
     
 private:
 

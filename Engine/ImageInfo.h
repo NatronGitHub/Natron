@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/Format.h"
+#include "Engine/EngineFwd.h"
 
 class ImageInfo
 {

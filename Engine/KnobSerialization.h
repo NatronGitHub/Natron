@@ -50,6 +50,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
 #include <SequenceParsing.h>
+#include "Engine/EngineFwd.h"
+
 
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS 2
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET 3
@@ -496,7 +498,7 @@ class KnobSerialization : public KnobSerializationBase
             }
             
             if (isDouble && isDouble->getDimension() == 2) {
-                bool useOverlay = isDouble->getHasNativeOverlayHandle();
+                bool useOverlay = isDouble->getHasHostOverlayHandle();
                 ar & boost::serialization::make_nvp("HasOverlayHandle",useOverlay);
             }
             

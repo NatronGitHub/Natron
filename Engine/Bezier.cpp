@@ -1149,47 +1149,7 @@ Bezier::isPointOnCurve(double x,
     return -1;
 } // isPointOnCurve
 
-void
-Bezier::resetCenterKnob()
-{
-    double time = getContext()->getTimelineCurrentTime();
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    Point center;
-    std::size_t nPoints = 0;
-    
-    {
-        QMutexLocker l(&itemMutex);
-        
-        ///Compute the value of the center knob
-        center.x = center.y = 0;
-        
-        for (BezierCPs::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
-            double x,y;
-            (*it)->getPositionAtTime(true,time, &x, &y);
-            center.x += x;
-            center.y += y;
-        }
-        nPoints = _imp->points.size();
-        
-    }
-    if (nPoints) {
-        assert(nPoints > 0);
-        center.x /= nPoints;
-        center.y /= nPoints;
-        boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
-        if (autoKeying) {
-            centerKnob->setValueAtTime(time, center.x, 0);
-            centerKnob->setValueAtTime(time, center.y, 1);
-            
-            //Also set a keyframe on all transform parameters
-            setKeyframeOnAllTransformParameters(time);
-        } else  {
-            centerKnob->setValue(center.x, 0);
-            centerKnob->setValue(center.y, 1);
-        }
-        
-    }
-}
+
 
 void
 Bezier::setCurveFinished(bool finished)
@@ -1203,7 +1163,7 @@ Bezier::setCurveFinished(bool finished)
         _imp->finished = finished;
     }
     
-    resetCenterKnob();
+    getContext()->resetTransformCenter();
 
     incrementNodesAge();
     refreshPolygonOrientation(false);

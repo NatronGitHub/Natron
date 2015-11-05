@@ -4,11 +4,11 @@ CWD=`pwd`
 
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
-NATRON_GIT_TAG=tags/2.0.0-RC2
-IOPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-MISCPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-ARENAPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-CVPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
+NATRON_GIT_TAG=tags/2.0.0-RC3
+IOPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+MISCPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+ARENAPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+CVPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
 #----------------------------------------------------------
 
 GIT_NATRON=https://github.com/MrKepzie/Natron.git
@@ -56,8 +56,8 @@ if [ "$OS" = "Darwin" ]; then
     esac;
 fi
 
-#COMPILER=clang
-COMPILER=gcc
+COMPILER=clang
+#COMPILER=gcc
 
 if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" ]; then
     echo "Error: COMPILER must be gcc or clang"
@@ -66,6 +66,7 @@ fi
 if [ "$COMPILER" = "clang" ]; then
     CC=clang-mp-3.4
     CXX=clang++-mp-3.4
+    GXX=g++-mp
 else
     CC=gcc-mp
     CXX=g++-mp

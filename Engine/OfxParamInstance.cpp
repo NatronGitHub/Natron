@@ -601,10 +601,10 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateX);
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateY);
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -624,16 +624,20 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
         dblKnob->setDecimals(decimals);
     }
 
-    if (coordSystem == kOfxParamCoordinatesNormalised) {
-        // The defaults should be stored as is, not premultiplied by the project size.
-        // The fact that the default value is normalized should be stored in Knob or KnobDouble.
+    // The defaults should be stored as is, not premultiplied by the project size.
+    // The fact that the default value is normalized should be stored in Knob or KnobDouble.
 
-        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-        // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
-        dblKnob->setDefaultValuesNormalized(def);
-    } else {
-        dblKnob->setDefaultValue(def,0);
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
+    if (doubleType == kOfxParamDoubleTypeNormalisedX ||
+        doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) {
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+    } else if (doubleType == kOfxParamDoubleTypeNormalisedY ||
+              doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
     }
+    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    dblKnob->setDefaultValue(def, 0);
 
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     dblKnob->setDimensionName(0, dimensionName);
@@ -1622,26 +1626,19 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
-    if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
-         ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
-        dblKnob->setNormalizedState(0, KnobDouble::eNormalizedStateX);
-        dblKnob->setNormalizedState(1, KnobDouble::eNormalizedStateY);
+    if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
+        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
     }
-    
-    bool isSpatial = doubleType == kOfxParamDoubleTypeNormalisedXY ||
-    doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
-    doubleType == kOfxParamDoubleTypeXY ||
-    doubleType == kOfxParamDoubleTypeXYAbsolute;
 
-    dblKnob->setSpatial(isSpatial);
-    
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
     std::vector<double> increment(dims);
     std::vector<double> displayMins(dims);
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
-    boost::scoped_array<double> def(new double[dims]);
+    std::vector<double> def(dims);
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
@@ -1666,17 +1663,27 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
 
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
-    // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute
-    if ((!_node->effectInstance()->getOverlayInteractMainEntry() && getDoubleType() == kOfxParamDoubleTypeXYAbsolute) ||
+    // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute
+#pragma message WARN("TODO: check that kOfxParamDoubleTypeNormalisedXYAbsolute overlays are OK")
+    if ((!_node->effectInstance()->getOverlayInteractMainEntry() &&
+         (getDoubleType() == kOfxParamDoubleTypeXYAbsolute ||
+          getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute)) ||
         properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
-        dblKnob->setHasNativeOverlayHandle(true);
+        dblKnob->setHasHostOverlayHandle(true);
     }
 
-    if (coordSystem == kOfxParamCoordinatesNormalised) {
-        dblKnob->setDefaultValuesNormalized( dims,def.get() );
-    } else {
-        dblKnob->setDefaultValue(def[0], 0);
-        dblKnob->setDefaultValue(def[1], 1);
+    dblKnob->setSpatial(doubleType == kOfxParamDoubleTypeNormalisedXY ||
+                        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
+                        doubleType == kOfxParamDoubleTypeXY ||
+                        doubleType == kOfxParamDoubleTypeXYAbsolute);
+    if (doubleType == kOfxParamDoubleTypeNormalisedXY ||
+        doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) {
+        dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
+        dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
+    }
+    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    for (int i = 0; i < dims; ++i) {
+        dblKnob->setDefaultValue(def[i], i);
     }
 }
 
@@ -2098,7 +2105,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
     std::vector<double> displayMins(dims);
     std::vector<double> displayMaxs(dims);
     std::vector<int> decimals(dims);
-    boost::scoped_array<double> def(new double[dims]);
+    std::vector<double> def(dims);
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
@@ -2121,9 +2128,9 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
     knob->setIncrement(increment);
     knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     knob->setDecimals(decimals);
-    knob->setDefaultValue(def[0],0);
-    knob->setDefaultValue(def[1],1);
-    knob->setDefaultValue(def[2],2);
+    for (int i = 0; i < dims; ++i) {
+        knob->setDefaultValue(def[i], i);
+    }
 }
 
 OfxStatus

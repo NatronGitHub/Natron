@@ -31,8 +31,9 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-class NodeCollection;
-class Effect;
+#include "Engine/EngineFwd.h"
+
+
 class Group
 {
     

@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <string>
+#include "Engine/EngineFwd.h"
 
 /**
  * @brief Public interface for all elements that can own something in the cache

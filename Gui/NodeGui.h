@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Engine/NodeGuiI.h"
 
-class DefaultOverlay;
+class HostOverlay;
 class Edge;
 class QPainterPath;
 class QScrollArea;
@@ -369,13 +369,29 @@ public:
     
     void checkOptionalEdgesVisibility();
     
+    
+    bool wasBeginEditCalled()
+    {
+        return _wasBeginEditCalled;
+    }
+
+    
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
     
     virtual void addDefaultPositionInteract(const boost::shared_ptr<KnobDouble>& point) OVERRIDE FINAL;
     
-    boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
+    virtual void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                                      const boost::shared_ptr<KnobDouble>& scale,
+                                      const boost::shared_ptr<KnobBool>& scaleUniform,
+                                      const boost::shared_ptr<KnobDouble>& rotate,
+                                      const boost::shared_ptr<KnobDouble>& skewX,
+                                      const boost::shared_ptr<KnobDouble>& skewY,
+                                      const boost::shared_ptr<KnobChoice>& skewOrder,
+                                      const boost::shared_ptr<KnobDouble>& center) OVERRIDE FINAL;
     
-    virtual void drawDefaultOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
+    boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
+    
+    virtual void drawHostOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
     
     virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -393,13 +409,13 @@ public:
     
     virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool hasDefaultOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
+    virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
 
-    virtual bool hasDefaultOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void removeDefaultOverlay(KnobI* knob) OVERRIDE FINAL;
+    virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
     
     virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
     
@@ -425,7 +441,14 @@ protected:
     
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
     
+    
+
+    
 public Q_SLOTS:
+    
+    void onIdentityStateChanged(int inputNb);
+    
+    void onAvailableViewsChanged();
 
     void onOutputLayerChanged();
 
@@ -492,11 +515,6 @@ public Q_SLOTS:
     void onInputNRenderingFinished(int input);
 
     void beginEditKnobs();
-
-    bool wasBeginEditCalled()
-    {
-        return _wasBeginEditCalled;
-    }
 
     void centerGraphOnIt();
 
@@ -595,7 +613,7 @@ private:
     QGraphicsRectItem* _stateIndicator;    
     
     bool _mergeHintActive;
-    NodeGuiIndicator* _bitDepthWarning;
+    boost::shared_ptr<NodeGuiIndicator> _bitDepthWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -631,7 +649,7 @@ private:
 
     typedef std::map<boost::shared_ptr<Natron::Node>,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
-    NodeGuiIndicator* _expressionIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
     QPoint _updateDistanceSinceLastMagnec; //for x and for y
@@ -649,10 +667,14 @@ private:
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth,_mtSafeHeight;
     
-    boost::shared_ptr<DefaultOverlay> _defaultOverlay;
+    boost::shared_ptr<HostOverlay> _hostOverlay;
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
 
     bool _overlayLocked;
+    
+    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    boost::weak_ptr<Natron::Node> _identityInput;
 };
 
 

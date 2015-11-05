@@ -200,6 +200,7 @@ SOURCES += \
     NatronEngine/group_wrapper.cpp \
     NatronEngine/beziercurve_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
+    NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/layer_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
     NatronEngine/groupparam_wrapper.cpp \
@@ -236,6 +237,7 @@ HEADERS += \
     DiskCacheNode.h \
     EffectInstance.h \
     EffectInstancePrivate.h \
+    EngineFwd.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
@@ -287,9 +289,9 @@ HEADERS += \
     NodeSerialization.h \
     NoOpBase.h \
     OfxClipInstance.h \
+    OfxEffectInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \
-    OfxEffectInstance.h \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \
@@ -402,6 +404,7 @@ HEADERS += \
     NatronEngine/group_wrapper.h \
     NatronEngine/beziercurve_wrapper.h \
     NatronEngine/itembase_wrapper.h \
+    NatronEngine/imagelayer_wrapper.h \
     NatronEngine/layer_wrapper.h \
     NatronEngine/roto_wrapper.h \
     NatronEngine/groupparam_wrapper.h \

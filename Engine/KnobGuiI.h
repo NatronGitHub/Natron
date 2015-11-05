@@ -29,8 +29,9 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
+#include "Engine/EngineFwd.h"
 
-class Curve;
+
 class KnobGuiI
     : public OverlaySupport
 {

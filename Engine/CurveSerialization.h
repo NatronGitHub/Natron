@@ -43,6 +43,7 @@ GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/CurvePrivate.h"
+#include "Engine/EngineFwd.h"
 
 template<class Archive>
 void

@@ -1185,6 +1185,7 @@ SmoothCuspUndoCommand::undo()
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itNew->first->clone(*itOld->first);
             itNew->second->clone(*itOld->second);
+            it->curve->incrementNodesAge();
         }
     }
 

@@ -180,21 +180,19 @@ KnobDouble::KnobDouble(KnobHolder* holder,
 , _increments(dimension)
 , _decimals(dimension)
 , _disableSlider(false)
-, _normalizationXY()
-, _defaultStoredNormalized(false)
-, _hasNativeOverlayHandle(false)
+, _valueIsNormalized(dimension)
+, _defaultValuesAreNormalized(false)
+, _hasHostOverlayHandle(false)
 {
-    _normalizationXY.first = eNormalizedStateNone;
-    _normalizationXY.second = eNormalizedStateNone;
-    
     for (int i = 0; i < dimension; ++i) {
         _increments[i] = 1.;
         _decimals[i] = 2;
+        _valueIsNormalized[i] = eValueIsNormalizedNone;
     }
 }
 
 void
-KnobDouble::setHasNativeOverlayHandle(bool handle)
+KnobDouble::setHasHostOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
     if (holder) {
@@ -212,17 +210,17 @@ KnobDouble::setHasNativeOverlayHandle(bool handle)
         if (handle) {
             effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
         } else {
-            effect->getNode()->removeDefaultOverlay(this);
+            effect->getNode()->removePositionHostOverlay(this);
         }
-       _hasNativeOverlayHandle = handle;
+       _hasHostOverlayHandle = handle;
     }
     
 }
 
 bool
-KnobDouble::getHasNativeOverlayHandle() const
+KnobDouble::getHasHostOverlayHandle() const
 {
-    return _hasNativeOverlayHandle;
+    return _hasHostOverlayHandle;
 }
 
 void
@@ -458,39 +456,11 @@ getInputRoD(EffectInstance* effect,
 #endif
 }
 
-void
-KnobDouble::setSpatial(bool spatial)
-{
-    _spatial = spatial;
-}
-
-bool
-KnobDouble::getIsSpatial() const
-{
-    return _spatial;
-}
-
-void
-KnobDouble::setDefaultValuesNormalized(int dims,
-                                        double defaults[])
-{
-    assert( dims == getDimension() );
-    _defaultStoredNormalized = true;
-    for (int i = 0; i < dims; ++i) {
-        setDefaultValue(defaults[i],i);
-    }
-}
-
-bool
-KnobDouble::areDefaultValuesNormalized() const
-{
-    return _defaultStoredNormalized;
-}
 
 void
 KnobDouble::denormalize(int dimension,
-                         double time,
-                         double* value) const
+                        double time,
+                        double* value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
     
@@ -501,9 +471,11 @@ KnobDouble::denormalize(int dimension,
     }
     RectD rod;
     getInputRoD(effect,time,rod);
-    if (dimension == 0) {
+    ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
+    // the second expression (with e == eValueIsNormalizedNone) is used when denormalizing default values
+    if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
         *value *= rod.width();
-    } else if (dimension == 1) {
+    } else if (e == eValueIsNormalizedY || (e == eValueIsNormalizedNone && dimension == 1)) {
         *value *= rod.height();
     }
 }
@@ -522,9 +494,11 @@ KnobDouble::normalize(int dimension,
     }
     RectD rod;
     getInputRoD(effect,time,rod);
-    if (dimension == 0) {
+    ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
+    // the second expression (with e == eValueIsNormalizedNone) is used when normalizing default values
+    if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
         *value /= rod.width();
-    } else if (dimension == 1) {
+    } else if (e == eValueIsNormalizedY || (e == eValueIsNormalizedNone && dimension == 1)) {
         *value /= rod.height();
     }
 }
@@ -669,9 +643,7 @@ KnobChoice::appendChoice(const std::string& entry, const std::string& help)
 {
     {
         QMutexLocker l(&_entriesMutex);
-        if (!_entriesHelp.empty()) {
-            _entriesHelp.push_back(help);
-        }
+        _entriesHelp.push_back(help);
         _entries.push_back(entry);
     }
     if (_signalSlotHandler) {
@@ -1694,7 +1666,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,int dimension) {
 
 void
 KnobParametric::cloneExtraData(KnobI* other,
-                                SequenceTime offset,
+                                double offset,
                                 const RangeD* range,
                                 int dimension)
 {

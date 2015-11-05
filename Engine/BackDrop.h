@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/NoOpBase.h"
+#include "Engine/EngineFwd.h"
 
 struct BackDropPrivate;
 class BackDrop : public NoOpBase
@@ -76,7 +77,7 @@ private:
     virtual void knobChanged(KnobI* k,
                              Natron::ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
-                             SequenceTime /*time*/,
+                             double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;

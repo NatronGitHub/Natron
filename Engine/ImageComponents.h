@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
 #define kNatronColorPlaneName "Color"
 #define kNatronBackwardMotionVectorsPlaneName "Backward"

@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
@@ -63,30 +64,11 @@ CLANG_DIAG_ON(deprecated)
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"
 
-class AppInstance;
-class NodeSettingsPanel;
-class KnobI;
-class ViewerInstance;
-class Format;
-class TimeLine;
-class NodeSerialization;
-class KnobSerialization;
-class KnobHolder;
-class OverlaySupport;
-class KnobChoice;
-class KnobDouble;
-class NodeGuiI;
-class RotoContext;
-class NodeCollection;
-class RotoDrawableItem;
-class RectD;
-class RectI;
+#define kReadOIIOAvailableViewsKnobName "availableViews"
+#define kWriteOIIOParamViewsSelector "viewsSelector"
+
+
 namespace Natron {
-class Plugin;
-class OutputEffectInstance;
-class Image;
-class EffectInstance;
-class LibraryBinary;
 
 class Node
     : public QObject, public boost::enable_shared_from_this<Natron::Node>
@@ -984,7 +966,7 @@ public:
     bool shouldDrawOverlay() const;
     
     
-    void drawDefaultOverlay(double time, double scaleX,double scaleY);
+    void drawHostOverlay(double time, double scaleX,double scaleY);
     
     bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
@@ -1004,15 +986,24 @@ public:
     
     void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     
-    void removeDefaultOverlay(KnobI* knob);
+    void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                              const boost::shared_ptr<KnobDouble>& scale,
+                              const boost::shared_ptr<KnobBool>& scaleUniform,
+                              const boost::shared_ptr<KnobDouble>& rotate,
+                              const boost::shared_ptr<KnobDouble>& skewX,
+                              const boost::shared_ptr<KnobDouble>& skewY,
+                              const boost::shared_ptr<KnobChoice>& skewOrder,
+                              const boost::shared_ptr<KnobDouble>& center);
     
-    void initializeDefaultOverlays();
+    void removePositionHostOverlay(KnobI* knob);
     
-    bool hasDefaultOverlay() const;
+    void initializeHostOverlays();
     
-    void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort);
+    bool hasHostOverlay() const;
     
-    bool hasDefaultOverlayForParam(const KnobI* knob) const;
+    void setCurrentViewportForHostOverlays(OverlaySupport* viewPort);
+    
+    bool hasHostOverlayForParam(const KnobI* knob) const;
 
     void setPluginIconFilePath(const std::string& iconFilePath);
     
@@ -1060,7 +1051,15 @@ public:
     
     bool getSelectedLayerChoiceRaw(int inputNb,std::string& layer) const;
     
+    const std::vector<std::string>& getCreatedViews() const;
+    
+    void refreshCreatedViews();
+    
+    void refreshIdentityState();
+    
 private:
+    
+    void refreshCreatedViews(KnobI* knob);
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
     
@@ -1126,6 +1125,10 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void identityChanged(int inputNb);
+    
+    void availableViewsChanged();
     
     void outputLayerChanged();
     
