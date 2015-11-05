@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
@@ -67,30 +68,7 @@ CLANG_DIAG_ON(deprecated)
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
 
-class AppInstance;
-class NodeSettingsPanel;
-class KnobI;
-class ViewerInstance;
-class Format;
-class TimeLine;
-class NodeSerialization;
-class KnobSerialization;
-class KnobHolder;
-class OverlaySupport;
-class KnobChoice;
-class KnobDouble;
-class NodeGuiI;
-class RotoContext;
-class NodeCollection;
-class RotoDrawableItem;
-class RectD;
-class RectI;
 namespace Natron {
-class Plugin;
-class OutputEffectInstance;
-class Image;
-class EffectInstance;
-class LibraryBinary;
 
 class Node
     : public QObject, public boost::enable_shared_from_this<Natron::Node>

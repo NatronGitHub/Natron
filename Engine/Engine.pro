@@ -237,6 +237,7 @@ HEADERS += \
     DiskCacheNode.h \
     EffectInstance.h \
     EffectInstancePrivate.h \
+    EngineFwd.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
@@ -288,9 +289,9 @@ HEADERS += \
     NodeSerialization.h \
     NoOpBase.h \
     OfxClipInstance.h \
+    OfxEffectInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \
-    OfxEffectInstance.h \
     OfxOverlayInteract.h \
     OfxMemory.h \
     OfxParamInstance.h \

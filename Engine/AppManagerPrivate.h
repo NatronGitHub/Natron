@@ -33,6 +33,7 @@
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/EngineFwd.h"
 
 class QProcess;
 class QLocalServer;
@@ -43,11 +44,6 @@ namespace google_breakpad {
     class ExceptionHandler;
 }
 #endif
-class ProcessInputChannel;
-namespace Natron {
-    class OfxHost;
-}
-
 
 
 struct AppManagerPrivate

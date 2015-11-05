@@ -44,6 +44,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 
+#include "Engine/EngineFwd.h"
+
 using namespace Natron;
 
 namespace boost {

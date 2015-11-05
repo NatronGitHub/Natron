@@ -27,16 +27,10 @@
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
 
 class QPointF;
-class KnobDouble;
-class KnobChoice;
-class KnobBool;
-class KnobI;
-class OverlaySupport;
-namespace Natron {
-class Node;
-}
+
 
 class NodeGuiI
 {

@@ -26,8 +26,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
 
 struct DiskCacheNodePrivate;
+
 class DiskCacheNode : public Natron::OutputEffectInstance
 {
 public:

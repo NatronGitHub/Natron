@@ -31,9 +31,8 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
+#include "Engine/EngineFwd.h"
 
-
-class BezierCP;
 
 namespace Natron {
 

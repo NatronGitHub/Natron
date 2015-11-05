@@ -31,10 +31,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/NodeWrapper.h"
-
-class Settings;
-class AppInstance;
-
+#include "Engine/EngineFwd.h"
 
 class AppSettings
 {

@@ -28,8 +28,12 @@
 #include <string>
 #include <map>
 #include <vector>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
+
+
 namespace Natron {
 #ifdef __NATRON_OSX__
     #define NATRON_LIBRARY_EXT "dylib"

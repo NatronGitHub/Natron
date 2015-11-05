@@ -41,27 +41,12 @@
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
+#include "Engine/EngineFwd.h"
+
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
-class KnobPage;
-class Curve;
-class KeyFrame;
-class KnobHolder;
-class AppInstance;
-class KnobSerialization;
-class StringAnimationManager;
-namespace Transform {
-struct Matrix3x3;
-}
-namespace Natron {
-class OfxParamOverlayInteract;
-}
-
-class DockablePanelI;
-
-class KnobI;
 class KnobSignalSlotHandler
 : public QObject
 {
@@ -1828,19 +1813,6 @@ private:
     StringAnimationManager* _animation;
 };
 
-class KnobInt;
-class KnobDouble;
-class KnobBool;
-class KnobChoice;
-class KnobColor;
-class KnobButton;
-class KnobString;
-class KnobFile;
-class KnobOutputFile;
-class KnobPath;
-class KnobParametric;
-class KnobGroup;
-class KnobPage;
 
 /**
  * @brief A Knob holder is a class that stores Knobs and interact with them in some way.

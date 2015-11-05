@@ -33,12 +33,8 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-class KnobHelper;
-class KnobHolder;
-namespace Natron {
-class LibraryBinary;
-}
 
 /******************************KNOB_FACTORY**************************************/
 

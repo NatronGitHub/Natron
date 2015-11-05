@@ -36,32 +36,12 @@
 #include <QStringList>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-namespace boost {
-namespace archive {
-class xml_iarchive;
-class xml_oarchive;
-}
-}
-
-class NodeSerialization;
-class TimeLine;
-struct AppInstancePrivate;
-class KnobSerialization;
-class KnobHolder;
 class QFileInfo;
-class ViewerInstance;
-class ProcessHandler;
-class NodeCollection;
 class QMutex;
-class CLArgs;
-namespace Natron {
-class Node;
-class Plugin;
-class Project;
-class EffectInstance;
-class OutputEffectInstance;
-}
+
+struct AppInstancePrivate;
 
 struct CreateNodeArgs
 {

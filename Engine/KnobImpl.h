@@ -55,6 +55,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EngineFwd.h"
 
 
 #define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)

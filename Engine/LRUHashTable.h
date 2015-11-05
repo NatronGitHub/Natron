@@ -56,6 +56,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include "Engine/EngineFwd.h"
+
+
 //#define USE_VARIADIC_TEMPLATES
 #define NATRON_CACHE_USE_HASH
 #define NATRON_CACHE_USE_BOOST

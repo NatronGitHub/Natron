@@ -29,12 +29,9 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class Node;
-}
 
-class KnobBool;
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
  * and it is also used to implement the "Dot" node.

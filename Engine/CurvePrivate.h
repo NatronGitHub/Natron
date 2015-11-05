@@ -34,10 +34,8 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/EngineFwd.h"
 
-class Curve;
-class KeyFrame;
-class KnobI;
 
 struct CurvePrivate
 {

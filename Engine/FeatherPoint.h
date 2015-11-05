@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/BezierCP.h"
+#include "Engine/EngineFwd.h"
 
 class FeatherPoint
     : public BezierCP

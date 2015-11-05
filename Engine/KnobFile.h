@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobTypes.h"
 
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
 namespace SequenceParsing {
 class SequenceFromFiles;

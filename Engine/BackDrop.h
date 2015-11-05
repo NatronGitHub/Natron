@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/NoOpBase.h"
+#include "Engine/EngineFwd.h"
 
 struct BackDropPrivate;
 class BackDrop : public NoOpBase

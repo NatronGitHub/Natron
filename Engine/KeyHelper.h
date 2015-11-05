@@ -26,8 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include <string>
+
 #include "Engine/Hash64.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/EngineFwd.h"
+
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
  * of 1 or more parameters that represent a "unique" element in the cache.

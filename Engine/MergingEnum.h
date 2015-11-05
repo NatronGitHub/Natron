@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 

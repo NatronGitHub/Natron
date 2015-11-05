@@ -38,15 +38,11 @@
 #include "Engine/FrameKey.h"
 #include "Engine/FrameParams.h"
 #include "Engine/CacheEntry.h"
+#include "Engine/EngineFwd.h"
 
-
-class Hash64;
 
 namespace Natron {
 
-
-
-class Image;
 class FrameEntry
     : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
 {

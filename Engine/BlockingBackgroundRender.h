@@ -28,9 +28,8 @@
 #include <QMutex>
 #include <QWaitCondition>
 
-namespace Natron {
-class OutputEffectInstance;
-}
+#include "Engine/EngineFwd.h"
+
 
 class BlockingBackgroundRender
 {

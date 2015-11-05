@@ -46,6 +46,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/BezierCPSerialization.h"
+#include "Engine/EngineFwd.h"
 
 #define BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE 2
 #define BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE 3

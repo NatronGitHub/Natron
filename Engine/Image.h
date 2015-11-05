@@ -42,8 +42,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/CacheEntry.h"
 #include "Engine/RectD.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/EngineFwd.h"
 
-class CacheEntryHolder;
 
 namespace Natron {
 

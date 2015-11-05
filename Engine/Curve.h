@@ -36,8 +36,7 @@
 #endif
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-
-namespace boost { namespace serialization { class access; } }
+#include "Engine/EngineFwd.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 /**
@@ -45,7 +44,6 @@ namespace boost { namespace serialization { class access; } }
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
  * used by the interpolation method of the curve.
  **/
-class Curve;
 
 class KeyFrame
 {
@@ -125,9 +123,7 @@ struct KeyFrame_compare_time
 typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 
 
-class KnobI;
 struct CurvePrivate;
-class RectD;
 
 class Curve
 {

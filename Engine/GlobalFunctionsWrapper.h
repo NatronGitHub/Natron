@@ -33,6 +33,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstanceWrapper.h"
 #include "Global/MemoryInfo.h"
+#include "Engine/EngineFwd.h"
 
 class PyCoreApplication
 {

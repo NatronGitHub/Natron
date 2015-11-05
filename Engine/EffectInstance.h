@@ -43,6 +43,7 @@
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
+#include "Engine/EngineFwd.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -85,31 +86,10 @@
 
 #define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
-
 class QThread;
-class Hash64;
-class Format;
-class TimeLine;
-class OverlaySupport;
-class PluginMemory;
-class BlockingBackgroundRender;
-class NodeSerialization;
-class ViewerInstance;
-class RenderEngine;
-class BufferableObject;
-namespace Natron {
-class OutputEffectInstance;
-}
-namespace Transform {
-struct Matrix3x3;
-}
-
 
 namespace Natron {
-class Node;
-class ImageKey;
-class Image;
-class ImageParams;
+
 /**
  * @brief This is the base class for visual effects.
  * A live instance is always living throughout the lifetime of a Node and other copies are

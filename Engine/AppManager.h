@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/EngineFwd.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -50,29 +51,6 @@ CLANG_DIAG_ON(deprecated)
 class QMutex;
 class QChar;
 
-class CacheEntryHolder;
-class AppInstance;
-class Format;
-class Settings;
-class KnobHolder;
-class NodeSerialization;
-class KnobSerialization;
-class RectI;
-class CLArgs;
-namespace Natron {
-class OfxImageEffectInstance;
-class Node;
-class EffectInstance;
-class LibraryBinary;
-class ImageKey;
-class FrameKey;
-class Image;
-class ImageParams;
-class FrameParams;
-class FrameEntry;
-class Plugin;
-class CacheSignalEmitter;
-}
 
 namespace Natron {
 enum AppInstanceStatusEnum

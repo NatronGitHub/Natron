@@ -36,18 +36,11 @@ CLANG_DIAG_ON(deprecated)
 #include <QVector>
 #include <QMutex>
 
-#include "Engine/Knob.h"
-
 #include "Global/GlobalDefines.h"
+#include "Engine/Knob.h"
+#include "Engine/EngineFwd.h"
 
-class Curve;
-class ChoiceExtraData;
-class OverlaySupport;
-class StringAnimationManager;
-class BezierCP;
-namespace Natron {
-class Node;
-}
+
 /******************************KnobInt**************************************/
 
 class KnobInt

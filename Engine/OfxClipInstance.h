@@ -49,20 +49,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/EngineFwd.h"
 
-class OfxImage;
-class OfxEffectInstance;
-namespace Transform
-{
-struct Matrix3x3;
-}
-namespace Natron {
-class EffectInstance;
-class GenericAccess;
-class OfxImageEffectInstance;
-class Image;
-class Node;
-}
 
 class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance

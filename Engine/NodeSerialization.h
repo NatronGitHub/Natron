@@ -47,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoContextSerialization.h"
 #include "Engine/ImageParamsSerialization.h"
 #include "Engine/AppManager.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
@@ -63,10 +64,6 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS 13
 #define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS
 
-namespace Natron {
-class Node;
-}
-class AppInstance;
 
 
 class NodeSerialization

@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/EngineFwd.h"
 
 class GroupOutput
 : public NoOpBase

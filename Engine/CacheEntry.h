@@ -47,6 +47,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
 #include <SequenceParsing.h> // for removePath
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

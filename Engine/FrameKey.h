@@ -28,6 +28,7 @@
 #include "Engine/KeyHelper.h"
 #include "Engine/TextureRect.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/EngineFwd.h"
 
 namespace Natron {
 class FrameKey
