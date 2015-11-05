@@ -18,11 +18,11 @@ fi
 
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
-NATRON_GIT_TAG=tags/2.0.0-RC2
-IOPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-MISCPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-ARENAPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
-CVPLUG_GIT_TAG=tags/Natron-2.0.0-RC2
+NATRON_GIT_TAG=tags/2.0.0-RC3
+IOPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+MISCPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+ARENAPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
+CVPLUG_GIT_TAG=tags/Natron-2.0.0-RC3
 #----------------------------------------------------------
 
 
