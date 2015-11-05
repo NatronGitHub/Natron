@@ -36,6 +36,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
+#include "Engine/Curve.h"
 #include "Engine/Node.h"
 #include "Engine/Transform.h"
 
@@ -1687,15 +1688,18 @@ HostOverlayPrivate::penUp(double /*time*/,
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
-            knob->setValue(it->_rotateDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_rotateDrag, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
-            knob->setValue(it->_skewXDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_skewXDrag, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
-            knob->setValue(it->_skewYDrag, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            KeyFrame k;
+            knob->setValue(it->_skewYDrag, 0, Natron::eValueChangedReasonNatronGuiEdited,&k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         

@@ -1465,6 +1465,8 @@ struct RotoContextPrivate
             knobs.push_back(center);
             cloneCenterKnob = center;
             
+            node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
+            
             boost::shared_ptr<KnobChoice> filter = Natron::createKnob<KnobChoice>(effect,kRotoBrushFilterParamLabel,1,false);
             filter->setName(kRotoBrushFilterParam);
             filter->setHintToolTip(kRotoBrushFilterParamHint);
