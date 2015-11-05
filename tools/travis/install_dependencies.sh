@@ -39,8 +39,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
-    # we use the irie/boost ppa for that purpose
-    sudo add-apt-repository -y ppa:irie/boost
+    ## we used the irie/boost ppa for that purpose
+    #sudo add-apt-repository -y ppa:irie/boost
+    # now we use ppa:boost-latest/ppa
+    sudo add-apt-repository -y ppa:boost-latest/ppa
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
@@ -53,7 +55,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     # we also need a recent ffmpeg for the newest version of the plugin
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi
+    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     sudo apt-get update
     sudo apt-get update -qq
 
@@ -72,7 +75,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
+    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins1; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/PropTester; fi
     if [ "$CC" = "$TEST_CC" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi

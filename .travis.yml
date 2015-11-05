@@ -29,14 +29,16 @@ addons:
     sources:
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
-    # we use the irie/boost ppa for that purpose
-    - irie-boost
+    # we use the ppa:boost-latest/ppa for that purpose
+    - ppa:boost-latest/ppa
     # kubuntu-ppa/backports contains OpenCV
-    - kubuntu-ppa-backports
+    - ppa:kubuntu-ppa/backports
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
-    - xorg-edgers-ppa
+    - ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    - ubuntu-toolchain-r-test
+    - ppa:ubuntu-toolchain-r/test
+    # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1)
+    - ppa:pavlyshko/precise
     packages:
     - gcc-4.9
     - g++-4.9
