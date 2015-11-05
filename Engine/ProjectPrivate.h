@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/ThreadStorage.h"
 
 class QTimer;
 class TimeLine;
@@ -115,8 +116,8 @@ struct ProjectPrivate
     boost::shared_ptr<KnobString> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
     boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
     boost::shared_ptr<KnobButton> addFormatKnob;
-    boost::shared_ptr<KnobInt> viewsCount;
-    boost::shared_ptr<KnobInt> mainView;
+    boost::shared_ptr<KnobPath> viewsList;
+    boost::shared_ptr<KnobButton> setupForStereoButton;
     boost::shared_ptr<KnobBool> previewMode; //< auto or manual
     boost::shared_ptr<KnobChoice> colorSpace8u;
     boost::shared_ptr<KnobChoice> colorSpace16u;
@@ -150,6 +151,8 @@ struct ProjectPrivate
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     
+    ThreadStorage<std::vector<std::string> > viewNamesTLS;
+    
     ProjectPrivate(Natron::Project* project);
 
     bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
@@ -172,6 +175,7 @@ struct ProjectPrivate
     
     void setProjectPath(const std::string& path);
     std::string getProjectPath() const;
+    
 };
 }
 

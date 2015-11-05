@@ -138,9 +138,11 @@ public:
 
     void setupProjectForStereo();
     
+    void createProjectViews(const std::vector<std::string>& views);
+    
+    const std::vector<std::string>& getProjectViewNames() const;
+    
     int getProjectViewsCount() const;
-
-    int getProjectMainView() const;
 
     void setOrAddProjectFormat(const Format & frmt,bool skipAdd = false);
     
@@ -202,6 +204,7 @@ public:
      * @brief Decode the project variables from the encoded version;
      **/
     static void makeEnvMap(const std::string& encoded,std::map<std::string,std::string>& variables);
+    static void makeEnvMapUnordered(const std::string& encoded,std::vector<std::pair<std::string,std::string> >& variables);
     
     /**
      * @brief Expands the environment variables in the given string that are found in env
@@ -385,7 +388,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;

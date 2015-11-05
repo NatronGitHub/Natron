@@ -56,6 +56,7 @@ class Plugin;
 struct OfxHostPrivate;
 class OfxHost
     : public OFX::Host::ImageEffect::Host
+    , private OFX::Host::Property::GetHook
 {
 public:
 
@@ -105,7 +106,7 @@ public:
                                            va_list args) OVERRIDE;
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
-    virtual void loadingStatus(const std::string &) OVERRIDE;
+    virtual void loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor) OVERRIDE;
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
     ///fetch the parametric parameters suite or returns the base class version
@@ -157,8 +158,8 @@ public:
 
     void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
     
-    static OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                           Natron::ContextEnum* ctx);
+    OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                    Natron::ContextEnum* ctx);
     
     GlobalOFXTLS& getCurrentThreadTLS();
 
@@ -168,6 +169,9 @@ private:
     /*Writes all plugins loaded and their descriptors to
      the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
+
+    // get the virutals for viewport size, pixel scale, background colour
+    const std::string &getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC OVERRIDE;
 
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };

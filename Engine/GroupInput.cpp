@@ -61,7 +61,7 @@ void
 GroupInput::knobChanged(KnobI* k,
                  Natron::ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
-                 SequenceTime /*time*/,
+                 double /*time*/,
                  bool /*originatedFromMainThread*/)
 {
     if (k == optional.lock().get()) {

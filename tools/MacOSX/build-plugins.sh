@@ -73,13 +73,19 @@ fi
 MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
+make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} HAVE_CIMG=0 || exit 1
+cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
 make -C CImg CImg.h || exit 1
 if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
-    make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp
+    make -C CImg CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD=-fopenmp || exit 1
+elif [ -n "$GXX" ]; then
+    # GCC is available too!
+    # libSupport was compiled by clang, now clean it to build it again with gcc
+    make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} HAVE_CIMG=0 clean || exit 1
+    # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
+    make -C CImg CXX="$GXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD="-fopenmp -static-libgcc" || exit 1
 fi
-make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
-cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
 cp -r CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR/" || exit 1
 cd ..
 
@@ -90,8 +96,15 @@ git checkout "$ARENA_BRANCH" || exit 1
 git submodule update -i --recursive || exit 1
 if [ "$ARENA_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
-    git submodule foreach git pull origin master
+    if true; then
+        git submodule foreach git pull origin master
+    else
+       echo "Warning: openfx-arena submodules not updated..."
+    fi
 fi
+# ImageMagick on OSX is usually compiled without openmp
+echo "Warning: removing -lgomp from MAGICK_LINKFLAGS, since ImageMagick on OSX is compiled without OMP support"
+sed -e s/-lgomp// -i.orig Makefile.master
 
 #Always bump git commit, it is only used to version-stamp binaries
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`

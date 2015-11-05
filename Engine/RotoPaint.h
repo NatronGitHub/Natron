@@ -119,6 +119,12 @@ public:
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     
 private:
+    
+    virtual void knobChanged(KnobI* k,
+                             Natron::ValueChangedReasonEnum reason,
+                             int view,
+                             double time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
 
     virtual Natron::StatusEnum
     getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;

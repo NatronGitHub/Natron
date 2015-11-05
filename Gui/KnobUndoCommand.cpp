@@ -242,7 +242,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
                                                            bool setKeyFrame,
                                                            const Variant & value,
                                                            int dimension,
-                                                           int time)
+                                                           double time)
     : QUndoCommand()
       , knobs()
       , createNew(createNew)
@@ -334,7 +334,7 @@ MultipleKnobEditsUndoCommand::undo()
 
     if (holder) {
         holder->beginChanges();
-        int time = holder->getCurrentTime();
+        double time = holder->getCurrentTime();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
             (*it)->evaluateValueChange(0,time,  _reason);
         }
@@ -358,7 +358,7 @@ MultipleKnobEditsUndoCommand::redo()
     if (firstRedoCalled) {
         ///just clone
         std::set <KnobI*> knobsUnique;
-        int time = -1;
+        double time = -1;
         if (holder) {
             time = holder->getCurrentTime();
         }
@@ -511,7 +511,7 @@ RestoreDefaultsCommand::undo()
                 if (c) {
                     KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                     for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                        times.push_back( it->getTime() );
+                        times.push_back( std::floor(it->getTime()+0.5) );
                     }
                 }
             }
@@ -550,7 +550,7 @@ RestoreDefaultsCommand::redo()
                 if (c) {
                     KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                     for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                        times.push_back( it->getTime() );
+                        times.push_back( std::floor(it->getTime()+0.5) );
                     }
                 }
             }
@@ -577,7 +577,7 @@ RestoreDefaultsCommand::redo()
      Block value changes and call instanceChange on all knobs  afterwards to put back the plug-in
      in a correct state
      */
-    int time = 0;
+    double time = 0;
     if (timeline) {
         time = timeline->currentFrame();
     }

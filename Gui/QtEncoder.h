@@ -84,7 +84,7 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
+    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;

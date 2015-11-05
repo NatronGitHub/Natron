@@ -1,4 +1,3 @@
-
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
@@ -18,8 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-#ifndef DEFAULTOVERLAYS_H
-#define DEFAULTOVERLAYS_H
+#ifndef Gui_HostOverlay_h
+#define Gui_HostOverlay_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -37,79 +36,39 @@
 #include "Engine/OfxOverlayInteract.h"
 
 class KnobDouble;
+class KnobChoice;
+class KnobBool;
 class KnobI;
 class QPoint;
 class QPointF;
 class NodeGui;
 struct PositionInteract;
-struct DefaultOverlayPrivate;
-class DefaultOverlay : public Natron::NatronOverlayInteractSupport
+struct HostOverlayPrivate;
+class HostOverlay : public Natron::NatronOverlayInteractSupport
 {
     
 public:
     
-    DefaultOverlay(const boost::shared_ptr<NodeGui>& node);
+    HostOverlay(const boost::shared_ptr<NodeGui>& node);
     
-    ~DefaultOverlay();
+    ~HostOverlay();
     
     boost::shared_ptr<NodeGui> getNode() const;
     
     bool addPositionParam(const boost::shared_ptr<KnobDouble>& position);
     
+    bool addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
+                              const boost::shared_ptr<KnobDouble>& scale,
+                              const boost::shared_ptr<KnobBool>& scaleUniform,
+                              const boost::shared_ptr<KnobDouble>& rotate,
+                              const boost::shared_ptr<KnobDouble>& skewX,
+                              const boost::shared_ptr<KnobDouble>& skewY,
+                              const boost::shared_ptr<KnobChoice>& skewOrder,
+                              const boost::shared_ptr<KnobDouble>& center);
+    
     void draw(double time,const RenderScale& renderScale);
     
-    bool penMotion(double time,
-                   const RenderScale &renderScale,
-                   const QPointF &penPos,
-                   const QPoint &penPosViewport,
-                   double pressure,
-                   PositionInteract* it);
-
-    bool penUp(double time,
-               const RenderScale &renderScale,
-               const QPointF &penPos,
-               const QPoint &penPosViewport,
-               double  pressure,
-               PositionInteract* it);
-
-
-    bool penDown(double time,
-                 const RenderScale &renderScale,
-                 const QPointF &penPos,
-                 const QPoint &penPosViewport,
-                 double  pressure,
-                 PositionInteract* it);
-
-
-    bool keyDown(double time,
-                 const RenderScale &renderScale,
-                 int     key,
-                 char*   keyString,
-                 PositionInteract* it);
-
-
-    bool keyUp(double time,
-               const RenderScale &renderScale,
-               int     key,
-               char*   keyString,
-               PositionInteract* it);
-
-
-    bool keyRepeat(double time,
-                   const RenderScale &renderScale,
-                   int     key,
-                   char*   keyString,
-                   PositionInteract* it);
-
-
-    bool gainFocus(double time,
-                   const RenderScale &renderScale,
-                   PositionInteract* it);
-
-
-    bool loseFocus(double  time,
-                   const RenderScale &renderScale,
-                   PositionInteract* it);
+    
 
     bool penMotion(double time,
                    const RenderScale &renderScale,
@@ -157,15 +116,15 @@ public:
     bool loseFocus(double  time,
                    const RenderScale &renderScale);
     
-    bool hasDefaultOverlayForParam(const KnobI* param);
+    bool hasHostOverlayForParam(const KnobI* param);
     
-    void removeDefaultOverlay(KnobI* knob);
+    void removePositionHostOverlay(KnobI* knob);
     
     bool isEmpty() const;
     
 private:
     
-    boost::scoped_ptr<DefaultOverlayPrivate> _imp;
+    boost::scoped_ptr<HostOverlayPrivate> _imp;
 };
 
-#endif // DEFAULTOVERLAYS_H
+#endif // Gui_HostOverlay_h

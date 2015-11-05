@@ -294,18 +294,25 @@ public:
 
 Q_SIGNALS:
 
+    void aboutToDrop();
+    void itemDropped();
     void deleteKeyPressed();
     void itemRightClicked(TableItem* item);
     void itemDoubleClicked(TableItem* item);
 
 private:
 
+    virtual void startDrag(Qt::DropActions supportedActions) OVERRIDE FINAL;
+    virtual void dragLeaveEvent(QDragLeaveEvent *e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent *e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual bool edit(const QModelIndex & index, QAbstractItemView::EditTrigger trigger, QEvent * event) OVERRIDE FINAL;
 
+    void rebuildDraggedItemsFromSelection();
     
     boost::scoped_ptr<TableViewPrivate> _imp;
 };

@@ -391,7 +391,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
         
         
-        
+        if (isReader() && serialization && !serialization->isNull()) {
+            getNode()->refreshCreatedViews();
+        }
         // Check here that bitdepth and components given by getClipPreferences are supported by the effect.
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
@@ -659,6 +661,18 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
 
     } else if (pluginIdentifier.startsWith("com.NewBlue.Titler")) {
         s = PLUGIN_GROUP_PAINT;
+
+    } else if (pluginIdentifier.startsWith("com.FXHOME.HitFilm")) {
+        // HitFilm uses grouping such as "HitFilm - Keying - Matte Enhancement"
+        s.replace(" - ", "/");
+
+    } else if (pluginIdentifier.startsWith("com.redgiantsoftware.Universe") && s.startsWith("Universe ")) {
+        // Red Giant Universe uses grouping such as "Universe Blur"
+        out.push_back("Universe");
+
+    } else if (pluginIdentifier.startsWith("com.NewBlue.") && s.startsWith("NewBlue ")) {
+        // NewBlueFX uses grouping such as "NewBlue Elements"
+        out.push_back("NewBlue");
 
     } else if ( (pluginIdentifier == "tuttle.avreader") ||
                (pluginIdentifier == "tuttle.avwriter") ||
@@ -1853,7 +1867,10 @@ OfxEffectInstance::beginSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->beginRenderAction(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        stat = effectInstance()->beginRenderAction(first, last, step,
+                                                   interactive, scale,
+                                                   isSequentialRender, isRenderResponseToUserInteraction,
+                                                   /*openGLRender=*/false, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1899,7 +1916,10 @@ OfxEffectInstance::endSequenceRender(double first,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = effectInstance()->endRenderAction(first, last, step, interactive,scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        stat = effectInstance()->endRenderAction(first, last, step,
+                                                 interactive, scale,
+                                                 isSequentialRender, isRenderResponseToUserInteraction,
+                                                 /*openGLRender=*/false, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1997,6 +2017,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                      args.mappedScale,
                                      args.isSequentialRender,
                                      args.isRenderResponseToUserInteraction,
+                                     /*openGLRender=*/false,
                                      args.draftMode,
                                      args.view,
                                      viewsCount,
@@ -2402,7 +2423,7 @@ void
 OfxEffectInstance::knobChanged(KnobI* k,
                                Natron::ValueChangedReasonEnum reason,
                                int view,
-                               SequenceTime time,
+                               double time,
                                bool originatedFromMainThread)
 {
     if (!_initialized) {
@@ -2471,7 +2492,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
-        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasDefaultOverlayForParam(k)) {
+        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasHostOverlayForParam(k)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {

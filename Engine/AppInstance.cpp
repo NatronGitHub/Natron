@@ -832,7 +832,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
         if (ofxPlugin) {
             
             try {
-                ofxDesc = Natron::OfxHost::getPluginContextAndDescribe(ofxPlugin,&ctx);
+                //  Should this method be in AppManager?
+                // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
+                ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin,&ctx);
             } catch (const std::exception& e) {
                 errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
                             + pluginID.toStdString() + ": " + e.what(), false);
@@ -1276,12 +1278,6 @@ Natron::ViewerColorSpaceEnum
 AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
-}
-
-int
-AppInstance::getMainView() const
-{
-    return _imp->_currentProject->getProjectMainView();
 }
 
 void

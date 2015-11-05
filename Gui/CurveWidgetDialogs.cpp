@@ -403,11 +403,11 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     
     SpinBox::SpinBoxTypeEnum xType;
     
-    if (mode == eEditModeKeyframePosition) {
-        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
-    } else {
+//    if (mode == eEditModeKeyframePosition) {
+//        xType = key->curve->areKeyFramesTimeClampedToIntegers() ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
+//    } else {
         xType = SpinBox::eSpinBoxTypeDouble;
-    }
+//    }
     
     _imp->xSpinbox = new SpinBox(_imp->boxContainer,xType);
     _imp->xSpinbox->setValue(_imp->originalX);

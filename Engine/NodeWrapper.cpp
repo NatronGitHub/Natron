@@ -31,6 +31,118 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoWrapper.h"
+#include "Engine/Hash64.h"
+
+ImageLayer::ImageLayer(const std::string& layerName,
+           const std::string& componentsPrettyName,
+           const std::vector<std::string>& componentsName)
+: _comps(layerName,componentsPrettyName, componentsName)
+{
+    
+}
+
+ImageLayer::ImageLayer(const Natron::ImageComponents& internalComps)
+: _comps(internalComps)
+{
+    
+}
+
+int
+ImageLayer::getHash(const ImageLayer& layer)
+{
+    Hash64 h;
+    Hash64_appendQString(&h, layer._comps.getLayerName().c_str());
+    const std::vector<std::string>& comps = layer._comps.getComponentsNames();
+    for (std::size_t i = 0; i < comps.size(); ++i) {
+        Hash64_appendQString(&h, comps[i].c_str());
+    }
+    return (int)h.value();
+}
+
+bool
+ImageLayer::isColorPlane() const
+{
+    return _comps.isColorPlane();
+}
+
+int
+ImageLayer::getNumComponents() const
+{
+    return _comps.getNumComponents();
+}
+
+const std::string&
+ImageLayer::getLayerName() const
+{
+    return _comps.getLayerName();
+}
+
+const std::vector<std::string>&
+ImageLayer::getComponentsNames() const
+{
+    return _comps.getComponentsNames();
+}
+
+const std::string&
+ImageLayer::getComponentsPrettyName() const
+{
+    return _comps.getComponentsGlobalName();
+}
+
+bool ImageLayer::operator==(const ImageLayer& other) const
+{
+    return _comps == other._comps;
+}
+
+
+bool
+ImageLayer::operator<(const ImageLayer& other) const
+{
+    return _comps < other._comps;
+}
+
+/*
+ * These are default presets image components
+ */
+ImageLayer ImageLayer::getNoneComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getNoneComponents());
+}
+
+ImageLayer ImageLayer::getRGBAComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getRGBAComponents());
+}
+
+ImageLayer ImageLayer::getRGBComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getRGBComponents());
+}
+
+ImageLayer ImageLayer::getAlphaComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getAlphaComponents());
+}
+
+ImageLayer ImageLayer::getBackwardMotionComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getBackwardMotionComponents());
+}
+
+ImageLayer ImageLayer::getForwardMotionComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getForwardMotionComponents());
+}
+
+ImageLayer ImageLayer::getDisparityLeftComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getDisparityLeftComponents());
+}
+
+ImageLayer ImageLayer::getDisparityRightComponents()
+{
+    return ImageLayer(Natron::ImageComponents::getDisparityRightComponents());
+}
 
 UserParamHolder::UserParamHolder()
 : _holder(0)
@@ -627,4 +739,24 @@ Effect::addUserPlane(const std::string& planeName, const std::vector<std::string
     }
     Natron::ImageComponents comp(planeName,compsGlobal,channels);
     return _node->addUserComponents(comp);
+}
+
+std::map<ImageLayer,Effect*>
+Effect::getAvailableLayers() const
+{
+    std::map<ImageLayer,Effect*> ret;
+    if (!_node) {
+        return ret;
+    }
+    Natron::EffectInstance::ComponentsAvailableMap availComps;
+    _node->getLiveInstance()->getComponentsAvailable(true, _node->getLiveInstance()->getCurrentTime(), &availComps);
+    for (Natron::EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+        NodePtr node = it->second.lock();
+        if (node) {
+            Effect* effect = new Effect(node);
+            ImageLayer layer(it->first);
+            ret.insert(std::make_pair(layer, effect));
+        }
+    }
+    return ret;
 }

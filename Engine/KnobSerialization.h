@@ -496,7 +496,7 @@ class KnobSerialization : public KnobSerializationBase
             }
             
             if (isDouble && isDouble->getDimension() == 2) {
-                bool useOverlay = isDouble->getHasNativeOverlayHandle();
+                bool useOverlay = isDouble->getHasHostOverlayHandle();
                 ar & boost::serialization::make_nvp("HasOverlayHandle",useOverlay);
             }
             

@@ -2489,24 +2489,7 @@ EffectInstance::evaluate(KnobI* knob,
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
         if (button) {
             if ( button->isRenderButton() ) {
-                std::string sequentialNode;
-                if ( node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
-                    if (node->getApp()->getProject()->getProjectViewsCount() > 1) {
-                        Natron::StandardButtonEnum answer =
-                            Natron::questionDialog( QObject::tr("Render").toStdString(),
-                                                    sequentialNode + QObject::tr(" can only "
-                                                                                 "render in sequential mode. Due to limitations in the "
-                                                                                 "OpenFX standard, %1"
-                                                                                 " will not be able "
-                                                                                 "to render all the views of the project. "
-                                                                                 "Only the main view of the project will be rendered. You can "
-                                                                                 "change the main view in the project settings. Would you like "
-                                                                                 "to continue ?").arg(NATRON_APPLICATION_NAME).toStdString(), false );
-                        if (answer != Natron::eStandardButtonYes) {
-                            return;
-                        }
-                    }
-                }
+                
                 AppInstance::RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>(this);
                 w.firstFrame = INT_MIN;
@@ -2523,6 +2506,7 @@ EffectInstance::evaluate(KnobI* knob,
     ///increments the knobs age following a change
     if (!button && isSignificant) {
         node->incrementKnobsAge();
+        node->refreshIdentityState();
     }
 
 
@@ -2539,7 +2523,7 @@ EffectInstance::evaluate(KnobI* knob,
         }
     }
 
-    getNode()->refreshPreviewsRecursivelyDownstream(time);
+    node->refreshPreviewsRecursivelyDownstream(time);
 } // evaluate
 
 bool
@@ -2703,7 +2687,7 @@ EffectInstance::onKnobSlaved(KnobI* slave,
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 {
-    getNode()->setCurrentViewportForDefaultOverlays(viewport);
+    getNode()->setCurrentViewportForHostOverlays(viewport);
     setCurrentViewportForOverlays(viewport);
 }
 
@@ -2714,7 +2698,7 @@ EffectInstance::drawOverlay_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return;
     }
 
@@ -2722,7 +2706,7 @@ EffectInstance::drawOverlay_public(double time,
 
     _imp->setDuringInteractAction(true);
     drawOverlay(time, scaleX, scaleY);
-    getNode()->drawDefaultOverlay(time, scaleX, scaleY);
+    getNode()->drawHostOverlay(time, scaleX, scaleY);
     _imp->setDuringInteractAction(false);
 }
 
@@ -2736,7 +2720,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2765,7 +2749,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2793,7 +2777,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
     bool ret;
@@ -2820,7 +2804,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2848,7 +2832,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2877,7 +2861,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2903,7 +2887,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return false;
     }
 
@@ -2929,7 +2913,7 @@ EffectInstance::onOverlayFocusLost_public(double time,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasHostOverlay() ) {
         return false;
     }
     bool ret;
@@ -3784,7 +3768,7 @@ EffectInstance::isMaskEnabled(int inputNb) const
 void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    Natron::ValueChangedReasonEnum /*reason*/,
-                                   SequenceTime /*time*/,
+                                   double /*time*/,
                                    bool /*originatedFromMainThread*/)
 {
 }
@@ -3865,7 +3849,7 @@ EffectInstance::getCurrentThreadSafetyThreadLocal() const
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           Natron::ValueChangedReasonEnum reason,
-                                          SequenceTime time,
+                                          double time,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
@@ -4388,4 +4372,11 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
+}
+
+void
+EffectInstance::refreshExtraStateAfterTimeChanged(double time)
+{
+    KnobHolder::refreshExtraStateAfterTimeChanged(time);
+    getNode()->refreshIdentityState();
 }

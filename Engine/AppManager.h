@@ -82,6 +82,15 @@ enum AppInstanceStatusEnum
 };
 }
 
+namespace OFX {
+    namespace Host {
+        namespace ImageEffect {
+            class ImageEffectPlugin;
+            class Descriptor;
+        }
+    }
+}
+
 struct AppInstanceRef
 {
     AppInstance* app;
@@ -430,6 +439,9 @@ public:
     static std::string isImageFileSupportedByNatron(const std::string& ext);
     
     void setOFXHostHandle(void* handle);
+    
+    OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                    Natron::ContextEnum* ctx);
     
 public Q_SLOTS:
     

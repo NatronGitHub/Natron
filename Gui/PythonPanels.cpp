@@ -87,7 +87,7 @@ DialogParamHolder::setParamChangedCallback(const std::string& callback)
 void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
                         Natron::ValueChangedReasonEnum reason,
-                        SequenceTime /*time*/,
+                        double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
     std::string callback;

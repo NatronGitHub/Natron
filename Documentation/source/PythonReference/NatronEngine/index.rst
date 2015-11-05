@@ -31,6 +31,7 @@ without importing anything.
 	FileParam
 	Group
 	GroupParam
+	ImageLayer
 	Int2DParam
 	Int2DTuple
 	Int3DParam

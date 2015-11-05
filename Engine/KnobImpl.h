@@ -1157,7 +1157,7 @@ Knob<std::string>::makeKeyFrame(Curve* /*curve*/,double time,const std::string& 
 
 template<typename T>
 bool
-Knob<T>::setValueAtTime(int time,
+Knob<T>::setValueAtTime(double time,
                         const T & v,
                         int dimension,
                         Natron::ValueChangedReasonEnum reason,
@@ -1289,7 +1289,7 @@ Knob<T>::setValueAtTime(int time,
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
 {
     
     KnobHolder* holder = getHolder();
@@ -1319,7 +1319,7 @@ Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, Natron::Valu
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1350,7 +1350,7 @@ Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& val
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1392,15 +1392,15 @@ Knob<T>::unSlave(int dimension,
     boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (helper->getSignalSlotHandler() && _signalSlotHandler) {
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
-                             SLOT( onMasterChanged(int,int) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(SequenceTime,int,int)) );
+        //QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(),
+        //                     SLOT( onMasterChanged(int,int) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)) );
         
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,int,int) ) );
+        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,double,double) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ) );
         QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int) ),
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
     }
@@ -1466,7 +1466,7 @@ Knob<T>::setValueFromPlugin(const T & value,int dimension)
 
 template<typename T>
 void
-Knob<T>::setValueAtTime(int time,
+Knob<T>::setValueAtTime(double time,
                         const T & v,
                         int dimension)
 {
@@ -1477,7 +1477,7 @@ Knob<T>::setValueAtTime(int time,
 
 template<typename T>
 void
-Knob<T>::setValueAtTimeFromPlugin(int time,const T & v,int dimension)
+Knob<T>::setValueAtTimeFromPlugin(double time,const T & v,int dimension)
 {
     KeyFrame k;
     
@@ -1677,7 +1677,7 @@ Knob<T>::isTypeCompatible(const boost::shared_ptr<KnobI> & other) const
 
 template<typename T>
 bool
-Knob<T>::onKeyFrameSet(SequenceTime time,
+Knob<T>::onKeyFrameSet(double time,
                        int dimension)
 {
     KeyFrame key;
@@ -1730,14 +1730,14 @@ Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReaso
 
 template<typename T>
 bool
-Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
+Knob<T>::onKeyFrameSet(double /*time*/,const KeyFrame& key,int dimension)
 {
     return setKeyFrame(key, dimension, Natron::eValueChangedReasonUserEdited);
 }
 
 template<typename T>
 void
-Knob<T>::onTimeChanged(SequenceTime /*time*/)
+Knob<T>::onTimeChanged(double /*time*/)
 {
     int dims = getDimension();
 
@@ -1943,14 +1943,26 @@ Knob<double>::resetToDefaultValue(int dimension)
     }
 
     resetExtraToDefaultValue(dimension);
-    
-    if ( isDouble && isDouble->areDefaultValuesNormalized() ) {
-        double time = getCurrentTime();
-        isDouble->denormalize(dimension, time, &def);
+
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    if (isDouble) {
+        if (isDouble->getDefaultValuesAreNormalized()) {
+            if (isDouble->getValueIsNormalized(dimension) == KnobDouble::eValueIsNormalizedNone) {
+                // default is normalized, value is non-normalized: denormalize it!
+                double time = getCurrentTime();
+                isDouble->denormalize(dimension, time, &def);
+            }
+        } else {
+            if (isDouble->getValueIsNormalized(dimension) != KnobDouble::eValueIsNormalizedNone) {
+                // default is non-normalized, value is normalized: normalize it!
+                double time = getCurrentTime();
+                isDouble->normalize(dimension, time, &def);
+            }
+        }
     }
-    ignore_result(setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
+    ignore_result(setValue(def, dimension, Natron::eValueChangedReasonRestoreDefault, NULL));
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
+        _signalSlotHandler->s_valueChanged(dimension, Natron::eValueChangedReasonRestoreDefault);
     }
     setSecret(getDefaultIsSecret());
     setEnabled(dimension, isDefaultEnabled(dimension));
@@ -2299,6 +2311,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
     }
     cloneExtraData(other,dimension);
     if (getHolder()) {
@@ -2340,6 +2353,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     if (hasChanged) {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+            _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
         }
     }
     hasChanged |= cloneExtraDataAndCheckIfChanged(other);
@@ -2355,7 +2369,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
 template<typename T>
 void
 Knob<T>::clone(KnobI* other,
-               SequenceTime offset,
+               double offset,
                const RangeD* range,
                int dimension)
 {
@@ -2382,6 +2396,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_updateDependencies(dimension,Natron::eValueChangedReasonPluginEdited);
     }
     cloneExtraData(other,offset,range,dimension);
     if (getHolder()) {
@@ -2416,7 +2431,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 guiCurve->clone(*otherGuiCurve);
             }
             if (_signalSlotHandler) {
-                std::list<SequenceTime> keysList;
+                std::list<double> keysList;
                 KeyFrameSet keys;
                 if (curve) {
                     keys = curve->getKeyFrames_mt_safe();
@@ -2426,6 +2441,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                 }
                 if (!keysList.empty()) {
                     _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)Natron::eValueChangedReasonNatronInternalEdited);
+                    _signalSlotHandler->s_updateDependencies(i, Natron::eValueChangedReasonPluginEdited);
                 }
             }
             checkAnimationLevel(i);
@@ -2461,12 +2477,12 @@ Knob<T>::cloneDefaultValues(KnobI* other)
 }
 
 template <typename T>
-void
+bool
 Knob<T>::dequeueValuesSet(bool disableEvaluation)
 {
     
     std::map<int,Natron::ValueChangedReasonEnum> dimensionChanged;
-    
+    bool ret = false;
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
         QMutexLocker kql(&_setValuesQueueMutex);
@@ -2520,16 +2536,17 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 
     clearExpressionsResultsIfNeeded(dimensionChanged);
     
+    ret |= !dimensionChanged.empty();
+    
     if (!disableEvaluation && !dimensionChanged.empty()) {
-        
         beginChanges();
-        int time = getCurrentTime();
+        double time = getCurrentTime();
         for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
             evaluateValueChange(it->first, time, it->second);
         }
         endChanges();
     }
-    
+    return ret;
 }
 
 template <typename T>

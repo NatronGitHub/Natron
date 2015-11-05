@@ -78,7 +78,7 @@ void
 BackDrop::knobChanged(KnobI* k,
                       Natron::ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
-                      SequenceTime /*time*/,
+                      double /*time*/,
                       bool /*originatedFromMainThread*/)
 {
     if ( k == _imp->knobLabel.lock().get() ) {

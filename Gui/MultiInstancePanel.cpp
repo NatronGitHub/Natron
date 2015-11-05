@@ -1636,7 +1636,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
     getSelectedInstances(&selectedInstances);
 
     ///Forward the button click event to all the selected instances
-    int time = getApp()->getTimeLine()->currentFrame();
+    double time = getApp()->getTimeLine()->currentFrame();
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         boost::shared_ptr<KnobI> k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<KnobButton*>( k.get() ) );
@@ -1647,7 +1647,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
 void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        Natron::ValueChangedReasonEnum reason,
-                                       SequenceTime time,
+                                       double time,
                                        bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {

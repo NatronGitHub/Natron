@@ -699,7 +699,7 @@ Double2DParam::setUsePointInteract(bool use)
     if (!_doubleKnob.lock()) {
         return;
     }
-    _doubleKnob.lock()->setHasNativeOverlayHandle(use);
+    _doubleKnob.lock()->setHasHostOverlayHandle(use);
 }
 
 void

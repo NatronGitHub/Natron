@@ -611,8 +611,8 @@ TimeLineGui::paintGL()
             } else if (i->mode == eStorageModeDisk) {
                 glColor4f(dcR,dcG,dcB,1.);
             }
-            glVertex2f(i->time - 0.5,cachedLineYPos);
-            glVertex2f(i->time + 0.5,cachedLineYPos);
+            glVertex2f(i->time,cachedLineYPos);
+            glVertex2f(i->time + 1,cachedLineYPos);
         }
         glEnd();
         
@@ -623,8 +623,8 @@ TimeLineGui::paintGL()
         for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
             std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
             if (success.second) {
-                glVertex2f(*i - 0.5,lineYpos);
-                glVertex2f(*i + 0.5,lineYpos);
+                glVertex2f(*i,lineYpos);
+                glVertex2f(*i+1,lineYpos);
             }
         }
         glEnd();

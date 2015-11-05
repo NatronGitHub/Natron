@@ -283,6 +283,8 @@ public:
     void setPickerEnabled(bool enabled);
     
     void onMousePressCalledInViewer();
+    
+    void updateViewsMenu(const std::vector<std::string>& viewNames);
 
 public Q_SLOTS:
 
@@ -315,8 +317,6 @@ public Q_SLOTS:
     void disconnectViewer();
 
     void refresh();
-
-    void updateViewsMenu(int count);
 
     void showView(int view);
 

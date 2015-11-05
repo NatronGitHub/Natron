@@ -149,7 +149,7 @@ private:
 
     virtual void redo() OVERRIDE FINAL
     {
-        SequenceTime time = 0;
+        double time = 0;
 
         if ( _knob->getKnob()->getHolder()->getApp() ) {
             time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -255,7 +255,7 @@ class MultipleKnobEditsUndoCommand
         boost::shared_ptr<KnobI> copy;
         Variant newValue;
         int dimension;
-        int time;
+        double time;
         bool setKeyFrame;
     };
 
@@ -278,7 +278,7 @@ public:
                                  bool setKeyFrame,
                                  const Variant & value,
                                  int dimension,
-                                 int time);
+                                 double time);
 
     virtual ~MultipleKnobEditsUndoCommand();
 

@@ -67,6 +67,30 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
+    enum KnownHostNameEnum {
+        eKnownHostNameNatron = 0,
+        eKnownHostNameNuke,
+        eKnownHostNameFusion,
+        eKnownHostNameVegas,
+        eKnownHostNameToxik,
+        eKnownHostNameScratch,
+        eKnownHostNameDustBuster,
+        eKnownHostNameResolve,
+        eKnownHostNameResolveLite,
+        eKnownHostNameMistika,
+        eKnownHostNamePablo,
+        eKnownHostNameMotionStudio,
+        eKnownHostNameShake,
+        eKnownHostNameBaselight,
+        eKnownHostNameFrameCycler,
+        eKnownHostNameNucoda,
+        eKnownHostNameAvidDS,
+        eKnownHostNameDX,
+        eKnownHostNameTitlerPro,
+        eKnownHostNameRamen,
+        eKnownHostNameTuttleOfx,
+        eKnownHostNameNone,
+    };
 
     Settings(AppInstance* appInstance);
 
@@ -80,7 +104,7 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,SequenceTime time,
+    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     Natron::ImageBitDepthEnum getViewersBitDepth() const;
@@ -201,6 +225,9 @@ public:
     bool getIconsBlackAndWhite() const;
 
     std::string getHostName() const;
+    const std::string& getKnownHostName(KnownHostNameEnum e) const {
+        return _knownHostNames[(int)e];
+    }
     std::string getDefaultLayoutFile() const;
 
     bool useCursorPositionIncrements() const;

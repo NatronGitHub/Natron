@@ -460,7 +460,7 @@ public:
     
     std::vector<DopeSheetKey> getKeyframesSelectionCopy() const;
 
-    bool hasSingleKeyFrameTimeSelected(int* time) const;
+    bool hasSingleKeyFrameTimeSelected(double* time) const;
     
     int getSelectedKeyframesCount() const;
     

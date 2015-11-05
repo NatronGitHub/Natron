@@ -455,14 +455,14 @@ KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension)
         knob->onKeyFrameRemoved(keys[i].getTime(), dimension);
     }
     
-    assert( knob->getHolder()->getApp() );
+    /*assert( knob->getHolder()->getApp() );
     if ( !knob->getIsSecret() ) {
         std::list<SequenceTime> times;
         for (std::size_t i = 0; i < keys.size(); ++i) {
             times.push_back(keys[i].getTime());
         }
         knob->getHolder()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(times, true);
-    }
+    }*/
 
     Q_EMIT keyFrameRemoved();
     updateGUI(dimension);

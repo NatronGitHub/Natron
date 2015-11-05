@@ -164,9 +164,9 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 
     if (strcmp(type, kOfxMessageError) == 0) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeError, message);
-    } else if ( strcmp(type, kOfxMessageWarning) ) {
+    } else if ( strcmp(type, kOfxMessageWarning) == 0 ) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, message);
-    } else if ( strcmp(type, kOfxMessageMessage) ) {
+    } else if ( strcmp(type, kOfxMessageMessage) == 0 ) {
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeInfo, message);
     }
 
@@ -350,8 +350,12 @@ OfxImageEffectInstance::getViewCount(int *nViews) const
 OfxStatus
 OfxImageEffectInstance::getViewName(int viewIndex, const char** name) const
 {
-#pragma message WARN("TODO")
-    return kOfxStatFailed;
+    const std::vector<std::string>& views = getOfxEffectInstance()->getApp()->getProject()->getProjectViewNames();
+    if (viewIndex >= 0 && viewIndex < (int)views.size()) {
+        *name = views[viewIndex].data();
+        return kOfxStatOK;
+    }
+    return kOfxStatErrBadIndex;
 }
 
 ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
@@ -684,7 +688,12 @@ OfxImageEffectInstance::addParamsToTheirParents()
         int nChildren = (*it)->getProperties().getDimension(kOfxParamPropPageChild);
         for (int i = 0; i < nChildren; ++i) {
             std::string childName = (*it)->getProperties().getStringProperty(kOfxParamPropPageChild,i);
-            
+            if (childName == kOfxParamPageSkipRow ||
+                childName == kOfxParamPageSkipColumn) {
+                // Pseudo parameter names used to skip a row/column in a page layout.
+                continue;
+            }
+
             boost::shared_ptr<KnobI> child;
             for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 if ((*it2)->getOriginalName() == childName) {
@@ -1184,7 +1193,7 @@ OFX::Host::Param::Descriptor *
 OfxImageEffectDescriptor::paramDefine(const char *paramType,
                                         const char *name)
 {
-    static const OFX::Host::Property::PropSpec nativeOverlaysProps[] = {
+    static const OFX::Host::Property::PropSpec hostOverlaysProps[] = {
         { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
         { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
         OFX::Host::Property::propSpecEnd
@@ -1192,15 +1201,16 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     
     OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
     OFX::Host::Property::Set& props = ret->getProperties();
-    props.addProperties(nativeOverlaysProps);
+    props.addProperties(hostOverlaysProps);
     
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         
         const std::string& type = ret->getDoubleType() ;
-        if (type == kOfxParamDoubleTypePlain ||
+        // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
+        if (//type == kOfxParamDoubleTypePlain ||
             type == kOfxParamDoubleTypeNormalisedXYAbsolute ||
-            type == kOfxParamDoubleTypeNormalisedXY ||
-            type == kOfxParamDoubleTypeXY ||
+            //type == kOfxParamDoubleTypeNormalisedXY ||
+            //type == kOfxParamDoubleTypeXY ||
             type == kOfxParamDoubleTypeXYAbsolute) {
             props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
         }

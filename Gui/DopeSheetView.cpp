@@ -206,7 +206,7 @@ public:
 
     void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
                               bool drawTime,
-                              int time,
+                              double time,
                               const QColor& textColor,
                               const RectD &rect) const;
 
@@ -1217,7 +1217,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 
         const DSTreeItemKnobMap& knobItems = dsNode->getItemKnobMap();
         
-        int kfTimeSelected;
+        double kfTimeSelected;
         int hasSingleKfTimeSelected = model->getSelectionModel()->hasSingleKeyFrameTimeSelected(&kfTimeSelected);
 
         std::map<double, bool> nodeKeytimes;
@@ -1364,7 +1364,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
 
 void DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
                                                 bool drawTime,
-                                                int time,
+                                                double time,
                                                 const QColor& textColor,
                                                 const RectD &rect) const
 {

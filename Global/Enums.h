@@ -448,7 +448,8 @@ enum DisplayChannelsEnum
     eDisplayChannelsG,
     eDisplayChannelsB,
     eDisplayChannelsA,
-    eDisplayChannelsY
+    eDisplayChannelsY,
+    eDisplayChannelsMatte,
 };
     
     /** @brief Enumerates the contexts a plugin can be used in */

@@ -1436,9 +1436,11 @@ drawEllipse(double x, double y, double radiusX, double radiusY, int l, double r,
 
 void
 RotoGui::drawOverlays(double time,
-                      double /*scaleX*/,
-                      double /*scaleY*/) const
+                      double scaleX,
+                      double scaleY) const
 {
+    
+    
     std::list< boost::shared_ptr<RotoDrawableItem> > drawables = _imp->context->getCurvesByRenderOrder();
     std::pair<double,double> pixelScale;
     std::pair<double,double> viewportSize;
@@ -1859,6 +1861,10 @@ RotoGui::drawOverlays(double time,
         _imp->drawSelectedCpsBBOX();
     }
     glCheckError();
+    
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->drawHostOverlay(time, scaleX, scaleY);
 } // drawOverlays
 
 void
@@ -2316,16 +2322,22 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 
 bool
 RotoGui::penDown(double time,
-                 double /*scaleX*/,
-                 double /*scaleY*/,
+                 double scaleX,
+                 double scaleY,
                  Natron::PenType pen,
                  bool isTabletEvent,
-                 const QPointF & /*viewportPos*/,
+                 const QPointF & viewportPos,
                  const QPointF & pos,
                  double pressure,
                  double timestamp,
                  QMouseEvent* e)
 {
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    if (node->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure)) {
+        return true;
+    }
+    
     std::pair<double, double> pixelScale;
     
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
@@ -2784,14 +2796,20 @@ RotoGui::penDoubleClicked(double /*time*/,
 
 bool
 RotoGui::penMotion(double time,
-                   double /*scaleX*/,
-                   double /*scaleY*/,
-                   const QPointF & /*viewportPos*/,
+                   double scaleX,
+                   double scaleY,
+                   const QPointF & viewportPos,
                    const QPointF & pos,
                    double pressure,
                    double timestamp,
                    QInputEvent* e)
 {
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    if (node->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure)) {
+        return true;
+    }
+    
     std::pair<double, double> pixelScale;
 
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
@@ -3202,17 +3220,23 @@ RotoGui::autoSaveAndRedraw()
 
 bool
 RotoGui::penUp(double /*time*/,
-               double /*scaleX*/,
-               double /*scaleY*/,
-               const QPointF & /*viewportPos*/,
-               const QPointF & /*pos*/,
-               double /* pressure */,
-               double /* timestamp */,
+               double scaleX,
+               double scaleY,
+               const QPointF & viewportPos,
+               const QPointF & pos,
+               double pressure ,
+               double /*timestamp*/,
                QMouseEvent* /*e*/)
 {
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    if (node->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure)) {
+        return true;
+    }
+    
     if (_imp->evaluateOnPenUp) {
         _imp->context->evaluateChange();
-        _imp->node->getNode()->getApp()->triggerAutoSave();
+        node->getApp()->triggerAutoSave();
 
         //sync other viewers linked to this roto
         _imp->viewerTab->onRotoEvaluatedForThisViewer();
@@ -3492,10 +3516,18 @@ RotoGui::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
 
 bool
 RotoGui::keyDown(double /*time*/,
-                 double /*scaleX*/,
-                 double /*scaleY*/,
+                 double scaleX,
+                 double scaleY,
                  QKeyEvent* e)
 {
+    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    if (node->onOverlayKeyDownDefault(scaleX, scaleY, natronKey, natronMod)) {
+        return true;
+    }
+    
     bool didSomething = false;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
@@ -3630,10 +3662,18 @@ RotoGui::keyDown(double /*time*/,
 
 bool
 RotoGui::keyRepeat(double /*time*/,
-                   double /*scaleX*/,
-                   double /*scaleY*/,
+                   double scaleX,
+                   double scaleY,
                    QKeyEvent* e)
 {
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    if (node->onOverlayKeyRepeatDefault(scaleX, scaleY, natronKey, natronMod)) {
+        return true;
+    }
+    
     bool didSomething = false;
 
     if ( (e->key() == Qt::Key_Right) && modCASIsAlt(e) ) {
@@ -3662,10 +3702,18 @@ RotoGui::focusOut(double /*time*/)
 
 bool
 RotoGui::keyUp(double /*time*/,
-               double /*scaleX*/,
-               double /*scaleY*/,
+               double scaleX,
+               double scaleY,
                QKeyEvent* e)
 {
+    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    NodePtr node = _imp->node->getNode();
+    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    if (node->onOverlayKeyUpDefault(scaleX, scaleY, natronKey, natronMod)) {
+        return true;
+    }
+    
     bool didSomething = false;
 
     if (e->key() == Qt::Key_Shift) {
@@ -4532,19 +4580,28 @@ RotoGui::smoothSelectedCurve()
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
-    for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
-        
-        boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        if (bezier) {
+    if (!_imp->rotoData->selectedCps.empty()) {
+        for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             SmoothCuspUndoCommand::SmoothCuspCurveData data;
-            data.curve = bezier;
-            const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
-                data.newPoints.push_back( std::make_pair(*it, *itFp) );
-            }
+            data.curve = it->first->getBezier();
+            data.newPoints.push_back(*it);
             datas.push_back(data);
+        }
+    } else {
+        for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
+            
+            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            if (bezier) {
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = bezier;
+                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
+                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                    data.newPoints.push_back( std::make_pair(*it, *itFp) );
+                }
+                datas.push_back(data);
+            }
         }
     }
     if (!datas.empty()) {
@@ -4561,18 +4618,27 @@ RotoGui::cuspSelectedCurve()
     int time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
-    for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
-        boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        if (bezier) {
+    if (!_imp->rotoData->selectedCps.empty()) {
+        for (SelectedCPs::const_iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             SmoothCuspUndoCommand::SmoothCuspCurveData data;
-            data.curve = bezier;
-            const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
-                data.newPoints.push_back( std::make_pair(*it, *itFp) );
-            }
+            data.curve = it->first->getBezier();
+            data.newPoints.push_back(*it);
             datas.push_back(data);
+        }
+    } else {
+        for (SelectedItems::const_iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
+            boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            if (bezier) {
+                SmoothCuspUndoCommand::SmoothCuspCurveData data;
+                data.curve = bezier;
+                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
+                std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                    data.newPoints.push_back( std::make_pair(*it, *itFp) );
+                }
+                datas.push_back(data);
+            }
         }
     }
     if (!datas.empty()) {
