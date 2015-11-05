@@ -79,6 +79,7 @@ class KnobHolder;
 class OverlaySupport;
 class KnobChoice;
 class KnobDouble;
+class KnobBool;
 class NodeGuiI;
 class RotoContext;
 class NodeCollection;
