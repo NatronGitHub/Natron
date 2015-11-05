@@ -25,6 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+
+#include "Engine/EngineFwd.h"
+
+
 class NodeGraphI
 {
 public:

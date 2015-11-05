@@ -45,25 +45,14 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OutputEffectInstance.h"
-
 #ifdef DEBUG
 #include "Engine/ThreadStorage.h"
 #endif
-
+#include "Engine/EngineFwd.h"
 
 
 class QReadWriteLock;
-class OfxClipInstance;
-class KnobButton;
-class OverlaySupport;
-class NodeSerialization;
-class KnobSerialization;
-class OfxClipInstance;
-namespace Natron {
-class Node;
-class OfxImageEffectInstance;
-class OfxOverlayInteract;
-}
+
 
 class AbstractOfxEffectInstance
     : public Natron::OutputEffectInstance

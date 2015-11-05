@@ -32,10 +32,8 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+#include "Engine/EngineFwd.h"
 
-
-class OverlaySupport;
-class KnobI;
 
 namespace Natron {
 class NatronOverlayInteractSupport

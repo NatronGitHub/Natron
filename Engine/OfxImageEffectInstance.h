@@ -38,10 +38,8 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-class OfxClipInstance;
-class OfxEffectInstance;
-class RectD;
 
 namespace OFX {
     namespace Host {
@@ -54,8 +52,7 @@ namespace OFX {
 }
 
 namespace Natron {
-class Image;
-class ImageComponents;
+
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
 {

@@ -28,12 +28,8 @@
 #include <cstddef>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-namespace boost {
-namespace serialization {
-class access;
-}
-}
 
 namespace Natron {
 class NonKeyParams

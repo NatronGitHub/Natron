@@ -39,19 +39,11 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 
 #include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
-class AbstractOfxEffectInstance;
-class AppInstance;
-class QMutex;
-class NodeSerialization;
-class GlobalOFXTLS;
-class KnobSerialization;
 namespace Natron {
-class OfxImageEffectInstance;
-class Node;
-class Plugin;
     
 struct OfxHostPrivate;
 class OfxHost

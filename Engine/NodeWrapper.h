@@ -39,31 +39,8 @@
 #include "Engine/Knob.h" // KnobI
 #include "Engine/NodeGroupWrapper.h" // Goup
 #include "Engine/RectD.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class Node;
-}
-
-class Roto;
-class Param;
-class IntParam;
-class Int2DParam;
-class Int3DParam;
-class BooleanParam;
-class DoubleParam;
-class Double2DParam;
-class Double3DParam;
-class ChoiceParam;
-class ColorParam;
-class StringParam;
-class FileParam;
-class OutputFileParam;
-class PathParam;
-class ButtonParam;
-class GroupParam;
-class PageParam;
-class ParametricParam;
-class KnobHolder;
 
 class ImageLayer
 {

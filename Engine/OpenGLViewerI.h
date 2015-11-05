@@ -32,17 +32,10 @@
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/RectI.h"
+#include "Engine/EngineFwd.h"
+
 
 class QString;
-
-class Format;
-struct TextureRect;
-class TimeLine;
-class RectD;
-namespace Natron
-{
-    class Image;
-}
 
 class OpenGLViewerI
     : public OverlaySupport

@@ -51,6 +51,7 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxCore.h"
 #include "ofxhParametricParam.h"
+#include "Engine/EngineFwd.h"
 
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
@@ -58,31 +59,10 @@ CLANG_DIAG_ON(unknown-pragmas)
    never call them. When the user interact with a knob, the onInstanceChanged() slot
    is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
-class KnobPath;
-class KnobString;
-class KnobFile;
-class KnobOutputFile;
-class KnobButton;
-class KnobColor;
-class KnobInt;
-class KnobDouble;
-class KnobBool;
-class KnobChoice;
-class KnobGroup;
-class RichText_Knob;
-class KnobPage;
-class KnobParametric;
-class OfxEffectInstance;
-class OverlaySupport;
-class KnobI;
-class Format;
-
-namespace Natron {
-class OfxOverlayInteract;
-}
 
 
 class OfxParamToKnob;
+
 class PropertyModified_RAII
 {
     OfxParamToKnob* _h;

@@ -36,11 +36,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 
 #include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class EffectInstance;
-}
-class PluginMemory;
+
 class OfxMemory
     : public OFX::Host::Memory::Instance
 {

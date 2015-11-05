@@ -39,7 +39,10 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
-using namespace Natron;
+
+#include "Engine/EngineFwd.h"
+
+namespace Natron {
 
 template<class Archive>
 void
@@ -48,6 +51,8 @@ NonKeyParams::serialize(Archive & ar,
 {
     ar & boost::serialization::make_nvp("Cost",_cost);
     ar & boost::serialization::make_nvp("ElementsCount",_elementsCount);
+}
+
 }
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Natron::NonKeyParams);
