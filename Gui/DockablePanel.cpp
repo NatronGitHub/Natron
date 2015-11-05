@@ -317,7 +317,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             }
             
             
-            if (isEffect && isEffect->hasOverlay()) {
+            if (isEffect && isEffect->getNode()->hasOverlay()) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
                 _imp->_overlayColor.setRgbF(1., 1., 1.);

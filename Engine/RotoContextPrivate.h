@@ -294,6 +294,22 @@
 #define kRotoDrawableItemLifeTimeFrameParamLabel "Frame"
 #define kRotoDrawableItemLifeTimeFrameParamHint "Use this to specify the frame when in mode Single/From start/To end"
 
+#define kRotoResetCloneTransformParam "resetCloneTransform"
+#define kRotoResetCloneTransformParamLabel "Reset Transform"
+#define kRotoResetCloneTransformParamHint "Reset the clone transform to an identity"
+
+#define kRotoResetTransformParam "resetTransform"
+#define kRotoResetTransformParamLabel "Reset Transform"
+#define kRotoResetTransformParamHint "Reset the transform to an identity"
+
+#define kRotoResetCloneCenterParam "resetCloneCenter"
+#define kRotoResetCloneCenterParamLabel "Reset Center"
+#define kRotoResetCloneCenterParamHint "Reset the clone transform center"
+
+#define kRotoResetCenterParam "resetTransformCenter"
+#define kRotoResetCenterParamLabel "Reset Center"
+#define kRotoResetCenterParamHint "Reset the transform center"
+
 class Bezier;
 
 
@@ -1168,9 +1184,10 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobDouble> cloneSkewYKnob;
     boost::weak_ptr<KnobChoice> cloneSkewOrderKnob;
     boost::weak_ptr<KnobDouble> cloneCenterKnob;
+    boost::weak_ptr<KnobButton> resetCloneCenterKnob;
     boost::weak_ptr<KnobChoice> cloneFilterKnob;
     boost::weak_ptr<KnobBool> cloneBlackOutsideKnob;
-    
+    boost::weak_ptr<KnobButton> resetCloneTransformKnob;
     
     boost::weak_ptr<KnobDouble> translateKnob;
     boost::weak_ptr<KnobDouble> rotateKnob;
@@ -1180,6 +1197,8 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobDouble> skewYKnob;
     boost::weak_ptr<KnobChoice> skewOrderKnob;
     boost::weak_ptr<KnobDouble> centerKnob;
+    boost::weak_ptr<KnobButton> resetCenterKnob;
+    boost::weak_ptr<KnobButton> resetTransformKnob;
     
     boost::weak_ptr<KnobChoice> sourceTypeKnob;
     boost::weak_ptr<KnobInt> timeOffsetKnob;
@@ -1456,14 +1475,32 @@ struct RotoContextPrivate
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip(kRotoBrushCenterParamHint);
             center->setDefaultAllDimensionsEnabled(false);
-            center->setAnimationEnabled(false);
             center->setDefaultValuesAreNormalized(true);
+            center->setAddNewLine(false);
             center->setDefaultValue(0.5, 0);
             center->setDefaultValue(0.5, 1);
             clonePage->addKnob(center);
             cloneKnobs.push_back(center);
             knobs.push_back(center);
             cloneCenterKnob = center;
+            
+            boost::shared_ptr<KnobButton> resetCloneCenter = Natron::createKnob<KnobButton>(effect, kRotoResetCloneCenterParamLabel, 1 , true);
+            resetCloneCenter->setName(kRotoResetCloneCenterParam);
+            resetCloneCenter->setHintToolTip(kRotoResetCloneCenterParamHint);
+            resetCloneCenter->setAllDimensionsEnabled(false);
+            clonePage->addKnob(resetCloneCenter);
+            cloneKnobs.push_back(resetCloneCenter);
+            knobs.push_back(resetCloneCenter);
+            resetCloneCenterKnob = resetCloneCenter;
+            
+            boost::shared_ptr<KnobButton> resetCloneTransform = Natron::createKnob<KnobButton>(effect, kRotoResetCloneTransformParamLabel, 1 , true);
+            resetCloneTransform->setName(kRotoResetCloneTransformParam);
+            resetCloneTransform->setHintToolTip(kRotoResetCloneTransformParamHint);
+            resetCloneTransform->setAllDimensionsEnabled(false);
+            clonePage->addKnob(resetCloneTransform);
+            cloneKnobs.push_back(resetCloneTransform);
+            knobs.push_back(resetCloneTransform);
+            resetCloneTransformKnob = resetCloneTransform;
             
             node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
             
@@ -1760,13 +1797,28 @@ struct RotoContextPrivate
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip(kRotoDrawableItemCenterParamHint);
         center->setDefaultAllDimensionsEnabled(false);
-        center->setAnimationEnabled(false);
         center->setDefaultValuesAreNormalized(true);
         center->setDefaultValue(0.5, 0);
         center->setDefaultValue(0.5, 1);
         transformPage->addKnob(center);
         knobs.push_back(center);
         centerKnob = center;
+        
+        boost::shared_ptr<KnobButton> resetCenter = Natron::createKnob<KnobButton>(effect, kRotoResetCenterParamLabel, 1 , true);
+        resetCenter->setName(kRotoResetCenterParam);
+        resetCenter->setHintToolTip(kRotoResetCenterParamHint);
+        resetCenter->setAllDimensionsEnabled(false);
+        transformPage->addKnob(resetCenter);
+        knobs.push_back(resetCenter);
+        resetCenterKnob = resetCenter;
+        
+        boost::shared_ptr<KnobButton> resetTransform = Natron::createKnob<KnobButton>(effect, kRotoResetTransformParamLabel, 1 , true);
+        resetTransform->setName(kRotoResetTransformParam);
+        resetTransform->setHintToolTip(kRotoResetTransformParamHint);
+        resetTransform->setAllDimensionsEnabled(false);
+        transformPage->addKnob(resetTransform);
+        knobs.push_back(resetTransform);
+        resetTransformKnob = resetTransform;
         
         node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
         

@@ -261,8 +261,7 @@ protected:
 
 private:
     
-    void resetCloneTransformCenter();
-    
+        
     RotoDrawableItem* findPreviousInHierarchy();
 
 

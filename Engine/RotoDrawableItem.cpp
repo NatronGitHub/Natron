@@ -853,8 +853,8 @@ RotoDrawableItem::refreshNodesConnections()
         }
     } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
     
-    if (connectionChanged && (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal)) {
-        resetCloneTransformCenter();
+    if (connectionChanged) {
+        getContext()->resetTransformsCenter(type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal, true);
     }
 }
 
@@ -875,35 +875,6 @@ RotoDrawableItem::resetNodesThreadSafety()
     
 }
 
-void
-RotoDrawableItem::resetCloneTransformCenter()
-{
-    
-    RotoStrokeType type;
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
-    if (type != eRotoStrokeTypeReveal && type != eRotoStrokeTypeClone) {
-        return;
-    }
-    boost::shared_ptr<KnobI> resetCenterKnob = _imp->effectNode->getKnobByName(kTransformParamResetCenter);
-    KnobButton* resetCenter = dynamic_cast<KnobButton*>(resetCenterKnob.get());
-    if (!resetCenter) {
-        return;
-    }
-    boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-    KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
-    if (!center) {
-        return;
-    }
-    resetCenter->evaluateValueChange(0, resetCenter->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
-    double x = center->getValue(0);
-    double y = center->getValue(1);
-    _imp->cloneCenter->setValues(x, y, Natron::eValueChangedReasonNatronGuiEdited);
-}
 
 
 void
