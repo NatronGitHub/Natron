@@ -156,7 +156,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
     _imp->viewerChannels = new ChannelsComboBox(_imp->firstSettingsRow);
-    _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels:") + "</b></p><p>"
+    _imp->viewerChannels->setToolTip( "<p><b>" + tr("Display Channels:") + "</b></p><p>"
                                        + tr("The channels to display on the viewer.") + "</p>");
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
     _imp->viewerChannels->setFixedWidth(fm.width("Luminance") + 3 * DROP_DOWN_ICON_SIZE);

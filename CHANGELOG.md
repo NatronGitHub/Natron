@@ -1,5 +1,17 @@
 # History
 
+## Version 2.0 - RC3
+
+- The Read node can now read multi-view EXR files. Decoding speed of EXR has been greatly improved.
+- The Write node can now write multi-view and multi-layered EXR files. Encoding speed of EXR has been greatly improved.
+- Viewer: The channel selected in the "Alpha channel" drop-down can now be overlayed on the image when using the "Matte" display channels
+- The RotoPaint/Roto Transform and Clone tabs now have a viewer handle overlay to help manipulating the parameters
+- DopeSheet and CureEditor: The scaling interactions with the bounding box of selected keyframes are now correct but may lead to keyframes being located at floating point times. 
+- A "P" indicator at the bottom right of a node will indicate that a node is a pass-through. Hovering the mouse over the "P" will indicate from which input this node is a pass-through of.
+The pass-through input will also be indicated with a plain arrow whereas all other inputs will have their arrow dashed. 
+- Python API: it is now possible to retrieve the layers available on a node with the getAvailableLayers() function, see [Python Reference](http://natron.rtfd.org)
+
+
 ## Version 2.0
 
 - Python 2.7 API: 
