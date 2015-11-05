@@ -34,10 +34,12 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 
-#include "Engine/KnobTypes.h"
-#include "Engine/Settings.h"
 #include "Engine/Curve.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/Settings.h"
 #include "Engine/Transform.h"
 
 #include "Global/KeySymbols.h"
