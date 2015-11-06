@@ -55,8 +55,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     # we also need a recent ffmpeg for the newest version of the plugin
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
-    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
+    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     sudo apt-get update
     sudo apt-get update -qq
 
