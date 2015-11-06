@@ -2529,6 +2529,13 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 }
 
 void
+ViewerGL::zoomSlot(double v)
+{
+    zoomSlot( (int)(std::floor(v+0.5)) );
+}
+
+
+void
 ViewerGL::zoomSlot(int v)
 {
     // always running in the main thread

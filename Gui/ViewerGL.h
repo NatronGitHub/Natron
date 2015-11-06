@@ -223,10 +223,7 @@ public Q_SLOTS:
     /**
      *@brief Convenience function. See ViewerGL::zoomSlot(int)
      **/
-    void zoomSlot(double v)
-    {
-        zoomSlot( (int)v );
-    }
+    void zoomSlot(double v);
 
 
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
