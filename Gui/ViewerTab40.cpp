@@ -1162,7 +1162,7 @@ ViewerTab::zoomIn()
     factor *= 1.1;
     factor *= 100;
     _imp->viewer->zoomSlot(factor);
-    QString text = QString::number(std::floor(factor + 0.5));
+    QString text = QString::number(std::floor(factor + 0.5)) + "%";
     _imp->zoomCombobox->setCurrentText_no_emit(text);
 }
 
