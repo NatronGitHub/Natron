@@ -524,7 +524,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
         type = eRotoStrokeTypeSolid;
     }
 
-    if (reason == Natron::eValueChangedReasonSlaveRefresh) {
+    if (reason == Natron::eValueChangedReasonSlaveRefresh && knob != _imp->center && knob != _imp->cloneCenter) {
         getContext()->s_breakMultiStroke();
     }
     
@@ -853,9 +853,7 @@ RotoDrawableItem::refreshNodesConnections()
         }
     } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
     
-    if (connectionChanged) {
-        getContext()->resetTransformsCenter(type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal, true);
-    }
+    
 }
 
 void

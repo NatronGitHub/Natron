@@ -3263,6 +3263,7 @@ RotoGui::penUp(double /*time*/,
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->context->getNode()->getApp()->setUserIsPainting(boost::shared_ptr<Node>());
+        assert(_imp->rotoData->strokeBeingPaint->getParentLayer());
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         if (!_imp->multiStrokeEnabled->isChecked()) {
             pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
