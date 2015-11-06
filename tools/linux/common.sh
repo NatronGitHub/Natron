@@ -50,7 +50,7 @@ GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natr
 COLOR_PROFILES_VERSION=2.0.0
 
 # bump timestamp on SDK changes, important!
-CORELIBS_VERSION=20151006
+CORELIBS_VERSION=20151103
 
 # SDK
 #
@@ -143,7 +143,7 @@ LIBRAW_TAR=LibRaw-0.16.0.tar.gz
 PIX_TAR=pixman-0.32.6.tar.gz
 LCMS_TAR=lcms2-2.6.tar.gz
 MAGICK_TAR=ImageMagick-6.9.1-10.tar.gz
-#SSL_TAR=openssl-1.0.0r.tar.gz #TODO ssl support in installer
+SSL_TAR=openssl-1.0.0s.tar.gz
 JASP_TAR=jasper-1.900.1.zip
 NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf # TODO generate own?
 LAME_TAR=lame-3.99.5.tar.gz
@@ -171,6 +171,7 @@ BZIP_TAR=bzip2-1.0.6.tar.gz
 CROCO_TAR=libcroco-0.6.8.tar.xz
 SVG_TAR=librsvg-2.40.10.tar.xz
 GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
+ELF_TAR=patchelf-0.8.tar.bz2
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1
