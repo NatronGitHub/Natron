@@ -1664,7 +1664,6 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
     // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute
-#pragma message WARN("TODO: check that kOfxParamDoubleTypeNormalisedXYAbsolute overlays are OK")
     if ((!_node->effectInstance()->getOverlayInteractMainEntry() &&
          (getDoubleType() == kOfxParamDoubleTypeXYAbsolute ||
           getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute)) ||
@@ -1681,7 +1680,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
         dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
     }
-    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedXY ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
     for (int i = 0; i < dims; ++i) {
         dblKnob->setDefaultValue(def[i], i);
     }
