@@ -890,13 +890,18 @@ AppInstance::createNodeInternal(const QString & pluginID,
     if (addToProject) {
         //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
         //of the node works
-        group->addNode(node);
+        assert(group);
+        if (group) {
+            group->addNode(node);
+        }
     }
     assert(node);
     try {
         node->load(multiInstanceParentName, serialization,dontLoadName, userEdited, addToProject, fixedName,paramValues);
     } catch (const std::exception & e) {
-        group->removeNode(node);
+        if (group) {
+            group->removeNode(node);
+        }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
@@ -904,7 +909,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
-        group->removeNode(node);
+        if (group) {
+            group->removeNode(node);
+        }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
