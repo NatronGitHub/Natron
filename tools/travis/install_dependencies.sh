@@ -75,7 +75,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins1; fi
+    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/PropTester; fi
     if [ "$CC" = "$TEST_CC" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
