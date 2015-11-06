@@ -285,10 +285,6 @@ RotoStrokeItem::isEmpty() const
 void
 RotoStrokeItem::setStrokeFinished()
 {
-    double time = getContext()->getTimelineCurrentTime();
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    Point center;
-    bool centerSet = false;
     {
         QMutexLocker k(&itemMutex);
         _imp->finished = true;
@@ -300,46 +296,9 @@ RotoStrokeItem::setStrokeFinished()
             }
         }
         _imp->strokeDotPatterns.clear();
-        
-        ///Compute the value of the center knob
-        center.x = center.y = 0;
-        
-        int nbPoints = 0;
-        for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
-             it!=_imp->strokes.end(); ++it) {
-            KeyFrameSet xCurve = it->xCurve->getKeyFrames_mt_safe();
-            KeyFrameSet yCurve = it->yCurve->getKeyFrames_mt_safe();
-            assert(xCurve.size() == yCurve.size());
-            
-            KeyFrameSet::iterator xIt = xCurve.begin();
-            KeyFrameSet::iterator yIt = yCurve.begin();
-            for (; xIt != xCurve.end(); ++xIt, ++yIt) {
-                center.x += xIt->getValue();
-                center.y += yIt->getValue();
-            }
-            nbPoints += xCurve.size();
-        }
-        
-        centerSet = nbPoints > 0;
-        if (centerSet) {
-            center.x /= (double)nbPoints;
-            center.y /= (double)nbPoints;
-        }
     }
-    if (centerSet) {
-        
-
-        boost::shared_ptr<KnobDouble> centerKnob = getCenterKnob();
-        if (autoKeying) {
-            centerKnob->setValueAtTime(time, center.x, 0);
-            centerKnob->setValueAtTime(time, center.y, 1);
-            setKeyframeOnAllTransformParameters(time);
-        } else  {
-            centerKnob->setValue(center.x, 0);
-            centerKnob->setValue(center.y, 1);
-        }
-        
-    }
+    
+    getContext()->resetTransformCenter();
     
     boost::shared_ptr<Node> effectNode = getEffectNode();
     boost::shared_ptr<Node> mergeNode = getMergeNode();

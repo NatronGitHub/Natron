@@ -109,8 +109,6 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
     }
     
     KnobDouble::ValueIsNormalizedEnum state = _knob.lock()->getValueIsNormalized(dimension);
-#if 1
-#pragma message WARN("Alex please check that the following is right")
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (state != KnobDouble::eValueIsNormalizedNone) {
@@ -120,26 +118,6 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
             knob->denormalize(dimension, time, value);
         }
     }
-#else
-    // this code is duplicated from KnobDouble::normalize and KnobDouble::denormalize
-    if (state == KnobDouble::eValueIsNormalizedX) {
-        Format f;
-        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-        if (normalize) {
-            *value /= f.width();
-        } else {
-            *value *= f.width();
-        }
-    } else if (state == KnobDouble::eValueIsNormalizedY) {
-        Format f;
-        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-        if (normalize) {
-            *value /= f.height();
-        } else {
-            *value *= f.height();
-        }
-    }
-#endif
 }
 
 bool
