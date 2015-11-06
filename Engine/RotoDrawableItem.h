@@ -214,6 +214,8 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
+    boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const;
+    
     virtual RectD getBoundingBox(double time) const = 0;
 
     void getTransformAtTime(double time,Transform::Matrix3x3* matrix) const;

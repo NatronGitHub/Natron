@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "itembase_wrapper.h"
 
 // Extra includes
+#include <ParameterWrapper.h>
 #include <RotoWrapper.h>
 
 
@@ -110,6 +111,51 @@ static PyObject* Sbk_ItemBaseFunc_getLockedRecursive(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_getParam(PyObject* self, PyObject* pyArg)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getParam(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getParam(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ItemBaseFunc_getParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getParam(std::string)const
+            Param * cppResult = const_cast<const ::ItemBase*>(cppSelf)->getParam(cppArg0);
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ItemBaseFunc_getParam_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.getParam", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
@@ -380,6 +426,7 @@ static PyMethodDef Sbk_ItemBase_methods[] = {
     {"getLabel", (PyCFunction)Sbk_ItemBaseFunc_getLabel, METH_NOARGS},
     {"getLocked", (PyCFunction)Sbk_ItemBaseFunc_getLocked, METH_NOARGS},
     {"getLockedRecursive", (PyCFunction)Sbk_ItemBaseFunc_getLockedRecursive, METH_NOARGS},
+    {"getParam", (PyCFunction)Sbk_ItemBaseFunc_getParam, METH_O},
     {"getParentLayer", (PyCFunction)Sbk_ItemBaseFunc_getParentLayer, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ItemBaseFunc_getScriptName, METH_NOARGS},
     {"getVisible", (PyCFunction)Sbk_ItemBaseFunc_getVisible, METH_NOARGS},

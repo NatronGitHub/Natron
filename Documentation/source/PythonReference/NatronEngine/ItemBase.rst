@@ -21,6 +21,7 @@ Functions
 *    def :meth:`getLocked<NatronEngine.ItemBase.getLocked>` ()
 *    def :meth:`getLockedRecursive<NatronEngine.ItemBase.getLockedRecursive>` ()
 *    def :meth:`getParentLayer<NatronEngine.ItemBase.getParentLayer>` ()
+*    def :meth:`getParam<NatronEngine.ItemBase.getParam>` (name)
 *    def :meth:`getScriptName<NatronEngine.ItemBase.getScriptName>` ()
 *    def :meth:`getVisible<NatronEngine.ItemBase.getVisible>` ()
 *    def :meth:`setLabel<NatronEngine.ItemBase.setLabel>` (name)
@@ -83,6 +84,15 @@ this function looks parent layers recursively to find out if the item should be 
 Returns the parent :doc:`layer<Layer>` of the item. All items must have a parent layer,
 except the base layer.
 
+.. method:: NatronEngine.ItemBase.getParam(name)
+
+
+    :param name: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`Param<Param>`
+
+
+Returns a :doc:`parameter<Param>` by its script-name or None if
+no such parameter exists.
 
 
 

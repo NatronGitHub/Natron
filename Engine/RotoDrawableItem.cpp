@@ -1338,6 +1338,17 @@ RotoDrawableItem::getKnobs() const
     return _imp->knobs;
 }
 
+boost::shared_ptr<KnobI>
+RotoDrawableItem::getKnobByName(const std::string& name) const
+{
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if ((*it)->getName() == name) {
+            return *it;
+        }
+    }
+    return boost::shared_ptr<KnobI>();
+}
+
 
 void
 RotoDrawableItem::getTransformAtTime(double time,Transform::Matrix3x3* matrix) const
