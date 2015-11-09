@@ -947,7 +947,10 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         
         for (std::list<boost::shared_ptr<KnobI> >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if ((*it2)->getName() == (*it)->getName()) {
+                boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
+                s->blockSignals(true);
                 (*it2)->clone((*it)->getKnob().get());
+                s->blockSignals(false);
                 break;
             }
         }

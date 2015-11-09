@@ -2490,11 +2490,17 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
 
     ///compute an enhanced hash different from the one of the merge node of the item in order to differentiate within the cache
     ///the output image of the node and the mask image.
-    Hash64 hash;
-    hash.append(stroke->getMergeNode()->getLiveInstance()->getRenderHash());
-    hash.computeHash();
+    U64 rotoHash;
+    {
+        Hash64 hash;
+        U64 mergeNodeHash = stroke->getMergeNode()->getLiveInstance()->getRenderHash();
+        hash.append(mergeNodeHash);
+        hash.computeHash();
+        rotoHash = hash.value();
+        assert(mergeNodeHash != rotoHash);
+    }
     
-    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),hash.value(), true ,time, view, false, false);
+    Natron::ImageKey key = Natron::Image::makeKey(stroke.get(),rotoHash, true ,time, view, false, false);
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);

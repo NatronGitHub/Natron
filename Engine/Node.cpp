@@ -6138,17 +6138,20 @@ Node::refreshIdentityState()
     RenderScale scale;
     scale.x = scale.y = 1;
     
-    double inputTime;
-    int inputNb;
+    double inputTime = 0;
+    int inputNb = -1;
     
     U64 hash = getHashValue();
     RectD rod;
     bool isProj;
-    (void)_imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProj);
+    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProj);
     
     RectI pixelRod;
     rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
-    bool isIdentity = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, 0, &inputTime, &inputNb);
+    bool isIdentity =  false;
+    if (!pixelRod.isNull() && stat != Natron::eStatusFailed) {
+        isIdentity = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, 0, &inputTime, &inputNb);
+    }
     
     
     Q_EMIT identityChanged(isIdentity ? inputNb : -1);

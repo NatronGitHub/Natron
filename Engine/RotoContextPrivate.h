@@ -751,6 +751,10 @@ struct RotoDrawableItemPrivate
         opacity->setHintToolTip(kRotoOpacityHint);
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
+        opacity->setMinimum(0.);
+        opacity->setMaximum(1.);
+        opacity->setDisplayMinimum(0.);
+        opacity->setDisplayMaximum(1.);
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         knobs.push_back(opacity);
         
@@ -758,6 +762,10 @@ struct RotoDrawableItemPrivate
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setName(kRotoFeatherParam);
         feather->populate();
+        feather->setMinimum(-100);
+        feather->setMaximum(100);
+        feather->setDisplayMinimum(-100);
+        feather->setDisplayMaximum(100);
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         knobs.push_back(feather);
         
@@ -765,6 +773,10 @@ struct RotoDrawableItemPrivate
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
+        featherFallOff->setMinimum(0.001);
+        featherFallOff->setMaximum(5.);
+        featherFallOff->setDisplayMinimum(0.2);
+        featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         knobs.push_back(featherFallOff);
         

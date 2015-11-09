@@ -575,8 +575,6 @@ EffectInstance::getImage(int inputNb,
 
     if (attachedStroke) {
         roto = attachedStroke->getContext();
-    } else {
-        roto = getNode()->getRotoContext();
     }
     bool useRotoInput = false;
     if (roto) {
