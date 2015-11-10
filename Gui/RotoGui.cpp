@@ -2355,10 +2355,40 @@ RotoGui::penDown(double time,
     }
     
     
+    
+    //////////////////BEZIER SELECTION
+    /////Check if the point is nearby a bezier
+    ///tolerance for bezier selection
+    double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
+    double nearbyBezierT;
+    int nearbyBezierCPIndex;
+    bool isFeather;
+    boost::shared_ptr<Bezier> nearbyBezier =
+    _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
+    int nearbyCpIndex = -1;
+    if (nearbyBezier) {
+        /////////////////CONTROL POINT SELECTION
+        //////Check if the point is nearby a control point of a selected bezier
+        ///Find out if the user selected a control point
+        
+        Bezier::ControlPointSelectionPrefEnum pref = Bezier::eControlPointSelectionPrefWhateverFirst;
+        if ( (_imp->selectedTool == eRotoToolSelectFeatherPoints) && isFeatherVisible() ) {
+            pref = Bezier::eControlPointSelectionPrefFeatherFirst;
+        }
+        
+        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
+    }
+    
     ////////////////// TANGENT SELECTION
     ///in all cases except cusp/smooth if a control point is selected, check if the user clicked on a tangent handle
     ///in which case we go into eEventStateDraggingTangent mode
-    if ( (_imp->selectedTool != eRotoToolCuspPoints) && (_imp->selectedTool != eRotoToolSmoothPoints) && (_imp->selectedTool != eRotoToolSelectCurves) ) {
+    if (!nearbyCP.first &&
+        _imp->selectedTool != eRotoToolCuspPoints &&
+        _imp->selectedTool != eRotoToolSmoothPoints &&
+        _imp->selectedTool != eRotoToolSelectCurves) {
+        
         for (SelectedCPs::iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             if ( (_imp->selectedTool == eRotoToolSelectAll) ||
                 ( _imp->selectedTool == eRotoToolDrawBezier) ) {
@@ -2408,31 +2438,8 @@ RotoGui::penDown(double time,
             }
         }
     }
+
     
-    //////////////////BEZIER SELECTION
-    /////Check if the point is nearby a bezier
-    ///tolerance for bezier selection
-    double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
-    double nearbyBezierT;
-    int nearbyBezierCPIndex;
-    bool isFeather;
-    boost::shared_ptr<Bezier> nearbyBezier =
-    _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
-    int nearbyCpIndex = -1;
-    if (nearbyBezier) {
-        /////////////////CONTROL POINT SELECTION
-        //////Check if the point is nearby a control point of a selected bezier
-        ///Find out if the user selected a control point
-        
-        Bezier::ControlPointSelectionPrefEnum pref = Bezier::eControlPointSelectionPrefWhateverFirst;
-        if ( (_imp->selectedTool == eRotoToolSelectFeatherPoints) && isFeatherVisible() ) {
-            pref = Bezier::eControlPointSelectionPrefFeatherFirst;
-        }
-        
-        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
-        
-    }
     switch (_imp->selectedTool) {
         case eRotoToolSelectAll:
         case eRotoToolSelectPoints:
