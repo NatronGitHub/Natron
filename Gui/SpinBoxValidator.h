@@ -35,6 +35,7 @@
 
 class SpinBox;
 class KnobGui;
+class QString;
 class SpinBoxValidator
 {
 public:
