@@ -45,6 +45,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/AppManager.h"
 #include "Global/Macros.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/SpinBoxValidator.h"
 
 
 struct SpinBoxPrivate
@@ -68,6 +69,8 @@ struct SpinBoxPrivate
     bool useLineColor;
     QColor lineColor;
     
+    SpinBoxValidator* customValidator;
+    
     SpinBoxPrivate(SpinBox::SpinBoxTypeEnum type)
     : type(type)
     , decimals(2)
@@ -83,6 +86,7 @@ struct SpinBoxPrivate
     , valueInitialized(false)
     , useLineColor(false)
     , lineColor(Qt::black)
+    , customValidator(0)
     {
     }
     
@@ -117,6 +121,7 @@ SpinBox::~SpinBox()
             delete _imp->intValidator;
             break;
     }
+    delete _imp->customValidator;
 }
 
 void
@@ -670,6 +675,67 @@ SpinBox::keyPressEvent(QKeyEvent* e)
     }
 }
 
+void
+SpinBox::setValidator(SpinBoxValidator* validator)
+{
+    _imp->customValidator = validator;
+}
+
+bool
+SpinBox::validateWithCustomValidator(const QString& txt)
+{
+    if (_imp->customValidator) {
+        double valueToDisplay;
+        if (_imp->customValidator->validateInput(txt, &valueToDisplay)) {
+            setValue_internal(_imp->type == eSpinBoxTypeDouble ? valueToDisplay : (int)valueToDisplay, true);
+            return true;
+        }
+    }
+    setValue_internal(_imp->valueAfterLastValidation, true);
+    return false;
+}
+
+bool
+SpinBox::validateInternal()
+{
+    
+    QString txt = text();
+    const QValidator* validator = 0;
+    if (_imp->type == eSpinBoxTypeDouble) {
+        validator = _imp->doubleValidator;
+    } else {
+        assert(_imp->type == eSpinBoxTypeInt);
+        validator = _imp->intValidator;
+    }
+    assert(validator);
+    int tmp;
+    QValidator::State st = validator->validate(txt,tmp);
+    double val;
+    double maxiD,miniD;
+    if (_imp->type == eSpinBoxTypeDouble) {
+        val = txt.toDouble();
+        maxiD = _imp->maxi.toDouble();
+        miniD = _imp->mini.toDouble();
+
+    } else {
+        assert(_imp->type == eSpinBoxTypeInt);
+        val = (double)txt.toInt();
+        maxiD = _imp->maxi.toInt();
+        miniD = _imp->mini.toInt();
+    }
+    if (st == QValidator::Invalid) {
+        return validateWithCustomValidator(txt);
+    } else if ((val < miniD) ||
+               (val > maxiD)) {
+        setValue_internal(_imp->valueAfterLastValidation, true);
+        return false;
+    } else {
+        setValue_internal(val, false);
+        return true;
+    }
+
+}
+
 bool
 SpinBox::validateText()
 {
@@ -677,57 +743,8 @@ SpinBox::validateText()
         return true;
     }
     
-    double maxiD,miniD;
-    switch (_imp->type) {
-        case eSpinBoxTypeInt:
-            maxiD = _imp->maxi.toInt();
-            miniD = _imp->mini.toInt();
-            break;
-        case eSpinBoxTypeDouble:
-        default:
-            maxiD = _imp->maxi.toDouble();
-            miniD = _imp->mini.toDouble();
-            break;
-    }
     
-    switch (_imp->type) {
-        case eSpinBoxTypeDouble: {
-            QString txt = text();
-            int tmp;
-            QValidator::State st = _imp->doubleValidator->validate(txt,tmp);
-            double val = txt.toDouble();
-            if ( (st == QValidator::Invalid) ||
-                (val < miniD) ||
-                (val > maxiD) ) {
-                setValue_internal(_imp->valueAfterLastValidation, true);
-                
-                return false;
-            } else {
-                setValue_internal(val, false);
-                
-                return true;
-            }
-            break;
-        }
-        case eSpinBoxTypeInt: {
-            QString txt = text();
-            int tmp;
-            QValidator::State st = _imp->intValidator->validate(txt,tmp);
-            int val = txt.toInt();
-            if ( ( st == QValidator::Invalid) || ( val < miniD) || ( val > maxiD) ) {
-                setValue_internal(_imp->valueAfterLastValidation, true);
-                
-                return false;
-            } else {
-                setValue_internal(val, false);
-                
-                return true;
-            }
-            break;
-        }
-    }
-    
-    return false;
+    return validateInternal();
 } // validateText
 
 void

@@ -644,34 +644,24 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,double* x,double *y) const
         if ( (*it)->isVisible() ) {
             
             //Try once with expressions
-            {
-                double yCurve = (*it)->evaluate(true, openGL_pos.x() );
-                double yWidget = zoomCtx.toWidgetCoordinates(0,yCurve).y();
-                if (std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-                    if (x != NULL) {
-                        *x = openGL_pos.x();
-                    }
-                    if (y != NULL) {
-                        *y = yCurve;
-                    }
-                    return it;
-                }
+            double yCurve;
+            try {
+                yCurve = (*it)->evaluate(!(*it)->getInternalCurve()->isAnimated(), openGL_pos.x() );
+            } catch (...) {
+                yCurve = (*it)->evaluate(false, openGL_pos.x() );
             }
-            //Try without expressions
-            {
-                double yCurve = (*it)->evaluate(false, openGL_pos.x() );
-                double yWidget = zoomCtx.toWidgetCoordinates(0,yCurve).y();
-                if (std::abs(pt.y() - yWidget) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) {
-                    if (x != NULL) {
-                        *x = openGL_pos.x();
-                    }
-                    if (y != NULL) {
-                        *y = yCurve;
-                    }
-                    return it;
+            
+            double yWidget = zoomCtx.toWidgetCoordinates(0,yCurve).y();
+            if (pt.y() < yWidget + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE && pt.y() > yWidget - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE ) {
+                if (x != NULL) {
+                    *x = openGL_pos.x();
                 }
-
+                if (y != NULL) {
+                    *y = yCurve;
+                }
+                return it;
             }
+            
         }
     }
 

@@ -32,6 +32,7 @@
 
 class QColor;
 class QMenu;
+class SpinBoxValidator;
 
 struct SpinBoxPrivate;
 class SpinBox
@@ -94,6 +95,12 @@ public:
 
     void setUseLineColor(bool use, const QColor& color);
     
+    /**
+     * @brief Set an optional validator that will validate numbers instead of the regular double/int validator.
+     * The spinbox takes ownership of the validator and will destroy it.
+     **/
+    void setValidator(SpinBoxValidator* validator);
+    
 private:
 
     void increment(int delta, int shift);
@@ -106,6 +113,10 @@ private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     bool validateText();
+    
+    bool validateInternal();
+    
+    bool validateWithCustomValidator(const QString& txt);
 
 Q_SIGNALS:
 

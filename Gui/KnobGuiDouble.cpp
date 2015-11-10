@@ -73,6 +73,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
+#include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
 #include "Gui/Utils.h"
 
@@ -210,6 +211,8 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
+        NumericKnobValidator* validator = new NumericKnobValidator(box,this);
+        box->setValidator(validator);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         
         ///set the copy/link actions in the right click menu
@@ -320,6 +323,23 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     }
 
 } // createWidget
+
+bool
+KnobGuiDouble::getAllDimensionsVisible() const
+{
+    return !_dimensionSwitchButton || _dimensionSwitchButton->isChecked();
+}
+
+int
+KnobGuiDouble::getDimensionForSpinBox(const SpinBox* spinbox) const
+{
+    for (std::size_t i = 0; i < _spinBoxes.size(); ++i) {
+        if (_spinBoxes[i].first == spinbox) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 
 void
 KnobGuiDouble::onDimensionSwitchClicked()

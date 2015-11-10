@@ -118,6 +118,10 @@ public:
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
+    bool getAllDimensionsVisible() const;
+    
+    int getDimensionForSpinBox(const SpinBox* spinbox) const;
+    
 public Q_SLOTS:
 
     void onSpinBoxValueChanged();

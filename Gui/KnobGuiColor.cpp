@@ -74,6 +74,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
+#include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
 #include "Gui/Utils.h"
 
@@ -154,17 +155,36 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
 #endif
     
     _rBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
+    {
+        NumericKnobValidator* validator = new NumericKnobValidator(_rBox,this);
+        _rBox->setValidator(validator);
+    }
+    
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     
     if (_dimension >= 3) {
         _gBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_gBox,this);
+            _gBox->setValidator(validator);
+        }
+        
         _bBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_bBox,this);
+            _bBox->setValidator(validator);
+        }
     }
     if (_dimension >= 4) {
         _aBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_aBox,this);
+            _aBox->setValidator(validator);
+        }
     }
     
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -549,6 +569,30 @@ KnobGuiColor::onDisplayMinMaxChanged(double mini,
         _aBox->setMaximum(maxi);
         break;
     }
+}
+
+bool
+KnobGuiColor::getAllDimensionsVisible() const
+{
+    return !_dimensionSwitchButton || _dimensionSwitchButton->isChecked();
+}
+
+int
+KnobGuiColor::getDimensionForSpinBox(const SpinBox* spinbox) const
+{
+    if (_rBox == spinbox) {
+        return 0;
+    }
+    if (_gBox == spinbox) {
+        return 1;
+    }
+    if (_bBox == spinbox) {
+        return 2;
+    }
+    if (_aBox == spinbox) {
+        return 3;
+    }
+    return -1;
 }
 
 void

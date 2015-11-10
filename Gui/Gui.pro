@@ -184,6 +184,7 @@ SOURCES += \
     SerializableWindow.cpp \
     ShortCutEditor.cpp \
     SpinBox.cpp \
+    SpinBoxValidator.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
     TabGroup.cpp \
@@ -319,6 +320,7 @@ HEADERS += \
     SerializableWindow.h \
     ShortCutEditor.h \
     SpinBox.h \
+    SpinBoxValidator.h \
     SplashScreen.h \
     Splitter.h \
     TabGroup.h \
