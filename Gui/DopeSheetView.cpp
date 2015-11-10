@@ -2776,7 +2776,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
             for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 boost::shared_ptr<KnobI> knob = knobIt->first.lock();
                 KnobGui *knobGui = knobIt->second;
-                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
                         this, SLOT(onKeyframeChanged()));
 
                 connect(knobGui, SIGNAL(keyFrameSet()),
