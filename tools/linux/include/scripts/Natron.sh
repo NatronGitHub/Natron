@@ -81,7 +81,7 @@ fi
 if [ "$1" = "-debug" -a -x "$DIR/bin/Natron.debug" ]; then
     SEGFAULT_SIGNALS="all"
     export SEGFAULT_SIGNALS
-    catchsegv "$DIR/bin/Natron.debug" -style fusion "$@"
+    catchsegv "$DIR/bin/Natron.debug" -style plastique "$@"
 else
-    "$DIR/bin/Natron" -style fusion "$@"
+    "$DIR/bin/Natron" -style plastique "$@"
 fi
