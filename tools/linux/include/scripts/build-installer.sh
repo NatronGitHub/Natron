@@ -123,10 +123,12 @@ OFX_IO_PATH=$INSTALLER/packages/$IOPLUG_PKG
 mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins $OFX_IO_PATH/data/bin || exit 1
 cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
 cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
-cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/bin/ || exit 1
-cat $CWD/include/scripts/ffmpeg.sh > $OFX_IO_PATH/data/ffmpeg || exit 1
-cat $CWD/include/scripts/ffmpeg.sh | sed 's/ffmpeg/ffprobe/g' > $OFX_IO_PATH/data/ffprobe || exit 1
-chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
+cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
+#cat $CWD/include/scripts/ffmpeg.sh > $OFX_IO_PATH/data/ffmpeg || exit 1
+#cat $CWD/include/scripts/ffmpeg.sh | sed 's/ffmpeg/ffprobe/g' > $OFX_IO_PATH/data/ffprobe || exit 1
+#chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
+strip -s $OFX_IO_PATH/data/ffmpeg
+strip -s $OFX_IO_PATH/data/ffprobe
 cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/ || exit 1
 strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
 IO_LIBS=$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Libraries
@@ -143,9 +145,8 @@ for y in $OFX_LIB_DEP; do
     cp -v $y $IO_LIBS/ || exit 1
 done
 
-rm -f $IO_LIBS/{libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libtiff*,libz.*}
+rm -f $IO_LIBS/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libtiff*,libz.*}
 (cd $IO_LIBS ;
-  ln -sf ../../../lib/libbz2.so.1.0 .
   ln -sf ../../../lib/libbz2.so.1 .
   ln -sf ../../../lib/libfontconfig.so.1 .
   ln -sf ../../../lib/libfreetype.so.6 .
@@ -155,6 +156,10 @@ rm -f $IO_LIBS/{libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libt
   ln -sf ../../../lib/libz.so.1 .
   ln -sf ../../../lib/libgcc_s.so.1 .
   ln -sf ../../../lib/libstdc++.so.6 .
+  ln -sf ../../../lib/liblcms2.so.2 .
+  for i in *.so*; do
+    patchelf --set-rpath "\$ORIGIN" $i
+  done;
 )
 strip -s $IO_LIBS/*
 
@@ -242,11 +247,8 @@ if [ -f $INC_PATH/misc/compat${BIT}.tgz ]; then
     tar xvf $INC_PATH/misc/compat${BIT}.tgz -C $CLIBS_PATH/data/lib/ || exit 1
 fi
 
+cp $INSTALL_PATH/lib/{liblcms2.so.2,libcairo.so.2} $CLIBS_PATH/data/lib/ || exit 1
 cp $INSTALL_PATH/lib/{libicudata.so.55,libicui18n.so.55,libicuuc.so.55} $CLIBS_PATH/data/lib/ || exit 1
-(cd $CLIBS_PATH/data/lib;
-  rm -f libbz2.so.1.0
-  ln -sf libbz2.so.1 libbz2.so.1.0
-)
 
 mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
 (cd $IO_LIBS ;
@@ -293,6 +295,86 @@ if [ ! -f "$SRC_PATH/strings$BIT.tgz" ]; then
 fi
 tar xvf $SRC_PATH/strings$BIT.tgz -C $CLIBS_PATH/data/bin/ || exit 1
 
+(cd $CLIBS_PATH/data/lib;
+  for i in *.so*; do
+    patchelf --set-rpath "\$ORIGIN" $i
+  done;
+  (cd python2.7/lib-dynload;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../.." $i
+    done;
+  )
+)
+(cd $CLIBS_PATH/data/Plugins/PySide;
+  for i in *.so*; do
+    patchelf --set-rpath "\$ORIGIN/../../lib" $i
+  done;
+)
+(cd $CLIBS_PATH/data/bin;
+  (cd accessible;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd bearer;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd codecs;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd designer;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd graphicssystems;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd iconengines;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd imageformats;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd inputmethods;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd qmltooling;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd script;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd sqldrivers;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+  (cd webkit;
+    for i in *.so*; do
+      patchelf --set-rpath "\$ORIGIN/../../lib" $i
+    done;
+  )
+)
+patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffmpeg || exit 1
+patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffprobe || exit 1
+
 # OFX ARENA
 OFX_ARENA_VERSION=$TAG
 OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
@@ -308,9 +390,8 @@ OFX_ARENA_DEPENDS=$(ldd $OFX_ARENA_PATH/data/Plugins/*/*/*/*|grep opt | awk '{pr
 for x in $OFX_ARENA_DEPENDS; do
     cp -v $x $ARENA_LIBS/ || exit 1
 done
-rm -f $ARENA_LIBS/{libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
+rm -f $ARENA_LIBS/{libcairo*,libpix*,liblcms*,libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
 (cd $ARENA_LIBS ; 
-  ln -sf ../../../lib/libbz2.so.1.0 .
   ln -sf ../../../lib/libbz2.so.1 .
   ln -sf ../../../lib/libexpat.so.1 .
   ln -sf ../../../lib/libfontconfig.so.1 .
@@ -323,6 +404,12 @@ rm -f $ARENA_LIBS/{libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*
   ln -sf ../../../lib/libstdc++.so.6 .
   ln -sf ../../../lib/libOpenColorIO.so.1 .
   ln -sf ../../../lib/libgomp.so.1 .
+  ln -sf ../../../lib/libpixman-1.so.0 .
+  ln -sf ../../../lib/libcairo.so.2 .
+  ln -sf ../../../lib/liblcms2.so.2 .
+  for i in *.so*; do
+    patchelf --set-rpath "\$ORIGIN" $i
+  done;
 )
 strip -s $ARENA_LIBS/*
 
@@ -376,14 +463,14 @@ if [ "$TAR_BUILD" = "1" ]; then
 fi
 
 if [ "$NO_INSTALLER" != "1" ]; then
-    $INSTALL_PATH/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
+    $INSTALL_PATH/installer/bin/repogen -v --update-new-components -p $INSTALLER/packages -c $INSTALLER/config/config.xml $REPO_DIR/packages || exit 1
     cd $REPO_DIR/installers || exit 1
     if [ "$OFFLINE" != "0" ]; then
-        $INSTALL_PATH/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
+        $INSTALL_PATH/installer/bin/binarycreator -v -f -p $INSTALLER/packages -c $INSTALLER/config/config.xml -i $PACKAGES $REPO_DIR/installers/$BUNDLED_INSTALL || exit 1 
         tar cvvzf $BUNDLED_INSTALL.tgz $BUNDLED_INSTALL || exit 1
         ln -sf $BUNDLED_INSTALL.tgz Natron-latest-$PKGOS-$ONLINE_TAG.tgz || exit 1
     fi
-    $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
+    $INSTALL_PATH/installer/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
     tar cvvzf $ONLINE_INSTALL.tgz $ONLINE_INSTALL || exit 1
 fi
 

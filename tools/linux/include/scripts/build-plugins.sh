@@ -140,7 +140,7 @@ if [ "$BUILD_IO" = "1" ]; then
 
     git clone $GIT_IO || exit 1
     cd openfx-io || exit 1
-    git checkout ${IO_RANCH} || exit 1
+    git checkout ${IO_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$IO_BRANCH" = "master" ]; then
         # the snapshots are always built with the latest version of submodules
