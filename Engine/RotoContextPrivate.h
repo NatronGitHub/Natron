@@ -58,6 +58,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/Transform.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/RotoPaint.h"
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -1341,10 +1342,15 @@ struct RotoContextPrivate
     QWaitCondition doingNeatRenderCond;
     bool doingNeatRender;
     bool mustDoNeatRender;
+    
+    /*
+     * A merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
+     */
+    std::list<boost::shared_ptr<Natron::Node> > globalMergeNodes;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
-    , isPaintNode(n->isRotoPaintingNode())
+    , isPaintNode(false)
     , layers()
     , autoKeying(true)
     , rippleEdit(false)
@@ -1354,7 +1360,15 @@ struct RotoContextPrivate
     , age(0)
     , doingNeatRender(false)
     , mustDoNeatRender(false)
+    , globalMergeNodes()
     {
+        RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(n->getLiveInstance());
+        if (isRotoNode) {
+            isPaintNode = isRotoNode->isDefaultBehaviourPaintContext();
+        } else {
+            isPaintNode = false;
+        }
+        
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
         

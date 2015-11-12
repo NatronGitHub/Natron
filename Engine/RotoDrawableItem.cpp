@@ -186,6 +186,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     } else {
         type = eRotoStrokeTypeSolid;
     }
+  
     switch (type) {
         case Natron::eRotoStrokeTypeBlur:
             pluginId = PLUGINID_OFX_BLURCIMG;
@@ -533,6 +534,11 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
         KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
         if (mergeOp) {
             mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
+        }
+        
+        ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
+        if ( reason == Natron::eValueChangedReasonUserEdited) {
+            getContext()->refreshRotoPaintTree();
         }
     } else if (knob == _imp->sourceColor) {
         refreshNodesConnections();

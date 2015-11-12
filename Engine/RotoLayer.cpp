@@ -214,6 +214,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 if (!bezier->getParentLayer()) {
                     bezier->setParentLayer(this_layer);
                 }
+                qDebug() << "Adding" << bezier->getScriptName().c_str();
                 QMutexLocker l(&itemMutex);
                 _imp->items.push_back(bezier);
             }

@@ -645,8 +645,10 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,double* x,double *y) const
             
             //Try once with expressions
             double yCurve;
+            
             try {
-                yCurve = (*it)->evaluate(!(*it)->getInternalCurve()->isAnimated(), openGL_pos.x() );
+                boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+                yCurve = (*it)->evaluate(internalCurve && !internalCurve->isAnimated(), openGL_pos.x() );
             } catch (...) {
                 yCurve = (*it)->evaluate(false, openGL_pos.x() );
             }

@@ -125,6 +125,8 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
 , _horizLayout(0)
 , _horizContainer(0)
 , _verticalColorBar(0)
+, _rightContainer(0)
+, _rightContainerLayout(0)
 ,_tabWidget(NULL)
 , _centerNodeButton(NULL)
 , _enterInGroupButton(NULL)
@@ -210,6 +212,24 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         }
     }
     
+    /*
+     Make the tab widget have the same height across all tabs to avoid the
+     layout being adjusted everytimes the user switches from tab to tab
+     */
+#pragma message WARN("Fix small layout issues then activate")
+    /*if (_tabWidget && !_useScrollAreasForTabs) {
+        //Compute the tab maximum height
+        int maxHeight = -1;
+        for (int i = 0; i < _tabWidget->count(); ++i) {
+            QWidget* w = _tabWidget->widget(i);
+            if (w) {
+                maxHeight = std::max(w->sizeHint().height(),maxHeight);
+            }
+        }
+        if (maxHeight > 0) {
+            _tabWidget->setFixedHeight(maxHeight);
+        }
+    }*/
 }
 
 KnobGui*
@@ -712,6 +732,8 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
             _horizLayout->addWidget(newTab);
         }
     }
+    
+    
     Page p;
     p.tab = newTab;
     p.currentRow = 0;

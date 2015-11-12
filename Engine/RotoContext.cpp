@@ -131,6 +131,13 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return boost::shared_ptr<Natron::Node>();
     }
     
+    if (isRotoPaintTreeConcatenatableInternal(items)) {
+        QMutexLocker k(&_imp->rotoContextMutex);
+        if (!_imp->globalMergeNodes.empty()) {
+            return _imp->globalMergeNodes.front();
+        }
+    }
+    
     const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
     assert(firstStrokeItem);
     boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
@@ -160,6 +167,11 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* 
         if (frameHoldNode) {
             nodes->push_back(frameHoldNode);
         }
+    }
+    
+    QMutexLocker k(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
+        nodes->push_back(*it);
     }
 }
 
@@ -202,6 +214,7 @@ RotoContext::addLayerInternal(bool declarePython)
     boost::shared_ptr<RotoLayer> item;
     
     std::string name = generateUniqueName(kRotoLayerBaseName);
+    int indexInLayer = -1;
     {
         
         boost::shared_ptr<RotoLayer> deepestLayer;
@@ -228,6 +241,7 @@ RotoContext::addLayerInternal(bool declarePython)
         item.reset( new RotoLayer(this_shared, name, boost::shared_ptr<RotoLayer>()) );
         if (parentLayer) {
             parentLayer->addItem(item,declarePython);
+            indexInLayer = parentLayer->getItems().size() - 1;
         }
         
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -237,7 +251,7 @@ RotoContext::addLayerInternal(bool declarePython)
         _imp->lastInsertedItem = item;
     }
     
-    Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
+    Q_EMIT itemInserted(indexInLayer,RotoItem::eSelectionReasonOther);
     
     
     clearSelection(RotoItem::eSelectionReasonOther);
@@ -419,12 +433,15 @@ RotoContext::makeBezier(double x,
     assert(parentLayer);
     boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>(), isOpenBezier) );
     curve->createNodes();
+    
+    int indexInLayer = -1;
     if (parentLayer) {
+        indexInLayer = 0;
         parentLayer->insertItem(curve,0);
     }
     _imp->lastInsertedItem = curve;
 
-    Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
+    Q_EMIT itemInserted(indexInLayer, RotoItem::eSelectionReasonOther);
 
 
     clearSelection(RotoItem::eSelectionReasonOther);
@@ -470,7 +487,9 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
     }
     assert(parentLayer);
     boost::shared_ptr<RotoStrokeItem> curve( new RotoStrokeItem(type,this_shared, name, boost::shared_ptr<RotoLayer>()) );
+    int indexInLayer = -1;
     if (parentLayer) {
+        indexInLayer = 0;
         parentLayer->insertItem(curve,0);
     }
     curve->createNodes();
@@ -478,7 +497,7 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
     
     _imp->lastInsertedItem = curve;
     
-    Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
+    Q_EMIT itemInserted(indexInLayer,RotoItem::eSelectionReasonOther);
     
     if (clearSel) {
         clearSelection(RotoItem::eSelectionReasonOther);
@@ -621,7 +640,7 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
         }
         _imp->lastInsertedItem = item;
     }
-    Q_EMIT itemInserted(reason);
+    Q_EMIT itemInserted(indexInLayer,reason);
 }
 
 
@@ -791,6 +810,42 @@ const
         }
     }
     getItemsRegionOfDefinition(allItems, time, view, rod);
+}
+
+bool
+RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items)
+{
+    bool operatorSet = false;
+    int comp_i;
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+        int op = (*it)->getCompositingOperator();
+        if (!operatorSet) {
+            operatorSet = true;
+            comp_i = op;
+        } else {
+            if (op != comp_i) {
+                //2 items have a different compositing operator
+                return false;
+            }
+        }
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        if (!isStroke) {
+            assert(dynamic_cast<Bezier*>(it->get()));
+        } else {
+            if (isStroke->getBrushType() != Natron::eRotoStrokeTypeSolid) {
+                return false;
+            }
+        }
+        
+    }
+    return true;
+}
+
+bool
+RotoContext::isRotoPaintTreeConcatenatable() const
+{
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    return isRotoPaintTreeConcatenatableInternal(items);
 }
 
 bool
@@ -3721,41 +3776,120 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     
 }
 
-static void refreshLayerRotoPaintTree(RotoLayer* layer)
+boost::shared_ptr<Natron::Node>
+RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
 {
-    const RotoItems& items = layer->getItems();
-    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
-        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
-        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(it->get());
-        if (isLayer) {
-            refreshLayerRotoPaintTree(isLayer);
-        } else if (isDrawable) {
-            isDrawable->refreshNodesConnections();
+    
+    
+    {
+        QMutexLocker k(&_imp->rotoContextMutex);
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _imp->globalMergeNodes.begin(); it!=_imp->globalMergeNodes.end(); ++it) {
+            const std::vector<boost::shared_ptr<Natron::Node> > &inputs = (*it)->getInputs();
+            
+            //Merge node goes like this: B, A, Mask, A2, A3, A4 ...
+            assert(inputs.size() >= 3 && (*it)->getLiveInstance()->isInputMask(2));
+            if (!inputs[1]) {
+                *availableInputIndex = 1;
+                return *it;
+            }
+            
+            //Leave the last input empty to connect the next merge node
+            for (std::size_t i = 3; i < inputs.size() - 1; ++i) {
+                if (!inputs[i]) {
+                    *availableInputIndex = (int)i;
+                    return *it;
+                }
+            }
         }
     }
+    
+    boost::shared_ptr<Natron::Node>  node = getNode();
+    //We must create a new merge node
+    QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append('_');
+    fixedNamePrefix.append("globalMerge");
+    fixedNamePrefix.append('_');
+    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
+                        -1,-1,
+                        false,
+                        INT_MIN,
+                        INT_MIN,
+                        false,
+                        false,
+                        false,
+                        fixedNamePrefix,
+                        CreateNodeArgs::DefaultValuesList(),
+                        boost::shared_ptr<NodeCollection>());
+    args.createGui = false;
+    
+    boost::shared_ptr<Natron::Node> mergeNode = node->getApp()->createNode(args);
+    if (!mergeNode) {
+        return mergeNode;
+    }
+    *availableInputIndex = 1;
+    
+    QMutexLocker k(&_imp->rotoContextMutex);
+    _imp->globalMergeNodes.push_back(mergeNode);
+    return mergeNode;
 }
 
 void
 RotoContext::refreshRotoPaintTree()
 {
-    if (!_imp->isPaintNode || _imp->isCurrentlyLoading) {
+    if (_imp->isCurrentlyLoading) {
         return;
     }
-    boost::shared_ptr<RotoLayer> layer;
+    
+    bool canConcatenate = isRotoPaintTreeConcatenatable();
+    
+    boost::shared_ptr<Natron::Node> globalMerge;
+    int globalMergeIndex = -1;
+    
+    
+    std::list<boost::shared_ptr<Natron::Node> > mergeNodes;
     {
         QMutexLocker k(&_imp->rotoContextMutex);
-        if (_imp->layers.empty()) {
-            return;
-        }
-        layer = _imp->layers.front();
+        mergeNodes = _imp->globalMergeNodes;
     }
-    refreshLayerRotoPaintTree(layer.get());
+    //ensure that all global merge nodes are disconnected
+    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = mergeNodes.begin(); it!=mergeNodes.end(); ++it) {
+        int maxInputs = (*it)->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            (*it)->disconnectInput(i);
+        }
+    }
+    if (canConcatenate) {
+        globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+    }
+    
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        (*it)->refreshNodesConnections();
+        
+        if (globalMerge) {
+            boost::shared_ptr<Natron::Node> effectNode = (*it)->getEffectNode();
+            assert(effectNode);
+            //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<
+            //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
+            globalMerge->connectInput(effectNode, globalMergeIndex);
+            
+            ///Refresh for next node
+            boost::shared_ptr<Natron::Node> nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+            if (nextMerge != globalMerge) {
+                int nextMergeInputNb = globalMerge->getMaxInputCount() - 1;
+                assert(!globalMerge->getInput(nextMergeInputNb));
+                globalMerge->connectInput(nextMerge, nextMergeInputNb);
+                
+                globalMerge = nextMerge;
+            }
+        }
+        
+    }
 }
 
 void
 RotoContext::onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node)
 {
-    assert(_imp->isPaintNode);
     
     if (node) {
         

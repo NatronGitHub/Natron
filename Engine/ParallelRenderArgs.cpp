@@ -278,11 +278,13 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 }
                                 
                                 RectI inputRoIPixelCoords;
-                                roi.toPixelEnclosing(useScaleOneInputs ? 0 : originalMipMapLevel, inputPar, &inputRoIPixelCoords);
+                                const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
+                                const RenderScale& upstreamScale = useScaleOneInputs ? scaleOne : scale;
+                                roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
                                 
                                 EffectInstance::RenderRoIArgs inArgs(f, //< time
-                                                                     useScaleOneInputs ? scaleOne : scale, //< scale
-                                                                     useScaleOneInputs ? 0 : originalMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                     upstreamScale, //< scale
+                                                                     upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
                                                                      viewIt->first, //< view
                                                                      byPassCache,
                                                                      inputRoIPixelCoords, //< roi in pixel coordinates

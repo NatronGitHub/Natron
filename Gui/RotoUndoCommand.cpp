@@ -1474,12 +1474,21 @@ MakeEllipseUndoCommand::redo()
         }
         if (_fromCenter) {
             ytop = _fromy - (_toy - _fromy);
-            xleft = std::min(_fromx - (xright - _fromx),xright - 1);
+            xleft = _fromx - (xright - _fromx);
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         } else {
             ytop = _fromy;
-            xleft = std::min(_fromx,xright - 1);
+            xleft = _fromx;
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         }
-        ybottom = std::min(_toy,ytop - 1);
+        ybottom = _toy;
+        if (ybottom == ytop) {
+            ybottom -= 1.;
+        }
         double xmid = (xleft + xright) / 2.;
         double ymid = (ytop + ybottom) / 2.;
         if (_create) {
@@ -1618,12 +1627,21 @@ MakeRectangleUndoCommand::redo()
         }
         if (_fromCenter) {
             ytop = _fromy - (_toy - _fromy);
-            xleft = std::min(_fromx - (xright - _fromx),xright -1);
+            xleft = _fromx - (xright - _fromx);
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         } else {
             ytop = _fromy;
-            xleft = std::min(_fromx,xright -1);
+            xleft = _fromx;
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         }
-        ybottom = std::min(_toy,ytop -1);
+        ybottom = _toy;
+        if (ybottom == ytop) {
+            ybottom -= 1.;
+        }
         if (_create) {
             _curve = _roto->getContext()->makeBezier(xleft, ytop, kRotoRectangleBaseName, _time, false); //topleft
             assert(_curve);

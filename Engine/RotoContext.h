@@ -214,8 +214,17 @@ public:
     void getMaskRegionOfDefinition(double time,
                                    int view,
                                    RectD* rod) const; //!< rod in canonical coordinates
+    
+    /**
+     * @brief Returns true if  all items have the same compositing operator and there are only strokes or bezier (because they
+     * are not masked)
+     **/
+    bool isRotoPaintTreeConcatenatable() const;
+    
+    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items);
 
 private:
+    
     
     void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int view, RectD* rod) const;
     
@@ -459,7 +468,7 @@ Q_SIGNALS:
 
     void restorationComplete();
 
-    void itemInserted(int);
+    void itemInserted(int,int);
 
     void itemRemoved(const boost::shared_ptr<RotoItem>&,int);
 
@@ -483,6 +492,9 @@ public Q_SLOTS:
     void onLifeTimeKnobValueChanged(int, int);
 
 private:
+    
+    
+    boost::shared_ptr<Natron::Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);

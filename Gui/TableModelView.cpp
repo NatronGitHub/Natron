@@ -418,7 +418,8 @@ TableModel::item(const QModelIndex &index) const
         return 0;
     }
 
-    return _imp->tableItems.at( tableIndex( index.row(), index.column() ) );
+    int idx = tableIndex(index.row(), index.column());
+    return idx < _imp->tableItems.size() ? _imp->tableItems[idx] : 0;
 }
 
 void

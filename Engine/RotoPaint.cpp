@@ -394,10 +394,8 @@ RotoPaint::render(const RenderActionArgs& args)
             }
         }
         
-        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-        assert(firstStrokeItem);
-        boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-                
+        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+        
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
 

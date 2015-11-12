@@ -423,6 +423,12 @@ DockablePanel::DockablePanel(Gui* gui ,
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
     _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
     _imp->_horizLayout->setSpacing(2);
+    
+    _imp->_rightContainer = new QWidget(_imp->_horizContainer);
+    _imp->_rightContainerLayout = new QVBoxLayout(_imp->_rightContainer);
+    _imp->_rightContainerLayout->setSpacing(0);
+    _imp->_rightContainerLayout->setContentsMargins(0, 0, 0, 0);
+    
     if (isEffect) {
         _imp->_verticalColorBar = new VerticalColorBar(_imp->_horizContainer);
         _imp->_verticalColorBar->setColor(currentColor);
@@ -439,7 +445,8 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_tabWidget->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
     }
     QObject::connect(_imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)));
-    _imp->_horizLayout->addWidget(_imp->_tabWidget);
+    _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
+    _imp->_horizLayout->addWidget(_imp->_rightContainer);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
@@ -674,10 +681,10 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-        _imp->_mainLayout->addWidget(roto);
+        _imp->_rightContainerLayout->addWidget(roto);
     }
 
-    initializeExtraGui(_imp->_mainLayout);
+    initializeExtraGui(_imp->_rightContainerLayout);
     
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {

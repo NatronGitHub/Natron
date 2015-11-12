@@ -97,6 +97,9 @@ struct Matrix3x3;
 /**
  * @class A RotoLayer is a group of RotoItem. This allows the context to sort
  * and build hierarchies of layers.
+ * Children items are rendered in reverse order of their ordering in the children list
+ * i.e: the last item will be rendered first, etc...
+ * Visually, in the GUI the top-most item of a layer corresponds to the first item in the children list
  **/
 struct RotoLayerPrivate;
 class RotoLayer
