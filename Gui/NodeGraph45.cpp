@@ -596,13 +596,15 @@ NodeGraph::expandSelectedGroups()
 }
 
 void
-NodeGraph::onGroupNameChanged(const QString& name)
+NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    
-    setLabel(name.toStdString());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
+    std::string label;
+    makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
+    setLabel(label);
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
     if (parent) {
-        parent->setTabLabel(this, name);
+        parent->setTabLabel(this, label.c_str());
     }
 }
 

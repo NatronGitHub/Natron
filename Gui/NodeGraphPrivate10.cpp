@@ -130,7 +130,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     assert(gui);
 
     std::string name;
-    if (grp == group.lock()) {
+    if (grp == group.lock() && internalSerialization.getNode()->getGroup() == group.lock()) {
         //We pasted the node in the same group, give it another label
         int no = 1;
         std::string label = internalSerialization.getNodeLabel();

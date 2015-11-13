@@ -80,6 +80,8 @@ public:
 
     virtual ~NodeGraph();
     
+    static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret);
+    
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
