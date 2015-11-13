@@ -209,6 +209,10 @@ public:
     boost::shared_ptr<KnobChoice> getTimeOffsetModeKnob() const;
     boost::shared_ptr<KnobChoice> getBrushSourceTypeKnob() const;
     boost::shared_ptr<KnobDouble> getBrushCloneTranslateKnob() const;
+    boost::shared_ptr<KnobDouble> getMotionBlurAmountKnob() const;
+    boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
+    boost::shared_ptr<KnobDouble> getShutterKnob() const;
+    boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
     
     void setKeyframeOnAllTransformParameters(double time);
 

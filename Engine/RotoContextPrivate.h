@@ -311,9 +311,6 @@
 #define kRotoResetCenterParamLabel "Reset Center"
 #define kRotoResetCenterParamHint "Reset the transform center"
 
-
-//#define NATRON_ROTO_ENABLE_MOTION_BLUR
-
 #define kRotoMotionBlurModeParam "motionBlurMode"
 #define kRotoMotionBlurModeParamLabel "Mode"
 #define kRotoMotionBlurModeParamHint "Per-shape motion blurs applies motion blur independently to each shape and then blends them together." \
@@ -742,7 +739,6 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobChoice> shutterType;
     boost::shared_ptr<KnobDouble> customOffset;
 #endif
-    
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
     RotoDrawableItemPrivate(bool isPaintingNode)
@@ -1136,11 +1132,10 @@ struct RotoDrawableItemPrivate
         }
         knobs.push_back(timeOffsetMode);
 
-        
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        motionBlur.reset(new KnobDouble(NULL, kRotoMotionBlurModeParamLabel, 1, false));
+        motionBlur.reset(new KnobDouble(NULL, kRotoMotionBlurParamLabel, 1, false));
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
-        motionBlur->setHintToolTip(kRotoMotionBlurModeParamHint);
+        motionBlur->setHintToolTip(kRotoMotionBlurParamHint);
         motionBlur->populate();
         motionBlur->setDefaultValue(0);
         motionBlur->setMinimum(0);
@@ -1185,8 +1180,7 @@ struct RotoDrawableItemPrivate
         customOffset->populate();
         customOffset->setDefaultValue(0);
         knobs.push_back(customOffset);
-
-#endif // NATRON_ROTO_ENABLE_MOTION_BLUR
+#endif
         
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
@@ -1957,11 +1951,9 @@ struct RotoContextPrivate
         node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
         
         
-        
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        
         boost::shared_ptr<KnobPage> mbPage = Natron::createKnob<KnobPage>(effect, "Motion Blur", 1, false);
-        boost::shared_ptr<KnobChoice> motionBlurType = Natron::createKnob<KnobChoice>(effect, kRotoMotionBlurModeParamLabel, 1, false);
+        boost::shared_ptr<KnobChoice> motionBlurType = Natron::createKnob<KnobChoice>(effect, kRotoMotionBlurModeParamLabel, 1, true);
         motionBlurType->setName(kRotoMotionBlurModeParam);
         motionBlurType->setHintToolTip(kRotoMotionBlurModeParamHint);
         motionBlurType->setAnimationEnabled(false);
@@ -1977,9 +1969,9 @@ struct RotoContextPrivate
         
         
         //////Per shape motion blur parameters
-        boost::shared_ptr<KnobDouble> motionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurModeParamLabel, 1, false);
+        boost::shared_ptr<KnobDouble> motionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurParamLabel, 1, false);
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
-        motionBlur->setHintToolTip(kRotoMotionBlurModeParamHint);
+        motionBlur->setHintToolTip(kRotoMotionBlurParamHint);
         motionBlur->setDefaultValue(0);
         motionBlur->setMinimum(0);
         motionBlur->setDisplayMinimum(0);
@@ -1987,6 +1979,7 @@ struct RotoContextPrivate
         motionBlur->setAllDimensionsEnabled(false);
         motionBlur->setIsPersistant(false);
         motionBlur->setMaximum(4);
+        shapeKnobs.push_back(motionBlur);
         mbPage->addKnob(motionBlur);
         motionBlurKnob = motionBlur;
         knobs.push_back(motionBlur);
@@ -2001,6 +1994,7 @@ struct RotoContextPrivate
         shutter->setMaximum(2);
         shutter->setAllDimensionsEnabled(false);
         shutter->setIsPersistant(false);
+        shapeKnobs.push_back(shutter);
         mbPage->addKnob(shutter);
         shutterKnob = shutter;
         knobs.push_back(shutter);
@@ -2026,6 +2020,7 @@ struct RotoContextPrivate
         shutterType->setIsPersistant(false);
         mbPage->addKnob(shutterType);
         shutterTypeKnob = shutterType;
+        shapeKnobs.push_back(shutterType);
         knobs.push_back(shutterType);
         
         boost::shared_ptr<KnobDouble> customOffset = Natron::createKnob<KnobDouble>(effect, kRotoShutterCustomOffsetParamLabel, 1, false);
@@ -2036,17 +2031,19 @@ struct RotoContextPrivate
         customOffset->setIsPersistant(false);
         mbPage->addKnob(customOffset);
         customOffsetKnob = customOffset;
+        shapeKnobs.push_back(customOffset);
         knobs.push_back(customOffset);
         
         //////Global motion blur parameters
-        boost::shared_ptr<KnobDouble> globalMotionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurModeParamLabel, 1, false);
+        boost::shared_ptr<KnobDouble> globalMotionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurParamLabel, 1, false);
         globalMotionBlur->setName(kRotoGlobalMotionBlurParam);
-        globalMotionBlur->setHintToolTip(kRotoMotionBlurModeParamHint);
+        globalMotionBlur->setHintToolTip(kRotoMotionBlurParamHint);
         globalMotionBlur->setDefaultValue(0);
         globalMotionBlur->setMinimum(0);
         globalMotionBlur->setDisplayMinimum(0);
         globalMotionBlur->setDisplayMaximum(4);
         globalMotionBlur->setMaximum(4);
+        globalMotionBlur->setSecretByDefault(true);
         mbPage->addKnob(globalMotionBlur);
         globalMotionBlurKnob = globalMotionBlur;
         knobs.push_back(globalMotionBlur);
@@ -2059,6 +2056,7 @@ struct RotoContextPrivate
         globalShutter->setDisplayMinimum(0);
         globalShutter->setDisplayMaximum(2);
         globalShutter->setMaximum(2);
+        globalShutter->setSecretByDefault(true);
         mbPage->addKnob(globalShutter);
         globalShutterKnob = globalShutter;
         knobs.push_back(globalShutter);
@@ -2077,9 +2075,10 @@ struct RotoContextPrivate
             helps.push_back(kRotoShutterOffsetEndHint);
             options.push_back("Custom");
             helps.push_back(kRotoShutterOffsetCustomHint);
-            shutterType->populateChoices(options,helps);
+            globalShutterType->populateChoices(options,helps);
         }
         globalShutterType->setAddNewLine(false);
+        globalShutterType->setSecretByDefault(true);
         mbPage->addKnob(globalShutterType);
         globalShutterTypeKnob = globalShutterType;
         knobs.push_back(globalShutterType);
@@ -2088,12 +2087,13 @@ struct RotoContextPrivate
         globalCustomOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         globalCustomOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
         globalCustomOffset->setDefaultValue(0);
+        globalCustomOffset->setSecretByDefault(true);
         mbPage->addKnob(globalCustomOffset);
         globalCustomOffsetKnob = globalCustomOffset;
         knobs.push_back(globalCustomOffset);
         
-#endif // NATRON_ROTO_ENABLE_MOTION_BLUR
-        
+#endif
+    
     }
 
     /**

@@ -118,37 +118,42 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                                                                                internalSerialization.getPluginMajorVersion(),
                                                                                internalSerialization.getPluginMinorVersion(),
                                                                                &internalSerialization,
-                                                                               true,
+                                                                               false,
                                                                                grp) );
 
     assert(n);
+    if (!n) {
+        return boost::shared_ptr<NodeGui>();
+    }
     boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
     boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
     std::string name;
-    if (internalSerialization.getNode()->getGroup() != group.lock() || grp != group.lock()) {
-        name = internalSerialization.getNodeScriptName();
-        n->setScriptName( name);
-        n->setLabel(internalSerialization.getNodeLabel());
-    } else {
+    if (grp == group.lock()) {
+        //We pasted the node in the same group, give it another label
         int no = 1;
-        std::stringstream ss;
-        ss << internalSerialization.getNodeScriptName();
-        ss << '_';
-        ss << no;
-        name = ss.str();
-        while ( grp->checkIfNodeNameExists( name,n.get() ) ) {
+        std::string label = internalSerialization.getNodeLabel();
+        do {
+            if (no > 1) {
+                std::stringstream ss;
+                ss << internalSerialization.getNodeLabel();
+                ss << '_';
+                ss << no;
+                label = ss.str();
+            }
             ++no;
-            ss.str( std::string() );
-            ss.clear();
-            ss << internalSerialization.getNodeScriptName();
-            ss << '_';
-            ss << no;
-            name = ss.str();
-        }
+        } while (grp->checkIfNodeLabelExists(label, n.get()));
+
+        n->setLabel(label);
+        
+    } else {
+        //If we paste the node in a different graph, it can keep its scriptname/label
+        /*name = internalSerialization.getNodeScriptName();
         n->setScriptName( name);
+        n->setLabel(internalSerialization.getNodeLabel());*/
     }
+
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( !masterNodeName.empty() ) {
@@ -188,7 +193,8 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
 
     const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization.getNodesCollection();
 
-    if (!nodes.empty()) {
+    if (internalSerialization.getPythonModule().empty() // the python code already loaded the internal tree
+        && !nodes.empty()) {
 
         std::string parentName;
         boost::shared_ptr<NodeCollection> collection;

@@ -57,6 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -1324,6 +1325,46 @@ boost::shared_ptr<KnobInt>
 RotoDrawableItem::getLifeTimeFrameKnob() const
 {
     return _imp->lifeTimeFrame;
+}
+
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getMotionBlurAmountKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->motionBlur;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getShutterOffsetKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->customOffset;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getShutterKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->shutter;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobChoice>
+RotoDrawableItem::getShutterTypeKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->shutterType;
+#else
+    return boost::shared_ptr<KnobChoice>();
+#endif
 }
 
 void

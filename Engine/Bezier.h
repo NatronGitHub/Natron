@@ -323,6 +323,11 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
     void cuspPointAtIndex(int index,double time,const std::pair<double,double>& pixelScale);
+    
+    void getMotionBlurSettings(const double time,
+                               double* startTime,
+                               double* endTime,
+                               double* timeStep) const;
 
 private:
     

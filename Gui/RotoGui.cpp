@@ -3443,16 +3443,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
         rotoData->strokeBeingPaint->createNodes(false);
     }
-    if (!prepareForLater) {
-        
-        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
-        if (!layer) {
-            layer = context->getOrCreateBaseLayer();
-        }
-        assert(layer);
-        context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
-        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
-    }
+   
     
     assert(rotoData->strokeBeingPaint);
     boost::shared_ptr<KnobColor> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
@@ -3507,6 +3498,13 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
+        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
+        if (!layer) {
+            layer = context->getOrCreateBaseLayer();
+        }
+        assert(layer);
+        context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
+        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
         rotoData->strokeBeingPaint->appendPoint(true,p);
     }
     

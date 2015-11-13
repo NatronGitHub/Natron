@@ -141,6 +141,11 @@ public:
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
     bool checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const;
+    
+    /**
+     * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
+     **/
+    bool checkIfNodeLabelExists(const std::string & n,const Natron::Node* caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.

@@ -131,7 +131,12 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return boost::shared_ptr<Natron::Node>();
     }
     
-    if (isRotoPaintTreeConcatenatableInternal(items)) {
+    boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
+    {
+        QMutexLocker k(&_imp->rotoContextMutex);
+        strokeBeingPainted = _imp->strokeBeingPainted;
+    }
+    if (!strokeBeingPainted && isRotoPaintTreeConcatenatableInternal(items)) {
         QMutexLocker k(&_imp->rotoContextMutex);
         if (!_imp->globalMergeNodes.empty()) {
             return _imp->globalMergeNodes.front();
@@ -749,44 +754,106 @@ RotoContext::onRippleEditChanged(bool enabled)
 }
 
 void
+RotoContext::getGlobalMotionBlurSettings(const double time,
+                              double* startTime,
+                              double* endTime,
+                              double* timeStep) const
+{
+    *startTime = time, *timeStep = 1., *endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    
+    double motionBlurAmnt = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    if (motionBlurAmnt == 0) {
+        return;
+    }
+    int nbSamples = std::floor(motionBlurAmnt * 10 + 0.5);
+    double shutterInterval = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    if (shutterInterval == 0) {
+        return;
+    }
+    int shutterType_i = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    if (nbSamples != 0) {
+        *timeStep = shutterInterval / nbSamples;
+    }
+    if (shutterType_i == 0) { // centered
+        *startTime = time - shutterInterval / 2.;
+        *endTime = time + shutterInterval / 2.;
+    } else if (shutterType_i == 1) {// start
+        *startTime = time;
+        *endTime = time + shutterInterval;
+    } else if (shutterType_i == 2) { // end
+        *startTime = time - shutterInterval;
+        *endTime = time;
+    } else if (shutterType_i == 3) { // custom
+        *startTime = time + _imp->globalCustomOffsetKnob.lock()->getValueAtTime(time);
+        *endTime = *startTime + shutterInterval;
+    } else {
+        assert(false);
+    }
+    
+    
+#endif
+}
+
+void
 RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int /*view*/, RectD* rod) const
 {
     
-    QMutexLocker l(&_imp->rotoContextMutex);
-    bool first = true;
+    double startTime = time, mbFrameStep = 1., endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    int mbType_i = getMotionBlurTypeKnob()->getValue();
+    bool applyGlobalMotionBlur = mbType_i == 1;
+    if (applyGlobalMotionBlur) {
+        getGlobalMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+    }
+#endif
+    
 
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-        Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
-        if (isBezier && !isStroke) {
-            if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
-                RectD splineRoD = isBezier->getBoundingBox(time);
-                if ( splineRoD.isNull() ) {
-                    continue;
+    bool rodSet = false;
+    
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (double t = startTime; t <= endTime; t+= mbFrameStep) {
+        bool first = true;
+        RectD bbox;
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
+            if (isBezier && !isStroke) {
+                if (isBezier->isActivated(time)  && isBezier->getControlPointsCount() > 1) {
+                    RectD splineRoD = isBezier->getBoundingBox(t);
+                    if ( splineRoD.isNull() ) {
+                        continue;
+                    }
+                    
+                    if (first) {
+                        first = false;
+                        bbox = splineRoD;
+                    } else {
+                        bbox.merge(splineRoD);
+                    }
                 }
-                
-                if (first) {
-                    first = false;
-                    *rod = splineRoD;
-                } else {
-                    rod->merge(splineRoD);
+            } else if (isStroke) {
+                RectD strokeRod;
+                if (isStroke->isActivated(time)) {
+                    if (isStroke == _imp->strokeBeingPainted.get()) {
+                        strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
+                    } else {
+                        strokeRod = isStroke->getBoundingBox(t);
+                    }
+                    if (first) {
+                        first = false;
+                        bbox= strokeRod;
+                    } else {
+                        bbox.merge(strokeRod);
+                    }
                 }
             }
-        } else if (isStroke) {
-            RectD strokeRod;
-            if (isStroke->isActivated(time)) {
-                if (isStroke == _imp->strokeBeingPainted.get()) {
-                    strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
-                } else {
-                    strokeRod = isStroke->getBoundingBox(time);
-                }
-                if (first) {
-                    first = false;
-                    *rod = strokeRod;
-                } else {
-                    rod->merge(strokeRod);
-                }
-            }
+        }
+        if (!rodSet) {
+            *rod = bbox;
+            rodSet = true;
+        } else {
+            rod->merge(bbox);
         }
     }
 
@@ -1432,6 +1499,21 @@ RotoContext::knobChanged(KnobI* k,
     } else if (k == _imp->resetCloneTransformKnob.lock().get()) {
         resetCloneTransform();
     }
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    else if (k == _imp->motionBlurTypeKnob.lock().get()) {
+        int mbType_i = getMotionBlurTypeKnob()->getValue();
+        bool isPerShapeMB = mbType_i == 0;
+        _imp->motionBlurKnob.lock()->setSecret(!isPerShapeMB);
+        _imp->shutterKnob.lock()->setSecret(!isPerShapeMB);
+        _imp->shutterTypeKnob.lock()->setSecret(!isPerShapeMB);
+        _imp->customOffsetKnob.lock()->setSecret(!isPerShapeMB);
+        
+        _imp->globalMotionBlurKnob.lock()->setSecret(isPerShapeMB);
+        _imp->globalShutterKnob.lock()->setSecret(isPerShapeMB);
+        _imp->globalShutterTypeKnob.lock()->setSecret(isPerShapeMB);
+        _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
+    }
+#endif
 }
 
 boost::shared_ptr<RotoItem>
@@ -1793,12 +1875,7 @@ RotoContext::evaluateChange()
 void
 RotoContext::evaluateChange_noIncrement()
 {
-    //Used for the rotopaint to optimize the portion to render (the last tick of the mouse move)
-    std::list<Node*> outputs;
-    for (std::list<Node*>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-        (*it)->incrementKnobsAge();
-    }
-    
+    //Used for the rotopaint to optimize the portion to render (render only the bbox of the last tick of the mouse move)
     std::list<ViewerInstance* > viewers;
     getNode()->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
@@ -1940,6 +2017,16 @@ RotoContext::dequeueGuiActions()
         evaluateChange();
     }
     
+}
+
+boost::shared_ptr<KnobChoice>
+RotoContext::getMotionBlurTypeKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->motionBlurTypeKnob.lock();
+#else
+    return boost::shared_ptr<KnobChoice>();
+#endif
 }
 
 bool
@@ -2528,14 +2615,15 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     return distToNext;
 }
 
+
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                   const RectI& /*roi*/,
                                   const Natron::ImageComponents& components,
-                                  SequenceTime time,
-                                  int view,
-                                  Natron::ImageBitDepthEnum depth,
-                                  unsigned int mipmapLevel)
+                                  const double time,
+                                  const int view,
+                                  const Natron::ImageBitDepthEnum depth,
+                                  const unsigned int mipmapLevel)
 {
     boost::shared_ptr<Node> node = getNode();
     
@@ -2566,17 +2654,38 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     }
     
     
-    RectD bbox;
-    
-    std::list<std::list<std::pair<Natron::Point,double> > > strokes;
-    
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
     Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
+    
+    double startTime = time, mbFrameStep = 1., endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    if (isBezier) {
+        int mbType_i = _imp->motionBlurTypeKnob.lock()->getValue();
+        bool applyPerShapeMotionBlur = mbType_i == 0;
+        if (applyPerShapeMotionBlur) {
+            isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+        }
+    }
+#endif
+    
+    RectD bbox;
+
+    std::list<std::list<std::pair<Natron::Point,double> > > strokes;
+ 
     if (isStroke) {
         isStroke->evaluateStroke(mipmapLevel, time, &strokes, &bbox);
     } else {
         assert(isBezier);
-        bbox = isBezier->getBoundingBox(time);
+        bool bboxSet = false;
+        for (double t = startTime; t <= endTime; t += mbFrameStep) {
+            RectD subBbox = isBezier->getBoundingBox(t);
+            if (!bboxSet) {
+                bbox = subBbox;
+                bboxSet = true;
+            } else {
+                bbox.merge(subBbox);
+            }
+        }
         if (isBezier->isOpenBezier()) {
             std::list<Point> decastelJauPolygon;
             isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, time, mipmapLevel, &decastelJauPolygon, 0);
@@ -2624,7 +2733,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     image->allocateMemory();
     
 
-    image = renderMaskInternal(stroke, pixelRod, components, time, depth, mipmapLevel, strokes, image);
+    image = renderMaskInternal(stroke, pixelRod, components, startTime, endTime, mbFrameStep, time, depth, mipmapLevel, strokes, image);
     
     return image;
 }
@@ -2636,9 +2745,12 @@ boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                 const RectI & roi,
                                 const Natron::ImageComponents& components,
-                                SequenceTime time,
-                                Natron::ImageBitDepthEnum depth,
-                                unsigned int mipmapLevel,
+                                const double startTime,
+                                const double endTime,
+                                const double timeStep,
+                                const double time,
+                                const Natron::ImageBitDepthEnum depth,
+                                const unsigned int mipmapLevel,
                                 const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                                 const boost::shared_ptr<Natron::Image> &image)
 {
@@ -2654,6 +2766,9 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
     bool doBuildUp = true;
     
     if (isStroke) {
+        //Motion-blur is not supported for strokes
+        assert(startTime == endTime);
+        
         doBuildUp = stroke->getBuildupKnob()->getValueAtTime(time);
         //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
         if (!doBuildUp || components.getNumComponents() > 1) {

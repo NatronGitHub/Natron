@@ -819,7 +819,13 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
-        return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
+        try {
+            return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
+        } catch (const std::exception& e) {
+            Natron::errorDialog(tr("Plugin error").toStdString(),
+                                tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
+            return node;
+        }
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
@@ -948,6 +954,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
                 }
+                Natron::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
         } else if (!requestedByLoad && !_imp->_creatingGroup) {

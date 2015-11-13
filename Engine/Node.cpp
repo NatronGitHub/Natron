@@ -696,7 +696,21 @@ Node::load(const std::string & parentMultiInstanceName,
             _imp->cacheID = serialization.getCacheID();
         }
         if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
-            setScriptName_no_error_check(serialization.getNodeScriptName());
+            const std::string& baseName = serialization.getNodeScriptName();
+            std::string name = baseName;
+            int no = 1;
+            do {
+                
+                if (no > 1) {
+                    std::stringstream ss;
+                    ss << baseName;
+                    ss << '_';
+                    ss << no;
+                    name = ss.str();
+                }
+                ++no;
+            } while(getGroup() && getGroup()->checkIfNodeNameExists(name, this));
+            setScriptName_no_error_check(name);
             setLabel(serialization.getNodeLabel());
             nameSet = true;
         }
@@ -2427,7 +2441,7 @@ Node::setScriptName(const std::string& name)
     } else {
         newName = name;
     }
-    
+    //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
         return false;
     }
