@@ -2722,12 +2722,14 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
         QString op = KnobGuiString::getNatronHtmlTagContent(label);
-        //Remove surrounding parenthesis
-        if (op[0] == QChar('(')) {
-            op.remove(0, 1);
-        }
-        if (op[op.size() - 1] == QChar(')')) {
-            op.remove(op.size() - 1,1);
+        if  (!op.isEmpty()) {
+            //Remove surrounding parenthesis
+            if (op[0] == QChar('(')) {
+                op.remove(0, 1);
+            }
+            if (op[op.size() - 1] == QChar(')')) {
+                op.remove(op.size() - 1,1);
+            }
         }
         QPixmap pix;
         getPixmapForMergeOperator(op, &pix);

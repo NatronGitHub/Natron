@@ -2349,6 +2349,7 @@ Node::setScriptName_no_error_check(const std::string & name)
     setNameInternal(name);
 }
 
+
 void
 Node::setNameInternal(const std::string& name)
 {
@@ -2369,11 +2370,15 @@ Node::setNameInternal(const std::string& name)
         ///Set the label at the same time
         _imp->label = newName;
     }
+    std::string fullySpecifiedName = getFullyQualifiedName();
+
     if (mustSetCacheID) {
-        std::string baseName = newName;
-        std::string cacheID = baseName;
+        std::string baseName = fullySpecifiedName;
+        std::string cacheID = fullySpecifiedName;
+        
+        
         int i = 1;
-        while (getApp()->getProject()->isCacheIDAlreadyTaken(cacheID)) {
+        while (getGroup() && getGroup()->isCacheIDAlreadyTaken(cacheID)) {
             std::stringstream ss;
             ss << baseName;
             ss << i;
@@ -2385,9 +2390,7 @@ Node::setNameInternal(const std::string& name)
     }
     
     if (collection) {
-        std::string fullySpecifiedName = getFullyQualifiedName();
         if (!oldName.empty()) {
-            
             if (fullOldName != fullySpecifiedName) {
                 try {
                     setNodeVariableToPython(fullOldName,fullySpecifiedName);

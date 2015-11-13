@@ -296,13 +296,6 @@ NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
         if ((*it)->getCacheID() == name) {
             return true;
         }
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGroup) {
-            bool found = isGroup->isCacheIDAlreadyTaken(name);
-            if (found) {
-                return true;
-            }
-        }
     }
     return false;
 }
