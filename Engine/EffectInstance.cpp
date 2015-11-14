@@ -1361,7 +1361,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
             *image = imageToConvert;
             //assert(imageToConvert->getBounds().contains(bounds));
-
             if ( stats && stats->isInDepthProfilingEnabled() ) {
                 stats->addCacheInfosForNode(getNode(), false, true);
             }
@@ -1874,6 +1873,12 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
     RectI dstBounds;
     dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
+    RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
+    assert(dstRealBounds.x1 == dstBounds.x1);
+    assert(dstRealBounds.x2 == dstBounds.x2);
+    assert(dstRealBounds.y1 == dstBounds.y1);
+    assert(dstRealBounds.y2 == dstBounds.y2);
+    
     for (InputImagesMap::const_iterator it = rectToRender.imgs.begin();
          it != rectToRender.imgs.end();
          ++it) {
@@ -1886,32 +1891,26 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
 
-                ///Note: The renderRoI() function returns an image according to the mipMapLevel given in parameters.
-                ///For effects that DO NOT SUPPORT TILES they are expected an input image to be the full RoD.
-                ///Hence the resulting image of the renderRoI call made on the input has to be upscaled to its full RoD.
-                ///The reason why this upscale is done externally to renderRoI is because renderRoI is "local" to an effect:
-                ///The effect has no way to know that the caller (downstream effect) doesn't support tiles. We would have to
-                ///pass this in parameters to the renderRoI function and would make it less clear to the caller.
-                ///
-                ///Another point is that we don't cache the resulting upscaled image (@see getImage()).
-                ///The reason why we don't do this is because all images in the NodeCache have a key identifying them.
-                ///Part of the key is the mipmapLevel of the image, hence
-                ///2 images with different mipmapLevels have different keys. Now if we were to put those "upscaled" images in the cache
-                ///they would take the same priority as the images that were REALLY rendered at scale 1. But those upcaled images have poor
-                ///quality compared to the images rendered at scale 1, hence we don't cache them.
-                ///If we were to cache them, we would need to change the way the cache works and return a list of potential images instead.
-                ///This way we could add a "quality" identifier to images and pick the best one from the list returned by the cache.
-                RectI srcRealBounds = (*it2)->getBounds();
-                RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-
+                /*
+                 * The following asserts do not hold true: In the following graph example: Viewer-->Writer-->Blur-->Read
+                 * The Writer does not support tiles. However Blur produces 2 distinct RoD depending on the render mipmap level
+                 * If a Blur image was produced at mipmaplevel 0, and then we render in the Viewer with a mipmap level of 1, the
+                 * Blur will actually retrieve the image from the cache and downscale it rather than recompute it.
+                 * Since the Writer does not support tiles, the Blur image is the full image and not a tile, which can be veryfied by
+                 *
+                 * blurCachedImage->getRod().toPixelEnclosing(blurCachedImage->getMipMapLevel(), blurCachedImage->getPixelAspectRatio(), &bounds)
+                 *
+                 * Since the Blur RoD changed (the RoD at mmlevel 0 is different than the ROD at mmlevel 1),
+                 * the resulting bounds of the downscaled image are not necessarily exactly result of the new downscaled RoD to the enclosing pixel
+                 * bounds, i.e: the bounds of the downscaled image may be contained in the bounds computed
+                 * by the line of code above (replacing blurCachedImage by the downscaledBlurCachedImage).
+                 */
+                /*
                 assert(srcRealBounds.x1 == srcBounds.x1);
                 assert(srcRealBounds.x2 == srcBounds.x2);
                 assert(srcRealBounds.y1 == srcBounds.y1);
-                assert(srcRealBounds.y2 == srcBounds.y2);
-                assert(dstRealBounds.x1 == dstBounds.x1);
-                assert(dstRealBounds.x2 == dstBounds.x2);
-                assert(dstRealBounds.y1 == dstBounds.y1);
-                assert(dstRealBounds.y2 == dstBounds.y2);
+                assert(srcRealBounds.y2 == srcBounds.y2);*/
+ 
             }
             if ( !supportsMultiResolution() ) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
