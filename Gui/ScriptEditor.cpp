@@ -67,6 +67,7 @@ struct ScriptEditorPrivate
     Button* execScriptB;
     Button* showHideOutputB;
     Button* clearOutputB;
+    Button* showAutoDeclVarsB;
     
     ScriptTextEdit* outputEdit;
     ScriptTextEdit* inputEdit;
@@ -93,6 +94,7 @@ struct ScriptEditorPrivate
     , execScriptB(0)
     , showHideOutputB(0)
     , clearOutputB(0)
+    , showAutoDeclVarsB(0)
     , outputEdit(0)
     , inputEdit(0)
     , autoSaveTimer()
@@ -211,6 +213,18 @@ ScriptEditor::ScriptEditor(Gui* gui)
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->clearOutputB);
     QObject::connect(_imp->clearOutputB, SIGNAL(clicked(bool)), this, SLOT(onClearOutputClicked()));
     
+    _imp->showAutoDeclVarsB = new Button(QIcon(),"...",_imp->buttonsContainer);
+    _imp->showAutoDeclVarsB->setFocusPolicy(Qt::NoFocus);
+    _imp->showAutoDeclVarsB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->showAutoDeclVarsB->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->showAutoDeclVarsB->setCheckable(true);
+    bool isAutoDeclEnabled = appPTR->getCurrentSettings()->isAutoDeclaredVariablePrintActivated();
+    _imp->showAutoDeclVarsB->setChecked(isAutoDeclEnabled);
+    _imp->showAutoDeclVarsB->setDown(isAutoDeclEnabled);
+    _imp->showAutoDeclVarsB->setToolTip(Natron::convertFromPlainText(tr("When checked, auto-declared Python variable will be printed "
+                                                                        "in gray in the output window."), Qt::WhiteSpaceNormal));
+    QObject::connect(_imp->showAutoDeclVarsB, SIGNAL(clicked(bool)), this, SLOT(onShowAutoDeclVarsClicked(bool)));
+    
     _imp->buttonsContainerLayout->addWidget(_imp->undoB);
     _imp->buttonsContainerLayout->addWidget(_imp->redoB);
     _imp->buttonsContainerLayout->addWidget(_imp->clearHistoB);
@@ -224,6 +238,9 @@ ScriptEditor::ScriptEditor(Gui* gui)
     
     _imp->buttonsContainerLayout->addWidget(_imp->showHideOutputB);
     _imp->buttonsContainerLayout->addWidget(_imp->clearOutputB);
+    _imp->buttonsContainerLayout->addSpacing(10);
+    
+    _imp->buttonsContainerLayout->addWidget(_imp->showAutoDeclVarsB);
     _imp->buttonsContainerLayout->addStretch();
     
     QSplitter* splitter = new QSplitter(Qt::Vertical,this);
@@ -582,4 +599,12 @@ void
 ScriptEditor::onUserScrollChanged(bool atBottom)
 {
     _imp->outputAtBottom = atBottom;
+}
+
+void
+ScriptEditor::onShowAutoDeclVarsClicked(bool clicked)
+{
+    _imp->showAutoDeclVarsB->setDown(clicked);
+    _imp->showAutoDeclVarsB->setChecked(clicked);
+    appPTR->getCurrentSettings()->setAutoDeclaredVariablePrintEnabled(clicked);
 }

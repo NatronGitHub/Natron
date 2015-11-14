@@ -296,6 +296,8 @@ public:
     
     bool isAutoDeclaredVariablePrintActivated() const;
     
+    void setAutoDeclaredVariablePrintEnabled(bool enabled);
+    
     bool isPluginIconActivatedOnNodeGraph() const;
     
     void getSunkenColor(double* r,double* g,double* b) const;

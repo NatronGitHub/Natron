@@ -96,6 +96,8 @@ public Q_SLOTS:
     void onInputScriptTextChanged();
     
     void onAutoSaveTimerTimedOut();
+    
+    void onShowAutoDeclVarsClicked(bool clicked);
 
 Q_SIGNALS:
     
