@@ -465,7 +465,7 @@ ScriptEditor::onExecScriptClicked()
             _imp->outputEdit->verticalScrollBar()->setValue(_imp->outputEdit->verticalScrollBar()->maximum());
         }
         _imp->history.push(new InputScriptCommand(this,script));
-        _imp->inputEdit->clear();
+        //_imp->inputEdit->clear();
     }
     
 }
