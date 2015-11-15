@@ -30,6 +30,7 @@
 #include "Gui/KnobGuiDouble.h"
 #include "Gui/KnobGuiInt.h"
 #include "Gui/KnobGuiColor.h"
+#include "Gui/SpinBox.h"
 
 struct NumericKnobValidatorPrivate
 {
@@ -98,24 +99,31 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
             dimension = 0;
         }
     }
-    std::string expr = userText.toStdString();
+    
+    *valueToDisplay = 0;
     std::string ret;
-    try {
-        _imp->knobUi->getKnob()->validateExpression(expr, 0, false, &ret);
-    } catch (...) {
-        *valueToDisplay = 0;
-        return false;
+    std::string expr = userText.toStdString();
+    if (!expr.empty()) {
+        try {
+            _imp->knobUi->getKnob()->validateExpression(expr, 0, false, &ret);
+        } catch (...) {
+            return false;
+        }
     }
     
     _imp->knobUi->pushUndoCommand(new SetExpressionCommand(_imp->knobUi->getKnob(),
                                                            false,
                                                            dimension,
                                                            expr));
-    bool ok = false;
-    *valueToDisplay = QString(ret.c_str()).toDouble(&ok);
-    if (!ok) {
-        *valueToDisplay = QString(ret.c_str()).toInt(&ok);
+    if (!expr.empty()) {
+        bool ok = false;
+        *valueToDisplay = QString(ret.c_str()).toDouble(&ok);
+        if (!ok) {
+            *valueToDisplay = QString(ret.c_str()).toInt(&ok);
+        }
+        assert(ok);
+    } else {
+        *valueToDisplay = _imp->spinbox->getLastValidValueBeforeValidation();
     }
-    assert(ok);
     return true;
 }

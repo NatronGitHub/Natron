@@ -43,8 +43,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Variant.h"
 #include "Engine/Settings.h"
 #include "Engine/AppManager.h"
+#include "Engine/KnobTypes.h"
+
 #include "Global/Macros.h"
+
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobGui.h"
 #include "Gui/SpinBoxValidator.h"
 
 
@@ -61,7 +65,7 @@ struct SpinBoxPrivate
     Variant mini,maxi;
     QDoubleValidator* doubleValidator;
     QIntValidator* intValidator;
-    double valueWhenEnteringFocus;
+    QString valueWhenEnteringFocus;
     bool hasChangedSinceLastValidation;
     double valueAfterLastValidation;
     bool valueInitialized; //< false when setValue has never been called yet.
@@ -80,7 +84,7 @@ struct SpinBoxPrivate
     , maxi()
     , doubleValidator(0)
     , intValidator(0)
-    , valueWhenEnteringFocus(0)
+    , valueWhenEnteringFocus()
     , hasChangedSinceLastValidation(false)
     , valueAfterLastValidation(0)
     , valueInitialized(false)
@@ -161,7 +165,7 @@ SpinBox::setValue_internal(double d,
         // the value is already OK
         return;
     }
-    _imp->valueWhenEnteringFocus = d;
+
     int pos = cursorPosition();
     QString str;
     switch (_imp->type) {
@@ -207,6 +211,7 @@ SpinBox::setValue_internal(double d,
      str = str.remove(int(skipFirst), i - int(skipFirst));
      }
      */
+    _imp->valueWhenEnteringFocus = str;
     setText(str, pos);
     _imp->valueInitialized = true;
 }
@@ -221,6 +226,12 @@ SpinBox::setText(const QString &str,
     setCursorPosition(cursorPos);
     _imp->hasChangedSinceLastValidation = false;
     _imp->valueAfterLastValidation = value();
+}
+
+double
+SpinBox::getLastValidValueBeforeValidation() const
+{
+    return _imp->valueAfterLastValidation;
 }
 
 void
@@ -623,20 +634,35 @@ SpinBox::focusInEvent(QFocusEvent* e)
             return;
         }
     }
-    _imp->valueWhenEnteringFocus = text().toDouble();
+    _imp->valueWhenEnteringFocus = text();
     LineEdit::focusInEvent(e);
+}
+
+void
+KnobSpinBox::focusInEvent(QFocusEvent* e)
+{
+    SpinBox::focusInEvent(e);
+    
+    //Set the expression so the user can edit it easily
+    std::string expr = knob->getKnob()->getExpression(dimension);
+    if (expr.empty()) {
+        return;
+    } else {
+        QLineEdit::setText(expr.c_str());
+        setCursorPosition(expr.size() - 1);
+    }
 }
 
 void
 SpinBox::focusOutEvent(QFocusEvent* e)
 {
     //qDebug() << "focusout";
-    double newValue = text().toDouble();
-    
-    if (newValue != _imp->valueWhenEnteringFocus) {
+    QString str = text();
+    if (str != _imp->valueWhenEnteringFocus) {
         if ( validateText() ) {
             //setValue_internal(text().toDouble(), true, true); // force a reformat
-            Q_EMIT valueChanged( value() );
+            double newValue = str.toDouble();
+            Q_EMIT valueChanged(newValue);
         }
     }
     LineEdit::focusOutEvent(e);
@@ -709,7 +735,10 @@ SpinBox::validateInternal()
     }
     assert(validator);
     int tmp;
-    QValidator::State st = validator->validate(txt,tmp);
+    QValidator::State st = QValidator::Invalid;
+    if (!txt.isEmpty()) {
+        st = validator->validate(txt,tmp);
+    }
     double val;
     double maxiD,miniD;
     if (_imp->type == eSpinBoxTypeDouble) {

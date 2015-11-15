@@ -210,7 +210,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
+        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble, this , i);
         NumericKnobValidator* validator = new NumericKnobValidator(box,this);
         box->setValidator(validator);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
@@ -735,7 +735,7 @@ KnobGuiDouble::setEnabled()
     bool enabled0 = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
     
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        bool b = knob->isEnabled(i) && !knob->isSlave(i) && knob->getExpression(i).empty();
+        bool b = knob->isEnabled(i) && !knob->isSlave(i);
         //_spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
@@ -784,7 +784,7 @@ KnobGuiDouble::reflectExpressionState(int dimension,
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     if (hasExpr) {
         _spinBoxes[dimension].first->setAnimation(3);
-        _spinBoxes[dimension].first->setReadOnly(true);
+        //_spinBoxes[dimension].first->setReadOnly(true);
         if (_slider) {
             _slider->setReadOnly(true);
         }
