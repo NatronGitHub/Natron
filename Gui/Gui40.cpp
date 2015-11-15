@@ -630,8 +630,10 @@ Gui::debugImage(const Natron::Image* image,
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
+#ifdef DEBUG
     qDebug() << "Writing image: " << realFileName;
     renderWindow.debug();
+#endif
     output.save(realFileName);
 }
 
