@@ -701,6 +701,28 @@ DockablePanel::initializeKnobsInternal()
 }
 
 void
+DockablePanel::refreshTabWidgetMaxHeight()
+{
+    /*
+     Make the tab widget have the same height across all tabs to avoid the
+     layout being adjusted everytimes the user switches from tab to tab
+     */
+    if (_imp->_tabWidget && !_imp->_useScrollAreasForTabs) {
+        //Compute the tab maximum height
+        int maxHeight = -1;
+        for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
+            QWidget* w = _imp->_tabWidget->widget(i);
+            if (w) {
+                maxHeight = std::max(w->sizeHint().height(),maxHeight);
+            }
+        }
+        if (maxHeight > 0) {
+            _imp->_tabWidget->setFixedHeight(maxHeight);
+        }
+    }
+}
+
+void
 DockablePanel::initializeKnobs()
 {
     initializeKnobsInternal();

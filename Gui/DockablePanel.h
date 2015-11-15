@@ -176,6 +176,8 @@ public:
 
     void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
+    void refreshTabWidgetMaxHeight();
+    
 public Q_SLOTS:
     
     void onPageIndexChanged(int index);

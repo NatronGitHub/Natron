@@ -212,24 +212,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         }
     }
     
-    /*
-     Make the tab widget have the same height across all tabs to avoid the
-     layout being adjusted everytimes the user switches from tab to tab
-     */
-#pragma message WARN("Fix small layout issues then activate")
-    /*if (_tabWidget && !_useScrollAreasForTabs) {
-        //Compute the tab maximum height
-        int maxHeight = -1;
-        for (int i = 0; i < _tabWidget->count(); ++i) {
-            QWidget* w = _tabWidget->widget(i);
-            if (w) {
-                maxHeight = std::max(w->sizeHint().height(),maxHeight);
-            }
-        }
-        if (maxHeight > 0) {
-            _tabWidget->setFixedHeight(maxHeight);
-        }
-    }*/
+    _publicInterface->refreshTabWidgetMaxHeight();
 }
 
 KnobGui*
@@ -598,7 +581,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 }
                 
                 
-                if (closestParentGroupTab) {
+                //if (closestParentGroupTab) {
                     ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
                     ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
                     ///To do this we add an empty widget with an expanding vertical size policy.
@@ -628,7 +611,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     
                     ///And add our stretch
                     layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
-                }
+               // }
                 
             }
 
