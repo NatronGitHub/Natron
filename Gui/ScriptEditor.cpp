@@ -30,6 +30,7 @@
 #include <QUndoCommand>
 #include <QFile>
 #include <QTextStream>
+#include <QTextCursor>
 #include <QThread>
 #include <QApplication>
 #include <QSplitter>
@@ -449,7 +450,24 @@ InputScriptCommand::undo()
 void
 ScriptEditor::onExecScriptClicked()
 {
-    QString script = _imp->inputEdit->toPlainText();
+    QString allText = _imp->inputEdit->toPlainText();
+    QTextCursor curs = _imp->inputEdit->textCursor();
+    QString selectedText;
+    if (curs.hasSelection()) {
+        int selStart = curs.selectionStart();
+        int selEnd = curs.selectionEnd();
+        assert(selStart >= 0 && selStart < allText.size() &&
+               selEnd >= 0 && selEnd <= allText.size());
+        for (int i = selStart; i < selEnd; ++i) {
+            selectedText.push_back(allText[i]);
+        }
+    }
+    QString script;
+    if (!selectedText.isEmpty()) {
+        script = selectedText;
+    } else {
+        script = allText;
+    }
     std::string error,output;
     
     if (!Natron::interpretPythonScript(script.toStdString(), &error, &output)) {
