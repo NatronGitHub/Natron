@@ -28,11 +28,14 @@
 #include <cmath>
 
 #include <QPainter>
+#include <QApplication>
 #include <QGraphicsScene>
+#include <QGraphicsSimpleTextItem>
 
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
@@ -61,7 +64,7 @@ struct EdgePrivate
     bool isOutputEdge;
     int inputNb;
     double angle;
-    QGraphicsTextItem* label;
+    QGraphicsSimpleTextItem* label;
     QPolygonF arrowHead;
     boost::weak_ptr<NodeGui> dest;
     boost::weak_ptr<NodeGui> source;
@@ -103,6 +106,8 @@ struct EdgePrivate
     {
         
     }
+    
+    void initLabel();
 };
 
 Edge::Edge(int inputNb_,
@@ -115,15 +120,28 @@ Edge::Edge(int inputNb_,
     _imp->dest = dest_;
     
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin) );
-    if ( (inputNb_ != -1) && dest_ ) {
-        _imp->label = new QGraphicsTextItem(QString( dest_->getNode()->getInputLabel(inputNb_).c_str() ),this);
-        _imp->label->setDefaultTextColor( QColor(200,200,200) );
-    }
+    _imp->initLabel();
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     //setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(15);
     refreshState(false);
+}
+
+void
+EdgePrivate::initLabel()
+{
+    boost::shared_ptr<NodeGui> dst = dest.lock();
+    if ((inputNb != -1) && dst) {
+        label = new QGraphicsSimpleTextItem(QString(dst->getNode()->getInputLabel(inputNb).c_str()),_publicInterface);
+        QColor txt;
+        double r,g,b;
+        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+        txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
+        label->setBrush(txt);
+        label->setFont(qApp->font());
+        //_imp->label->setDefaultTextColor( QColor(200,200,200) );
+    }
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui> & src,
@@ -250,16 +268,10 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
     _imp->dest = dst;
     
     if (!_imp->label) {
-        QString label;
-        try {
-            label = QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() );
-        } catch (...) {
-            
-        }
-        _imp->label = new QGraphicsTextItem(label,this);
-        _imp->label->setDefaultTextColor( QColor(200,200,200) );
+        _imp->initLabel();
     } else {
-        _imp->label->setPlainText( QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() ) );
+        _imp->label->setText(QString(dst->getNode()->getInputLabel(_imp->inputNb).c_str()));
+        //_imp->label->setPlainText( QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() ) );
     }
     refreshState(false);
     initLine();
@@ -465,7 +477,7 @@ Edge::initLine()
                 _imp->label->setPos( _imp->middlePoint + QPointF(-5,-10) );
                 QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
-                double txtWidth = fm.width( _imp->label->toPlainText() );
+                double txtWidth = fm.width( _imp->label->text() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _imp->label->hide();
                     _imp->enoughSpaceToShowLabel = false;
@@ -505,7 +517,7 @@ Edge::initLine()
                 double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {
-                    yOffset = -fm.width(_imp->label->toPlainText());
+                    yOffset = -fm.width(_imp->label->text());
                 } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                     yOffset = +5;
                 } else {

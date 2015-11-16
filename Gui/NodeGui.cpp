@@ -2664,6 +2664,7 @@ NodeGui::setNameItemHtml(const QString & name,
     if (hasFontData) {
         KnobGuiString::parseFont(textLabel, &f, &color);
     }
+    f.setStyleStrategy(QFont::NoAntialias);
     _nameItem->setFont(f);
 
     QRectF bbox = boundingRect();
