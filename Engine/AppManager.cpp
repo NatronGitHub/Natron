@@ -30,9 +30,11 @@
 #include <cstddef>
 #include <stdexcept>
 
-#if defined(__NATRON_LINUX__)
+#if defined(Q_OS_LINUX)
 #include <sys/signal.h>
+#ifndef __USE_GNU
 #define __USE_GNU
+#endif
 #include <ucontext.h>
 #include <execinfo.h>
 #endif
@@ -81,11 +83,12 @@ AppManager* AppManager::_instance = 0;
 
 
 
-#ifdef NATRON_USE_BREAKPAD
+#if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
 #ifdef DEBUG
 inline
 void crash_application()
 {
+#pragma message WARN("crash_application() defined, make sure it is not used anywhere!")
 #ifdef __NATRON_UNIX__
     sleep(2);
 #endif
@@ -140,24 +143,39 @@ backTraceSigSegvHandler(int sig, siginfo_t *info,
     ucontext_t *uc = (ucontext_t *)secret;
     
     /* Do something useful with siginfo_t */
-    if (sig == SIGSEGV)
-        printf("Caught signal %d, faulty address is %p, "
-               "from %p\n", sig, info->si_addr,
-               uc->uc_mcontext.gregs[REG_EIP]);
-    else
+    if (sig == SIGSEGV) {
+        QThread* curThread = QThread::currentThread();
+        std::string threadName;
+        if (curThread) {
+            threadName = (qApp && qApp->thread() == curThread) ? "Main" : curThread->objectName().toStdString();
+        }
+        std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
+             #ifndef __x86_64__
+                     (void*)uc->uc_mcontext.gregs[REG_EIP]
+             #else
+                     (void*)uc->uc_mcontext.gregs[REG_RIP]
+             #endif
+                     << " from " << info->si_addr << std::endl;
+    } else {
         printf("Got signal %d#92;n", sig);
+    }
     
     trace_size = backtrace(trace, NATRON_UNIX_BACKTRACE_STACK_DEPTH);
     /* overwrite sigaction with caller's address */
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
+#ifndef __x86_64__
+       trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
+#else
+       trace[1] = (void *) uc->uc_mcontext.gregs[REG_RIP];
+#endif
+
     
     messages = backtrace_symbols(trace, trace_size);
     /* skip first stack frame (points here) */
-    printf("[bt] Execution path:#92;n");
-    for (i=1; i<trace_size; ++i)
-        printf("[bt] %s#92;n", messages[i]);
-    
-    exit(0);
+    std::cerr << "Backtrace:" << std::endl;
+    for (i = 1; i < trace_size; ++i) {
+        std::cerr << "[Frame " << i << "]: " << messages[i] << std::endl;
+    }
+    exit(1);
 }
 
 static void
@@ -167,7 +185,7 @@ setSigSegvSignal()
     sigemptyset (&sa.sa_mask);
     sa.sa_flags = SA_RESTART | SA_SIGINFO;
     /* if SA_SIGINFO is set, sa_sigaction is to be used instead of sa_handler. */
-    sa.sa_sigaction = (void *)backTraceSigSegvHandler;
+    sa.sa_sigaction = backTraceSigSegvHandler;
    
     if (sigaction(SIGSEGV, &sa, NULL) == -1) {
         std::perror("setting up sigsegv signal");
@@ -204,7 +222,7 @@ AppManager::AppManager()
 #if defined(__NATRON_LINUX__)
     setSigSegvSignal();
 #endif
-    
+
     QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance*, void*)), this, SLOT(onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance*, void*)));
 }
 
