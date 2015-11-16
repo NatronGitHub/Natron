@@ -707,6 +707,9 @@ DockablePanel::refreshTabWidgetMaxHeight()
      Make the tab widget have the same height across all tabs to avoid the
      layout being adjusted everytimes the user switches from tab to tab
      */
+    
+    //Disabled for now - it leads to bad behaviour if the Node tab is bigger than the main actual tab
+#if 0
     if (_imp->_tabWidget && !_imp->_useScrollAreasForTabs) {
         //Compute the tab maximum height
         int maxHeight = -1;
@@ -720,6 +723,7 @@ DockablePanel::refreshTabWidgetMaxHeight()
             _imp->_tabWidget->setFixedHeight(maxHeight);
         }
     }
+#endif
 }
 
 void
