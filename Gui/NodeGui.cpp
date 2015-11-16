@@ -3704,7 +3704,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
     _passThroughIndicator->setActive(ptInput.get() != 0);
     if (ptInput) {
     
-        QString tooltip = tr("This node is a pass-through and will yield identical results as");
+        QString tooltip = tr("This node is a pass-through and produces the same results as");
         tooltip += ' ';
         tooltip += QString(ptInput->getLabel().c_str());
         _passThroughIndicator->setToolTip(tooltip);
