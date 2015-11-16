@@ -33,6 +33,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
 class QGraphicsPolygonItem;
@@ -46,6 +47,7 @@ class QGraphicsSceneMouseEvent;
 class NodeGui;
 class Node;
 
+struct EdgePrivate;
 class Edge
     : public QGraphicsLineItem
 {
@@ -73,30 +75,14 @@ public:
 
     void setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,const boost::shared_ptr<NodeGui> & dst);
 
-    int getInputNumber() const
-    {
-        return _inputNb;
-    }
+    int getInputNumber() const;
 
-    void setInputNumber(int i)
-    {
-        _inputNb = i;
-    }
+    void setInputNumber(int i);
 
-    boost::shared_ptr<NodeGui> getDest() const
-    {
-        return _dest.lock();
-    }
+    boost::shared_ptr<NodeGui> getDest() const;
+    boost::shared_ptr<NodeGui> getSource() const;
 
-    boost::shared_ptr<NodeGui> getSource() const
-    {
-        return _source.lock();
-    }
-
-    bool hasSource() const
-    {
-        return _source.lock().get() != NULL;
-    }
+    bool hasSource() const;
 
     void dragSource(const QPointF & src);
 
@@ -104,34 +90,19 @@ public:
 
     void initLine();
 
-    void setAngle(double a)
-    {
-        _angle = a;
-    }
+    void setAngle(double a);
 
-    void turnOnRenderingColor()
-    {
-        _useRenderingColor = true;
-        update();
-    }
+    void turnOnRenderingColor();
 
-    void turnOffRenderingColor()
-    {
-        _useRenderingColor = false;
-        update();
-    }
+    void turnOffRenderingColor();
 
     void setUseHighlight(bool highlight);
 
-    bool isOutputEdge() const
-    {
-        return _isOutputEdge;
-    }
+    bool isOutputEdge() const;
 
-    void setDefaultColor(const QColor & color)
-    {
-        _defaultColor = color;
-    }
+    void setDefaultColor(const QColor & color);
+    
+    bool isBendPointVisible() const;
     
     bool areOptionalInputsAutoHidden() const;
     
@@ -140,39 +111,26 @@ public:
     void setDashed(bool dashed);
 
     void setBendPointVisible(bool visible);
-
-    bool isBendPointVisible() const
-    {
-        return _paintBendPoint;
-    }
+    
+    bool isRotoEdge() const;
+    
+    bool isMask() const;
 
     bool isNearbyBendPoint(const QPointF & scenePoint);
+    
+    /**
+     * @brief Refresh the Edge properties such as dashed state, optional state, visibility etc...
+     * @param hovered True if the mouse is hovering the dst node (the node holding this edge)
+     **/
+    void refreshState(bool hovered);
 
-    bool isRotoEdge() const {
-        return _isRotoMask;
-    }
+    
 private:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0) OVERRIDE FINAL;
-    bool _isOutputEdge;
-    int _inputNb;
-    double _angle;
-    QGraphicsTextItem* _label;
-    QPolygonF _arrowHead;
-    boost::weak_ptr<NodeGui> _dest;
-    boost::weak_ptr<NodeGui> _source;
-    QColor _defaultColor;
-    QColor _renderingColor;
-    bool _useRenderingColor;
-    bool _useHighlight;
-    bool _paintWithDash;
-    bool _optional;
-    bool _paintBendPoint;
-    bool _bendPointHiddenAutomatically;
-    bool _enoughSpaceToShowLabel;
-    bool _isRotoMask;
-    bool _isMask;
-    QPointF _middlePoint; //updated only when dest && source are valid
+    
+        
+    boost::scoped_ptr<EdgePrivate> _imp;
 };
 
 /**

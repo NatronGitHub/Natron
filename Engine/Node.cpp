@@ -236,6 +236,7 @@ struct Node::Implementation
     , refreshInfoButton()
     , useFullScaleImagesWhenRenderScaleUnsupported()
     , forceCaching()
+    , hideInputs()
     , beforeFrameRender()
     , beforeRender()
     , afterFrameRender()
@@ -434,6 +435,7 @@ struct Node::Implementation
     
     boost::weak_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported;
     boost::weak_ptr<KnobBool> forceCaching;
+    boost::weak_ptr<KnobBool> hideInputs;
     
     boost::weak_ptr<KnobString> beforeFrameRender;
     boost::weak_ptr<KnobString> beforeRender;
@@ -2863,6 +2865,19 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->nodeLabelKnob = nodeLabel;
         
         if (!isBd) {
+            
+            boost::shared_ptr<KnobBool> hideInputs = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), "Hide inputs", 1, false);
+            hideInputs->setName("hideInputs");
+            hideInputs->setDefaultValue(false);
+            hideInputs->setAnimationEnabled(false);
+            hideInputs->setAddNewLine(false);
+            hideInputs->setIsPersistant(true);
+            hideInputs->setEvaluateOnChange(false);
+            hideInputs->setHintToolTip(tr("When checked, the input arrows of the node in the nodegraph will be hidden").toStdString());
+            _imp->hideInputs = hideInputs;
+            _imp->nodeSettingsPage.lock()->addKnob(hideInputs);
+
+            
             boost::shared_ptr<KnobBool> fCaching = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), "Force caching", 1, false);
             fCaching->setName("forceCaching");
             fCaching->setDefaultValue(false);
@@ -2875,7 +2890,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->forceCaching = fCaching;
             _imp->nodeSettingsPage.lock()->addKnob(fCaching);
             
-            boost::shared_ptr<KnobBool> previewEnabled = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), tr("Preview enabled").toStdString(),1,false);
+            boost::shared_ptr<KnobBool> previewEnabled = Natron::createKnob<KnobBool>(_imp->liveInstance.get(), tr("Preview").toStdString(),1,false);
             assert(previewEnabled);
             previewEnabled->setDefaultValue( makePreviewByDefault() );
             previewEnabled->setName(kEnablePreviewKnobName);
@@ -6148,6 +6163,26 @@ Node::refreshCreatedViews(KnobI* knob)
     
 }
 
+bool
+Node::getHideInputsKnobValue() const
+{
+    boost::shared_ptr<KnobBool> k = _imp->hideInputs.lock();
+    if (!k) {
+        return false;
+    }
+    return k->getValue();
+}
+
+void
+Node::setHideInputsKnobValue(bool hidden)
+{
+    boost::shared_ptr<KnobBool> k = _imp->hideInputs.lock();
+    if (!k) {
+        return;
+    }
+    k->setValue(hidden,0);
+}
+
 void
 Node::refreshIdentityState()
 {
@@ -6212,6 +6247,8 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
             replaceCustomDataInlabel(operation);
         }
+    } else if (what == _imp->hideInputs.lock().get()) {
+        Q_EMIT hideInputsKnobChanged(_imp->hideInputs.lock()->getValue());
     } else if (what->getName() == kOfxImageEffectFileParamName) {
         
         if (_imp->liveInstance->isReader()) {

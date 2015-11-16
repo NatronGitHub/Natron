@@ -55,86 +55,83 @@
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
 
+struct EdgePrivate
+{
+    Edge* _publicInterface;
+    bool isOutputEdge;
+    int inputNb;
+    double angle;
+    QGraphicsTextItem* label;
+    QPolygonF arrowHead;
+    boost::weak_ptr<NodeGui> dest;
+    boost::weak_ptr<NodeGui> source;
+    QColor defaultColor;
+    QColor renderingColor;
+    bool useRenderingColor;
+    bool useHighlight;
+    bool paintWithDash;
+    bool optional;
+    bool paintBendPoint;
+    bool bendPointHiddenAutomatically;
+    bool enoughSpaceToShowLabel;
+    bool isRotoMask;
+    bool isMask;
+    QPointF middlePoint; //updated only when dest && source are valid
+
+    
+    EdgePrivate(Edge* publicInterface, int inputNb, double angle)
+    : _publicInterface(publicInterface)
+    , isOutputEdge(inputNb == -1)
+    , inputNb(inputNb)
+    , angle(angle)
+    , label(NULL)
+    , arrowHead()
+    , dest()
+    , source()
+    , defaultColor(Qt::black)
+    , renderingColor(243,149,0)
+    , useRenderingColor(false)
+    , useHighlight(false)
+    , paintWithDash(false)
+    , optional(false)
+    , paintBendPoint(false)
+    , bendPointHiddenAutomatically(false)
+    , enoughSpaceToShowLabel(true)
+    , isRotoMask(false)
+    , isMask(false)
+    , middlePoint()
+    {
+        
+    }
+};
 
 Edge::Edge(int inputNb_,
            double angle_,
            const boost::shared_ptr<NodeGui> & dest_,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
-, _isOutputEdge(false)
-, _inputNb(inputNb_)
-, _angle(angle_)
-, _label(NULL)
-, _arrowHead()
-, _dest(dest_)
-, _source()
-, _defaultColor(Qt::black)
-, _renderingColor(243,149,0)
-, _useRenderingColor(false)
-, _useHighlight(false)
-, _paintWithDash(false)
-, _optional(false)
-, _paintBendPoint(false)
-, _bendPointHiddenAutomatically(false)
-, _enoughSpaceToShowLabel(true)
-, _isRotoMask(false)
-, _isMask(false)
-, _middlePoint()
+, _imp(new EdgePrivate(this, inputNb_, angle_))
 {
+    _imp->dest = dest_;
+    
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin) );
-    if ( (_inputNb != -1) && dest_ ) {
-        _label = new QGraphicsTextItem(QString( dest_->getNode()->getInputLabel(_inputNb).c_str() ),this);
-        _label->setDefaultTextColor( QColor(200,200,200) );
+    if ( (inputNb_ != -1) && dest_ ) {
+        _imp->label = new QGraphicsTextItem(QString( dest_->getNode()->getInputLabel(inputNb_).c_str() ),this);
+        _imp->label->setDefaultTextColor( QColor(200,200,200) );
     }
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     //setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(15);
-    Natron::EffectInstance* effect = dest_ ? dest_->getNode()->getLiveInstance() : 0;
-    if (effect) {
-        
-        _isRotoMask = effect->isInputRotoBrush(_inputNb);
-        _isMask = effect->isInputMask(_inputNb);
-        bool autoHide = areOptionalInputsAutoHidden();
-        bool isSelected = dest_->getIsSelected();
-        if (_isMask) {
-            setDashed(true);
-            setOptional(true);
-            if (!isSelected && autoHide && _isMask) {
-                hide();
-            }
-        } else if (effect->isInputOptional(_inputNb)) {
-            setOptional(true);
-            if (!isSelected && autoHide  && _isMask) {
-                hide();
-            }
-        }
-    }
+    refreshState(false);
 }
 
 Edge::Edge(const boost::shared_ptr<NodeGui> & src,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
-, _isOutputEdge(true)
-, _inputNb(-1)
-, _angle(M_PI_2)
-, _label(NULL)
-, _arrowHead()
-, _dest()
-, _source(src)
-, _defaultColor(Qt::black)
-, _renderingColor(243,149,0)
-, _useRenderingColor(false)
-, _useHighlight(false)
-, _paintWithDash(false)
-, _optional(false)
-, _paintBendPoint(false)
-, _bendPointHiddenAutomatically(false)
-, _enoughSpaceToShowLabel(true)
-, _isRotoMask(false)
-, _isMask(false)
-, _middlePoint()
+, _imp(new EdgePrivate(this, -1, M_PI_2))
 {
+    _imp->source = src;
     assert(src);
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
     setAcceptedMouseButtons(Qt::LeftButton);
@@ -145,7 +142,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 
 Edge::~Edge()
 {
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
+    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
     if (dst) {
         dst->markInputNull(this);
     }
@@ -154,33 +151,94 @@ Edge::~Edge()
 void
 Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
-    _source = src;
-    bool autoHide = areOptionalInputsAutoHidden();
-
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
-    assert(dst);
-    bool isSelected = dst->getIsSelected();
-    
-    bool isViewer = false;
-    if (src) {
-        boost::shared_ptr<Natron::Node> internalNode = src->getNode();
-        isViewer = dynamic_cast<InspectorNode*>(internalNode.get());
-    }
-    if (autoHide && _optional  && !_isRotoMask && !isViewer) {
-
-        if (src || isSelected || !_isMask) {
-            show();
-        } else {
-            hide();
-        }
-    }
+    _imp->source = src;
     initLine();
+    refreshState(false);
+}
+
+int
+Edge::getInputNumber() const
+{
+    return _imp->inputNb;
+}
+
+void
+Edge::setInputNumber(int i)
+{
+    _imp->inputNb = i;
+}
+
+boost::shared_ptr<NodeGui>
+Edge::getDest() const
+{
+    return _imp->dest.lock();
+}
+
+boost::shared_ptr<NodeGui>
+Edge::getSource() const
+{
+    return _imp->source.lock();
+}
+
+bool
+Edge::hasSource() const
+{
+    return _imp->source.lock().get() != NULL;
+}
+
+void
+Edge::setAngle(double a)
+{
+    _imp->angle = a;
+}
+
+void
+Edge::turnOnRenderingColor()
+{
+    _imp->useRenderingColor = true;
+    update();
+}
+
+void
+Edge::turnOffRenderingColor()
+{
+    _imp->useRenderingColor = false;
+    update();
+}
+
+bool
+Edge::isOutputEdge() const
+{
+    return _imp->isOutputEdge;
+}
+
+void
+Edge::setDefaultColor(const QColor & color)
+{
+    _imp->defaultColor = color;
+}
+
+bool
+Edge::isBendPointVisible() const
+{
+    return _imp->paintBendPoint;
+}
+
+bool
+Edge::isRotoEdge() const {
+    return _imp->isRotoMask;
+}
+
+bool
+Edge::isMask() const
+{
+    return _imp->isMask;
 }
 
 bool
 Edge::areOptionalInputsAutoHidden() const
 {
-    boost::shared_ptr<NodeGui> dst = _dest.lock();
+    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
     return dst ? dst->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
@@ -188,44 +246,66 @@ void
 Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
                               const boost::shared_ptr<NodeGui> & dst)
 {
-    _source = src;
-    _dest = dst;
+    _imp->source = src;
+    _imp->dest = dst;
     
-    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
-
-    if (effect) {
-        _isRotoMask = effect->isInputRotoBrush(_inputNb);
-    }
-    
-    if (!_label) {
+    if (!_imp->label) {
         QString label;
         try {
-            label = QString( dst->getNode()->getInputLabel(_inputNb).c_str() );
+            label = QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() );
         } catch (...) {
             
         }
-        _label = new QGraphicsTextItem(label,this);
-        _label->setDefaultTextColor( QColor(200,200,200) );
+        _imp->label = new QGraphicsTextItem(label,this);
+        _imp->label->setDefaultTextColor( QColor(200,200,200) );
     } else {
-        _label->setPlainText( QString( dst->getNode()->getInputLabel(_inputNb).c_str() ) );
+        _imp->label->setPlainText( QString( dst->getNode()->getInputLabel(_imp->inputNb).c_str() ) );
     }
+    refreshState(false);
+    initLine();
+}
+
+void
+Edge::refreshState(bool hovered)
+{
+    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    
+    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    
     if (effect) {
-        bool autoHide = areOptionalInputsAutoHidden();
-        bool isSelected = dst->getIsSelected();
-        if (effect->isInputMask(_inputNb) && !_isRotoMask) {
-            setDashed(true);
-            setOptional(true);
-            if (autoHide) {
-                if (!isSelected && !src) {
-                    hide();
-                } else {
-                    show();
-                }
-            }
-        } else if (effect->isInputOptional(_inputNb)  && !_isRotoMask) {
-            setOptional(true);
-            if (!isSelected && autoHide) {
-                if (!src) {
+        
+        ///Refresh properties
+        _imp->isRotoMask = effect->isInputRotoBrush(_imp->inputNb);
+        _imp->isMask = effect->isInputMask(_imp->inputNb);
+        _imp->optional = _imp->isMask || effect->isInputOptional(_imp->inputNb);
+        if (_imp->isMask) {
+            _imp->paintWithDash = true;
+        }
+
+        ///Determine whether the edge should be visible or not
+        bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
+        if ((_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge) {
+            hide();
+        } else {
+            
+            if (_imp->isOutputEdge) {
+                show();
+            } else {
+                
+                boost::shared_ptr<NodeGui> src = _imp->source.lock();
+                
+                //The viewer does not hide its optional edges
+                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect) : false;
+                bool isReader = effect ? effect->isReader() : false;
+                bool autoHide = areOptionalInputsAutoHidden();
+                bool isSelected = dst->getIsSelected();
+                
+                /*
+                 * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
+                 * a Reader OR the input is optional and it doesn't have an input node
+                 */
+                if ( !hovered && !isSelected && autoHide  && !isViewer &&
+                    ((_imp->optional && !src) || isReader)) {
                     hide();
                 } else {
                     show();
@@ -233,25 +313,24 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
             }
         }
     }
-    initLine();
 }
 
 void
 Edge::setOptional(bool optional)
 {
-    _optional = optional;
+    _imp->optional = optional;
 }
 
 void
 Edge::setDashed(bool dashed)
 {
-    _paintWithDash = dashed;
+    _imp->paintWithDash = dashed;
 }
 
 void
 Edge::setUseHighlight(bool highlight)
 {
-    _useHighlight = highlight;
+    _imp->useHighlight = highlight;
     update();
 }
 
@@ -285,12 +364,12 @@ makeEdges(const QRectF & bbox,
 void
 Edge::initLine()
 {
-    if (!_source.lock() && !_dest.lock()) {
+
+    boost::shared_ptr<NodeGui> source = _imp->source.lock();
+    boost::shared_ptr<NodeGui> dest = _imp->dest.lock();
+    if (!source && !dest) {
         return;
     }
-    
-    boost::shared_ptr<NodeGui> source = _source.lock();
-    boost::shared_ptr<NodeGui> dest = _dest.lock();
 
     double sc = scale();
     QRectF sourceBBOX = source ? mapFromItem( source.get(), source->boundingRect() ).boundingRect() : QRectF(0,0,1,1);
@@ -330,8 +409,8 @@ Edge::initLine()
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
     } else if (!source && dest) {
         /// The edge is an input edge which is unconnected
-        srcpt = QPointF( dst.x() + (std::cos(_angle) * 100000 * sc),
-                        dst.y() - (std::sin(_angle) * 100000 * sc) );
+        srcpt = QPointF( dst.x() + (std::cos(_imp->angle) * 100000 * sc),
+                        dst.y() - (std::sin(_imp->angle) * 100000 * sc) );
         setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
     } else if (source && !dest) {
         /// The edge is an output edge which is unconnected
@@ -370,29 +449,29 @@ Edge::initLine()
             }
         }
         if (foundSrcIntersection) {
-            _middlePoint = (srcInteresect + dstIntersection) / 2;
+            _imp->middlePoint = (srcInteresect + dstIntersection) / 2;
             ///Hide bend point for short edges
             double visibleLength  = QLineF(srcInteresect,dstIntersection).length();
-            if ( (visibleLength < 50) && _paintBendPoint ) {
-                _paintBendPoint = false;
-                _bendPointHiddenAutomatically = true;
-            } else if ( (visibleLength >= 50) && _bendPointHiddenAutomatically ) {
-                _bendPointHiddenAutomatically = false;
-                _paintBendPoint = true;
+            if ( (visibleLength < 50) && _imp->paintBendPoint ) {
+                _imp->paintBendPoint = false;
+                _imp->bendPointHiddenAutomatically = true;
+            } else if ( (visibleLength >= 50) && _imp->bendPointHiddenAutomatically ) {
+                _imp->bendPointHiddenAutomatically = false;
+                _imp->paintBendPoint = true;
             }
 
 
-            if ( _label ) {
-                _label->setPos( _middlePoint + QPointF(-5,-10) );
-                QFontMetrics fm( _label->font() );
+            if ( _imp->label ) {
+                _imp->label->setPos( _imp->middlePoint + QPointF(-5,-10) );
+                QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
-                double txtWidth = fm.width( _label->toPlainText() );
+                double txtWidth = fm.width( _imp->label->toPlainText() );
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
-                    _label->hide();
-                    _enoughSpaceToShowLabel = false;
+                    _imp->label->hide();
+                    _imp->enoughSpaceToShowLabel = false;
                 } else {
-                    _label->show();
-                    _enoughSpaceToShowLabel = true;
+                    _imp->label->show();
+                    _imp->enoughSpaceToShowLabel = true;
                 }
             }
         }
@@ -417,16 +496,16 @@ Edge::initLine()
                                             ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
             distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
 
-            srcpt = QPointF( dst.x() + (std::cos(_angle) * distToCenter * sc),
-                            dst.y() - (std::sin(_angle) * distToCenter * sc) );
+            srcpt = QPointF( dst.x() + (std::cos(_imp->angle) * distToCenter * sc),
+                            dst.y() - (std::sin(_imp->angle) * distToCenter * sc) );
             setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
-            if (_label) {
-                QFontMetrics fm(_label->font());
-                double cosinus = std::cos(_angle);
+            if (_imp->label) {
+                QFontMetrics fm(_imp->label->font());
+                double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {
-                    yOffset = -fm.width(_label->toPlainText());
+                    yOffset = -fm.width(_imp->label->toPlainText());
                 } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                     yOffset = +5;
                 } else {
@@ -437,7 +516,7 @@ Edge::initLine()
 
                 QPointF labelDst = dstIntersection;//QPointF( destBBOX.x(),destBBOX.y() ) + QPointF(dstNodeSize.width() / 2.,0);
 
-                _label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
+                _imp->label->setPos( ( ( labelDst.x() + srcpt.x() ) / 2. ) + yOffset,( labelDst.y() + srcpt.y() ) / 2. - 20 );
             }
         }
     }
@@ -473,8 +552,8 @@ Edge::initLine()
                                                std::sin(a - ARROW_HEAD_ANGLE/2) * arrowSize);
     //_drawLine = QLineF((arrowP1+arrowP2)/2, line().p2());
 
-    _arrowHead.clear();
-    _arrowHead << arrowIntersect << arrowP1 << arrowP2;
+    _imp->arrowHead.clear();
+    _imp->arrowHead << arrowIntersect << arrowP1 << arrowP2;
 } // initLine
 
 QPainterPath
@@ -482,7 +561,7 @@ Edge::shape() const
 {
     QPainterPath path = QGraphicsLineItem::shape();
 
-    path.addPolygon(_arrowHead);
+    path.addPolygon(_imp->arrowHead);
 
 
     return path;
@@ -550,12 +629,12 @@ Edge::dragSource(const QPointF & src)
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a - ARROW_HEAD_ANGLE/2) * arrowSize);
-    _arrowHead.clear();
-    _arrowHead << line().p1() << arrowP1 << arrowP2;
+    _imp->arrowHead.clear();
+    _imp->arrowHead << line().p1() << arrowP1 << arrowP2;
 
 
-    if (_label) {
-        _label->setPos( QPointF( ( ( line().p1().x() + src.x() ) / 2. ) - 5,( ( line().p1().y() + src.y() ) / 2. ) - 5 ) );
+    if (_imp->label) {
+        _imp->label->setPos( QPointF( ( ( line().p1().x() + src.x() ) / 2. ) - 5,( ( line().p1().y() + src.y() ) / 2. ) - 5 ) );
     }
 }
 
@@ -574,16 +653,16 @@ Edge::dragDest(const QPointF & dst)
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a - ARROW_HEAD_ANGLE/2) * arrowSize);
-    _arrowHead.clear();
-    _arrowHead << line().p1() << arrowP1 << arrowP2;
+    _imp->arrowHead.clear();
+    _imp->arrowHead << line().p1() << arrowP1 << arrowP2;
 }
 
 void
 Edge::setBendPointVisible(bool visible)
 {
-    _paintBendPoint = visible;
+    _imp->paintBendPoint = visible;
     if (!visible) {
-        _bendPointHiddenAutomatically = false;
+        _imp->bendPointHiddenAutomatically = false;
     }
     update();
 }
@@ -591,10 +670,10 @@ Edge::setBendPointVisible(bool visible)
 bool
 Edge::isNearbyBendPoint(const QPointF & scenePoint)
 {
-    assert(_source.lock() && _dest.lock());
+    assert(_imp->source.lock() && _imp->dest.lock());
     QPointF pos = mapFromScene(scenePoint);
-    if ( ( pos.x() >= (_middlePoint.x() - 10) ) && ( pos.x() <= (_middlePoint.x() + 10) ) &&
-         ( pos.y() >= (_middlePoint.y() - 10) ) && ( pos.y() <= (_middlePoint.y() + 10) ) ) {
+    if ( ( pos.x() >= (_imp->middlePoint.x() - 10) ) && ( pos.x() <= (_imp->middlePoint.x() + 10) ) &&
+         ( pos.y() >= (_imp->middlePoint.y() - 10) ) && ( pos.y() <= (_imp->middlePoint.y() + 10) ) ) {
         return true;
     }
 
@@ -605,10 +684,10 @@ void
 Edge::setVisibleDetails(bool visible)
 {
     if (!visible) {
-        _label->hide();
+        _imp->label->hide();
     } else {
-        if (_enoughSpaceToShowLabel) {
-            _label->show();
+        if (_imp->enoughSpaceToShowLabel) {
+            _imp->label->show();
         }
     }
 }
@@ -620,7 +699,7 @@ Edge::paint(QPainter *painter,
 {
     QPen myPen = pen();
 
-    if (_paintWithDash) {
+    if (_imp->paintWithDash) {
         QVector<qreal> dashStyle;
         qreal space = 4;
         dashStyle << 3 << space;
@@ -630,13 +709,13 @@ Edge::paint(QPainter *painter,
     }
 
     QColor color, arrowColor;
-    if (_useHighlight) {
+    if (_imp->useHighlight) {
         color = arrowColor = Qt::green;
-    } else if (_useRenderingColor) {
-        color = arrowColor = _renderingColor;
+    } else if (_imp->useRenderingColor) {
+        color = arrowColor = _imp->renderingColor;
     } else {
-        color = arrowColor = _defaultColor;
-        if (_optional && !_paintWithDash) {
+        color = arrowColor = _imp->defaultColor;
+        if (_imp->optional && !_imp->paintWithDash) {
             color.setAlphaF(0.4);
         }
     }
@@ -650,15 +729,15 @@ Edge::paint(QPainter *painter,
     painter->setPen(myPen);
 
     QPainterPath headPath;
-    headPath.addPolygon(_arrowHead);
+    headPath.addPolygon(_imp->arrowHead);
     headPath.closeSubpath();
     myPen.setColor(arrowColor);
     myPen.setJoinStyle(Qt::MiterJoin);
     painter->fillPath(headPath, color);
     painter->strokePath(headPath, myPen); // also draw the outline, or arrows are too small
 
-    if (_paintBendPoint) {
-        QRectF arcRect(_middlePoint.x() - 5,_middlePoint.y() - 5,10,10);
+    if (_imp->paintBendPoint) {
+        QRectF arcRect(_imp->middlePoint.x() - 5,_imp->middlePoint.y() - 5,10,10);
         QPainterPath bendPointPath;
         bendPointPath.addEllipse(arcRect);
         bendPointPath.closeSubpath();

@@ -228,6 +228,8 @@ public Q_SLOTS:
     void toggleConnectionHints();
     
     void toggleAutoHideInputs(bool setSettings = true);
+    
+    void toggleHideInputs();
         
     void onNodeCreationDialogFinished();
 

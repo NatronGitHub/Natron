@@ -1057,6 +1057,9 @@ public:
     
     void refreshIdentityState();
     
+    bool getHideInputsKnobValue() const;
+    void setHideInputsKnobValue(bool hidden);
+    
 private:
     
     void refreshCreatedViews(KnobI* knob);
@@ -1089,7 +1092,6 @@ public Q_SLOTS:
 
 
     void setKnobsAge(U64 newAge);
-
 
 
     void doRefreshEdgesGUI()
@@ -1125,6 +1127,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void hideInputsKnobChanged(bool hidden);
     
     void identityChanged(int inputNb);
     
