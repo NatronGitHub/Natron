@@ -1874,10 +1874,12 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     RectI dstBounds;
     dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
     RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-    assert(dstRealBounds.x1 == dstBounds.x1);
-    assert(dstRealBounds.x2 == dstBounds.x2);
-    assert(dstRealBounds.y1 == dstBounds.y1);
-    assert(dstRealBounds.y2 == dstBounds.y2);
+    if (!frameArgs.tilesSupported) {
+        assert(dstRealBounds.x1 == dstBounds.x1);
+        assert(dstRealBounds.x2 == dstBounds.x2);
+        assert(dstRealBounds.y1 == dstBounds.y1);
+        assert(dstRealBounds.y2 == dstBounds.y2);
+    }
     
     for (InputImagesMap::const_iterator it = rectToRender.imgs.begin();
          it != rectToRender.imgs.end();
