@@ -3724,7 +3724,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
 }
 
 void
-NodeGui::onHideInputsKnobValueChanged(bool hidden)
+NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
 {
     refreshEdgesVisility();
 }
