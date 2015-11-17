@@ -3908,8 +3908,8 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
                 return *it;
             }
             
-            //Leave the last input empty to connect the next merge node
-            for (std::size_t i = 3; i < inputs.size() - 1; ++i) {
+            //Leave the B empty to connect the next merge node
+            for (std::size_t i = 3; i < inputs.size(); ++i) {
                 if (!inputs[i]) {
                     *availableInputIndex = (int)i;
                     return *it;
@@ -3976,6 +3976,11 @@ RotoContext::refreshRotoPaintTree()
     if (canConcatenate) {
         globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
     }
+    if (globalMerge) {
+        boost::shared_ptr<Natron::Node> rotopaintNodeInput = getNode()->getInput(0);
+        //Connect the rotopaint node input to the B input of the Merge
+        globalMerge->connectInput(rotopaintNodeInput, 0);
+    }
     
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = items.begin(); it!=items.end(); ++it) {
@@ -3991,10 +3996,8 @@ RotoContext::refreshRotoPaintTree()
             ///Refresh for next node
             boost::shared_ptr<Natron::Node> nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
             if (nextMerge != globalMerge) {
-                int nextMergeInputNb = globalMerge->getMaxInputCount() - 1;
-                assert(!globalMerge->getInput(nextMergeInputNb));
-                globalMerge->connectInput(nextMerge, nextMergeInputNb);
-                
+                assert(!nextMerge->getInput(0));
+                nextMerge->connectInput(globalMerge, 0);
                 globalMerge = nextMerge;
             }
         }
