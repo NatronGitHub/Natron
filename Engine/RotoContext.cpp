@@ -3979,7 +3979,9 @@ RotoContext::refreshRotoPaintTree()
     if (globalMerge) {
         boost::shared_ptr<Natron::Node> rotopaintNodeInput = getNode()->getInput(0);
         //Connect the rotopaint node input to the B input of the Merge
-        globalMerge->connectInput(rotopaintNodeInput, 0);
+        if (rotopaintNodeInput) {
+            globalMerge->connectInput(rotopaintNodeInput, 0);
+        }
     }
     
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
