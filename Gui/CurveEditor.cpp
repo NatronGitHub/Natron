@@ -1378,7 +1378,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
 
     QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>,int) ),this,
                      SLOT( onItemRemoved(boost::shared_ptr<RotoItem>,int) ) );
-    QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int,int) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int,int) ),this,SLOT( itemInserted(int,int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
     
     std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();

@@ -1062,6 +1062,8 @@ public:
     
 private:
     
+    void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
+    
     void refreshCreatedViews(KnobI* knob);
     
     void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);

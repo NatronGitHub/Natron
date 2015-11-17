@@ -6461,22 +6461,29 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
         }
 
     } else {
-        const std::vector<std::string>& channels = comp.getComponentsNames();
-        for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = enabledChan[i].lock();
-            if (i >= (int)(channels.size())) {
-                enabled->setSecret(true);
-            } else {
-                enabled->setSecret(false);
-                enabled->setDescription(channels[i]);
-            }
-            enabled->setValue(true, 0);
-        }
+        _publicInterface->refreshEnabledKnobsLabel(comp);
     }
     
     if (inputNb == -1) {
         _publicInterface->s_outputLayerChanged();
     }
+}
+
+void
+Node::refreshEnabledKnobsLabel(const Natron::ImageComponents& comp)
+{
+    const std::vector<std::string>& channels = comp.getComponentsNames();
+    for (int i = 0; i < 4; ++i) {
+        boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+        if (i >= (int)(channels.size())) {
+            enabled->setSecret(true);
+        } else {
+            enabled->setSecret(false);
+            enabled->setDescription(channels[i]);
+        }
+        enabled->setValue(true, 0);
+    }
+
 }
 
 void
@@ -8174,7 +8181,8 @@ Node::refreshChannelSelectors(bool setValues)
         }
         int gotColor = -1;
 
-        Natron::ImageComponents colorComp;
+        Natron::ImageComponents colorComp,selectedComp;
+        bool foundSelectedComp = false;
         
         /*
          These are default layers that we always display in the layer selector.
@@ -8203,6 +8211,11 @@ Node::refreshChannelSelectors(bool setValues)
                     std::vector<std::string>::iterator pos = choices.begin();
                     ++pos;
                     gotColor = 1;
+                    
+                    if (!foundSelectedComp && (curLayer == kNatronRGBAComponentsName || curLayer == kNatronRGBComponentsName || curLayer == kNatronAlphaComponentsName)) {
+                        selectedComp = it2->first;
+                        foundSelectedComp = true;
+                    }
 
                     if (numComp == 1) {
                         choices.insert(pos,kNatronAlphaComponentsName);
@@ -8221,6 +8234,10 @@ Node::refreshChannelSelectors(bool setValues)
                         }
                     }
                 } else {
+                    if (!foundSelectedComp && it2->first.getLayerName() == curLayer) {
+                        selectedComp = it2->first;
+                        foundSelectedComp = true;
+                    }
                     choices.push_back(it2->first.getLayerName());
                     std::map<std::string, int>::iterator foundDefaultLayer = defaultLayers.find(it2->first.getLayerName());
                     if (foundDefaultLayer != defaultLayers.end()) {
@@ -8303,17 +8320,8 @@ Node::refreshChannelSelectors(bool setValues)
                         layerKnob->setValue(i, 0);
                         _imp->liveInstance->endChanges(true);
                         layerKnob->unblockValueChanges();
-                        if (isColor && it->first == -1 && _imp->enabledChan[0].lock()) {
-                            assert(gotColor != -1);
-                            //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
-                            const std::vector<std::string>& channels = colorComp.getComponentsNames();
-                            for (int j = 0; j < 4; ++j) {
-                                if (j >= (int)(channels.size())) {
-                                    _imp->enabledChan[j].lock()->setSecret(true);
-                                } else {
-                                    _imp->enabledChan[j].lock()->setSecret(false);
-                                }
-                            }
+                        if (foundSelectedComp && it->first == -1 && _imp->enabledChan[0].lock()) {
+                            refreshEnabledKnobsLabel(selectedComp);
                         }
                         break;
                     }
