@@ -699,6 +699,10 @@ EffectInstance::getImage(int inputNb,
             roi = found->second;
         } else {
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
+            if (n) {
+                qDebug() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
+                n->getScriptName_mt_safe().c_str();
+            }
             roi = rod;
         }
     }

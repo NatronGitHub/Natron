@@ -393,12 +393,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
         ///Set up global data specific for this frame view, this is the first time it has been requested so far
         
-        {
-            FrameViewRequest tmpFvRequest;
-            std::pair<NodeFrameViewRequestData::iterator,bool> ret = nodeRequest->frames.insert(std::make_pair(frameView, tmpFvRequest));
-            assert(ret.second);
-            fvRequest = &ret.first->second;
-        }
+        
+        fvRequest = &nodeRequest->frames[frameView];
         
         ///Get the RoD
         Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
@@ -575,14 +571,15 @@ EffectInstance::computeRequestPass(double time,
 const FrameViewRequest*
 NodeFrameRequest::getFrameViewRequest(double time, int view) const
 {
-    FrameViewPair p;
-    p.time = time;
-    p.view = view;
-    NodeFrameViewRequestData::const_iterator found = frames.find(p);
-    if (found == frames.end()) {
-        return 0;
+
+    for (NodeFrameViewRequestData::const_iterator it = frames.begin(); it != frames.end();++it) {
+        if (it->first.time == time) {
+            if (it->first.view == -1 || it->first.view == view) {
+                return &it->second;
+            }
+        }
     }
-    return &found->second;
+    return 0;
 }
 
 
