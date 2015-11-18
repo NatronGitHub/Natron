@@ -150,21 +150,22 @@ private:
     virtual void redo() OVERRIDE FINAL
     {
         double time = 0;
-
-        if ( _knob->getKnob()->getHolder()->getApp() ) {
-            time = _knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        
+        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        if ( knob->getHolder() && knob->getHolder()->getApp() ) {
+            time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
         }
 
         bool modifiedKeyFrames = false;
 
-        _knob->getKnob()->beginChanges();
+        knob->beginChanges();
         int i = 0;
         
         for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
     
 
-            boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
+            boost::shared_ptr<Curve> c = knob->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
@@ -192,14 +193,14 @@ private:
         }
 
         
-        _knob->getKnob()->endChanges();
+        knob->endChanges();
 
         if (modifiedKeyFrames) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
 
         setText( QObject::tr("Set value of %1")
-                 .arg( _knob->getKnob()->getDescription().c_str() ) );
+                 .arg( knob->getDescription().c_str() ) );
 
         _firstRedoCalled = true;
     } // redo
