@@ -178,9 +178,13 @@ an explanation of *script-name* vs. *label*.
 
 
     :param effect: :class:`Effect<NatronEngine.Effect>`
+    
 	:param firstFrame: :class:`int<PySide.QtCore.int>`
+	
 	:param lastFrame: :class:`int<PySide.QtCore.int>`
+	
 	:param frameStep: :class:`int<PySide.QtCore.int>`
+	
 
 Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
 The *frameStep* parameter indicates how many frames the timeline should step after rendering

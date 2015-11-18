@@ -266,9 +266,12 @@ Returns a user panel matching the given *scriptName* if there is any.
 
 .. method:: NatronGui.GuiApp.renderBlocking(effect,firstFrame,lastFrame,frameStep)
 
- :param effect: :class:`Effect<NatronEngine.Effect>`
+	:param effect: :class:`Effect<NatronEngine.Effect>`
+ 
 	:param firstFrame: :class:`int<PySide.QtCore.int>`
+	
 	:param lastFrame: :class:`int<PySide.QtCore.int>`
+	
 	:param frameStep: :class:`int<PySide.QtCore.int>`
 
 Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
