@@ -3941,6 +3941,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     if (!mergeNode) {
         return mergeNode;
     }
+    mergeNode->setUseAlpha0ToConvertFromRGBToRGBA(true);
     *availableInputIndex = 1;
     
     QMutexLocker k(&_imp->rotoContextMutex);

@@ -177,8 +177,8 @@ RotoPaint::initializeKnobs()
     
     boost::shared_ptr<KnobBool> premultKnob = Natron::createKnob<KnobBool>(this, "Premultiply", 1, false);
     premultKnob->setName("premultiply");
-    premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha mask "
-                                "produced by the shapes and strokes. This will result in the pixels outside of the shapes and paint strokes "
+    premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
+                                " This will result in the pixels outside of the shapes and paint strokes "
                                 "being black and transparant.");
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);

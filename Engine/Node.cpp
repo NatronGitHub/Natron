@@ -7649,6 +7649,13 @@ Node::attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke)
     setProcessChannelsValues(true, true, true, true);
 }
 
+void
+Node::setUseAlpha0ToConvertFromRGBToRGBA(bool use)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->useAlpha0ToConvertFromRGBToRGBA = use;
+}
+
 boost::shared_ptr<RotoDrawableItem>
 Node::getAttachedRotoItem() const
 {

@@ -557,10 +557,12 @@ public:
     void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
     boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
     
+    
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     bool usesAlpha0ToConvertFromRGBToRGBA() const;
+    void setUseAlpha0ToConvertFromRGBToRGBA(bool use);
     
 protected:
     
