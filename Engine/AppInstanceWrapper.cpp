@@ -173,6 +173,18 @@ void AppSettings::restoreDefaultSettings()
 void
 App::render(Effect* writeNode,int firstFrame,int lastFrame)
 {
+    renderInternal(false, writeNode, firstFrame, lastFrame);
+}
+
+void
+App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
+{
+    renderInternal(false, effects, firstFrames, lastFrames);
+}
+
+void
+App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int lastFrame)
+{
     if (!writeNode) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
@@ -194,14 +206,14 @@ App::render(Effect* writeNode,int firstFrame,int lastFrame)
     
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    _instance->startWritersRendering(false, l);
+    _instance->startWritersRendering(false, forceBlocking, l);
 }
 
 void
-App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
+App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
 {
     std::list<AppInstance::RenderWork> l;
-
+    
     assert(effects.size() == firstFrames.size() && effects.size() == lastFrames.size());
     std::list<Effect*>::const_iterator itE = effects.begin();
     std::list<int>::const_iterator itF = firstFrames.begin();
@@ -227,9 +239,9 @@ App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,
         w.lastFrame = (*itL);
         
         l.push_back(w);
-
+        
     }
-    _instance->startWritersRendering(false, l);
+    _instance->startWritersRendering(false, forceBlocking, l);
 }
 
 Param*

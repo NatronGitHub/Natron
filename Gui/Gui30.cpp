@@ -252,6 +252,10 @@ Gui::onDoDialog(int type,
                 int defaultB)
 {
     QWidget* currentActiveWindow = qApp->activeWindow();
+    QDialog* isActiveWindowADialog = 0;
+    if (currentActiveWindow) {
+        isActiveWindowADialog = qobject_cast<QDialog*>(currentActiveWindow);
+    }
     
     QString msg = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
@@ -303,7 +307,7 @@ Gui::onDoDialog(int type,
         _imp->_uiUsingMainThread = false;
         _imp->_uiUsingMainThreadCond.wakeOne();
     }
-    if (currentActiveWindow) {
+    if (currentActiveWindow && !isActiveWindowADialog) {
         currentActiveWindow->activateWindow();
     }
 }

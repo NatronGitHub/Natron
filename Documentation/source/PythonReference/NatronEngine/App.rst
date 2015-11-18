@@ -180,8 +180,8 @@ an explanation of *script-name* vs. *label*.
     :param task: :class:`RenderTask<NatronEngine.RenderTask>`
 
 
-Starts rendering the given *task*. This is a blocking call, meaning that this function
-returns only when the rendering is finished (from failure or success). 
+Starts rendering the given *task*. This is a blocking call only in background mode.
+A blocking render means that this function returns only when the render finishes (from failure or success). 
 
 This function should only be used to render with a Write node or DiskCache node.
 
@@ -197,8 +197,7 @@ but all *tasks* will be rendered concurrently.
 This function is called when rendering a script in background mode with 
 multiple writers. 
 
-This is a blocking call.
-
+This is a blocking call only in background mode.
 
 
 

@@ -313,9 +313,11 @@ public:
     
   
     
-    void startWritersRendering(bool enableRenderStats,const std::list<RenderRequest>& writers);
-    void startWritersRendering(bool enableRenderStats,const std::list<RenderWork>& writers);
+    void startWritersRendering(bool enableRenderStats, bool doBlockingRender, const std::list<RenderRequest>& writers);
+    void startWritersRendering(bool enableRenderStats, bool doBlockingRender, const std::list<RenderWork>& writers);
 
+    void startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
+    
     virtual void startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
 
     virtual void clearViewersLastRenderedTexture() {}

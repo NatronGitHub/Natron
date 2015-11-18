@@ -145,6 +145,9 @@ public:
     PyViewer* getViewer(const std::string& scriptName) const;
     
     PyPanel* getUserPanel(const std::string& scriptName) const;
+    
+    void renderBlocking(Effect* writeNode,int firstFrame, int lastFrame);
+    void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
 
 };
 

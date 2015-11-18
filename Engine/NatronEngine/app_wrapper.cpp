@@ -40,11 +40,11 @@ AppWrapper::~AppWrapper()
 extern "C" {
 static PyObject* Sbk_AppFunc_addFormat(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -82,11 +82,11 @@ static PyObject* Sbk_AppFunc_addFormat(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_closeProject(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -108,11 +108,11 @@ static PyObject* Sbk_AppFunc_closeProject(PyObject* self)
 
 static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
@@ -212,11 +212,11 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
 
 static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -224,7 +224,7 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getAppID()const
-            int cppResult = const_cast<const ::App*>(cppSelf)->getAppID();
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getAppID();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -238,11 +238,11 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
 
 static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -264,7 +264,7 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getProjectParam(std::string)const
-            Param * cppResult = const_cast<const ::App*>(cppSelf)->getProjectParam(cppArg0);
+            Param * cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getProjectParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -286,11 +286,11 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_loadProject(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -340,11 +340,11 @@ static PyObject* Sbk_AppFunc_loadProject(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_newProject(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -375,11 +375,11 @@ static PyObject* Sbk_AppFunc_newProject(PyObject* self)
 
 static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -491,11 +491,11 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_AppFunc_resetProject(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -517,11 +517,11 @@ static PyObject* Sbk_AppFunc_resetProject(PyObject* self)
 
 static PyObject* Sbk_AppFunc_saveProject(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -562,11 +562,11 @@ static PyObject* Sbk_AppFunc_saveProject(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_saveProjectAs(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -607,11 +607,11 @@ static PyObject* Sbk_AppFunc_saveProjectAs(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_saveTempProject(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -652,11 +652,11 @@ static PyObject* Sbk_AppFunc_saveTempProject(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -664,7 +664,7 @@ static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetLeftBound()const
-            int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetLeftBound();
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->timelineGetLeftBound();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -678,11 +678,11 @@ static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 
 static PyObject* Sbk_AppFunc_timelineGetRightBound(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -690,7 +690,7 @@ static PyObject* Sbk_AppFunc_timelineGetRightBound(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetRightBound()const
-            int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetRightBound();
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->timelineGetRightBound();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -704,11 +704,11 @@ static PyObject* Sbk_AppFunc_timelineGetRightBound(PyObject* self)
 
 static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -716,7 +716,7 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetTime()const
-            int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetTime();
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->timelineGetTime();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -730,11 +730,11 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 
 static PyObject* Sbk_AppFunc_writeToScriptEditor(PyObject* self, PyObject* pyArg)
 {
-    ::App* cppSelf = 0;
+    AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)

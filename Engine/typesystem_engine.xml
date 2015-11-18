@@ -350,6 +350,8 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="renderInternal(bool,std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)" remove="all"/>
+        <modify-function signature="renderInternal(bool,Effect*,int,int)" remove="all"/>
         <modify-function signature="render(std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)">
             <modify-argument index="1">
                 <replace-type modified-type="PyList"/>

@@ -108,6 +108,12 @@ public:
     
     ///Opens a new window
     App* newProject();
+    
+protected:
+    
+    void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame);
+    void renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
+    
 };
 
 

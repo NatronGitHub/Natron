@@ -50,6 +50,49 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="renderBlocking(std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                if (!PyList_Check(%PYARG_1)) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                std::list&lt;Effect*&gt; effects;
+                
+                std::list&lt;int&gt; firstFrames;
+                
+                std::list&lt;int&gt; lastFrames;
+                
+                int size = (int)PyList_GET_SIZE(%PYARG_1);
+                for (int i = 0; i &lt; size; ++i) {
+                PyObject* tuple = PyList_GET_ITEM(%PYARG_1,i);
+                if (!tuple) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                if (PyTuple_GET_SIZE(%PYARG_1) != 3) {
+                PyErr_SetString(PyExc_TypeError, "the tuple must have exactly 3 items.");
+                return 0;
+                }
+                Effect* writeNode = %CONVERTTOCPP[Effect*](PyTuple_GET_ITEM(tuple, 0));
+                int firstFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 1));
+                int lastFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 2));
+                effects.push_back(writeNode);
+                firstFrames.push_back(firstFrame);
+                lastFrames.push_back(lastFrame);
+                }
+                
+                %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames);
+            </inject-code>
+        </modify-function>
     </object-type>
     
     <object-type name="PyViewer">

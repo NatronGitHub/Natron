@@ -36,7 +36,8 @@ Functions
 *    def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
 *    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
 *    def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
-
+*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (task)
+*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (tasks)
 
 .. _guiApp.details:
 
@@ -260,3 +261,30 @@ Returns a user panel matching the given *scriptName* if there is any.
 
 	Wipe any current selection in the given *group*. If *group* is *None*, the selection
 	in the top-level nodegraph will be cleared.
+
+
+
+.. method:: NatronGui.GuiApp.renderBlocking(task)
+
+
+    :param task: :class:`RenderTask<NatronEngine.RenderTask>`
+
+
+Starts rendering the given *task*. This is a blocking call.
+A blocking render means that this function returns only when the render finishes (from failure or success). 
+
+This function should only be used to render with a Write node or DiskCache node.
+
+
+.. method:: NatronGui.GuiApp.renderBlocking(tasks)
+
+
+    :param tasks: :class:`sequence` 
+
+This is an overloaded function. Same as :func:`render(task)<NatronEngine.App.render>`
+but all *tasks* will be rendered concurrently. 
+
+This function is called when rendering a script in background mode with 
+multiple writers. 
+
+This is a blocking call.

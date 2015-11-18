@@ -2502,7 +2502,7 @@ EffectInstance::evaluate(KnobI* knob,
                 w.lastFrame = INT_MAX;
                 std::list<AppInstance::RenderWork> works;
                 works.push_back(w);
-                getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), works);
+                getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);
 
                 return;
             }

@@ -2238,7 +2238,11 @@ private:
                                                                               false,
                                                                               _imp->output),&planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+                    if (retCode == EffectInstance::eRenderRoIRetCodeAborted) {
+                        _imp->scheduler->notifyRenderFailure("Render aborted");
+                    } else {
+                        _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+                    }
                     return;
                 }
                 
@@ -2469,9 +2473,8 @@ DefaultScheduler::onRenderStopped(bool aborted)
     bool isBackGround = appPTR->isBackground();
     if (!isBackGround) {
         _effect->setKnobsFrozen(false);
-    } else {
-        _effect->notifyRenderFinished();
     }
+     _effect->notifyRenderFinished();
     
     std::string cb = _effect->getNode()->getAfterRenderCallback();
     if (!cb.empty()) {

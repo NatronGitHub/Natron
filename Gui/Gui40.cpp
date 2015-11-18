@@ -742,7 +742,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), std::list<AppInstance::RenderRequest>() );
+    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<AppInstance::RenderRequest>() );
 }
 
 void
@@ -790,7 +790,7 @@ Gui::renderSelectedNode()
                 }
             }
         }
-        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(),workList);
+        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, workList);
     }
 }
 

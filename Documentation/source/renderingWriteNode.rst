@@ -27,6 +27,10 @@ frames 20 to 50 included, you would call it the following way::
 
 	On the other hand, if called from a :ref:`background application<App>`, this call will be blocking 
 	and return once the render is finished.
+	
+	If you need to have a blocking render whilst using Natron Gui, you can use the 
+	:func:`renderBlocking()<NatronGui.GuiApp.renderBlocking>` function but bear in mind that
+	it will freeze the user interface until the render is finished.
 
 You can use the :ref:`after render callback<afterRenderCallback>` to call code to be run once the render 
 is finished.

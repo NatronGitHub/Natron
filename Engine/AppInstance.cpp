@@ -467,7 +467,7 @@ AppInstance::load(const CLArgs& cl)
         }
         
        
-        startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
+        startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
        
         
         
@@ -557,10 +557,13 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             moduleName = moduleName.left(lastDotPos);
         }
     
+        std::stringstream ss;
+        ss << "import " << moduleName.toStdString() << '\n';
+        ss << moduleName.toStdString() << ".createInstance(app,app)";
         
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        if (!Natron::interpretPythonScript(moduleName.toStdString() + ".createInstance(app,app)", &err, &output)) {
+        if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
                 Natron::errorDialog(tr("Python").toStdString(), err);
             }
@@ -1139,7 +1142,7 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderRequest>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderRequest>& writers)
 {
     
     std::list<RenderWork> renderers;
@@ -1193,11 +1196,11 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
         }
     }
     
-    startWritersRendering(enableRenderStats, renderers);
+    startWritersRendering(enableRenderStats, doBlockingRender, renderers);
 }
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderWork>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderWork>& writers)
 {
     
     
@@ -1208,10 +1211,10 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
     getProject()->resetTotalTimeSpentRenderingForAllNodes();
 
     
-    if ( appPTR->isBackground() ) {
+    if (appPTR->isBackground() || doBlockingRender) {
         
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,enableRenderStats, _1,false,QString()) );
+        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingBlockingFullSequence,this,enableRenderStats, _1,false,QString()) );
     } else {
         
         //Take a snapshot of the graph at this time, this will be the version loaded by the process
@@ -1227,7 +1230,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
 }
 
 void
-AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
+AppInstance::startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writerWork.writer);
     double first,last;
@@ -1242,6 +1245,12 @@ AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork&
     }
     
     backgroundRender.blockingRender(enableRenderStats,first,last); //< doesn't return before rendering is finished
+}
+
+void
+AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath)
+{
+    startRenderingBlockingFullSequence(enableRenderStats, writerWork, renderInSeparateProcess, savePath);
 }
 
 void
