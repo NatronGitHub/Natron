@@ -5723,7 +5723,6 @@ Node::onInputChanged(int inputNb)
     GroupOutput* isOutput = dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
     if (isOutput) {
         NodeGroup* containerGroup = dynamic_cast<NodeGroup*>(isOutput->getNode()->getGroup().get());
-        assert(containerGroup);
         if (containerGroup) {
             std::map<Node*,int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
