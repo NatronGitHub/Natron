@@ -18,7 +18,7 @@ Natron always renders from the *firstFrame* to the *lastFrame*.
 Generally Natron uses multiple threads to render concurrently several frames, you can control
 this behaviour with the parameters in the :ref:`settings<AppSettings>`.
 
-Let's imagine there's a node called **WriteOIIO1** in your project and that you want to render
+Let's imagine there's a node called **Write1** in your project and that you want to render
 frames 20 to 50 included, you would call it the following way::
 
 	app.render(app.Write1,20,50)
