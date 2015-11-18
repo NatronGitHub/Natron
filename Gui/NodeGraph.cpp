@@ -54,7 +54,8 @@ using namespace Natron;
 //using std::cout; using std::endl;
 
 
-static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+void
+NodeGraph::makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
 {
     boost::shared_ptr<NodeCollection> parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());

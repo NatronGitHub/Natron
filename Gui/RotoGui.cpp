@@ -539,7 +539,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     bool hasShapes = _imp->context->getNCurves();
     
-    bool effectIsPaint = node->getNode()->getPluginID() == PLUGINID_NATRON_ROTOPAINT;
+    bool effectIsPaint = _imp->context->isRotoPaint();
 
     QObject::connect( parent->getViewer(),SIGNAL( selectionRectangleChanged(bool) ),this,SLOT( updateSelectionFromSelectionRectangle(bool) ) );
     QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
@@ -938,16 +938,15 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(pixSelectAll), tr("Select all"),
                                              tr("everything can be selected and moved."),
                                              selectShortCut, eRotoToolSelectAll);
-    if (!_imp->context->isRotoPaint()) {
-        createToolAction(_imp->selectTool, QIcon(pixSelectPoints), tr("Select points"),
-                         tr("works only for the points of the inner shape,"
-                            " feather points will not be taken into account."),
-                         selectShortCut, eRotoToolSelectPoints);
-        createToolAction(_imp->selectTool, QIcon(pixSelectCurves), tr("Select curves"),
-                         tr("only the curves can be selected.")
-                         ,selectShortCut,eRotoToolSelectCurves);
-        createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,eRotoToolSelectFeatherPoints);
-    }
+    createToolAction(_imp->selectTool, QIcon(pixSelectPoints), tr("Select points"),
+                     tr("works only for the points of the inner shape,"
+                        " feather points will not be taken into account."),
+                     selectShortCut, eRotoToolSelectPoints);
+    createToolAction(_imp->selectTool, QIcon(pixSelectCurves), tr("Select curves"),
+                     tr("only the curves can be selected.")
+                     ,selectShortCut,eRotoToolSelectCurves);
+    createToolAction(_imp->selectTool, QIcon(pixSelectFeather), tr("Select feather points"), tr("only the feather points can be selected."),selectShortCut,eRotoToolSelectFeatherPoints);
+    
     _imp->selectTool->setDown(hasShapes);
     _imp->selectTool->setDefaultAction(_imp->selectAllAction);
     _imp->allTools.push_back(_imp->selectTool);
@@ -1011,53 +1010,57 @@ RotoGui::RotoGui(NodeGui* node,
     QKeySequence brushPaintShortcut(Qt::Key_N);
     QAction* brushPaintAct = createToolAction(_imp->paintBrushTool, QIcon(pixPaintBrush), tr("Brush"), tr("Freehand painting"), brushPaintShortcut, eRotoToolSolidBrush);
     createToolAction(_imp->paintBrushTool, QIcon(pixPencil), tr("Pencil"), tr("Freehand painting based on bezier curves"), brushPaintShortcut, eRotoToolOpenBezier);
-    _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
+    if (effectIsPaint) {
+        _imp->eraserAction = createToolAction(_imp->paintBrushTool, QIcon(pixEraser), tr("Eraser"), tr("Erase previous paintings"), brushPaintShortcut, eRotoToolEraserBrush);
+    }
     _imp->paintBrushTool->setDefaultAction(brushPaintAct);
     _imp->allTools.push_back(_imp->paintBrushTool);
     _imp->toolbar->addWidget(_imp->paintBrushTool);
     
-    _imp->cloneBrushTool = new RotoToolButton(_imp->toolbar);
-    _imp->cloneBrushTool->setFixedSize(rotoToolSize);
-    _imp->cloneBrushTool->setIconSize(rotoToolSize);
-    _imp->cloneBrushTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->cloneBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
-    _imp->cloneBrushTool->setText("Clone");
-    _imp->cloneBrushTool->setDown(false);
-    QKeySequence cloneBrushShortcut(Qt::Key_C);
-    QAction* cloneBrushAct = createToolAction(_imp->cloneBrushTool, QIcon(pixClone), tr("Clone"), tr("Clone a portion of the source image"), cloneBrushShortcut, eRotoToolClone);
-    createToolAction(_imp->cloneBrushTool, QIcon(pixReveal), tr("Reveal"), tr("Reveal a portion of the source image"), cloneBrushShortcut, eRotoToolReveal);
-    _imp->cloneBrushTool->setDefaultAction(cloneBrushAct);
-    _imp->allTools.push_back(_imp->cloneBrushTool);
-    _imp->toolbar->addWidget(_imp->cloneBrushTool);
-    
-    _imp->effectBrushTool = new RotoToolButton(_imp->toolbar);
-    _imp->effectBrushTool->setFixedSize(rotoToolSize);
-    _imp->effectBrushTool->setIconSize(rotoToolSize);
-    _imp->effectBrushTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->effectBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
-    _imp->effectBrushTool->setText("Blur");
-    _imp->effectBrushTool->setDown(false);
-    QKeySequence blurShortcut(Qt::Key_X);
-    QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(pixBlur), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
-    //createToolAction(_imp->effectBrushTool, QIcon(pixSharpen), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
-    createToolAction(_imp->effectBrushTool, QIcon(pixSmear), tr("Smear"), tr("Blur and displace a portion of the source image along the direction of the pen"), blurShortcut, eRotoToolSmear);
-    _imp->effectBrushTool->setDefaultAction(blurBrushAct);
-    _imp->allTools.push_back(_imp->effectBrushTool);
-    _imp->toolbar->addWidget(_imp->effectBrushTool);
-    
-    _imp->mergeBrushTool = new RotoToolButton(_imp->toolbar);
-    _imp->mergeBrushTool->setFixedSize(rotoToolSize);
-    _imp->mergeBrushTool->setIconSize(rotoToolSize);
-    _imp->mergeBrushTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->mergeBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
-    _imp->mergeBrushTool->setText("Dodge");
-    _imp->mergeBrushTool->setDown(false);
-    QKeySequence dodgeBrushShortcut(Qt::Key_E);
-    QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(pixDodge), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
-    createToolAction(_imp->mergeBrushTool, QIcon(pixBurn), tr("Burn"), tr("Make the source image darker"), dodgeBrushShortcut, eRotoToolBurn);
-    _imp->mergeBrushTool->setDefaultAction(dodgeBrushAct);
-    _imp->allTools.push_back(_imp->mergeBrushTool);
-    _imp->toolbar->addWidget(_imp->mergeBrushTool);
+    if (effectIsPaint) {
+        _imp->cloneBrushTool = new RotoToolButton(_imp->toolbar);
+        _imp->cloneBrushTool->setFixedSize(rotoToolSize);
+        _imp->cloneBrushTool->setIconSize(rotoToolSize);
+        _imp->cloneBrushTool->setPopupMode(QToolButton::InstantPopup);
+        QObject::connect( _imp->cloneBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        _imp->cloneBrushTool->setText("Clone");
+        _imp->cloneBrushTool->setDown(false);
+        QKeySequence cloneBrushShortcut(Qt::Key_C);
+        QAction* cloneBrushAct = createToolAction(_imp->cloneBrushTool, QIcon(pixClone), tr("Clone"), tr("Clone a portion of the source image"), cloneBrushShortcut, eRotoToolClone);
+        createToolAction(_imp->cloneBrushTool, QIcon(pixReveal), tr("Reveal"), tr("Reveal a portion of the source image"), cloneBrushShortcut, eRotoToolReveal);
+        _imp->cloneBrushTool->setDefaultAction(cloneBrushAct);
+        _imp->allTools.push_back(_imp->cloneBrushTool);
+        _imp->toolbar->addWidget(_imp->cloneBrushTool);
+        
+        _imp->effectBrushTool = new RotoToolButton(_imp->toolbar);
+        _imp->effectBrushTool->setFixedSize(rotoToolSize);
+        _imp->effectBrushTool->setIconSize(rotoToolSize);
+        _imp->effectBrushTool->setPopupMode(QToolButton::InstantPopup);
+        QObject::connect( _imp->effectBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        _imp->effectBrushTool->setText("Blur");
+        _imp->effectBrushTool->setDown(false);
+        QKeySequence blurShortcut(Qt::Key_X);
+        QAction* blurBrushAct = createToolAction(_imp->effectBrushTool, QIcon(pixBlur), tr("Blur"), tr("Blur a portion of the source image"), blurShortcut, eRotoToolBlur);
+        //createToolAction(_imp->effectBrushTool, QIcon(pixSharpen), tr("Sharpen"), tr("Sharpen a portion of the source image"), blurShortcut, eRotoToolSharpen);
+        createToolAction(_imp->effectBrushTool, QIcon(pixSmear), tr("Smear"), tr("Blur and displace a portion of the source image along the direction of the pen"), blurShortcut, eRotoToolSmear);
+        _imp->effectBrushTool->setDefaultAction(blurBrushAct);
+        _imp->allTools.push_back(_imp->effectBrushTool);
+        _imp->toolbar->addWidget(_imp->effectBrushTool);
+        
+        _imp->mergeBrushTool = new RotoToolButton(_imp->toolbar);
+        _imp->mergeBrushTool->setFixedSize(rotoToolSize);
+        _imp->mergeBrushTool->setIconSize(rotoToolSize);
+        _imp->mergeBrushTool->setPopupMode(QToolButton::InstantPopup);
+        QObject::connect( _imp->mergeBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        _imp->mergeBrushTool->setText("Dodge");
+        _imp->mergeBrushTool->setDown(false);
+        QKeySequence dodgeBrushShortcut(Qt::Key_E);
+        QAction* dodgeBrushAct = createToolAction(_imp->mergeBrushTool, QIcon(pixDodge), tr("Dodge"), tr("Make the source image brighter"), dodgeBrushShortcut, eRotoToolDodge);
+        createToolAction(_imp->mergeBrushTool, QIcon(pixBurn), tr("Burn"), tr("Make the source image darker"), dodgeBrushShortcut, eRotoToolBurn);
+        _imp->mergeBrushTool->setDefaultAction(dodgeBrushAct);
+        _imp->allTools.push_back(_imp->mergeBrushTool);
+        _imp->toolbar->addWidget(_imp->mergeBrushTool);
+    }
     
     if (!hasShapes && effectIsPaint) {
         defaultAction = brushPaintAct;
@@ -2355,10 +2358,40 @@ RotoGui::penDown(double time,
     }
     
     
+    
+    //////////////////BEZIER SELECTION
+    /////Check if the point is nearby a bezier
+    ///tolerance for bezier selection
+    double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
+    double nearbyBezierT;
+    int nearbyBezierCPIndex;
+    bool isFeather;
+    boost::shared_ptr<Bezier> nearbyBezier =
+    _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
+    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
+    int nearbyCpIndex = -1;
+    if (nearbyBezier) {
+        /////////////////CONTROL POINT SELECTION
+        //////Check if the point is nearby a control point of a selected bezier
+        ///Find out if the user selected a control point
+        
+        Bezier::ControlPointSelectionPrefEnum pref = Bezier::eControlPointSelectionPrefWhateverFirst;
+        if ( (_imp->selectedTool == eRotoToolSelectFeatherPoints) && isFeatherVisible() ) {
+            pref = Bezier::eControlPointSelectionPrefFeatherFirst;
+        }
+        
+        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
+        
+    }
+    
     ////////////////// TANGENT SELECTION
     ///in all cases except cusp/smooth if a control point is selected, check if the user clicked on a tangent handle
     ///in which case we go into eEventStateDraggingTangent mode
-    if ( (_imp->selectedTool != eRotoToolCuspPoints) && (_imp->selectedTool != eRotoToolSmoothPoints) && (_imp->selectedTool != eRotoToolSelectCurves) ) {
+    if (!nearbyCP.first &&
+        _imp->selectedTool != eRotoToolCuspPoints &&
+        _imp->selectedTool != eRotoToolSmoothPoints &&
+        _imp->selectedTool != eRotoToolSelectCurves) {
+        
         for (SelectedCPs::iterator it = _imp->rotoData->selectedCps.begin(); it != _imp->rotoData->selectedCps.end(); ++it) {
             if ( (_imp->selectedTool == eRotoToolSelectAll) ||
                 ( _imp->selectedTool == eRotoToolDrawBezier) ) {
@@ -2408,31 +2441,8 @@ RotoGui::penDown(double time,
             }
         }
     }
+
     
-    //////////////////BEZIER SELECTION
-    /////Check if the point is nearby a bezier
-    ///tolerance for bezier selection
-    double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
-    double nearbyBezierT;
-    int nearbyBezierCPIndex;
-    bool isFeather;
-    boost::shared_ptr<Bezier> nearbyBezier =
-    _imp->context->isNearbyBezier(pos.x(), pos.y(), bezierSelectionTolerance,&nearbyBezierCPIndex,&nearbyBezierT,&isFeather);
-    std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > nearbyCP;
-    int nearbyCpIndex = -1;
-    if (nearbyBezier) {
-        /////////////////CONTROL POINT SELECTION
-        //////Check if the point is nearby a control point of a selected bezier
-        ///Find out if the user selected a control point
-        
-        Bezier::ControlPointSelectionPrefEnum pref = Bezier::eControlPointSelectionPrefWhateverFirst;
-        if ( (_imp->selectedTool == eRotoToolSelectFeatherPoints) && isFeatherVisible() ) {
-            pref = Bezier::eControlPointSelectionPrefFeatherFirst;
-        }
-        
-        nearbyCP = nearbyBezier->isNearbyControlPoint(pos.x(), pos.y(), cpSelectionTolerance,pref,&nearbyCpIndex);
-        
-    }
     switch (_imp->selectedTool) {
         case eRotoToolSelectAll:
         case eRotoToolSelectPoints:
@@ -3433,16 +3443,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         rotoData->strokeBeingPaint.reset(new RotoStrokeItem(strokeType, context, name, boost::shared_ptr<RotoLayer>()));
         rotoData->strokeBeingPaint->createNodes(false);
     }
-    if (!prepareForLater) {
-        
-        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
-        if (!layer) {
-            layer = context->getOrCreateBaseLayer();
-        }
-        assert(layer);
-        context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
-        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
-    }
+   
     
     assert(rotoData->strokeBeingPaint);
     boost::shared_ptr<KnobColor> colorKnob = rotoData->strokeBeingPaint->getColorKnob();
@@ -3497,6 +3498,13 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
+        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
+        if (!layer) {
+            layer = context->getOrCreateBaseLayer();
+        }
+        assert(layer);
+        context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
+        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
         rotoData->strokeBeingPaint->appendPoint(true,p);
     }
     

@@ -402,10 +402,10 @@ public:
 
     void deselectAllNodes() const;
 
-    void onProcessHandlerStarted(const QString & sequenceName,int firstFrame,int lastFrame,
+    void onProcessHandlerStarted(const QString & sequenceName,int firstFrame,int lastFrame, int frameStep,
                                  const boost::shared_ptr<ProcessHandler> & process);
 
-    void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,
+    void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,int frameStep,
                                Natron::OutputEffectInstance* writer);
 
     NodeGraph* getNodeGraph() const;

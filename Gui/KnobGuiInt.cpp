@@ -73,6 +73,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
+#include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
 #include "Gui/Utils.h"
 
@@ -166,7 +167,9 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
+        SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt, this, i);
+        NumericKnobValidator* validator = new NumericKnobValidator(box,this);
+        box->setValidator(validator);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
 
         ///set the copy/link actions in the right click menu
@@ -284,6 +287,23 @@ bool
 KnobGuiInt::shouldAddStretch() const
 {
     return _knob.lock()->isSliderDisabled();
+}
+
+bool
+KnobGuiInt::getAllDimensionsVisible() const
+{
+    return !_dimensionSwitchButton || _dimensionSwitchButton->isChecked();
+}
+
+int
+KnobGuiInt::getDimensionForSpinBox(const SpinBox* spinbox) const
+{
+    for (std::size_t i = 0; i < _spinBoxes.size(); ++i) {
+        if (_spinBoxes[i].first == spinbox) {
+            return (int)i;
+        }
+    }
+    return -1;
 }
 
 void
@@ -594,7 +614,7 @@ KnobGuiInt::setEnabled()
     bool enabled0 = knob->isEnabled(0) && !knob->isSlave(0) && knob->getExpression(0).empty();
     
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        bool b = knob->isEnabled(i) && !knob->isSlave(i) && knob->getExpression(i).empty();
+        bool b = knob->isEnabled(i) && !knob->isSlave(i);
         //_spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if (_spinBoxes[i].second) {
@@ -642,7 +662,7 @@ KnobGuiInt::reflectExpressionState(int dimension,
 
     if (hasExpr) {
         _spinBoxes[dimension].first->setAnimation(3);
-        _spinBoxes[dimension].first->setReadOnly(true);
+        //_spinBoxes[dimension].first->setReadOnly(true);
         if (_slider) {
             _slider->setReadOnly(true);
         }

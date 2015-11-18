@@ -378,12 +378,15 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( displayCacheInfoAction,SIGNAL( triggered() ),this,SLOT( toggleCacheInfo() ) );
     _imp->_menu->addAction(displayCacheInfoAction);
     
-    QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphTogglePreview,
-                                                           kShortcutDescActionGraphTogglePreview,_imp->_menu);
-    turnOffPreviewAction->setCheckable(true);
-    turnOffPreviewAction->setChecked(false);
-    QObject::connect( turnOffPreviewAction,SIGNAL( triggered() ),this,SLOT( togglePreviewsForSelectedNodes() ) );
-    _imp->_menu->addAction(turnOffPreviewAction);
+    const NodeGuiList& selectedNodes = getSelectedNodes();
+    if (!selectedNodes.empty()) {
+        QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphTogglePreview,
+                                                               kShortcutDescActionGraphTogglePreview,_imp->_menu);
+        turnOffPreviewAction->setCheckable(true);
+        turnOffPreviewAction->setChecked(false);
+        QObject::connect( turnOffPreviewAction,SIGNAL( triggered() ),this,SLOT( togglePreviewsForSelectedNodes() ) );
+        _imp->_menu->addAction(turnOffPreviewAction);
+    }
     
     QAction* connectionHints = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphEnableHints,
                                                       kShortcutDescActionGraphEnableHints,_imp->_menu);
@@ -398,6 +401,18 @@ NodeGraph::showMenu(const QPoint & pos)
     autoHideInputs->setChecked( appPTR->getCurrentSettings()->areOptionalInputsAutoHidden() );
     QObject::connect( autoHideInputs,SIGNAL( triggered() ),this,SLOT( toggleAutoHideInputs() ) );
     _imp->_menu->addAction(autoHideInputs);
+    
+    QAction* hideInputs = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphHideInputs,
+                                                     kShortcutDescActionGraphHideInputs,_imp->_menu);
+    hideInputs->setCheckable(true);
+    bool hideInputsVal = false;
+    if (!selectedNodes.empty()) {
+        hideInputsVal = selectedNodes.front()->getNode()->getHideInputsKnobValue();
+    }
+    hideInputs->setChecked(hideInputsVal);
+    QObject::connect( hideInputs,SIGNAL( triggered() ),this,SLOT( toggleHideInputs() ) );
+    _imp->_menu->addAction(hideInputs);
+
     
     QAction* knobLinks = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphShowExpressions,
                                                 kShortcutDescActionGraphShowExpressions,_imp->_menu);

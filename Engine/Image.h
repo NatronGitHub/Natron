@@ -808,6 +808,8 @@ namespace Natron {
         void premultImage(const RectI& roi);
         void unpremultImage(const RectI& roi);
         
+        bool canCallCopyUnPorcessedChannels(const bool* processChannels) const;
+        
         void copyUnProcessedChannels(const RectI& roi,
                                      Natron::ImagePremultiplicationEnum outputPremult,
                                      Natron::ImagePremultiplicationEnum originalImagePremult,

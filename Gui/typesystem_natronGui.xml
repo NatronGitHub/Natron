@@ -50,6 +50,63 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="renderBlocking(std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                if (!PyList_Check(%PYARG_1)) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                std::list&lt;Effect*&gt; effects;
+                
+                std::list&lt;int&gt; firstFrames;
+                
+                std::list&lt;int&gt; lastFrames;
+                
+                std::list&lt;int&gt; frameSteps;
+                
+                int size = (int)PyList_GET_SIZE(%PYARG_1);
+                for (int i = 0; i &lt; size; ++i) {
+                PyObject* tuple = PyList_GET_ITEM(%PYARG_1,i);
+                if (!tuple) {
+                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                return 0;
+                }
+                
+                int tupleSize = PyTuple_GET_SIZE(tuple);
+                if (tupleSize != 4 &amp;&amp; tupleSize != 3) {
+                PyErr_SetString(PyExc_TypeError, "the tuple must have 3 or 4 items.");
+                return 0;
+                }
+                Effect* writeNode = %CONVERTTOCPP[Effect*](PyTuple_GET_ITEM(tuple, 0));
+                int firstFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 1));
+                int lastFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 2));
+                int frameStep;
+                if (tupleSize == 4) {
+                frameStep = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 3));
+                } else {
+                frameStep = INT_MIN;
+                }
+                effects.push_back(writeNode);
+                firstFrames.push_back(firstFrame);
+                lastFrames.push_back(lastFrame);
+                frameSteps.push_back(frameStep);
+                }
+                
+                %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
+            </inject-code>
+        </modify-function>
     </object-type>
     
     <object-type name="PyViewer">

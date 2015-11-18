@@ -127,7 +127,7 @@ protected:
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame(int time, bool enableRenderStats) = 0;
+    virtual void renderFrame(int time, const std::vector<int>& viewsToRender, bool enableRenderStats) = 0;
         
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
@@ -203,14 +203,22 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(bool enableRenderStats, int firstFrame,int lastFrame,RenderDirectionEnum forward);
+    void renderFrameRange(bool isBlocking,
+                          bool enableRenderStats,
+                          int firstFrame,
+                          int lastFrame,
+                          int frameStep,
+                          const std::vector<int>& viewsToRender,
+                          RenderDirectionEnum forward);
 
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(bool enableRenderStats, RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats,
+                                const std::vector<int>& viewsToRender,
+                                RenderDirectionEnum forward);
     
     /**
      * @brief Whether the playback can be automatically restarted by a single render request
@@ -255,6 +263,12 @@ public:
     RenderDirectionEnum getDirectionRequestedToRender() const;
     
     /**
+     * @brief Returns the views as set in the livingRunArgs, @see startRender()
+     * This can only be called on the scheduler thread (this)
+     **/
+    std::vector<int> getViewsRequestedToRender() const;
+    
+    /**
      * @brief Returns the current number of render threads
      **/
     int getNRenderThreads() const;
@@ -267,7 +281,7 @@ public:
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
-    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats);
+    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<int>* viewsToRender);
     
 
     /**
@@ -640,16 +654,23 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(bool enableRenderStats, int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFrameRange(bool isBlocking,
+                          bool enableRenderStats,
+                          int firstFrame,
+                          int lastFrame,
+                          int frameStep,
+                          const std::vector<int>& viewsToRender,
+                          OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(bool enableRenderStats, OutputSchedulerThread::RenderDirectionEnum forward);
+    void renderFromCurrentFrame(bool enableRenderStats,
+                                const std::vector<int>& viewsToRender,
+                                OutputSchedulerThread::RenderDirectionEnum forward);
     
-    void renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats);
     
     /**
      * @brief Basically it just renders with the current frame on the timeline.

@@ -125,6 +125,8 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
 , _horizLayout(0)
 , _horizContainer(0)
 , _verticalColorBar(0)
+, _rightContainer(0)
+, _rightContainerLayout(0)
 ,_tabWidget(NULL)
 , _centerNodeButton(NULL)
 , _enterInGroupButton(NULL)
@@ -210,6 +212,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         }
     }
     
+    _publicInterface->refreshTabWidgetMaxHeight();
 }
 
 KnobGui*
@@ -578,7 +581,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 }
                 
                 
-                if (closestParentGroupTab) {
+                //if (closestParentGroupTab) {
                     ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
                     ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
                     ///To do this we add an empty widget with an expanding vertical size policy.
@@ -608,7 +611,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     
                     ///And add our stretch
                     layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
-                }
+               // }
                 
             }
 
@@ -712,6 +715,8 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
             _horizLayout->addWidget(newTab);
         }
     }
+    
+    
     Page p;
     p.tab = newTab;
     p.currentRow = 0;

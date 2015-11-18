@@ -48,12 +48,18 @@ using namespace Natron;
 void
 NodeGraph::togglePreviewsForSelectedNodes()
 {
-    QMutexLocker l(&_imp->_nodesMutex);
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
-         it != _imp->_selection.end();
-         ++it) {
-        (*it)->togglePreview();
+    bool empty = false;
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        empty = _imp->_selection.empty();
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+             it != _imp->_selection.end();
+             ++it) {
+            (*it)->togglePreview();
+        }
+    }
+    if (empty) {
+        Natron::warningDialog(tr("Toggle Preview").toStdString(), tr("You must select a node first").toStdString());
     }
 }
 

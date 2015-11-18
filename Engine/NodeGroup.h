@@ -141,6 +141,11 @@ public:
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
     bool checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const;
+    
+    /**
+     * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
+     **/
+    bool checkIfNodeLabelExists(const std::string & n,const Natron::Node* caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
@@ -307,6 +312,16 @@ class ParallelRenderArgsSetter
         
 public:
     
+    /**
+     * @brief Set the TLS for rendering a frame on the NodeCollection n and all its children recursively.
+     * The argument passed here should always be the project, that is all nodes in the project should have their 
+     * TLS set regardless whether they are connected to the tree that takes root from the treeRoot parameter.
+     * We do this because TLS is needed to know the correct frame, view at which the frame is evaluated (i.e rendered)
+     * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
+     * relying on other nodes that do not belong in the tree through expressions.
+     * An enhancement could be to set the TLS only on the nodes in the tree and on the nodes that are dependencies through
+     * expressions.
+     **/
     ParallelRenderArgsSetter(NodeCollection* n,
                              int time,
                              int view,

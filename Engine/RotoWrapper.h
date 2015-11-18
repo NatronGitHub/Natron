@@ -68,6 +68,8 @@ public:
     
     Layer* getParentLayer() const;
     
+    Param* getParam(const std::string& name) const;
+    
 private:
     
     boost::shared_ptr<RotoItem> _item;

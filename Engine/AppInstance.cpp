@@ -336,18 +336,12 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
 {
     const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
     for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        AppInstance::RenderRequest r;
         
-        int firstFrame = INT_MIN,lastFrame = INT_MAX;
-        if (cl.hasFrameRange()) {
-            const std::pair<int,int>& range = cl.getFrameRange();
-            firstFrame = range.first;
-            lastFrame = range.second;
-        }
-        
-        if (it->mustCreate) {
-            
-            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), firstFrame, lastFrame);
+        QString writerName;
+        if (!it->mustCreate) {
+            writerName = it->name;
+        } else {
+            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), INT_MIN, INT_MAX);
             
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
@@ -363,15 +357,28 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
                 writer->connectInput(outputInput, 0);
             }
             
-            r.writerName = writer->getScriptName().c_str();
-            r.firstFrame = firstFrame;
-            r.lastFrame = lastFrame;
-        } else {
-            r.writerName = it->name;
-            r.firstFrame = firstFrame;
-            r.lastFrame = lastFrame;
+            writerName = writer->getScriptName().c_str();
         }
-        requests.push_back(r);
+
+        if (cl.hasFrameRange()) {
+            const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
+            for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
+                AppInstance::RenderRequest r;
+                r.firstFrame = it2->second.first;
+                r.lastFrame = it2->second.second;
+                r.frameStep = it2->first;
+                r.writerName = writerName;
+                requests.push_back(r);
+            }
+        } else {
+            AppInstance::RenderRequest r;
+            r.firstFrame = INT_MIN;
+            r.lastFrame = INT_MAX;
+            r.frameStep = INT_MIN;
+            r.writerName = writerName;
+            requests.push_back(r);
+        }
+    
     }
 }
 
@@ -467,7 +474,7 @@ AppInstance::load(const CLArgs& cl)
         }
         
        
-        startWritersRendering(cl.areRenderStatsEnabled(),writersWork);
+        startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
        
         
         
@@ -557,10 +564,13 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             moduleName = moduleName.left(lastDotPos);
         }
     
+        std::stringstream ss;
+        ss << "import " << moduleName.toStdString() << '\n';
+        ss << moduleName.toStdString() << ".createInstance(app,app)";
         
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        if (!Natron::interpretPythonScript(moduleName.toStdString() + ".createInstance(app,app)", &err, &output)) {
+        if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
                 Natron::errorDialog(tr("Python").toStdString(), err);
             }
@@ -819,7 +829,13 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
-        return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
+        try {
+            return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
+        } catch (const std::exception& e) {
+            Natron::errorDialog(tr("Plugin error").toStdString(),
+                                tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
+            return node;
+        }
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
@@ -948,6 +964,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
                 }
+                Natron::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
         } else if (!requestedByLoad && !_imp->_creatingGroup) {
@@ -1132,7 +1149,7 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderRequest>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderRequest>& writers)
 {
     
     std::list<RenderWork> renderers;
@@ -1164,6 +1181,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
                 assert(w.writer);
                 w.firstFrame = it->firstFrame;
                 w.lastFrame = it->lastFrame;
+                w.frameStep = it->frameStep;
                 renderers.push_back(w);
             }
         }
@@ -1181,16 +1199,17 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
                 w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
                 w.firstFrame = std::floor(f);
                 w.lastFrame = std::ceil(l);
+                w.frameStep = w.writer->getNode()->getFrameStepKnobValue();
                 renderers.push_back(w);
             }
         }
     }
     
-    startWritersRendering(enableRenderStats, renderers);
+    startWritersRendering(enableRenderStats, doBlockingRender, renderers);
 }
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,const std::list<RenderWork>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderWork>& writers)
 {
     
     
@@ -1201,10 +1220,10 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
     getProject()->resetTotalTimeSpentRenderingForAllNodes();
 
     
-    if ( appPTR->isBackground() ) {
+    if (appPTR->isBackground() || doBlockingRender) {
         
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingFullSequence,this,enableRenderStats, _1,false,QString()) );
+        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingBlockingFullSequence,this,enableRenderStats, _1,false,QString()) );
     } else {
         
         //Take a snapshot of the graph at this time, this will be the version loaded by the process
@@ -1220,7 +1239,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,const std::list<Render
 }
 
 void
-AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
+AppInstance::startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
 {
     BlockingBackgroundRender backgroundRender(writerWork.writer);
     double first,last;
@@ -1234,7 +1253,21 @@ AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork&
         last = writerWork.lastFrame;
     }
     
-    backgroundRender.blockingRender(enableRenderStats,first,last); //< doesn't return before rendering is finished
+    int frameStep;
+    if (writerWork.frameStep == INT_MAX || writerWork.frameStep == INT_MIN) {
+        ///Get the frame step from the frame step parameter of the Writer
+        frameStep = writerWork.writer->getNode()->getFrameStepKnobValue();
+    } else {
+        frameStep = std::max(1, writerWork.frameStep);
+    }
+    
+    backgroundRender.blockingRender(enableRenderStats,first,last,frameStep); //< doesn't return before rendering is finished
+}
+
+void
+AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath)
+{
+    startRenderingBlockingFullSequence(enableRenderStats, writerWork, renderInSeparateProcess, savePath);
 }
 
 void

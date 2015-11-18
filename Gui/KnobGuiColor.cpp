@@ -74,6 +74,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
+#include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
 #include "Gui/Utils.h"
 
@@ -153,18 +154,37 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     const std::vector<double> & maximums = _knob->getMaximums();
 #endif
     
-    _rBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
+    _rBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 0);
+    {
+        NumericKnobValidator* validator = new NumericKnobValidator(_rBox,this);
+        _rBox->setValidator(validator);
+    }
+    
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     
     if (_dimension >= 3) {
-        _gBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
+        _gBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 1);
         QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
-        _bBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_gBox,this);
+            _gBox->setValidator(validator);
+        }
+        
+        _bBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 2);
         QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_bBox,this);
+            _bBox->setValidator(validator);
+        }
     }
     if (_dimension >= 4) {
-        _aBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
+        _aBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 3);
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        {
+            NumericKnobValidator* validator = new NumericKnobValidator(_aBox,this);
+            _aBox->setValidator(validator);
+        }
     }
     
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -551,23 +571,48 @@ KnobGuiColor::onDisplayMinMaxChanged(double mini,
     }
 }
 
+bool
+KnobGuiColor::getAllDimensionsVisible() const
+{
+    return !_dimensionSwitchButton || _dimensionSwitchButton->isChecked();
+}
+
+int
+KnobGuiColor::getDimensionForSpinBox(const SpinBox* spinbox) const
+{
+    if (_rBox == spinbox) {
+        return 0;
+    }
+    if (_gBox == spinbox) {
+        return 1;
+    }
+    if (_bBox == spinbox) {
+        return 2;
+    }
+    if (_aBox == spinbox) {
+        return 3;
+    }
+    return -1;
+}
+
 void
 KnobGuiColor::setEnabled()
 {
     boost::shared_ptr<KnobColor> knob = _knob.lock();
-    bool r = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool r = knob->isEnabled(0)  && !knob->isSlave(0);
+    bool enabled0 = r && knob->getExpression(0).empty();
 
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
     _rLabel->setEnabled(r);
 
-    _slider->setReadOnly(!r);
-    _colorDialogButton->setEnabled(r);
+    _slider->setReadOnly(!enabled0);
+    _colorDialogButton->setEnabled(enabled0);
     
     if (_dimension >= 3) {
         
-        bool g = knob->isEnabled(1) && !knob->isSlave(1) && knob->getExpression(1).empty();
-        bool b = knob->isEnabled(2) && !knob->isSlave(2) && knob->getExpression(2).empty();
+        bool g = knob->isEnabled(1) && !knob->isSlave(1);
+        bool b = knob->isEnabled(2) && !knob->isSlave(2);
         //_gBox->setEnabled(g);
         _gBox->setReadOnly(!g);
         _gLabel->setEnabled(g);
@@ -576,13 +621,13 @@ KnobGuiColor::setEnabled()
         _bLabel->setEnabled(b);
     }
     if (_dimension >= 4) {
-        bool a = knob->isEnabled(3) && !knob->isSlave(3) && knob->getExpression(3).empty();
+        bool a = knob->isEnabled(3) && !knob->isSlave(3);
         //_aBox->setEnabled(a);
         _aBox->setReadOnly(!a);
         _aLabel->setEnabled(a);
     }
-    _dimensionSwitchButton->setEnabled(r);
-    _colorLabel->setEnabledMode(r);
+    _dimensionSwitchButton->setEnabled(enabled0);
+    _colorLabel->setEnabledMode(enabled0);
 }
 
 void
@@ -771,28 +816,30 @@ void
 KnobGuiColor::reflectExpressionState(int dimension,
                                       bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(dimension);
+    //bool isEnabled = _knob.lock()->isEnabled(dimension);
     switch (dimension) {
         case 0:
             _rBox->setAnimation(3);
-            _rBox->setReadOnly(hasExpr || !isEnabled);
+            //_rBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 1:
             _gBox->setAnimation(3);
-            _gBox->setReadOnly(hasExpr || !isEnabled);
+            //_gBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 2:
             _bBox->setAnimation(3);
-            _bBox->setReadOnly(hasExpr || !isEnabled);
+            //_bBox->setReadOnly(hasExpr || !isEnabled);
             break;
         case 3:
             _aBox->setAnimation(3);
-            _aBox->setReadOnly(hasExpr || !isEnabled);
+            //_aBox->setReadOnly(hasExpr || !isEnabled);
             break;
         default:
             break;
     }
-    
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
 }
 
 void

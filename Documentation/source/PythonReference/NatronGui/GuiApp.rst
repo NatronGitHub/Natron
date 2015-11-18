@@ -36,7 +36,8 @@ Functions
 *    def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
 *    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
 *    def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
-
+*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (effect,firstFrame,lastFrame,frameStep)
+*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (tasks)
 
 .. _guiApp.details:
 
@@ -260,3 +261,53 @@ Returns a user panel matching the given *scriptName* if there is any.
 
 	Wipe any current selection in the given *group*. If *group* is *None*, the selection
 	in the top-level nodegraph will be cleared.
+
+
+
+.. method:: NatronGui.GuiApp.renderBlocking(effect,firstFrame,lastFrame,frameStep)
+
+	:param effect: :class:`Effect<NatronEngine.Effect>`
+ 
+	:param firstFrame: :class:`int<PySide.QtCore.int>`
+	
+	:param lastFrame: :class:`int<PySide.QtCore.int>`
+	
+	:param frameStep: :class:`int<PySide.QtCore.int>`
+
+Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
+The *frameStep* parameter indicates how many frames the timeline should step after rendering
+each frame. The value must be greater or equal to 1. 
+The *frameStep* parameter is optional and if not given will default to the value of the 
+**Frame Increment** parameter in the Write node.
+
+For instance::
+
+	render(effect,1,10,2)
+	
+Would render the frames 1,3,5,7,9
+
+
+This is a blocking function.
+A blocking render means that this function returns only when the render finishes (from failure or success). 
+
+This function should only be used to render with a Write node or DiskCache node.
+
+
+.. method:: NatronGui.GuiApp.renderBlocking(tasks)
+
+
+   :param tasks: :class:`sequence` 
+
+This function takes a sequence of tuples of the form *(effect,firstFrame,lastFrame[,frameStep])*
+The *frameStep* is optional in the tuple and if not set will default to the value of the 
+**Frame Increment** parameter in the Write node.
+
+This is an overloaded function. Same as :func:`render(effect,firstFrame,lastFrame,frameStep)<NatronEngine.App.render>`
+but all *tasks* will be rendered concurrently. 
+
+This function is called when rendering a script in background mode with 
+multiple writers. 
+
+This is a blocking call.
+
+

@@ -21,6 +21,9 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SU
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 DEFINES += OFX_SUPPORTS_DIALOG
 
+#Commented-out because many plug-in vendors do not implement it correctly
+#DEFINES += OFX_SUPPORTS_DIALOG_V1
+
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
 # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO

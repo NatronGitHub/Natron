@@ -290,15 +290,13 @@ public:
         return x >= x1 && x < x2 && y >= y1 && y < y2;
     }
 
+#ifdef DEBUG
     void debug() const
     {
-        std::cout << "RectI is..." << std::endl;
-        std::cout << "left = " << x1 << std::endl;
-        std::cout << "bottom = " << y1 << std::endl;
-        std::cout << "right = " << x2 << std::endl;
-        std::cout << "top = " << y2 << std::endl;
+        std::cout << "x1 = "<<x1<<" y1 = "<<y1<<" x2 = "<<x2<<" y2 = "<<y2<< std::endl;
     }
-
+#endif
+    
     void toPixelEnclosing(const RenderScale & scale,
                           double par,
                           RectI *rect) const;

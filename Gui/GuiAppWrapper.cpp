@@ -463,6 +463,18 @@ GuiApp::getUserPanel(const std::string& scriptName) const
     return dynamic_cast<PyPanel*>(w->getWidget());
 }
 
+void
+GuiApp::renderBlocking(Effect* writeNode,int firstFrame, int lastFrame,int frameStep)
+{
+    renderInternal(true, writeNode, firstFrame, lastFrame, frameStep);
+}
+
+void
+GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps)
+{
+    renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
+}
+
 PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
 : _node(node)
 {

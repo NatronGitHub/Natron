@@ -296,13 +296,6 @@ NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
         if ((*it)->getCacheID() == name) {
             return true;
         }
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGroup) {
-            bool found = isGroup->isCacheIDAlreadyTaken(name);
-            if (found) {
-                return true;
-            }
-        }
     }
     return false;
 }
@@ -866,6 +859,19 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
         }
     }
     
+}
+
+bool
+NodeCollection::checkIfNodeLabelExists(const std::string & n,const Natron::Node* caller) const
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        if ( (it->get() != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool

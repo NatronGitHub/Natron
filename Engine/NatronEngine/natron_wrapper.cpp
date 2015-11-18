@@ -823,6 +823,9 @@ void init_Natron(PyObject* module)
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
         &Sbk_Natron_Type, "eDisplayChannelsY", (long) Natron::eDisplayChannelsY))
         return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsMatte", (long) Natron::eDisplayChannelsMatte))
+        return ;
     // Register converter for enum 'Natron::DisplayChannelsEnum'.
     {
         SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],

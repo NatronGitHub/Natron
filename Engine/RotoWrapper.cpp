@@ -28,6 +28,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/NodeWrapper.h"
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
@@ -107,6 +108,21 @@ ItemBase::getParentLayer() const
     } else {
         return 0;
     }
+}
+
+Param*
+ItemBase::getParam(const std::string& name) const
+{
+    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>(_item.get());
+    if (!drawable) {
+        return 0;
+    }
+    boost::shared_ptr<KnobI> knob = drawable->getKnobByName(name);
+    if (!knob) {
+        return 0;
+    }
+    Param* ret = Effect::createParamWrapperForKnob(knob);
+    return ret;
 }
 
 
@@ -507,7 +523,7 @@ Roto::getItemByName(const std::string& name) const
     }
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
     if (isStroke) {
-        std::cerr << "Roto::getItemByName: RotoPaint strokes are currently unsupported in the Python API." << std::endl;
+        return new ItemBase(item);
     }
     return 0;
 }

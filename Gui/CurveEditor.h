@@ -332,7 +332,7 @@ public Q_SLOTS:
     
     void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
     
-    void itemInserted(int);
+    void itemInserted(int,int);
     
     void onItemRemoved(const boost::shared_ptr<RotoItem>& item, int);
 

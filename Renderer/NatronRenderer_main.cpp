@@ -22,22 +22,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <csignal>
 #include <cstdio>  // perror
 #include <cstdlib> // exit
 #include <iostream>
-
-#if defined(Q_OS_UNIX)
-#include <sys/signal.h>
-#endif
 
 #include <QCoreApplication>
 
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
-
-static void setShutDownSignal(int signalId);
-static void handleShutDownSignal(int signalId);
 
 int
 main(int argc,
@@ -47,9 +39,6 @@ main(int argc,
     if (args.getError() > 0) {
         return 1;
     }
-    
-    setShutDownSignal(SIGINT);   // shut down on ctrl-c
-    setShutDownSignal(SIGTERM);   // shut down on killall
 
     AppManager manager;
 
@@ -63,29 +52,5 @@ main(int argc,
     return 0;
 } //main
 
-static void
-setShutDownSignal(int signalId)
-{
-#if defined(Q_OS_UNIX)
-    struct sigaction sa;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = handleShutDownSignal;
-    if (sigaction(signalId, &sa, NULL) == -1) {
-        std::perror("setting up termination signal");
-        std::exit(1);
-    }
-#else
-    std::signal(signalId, handleShutDownSignal);
-#endif
-}
 
-static void
-handleShutDownSignal( int /*signalId*/ )
-{
-    if (appPTR) {
-        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
-        appPTR->quitApplication();
-    }
-}
 

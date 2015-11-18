@@ -58,6 +58,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/Transform.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/RotoPaint.h"
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -309,6 +310,41 @@
 #define kRotoResetCenterParam "resetTransformCenter"
 #define kRotoResetCenterParamLabel "Reset Center"
 #define kRotoResetCenterParamHint "Reset the transform center"
+
+#define kRotoMotionBlurModeParam "motionBlurMode"
+#define kRotoMotionBlurModeParamLabel "Mode"
+#define kRotoMotionBlurModeParamHint "Per-shape motion blurs applies motion blur independently to each shape and then blends them together." \
+" This may produce artifacts when shapes blur over the same portion of the image, but might be more efficient than global motion-blur." \
+" Global motion-blur takes into account the interaction between shapes and will not create artifacts at the expense of being slightly " \
+"more expensive than the per-shape motion blur. Note that when using the global motion-blur, all shapes will have the same motion-blur " \
+"settings applied to them."
+
+#define kRotoPerShapeMotionBlurParam "motionBlur"
+#define kRotoGlobalMotionBlurParam "globalMotionBlur"
+#define kRotoMotionBlurParamLabel "Motion Blur"
+#define kRotoMotionBlurParamHint "The number of Motion-Blur samples used for blurring. Increase for better quality but slower rendering."
+
+#define kRotoPerShapeShutterParam "motionBlurShutter"
+#define kRotoGlobalShutterParam "globalMotionBlurShutter"
+#define kRotoShutterParamLabel "Shutter"
+#define kRotoShutterParamHint "The number of frames during which the shutter should be opened when motion blurring."
+
+#define kRotoPerShapeShutterOffsetTypeParam "motionBlurShutterOffset"
+#define kRotoGlobalShutterOffsetTypeParam "gobalMotionBlurShutterOffset"
+#define kRotoShutterOffsetTypeParamLabel "Shutter Offset"
+#define kRotoShutterOffsetTypeParamHint "This controls how the shutter operates in respect to the current frame value."
+
+#define kRotoShutterOffsetCenteredHint "Centers the shutter around the current frame, that is the shutter will be opened from f - shutter/2 to " \
+"f + shutter/2"
+#define kRotoShutterOffsetStartHint "The shutter will open at the current frame and stay open until f + shutter"
+#define kRotoShutterOffsetEndHint "The shutter will open at f - shutter until the current frame"
+#define kRotoShutterOffsetCustomHint "The shutter will open at the time indicated by the shutter offset parameter"
+
+#define kRotoPerShapeShutterCustomOffsetParam "motionBlurCustomShutterOffset"
+#define kRotoGlobalShutterCustomOffsetParam "globalMotionBlurCustomShutterOffset"
+#define kRotoShutterCustomOffsetParamLabel "Custom Offset"
+#define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
+"which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
 class Bezier;
 
@@ -697,6 +733,12 @@ struct RotoDrawableItemPrivate
     boost::shared_ptr<KnobInt> timeOffset;
     boost::shared_ptr<KnobChoice> timeOffsetMode;
     
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    boost::shared_ptr<KnobDouble> motionBlur;
+    boost::shared_ptr<KnobDouble> shutter;
+    boost::shared_ptr<KnobChoice> shutterType;
+    boost::shared_ptr<KnobDouble> customOffset;
+#endif
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
     RotoDrawableItemPrivate(bool isPaintingNode)
@@ -751,6 +793,10 @@ struct RotoDrawableItemPrivate
         opacity->setHintToolTip(kRotoOpacityHint);
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
+        opacity->setMinimum(0.);
+        opacity->setMaximum(1.);
+        opacity->setDisplayMinimum(0.);
+        opacity->setDisplayMaximum(1.);
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         knobs.push_back(opacity);
         
@@ -758,6 +804,10 @@ struct RotoDrawableItemPrivate
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setName(kRotoFeatherParam);
         feather->populate();
+        feather->setMinimum(-100);
+        feather->setMaximum(100);
+        feather->setDisplayMinimum(-100);
+        feather->setDisplayMaximum(100);
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         knobs.push_back(feather);
         
@@ -765,6 +815,10 @@ struct RotoDrawableItemPrivate
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
+        featherFallOff->setMinimum(0.001);
+        featherFallOff->setMaximum(5.);
+        featherFallOff->setDisplayMinimum(0.2);
+        featherFallOff->setDisplayMaximum(5.);
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         knobs.push_back(featherFallOff);
         
@@ -1078,10 +1132,62 @@ struct RotoDrawableItemPrivate
         }
         knobs.push_back(timeOffsetMode);
 
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+        motionBlur.reset(new KnobDouble(NULL, kRotoMotionBlurParamLabel, 1, false));
+        motionBlur->setName(kRotoPerShapeMotionBlurParam);
+        motionBlur->setHintToolTip(kRotoMotionBlurParamHint);
+        motionBlur->populate();
+        motionBlur->setDefaultValue(0);
+        motionBlur->setMinimum(0);
+        motionBlur->setDisplayMinimum(0);
+        motionBlur->setDisplayMaximum(4);
+        motionBlur->setMaximum(4);
+        knobs.push_back(motionBlur);
+        
+        shutter.reset(new KnobDouble(NULL, kRotoShutterParamLabel, 1, false));
+        shutter->setName(kRotoPerShapeShutterParam);
+        shutter->setHintToolTip(kRotoShutterParamHint);
+        shutter->populate();
+        shutter->setDefaultValue(0.5);
+        shutter->setMinimum(0);
+        shutter->setDisplayMinimum(0);
+        shutter->setDisplayMaximum(2);
+        shutter->setMaximum(2);
+        knobs.push_back(shutter);
+        
+        shutterType.reset(new KnobChoice(NULL, kRotoShutterOffsetTypeParamLabel, 1, false));
+        shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
+        shutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
+        shutterType->populate();
+        shutterType->setDefaultValue(0);
+        {
+            std::vector<std::string> options,helps;
+            options.push_back("Centered");
+            helps.push_back(kRotoShutterOffsetCenteredHint);
+            options.push_back("Start");
+            helps.push_back(kRotoShutterOffsetStartHint);
+            options.push_back("End");
+            helps.push_back(kRotoShutterOffsetEndHint);
+            options.push_back("Custom");
+            helps.push_back(kRotoShutterOffsetCustomHint);
+            shutterType->populateChoices(options,helps);
+        }
+        knobs.push_back(shutterType);
+
+        customOffset.reset(new KnobDouble(NULL, kRotoShutterCustomOffsetParamLabel, 1, false));
+        customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
+        customOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
+        customOffset->populate();
+        customOffset->setDefaultValue(0);
+        knobs.push_back(customOffset);
+#endif
+        
         overlayColor[0] = 0.85164;
         overlayColor[1] = 0.196936;
         overlayColor[2] = 0.196936;
         overlayColor[3] = 1.;
+        
+        
     }
 
     ~RotoDrawableItemPrivate()
@@ -1203,6 +1309,14 @@ struct RotoContextPrivate
     boost::weak_ptr<KnobChoice> sourceTypeKnob;
     boost::weak_ptr<KnobInt> timeOffsetKnob;
     boost::weak_ptr<KnobChoice> timeOffsetModeKnob;
+    
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    boost::weak_ptr<KnobChoice> motionBlurTypeKnob;
+    boost::weak_ptr<KnobDouble> motionBlurKnob,globalMotionBlurKnob;
+    boost::weak_ptr<KnobDouble> shutterKnob,globalShutterKnob;
+    boost::weak_ptr<KnobChoice> shutterTypeKnob,globalShutterTypeKnob;
+    boost::weak_ptr<KnobDouble> customOffsetKnob,globalCustomOffsetKnob;
+#endif
 
     std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
     std::list<boost::weak_ptr<KnobI> > cloneKnobs;
@@ -1222,10 +1336,15 @@ struct RotoContextPrivate
     QWaitCondition doingNeatRenderCond;
     bool doingNeatRender;
     bool mustDoNeatRender;
+    
+    /*
+     * A merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
+     */
+    std::list<boost::shared_ptr<Natron::Node> > globalMergeNodes;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
-    , isPaintNode(n->isRotoPaintingNode())
+    , isPaintNode(false)
     , layers()
     , autoKeying(true)
     , rippleEdit(false)
@@ -1235,7 +1354,15 @@ struct RotoContextPrivate
     , age(0)
     , doingNeatRender(false)
     , mustDoNeatRender(false)
+    , globalMergeNodes()
     {
+        RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(n->getLiveInstance());
+        if (isRotoNode) {
+            isPaintNode = isRotoNode->isDefaultBehaviourPaintContext();
+        } else {
+            isPaintNode = false;
+        }
+        
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
         
@@ -1823,6 +1950,150 @@ struct RotoContextPrivate
         
         node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center);
         
+        
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+        boost::shared_ptr<KnobPage> mbPage = Natron::createKnob<KnobPage>(effect, "Motion Blur", 1, false);
+        boost::shared_ptr<KnobChoice> motionBlurType = Natron::createKnob<KnobChoice>(effect, kRotoMotionBlurModeParamLabel, 1, true);
+        motionBlurType->setName(kRotoMotionBlurModeParam);
+        motionBlurType->setHintToolTip(kRotoMotionBlurModeParamHint);
+        motionBlurType->setAnimationEnabled(false);
+        {
+            std::vector<std::string> entries;
+            entries.push_back("Per-Shape");
+            entries.push_back("Global");
+            motionBlurType->populateChoices(entries);
+        }
+        mbPage->addKnob(motionBlurType);
+        motionBlurTypeKnob = motionBlurType;
+        knobs.push_back(motionBlurType);
+        
+        
+        //////Per shape motion blur parameters
+        boost::shared_ptr<KnobDouble> motionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurParamLabel, 1, false);
+        motionBlur->setName(kRotoPerShapeMotionBlurParam);
+        motionBlur->setHintToolTip(kRotoMotionBlurParamHint);
+        motionBlur->setDefaultValue(0);
+        motionBlur->setMinimum(0);
+        motionBlur->setDisplayMinimum(0);
+        motionBlur->setDisplayMaximum(4);
+        motionBlur->setAllDimensionsEnabled(false);
+        motionBlur->setIsPersistant(false);
+        motionBlur->setMaximum(4);
+        shapeKnobs.push_back(motionBlur);
+        mbPage->addKnob(motionBlur);
+        motionBlurKnob = motionBlur;
+        knobs.push_back(motionBlur);
+        
+        boost::shared_ptr<KnobDouble> shutter = Natron::createKnob<KnobDouble>(effect, kRotoShutterParamLabel, 1, false);
+        shutter->setName(kRotoPerShapeShutterParam);
+        shutter->setHintToolTip(kRotoShutterParamHint);
+        shutter->setDefaultValue(0.5);
+        shutter->setMinimum(0);
+        shutter->setDisplayMinimum(0);
+        shutter->setDisplayMaximum(2);
+        shutter->setMaximum(2);
+        shutter->setAllDimensionsEnabled(false);
+        shutter->setIsPersistant(false);
+        shapeKnobs.push_back(shutter);
+        mbPage->addKnob(shutter);
+        shutterKnob = shutter;
+        knobs.push_back(shutter);
+        
+        boost::shared_ptr<KnobChoice> shutterType = Natron::createKnob<KnobChoice>(effect, kRotoShutterOffsetTypeParamLabel, 1, false);
+        shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
+        shutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
+        shutterType->setDefaultValue(0);
+        {
+            std::vector<std::string> options,helps;
+            options.push_back("Centered");
+            helps.push_back(kRotoShutterOffsetCenteredHint);
+            options.push_back("Start");
+            helps.push_back(kRotoShutterOffsetStartHint);
+            options.push_back("End");
+            helps.push_back(kRotoShutterOffsetEndHint);
+            options.push_back("Custom");
+            helps.push_back(kRotoShutterOffsetCustomHint);
+            shutterType->populateChoices(options,helps);
+        }
+        shutterType->setAllDimensionsEnabled(false);
+        shutterType->setAddNewLine(false);
+        shutterType->setIsPersistant(false);
+        mbPage->addKnob(shutterType);
+        shutterTypeKnob = shutterType;
+        shapeKnobs.push_back(shutterType);
+        knobs.push_back(shutterType);
+        
+        boost::shared_ptr<KnobDouble> customOffset = Natron::createKnob<KnobDouble>(effect, kRotoShutterCustomOffsetParamLabel, 1, false);
+        customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
+        customOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
+        customOffset->setDefaultValue(0);
+        customOffset->setAllDimensionsEnabled(false);
+        customOffset->setIsPersistant(false);
+        mbPage->addKnob(customOffset);
+        customOffsetKnob = customOffset;
+        shapeKnobs.push_back(customOffset);
+        knobs.push_back(customOffset);
+        
+        //////Global motion blur parameters
+        boost::shared_ptr<KnobDouble> globalMotionBlur = Natron::createKnob<KnobDouble>(effect, kRotoMotionBlurParamLabel, 1, false);
+        globalMotionBlur->setName(kRotoGlobalMotionBlurParam);
+        globalMotionBlur->setHintToolTip(kRotoMotionBlurParamHint);
+        globalMotionBlur->setDefaultValue(0);
+        globalMotionBlur->setMinimum(0);
+        globalMotionBlur->setDisplayMinimum(0);
+        globalMotionBlur->setDisplayMaximum(4);
+        globalMotionBlur->setMaximum(4);
+        globalMotionBlur->setSecretByDefault(true);
+        mbPage->addKnob(globalMotionBlur);
+        globalMotionBlurKnob = globalMotionBlur;
+        knobs.push_back(globalMotionBlur);
+        
+        boost::shared_ptr<KnobDouble> globalShutter = Natron::createKnob<KnobDouble>(effect, kRotoShutterParamLabel, 1, false);
+        globalShutter->setName(kRotoGlobalShutterParam);
+        globalShutter->setHintToolTip(kRotoShutterParamHint);
+        globalShutter->setDefaultValue(0.5);
+        globalShutter->setMinimum(0);
+        globalShutter->setDisplayMinimum(0);
+        globalShutter->setDisplayMaximum(2);
+        globalShutter->setMaximum(2);
+        globalShutter->setSecretByDefault(true);
+        mbPage->addKnob(globalShutter);
+        globalShutterKnob = globalShutter;
+        knobs.push_back(globalShutter);
+        
+        boost::shared_ptr<KnobChoice> globalShutterType = Natron::createKnob<KnobChoice>(effect, kRotoShutterOffsetTypeParamLabel, 1, false);
+        globalShutterType->setName(kRotoGlobalShutterOffsetTypeParam);
+        globalShutterType->setHintToolTip(kRotoShutterOffsetTypeParamHint);
+        globalShutterType->setDefaultValue(0);
+        {
+            std::vector<std::string> options,helps;
+            options.push_back("Centered");
+            helps.push_back(kRotoShutterOffsetCenteredHint);
+            options.push_back("Start");
+            helps.push_back(kRotoShutterOffsetStartHint);
+            options.push_back("End");
+            helps.push_back(kRotoShutterOffsetEndHint);
+            options.push_back("Custom");
+            helps.push_back(kRotoShutterOffsetCustomHint);
+            globalShutterType->populateChoices(options,helps);
+        }
+        globalShutterType->setAddNewLine(false);
+        globalShutterType->setSecretByDefault(true);
+        mbPage->addKnob(globalShutterType);
+        globalShutterTypeKnob = globalShutterType;
+        knobs.push_back(globalShutterType);
+        
+        boost::shared_ptr<KnobDouble> globalCustomOffset = Natron::createKnob<KnobDouble>(effect, kRotoShutterCustomOffsetParamLabel, 1, false);
+        globalCustomOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
+        globalCustomOffset->setHintToolTip(kRotoShutterCustomOffsetParamHint);
+        globalCustomOffset->setDefaultValue(0);
+        globalCustomOffset->setSecretByDefault(true);
+        mbPage->addKnob(globalCustomOffset);
+        globalCustomOffsetKnob = globalCustomOffset;
+        knobs.push_back(globalCustomOffset);
+        
+#endif
+    
     }
 
     /**

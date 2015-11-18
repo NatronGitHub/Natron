@@ -1363,7 +1363,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         e->accept();
     } else {
         if (ce) {
-            ce->handleUnCaughtKeyPressEvent();
+            ce->handleUnCaughtKeyPressEvent(e);
         }
     }
 } // keyPressEvent

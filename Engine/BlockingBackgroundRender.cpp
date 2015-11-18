@@ -41,13 +41,13 @@ BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance*
 }
 
 void
-BlockingBackgroundRender::blockingRender(bool enableRenderStats,int first,int last)
+BlockingBackgroundRender::blockingRender(bool enableRenderStats,int first,int last,int frameStep)
 {
     // avoid race condition: the code must work even if renderFullSequence() calls notifyFinished()
     // immediately.
     QMutexLocker locker(&_runningMutex);
     _running = true;
-    _writer->renderFullSequence(enableRenderStats,this,first,last);
+    _writer->renderFullSequence(true, enableRenderStats,this,first,last, frameStep);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         _running = false;
     } else {

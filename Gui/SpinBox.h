@@ -30,8 +30,10 @@
 #endif
 #include "Gui/LineEdit.h"
 
+class KnobGui;
 class QColor;
 class QMenu;
+class SpinBoxValidator;
 
 struct SpinBoxPrivate;
 class SpinBox
@@ -94,18 +96,30 @@ public:
 
     void setUseLineColor(bool use, const QColor& color);
     
-private:
+    /**
+     * @brief Set an optional validator that will validate numbers instead of the regular double/int validator.
+     * The spinbox takes ownership of the validator and will destroy it.
+     **/
+    void setValidator(SpinBoxValidator* validator);
+    
+    double getLastValidValueBeforeValidation() const;
+    
+protected:
 
     void increment(int delta, int shift);
 
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     bool validateText();
+    
+    bool validateInternal();
+    
+    bool validateWithCustomValidator(const QString& txt);
 
 Q_SIGNALS:
 
@@ -132,6 +146,33 @@ private:
     bool dirty;
     bool altered;
     boost::scoped_ptr<SpinBoxPrivate> _imp;
+};
+
+class KnobSpinBox : public SpinBox
+{
+    const KnobGui* knob;
+    int dimension;
+public:
+    
+    KnobSpinBox(QWidget* parent,
+                SpinBoxTypeEnum type,
+                const KnobGui* knob,
+                int dimension)
+    : SpinBox(parent,type)
+    , knob(knob)
+    , dimension(dimension)
+    {
+        
+    }
+    
+    virtual ~KnobSpinBox()
+    {
+        
+    }
+    
+private:
+    
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 };
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

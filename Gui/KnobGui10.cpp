@@ -609,6 +609,9 @@ KnobGui::hide()
 
     if (shouldRemoveWidget) {
         _imp->field->hide();
+        if (_imp->container) {
+            _imp->container->refreshTabWidgetMaxHeight();
+        }
     } else {
         if (!_imp->field->isVisible()) {
             _imp->field->show();
@@ -617,6 +620,7 @@ KnobGui::hide()
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->hide();
     }
+    
 }
 
 void
@@ -640,11 +644,15 @@ KnobGui::show(int /*index*/)
 
     if (_imp->isOnNewLine) {
         _imp->field->show();
+        if (_imp->container) {
+            _imp->container->refreshTabWidgetMaxHeight();
+        }
     }
     
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->show();
     }
+ 
 }
 
 int

@@ -108,9 +108,19 @@ public:
         return _nodeLabel;
     }
     
+    void setNodeLabel(const std::string& s)
+    {
+        _nodeLabel = s;
+    }
+    
     const std::string & getNodeScriptName() const
     {
         return _nodeScriptName;
+    }
+    
+    void setNodeScriptName(const std::string &s)
+    {
+        _nodeScriptName = s;
     }
     
     const std::string & getCacheID() const

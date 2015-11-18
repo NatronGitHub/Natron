@@ -358,7 +358,7 @@ CurveGui::drawCurve(int curveIndex,
         double textY;
         
         try {
-            textY = evaluate(false,textX);
+            textY = evaluate(_internalCurve && !_internalCurve->isAnimated(),textX);
         } catch (...) {
             textY = evaluate(true,textX);
         }

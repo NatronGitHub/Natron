@@ -435,7 +435,9 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,
     k->setMinimum(min);
     k->setIncrement(1); // kOfxParamPropIncrement only exists for Double
     k->setMaximum(max);
+    k->blockValueChanges();
     k->setDefaultValue(def,0);
+    k->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     k->setDimensionName(0, dimensionName);
 }
@@ -637,8 +639,9 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
     }
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    dblKnob->blockValueChanges();
     dblKnob->setDefaultValue(def, 0);
-
+    dblKnob->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel,0);
     dblKnob->setDimensionName(0, dimensionName);
 }
@@ -824,7 +827,9 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node,
     boost::shared_ptr<KnobBool> b = Natron::createKnob<KnobBool>( node, getParamLabel(this) );
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
+    b->blockValueChanges();
     b->setDefaultValue( (bool)def,0 );
+    b->unblockValueChanges();
 }
 
 OfxStatus
@@ -989,8 +994,9 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     choice->populateChoices(entires,helpStrings);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
+    choice->blockValueChanges();
     choice->setDefaultValue(def,0);
-    
+    choice->unblockValueChanges();
     bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
     choice->setCascading(cascading);
     
@@ -1180,11 +1186,12 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
     double defA = properties.getDoubleProperty(kOfxParamPropDefault,3);
+    color->blockValueChanges();
     color->setDefaultValue(defR,0);
     color->setDefaultValue(defG,1);
     color->setDefaultValue(defB,2);
     color->setDefaultValue(defA,3);
-
+    color->unblockValueChanges();
     const int dims = 4;
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -1410,10 +1417,11 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
     double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
     double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
+    color->blockValueChanges();
     color->setDefaultValue(defR, 0);
     color->setDefaultValue(defG, 1);
     color->setDefaultValue(defB, 2);
-
+    color->unblockValueChanges();
     const int dims = 3;
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
@@ -1683,9 +1691,11 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
+    dblKnob->blockValueChanges();
     for (int i = 0; i < dims; ++i) {
         dblKnob->setDefaultValue(def[i], i);
     }
+    dblKnob->unblockValueChanges();
 }
 
 OfxStatus
@@ -1922,8 +1932,10 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node,
     iKnob->setMinimumsAndMaximums(minimum, maximum);
     iKnob->setIncrement(increment);
     iKnob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    iKnob->blockValueChanges();
     iKnob->setDefaultValue(def[0], 0);
     iKnob->setDefaultValue(def[1], 1);
+    iKnob->unblockValueChanges();
 }
 
 OfxStatus
@@ -2129,9 +2141,11 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
     knob->setIncrement(increment);
     knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     knob->setDecimals(decimals);
+    knob->blockValueChanges();
     for (int i = 0; i < dims; ++i) {
         knob->setDefaultValue(def[i], i);
     }
+    knob->unblockValueChanges();
 }
 
 OfxStatus
@@ -2384,9 +2398,11 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node,
     knob->setMinimumsAndMaximums(minimum, maximum);
     knob->setIncrement(increment);
     knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    knob->blockValueChanges();
     knob->setDefaultValue(def[0],0);
     knob->setDefaultValue(def[1],1);
     knob->setDefaultValue(def[2],2);
+    knob->unblockValueChanges();
 }
 
 OfxStatus
@@ -2570,12 +2586,16 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
 
-    _groupKnob = Natron::createKnob<KnobGroup>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobGroup> group = Natron::createKnob<KnobGroup>( node, getParamLabel(this) );
+    _groupKnob = group;
     int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
     if (isTab) {
-        _groupKnob.lock()->setAsTab();
+        group->setAsTab();
     }
-    _groupKnob.lock()->setDefaultValue(opened,0);
+    
+    group->blockValueChanges();
+    group->setDefaultValue(opened,0);
+    group->unblockValueChanges();
 }
 
 void
@@ -2715,15 +2735,27 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
     if ( !defaultVal.empty() ) {
         if (_fileKnob.lock()) {
             projectEnvVar_setProxy(defaultVal);
-            _fileKnob.lock()->setDefaultValue(defaultVal,0);
+            boost::shared_ptr<KnobFile> k = _fileKnob.lock();
+            k->blockValueChanges();
+            k->setDefaultValue(defaultVal,0);
+            k->unblockValueChanges();
         } else if (_outputFileKnob.lock()) {
             projectEnvVar_setProxy(defaultVal);
-            _outputFileKnob.lock()->setDefaultValue(defaultVal,0);
+            boost::shared_ptr<KnobOutputFile> k = _outputFileKnob.lock();
+            k->blockValueChanges();
+            k->setDefaultValue(defaultVal,0);
+            k->unblockValueChanges();
         } else if (_stringKnob.lock()) {
-            _stringKnob.lock()->setDefaultValue(defaultVal,0);
+            boost::shared_ptr<KnobString> k = _stringKnob.lock();
+            k->blockValueChanges();
+            k->setDefaultValue(defaultVal,0);
+            k->unblockValueChanges();
         } else if (_pathKnob.lock()) {
             projectEnvVar_setProxy(defaultVal);
-            _pathKnob.lock()->setDefaultValue(defaultVal,0);
+            boost::shared_ptr<KnobPath> k = _pathKnob.lock();
+            k->blockValueChanges();
+            k->setDefaultValue(defaultVal,0);
+            k->unblockValueChanges();
         }
     }
 }
@@ -3096,9 +3128,9 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,
     _knob = knob;
 
     knob->setAsCustom();
-
+    knob->blockValueChanges();
     knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault),0);
-
+    knob->unblockValueChanges();
     _customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_customParamInterpolationV1Entry) {
         knob->setCustomInterpolation( _customParamInterpolationV1Entry, (void*)getHandle() );

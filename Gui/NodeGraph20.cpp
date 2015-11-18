@@ -105,7 +105,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     if ((*it)->contains(evpt)) {
                         selected = (*it);
                         if (optionalInputsAutoHidden) {
-                            (*it)->setOptionalInputsVisible(true);
+                            (*it)->refreshEdgesVisility(true);
                         } else {
                             break;
                         }
@@ -117,7 +117,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 break;
                             }
                         } else if (optionalInputsAutoHidden && !(*it)->getIsSelected()) {
-                            (*it)->setOptionalInputsVisible(false);
+                            (*it)->refreshEdgesVisility(false);
                         }
                     }
                 }

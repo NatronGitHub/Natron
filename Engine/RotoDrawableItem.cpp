@@ -57,6 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -186,6 +187,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     } else {
         type = eRotoStrokeTypeSolid;
     }
+  
     switch (type) {
         case Natron::eRotoStrokeTypeBlur:
             pluginId = PLUGINID_OFX_BLURCIMG;
@@ -533,6 +535,11 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
         KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
         if (mergeOp) {
             mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
+        }
+        
+        ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
+        if ( reason == Natron::eValueChangedReasonUserEdited) {
+            getContext()->refreshRotoPaintTree();
         }
     } else if (knob == _imp->sourceColor) {
         refreshNodesConnections();
@@ -947,7 +954,10 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         
         for (std::list<boost::shared_ptr<KnobI> >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if ((*it2)->getName() == (*it)->getName()) {
+                boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
+                s->blockSignals(true);
                 (*it2)->clone((*it)->getKnob().get());
+                s->blockSignals(false);
                 break;
             }
         }
@@ -1317,6 +1327,46 @@ RotoDrawableItem::getLifeTimeFrameKnob() const
     return _imp->lifeTimeFrame;
 }
 
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getMotionBlurAmountKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->motionBlur;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getShutterOffsetKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->customOffset;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobDouble>
+RotoDrawableItem::getShutterKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->shutter;
+#else
+    return boost::shared_ptr<KnobDouble>();
+#endif
+}
+
+boost::shared_ptr<KnobChoice>
+RotoDrawableItem::getShutterTypeKnob() const
+{
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    return _imp->shutterType;
+#else
+    return boost::shared_ptr<KnobChoice>();
+#endif
+}
+
 void
 RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 {
@@ -1336,6 +1386,17 @@ const std::list<boost::shared_ptr<KnobI> >&
 RotoDrawableItem::getKnobs() const
 {
     return _imp->knobs;
+}
+
+boost::shared_ptr<KnobI>
+RotoDrawableItem::getKnobByName(const std::string& name) const
+{
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if ((*it)->getName() == name) {
+            return *it;
+        }
+    }
+    return boost::shared_ptr<KnobI>();
 }
 
 

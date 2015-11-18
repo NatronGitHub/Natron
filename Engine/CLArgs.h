@@ -80,8 +80,8 @@ public:
     
     bool hasFrameRange() const;
     
-    const std::pair<int,int>& getFrameRange() const;
-    
+    const std::list<std::pair<int,std::pair<int,int> > >& getFrameRanges() const;
+        
     bool isBackgroundMode() const;
     
     bool isInterpreterMode() const;

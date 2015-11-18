@@ -115,6 +115,9 @@ struct DockablePanelPrivate
     VerticalColorBar* _verticalColorBar;
 
     /*Tab related*/
+    QWidget* _rightContainer;
+    QVBoxLayout* _rightContainerLayout;
+    
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
     Button* _enterInGroupButton;

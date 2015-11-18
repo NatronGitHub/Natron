@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 
+class QKeyEvent;
 class Gui;
 class TabWidget;
 class PanelWidget : public ScriptObject
@@ -68,7 +69,7 @@ public:
     /*
      * @brief To be called when a keypress event is not accepted
      */
-    void handleUnCaughtKeyPressEvent();
+    void handleUnCaughtKeyPressEvent(QKeyEvent* e);
     
 protected:
     

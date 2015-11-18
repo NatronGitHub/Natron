@@ -75,6 +75,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/TabGroup.h"
 #include "Gui/Utils.h"
+#include "Gui/PropertiesBinWrapper.h"
 
 #include "ofxNatron.h"
 
@@ -194,7 +195,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
-    
+    //getGui()->getPropertiesBin()->setUpdatesEnabled(false);
     for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (!checked) {
             (*it)->hide();
@@ -205,6 +206,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
             }
         }
     }
+    //getGui()->getPropertiesBin()->setUpdatesEnabled(true);
 }
 
 void

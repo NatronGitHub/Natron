@@ -67,6 +67,13 @@ CLANG_DIAG_ON(deprecated)
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
+#define kWriteParamFrameStep "frameIncr"
+#define kWriteParamFrameStepLabel "Frame Increment"
+#define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
+"If 1, all frames will be rendered, if 2 only 1 frame out of 2" \
+" etc...This number cannot be inferior to 1."
+
+
 
 namespace Natron {
 
@@ -557,10 +564,12 @@ public:
     void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
     boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
     
+    
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
     //won't be able to paint the alpha channel
     bool usesAlpha0ToConvertFromRGBToRGBA() const;
+    void setUseAlpha0ToConvertFromRGBToRGBA(bool use);
     
 protected:
     
@@ -1057,7 +1066,14 @@ public:
     
     void refreshIdentityState();
     
+    bool getHideInputsKnobValue() const;
+    void setHideInputsKnobValue(bool hidden);
+    
+    int getFrameStepKnobValue() const;
+    
 private:
+    
+    void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
     
     void refreshCreatedViews(KnobI* knob);
     
@@ -1089,7 +1105,6 @@ public Q_SLOTS:
 
 
     void setKnobsAge(U64 newAge);
-
 
 
     void doRefreshEdgesGUI()
@@ -1125,6 +1140,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void hideInputsKnobChanged(bool hidden);
     
     void identityChanged(int inputNb);
     

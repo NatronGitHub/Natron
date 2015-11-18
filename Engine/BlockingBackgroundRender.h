@@ -53,7 +53,7 @@ public:
 
     void notifyFinished();
 
-    void blockingRender(bool enableRenderStats,int first,int last);
+    void blockingRender(bool enableRenderStats,int first,int last, int frameStep);
 };
 
 #endif // BLOCKINGBACKGROUNDRENDER_H

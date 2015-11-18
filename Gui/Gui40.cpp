@@ -366,10 +366,11 @@ void
 Gui::onProcessHandlerStarted(const QString & sequenceName,
                              int firstFrame,
                              int lastFrame,
+                             int frameStep,
                              const boost::shared_ptr<ProcessHandler> & process)
 {
     ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, process, this);
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep, process, this);
     QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
     QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
@@ -630,8 +631,10 @@ Gui::debugImage(const Natron::Image* image,
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
+#ifdef DEBUG
     qDebug() << "Writing image: " << realFileName;
     renderWindow.debug();
+#endif
     output.save(realFileName);
 }
 
@@ -663,11 +666,12 @@ void
 Gui::onWriterRenderStarted(const QString & sequenceName,
                            int firstFrame,
                            int lastFrame,
+                           int frameStep,
                            Natron::OutputEffectInstance* writer)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame,
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep,
                                                                   boost::shared_ptr<ProcessHandler>(), this);
     RenderEngine* engine = writer->getRenderEngine();
     QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
@@ -740,7 +744,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), std::list<AppInstance::RenderRequest>() );
+    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<AppInstance::RenderRequest>() );
 }
 
 void
@@ -771,6 +775,7 @@ Gui::renderSelectedNode()
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
+                    w.frameStep = INT_MIN;
                     workList.push_back(w);
                 }
             } else {
@@ -783,12 +788,13 @@ Gui::renderSelectedNode()
                         assert(w.writer);
                         w.firstFrame = INT_MIN;
                         w.lastFrame = INT_MAX;
+                        w.frameStep = INT_MIN;
                         workList.push_back(w);
                     }
                 }
             }
         }
-        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(),workList);
+        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, workList);
     }
 }
 

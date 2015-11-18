@@ -16,59 +16,59 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+#ifndef GUI_SPINBOXVALIDATOR_H
+#define GUI_SPINBOXVALIDATOR_H
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
-#include <cstdio>  // perror
-#include <cstdlib> // exit
-#include <fstream>
-#include <sstream>
-#include <iostream>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/weak_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
 
 #include "Global/Macros.h"
 
-#include <QCoreApplication>
-
-#include "Engine/CLArgs.h"
-
-#include "Gui/GuiApplicationManager.h"
-
-
-
-int
-main(int argc,
-     char *argv[])
+class SpinBox;
+class KnobGui;
+class QString;
+class SpinBoxValidator
 {
-    CLArgs::printBackGroundWelcomeMessage();
-
-    CLArgs args(argc,argv,false);
-    if (args.getError() > 0) {
-        return 1;
+public:
+    
+    SpinBoxValidator()
+    {
+        
     }
-
-    if (args.isBackgroundMode()) {
+    
+    virtual ~SpinBoxValidator()
+    {
         
-        AppManager manager;
-
-        // coverity[tainted_data]
-        if (!manager.load(argc,argv,args) ) {
-            return 1;
-        } else {
-            return 0;
-        }
-    } else {
-        
-        GuiApplicationManager manager;
-        
-        // coverity[tainted_data]
-        return manager.load(argc,argv,args);
-        
-        //exec() is called within the GuiApplicationManager
     }
-} // main
+    
+    virtual bool validateInput(const QString& userText, double* valueToDisplay) const = 0;
+};
 
 
+struct NumericKnobValidatorPrivate;
+class NumericKnobValidator : public SpinBoxValidator
+{
+    
+public:
+    
+    NumericKnobValidator(const SpinBox* spinbox,KnobGui* knob);
+    
+    virtual ~NumericKnobValidator();
+    
+    virtual bool validateInput(const QString& userText, double* valueToDisplay) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+private:
+    
+    boost::scoped_ptr<NumericKnobValidatorPrivate> _imp;
+};
+
+#endif // GUI_SPINBOXVALIDATOR_H

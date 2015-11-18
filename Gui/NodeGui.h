@@ -367,8 +367,6 @@ public:
     
     int getFrameNameHeight() const;
     
-    void checkOptionalEdgesVisibility();
-    
     
     bool wasBeginEditCalled()
     {
@@ -446,6 +444,8 @@ protected:
     
 public Q_SLOTS:
     
+    void onHideInputsKnobValueChanged(bool hidden);
+    
     void onIdentityStateChanged(int inputNb);
     
     void onAvailableViewsChanged();
@@ -484,6 +484,9 @@ public Q_SLOTS:
 
     void refreshEdges();
 
+    /**
+     * @brief Specific for the Viewer to  have inputs that are not used in A or B be dashed
+     **/
     void refreshDashedStateOfEdges();
     
     void refreshKnobLinks();
@@ -534,7 +537,8 @@ public Q_SLOTS:
 
     void onParentMultiInstancePositionChanged(int x,int y);
     
-    void setOptionalInputsVisible(bool visible);
+    void refreshEdgesVisility(bool hovered);
+    void refreshEdgesVisility();
     
 Q_SIGNALS:
 
@@ -555,7 +559,7 @@ protected:
 
 private:
     
-    void setOptionalInputsVisibleInternal(bool visible);
+    void refreshEdgesVisibilityInternal(bool hovered);
     
     void refreshPositionEnd(double x,double y);
 
@@ -660,9 +664,7 @@ private:
     
     int _renderingStartedCount;
     std::map<int,int> _inputNRenderingStartedCount;
-    
-    bool _optionalInputsVisible;
-    
+        
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth,_mtSafeHeight;

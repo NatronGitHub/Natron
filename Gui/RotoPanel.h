@@ -116,7 +116,7 @@ public Q_SLOTS:
     void onTimeChanged(SequenceTime time,int reason);
 
     ///A new item has been created internally
-    void onItemInserted(int reason);
+    void onItemInserted(int index,int reason);
 
     ///An item was removed by the user
     void onItemRemoved(const boost::shared_ptr<RotoItem>& item,int reason);

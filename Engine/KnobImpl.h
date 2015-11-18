@@ -2417,7 +2417,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
     cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
-            if (_signalSlotHandler) {
+            if (_signalSlotHandler && isAnimated(i)) {
                 _signalSlotHandler->s_animationAboutToBeRemoved(i);
                 _signalSlotHandler->s_animationRemoved(i);
             }

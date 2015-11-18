@@ -2308,36 +2308,96 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
     } // for(it)
 }
 
+void
+Bezier::getMotionBlurSettings(const double time,
+                           double* startTime,
+                           double* endTime,
+                           double* timeStep) const
+{
+    *startTime = time, *timeStep = 1., *endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    
+    double motionBlurAmnt = getMotionBlurAmountKnob()->getValueAtTime(time);
+    if (isOpenBezier() || motionBlurAmnt == 0) {
+        return;
+    }
+    int nbSamples = std::floor(motionBlurAmnt * 10 + 0.5);
+    double shutterInterval = getShutterKnob()->getValueAtTime(time);
+    if (shutterInterval == 0) {
+        return;
+    }
+    int shutterType_i = getShutterTypeKnob()->getValueAtTime(time);
+    if (nbSamples != 0) {
+        *timeStep = shutterInterval / nbSamples;
+    }
+    if (shutterType_i == 0) { // centered
+        *startTime = time - shutterInterval / 2.;
+        *endTime = time + shutterInterval / 2.;
+    } else if (shutterType_i == 1) {// start
+        *startTime = time;
+        *endTime = time + shutterInterval;
+    } else if (shutterType_i == 2) { // end
+        *startTime = time - shutterInterval;
+        *endTime = time;
+    } else if (shutterType_i == 3) { // custom
+        *startTime = time + getShutterOffsetKnob()->getValueAtTime(time);
+        *endTime = *startTime + shutterInterval;
+    } else {
+        assert(false);
+    }
+    
+    
+#endif
+}
+
 RectD
 Bezier::getBoundingBox(double time) const
 {
+    double startTime = time, mbFrameStep = 1., endTime = time;
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+    int mbType_i = getContext()->getMotionBlurTypeKnob()->getValue();
+    bool applyPerShapeMotionBlur = mbType_i == 0;
+    if (applyPerShapeMotionBlur) {
+        getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+    }
+#endif
     
-    RectD bbox; // a very empty bbox
-    bbox.setupInfinity();
-    
-    Transform::Matrix3x3 transform;
-    getTransformAtTime(time, &transform);
-    
-    QMutexLocker l(&itemMutex);
-    bezierSegmentListBboxUpdate(false,_imp->points, _imp->finished, _imp->isOpenBezier, time, 0, transform , &bbox);
-    
-    
-    if (useFeatherPoints() && !_imp->isOpenBezier) {
-        bezierSegmentListBboxUpdate(false,_imp->featherPoints, _imp->finished, _imp->isOpenBezier, time, 0, transform, &bbox);
-        // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
-        // enclosing the real bbox and close enough
-        double featherDistance = getFeatherDistance(time);
-        bbox.x1 -= featherDistance;
-        bbox.x2 += featherDistance;
-        bbox.y1 -= featherDistance;
-        bbox.y2 += featherDistance;
-    } else if (_imp->isOpenBezier) {
-        double brushSize = getBrushSizeKnob()->getValueAtTime(time);
-        double halfBrushSize = brushSize / 2. + 1;
-        bbox.x1 -= halfBrushSize;
-        bbox.x2 += halfBrushSize;
-        bbox.y1 -= halfBrushSize;
-        bbox.y2 += halfBrushSize;
+    RectD bbox;
+    bool bboxSet = false;
+    for (double t = startTime; t <= endTime; t+= mbFrameStep) {
+        RectD subBbox; // a very empty bbox
+        subBbox.setupInfinity();
+        
+        Transform::Matrix3x3 transform;
+        getTransformAtTime(t, &transform);
+        
+        QMutexLocker l(&itemMutex);
+        bezierSegmentListBboxUpdate(false,_imp->points, _imp->finished, _imp->isOpenBezier, t, 0, transform , &subBbox);
+        
+        
+        if (useFeatherPoints() && !_imp->isOpenBezier) {
+            bezierSegmentListBboxUpdate(false,_imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, 0, transform, &subBbox);
+            // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+            // enclosing the real bbox and close enough
+            double featherDistance = getFeatherDistance(t);
+            subBbox.x1 -= featherDistance;
+            subBbox.x2 += featherDistance;
+            subBbox.y1 -= featherDistance;
+            subBbox.y2 += featherDistance;
+        } else if (_imp->isOpenBezier) {
+            double brushSize = getBrushSizeKnob()->getValueAtTime(t);
+            double halfBrushSize = brushSize / 2. + 1;
+            subBbox.x1 -= halfBrushSize;
+            subBbox.x2 += halfBrushSize;
+            subBbox.y1 -= halfBrushSize;
+            subBbox.y2 += halfBrushSize;
+        }
+        if (!bboxSet) {
+            bboxSet = true;
+            bbox = subBbox;
+        } else {
+            bbox.merge(subBbox);
+        }
     }
     return bbox;
 }

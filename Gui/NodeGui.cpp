@@ -178,7 +178,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _nodeLabel()
 , _parentMultiInstance()
 , _renderingStartedCount(0)
-, _optionalInputsVisible(false)
 , _mtSafeSizeMutex()
 , _mtSafeWidth(0)
 , _mtSafeHeight(0)
@@ -231,6 +230,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
     QObject::connect( internalNode.get(), SIGNAL( identityChanged(int) ),this,SLOT( onIdentityStateChanged(int) ) );
+    QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ),this,SLOT( onHideInputsKnobValueChanged(bool) ) );
+    QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ),this,SLOT( onAvailableViewsChanged() ) );
     
     setCacheMode(DeviceCoordinateCache);
 
@@ -1229,9 +1230,7 @@ NodeGui::initializeInputsForInspector()
     ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
 
     bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance()) != 0;
-
     int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
-
     double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
 
     double angle =  piDividedbyX;
@@ -1254,24 +1253,7 @@ NodeGui::initializeInputsForInspector()
         }
     }
 
-
-    bool inputAsideDisplayed = false;
-    for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        if (_inputEdges[i]->hasSource() || node->getLiveInstance()->isInputMask(i)) {
-            _inputEdges[i]->setVisible(true);
-        } else {
-            if ((int)i < maxInitiallyOnTopVisibleInputs) {
-                _inputEdges[i]->setVisible(true);
-            } else {
-                if (!inputAsideDisplayed) {
-                    _inputEdges[i]->setVisible(true);
-                    inputAsideDisplayed = true;
-                } else {
-                    _inputEdges[i]->setVisible(false);
-                }
-            }
-        }
-    }
+    refreshEdgesVisility();
 
 }
 
@@ -1409,45 +1391,54 @@ NodeGui::boundingRect() const
 }
 
 void
-NodeGui::checkOptionalEdgesVisibility()
+NodeGui::refreshEdgesVisility()
 {
     QPointF mousePos = mapFromScene(_graph->mapToScene(_graph->mapFromGlobal(QCursor::pos())));
-    bool visible = contains(mousePos) || getIsSelected();
-    setOptionalInputsVisibleInternal(visible);
+    bool hovered = contains(mousePos);
+    refreshEdgesVisibilityInternal(hovered);
 }
 
 void
-NodeGui::setOptionalInputsVisibleInternal(bool visible)
+NodeGui::refreshEdgesVisility(bool hovered)
 {
-    _optionalInputsVisible = visible;
     
-    NodePtr node = getNode();
-    bool isReader = node->getLiveInstance()->isReader();
+    refreshEdgesVisibilityInternal(hovered);
+}
+
+
+void
+NodeGui::refreshEdgesVisibilityInternal(bool hovered)
+{
     for (U32 i = 0; i < _inputEdges.size() ; ++i) {
-        if (isReader || (node->getLiveInstance()->isInputOptional(i) &&
-                         node->getLiveInstance()->isInputMask(i) &&
-                         !_inputEdges[i]->isRotoEdge())) {
-            
-            bool nodeVisible = _optionalInputsVisible;
-            if (!_optionalInputsVisible && node->getRealInput(i) ) {
-                nodeVisible = true;
+        _inputEdges[i]->refreshState(hovered);
+    }
+    
+    boost::shared_ptr<Natron::Node> node = getNode();
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
+    if (isInspector) {
+        
+        bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance()) != 0;
+        int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
+        bool inputAsideDisplayed = false;
+        
+        /*
+         * If optional inputs are displayed, only show one input on th left side of the node
+         */
+        for (int i = maxInitiallyOnTopVisibleInputs; i < (int)_inputEdges.size(); ++i) {
+            if (!_inputEdges[i]->isVisible() || _inputEdges[i]->isMask()) {
+                continue;
             }
-            
-            _inputEdges[i]->setVisible(nodeVisible);
-            
+            if (!inputAsideDisplayed) {
+                inputAsideDisplayed = true;
+            } else {
+                _inputEdges[i]->setVisible(false);
+            }
         }
     }
-
+    
+    update();
 }
 
-void
-NodeGui::setOptionalInputsVisible(bool visible)
-{
-
-    if (visible != _optionalInputsVisible) {
-        setOptionalInputsVisibleInternal(visible);
-    }
-}
 
 QRectF
 NodeGui::boundingRectWithEdges() const
@@ -1535,19 +1526,7 @@ NodeGui::setUserSelected(bool b)
         }
     }
 
-    bool optionalInputsAutoHidden = _graph->areOptionalInputsAutoHidden();
-    if (optionalInputsAutoHidden) {
-        if (!b) {
-            QPointF evpt = mapFromScene(_graph->mapToScene(_graph->mapFromGlobal(QCursor::pos())));
-            QRectF bbox = boundingRect();
-            if (!bbox.contains(evpt)) {
-                setOptionalInputsVisible(false);
-            }
-        } else {
-            setOptionalInputsVisible(true);
-        }
-    }
-
+    refreshEdgesVisility();
     refreshStateIndicator();
 
 
@@ -1598,7 +1577,7 @@ NodeGui::connectEdge(int edgeNumber)
         initializeInputsForInspector();
     }
     
-    checkOptionalEdgesVisibility();
+    refreshEdgesVisility();
 
     return true;
 
@@ -2686,6 +2665,7 @@ NodeGui::setNameItemHtml(const QString & name,
     if (hasFontData) {
         KnobGuiString::parseFont(textLabel, &f, &color);
     }
+    f.setStyleStrategy(QFont::NoAntialias);
     _nameItem->setFont(f);
 
     QRectF bbox = boundingRect();
@@ -2722,12 +2702,14 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
         QString op = KnobGuiString::getNatronHtmlTagContent(label);
-        //Remove surrounding parenthesis
-        if (op[0] == QChar('(')) {
-            op.remove(0, 1);
-        }
-        if (op[op.size() - 1] == QChar(')')) {
-            op.remove(op.size() - 1,1);
+        if  (!op.isEmpty()) {
+            //Remove surrounding parenthesis
+            if (op[0] == QChar('(')) {
+                op.remove(0, 1);
+            }
+            if (op[op.size() - 1] == QChar(')')) {
+                op.remove(op.size() - 1,1);
+            }
         }
         QPixmap pix;
         getPixmapForMergeOperator(op, &pix);
@@ -3724,7 +3706,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
     _passThroughIndicator->setActive(ptInput.get() != 0);
     if (ptInput) {
     
-        QString tooltip = tr("This node is a pass-through and will yield identical results as");
+        QString tooltip = tr("This node is a pass-through and produces the same results as");
         tooltip += ' ';
         tooltip += QString(ptInput->getLabel().c_str());
         _passThroughIndicator->setToolTip(tooltip);
@@ -3742,3 +3724,10 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     getDagGui()->update();
 }
+
+void
+NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
+{
+    refreshEdgesVisility();
+}
+

@@ -1468,21 +1468,29 @@ MakeEllipseUndoCommand::redo()
         _roto->evaluate(true);
     } else {
         double ytop, xright, ybottom, xleft;
-        double tox = _tox;
+        xright = _tox;
         if (_constrained) {
-            tox =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
+            xright =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
         }
         if (_fromCenter) {
             ytop = _fromy - (_toy - _fromy);
-            xleft = _fromx - (tox - _fromx);
+            xleft = _fromx - (xright - _fromx);
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         } else {
             ytop = _fromy;
             xleft = _fromx;
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         }
         ybottom = _toy;
-        xright = tox;
-        double xmid = (xleft + xright) / 2;
-        double ymid = (ytop + ybottom) / 2;
+        if (ybottom == ytop) {
+            ybottom -= 1.;
+        }
+        double xmid = (xleft + xright) / 2.;
+        double ymid = (ytop + ybottom) / 2.;
         if (_create) {
             _curve = _roto->getContext()->makeBezier(xmid, ytop, kRotoEllipseBaseName, _time, false); //top
             assert(_curve);
@@ -1613,19 +1621,27 @@ MakeRectangleUndoCommand::redo()
         _roto->evaluate(true);
     } else {
         double ytop, xright, ybottom, xleft;
-        double tox = _tox;
+        xright = _tox;
         if (_constrained) {
-            tox =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
+            xright =  _fromx + (_tox > _fromx ? 1 : -1) * std::abs(_toy - _fromy);
         }
         if (_fromCenter) {
             ytop = _fromy - (_toy - _fromy);
-            xleft = _fromx - (tox - _fromx);
+            xleft = _fromx - (xright - _fromx);
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         } else {
             ytop = _fromy;
             xleft = _fromx;
+            if (xleft == xright) {
+                xleft -= 1.;
+            }
         }
         ybottom = _toy;
-        xright = tox;
+        if (ybottom == ytop) {
+            ybottom -= 1.;
+        }
         if (_create) {
             _curve = _roto->getContext()->makeBezier(xleft, ytop, kRotoRectangleBaseName, _time, false); //topleft
             assert(_curve);

@@ -470,7 +470,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionGraphEnableHints "Enable Connection Hints"
 
 #define kShortcutIDActionGraphAutoHideInputs "autoHideInputs"
-#define kShortcutDescActionGraphAutoHideInputs "Auto-Hide Masks Inputs"
+#define kShortcutDescActionGraphAutoHideInputs "Auto-Hide Optional Inputs"
+
+#define kShortcutIDActionGraphHideInputs "hideInputs"
+#define kShortcutDescActionGraphHideInputs "Hide inputs"
 
 #define kShortcutIDActionGraphSwitchInputs "switchInputs"
 #define kShortcutDescActionGraphSwitchInputs "Switch Inputs 1 and 2"

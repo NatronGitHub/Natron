@@ -26,8 +26,18 @@
 #include "AppManagerPrivate.h"
 
 #include <clocale>
+#include <csignal>
 #include <cstddef>
 #include <stdexcept>
+
+#if defined(Q_OS_LINUX)
+#include <sys/signal.h>
+#ifndef __USE_GNU
+#define __USE_GNU
+#endif
+#include <ucontext.h>
+#include <execinfo.h>
+#endif
 
 #include <QtCore/QDebug>
 #include <QtCore/QTextCodec>
@@ -73,11 +83,12 @@ AppManager* AppManager::_instance = 0;
 
 
 
-#ifdef NATRON_USE_BREAKPAD
+#if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
 #ifdef DEBUG
 inline
 void crash_application()
 {
+#pragma message WARN("crash_application() defined, make sure it is not used anywhere!")
 #ifdef __NATRON_UNIX__
     sleep(2);
 #endif
@@ -88,6 +99,102 @@ void crash_application()
 #endif // DEBUG
 #endif // NATRON_USE_BREAKPAD
 
+
+//namespace  {
+static void
+handleShutDownSignal( int /*signalId*/ )
+{
+    if (appPTR) {
+        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
+        appPTR->quitApplication();
+    }
+}
+
+static void
+setShutDownSignal(int signalId)
+{
+#if defined(__NATRON_UNIX__)
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = handleShutDownSignal;
+    if (sigaction(signalId, &sa, NULL) == -1) {
+        std::perror("setting up termination signal");
+        std::exit(1);
+    }
+#else
+    std::signal(signalId, handleShutDownSignal);
+#endif
+    
+}
+
+
+#if defined(__NATRON_LINUX__)
+
+#define NATRON_UNIX_BACKTRACE_STACK_DEPTH 16
+
+static void
+backTraceSigSegvHandler(int sig, siginfo_t *info,
+                   void *secret) {
+    
+    void *trace[NATRON_UNIX_BACKTRACE_STACK_DEPTH];
+    char **messages = (char **)NULL;
+    int i, trace_size = 0;
+    ucontext_t *uc = (ucontext_t *)secret;
+    
+    /* Do something useful with siginfo_t */
+    if (sig == SIGSEGV) {
+        QThread* curThread = QThread::currentThread();
+        std::string threadName;
+        if (curThread) {
+            threadName = (qApp && qApp->thread() == curThread) ? "Main" : curThread->objectName().toStdString();
+        }
+        std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
+             #ifndef __x86_64__
+                     (void*)uc->uc_mcontext.gregs[REG_EIP]
+             #else
+                     (void*)uc->uc_mcontext.gregs[REG_RIP]
+             #endif
+                     << " from " << info->si_addr << std::endl;
+    } else {
+        printf("Got signal %d#92;n", sig);
+    }
+    
+    trace_size = backtrace(trace, NATRON_UNIX_BACKTRACE_STACK_DEPTH);
+    /* overwrite sigaction with caller's address */
+#ifndef __x86_64__
+       trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
+#else
+       trace[1] = (void *) uc->uc_mcontext.gregs[REG_RIP];
+#endif
+
+    
+    messages = backtrace_symbols(trace, trace_size);
+    /* skip first stack frame (points here) */
+    std::cerr << "Backtrace:" << std::endl;
+    for (i = 1; i < trace_size; ++i) {
+        std::cerr << "[Frame " << i << "]: " << messages[i] << std::endl;
+    }
+    exit(1);
+}
+
+static void
+setSigSegvSignal()
+{
+    struct sigaction sa;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_SIGINFO;
+    /* if SA_SIGINFO is set, sa_sigaction is to be used instead of sa_handler. */
+    sa.sa_sigaction = backTraceSigSegvHandler;
+   
+    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+        std::perror("setting up sigsegv signal");
+        std::exit(1);
+    }
+}
+#endif
+
+//} // anon namespace
 
 void
 AppManager::saveCaches() const
@@ -110,6 +217,12 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
     
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGTERM);   // shut down on killall
+#if defined(__NATRON_LINUX__)
+    setSigSegvSignal();
+#endif
+
     QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance*, void*)), this, SLOT(onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance*, void*)));
 }
 

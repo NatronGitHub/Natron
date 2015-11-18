@@ -1503,7 +1503,7 @@ ViewerInstance::renderViewer_internal(int view,
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
         assert((inArgs.channels != Natron::eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
-               (inArgs.channels == Natron::eDisplayChannelsMatte && alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()));
+               (inArgs.channels == Natron::eDisplayChannelsMatte && (alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() || !alphaImage)));
         
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;

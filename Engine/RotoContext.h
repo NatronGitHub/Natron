@@ -62,6 +62,8 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+//#define NATRON_ROTO_ENABLE_MOTION_BLUR
+
 namespace Natron {
 class Image;
 class ImageComponents;
@@ -214,8 +216,23 @@ public:
     void getMaskRegionOfDefinition(double time,
                                    int view,
                                    RectD* rod) const; //!< rod in canonical coordinates
+    
+    /**
+     * @brief Returns true if  all items have the same compositing operator and there are only strokes or bezier (because they
+     * are not masked)
+     **/
+    bool isRotoPaintTreeConcatenatable() const;
+    
+    static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items);
+    
+    void getGlobalMotionBlurSettings(const double time,
+                               double* startTime,
+                               double* endTime,
+                               double* timeStep) const;
+
 
 private:
+    
     
     void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int view, RectD* rod) const;
     
@@ -226,10 +243,10 @@ public:
     boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const RectI& roi,
                                                           const Natron::ImageComponents& components,
-                                                          SequenceTime time,
-                                                          int view,
-                                                          Natron::ImageBitDepthEnum depth,
-                                                          unsigned int mipmapLevel);
+                                                          const double time,
+                                                          const int view,
+                                                          const Natron::ImageBitDepthEnum depth,
+                                                          const unsigned int mipmapLevel);
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                             const RectD& rod,
@@ -246,9 +263,12 @@ private:
     boost::shared_ptr<Natron::Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                         const RectI & roi,
                                                         const Natron::ImageComponents& components,
-                                                        SequenceTime time,
-                                                        Natron::ImageBitDepthEnum depth,
-                                                        unsigned int mipmapLevel,
+                                                        const double startTime,
+                                                        const double endTime,
+                                                        const double timeStep,
+                                                        const double time,
+                                                        const Natron::ImageBitDepthEnum depth,
+                                                        const unsigned int mipmapLevel,
                                                         const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                                                         const boost::shared_ptr<Natron::Image> &image);
     
@@ -368,6 +388,8 @@ private:
     
 public:
     
+    boost::shared_ptr<KnobChoice> getMotionBlurTypeKnob() const;
+    
 
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
@@ -459,7 +481,7 @@ Q_SIGNALS:
 
     void restorationComplete();
 
-    void itemInserted(int);
+    void itemInserted(int,int);
 
     void itemRemoved(const boost::shared_ptr<RotoItem>&,int);
 
@@ -483,6 +505,9 @@ public Q_SLOTS:
     void onLifeTimeKnobValueChanged(int, int);
 
 private:
+    
+    
+    boost::shared_ptr<Natron::Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);

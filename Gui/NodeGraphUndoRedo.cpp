@@ -519,13 +519,13 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
     }
     
     dst->refreshEdges();
-    dst->checkOptionalEdgesVisibility();
+    dst->refreshEdgesVisility();
 
     if (newSrc) {
-        newSrc->checkOptionalEdgesVisibility();
+        newSrc->refreshEdgesVisility();
     }
     if (oldSrc) {
-        oldSrc->checkOptionalEdgesVisibility();
+        oldSrc->refreshEdgesVisility();
     }
 
 

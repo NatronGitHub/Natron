@@ -8,7 +8,7 @@ PortGroup                   conflicts_build 1.0
 
 name                        ImageMagick
 version                     6.9.1-10
-revision                    1
+revision                    2
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -132,8 +132,9 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --with-jbig --without-jbig
     depends_lib-delete       port:jpeg
     configure.args-replace  --with-jpeg --without-jpeg
-    depends_lib-delete       port:png
-    configure.args-replace  --with-png --without-png
+    # PNG is required for povray plugin, see https://github.com/olear/openfx-arena/commit/48064135604d1c2d07362bc16cecc7a16a640d3e#commitcomment-14356716
+    # depends_lib-delete       port:png
+    # configure.args-replace  --with-png --without-png
     # [FD] why LCMS and not LCMS2?
     depends_lib-delete       port:lcms2
     configure.args-replace  --with-lcms2 --without-lcms2

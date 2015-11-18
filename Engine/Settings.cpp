@@ -1218,6 +1218,7 @@ Settings::initializeKnobsPython()
     _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
     _echoVariableDeclarationToPython = Natron::createKnob<KnobBool>(this, "Print auto-declared variables in the Script Editor");
+    _echoVariableDeclarationToPython->setName("printAutoDeclaredVars");
     _echoVariableDeclarationToPython->setHintToolTip("When checked, Natron will print in the Script Editor all variables that are "
                                                      "automatically declared, such as the app variable or node attributes.");
     _echoVariableDeclarationToPython->setAnimationEnabled(false);
@@ -2946,6 +2947,13 @@ bool
 Settings::isAutoDeclaredVariablePrintActivated() const
 {
     return _echoVariableDeclarationToPython->getValue();
+}
+
+void
+Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
+{
+    _echoVariableDeclarationToPython->setValue(enabled, 0);
+    saveSetting(_echoVariableDeclarationToPython.get());
 }
 
 bool

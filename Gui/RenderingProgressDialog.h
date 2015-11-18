@@ -59,6 +59,7 @@ public:
                             const QString & sequenceName,
                             int firstFrame,
                             int lastFrame,
+                            int frameStep,
                             const boost::shared_ptr<ProcessHandler> & process,
                             QWidget* parent = 0);
 

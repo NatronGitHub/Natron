@@ -65,6 +65,6 @@ PropertiesBinWrapper::leaveEvent(QEvent* e)
 void
 PropertiesBinWrapper::keyPressEvent(QKeyEvent* e)
 {
-    handleUnCaughtKeyPressEvent();
+    handleUnCaughtKeyPressEvent(e);
     QWidget::keyPressEvent(e);
 }
