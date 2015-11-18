@@ -24,6 +24,7 @@
 
 #include "PanelWidget.h"
 #include <cassert>
+#include <QApplication>
 #include <QKeyEvent>
 
 #include "Gui/TabWidget.h"
