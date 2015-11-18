@@ -249,7 +249,12 @@ ViewerTab::startPause(bool b)
     abortRendering();
     if (b) {
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionForward);
+        std::vector<int> viewsToRender;
+        {
+            QMutexLocker k(&_imp->currentViewMutex);
+            viewsToRender.push_back(_imp->currentViewIndex);
+        }
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionForward);
     }
 }
 
@@ -329,7 +334,12 @@ ViewerTab::startBackward(bool b)
     abortRendering();
     if (b) {
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), OutputSchedulerThread::eRenderDirectionBackward);
+        std::vector<int> viewsToRender;
+        {
+            QMutexLocker k(&_imp->currentViewMutex);
+            viewsToRender.push_back(_imp->currentViewIndex);
+        }
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionBackward);
 
     }
 }
@@ -751,7 +761,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         takeClickFocus();
         e->accept();
     } else {
-        handleUnCaughtKeyPressEvent();
+        handleUnCaughtKeyPressEvent(e);
     }
 } // keyPressEvent
 

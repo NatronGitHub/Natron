@@ -373,7 +373,7 @@ static PyObject* Sbk_AppFunc_newProject(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
+static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args, PyObject* kwds)
 {
     AppWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -381,30 +381,41 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
         return 0;
     cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs == 2)
+    if (numArgs + numNamedArgs > 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.render(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.render(): not enough arguments");
+        return 0;
+    } else if (numArgs == 2)
         goto Sbk_AppFunc_render_TypeError;
 
-    if (!PyArg_UnpackTuple(args, "render", 1, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOOO:render", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: render(Effect*,int,int)
-    // 1: render(std::list<Effect*>,std::list<int>,std::list<int>)
-    if (numArgs == 3
+    // 0: render(Effect*,int,int,int)
+    // 1: render(std::list<Effect*>,std::list<int>,std::list<int>,std::list<int>)
+    if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-        overloadId = 0; // render(Effect*,int,int)
+        if (numArgs == 3) {
+            overloadId = 0; // render(Effect*,int,int,int)
+        } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
+            overloadId = 0; // render(Effect*,int,int,int)
+        }
     } else if (numArgs == 1
         && PyList_Check(pyArgs[0])) {
-        overloadId = 1; // render(std::list<Effect*>,std::list<int>,std::list<int>)
+        overloadId = 1; // render(std::list<Effect*>,std::list<int>,std::list<int>,std::list<int>)
     }
 
     // Function signature not found.
@@ -412,8 +423,19 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // render(Effect * writeNode, int firstFrame, int lastFrame)
+        case 0: // render(Effect * writeNode, int firstFrame, int lastFrame, int frameStep)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "frameStep");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.App.render(): got multiple values for keyword argument 'frameStep'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3]))))
+                        goto Sbk_AppFunc_render_TypeError;
+                }
+            }
             if (!Shiboken::Object::isValid(pyArgs[0]))
                 return 0;
             ::Effect* cppArg0;
@@ -422,18 +444,20 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
             pythonToCpp[1](pyArgs[1], &cppArg1);
             int cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
+            int cppArg3 = 1;
+            if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // render(Effect*,int,int)
-                cppSelf->render(cppArg0, cppArg1, cppArg2);
+                // render(Effect*,int,int,int)
+                cppSelf->render(cppArg0, cppArg1, cppArg2, cppArg3);
             }
             break;
         }
-        case 1: // render(const std::list<Effect * > & effects, const std::list<int > & firstFrames, const std::list<int > & lastFrames)
+        case 1: // render(const std::list<Effect * > & effects, const std::list<int > & firstFrames, const std::list<int > & lastFrames, const std::list<int > & frameSteps)
         {
 
             if (!PyErr_Occurred()) {
-                // render(std::list<Effect*>,std::list<int>,std::list<int>)
+                // render(std::list<Effect*>,std::list<int>,std::list<int>,std::list<int>)
                 // Begin code injection
 
                 if (!PyList_Check(pyArgs[1-1])) {
@@ -446,6 +470,8 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 
                 std::list<int> lastFrames;
 
+                std::list<int> frameSteps;
+
                 int size = (int)PyList_GET_SIZE(pyArgs[1-1]);
                 for (int i = 0; i < size; ++i) {
                     PyObject* tuple = PyList_GET_ITEM(pyArgs[1-1],i);
@@ -453,9 +479,11 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
                         PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
                         return 0;
                     }
-                    if (PyTuple_GET_SIZE(pyArgs[1-1]) != 3) {
-                    PyErr_SetString(PyExc_TypeError, "the tuple must have exactly 3 items.");
-                    return 0;
+
+                    int tupleSize = PyTuple_GET_SIZE(tuple);
+                    if (tupleSize != 4 && tupleSize != 3) {
+                        PyErr_SetString(PyExc_TypeError, "the tuple must have 3 or 4 items.");
+                        return 0;
                     }
                     ::Effect* writeNode = ((::Effect*)0);
                     Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], PyTuple_GET_ITEM(tuple, 0), &(writeNode));
@@ -463,12 +491,19 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
                     Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<int>(), PyTuple_GET_ITEM(tuple, 1), &(firstFrame));
                     int lastFrame;
                     Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<int>(), PyTuple_GET_ITEM(tuple, 2), &(lastFrame));
+                    int frameStep;
+                    if (tupleSize == 4) {
+                        Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<int>(), PyTuple_GET_ITEM(tuple, 3), &(frameStep));
+                    } else {
+                        frameStep = INT_MIN;
+                    }
                     effects.push_back(writeNode);
                     firstFrames.push_back(firstFrame);
                     lastFrames.push_back(lastFrame);
+                    frameSteps.push_back(frameStep);
                 }
 
-                cppSelf->render(effects,firstFrames,lastFrames);
+                cppSelf->render(effects,firstFrames,lastFrames, frameSteps);
 
                 // End of code injection
 
@@ -484,7 +519,7 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_AppFunc_render_TypeError:
-        const char* overloads[] = {"NatronEngine.Effect, int, int", "list, list, list", 0};
+        const char* overloads[] = {"NatronEngine.Effect, int, int, int = 1", "list, list, list, list", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.render", overloads);
         return 0;
 }
@@ -778,7 +813,7 @@ static PyMethodDef Sbk_App_methods[] = {
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
     {"loadProject", (PyCFunction)Sbk_AppFunc_loadProject, METH_O},
     {"newProject", (PyCFunction)Sbk_AppFunc_newProject, METH_NOARGS},
-    {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS},
+    {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS|METH_KEYWORDS},
     {"resetProject", (PyCFunction)Sbk_AppFunc_resetProject, METH_NOARGS},
     {"saveProject", (PyCFunction)Sbk_AppFunc_saveProject, METH_O},
     {"saveProjectAs", (PyCFunction)Sbk_AppFunc_saveProjectAs, METH_O},

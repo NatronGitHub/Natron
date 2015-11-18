@@ -366,10 +366,11 @@ void
 Gui::onProcessHandlerStarted(const QString & sequenceName,
                              int firstFrame,
                              int lastFrame,
+                             int frameStep,
                              const boost::shared_ptr<ProcessHandler> & process)
 {
     ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, process, this);
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep, process, this);
     QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
     QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
@@ -665,11 +666,12 @@ void
 Gui::onWriterRenderStarted(const QString & sequenceName,
                            int firstFrame,
                            int lastFrame,
+                           int frameStep,
                            Natron::OutputEffectInstance* writer)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame,
+    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep,
                                                                   boost::shared_ptr<ProcessHandler>(), this);
     RenderEngine* engine = writer->getRenderEngine();
     QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
@@ -773,6 +775,7 @@ Gui::renderSelectedNode()
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
+                    w.frameStep = INT_MIN;
                     workList.push_back(w);
                 }
             } else {
@@ -785,6 +788,7 @@ Gui::renderSelectedNode()
                         assert(w.writer);
                         w.firstFrame = INT_MIN;
                         w.lastFrame = INT_MAX;
+                        w.frameStep = INT_MIN;
                         workList.push_back(w);
                     }
                 }

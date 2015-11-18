@@ -538,7 +538,7 @@ ScriptEditor::keyPressEvent(QKeyEvent* e)
         takeClickFocus();
         e->accept();
     } else {
-        handleUnCaughtKeyPressEvent();
+        handleUnCaughtKeyPressEvent(e);
     }
 }
 

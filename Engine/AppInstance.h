@@ -159,13 +159,14 @@ public:
     
     struct RenderRequest {
         QString writerName;
-        int firstFrame,lastFrame;
+        int firstFrame,lastFrame,frameStep;
     };
     
     struct RenderWork {
         Natron::OutputEffectInstance* writer;
         int firstFrame;
         int lastFrame;
+        int frameStep;
     };
     
     virtual void load(const CLArgs& cl);
@@ -261,6 +262,7 @@ public:
     virtual void notifyRenderProcessHandlerStarted(const QString & /*sequenceName*/,
                                                    int /*firstFrame*/,
                                                    int /*lastFrame*/,
+                                                   int /*frameStep*/,
                                                    const boost::shared_ptr<ProcessHandler> & /*process*/)
     {
     }

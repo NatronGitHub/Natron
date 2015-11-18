@@ -146,8 +146,8 @@ public:
     
     PyPanel* getUserPanel(const std::string& scriptName) const;
     
-    void renderBlocking(Effect* writeNode,int firstFrame, int lastFrame);
-    void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
+    void renderBlocking(Effect* writeNode,int firstFrame, int lastFrame,int frameStep = 1);
+    void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps);
 
 };
 

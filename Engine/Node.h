@@ -67,6 +67,13 @@ CLANG_DIAG_ON(deprecated)
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
+#define kWriteParamFrameStep "frameIncr"
+#define kWriteParamFrameStepLabel "Frame Increment"
+#define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
+"If 1, all frames will be rendered, if 2 only 1 frame out of 2" \
+" etc...This number cannot be inferior to 1."
+
+
 
 namespace Natron {
 
@@ -1061,6 +1068,8 @@ public:
     
     bool getHideInputsKnobValue() const;
     void setHideInputsKnobValue(bool hidden);
+    
+    int getFrameStepKnobValue() const;
     
 private:
     

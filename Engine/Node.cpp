@@ -225,6 +225,7 @@ struct Node::Implementation
     , masterNodeMutex()
     , masterNode()
     , nodeLinks()
+    , frameIncrKnob()
     , nodeSettingsPage()
     , nodeLabelKnob()
     , previewEnabledKnob()
@@ -416,6 +417,8 @@ struct Node::Implementation
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
     boost::weak_ptr<Node> masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
+    
+    boost::weak_ptr<KnobInt> frameIncrKnob;
     
     boost::weak_ptr<KnobPage> nodeSettingsPage;
     boost::weak_ptr<KnobString> nodeLabelKnob;
@@ -2603,9 +2606,11 @@ Node::initializeKnobs(int renderScaleSupportPref)
         
         if (!isBd) {
             
-            bool disableNatronKnobs = _imp->liveInstance->isReader() || _imp->liveInstance->isWriter() || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get()) || dynamic_cast<GroupInput*>(_imp->liveInstance.get()) ||
-            dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
+            bool isWriter = _imp->liveInstance->isWriter();
+        
             
+            bool disableNatronKnobs = _imp->liveInstance->isReader() || isWriter || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get()) || dynamic_cast<GroupInput*>(_imp->liveInstance.get()) ||
+            dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
             
             bool useChannels = !_imp->liveInstance->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
             
@@ -2613,7 +2618,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             boost::shared_ptr<KnobPage> mainPage;
             const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
             
-            if (!disableNatronKnobs) {
+            if (!disableNatronKnobs || isWriter) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
                     if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
@@ -2627,6 +2632,33 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 }
                 assert(mainPage);
             }
+            
+            
+            if (isWriter) {
+                ///Find a  "lastFrame" parameter and add it after it
+                boost::shared_ptr<KnobInt> frameIncrKnob = Natron::createKnob<KnobInt>(_imp->liveInstance.get(), kWriteParamFrameStepLabel, 1 , false);
+                frameIncrKnob->setName(kWriteParamFrameStep);
+                frameIncrKnob->setHintToolTip(kWriteParamFrameStepHint);
+                frameIncrKnob->setAnimationEnabled(false);
+                frameIncrKnob->setMinimum(1);
+                frameIncrKnob->setDefaultValue(1);
+                if (mainPage) {
+                    std::vector< boost::shared_ptr<KnobI> > children = mainPage->getChildren();
+                    bool foundLastFrame = false;
+                    for (std::size_t i = 0; i < children.size(); ++i) {
+                        if (children[i]->getName() == "lastFrame") {
+                            mainPage->insertKnob(i + 1, frameIncrKnob);
+                            foundLastFrame = true;
+                            break;
+                        }
+                    }
+                    if (!foundLastFrame) {
+                        mainPage->addKnob(frameIncrKnob);
+                    }
+                }
+                _imp->frameIncrKnob = frameIncrKnob;
+            }
+            
            
             
             ///Pair hasMaskChannelSelector, isMask
@@ -3103,7 +3135,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
         }
     }
-  
+
 
     if (isGroup) {
         _imp->liveInstance->initializeKnobsPublic();
@@ -3170,6 +3202,18 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     
     channelsSelectors[inputNb] = sel;
     
+}
+
+int
+Node::getFrameStepKnobValue() const
+{
+    boost::shared_ptr<KnobInt> k = _imp->frameIncrKnob.lock();
+    if (!k) {
+        return 1;
+    } else {
+        int v = k->getValue();
+        return std::max(1, v);
+    }
 }
 
 bool

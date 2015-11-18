@@ -33,6 +33,7 @@
 #include <QtConcurrentMap>
 #include <QReadWriteLock>
 #include <QCoreApplication>
+#include <QThread>
 #include <QtConcurrentRun>
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -86,7 +87,7 @@ OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     , _writerFirstFrame(0)
     , _writerLastFrame(0)
     , _outputEffectDataLock(new QMutex)
-    , _renderController(0)
+    , _renderSequenceRequests()
     , _engine(0)
     , _timeSpentPerFrameRendered()
 {
@@ -114,11 +115,6 @@ OutputEffectInstance::renderCurrentFrameWithRenderStats(bool canAbort)
     _engine->renderCurrentFrame(true, canAbort);
 }
 
-void
-OutputEffectInstance::renderFromCurrentFrameUsingCurrentDirection(bool enableRenderStats)
-{
-    _engine->renderFromCurrentFrameUsingCurrentDirection(enableRenderStats);
-}
 
 bool
 OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
@@ -154,13 +150,162 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 }
 
 void
-OutputEffectInstance::renderFullSequence(bool enableRenderStats,
+OutputEffectInstance::renderFullSequence(bool isBlocking, 
+                                         bool enableRenderStats,
                                          BlockingBackgroundRender* renderController,
                                          int first,
-                                         int last)
+                                         int last,
+                                         int frameStep)
 {
-    _renderController = renderController;
+    
+    int viewsCount = getApp()->getProject()->getProjectViewsCount();
 
+    const int mainView = 0;
+    
+    std::vector<int> viewsToRender(viewsCount);
+    for (int i = 0; i < viewsCount; ++i) {
+        viewsToRender[i] = i;
+    }
+    
+    ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
+    ///We pick the user defined main view in the project settings
+    Natron::SequentialPreferenceEnum sequentiallity = getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    
+    if (canOnlyHandleOneView) {
+        viewsCount = 1;
+        viewsToRender.clear();
+        viewsToRender.push_back(mainView);
+    }
+    
+    if (isViewAware()) {
+        //If the Writer is view aware, check if it wants to render all views at once or not
+        boost::shared_ptr<KnobI> outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        if (outputFileNameKnob) {
+            KnobOutputFile* outputFileName = dynamic_cast<KnobOutputFile*>(outputFileNameKnob.get());
+            assert(outputFileName);
+            if (outputFileName) {
+                std::string pattern = outputFileName->getValue();
+                std::size_t foundViewPattern = pattern.find_first_of("%v");
+                if (foundViewPattern == std::string::npos) {
+                    foundViewPattern = pattern.find_first_of("%V");
+                }
+                if (foundViewPattern == std::string::npos) {
+                    ///No view pattern
+                    ///all views will be overwritten to the same file
+                    ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
+                    ///views to a single file or not
+                    boost::shared_ptr<KnobI> viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                    bool hasViewChoice = false;
+                    if (viewsKnob && !viewsKnob->getIsSecret()) {
+                        KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>(viewsKnob.get());
+                        if (viewsChoice) {
+                            hasViewChoice = true;
+                            int viewChoice_i = viewsChoice->getValue();
+                            if (viewChoice_i == 0) { // the "All" chocie
+                                viewsToRender.clear();
+                                viewsToRender.push_back(-1);
+                            } else {
+                                //The user has specified a view
+                                viewsToRender.clear();
+                                viewsToRender.push_back(viewChoice_i - 1);
+                            }
+                        }
+                    }
+                    if (!hasViewChoice) {
+                        if (viewsToRender.size() > 1) {
+                            std::string mainViewName;
+                            const std::vector<std::string>& viewNames = getApp()->getProject()->getProjectViewNames();
+                            if (mainView < (int)viewNames.size()) {
+                                mainViewName = viewNames[mainView];
+                            }
+                            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
+                            QObject::tr("does not support multi-view, only the view ") + mainViewName.c_str() + QObject::tr(" will be rendered");
+                            if (!renderController) {
+                                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                                message = message + QObject::tr("Would you like to continue?");
+                                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
+                                if (rep != Natron::eStandardButtonOk) {
+                                    return;
+                                }
+                            } else {
+                                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                            }
+                        }
+                        //Render the main-view only...
+                        viewsToRender.clear();
+                        viewsToRender.push_back(mainView);
+                    }
+                } else {
+                    ///The user wants to write each view into a separate file
+                    ///This will disregard the content of kWriteOIIOParamViewsSelector and the Writer
+                    ///should write one view per-file.
+                }
+            }
+        }
+    } else { // !isViewAware
+        if (viewsToRender.size() > 1) {
+            std::string mainViewName;
+            const std::vector<std::string>& viewNames = getApp()->getProject()->getProjectViewNames();
+            if (mainView < (int)viewNames.size()) {
+                mainViewName = viewNames[mainView];
+            }
+            QString message = QString(getNode()->getLabel_mt_safe().c_str()) + ' ' +
+            QObject::tr("does not support multi-view, only the view") + mainViewName.c_str() + QObject::tr("will be rendered");
+            if (!renderController) {
+                message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
+                message = message + QObject::tr("Would you like to continue?");
+                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
+                if (rep != Natron::eStandardButtonOk) {
+                    return;
+                }
+            } else {
+                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+            }
+        }
+        
+    }
+
+    
+    RenderSequenceArgs args;
+    {
+        QMutexLocker k(_outputEffectDataLock);
+        args.firstFrame = first;
+        args.lastFrame = last;
+        args.frameStep = frameStep;
+        args.renderController = renderController;
+        args.useStats = enableRenderStats;
+        args.blocking = isBlocking;
+        args.viewsToRender = viewsToRender;
+        _renderSequenceRequests.push_back(args);
+        if (_renderSequenceRequests.size() > 1) {
+            //The node is already rendering a sequence, queue it and dequeue it in notifyRenderFinished()
+            return;
+        }
+    }
+    launchRenderSequence(args);
+}
+
+void
+OutputEffectInstance::launchRenderSequence(const RenderSequenceArgs& args)
+{
+    
+    createWriterPath();
+    
+    ///If you want writers to render backward (from last to first), just change the flag in parameter here
+    _engine->renderFrameRange(args.blocking,
+                              args.useStats,
+                              args.firstFrame,
+                              args.lastFrame,
+                              args.frameStep,
+                              args.viewsToRender,
+                              OutputSchedulerThread::eRenderDirectionForward);
+
+}
+
+void
+OutputEffectInstance::createWriterPath()
+{
     ///Make sure that the file path exists
     boost::shared_ptr<KnobI> fileParam = getKnobByName(kOfxImageEffectFileParamName);
     if (fileParam) {
@@ -171,20 +316,34 @@ OutputEffectInstance::renderFullSequence(bool enableRenderStats,
             std::map<std::string, std::string> env;
             getApp()->getProject()->getEnvironmentVariables(env);
             Project::expandVariable(env, path);
-            QDir().mkpath( path.c_str() );
+            if (!path.empty()) {
+                QDir().mkpath( path.c_str() );
+            }
         }
     }
-    ///If you want writers to render backward (from last to first), just change the flag in parameter here
-    _engine->renderFrameRange(enableRenderStats, first, last, OutputSchedulerThread::eRenderDirectionForward);
+
 }
 
 void
 OutputEffectInstance::notifyRenderFinished()
 {
-    if (_renderController) {
-        _renderController->notifyFinished();
-        _renderController = 0;
+    RenderSequenceArgs newArgs;
+    
+    {
+        QMutexLocker k(_outputEffectDataLock);
+        if (!_renderSequenceRequests.empty()) {
+            const RenderSequenceArgs& args = _renderSequenceRequests.front();
+            if (args.renderController) {
+                args.renderController->notifyFinished();
+            }
+            _renderSequenceRequests.pop_front();
+        }
+        if (_renderSequenceRequests.empty()) {
+            return;
+        }
+        newArgs = _renderSequenceRequests.front();
     }
+    launchRenderSequence(newArgs);
 }
 
 int

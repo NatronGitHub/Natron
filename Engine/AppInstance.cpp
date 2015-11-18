@@ -336,18 +336,12 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
 {
     const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
     for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        AppInstance::RenderRequest r;
         
-        int firstFrame = INT_MIN,lastFrame = INT_MAX;
-        if (cl.hasFrameRange()) {
-            const std::pair<int,int>& range = cl.getFrameRange();
-            firstFrame = range.first;
-            lastFrame = range.second;
-        }
-        
-        if (it->mustCreate) {
-            
-            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), firstFrame, lastFrame);
+        QString writerName;
+        if (!it->mustCreate) {
+            writerName = it->name;
+        } else {
+            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), INT_MIN, INT_MAX);
             
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
@@ -363,15 +357,28 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
                 writer->connectInput(outputInput, 0);
             }
             
-            r.writerName = writer->getScriptName().c_str();
-            r.firstFrame = firstFrame;
-            r.lastFrame = lastFrame;
-        } else {
-            r.writerName = it->name;
-            r.firstFrame = firstFrame;
-            r.lastFrame = lastFrame;
+            writerName = writer->getScriptName().c_str();
         }
-        requests.push_back(r);
+
+        if (cl.hasFrameRange()) {
+            const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
+            for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
+                AppInstance::RenderRequest r;
+                r.firstFrame = it2->second.first;
+                r.lastFrame = it2->second.second;
+                r.frameStep = it2->first;
+                r.writerName = writerName;
+                requests.push_back(r);
+            }
+        } else {
+            AppInstance::RenderRequest r;
+            r.firstFrame = INT_MIN;
+            r.lastFrame = INT_MAX;
+            r.frameStep = INT_MIN;
+            r.writerName = writerName;
+            requests.push_back(r);
+        }
+    
     }
 }
 
@@ -1174,6 +1181,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                 assert(w.writer);
                 w.firstFrame = it->firstFrame;
                 w.lastFrame = it->lastFrame;
+                w.frameStep = it->frameStep;
                 renderers.push_back(w);
             }
         }
@@ -1191,6 +1199,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                 w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
                 w.firstFrame = std::floor(f);
                 w.lastFrame = std::ceil(l);
+                w.frameStep = w.writer->getNode()->getFrameStepKnobValue();
                 renderers.push_back(w);
             }
         }
@@ -1244,7 +1253,15 @@ AppInstance::startRenderingBlockingFullSequence(bool enableRenderStats,const Ren
         last = writerWork.lastFrame;
     }
     
-    backgroundRender.blockingRender(enableRenderStats,first,last); //< doesn't return before rendering is finished
+    int frameStep;
+    if (writerWork.frameStep == INT_MAX || writerWork.frameStep == INT_MIN) {
+        ///Get the frame step from the frame step parameter of the Writer
+        frameStep = writerWork.writer->getNode()->getFrameStepKnobValue();
+    } else {
+        frameStep = std::max(1, writerWork.frameStep);
+    }
+    
+    backgroundRender.blockingRender(enableRenderStats,first,last,frameStep); //< doesn't return before rendering is finished
 }
 
 void

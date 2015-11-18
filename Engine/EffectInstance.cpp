@@ -2500,6 +2500,7 @@ EffectInstance::evaluate(KnobI* knob,
                 w.writer = dynamic_cast<OutputEffectInstance*>(this);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
+                w.frameStep = INT_MIN;
                 std::list<AppInstance::RenderWork> works;
                 works.push_back(w);
                 getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);

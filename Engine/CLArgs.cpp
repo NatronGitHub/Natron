@@ -56,7 +56,7 @@ struct CLArgsPrivate
     
     bool isInterpreterMode;
     
-    std::pair<int,int> range;
+    std::list<std::pair<int, std::pair<int,int> > > frameRanges;
     bool rangeSet;
     
     bool enableRenderStats;
@@ -75,7 +75,7 @@ struct CLArgsPrivate
     , ipcPipe()
     , error(0)
     , isInterpreterMode(false)
-    , range()
+    , frameRanges()
     , rangeSet(false)
     , enableRenderStats(false)
     , isEmpty(true)
@@ -165,7 +165,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->ipcPipe = other._imp->ipcPipe;
     _imp->error = other._imp->error;
     _imp->isInterpreterMode = other._imp->isInterpreterMode;
-    _imp->range = other._imp->range;
+    _imp->frameRanges = other._imp->frameRanges;
     _imp->rangeSet = other._imp->rangeSet;
     _imp->enableRenderStats = other._imp->enableRenderStats;
     _imp->isEmpty = other._imp->isEmpty;
@@ -232,6 +232,13 @@ CLArgs::printUsage(const std::string& programName)
                               "    After the writer node script name you can pass an optional output\n"
                               "    filename and pass an optional frame range in the format:\n"
                               "      <firstFrame>-<lastFrame> (e.g: 10-40).\n"
+                              "      The frame-range can also contain a frame-step indicating how many steps\n"
+                              "      the timeline should do before rendering a frame:\n"
+                              "       <firstFrame>-<lastFrame>:<frameStep> (e.g:1-10:2 Would render 1,3,5,7,9)\n"
+                              "      You can also specify multiple frame-ranges to render by separating them with commas:\n"
+                              "      1-10:1,20-30:2,40-50\n"
+                              "      Individual frames can also be specified:\n"
+                              "      1329,2450,123,1-10:2\n"
                               "    Note that several -w options can be set to specify multiple Write nodes\n"
                               "    to render.\n"
                               "    Note that if specified, the frame range is the same for all Write nodes\n"
@@ -329,10 +336,10 @@ CLArgs::hasFrameRange() const
     return _imp->rangeSet;
 }
 
-const std::pair<int,int>&
-CLArgs::getFrameRange() const
+const std::list<std::pair<int,std::pair<int,int> > >&
+CLArgs::getFrameRanges() const
 {
-    return _imp->range;
+    return _imp->frameRanges;
 }
 
 bool
@@ -483,33 +490,69 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
     return args.end();
 }
 
-static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range)
+static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int& frameStep)
 {
-    bool frameRangeFound = true;
-
+    bool ok;
+    int singleNumber = arg.toInt(&ok);
+    if (ok) {
+        //this is a single frame
+        range.first = range.second = singleNumber;
+        frameStep = INT_MIN;
+        return true;
+    }
     QStringList strRange = arg.split('-');
     if (strRange.size() != 2) {
-        frameRangeFound = false;
+        return false;
     }
     for (int i = 0; i < strRange.size(); ++i) {
+        //whitespace removed from the start and the end.
         strRange[i] = strRange[i].trimmed();
     }
-    if (frameRangeFound) {
-        bool ok;
-        range.first = strRange[0].toInt(&ok);
+    range.first = strRange[0].toInt(&ok);
+    if (!ok) {
+        return false;
+    }
+    
+    int foundColon = strRange[1].indexOf(':');
+    if (foundColon != -1) {
+        ///A frame-step has been specified
+        QString lastFrameStr = strRange[1].mid(0,foundColon);
+        QString frameStepStr = strRange[1].mid(foundColon + 1);
+        range.second = lastFrameStr.toInt(&ok);
         if (!ok) {
-            frameRangeFound = false;
+            return false;
         }
-
-        if (frameRangeFound) {
-            range.second = strRange[1].toInt(&ok);
-            if (!ok) {
-                frameRangeFound = false;
-            }
+        frameStep = frameStepStr.toInt(&ok);
+        if (!ok) {
+            return false;
+        }
+    } else {
+        frameStep = INT_MIN;
+        ///Frame range without frame-step specified
+        range.second = strRange[1].toInt(&ok);
+        if (!ok) {
+            return false;
         }
     }
+  
+    return true;
+    
+}
 
-    return frameRangeFound;
+static bool tryParseMultipleFrameRanges(const QString& args,std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
+{
+    QStringList splits = args.split(',');
+    for (int i = 0; i < splits.size(); ++i) {
+        std::pair<int,int> frameRange;
+        int frameStep;
+        if (tryParseFrameRange(splits[i], frameRange, frameStep)) {
+            frameRanges.push_back(std::make_pair(frameStep, frameRange));
+        }
+    }
+    if (!frameRanges.empty()) {
+        return true;
+    }
+    return false;
 }
 
 void
@@ -625,9 +668,9 @@ CLArgsPrivate::parse()
     
     //Parse frame range
     for (int i = 0; i < args.size(); ++i) {
-        if (tryParseFrameRange(args[i], range)) {
+        if (tryParseMultipleFrameRanges(args[i], frameRanges)) {
             if (rangeSet) {
-                std::cout << QObject::tr("Only a single frame range can be specified").toStdString() << std::endl;
+                std::cout << QObject::tr("Only a single frame range can be specified from the command-line for all Write nodes").toStdString() << std::endl;
                 error = 1;
                 return;
             }

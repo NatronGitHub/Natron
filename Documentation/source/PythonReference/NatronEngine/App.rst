@@ -21,7 +21,7 @@ Functions
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`render<NatronEngine.App.render>` (task)
+*    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 *    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
@@ -174,13 +174,28 @@ an explanation of *script-name* vs. *label*.
 
 
 
-.. method:: NatronEngine.App.render(task)
+.. method:: NatronEngine.App.render(effect,firstFrame,lastFrame[,frameStep])
 
 
-    :param task: :class:`RenderTask<NatronEngine.RenderTask>`
+    :param effect: :class:`Effect<NatronEngine.Effect>`
+	:param firstFrame: :class:`int<PySide.QtCore.int>`
+	:param lastFrame: :class:`int<PySide.QtCore.int>`
+	:param frameStep: :class:`int<PySide.QtCore.int>`
+
+Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
+The *frameStep* parameter indicates how many frames the timeline should step after rendering
+each frame. The value must be greater or equal to 1. 
+The *frameStep* parameter is optional and if not given will default to the value of the 
+**Frame Increment** parameter in the Write node.
+
+For instance::
+
+	render(effect,1,10,2)
+	
+Would render the frames 1,3,5,7,9
 
 
-Starts rendering the given *task*. This is a blocking call only in background mode.
+This is a blocking function only in background mode.
 A blocking render means that this function returns only when the render finishes (from failure or success). 
 
 This function should only be used to render with a Write node or DiskCache node.
@@ -191,7 +206,11 @@ This function should only be used to render with a Write node or DiskCache node.
 
     :param tasks: :class:`sequence` 
 
-This is an overloaded function. Same as :func:`render(task)<NatronEngine.App.render>`
+This function takes a sequence of tuples of the form *(effect,firstFrame,lastFrame[,frameStep])*
+The *frameStep* is optional in the tuple and if not set will default to the value of the 
+**Frame Increment** parameter in the Write node.
+
+This is an overloaded function. Same as :func:`render(effect,firstFrame,lastFrame,frameStep)<NatronEngine.App.render>`
 but all *tasks* will be rendered concurrently. 
 
 This function is called when rendering a script in background mode with 

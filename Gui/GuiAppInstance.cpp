@@ -776,6 +776,14 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
         lastFrame = w.lastFrame;
     }
 
+    int frameStep;
+    if (w.frameStep == INT_MAX || w.frameStep == INT_MIN) {
+        ///Get the frame step from the frame step parameter of the Writer
+        frameStep = w.writer->getNode()->getFrameStepKnobValue();
+    } else {
+        frameStep = std::max(1, w.frameStep);
+    }
+    
     ///get the output file knob to get the name of the sequence
     QString outputFileSequence;
 
@@ -796,7 +804,7 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
         try {
             boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,savePath,w.writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
-            notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame,process);
+            notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame, frameStep, process);
             process->startProcess();
 
             {
@@ -811,8 +819,8 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
                                 tr("Error while starting rendering").toStdString(),false  );
         }
     } else {
-        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);
-        w.writer->renderFullSequence(enableRenderStats,NULL,firstFrame,lastFrame);
+        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, frameStep, w.writer);
+        w.writer->renderFullSequence(false, enableRenderStats,NULL,firstFrame,lastFrame, frameStep);
     }
 } // startRenderingFullSequence
 
@@ -838,9 +846,10 @@ void
 GuiAppInstance::notifyRenderProcessHandlerStarted(const QString & sequenceName,
                                                   int firstFrame,
                                                   int lastFrame,
+                                                  int frameStep,
                                                   const boost::shared_ptr<ProcessHandler> & process)
 {
-    _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame,process);
+    _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame, frameStep, process);
 }
 
 void

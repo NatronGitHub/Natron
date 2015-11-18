@@ -248,6 +248,7 @@ TEST_F(BaseTest,GenerateDot)
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
+    w.frameStep = INT_MIN;
     works.push_back(w);
     _app->startWritersRendering(false, false, works);
     

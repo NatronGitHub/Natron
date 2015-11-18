@@ -88,8 +88,8 @@ public:
     
     void addFormat(const std::string& formatSpec);
     
-    void render(Effect* writeNode,int firstFrame, int lastFrame);
-    void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
+    void render(Effect* writeNode,int firstFrame, int lastFrame, int frameStep = 1);
+    void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps);
     
     Param* getProjectParam(const std::string& name) const;
     
@@ -111,8 +111,9 @@ public:
     
 protected:
     
-    void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame);
-    void renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
+    void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame, int frameStep);
+    void renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,
+                        const std::list<int>& frameSteps);
     
 };
 

@@ -124,6 +124,7 @@ public:
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
     virtual void notifyRenderProcessHandlerStarted(const QString & sequenceName,
                                                    int firstFrame,int lastFrame,
+                                                   int frameStep,
                                                    const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 

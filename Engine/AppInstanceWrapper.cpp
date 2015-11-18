@@ -171,19 +171,19 @@ void AppSettings::restoreDefaultSettings()
 }
 
 void
-App::render(Effect* writeNode,int firstFrame,int lastFrame)
+App::render(Effect* writeNode,int firstFrame,int lastFrame, int frameStep)
 {
-    renderInternal(false, writeNode, firstFrame, lastFrame);
+    renderInternal(false, writeNode, firstFrame, lastFrame, frameStep);
 }
 
 void
-App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
+App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps)
 {
-    renderInternal(false, effects, firstFrames, lastFrames);
+    renderInternal(false, effects, firstFrames, lastFrames, frameSteps);
 }
 
 void
-App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int lastFrame)
+App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int lastFrame, int frameStep)
 {
     if (!writeNode) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
@@ -203,6 +203,7 @@ App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int last
     
     w.firstFrame = firstFrame;
     w.lastFrame = lastFrame;
+    w.frameStep = frameStep;
     
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
@@ -210,15 +211,16 @@ App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int last
 }
 
 void
-App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
+App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames, const std::list<int>& frameSteps)
 {
     std::list<AppInstance::RenderWork> l;
     
-    assert(effects.size() == firstFrames.size() && effects.size() == lastFrames.size());
+    assert(effects.size() == firstFrames.size() && effects.size() == lastFrames.size() && frameSteps.size() == effects.size());
     std::list<Effect*>::const_iterator itE = effects.begin();
     std::list<int>::const_iterator itF = firstFrames.begin();
     std::list<int>::const_iterator itL = lastFrames.begin();
-    for (; itE != effects.end(); ++itE, ++itF, ++itL) {
+    std::list<int>::const_iterator itS = frameSteps.begin();
+    for (; itE != effects.end(); ++itE, ++itF, ++itL, ++itS) {
         if (!*itE) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
@@ -237,6 +239,7 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
         
         w.firstFrame = (*itF);
         w.lastFrame = (*itL);
+        w.frameStep = (*itS);
         
         l.push_back(w);
         

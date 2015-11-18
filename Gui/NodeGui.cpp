@@ -231,6 +231,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
     QObject::connect( internalNode.get(), SIGNAL( identityChanged(int) ),this,SLOT( onIdentityStateChanged(int) ) );
     QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ),this,SLOT( onHideInputsKnobValueChanged(bool) ) );
+    QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ),this,SLOT( onAvailableViewsChanged() ) );
     
     setCacheMode(DeviceCoordinateCache);
 

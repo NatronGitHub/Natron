@@ -464,15 +464,15 @@ GuiApp::getUserPanel(const std::string& scriptName) const
 }
 
 void
-GuiApp::renderBlocking(Effect* writeNode,int firstFrame, int lastFrame)
+GuiApp::renderBlocking(Effect* writeNode,int firstFrame, int lastFrame,int frameStep)
 {
-    renderInternal(true, writeNode, firstFrame, lastFrame);
+    renderInternal(true, writeNode, firstFrame, lastFrame, frameStep);
 }
 
 void
-GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
+GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps)
 {
-    renderInternal(true, effects, firstFrames, lastFrames);
+    renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
 PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)

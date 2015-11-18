@@ -147,6 +147,7 @@ DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, 
         w.writer = this;
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
+        w.frameStep = 1;
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
         getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);
