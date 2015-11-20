@@ -721,15 +721,17 @@ QMenuBar::item:selected
     background: %1;
 }
 
-ScriptTextEdit[isOutput="true"] {
-    color: %5;
-    background-color: %2;
-    selection-color: %8;
-    selection-background-color: %1;
-}
-ScriptTextEdit[isOutput="false"] {
+QPlainTextEdit {
     color: %5;
     background-color: %3;
     selection-color: %8;
     selection-background-color: %1;
 }
+
+OutputScriptTextEdit {
+    color: %5;
+    background-color: %2;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+

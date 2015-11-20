@@ -47,6 +47,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraphTextItem.h"
 
 #include "Global/QtCompat.h"
 
@@ -104,7 +105,7 @@ NodeGraph::NodeGraph(Gui* gui,
         setLabel(QObject::tr("Node Graph").toStdString());
     }
     
-    
+    QObject::connect(&_imp->autoScrollTimer, SIGNAL(timeout()), this, SLOT(onAutoScrollTimerTriggered()));
     
     
     setMouseTracking(true);
@@ -116,13 +117,9 @@ NodeGraph::NodeGraph(Gui* gui,
     //setResizeAnchor(QGraphicsView::AnchorUnderMouse);
     scale(0.8,0.8);
 
-    _imp->_root = new QGraphicsTextItem(0);
-    _imp->_nodeRoot = new QGraphicsTextItem(_imp->_root);
+    _imp->_root = new NodeGraphTextItem(this, 0, false);
+    _imp->_nodeRoot = new NodeGraphTextItem(this, _imp->_root, false);
     scene->addItem(_imp->_root);
-
-    _imp->_selectionRect = new SelectionRectangle(_imp->_root);
-    _imp->_selectionRect->setZValue(1);
-    _imp->_selectionRect->hide();
 
     _imp->_navigator = new Navigator(0);
     scene->addItem(_imp->_navigator);
@@ -130,10 +127,10 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_navigator->hide();
 
 
-    _imp->_cacheSizeText = new QGraphicsTextItem(0);
+    _imp->_cacheSizeText = new NodeGraphSimpleTextItem(this, 0, true);
     scene->addItem(_imp->_cacheSizeText);
     _imp->_cacheSizeText->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    _imp->_cacheSizeText->setDefaultTextColor( QColor(200,200,200) );
+    _imp->_cacheSizeText->setBrush( QColor(200,200,200) );
 
     QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
@@ -150,19 +147,19 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_hintOutputEdge->setDefaultColor( QColor(0,255,0,100) );
     _imp->_hintOutputEdge->hide();
 
-    _imp->_tL = new QGraphicsTextItem(0);
+    _imp->_tL = new NodeGraphTextItem(this,0,false);
     _imp->_tL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_tL);
 
-    _imp->_tR = new QGraphicsTextItem(0);
+    _imp->_tR = new NodeGraphTextItem(this,0,false);
     _imp->_tR->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_tR);
 
-    _imp->_bR = new QGraphicsTextItem(0);
+    _imp->_bR = new NodeGraphTextItem(this,0,false);
     _imp->_bR->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_bR);
 
-    _imp->_bL = new QGraphicsTextItem(0);
+    _imp->_bL = new NodeGraphTextItem(this,0,false);
     _imp->_bL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_imp->_bL);
 
@@ -212,6 +209,12 @@ NodeGraph::~NodeGraph()
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
+}
+
+bool
+NodeGraph::isDoingNavigatorRender() const
+{
+    return _imp->isDoingPreviewRender;
 }
 
 
@@ -339,6 +342,16 @@ NodeGraph::paintEvent(QPaintEvent* e)
             p.drawRoundedRect(pixRect,5,5);
             p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
         }
+    }
+    
+    if (_imp->_evtState == eEventStateSelectionRect && !isDoingNavigatorRender()) {
+        QPainter p(viewport());
+        const QRect r = mapFromScene(_imp->_selectionRect).boundingRect();
+        QColor color(16,84,200,20);
+        p.setBrush(color);
+        p.drawRect(r);
+        double w = p.pen().widthF();
+        p.fillRect(QRect(r.x() + w,r.y() + w,r.width() - w,r.height() - w),color);
     }
 }
 

@@ -459,13 +459,6 @@ NodeGraph::centerOnAllNodes()
         scale(scaleFactor,scaleFactor);
         setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     }
-    
-    currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
-    if (currentZoomFactor < 0.4) {
-        setVisibleNodeDetails(false);
-    } else if (currentZoomFactor >= 0.4) {
-        setVisibleNodeDetails(true);
-    }
 
     _imp->_refreshOverlays = true;
     update();

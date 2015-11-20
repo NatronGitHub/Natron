@@ -30,10 +30,11 @@
 #include <QPainter>
 #include <QApplication>
 #include <QGraphicsScene>
-#include <QGraphicsSimpleTextItem>
 
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/NodeGraphTextItem.h"
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
@@ -64,7 +65,7 @@ struct EdgePrivate
     bool isOutputEdge;
     int inputNb;
     double angle;
-    QGraphicsSimpleTextItem* label;
+    NodeGraphSimpleTextItem* label;
     QPolygonF arrowHead;
     boost::weak_ptr<NodeGui> dest;
     boost::weak_ptr<NodeGui> source;
@@ -133,13 +134,16 @@ EdgePrivate::initLabel()
 {
     boost::shared_ptr<NodeGui> dst = dest.lock();
     if ((inputNb != -1) && dst) {
-        label = new QGraphicsSimpleTextItem(QString(dst->getNode()->getInputLabel(inputNb).c_str()),_publicInterface);
+        label = new NodeGraphSimpleTextItem(dst->getDagGui(), _publicInterface, false);
+        label->setText(QString(dst->getNode()->getInputLabel(inputNb).c_str()));
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
         txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
         label->setBrush(txt);
-        label->setFont(qApp->font());
+        QFont f = qApp->font();
+        f.setStyleStrategy(QFont::NoAntialias);
+        label->setFont(f);
         //_imp->label->setDefaultTextColor( QColor(200,200,200) );
     }
 }
@@ -692,17 +696,6 @@ Edge::isNearbyBendPoint(const QPointF & scenePoint)
     return false;
 }
 
-void
-Edge::setVisibleDetails(bool visible)
-{
-    if (!visible) {
-        _imp->label->hide();
-    } else {
-        if (_imp->enoughSpaceToShowLabel) {
-            _imp->label->show();
-        }
-    }
-}
 
 void
 Edge::paint(QPainter *painter,
@@ -710,6 +703,13 @@ Edge::paint(QPainter *painter,
             QWidget * /*parent*/)
 {
     QPen myPen = pen();
+    
+    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    if (dst) {
+        if (dst->getDagGui()->isDoingNavigatorRender()) {
+            return;
+        }
+    }
 
     if (_imp->paintWithDash) {
         QVector<qreal> dashStyle;

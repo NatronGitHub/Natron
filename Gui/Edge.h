@@ -71,8 +71,6 @@ public:
 
     void setSource(const boost::shared_ptr<NodeGui> & src);
     
-    void setVisibleDetails(bool visible);
-
     void setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,const boost::shared_ptr<NodeGui> & dst);
 
     int getInputNumber() const;

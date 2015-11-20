@@ -101,7 +101,7 @@ struct EditScriptDialogPrivate
     QVBoxLayout* mainLayout;
     
     Natron::Label* expressionLabel;
-    ScriptTextEdit* expressionEdit;
+    InputScriptTextEdit* expressionEdit;
     
     QWidget* midButtonsContainer;
     QHBoxLayout* midButtonsLayout;
@@ -110,7 +110,7 @@ struct EditScriptDialogPrivate
     Button* helpButton;
     
     Natron::Label* resultLabel;
-    ScriptTextEdit* resultEdit;
+    OutputScriptTextEdit* resultEdit;
     
     QDialogButtonBox* buttons;
     
@@ -173,7 +173,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
-    _imp->expressionEdit = new ScriptTextEdit(this);
+    _imp->expressionEdit = new InputScriptTextEdit(this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
@@ -215,8 +215,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
-    _imp->resultEdit = new ScriptTextEdit(this);
-    _imp->resultEdit->setOutput(true);
+    _imp->resultEdit = new OutputScriptTextEdit(this);
     _imp->resultEdit->setFixedHeight(80);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);

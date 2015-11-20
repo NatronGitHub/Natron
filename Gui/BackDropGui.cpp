@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/BackDrop.h"
 
 #include "Gui/KnobGuiString.h"
+#include "Gui/NodeGraphTextItem.h"
 
 #define RESIZE_HANDLE_SIZE 20
 
@@ -49,7 +50,7 @@ struct BackDropGuiPrivate
 {
     BackDropGui* _publicInterface;
     
-    QGraphicsTextItem* label;
+    NodeGraphTextItem* label;
 
     BackDropGuiPrivate(BackDropGui* publicInterface)
     : _publicInterface(publicInterface)
@@ -99,7 +100,7 @@ BackDropGui::createGui()
 {
     NodeGui::createGui();
     
-    _imp->label = new QGraphicsTextItem("",this);
+    _imp->label = new NodeGraphTextItem(getDagGui(), this, false);
     _imp->label->setDefaultTextColor( QColor(0,0,0,255) );
     _imp->label->setZValue(getBaseDepth() + 1);
     
@@ -165,6 +166,7 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     QColor color;
     if (!text.isEmpty()) {
         KnobGuiString::parseFont(textLabel, &f, &color);
+        f.setStyleStrategy(QFont::NoAntialias);
         label->setFont(f);
     }
     

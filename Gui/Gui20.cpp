@@ -63,6 +63,7 @@
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ToolButton.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
@@ -142,6 +143,9 @@ void
 Gui::reloadStylesheet()
 {
     loadStyleSheet();
+    if (_imp->_scriptEditor) {
+        _imp->_scriptEditor->reloadHighlighter();
+    }
 }
 
 void

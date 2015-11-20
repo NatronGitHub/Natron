@@ -28,28 +28,125 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextEdit>
+#include <QPlainTextEdit>
+#include <QSyntaxHighlighter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
 
-#include "Global/Macros.h"
 
-class ScriptTextEdit : public QTextEdit
+
+struct PySyntaxHighlighterPrivate;
+class PySyntaxHighlighter : public QSyntaxHighlighter
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
 
 public:
     
-    ScriptTextEdit(QWidget* parent);
+    PySyntaxHighlighter(QTextDocument *parent = 0);
     
-    virtual ~ScriptTextEdit();
+    virtual ~PySyntaxHighlighter();
     
-    void setOutput(bool o);
+    void reload();
     
-    bool getOutput() const;
+private:
+    
+    virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
+    bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
+
+    boost::scoped_ptr<PySyntaxHighlighterPrivate> _imp;
+    
+};
+
+class LineNumberWidget;
+class InputScriptTextEdit : public QPlainTextEdit
+{
+    
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    
+    friend class LineNumberWidget;
+    
+public:
+    
+    InputScriptTextEdit(QWidget* parent);
+    
+    virtual ~InputScriptTextEdit();
+
+    int getLineNumberAreaWidth();
+    
+    void reloadHighlighter();
+    
+private Q_SLOTS:
+    
+    void updateLineNumberAreaWidth(int newBlockCount);
+    void highlightCurrentLine();
+    void updateLineNumberArea(const QRect &, int);
+    
+private:
+    
+    void lineNumberAreaPaintEvent(QPaintEvent *event);
+        
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    
+    virtual void resizeEvent(QResizeEvent *event) OVERRIDE FINAL;
+    
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+  
+    
+private:
+    
+    LineNumberWidget* _lineNumber;
+    PySyntaxHighlighter* _highlighter;
+};
+
+class LineNumberWidget : public QWidget
+{
+public:
+    
+    LineNumberWidget(InputScriptTextEdit *editor)
+    : QWidget(editor)
+    , codeEditor(editor)
+    {
+        codeEditor = editor;
+    }
+    
+    virtual QSize sizeHint() const OVERRIDE FINAL {
+        return QSize(codeEditor->getLineNumberAreaWidth(), 0);
+    }
+    
+protected:
+    
+    virtual void paintEvent(QPaintEvent *event) OVERRIDE FINAL {
+        codeEditor->lineNumberAreaPaintEvent(event);
+    }
+    
+private:
+    InputScriptTextEdit *codeEditor;
+};
+
+class OutputScriptTextEdit : public QTextEdit
+{
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+public:
+    
+    OutputScriptTextEdit(QWidget* parent);
+    
+    virtual ~OutputScriptTextEdit();
     
 Q_SIGNALS:
     
@@ -59,19 +156,7 @@ private:
     
     virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
     
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-    
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
-    
-    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    
     virtual void scrollContentsBy(int dx, int dy) OVERRIDE FINAL;
-    
-    bool isOutput;
 };
 
 #endif // SCRIPTTEXTEDIT_H

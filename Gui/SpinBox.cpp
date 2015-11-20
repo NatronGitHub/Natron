@@ -653,6 +653,8 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     }
 }
 
+
+
 void
 SpinBox::focusOutEvent(QFocusEvent* e)
 {
@@ -661,8 +663,23 @@ SpinBox::focusOutEvent(QFocusEvent* e)
     if (str != _imp->valueWhenEnteringFocus) {
         if ( validateText() ) {
             //setValue_internal(text().toDouble(), true, true); // force a reformat
-            double newValue = str.toDouble();
+            bool ok;
+            QString newValueStr = text();
+            double newValue = newValueStr.toDouble(&ok);
+            
+            if (!ok) {
+                newValueStr = _imp->valueWhenEnteringFocus;
+                newValue = newValueStr.toDouble(&ok);
+                assert(ok);
+            }
+            QLineEdit::setText(newValueStr);
             Q_EMIT valueChanged(newValue);
+        }
+    } else {
+        bool ok;
+        (void)str.toDouble(&ok);
+        if (!ok) {
+            QLineEdit::setText(_imp->valueWhenEnteringFocus);
         }
     }
     LineEdit::focusOutEvent(e);

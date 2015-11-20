@@ -66,6 +66,8 @@ public:
     
     void printAutoDeclaredVariable(const QString& str);
     
+    void reloadHighlighter();
+    
 public Q_SLOTS:
     
     void doAppendToScriptEditorOnMainThread(const QString& str);

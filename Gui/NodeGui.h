@@ -69,6 +69,9 @@ class MultiInstancePanel;
 class QMenu;
 class NodeGroup;
 class QUndoStack;
+class QGraphicsSimpleTextItem;
+class NodeGraphPixmapItem;
+class NodeGraphTextItem;
 class NodeCollection;
 namespace Natron {
 class ChannelSet;
@@ -80,7 +83,8 @@ class NodeGuiIndicator
 {
 public:
 
-    NodeGuiIndicator(int depth,
+    NodeGuiIndicator(NodeGraph* graph,
+                     int depth,
                      const QString & text,
                      const QPointF & topLeft,
                      int width,
@@ -348,12 +352,7 @@ public:
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
         
     void setMergeHintActive(bool active);
-    
-    /**
-     * @brief Called after the node-graph view reaches a certain detail level (zoom) to show/hide elements that would otherwise 
-     * not be visible and would just clutter and slow down the interface
-     **/
-    void setVisibleDetails(bool visible);
+
     
     void setOverlayLocked(bool locked);
     
@@ -595,12 +594,12 @@ private:
     
     bool _panelOpenedBeforeDeactivate;
     
-    QGraphicsPixmapItem* _pluginIcon;
+    NodeGraphPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
     
     QGraphicsPixmapItem* _mergeIcon;
     
-    QGraphicsTextItem *_nameItem;
+    NodeGraphTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     
     QGraphicsPolygonItem* _resizeHandle;
@@ -613,7 +612,7 @@ private:
 
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
-    QGraphicsTextItem* _persistentMessage;
+    QGraphicsSimpleTextItem* _persistentMessage;
     QGraphicsRectItem* _stateIndicator;    
     
     bool _mergeHintActive;

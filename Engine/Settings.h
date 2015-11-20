@@ -323,6 +323,18 @@ public:
     void getDopeSheetEditorScaleColor(double* r,double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
 
+    
+    void getSEKeywordColor(double* r,double* g, double* b) const;
+    void getSEOperatorColor(double* r,double* g, double* b) const;
+    void getSEBraceColor(double* r,double* g, double* b) const;
+    void getSEDefClassColor(double* r,double* g, double* b) const;
+    void getSEStringsColor(double* r,double* g, double* b) const;
+    void getSECommentsColor(double* r,double* g, double* b) const;
+    void getSESelfColor(double* r,double* g, double* b) const;
+    void getSENumbersColor(double* r,double* g, double* b) const;
+    void getSECurLineColor(double* r,double* g, double* b) const;
+    
+    
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
     int getDopeSheetEditorNodeSeparationWith() const;
     
@@ -515,6 +527,18 @@ private:
     boost::shared_ptr<KnobColor> _dopeSheetEditorKnobSectionBackgroundColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorScaleColor;
     boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
+    
+    boost::shared_ptr<KnobGroup> _scriptEditorColors;
+    boost::shared_ptr<KnobColor> _curLineColor;
+    boost::shared_ptr<KnobColor> _keywordColor;
+    boost::shared_ptr<KnobColor> _operatorColor;
+    boost::shared_ptr<KnobColor> _braceColor;
+    boost::shared_ptr<KnobColor> _defClassColor;
+    boost::shared_ptr<KnobColor> _stringsColor;
+    boost::shared_ptr<KnobColor> _commentsColor;
+    boost::shared_ptr<KnobColor> _selfColor;
+    boost::shared_ptr<KnobColor> _numbersColor;
+    
     
     struct PerPluginKnobs
     {

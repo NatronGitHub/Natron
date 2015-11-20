@@ -1,5 +1,15 @@
 # History
 
+## Version 2.0 - RC4
+
+- Write nodes now have a Frame Increment parameter which allows to skip frames while rendering.
+- The command-line parameters and Python API have been updated in this regard (see Python documentation).
+- Fix multiple bugs when rendering a multi-layered exr
+- Linux: when crashing, Natron will now print a backtrace if launched from the Terminal. This is temporary and will be soon replaced by a cross-platform crash reports handler.
+- RotoPaint: enhancements in the rendering algorithm 
+- Color, Double and Integer parameters can now have an expression entered directly in a SpinBox for convenience
+- NodeGraph: optimize for speed when the scene contains a lot of nodes and add auto-scrolling when reaching the border of the view
+
 ## Version 2.0 - RC3
 
 - The Read node can now read multi-view EXR files. Decoding speed of EXR has been greatly improved.

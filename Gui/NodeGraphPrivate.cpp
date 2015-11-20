@@ -37,6 +37,7 @@
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraph.h"
 #include "Gui/NodeGuiSerialization.h"
 
 
@@ -48,8 +49,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 : _publicInterface(p)
 , group(group)
 , _lastMousePos()
-, _lastNodeDragStartPoint()
-, _lastSelectionStartPoint()
+, _lastSelectionStartPointScene()
 , _evtState(eEventStateNone)
 , _magnifiedNode()
 , _nodeSelectedScaleBeforeMagnif(1.)
@@ -63,6 +63,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _root(NULL)
 , _nodeRoot(NULL)
 , _cacheSizeText(NULL)
+, cacheSizeHidden(false)
 , _refreshCacheTextTimer()
 , _navigator(NULL)
 , _undoStack(NULL)
@@ -79,7 +80,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _backdropResized()
 , _selection()
 , _nodesWithinBDAtPenDown()
-, _selectionRect(NULL)
+, _selectionRect()
 , _bendPointsVisible(false)
 , _knobLinksVisible(true)
 , _accumDelta(0)
@@ -87,6 +88,8 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _deltaSinceMousePress(0,0)
 , _hasMovedOnce(false)
 , lastSelectedViewer(0)
+, isDoingPreviewRender(false)
+, autoScrollTimer()
 {
     appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &unlockIcon);
 }
@@ -114,7 +117,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
         resetSelection();
     }
 
-    QRectF selection = _selectionRect->mapToScene( _selectionRect->rect() ).boundingRect();
+    const QRectF& selection = _selectionRect;
 
     for (NodeGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();

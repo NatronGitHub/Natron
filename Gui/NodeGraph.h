@@ -181,6 +181,8 @@ public:
     
     QPointF getRootPos() const;
     
+    bool isDoingNavigatorRender() const;
+    
 public Q_SLOTS:
 
     void deleteSelection();
@@ -249,14 +251,15 @@ public Q_SLOTS:
     void onGroupScriptNameChanged(const QString& name);
     
     
+    void onAutoScrollTimerTriggered();
     
 private:
     
     void scrollViewIfNeeded(const QPointF& scenePos);
     
+    void checkAndStartAutoScrollTimer(const QPointF& scenePos);
+    
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
-
-    void setVisibleNodeDetails(bool visible);
     
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
@@ -278,6 +281,8 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
+    
+    void moveRootInternal(double dx, double dy);
     
     void wheelEventInternal(bool ctrlDown,double delta);
 

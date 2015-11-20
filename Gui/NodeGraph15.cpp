@@ -29,6 +29,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
+#include <QCursor>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
@@ -45,6 +46,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 
 #include "Global/QtCompat.h"
+
+#define NATRON_GRAPH_AUTO_SCROLL_OFFSET 20
+#define NATRON_AUTO_SCROLL_TIMEOUT_MS 50
+
 
 using namespace Natron;
 
@@ -110,6 +115,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     EventStateEnum state = _imp->_evtState;
     
     _imp->_evtState = eEventStateNone;
+    
+    _imp->autoScrollTimer.stop();
     
     bool hasMovedOnce = modCASIsControl(e) || _imp->_hasMovedOnce;
     if (state == eEventStateDraggingArrow && hasMovedOnce) {
@@ -296,7 +303,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             }
         }
     } else if (state == eEventStateSelectionRect) {
-        _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
     _imp->_nodesWithinBDAtPenDown.clear();
@@ -305,37 +311,81 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     update();
 } // mouseReleaseEvent
 
-void
-NodeGraph::scrollViewIfNeeded(const QPointF& /*scenePos*/)
-{
 
-    //Doesn't work for now
-    return;
-#if 0
-    QRectF visibleRect = visibleSceneRect();
+
+void
+NodeGraph::scrollViewIfNeeded(const QPointF& scenePos)
+{
     
-   
     
-    static const int delta = 50;
+    QPoint widgetPos = mapFromScene(scenePos);
+    QRectF visibleRect = visibleWidgetRect();
     
-    int deltaX = 0;
-    int deltaY = 0;
-    if (scenePos.x() < visibleRect.left()) {
-        deltaX = -delta;
-    } else if (scenePos.x() > visibleRect.right()) {
-        deltaX = delta;
+    int scrollDeltaZone = 50;
+    
+    int dx = 0,dy = 0;
+    if (widgetPos.x() <= visibleRect.x() + scrollDeltaZone ) {
+        dx = -NATRON_GRAPH_AUTO_SCROLL_OFFSET;
+    } else if (widgetPos.x() >= (visibleRect.x() + visibleRect.width()) - scrollDeltaZone) {
+        dx = NATRON_GRAPH_AUTO_SCROLL_OFFSET;
     }
-    if (scenePos.y() < visibleRect.top()) {
-        deltaY = -delta;
-    } else if (scenePos.y() > visibleRect.bottom()) {
-        deltaY = delta;
+    if (widgetPos.y() <= visibleRect.y() + scrollDeltaZone ) {
+        dy = -NATRON_GRAPH_AUTO_SCROLL_OFFSET;
+    } else if (widgetPos.y() >= (visibleRect.y() + visibleRect.height()) - scrollDeltaZone) {
+        dy = NATRON_GRAPH_AUTO_SCROLL_OFFSET;
     }
-    if (deltaX != 0 || deltaY != 0) {
-        QPointF newCenter = visibleRect.center();
-        newCenter.rx() += deltaX;
-        newCenter.ry() += deltaY;
-        centerOn(newCenter);
+    
+    
+    if (dx != 0 || dy != 0) {
+        moveRootInternal(-dx, -dy);
+        _imp->_refreshOverlays = true;
+        update();
+    } else {
+        _imp->autoScrollTimer.stop();
     }
-#endif
+
 }
 
+void
+NodeGraph::moveRootInternal(double dx, double dy)
+{
+    _imp->_lastSelectionStartPointScene.rx() += dx;
+    _imp->_lastSelectionStartPointScene.ry() += dy;
+    
+    _imp->_root->moveBy(dx, dy);
+}
+
+void
+NodeGraph::checkAndStartAutoScrollTimer(const QPointF& scenePos)
+{
+    if (_imp->autoScrollTimer.isActive()) {
+        return;
+    }
+    QPoint widgetPos = mapFromScene(scenePos);
+    QRectF visibleRect = visibleWidgetRect();
+    
+    int scrollDeltaZone = 50;
+    
+    bool startScrolling = false;
+    if (widgetPos.x() <= visibleRect.x() + scrollDeltaZone ) {
+        startScrolling = true;
+    } else if (widgetPos.x() >= (visibleRect.x() + visibleRect.width()) - scrollDeltaZone) {
+        startScrolling = true;
+    }
+    if (widgetPos.y() <= visibleRect.y() + scrollDeltaZone ) {
+        startScrolling = true;
+    } else if (widgetPos.y() >= (visibleRect.y() + visibleRect.height()) - scrollDeltaZone) {
+        startScrolling = true;
+    }
+    
+    if (startScrolling) {
+        _imp->autoScrollTimer.start(NATRON_AUTO_SCROLL_TIMEOUT_MS);
+    }
+}
+
+void
+NodeGraph::onAutoScrollTimerTriggered()
+{
+    QPointF cursorPos = mapToScene(mapFromGlobal(QCursor::pos()));
+    scrollViewIfNeeded(cursorPos);
+}
