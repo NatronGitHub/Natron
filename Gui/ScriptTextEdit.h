@@ -29,10 +29,37 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QSyntaxHighlighter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
 
-#include "Global/Macros.h"
+
+
+struct PySyntaxHighlighterPrivate;
+class PySyntaxHighlighter : public QSyntaxHighlighter
+{
+
+public:
+    
+    PySyntaxHighlighter(QTextDocument *parent = 0);
+    
+    virtual ~PySyntaxHighlighter();
+    
+    void reload();
+    
+private:
+    
+    virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
+    bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
+
+    boost::scoped_ptr<PySyntaxHighlighterPrivate> _imp;
+    
+};
 
 class LineNumberWidget;
 class InputScriptTextEdit : public QPlainTextEdit
@@ -52,6 +79,8 @@ public:
     virtual ~InputScriptTextEdit();
 
     int getLineNumberAreaWidth();
+    
+    void reloadHighlighter();
     
 private Q_SLOTS:
     
@@ -79,6 +108,7 @@ private:
 private:
     
     LineNumberWidget* _lineNumber;
+    PySyntaxHighlighter* _highlighter;
 };
 
 class LineNumberWidget : public QWidget

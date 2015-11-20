@@ -30,6 +30,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QScrollBar>
 #include <QTextBlock>
 #include <QPainter>
+#include <QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -40,6 +41,261 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+
+
+struct PyHighLightRule
+{
+
+    PyHighLightRule(const QString &patternStr, int n, const QTextCharFormat &matchingFormat)
+    {
+        originalRuleStr = patternStr;
+        pattern = QRegExp(patternStr);
+        nth = n;
+        format = matchingFormat;
+    }
+    
+    QString originalRuleStr;
+    QRegExp pattern;
+    int nth;
+    QTextCharFormat format;
+};
+
+struct PySyntaxHighlighterPrivate
+{
+    PySyntaxHighlighter* publicInterface;
+    QStringList keywords;
+    QStringList operators;
+    QStringList braces;
+    QHash<QString, QTextCharFormat> basicStyles;
+    QList<PyHighLightRule> rules;
+    QRegExp triSingleQuote;
+    QRegExp triDoubleQuote;
+    
+    PySyntaxHighlighterPrivate(PySyntaxHighlighter* publicInterface)
+    : publicInterface(publicInterface)
+    , keywords()
+    , operators()
+    , braces()
+    , basicStyles()
+    , rules()
+    , triSingleQuote()
+    , triDoubleQuote()
+    {
+        keywords = QStringList() << "and" << "assert" << "break" << "class" << "continue" << "def" <<
+        "del" << "elif" << "else" << "except" << "exec" << "finally" <<
+        "for" << "from" << "global" << "if" << "import" << "in" <<
+        "is" << "lambda" << "not" << "or" << "pass" << "print" <<
+        "raise" << "return" << "try" << "while" << "yield" <<
+        "None" << "True" << "False";
+        
+        operators = QStringList() << "=" <<
+        // Comparison
+        "==" << "!=" << "<" << "<=" << ">" << ">=" <<
+        // Arithmetic
+        "\\+" << "-" << "\\*" << "/" << "//" << "%" << "\\*\\*" <<
+        // In-place
+        "\\+=" << "-=" << "\\*=" << "/=" << "%=" <<
+        // Bitwise
+        "\\^" << "\\|" << "&" << "~" << ">>" << "<<";
+        
+        braces = QStringList() << "\\{" << "\\}" << "\\(" << "\\)" << "\\[" << "\\]";
+        
+        triSingleQuote.setPattern("'''");
+        triDoubleQuote.setPattern("\"\"\"");
+        
+        reload();
+        
+       
+
+        
+    }
+    
+    void reload();
+    
+    void initializeRules();
+    const QTextCharFormat getTextCharFormat(double r, double g, double b, const QString &style = QString());
+    
+};
+
+void
+PySyntaxHighlighter::highlightBlock(const QString &text)
+{
+    for (QList<PyHighLightRule>::Iterator it = _imp->rules.begin(); it != _imp->rules.end(); ++it) {
+        int idx = it->pattern.indexIn(text, 0);
+        while (idx >= 0)
+        {
+            // Get index of Nth match
+            idx = it->pattern.pos(it->nth);
+            int length = it->pattern.cap(it->nth).length();
+            setFormat(idx, length, it->format);
+            idx = it->pattern.indexIn(text, idx + length);
+        }
+    }
+    
+    setCurrentBlockState(0);
+    
+    // Do multi-line strings
+    bool isInMultilne = matchMultiline(text, _imp->triSingleQuote, 1, _imp->basicStyles.value("string2"));
+    if (!isInMultilne)
+        isInMultilne = matchMultiline(text, _imp->triDoubleQuote, 2, _imp->basicStyles.value("string2"));
+}
+
+void
+PySyntaxHighlighterPrivate::initializeRules()
+{
+    rules.clear();
+    for (QStringList::Iterator it = keywords.begin(); it!=keywords.end(); ++it) {
+        rules.append(PyHighLightRule(QString("\\b%1\\b").arg(*it), 0, basicStyles.value("keyword")));
+    }
+    for (QStringList::Iterator it = operators.begin(); it!=operators.end(); ++it) {
+        rules.append(PyHighLightRule(QString("%1").arg(*it), 0, basicStyles.value("operator")));
+    }
+
+    for (QStringList::Iterator it = braces.begin(); it!=braces.end(); ++it) {
+        rules.append(PyHighLightRule(QString("%1").arg(*it), 0, basicStyles.value("brace")));
+    }
+    
+    // 'self'
+    rules.append(PyHighLightRule("\\bself\\b", 0, basicStyles.value("self")));
+    
+    // Double-quoted string, possibly containing escape sequences
+    rules.append(PyHighLightRule("\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\"", 0, basicStyles.value("string")));
+    
+    // Single-quoted string, possibly containing escape sequences
+    rules.append(PyHighLightRule("'[^'\\\\]*(\\\\.[^'\\\\]*)*'", 0, basicStyles.value("string")));
+    
+    // 'def' followed by an identifier
+    rules.append(PyHighLightRule("\\bdef\\b\\s*(\\w+)", 1, basicStyles.value("defclass")));
+    
+    //  'class' followed by an identifier
+    rules.append(PyHighLightRule("\\bclass\\b\\s*(\\w+)", 1, basicStyles.value("defclass")));
+    
+    // From '#' until a newline
+    rules.append(PyHighLightRule("#[^\\n]*", 0, basicStyles.value("comment")));
+    
+    // Numeric literals
+    rules.append(PyHighLightRule("\\b[+-]?[0-9]+[lL]?\\b", 0, basicStyles.value("numbers")));
+    rules.append(PyHighLightRule("\\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\\b", 0, basicStyles.value("numbers")));
+    rules.append(PyHighLightRule("\\b[+-]?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b", 0, basicStyles.value("numbers")));
+}
+
+bool
+PySyntaxHighlighter::matchMultiline(const QString &text,
+                                    const QRegExp &delimiter,
+                                    const int inState,
+                                    const QTextCharFormat &style)
+{
+    int start = -1;
+    int add = -1;
+    int end = -1;
+    int length = 0;
+    
+    // If inside triple-single quotes, start at 0
+    // Otherwise, look for the delimiter on this line
+    if (previousBlockState() == inState) {
+        start = 0;
+        add = 0;
+    } else {
+        start = delimiter.indexIn(text);
+        // Move past this match
+        add = delimiter.matchedLength();
+    }
+    
+    // As long as there's a delimiter match on this line...
+    while (start >= 0) {
+        // Look for the ending delimiter
+        end = delimiter.indexIn(text, start + add);
+        // Ending delimiter on this line?
+        if (end >= add) {
+            length = end - start + add + delimiter.matchedLength();
+            setCurrentBlockState(0);
+        } else {
+            // No= multi-line string
+            setCurrentBlockState(inState);
+            length = text.length() - start + add;
+        }
+        // Apply formatting and look for next
+        setFormat(start, length, style);
+        start = delimiter.indexIn(text, start + length);
+    }
+    // Return True if still inside a multi-line string, False otherwise
+    if (currentBlockState() == inState) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+const QTextCharFormat
+PySyntaxHighlighterPrivate::getTextCharFormat(double r, double g, double b, const QString &style)
+{
+    QTextCharFormat charFormat;
+    QColor color;
+    color.setRgbF(Natron::clamp(r, 0., 1.), Natron::clamp(g, 0., 1.), Natron::clamp(b, 0., 1.));
+    charFormat.setForeground(color);
+    if (style.contains("bold", Qt::CaseInsensitive)) {
+        charFormat.setFontWeight(QFont::Bold);
+    }
+    if (style.contains("italic", Qt::CaseInsensitive)) {
+        charFormat.setFontItalic(true);
+    }
+    return charFormat;
+}
+
+
+PySyntaxHighlighter::PySyntaxHighlighter(QTextDocument *parent)
+: QSyntaxHighlighter(parent)
+, _imp(new PySyntaxHighlighterPrivate(this))
+{
+    
+}
+
+PySyntaxHighlighter::~PySyntaxHighlighter()
+{
+    
+}
+
+void PySyntaxHighlighter::reload()
+{
+    _imp->reload();
+}
+
+void
+PySyntaxHighlighterPrivate::reload()
+{
+    basicStyles.clear();
+    
+    double r,g,b;
+    boost::shared_ptr<Settings> s = appPTR->getCurrentSettings();
+    s->getSEKeywordColor(&r, &g, &b);
+    basicStyles.insert("keyword", getTextCharFormat(r,g,b,"bold"));
+    
+    s->getSEOperatorColor(&r, &g, &b);
+    basicStyles.insert("operator", getTextCharFormat(r,g,b));
+    
+    s->getSEBraceColor(&r, &g, &b);
+    basicStyles.insert("brace", getTextCharFormat(r,g,b));
+    
+    s->getSEDefClassColor(&r, &g, &b);
+    basicStyles.insert("defclass", getTextCharFormat(r,g,b, "bold"));
+    
+    s->getSEStringsColor(&r, &g, &b);
+    basicStyles.insert("string", getTextCharFormat(r,g,b));
+    basicStyles.insert("string2", getTextCharFormat(r,g,b));
+    
+    s->getSECommentsColor(&r, &g, &b);
+    basicStyles.insert("comment", getTextCharFormat(r,g,b, "italic"));
+    
+    s->getSESelfColor(&r, &g, &b);
+    basicStyles.insert("self", getTextCharFormat(r,g,b,"bold,italic"));
+    
+    s->getSENumbersColor(&r, &g, &b);
+    basicStyles.insert("numbers", getTextCharFormat(r,g,b));
+    
+    initializeRules();
+
+}
+
 InputScriptTextEdit::InputScriptTextEdit(QWidget* parent)
 : QPlainTextEdit(parent)
 , _lineNumber(new LineNumberWidget(this))
@@ -47,6 +303,16 @@ InputScriptTextEdit::InputScriptTextEdit(QWidget* parent)
     QObject::connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
     QObject::connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
     QObject::connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
+    
+    _highlighter = new PySyntaxHighlighter(document());
+}
+
+
+void
+InputScriptTextEdit::reloadHighlighter()
+{
+    _highlighter->reload();
+    _highlighter->rehighlight();
 }
 
 InputScriptTextEdit::~InputScriptTextEdit()

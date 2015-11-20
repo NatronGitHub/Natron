@@ -281,6 +281,14 @@ ScriptEditor::~ScriptEditor()
 }
 
 void
+ScriptEditor::reloadHighlighter()
+{
+    if (_imp->inputEdit) {
+        _imp->inputEdit->reloadHighlighter();
+    }
+}
+
+void
 ScriptEditor::onHistoryCanUndoChanged(bool canUndo)
 {
     _imp->undoB->setEnabled(canUndo);

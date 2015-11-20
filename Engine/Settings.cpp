@@ -450,6 +450,10 @@ Settings::initializeKnobsAppearance()
     _dopeSheetEditorColors->setAsTab();
     _appearanceTab->addKnob(_dopeSheetEditorColors);
     
+    _scriptEditorColors = Natron::createKnob<KnobGroup>(this, "Script Editor");
+    _scriptEditorColors->setAsTab();
+    _appearanceTab->addKnob(_scriptEditorColors);
+    
     _sunkenColor =  Natron::createKnob<KnobColor>(this, "Sunken",3);
     _sunkenColor->setName("sunken");
     _sunkenColor->setAnimationEnabled(false);
@@ -601,6 +605,70 @@ Settings::initializeKnobsAppearance()
     _dopeSheetEditorGridColor->setAnimationEnabled(false);
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
+    
+    
+    _curLineColor = Natron::createKnob<KnobColor>(this, "Current Line Color", 3);
+    _curLineColor->setName("currentLineColor");
+    _curLineColor->setAnimationEnabled(false);
+    _curLineColor->setSimplified(true);
+    //_numbersColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_curLineColor);
+    
+    _keywordColor = Natron::createKnob<KnobColor>(this, "Keyword Color", 3);
+    _keywordColor->setName("keywordColor");
+    _keywordColor->setAnimationEnabled(false);
+    _keywordColor->setSimplified(true);
+    _keywordColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_keywordColor);
+    
+    _operatorColor = Natron::createKnob<KnobColor>(this, "Operator Color", 3);
+    _operatorColor->setName("operatorColor");
+    _operatorColor->setAnimationEnabled(false);
+    _operatorColor->setSimplified(true);
+    _operatorColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_operatorColor);
+    
+    _braceColor = Natron::createKnob<KnobColor>(this, "Brace Color", 3);
+    _braceColor->setName("braceColor");
+    _braceColor->setAnimationEnabled(false);
+    _braceColor->setSimplified(true);
+    _braceColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_braceColor);
+    
+    _defClassColor = Natron::createKnob<KnobColor>(this, "Class Def Color", 3);
+    _defClassColor->setName("classDefColor");
+    _defClassColor->setAnimationEnabled(false);
+    _defClassColor->setSimplified(true);
+    //_defClassColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_defClassColor);
+    
+    _stringsColor = Natron::createKnob<KnobColor>(this, "Strings Color", 3);
+    _stringsColor->setName("stringsColor");
+    _stringsColor->setAnimationEnabled(false);
+    _stringsColor->setSimplified(true);
+    _stringsColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_stringsColor);
+    
+    _commentsColor = Natron::createKnob<KnobColor>(this, "Comments Color", 3);
+    _commentsColor->setName("commentsColor");
+    _commentsColor->setAnimationEnabled(false);
+    _commentsColor->setSimplified(true);
+    _commentsColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_commentsColor);
+    
+    _selfColor = Natron::createKnob<KnobColor>(this, "Self Color", 3);
+    _selfColor->setName("selfColor");
+    _selfColor->setAnimationEnabled(false);
+    _selfColor->setSimplified(true);
+    _selfColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_selfColor);
+    
+    _numbersColor = Natron::createKnob<KnobColor>(this, "Numbers Color", 3);
+    _numbersColor->setName("numbersColor");
+    _numbersColor->setAnimationEnabled(false);
+    _numbersColor->setSimplified(true);
+    //_numbersColor->setAddNewLine(false);
+    _scriptEditorColors->addKnob(_numbersColor);
 
 
     boost::shared_ptr<KnobPage> ocioTab = Natron::createKnob<KnobPage>(this, "OpenColorIO");
@@ -1458,6 +1526,41 @@ Settings::setDefaultValues()
     _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
     _dopeSheetEditorGridColor->setDefaultValue(0.714, 2);
 
+    _keywordColor->setDefaultValue(0.7,0);
+    _keywordColor->setDefaultValue(0.7,1);
+    _keywordColor->setDefaultValue(0.,2);
+    
+    _operatorColor->setDefaultValue(0.78, 0);
+    _operatorColor->setDefaultValue(0.78, 1);
+    _operatorColor->setDefaultValue(0.78, 2);
+    
+    _braceColor->setDefaultValue(0.85, 0);
+    _braceColor->setDefaultValue(0.85, 1);
+    _braceColor->setDefaultValue(0.85, 2);
+    
+    _defClassColor->setDefaultValue(0.7,0);
+    _defClassColor->setDefaultValue(0.7,1);
+    _defClassColor->setDefaultValue(0.,2);
+    
+    _stringsColor->setDefaultValue(0.8,0);
+    _stringsColor->setDefaultValue(0.2,1);
+    _stringsColor->setDefaultValue(0.,2);
+
+    _commentsColor->setDefaultValue(0.25,0);
+    _commentsColor->setDefaultValue(0.6,1);
+    _commentsColor->setDefaultValue(0.25,2);
+    
+    _selfColor->setDefaultValue(0.7,0);
+    _selfColor->setDefaultValue(0.7,1);
+    _selfColor->setDefaultValue(0.,2);
+
+    _numbersColor->setDefaultValue(0.25,0);
+    _numbersColor->setDefaultValue(0.8,1);
+    _numbersColor->setDefaultValue(0.9,2);
+    
+    _curLineColor->setDefaultValue(0.35,0);
+    _curLineColor->setDefaultValue(0.35,1);
+    _curLineColor->setDefaultValue(0.35,2);
 
     endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 } // setDefaultValues
@@ -1918,11 +2021,19 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _dopeSheetEditorRootSectionBackgroundColor.get() ||
                 k == _dopeSheetEditorKnobSectionBackgroundColor.get() ||
                 k == _dopeSheetEditorScaleColor.get() ||
-                k == _dopeSheetEditorGridColor.get())) {
+                k == _dopeSheetEditorGridColor.get() ||
+                k == _keywordColor.get() ||
+                k == _operatorColor.get() ||
+                k == _curLineColor.get() ||
+                k == _braceColor.get() ||
+                k == _defClassColor.get() ||
+                k == _stringsColor.get() ||
+                k == _commentsColor.get() ||
+                k == _selfColor.get() ||
+                k == _numbersColor.get())) {
                     appPTR->reloadStylesheets();
                   
-                }
-    else if (k == _qssFile.get()) {
+    } else if (k == _qssFile.get()) {
         appPTR->reloadStylesheets();
     } else if (k == _hostName.get()) {
         std::string hostName = _hostName->getActiveEntryText_mt_safe();
@@ -2786,6 +2897,9 @@ Settings::isMergeAutoConnectingToAInput() const
     return _useInputAForMergeAutoConnect->getValue();
 }
 
+
+
+
 void
 Settings::doOCIOStartupCheckIfNeeded()
 {
@@ -3136,6 +3250,80 @@ Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const
     *g = _dopeSheetEditorGridColor->getValue(1);
     *b = _dopeSheetEditorGridColor->getValue(2);
 }
+
+void
+Settings::getSEKeywordColor(double* r,double* g, double* b) const
+{
+    *r = _keywordColor->getValue(0);
+    *g = _keywordColor->getValue(1);
+    *b = _keywordColor->getValue(2);
+}
+
+void
+Settings::getSEOperatorColor(double* r,double* g, double* b) const
+{
+    *r = _operatorColor->getValue(0);
+    *g = _operatorColor->getValue(1);
+    *b = _operatorColor->getValue(2);
+}
+
+void
+Settings::getSEBraceColor(double* r,double* g, double* b) const
+{
+    *r = _braceColor->getValue(0);
+    *g = _braceColor->getValue(1);
+    *b = _braceColor->getValue(2);
+}
+
+void
+Settings::getSEDefClassColor(double* r,double* g, double* b) const
+{
+    *r = _defClassColor->getValue(0);
+    *g = _defClassColor->getValue(1);
+    *b = _defClassColor->getValue(2);
+}
+
+void
+Settings::getSEStringsColor(double* r,double* g, double* b) const
+{
+    *r = _stringsColor->getValue(0);
+    *g = _stringsColor->getValue(1);
+    *b = _stringsColor->getValue(2);
+}
+
+void
+Settings::getSECommentsColor(double* r,double* g, double* b) const
+{
+    *r = _commentsColor->getValue(0);
+    *g = _commentsColor->getValue(1);
+    *b = _commentsColor->getValue(2);
+}
+
+void
+Settings::getSESelfColor(double* r,double* g, double* b) const
+{
+    *r = _selfColor->getValue(0);
+    *g = _selfColor->getValue(1);
+    *b = _selfColor->getValue(2);
+}
+
+void
+Settings::getSENumbersColor(double* r,double* g, double* b) const
+{
+    *r = _numbersColor->getValue(0);
+    *g = _numbersColor->getValue(1);
+    *b = _numbersColor->getValue(2);
+}
+
+
+void
+Settings::getSECurLineColor(double* r,double* g, double* b) const
+{
+    *r = _curLineColor->getValue(0);
+    *g = _curLineColor->getValue(1);
+    *b = _curLineColor->getValue(2);
+}
+
 
 void Settings::getPluginIconFrameColor(int *r, int *g, int *b) const
 {
