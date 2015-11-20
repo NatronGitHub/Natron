@@ -70,8 +70,8 @@ struct ScriptEditorPrivate
     Button* clearOutputB;
     Button* showAutoDeclVarsB;
     
-    ScriptTextEdit* outputEdit;
-    ScriptTextEdit* inputEdit;
+    OutputScriptTextEdit* outputEdit;
+    InputScriptTextEdit* inputEdit;
     
     QUndoStack history;
     
@@ -251,18 +251,17 @@ ScriptEditor::ScriptEditor(Gui* gui)
         scriptFont = font();
     }
     
-    _imp->outputEdit = new ScriptTextEdit(this);
+    _imp->outputEdit = new OutputScriptTextEdit(this);
     QObject::connect(_imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)));
-    _imp->outputEdit->setOutput(true);
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
     _imp->outputEdit->setFont(scriptFont);
     
-    _imp->inputEdit = new ScriptTextEdit(this);
+    _imp->inputEdit = new InputScriptTextEdit(this);
     QObject::connect(_imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()));
+    _imp->inputEdit->setFont(scriptFont);
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
     _imp->inputEdit->setTabStopWidth(fm.width(' ') * 4);
-    _imp->inputEdit->setFont(scriptFont);
     _imp->outputEdit->setTabStopWidth(fm.width(' ') * 4);
     
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
