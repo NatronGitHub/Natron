@@ -99,7 +99,7 @@ NodeGraphSimpleTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
             QPoint topLeft = _graph->mapFromScene(mapToScene(QPointF(0,0)));
             QPointF btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
             
-            int height = std::abs(btmLeft.y() - topLeft.y());
+            int height = (int)std::abs((double)(btmLeft.y() - topLeft.y()));
 
             isTooSmall = height < NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX;
 
