@@ -71,7 +71,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     bool didSomething = false;
 
     _imp->_lastMousePos = e->pos();
-    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+    const QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
 
     if (((e->buttons() & Qt::MiddleButton) &&
          (buttonMetaAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton))) ||
@@ -206,7 +206,6 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 }
             }
 
-            _imp->_lastNodeDragStartPoint = selected->getPos_mt_safe();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {
                 selectNode(selected,true); ///< don't wipe the selection
@@ -281,7 +280,6 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         
         _imp->_evtState = eEventStateDraggingNode;
-        _imp->_lastNodeDragStartPoint = dotNodeGui->getPos_mt_safe();
         didSomething = true;
     } else if (selectedEdge && groupEdited) {
         _imp->_arrowSelected = selectedEdge;
@@ -317,10 +315,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 deselect();
             }
             _imp->_evtState = eEventStateSelectionRect;
-            _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
-            QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
-            _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
-            //_imp->_selectionRect->show();
+            _imp->_lastSelectionStartPointScene = lastMousePosScene;
+            _imp->_selectionRect = QRectF(lastMousePosScene.x(), lastMousePosScene.y(), 0,0);
         } else if ( buttonDownIsMiddle(e) ) {
             _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);

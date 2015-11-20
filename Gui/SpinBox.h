@@ -112,7 +112,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
-    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     bool validateText();

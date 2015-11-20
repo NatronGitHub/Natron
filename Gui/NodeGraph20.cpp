@@ -60,8 +60,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
     
-    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(lastMousePosScene).x();
-    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
+    double dx,dy;
+    {
+        QPointF newPosRoot = _imp->_root->mapFromScene(newPos);
+        QPointF lastMousePosRoot = _imp->_root->mapFromScene(lastMousePosScene);
+        dx = newPosRoot.x() - lastMousePosRoot.x();
+        dy = newPosRoot.y() - lastMousePosRoot.y();
+    }
 
     _imp->_hasMovedOnce = true;
     
@@ -142,7 +147,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         } else {
             _imp->_arrowSelected->dragSource(np);
         }
-        scrollViewIfNeeded(newPos);
+        checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
         break;
     }
@@ -183,7 +188,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             double dxScene = newPos.x() - lastMousePosScene.x();
             double dyScene = newPos.y() - lastMousePosScene.y();
             
-            QPointF newNodesCenter;
             
             bool deltaSet = false;
             for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it = nodesToMove.begin();
@@ -197,19 +201,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     _imp->_deltaSinceMousePress.rx() += newNodePos.x() - pos.x();
                     _imp->_deltaSinceMousePress.ry() += newNodePos.y() - pos.y();
                     deltaSet = true;
-                }
-                newNodePos = it->first->mapToScene(it->first->mapFromParent(newNodePos));
-                newNodesCenter.rx() += newNodePos.x();
-                newNodesCenter.ry() += newNodePos.y();
-                
+                }                
             }
-            size_t c = nodesToMove.size();
-            if (c) {
-                newNodesCenter.rx() /= c;
-                newNodesCenter.ry() /= c;
-            }
-            
-            scrollViewIfNeeded(newNodesCenter);
+         
+            checkAndStartAutoScrollTimer(newPos);
             
             if (!deltaSet) {
                 _imp->_deltaSinceMousePress.rx() += dxScene;
@@ -439,7 +434,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     case eEventStateMovingArea: {
         mustUpdateNavigator = true;
-        _imp->_root->moveBy(dx, dy);
+        moveRootInternal(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
         mustUpdate = true;
         break;
@@ -450,22 +445,21 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QPointF p = _imp->_backdropResized->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
-        scrollViewIfNeeded(newPos);
+        checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case eEventStateSelectionRect: {
-        QPointF lastSelectionScene = mapToScene(_imp->_lastSelectionStartPoint);
-        QPointF startDrag = _imp->_selectionRect->mapFromScene(lastSelectionScene);
-        QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
+        QPointF startDrag = _imp->_lastSelectionStartPointScene;
+        QPointF cur = newPos;
         double xmin = std::min( cur.x(),startDrag.x() );
         double xmax = std::max( cur.x(),startDrag.x() );
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
-        scrollViewIfNeeded(newPos);
-        _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
-        _imp->_selectionRect->show();
+        checkAndStartAutoScrollTimer(newPos);
+        QRectF selRect(xmin,ymin,xmax-xmin,ymax-ymin);
+        _imp->_selectionRect = selRect;
         mustUpdate = true;
         break;
     }
@@ -496,6 +490,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     
     _imp->_lastMousePos = e->pos();
 
+    
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
         mustUpdate = true;

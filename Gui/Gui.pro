@@ -156,6 +156,7 @@ SOURCES += \
     NodeGraph45.cpp \
     NodeGraphPrivate.cpp \
     NodeGraphPrivate10.cpp \
+    NodeGraphTextItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
@@ -290,6 +291,7 @@ HEADERS += \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
+    NodeGraphTextItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeGuiSerialization.h \

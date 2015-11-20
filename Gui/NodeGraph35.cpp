@@ -61,6 +61,9 @@ using namespace Natron;
 QImage
 NodeGraph::getFullSceneScreenShot()
 {
+    
+    _imp->isDoingPreviewRender = true;
+    
     ///The bbox of all nodes in the nodegraph
     QRectF sceneR = _imp->calcNodesBoundingRect();
 
@@ -101,7 +104,7 @@ NodeGraph::getFullSceneScreenShot()
 
     ///Paint the visible portion with a highlight
     QPainter painter(&renderImage);
-
+    
     ///Remove the overlays from the scene before rendering it
     scene()->removeItem(_imp->_cacheSizeText);
     scene()->removeItem(_imp->_navigator);
@@ -150,6 +153,8 @@ NodeGraph::getFullSceneScreenShot()
         }
     }
 
+    _imp->isDoingPreviewRender = false;
+    
     return img;
 } // getFullSceneScreenShot
 
@@ -244,18 +249,21 @@ NodeGraph::updateCacheSizeText()
         }
         return;
     } else {
-        if (!_imp->_cacheSizeText->isVisible()) {
+        if (!_imp->cacheSizeHidden && !_imp->_cacheSizeText->isVisible()) {
             _imp->_cacheSizeText->show();
+        } else if (_imp->cacheSizeHidden && _imp->_cacheSizeText->isVisible()) {
+            _imp->_cacheSizeText->hide();
+            return;
         }
 
     }
     
-    QString oldText = _imp->_cacheSizeText->toPlainText();
+    QString oldText = _imp->_cacheSizeText->text();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
     QString newText = tr("Memory cache size: ") + cacheSizeStr;
     if (newText != oldText) {
-        _imp->_cacheSizeText->setPlainText(newText);
+        _imp->_cacheSizeText->setText(newText);
     }
 }
 
@@ -263,7 +271,8 @@ NodeGraph::updateCacheSizeText()
 void
 NodeGraph::toggleCacheInfo()
 {
-    if ( _imp->_cacheSizeText->isVisible() ) {
+    _imp->cacheSizeHidden = !_imp->cacheSizeHidden;
+    if (_imp->cacheSizeHidden) {
         _imp->_cacheSizeText->hide();
     } else {
         _imp->_cacheSizeText->show();

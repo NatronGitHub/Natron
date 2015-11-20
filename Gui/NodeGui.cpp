@@ -78,6 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGuiSerialization.h"
+#include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SequenceFileDialog.h"
@@ -533,7 +534,7 @@ NodeGui::createGui()
 
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
-            _pluginIcon = new QGraphicsPixmapItem(this);
+            _pluginIcon = new NodeGraphPixmapItem(getDagGui(),this);
             _pluginIcon->setZValue(depth + 1);
             _pluginIconFrame = new QGraphicsRectItem(this);
             _pluginIconFrame->setZValue(depth);
@@ -547,19 +548,21 @@ NodeGui::createGui()
     }
 
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
-        _mergeIcon = new QGraphicsPixmapItem(this);
+        _mergeIcon = new NodeGraphPixmapItem(getDagGui(),this);
         _mergeIcon->setZValue(depth + 1);
     }
 
-    _nameItem = new QGraphicsTextItem(getNode()->getLabel().c_str(),this);
+    _nameItem = new NodeGraphTextItem(getDagGui(),this,false);
+    _nameItem->setPlainText(getNode()->getLabel().c_str());
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth+ 1);
 
-    _persistentMessage = new QGraphicsTextItem("",this);
+    _persistentMessage = new NodeGraphSimpleTextItem(getDagGui(),this,false);
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
+    f.setStyleStrategy(QFont::NoAntialias);
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
@@ -572,7 +575,7 @@ NodeGui::createGui()
     bitDepthGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     bitDepthGrad.push_back( qMakePair( 0.3, QColor(Qt::yellow) ) );
     bitDepthGrad.push_back( qMakePair( 1., QColor(243,137,0) ) );
-    _bitDepthWarning.reset(new NodeGuiIndicator(depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
+    _bitDepthWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
                                                 NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                             bitDepthGrad,QColor(0,0,0,255),this));
     _bitDepthWarning->setActive(false);
@@ -582,12 +585,12 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator.reset(new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
+    _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
     _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
-    _availableViewsIndicator.reset(new NodeGuiIndicator(depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,exprGrad, QColor(255,255,255), this));
+    _availableViewsIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,exprGrad, QColor(255,255,255), this));
     _availableViewsIndicator->setActive(false);
     
     onAvailableViewsChanged();
@@ -596,7 +599,7 @@ NodeGui::createGui()
     ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
     ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
     ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
-    _passThroughIndicator.reset(new NodeGuiIndicator(depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
+    _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
     _passThroughIndicator->setActive(false);
 
 
@@ -829,7 +832,7 @@ NodeGui::resize(int width,
 
     }
 
-    QString persistentMessage = _persistentMessage->toPlainText();
+    QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
     metrics = QFontMetrics(f);
     int pMWidth = metrics.width(persistentMessage);
@@ -1905,13 +1908,13 @@ NodeGui::onPersistentMessageChanged()
     } else {
 
         if (type == 1) {
-            _persistentMessage->setPlainText(tr("ERROR"));
+            _persistentMessage->setText(tr("ERROR"));
             QColor errColor(128,0,0,255);
-            _persistentMessage->setDefaultTextColor(errColor);
+            _persistentMessage->setBrush(errColor);
         } else if (type == 2) {
-            _persistentMessage->setPlainText(tr("WARNING"));
+            _persistentMessage->setText(tr("WARNING"));
             QColor warColor(180,180,0,255);
-            _persistentMessage->setDefaultTextColor(warColor);
+            _persistentMessage->setBrush(warColor);
         } else {
             return;
         }
@@ -2085,19 +2088,6 @@ NodeGui::setMergeHintActive(bool active)
 
 }
 
-void
-NodeGui::setVisibleDetails(bool visible)
-{
-    if (!isVisible()) {
-        return;
-    }
-    if (_nameItem) {
-        _nameItem->setVisible(visible);
-    }
-    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        (*it)->setVisibleDetails(visible);
-    }
-}
 
 void
 NodeGui::onInputNRenderingStarted(int input)
@@ -2438,10 +2428,11 @@ NodeGui::toggleBitDepthIndicator(bool on,
 struct NodeGuiIndicatorPrivate
 {
     QGraphicsEllipseItem* ellipse;
-    QGraphicsTextItem* textItem;
+    QGraphicsSimpleTextItem* textItem;
     QGradientStops gradStops;
 
-    NodeGuiIndicatorPrivate(int depth,
+    NodeGuiIndicatorPrivate(NodeGraph* graph,
+                            int depth,
                             const QString & text,
                             const QPointF & topLeft,
                             int width,
@@ -2466,12 +2457,19 @@ struct NodeGuiIndicatorPrivate
         ellipse->setBrush(radialGrad);
 
 
-        textItem = new QGraphicsTextItem(text,parent);
-        //QFont font(appFont,appFontSize);
-        QFontMetrics fm(textItem->font());
-        textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
-        //textItem->setFont(font);
-        textItem->setDefaultTextColor(textColor);
+        textItem = new NodeGraphSimpleTextItem(graph,parent,false);
+        textItem->setText(text);
+        
+        
+        QPointF sceneCenter = ellipse->mapToScene(ellipse->mapFromParent(ellipseCenter));
+        QRectF textBr = textItem->mapToScene(textItem->boundingRect()).boundingRect();
+        sceneCenter.ry() -= (textBr.height() / 2.);
+        sceneCenter.rx() -= (textBr.width() / 2.);
+        QPointF textPos = textItem->mapToParent(textItem->mapFromScene(sceneCenter));
+        textItem->setPos(textPos);
+
+        
+        textItem->setBrush(textColor);
         textItem->setZValue(depth);
 #if QT_VERSION < 0x050000
         textItem->scale(0.8, 0.8);
@@ -2481,7 +2479,8 @@ struct NodeGuiIndicatorPrivate
     }
 };
 
-NodeGuiIndicator::NodeGuiIndicator(int depth,
+NodeGuiIndicator::NodeGuiIndicator(NodeGraph* graph,
+                                   int depth,
                                    const QString & text,
                                    const QPointF & topLeft,
                                    int width,
@@ -2489,7 +2488,7 @@ NodeGuiIndicator::NodeGuiIndicator(int depth,
                                    const QGradientStops & gradient,
                                    const QColor & textColor,
                                    QGraphicsItem* parent)
-    : _imp( new NodeGuiIndicatorPrivate(depth,text,topLeft,width,height,gradient,textColor,parent) )
+    : _imp( new NodeGuiIndicatorPrivate(graph,depth,text,topLeft,width,height,gradient,textColor,parent) )
 {
 }
 
@@ -2531,10 +2530,15 @@ NodeGuiIndicator::refreshPosition(const QPointF & topLeft)
     QRadialGradient radialGrad(ellipseRect.center(),ellipseRad);
     radialGrad.setStops(_imp->gradStops);
     _imp->ellipse->setBrush(radialGrad);
-
-    QFont font = _imp->textItem->font();
-    QFontMetrics fm(font);
-    _imp->textItem->setPos(topLeft.x()  - 2 * r.width() / 3, topLeft.y() - 2 * fm.height() / 3);
+    QPointF ellipseCenter = ellipseRect.center();
+    
+    
+    QPointF sceneCenter = _imp->ellipse->mapToScene(_imp->ellipse->mapFromParent(ellipseCenter));
+    QRectF textBr = _imp->textItem->mapToScene(_imp->textItem->boundingRect()).boundingRect();
+    sceneCenter.ry() -= (textBr.height() / 2.);
+    sceneCenter.rx() -= (textBr.width() / 2.);
+    QPointF textPos = _imp->textItem->mapToParent(_imp->textItem->mapFromScene(sceneCenter));
+    _imp->textItem->setPos(textPos);
 }
 
 ///////////////////
@@ -3592,7 +3596,7 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     }
 
     if (!_pluginIcon) {
-        _pluginIcon = new QGraphicsPixmapItem(this);
+        _pluginIcon = new NodeGraphPixmapItem(getDagGui(),this);
         _pluginIcon->setZValue(getBaseDepth() + 1);
         _pluginIconFrame = new QGraphicsRectItem(this);
         _pluginIconFrame->setZValue(getBaseDepth());
