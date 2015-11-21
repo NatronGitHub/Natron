@@ -1103,6 +1103,7 @@ OutputSchedulerThread::run()
                 {
                     QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
                     isAbortRequested = _imp->abortRequested > 0;
+#pragma message WARN("Value stored to 'blocking' is never read'")
                     blocking = _imp->isAbortRequestBlocking;
                 }
                 if (isAbortRequested) {

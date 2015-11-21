@@ -392,33 +392,29 @@ void
 KnobGuiInt::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    
-    assert(dimension == -1 || (dimension >= 0 && dimension < knob->getDimension()));
-    
     int values[3];
+    const int knobDim =  knob->getDimension();
+    assert(1 <= knobDim && knobDim <= 3);
+    assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
+    for (int i = 0; i < knobDim; ++i) {
+        values[i] = knob->getValue(i);
+    }
     int refValue;
     if (dimension == -1) {
-        values[0] = knob->getValue(0);
         refValue = values[0];
     } else {
         values[dimension] = knob->getValue(dimension);
         refValue = values[dimension];
     }
-    bool allValuesDifferent = false;
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        
-        if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
-            ///Already processed
-            continue;
-        }
-        values[i] = knob->getValue(i);
+    bool allValuesNotEqual = false;
+    for (int i = 0; i < knobDim; ++i) {
         if (values[i] != refValue) {
-            allValuesDifferent = true;
+            allValuesNotEqual = true;
         }
     }
-    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && allValuesDifferent) {
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked() && allValuesNotEqual) {
         expandAllDimensions();
-    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !allValuesDifferent) {
+    } else if (_dimensionSwitchButton && _dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
         foldAllDimensions();
     }
     
@@ -432,7 +428,7 @@ KnobGuiInt::updateGUI(int dimension)
             case 0:
                 _spinBoxes[dimension].first->setValue(values[dimension]);
                 if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-                    for (int i = 1; i < knob->getDimension(); ++i) {
+                    for (int i = 1; i < knobDim; ++i) {
                         _spinBoxes[i].first->setValue(values[dimension]);
                     }
                 }
@@ -448,11 +444,11 @@ KnobGuiInt::updateGUI(int dimension)
     } else {
         _spinBoxes[0].first->setValue(values[0]);
         if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-            for (int i = 1; i < knob->getDimension(); ++i) {
+            for (int i = 1; i < knobDim; ++i) {
                 _spinBoxes[i].first->setValue(values[0]);
             }
         } else {
-            for (int i = 1; i < knob->getDimension(); ++i) {
+            for (int i = 1; i < knobDim; ++i) {
                 _spinBoxes[i].first->setValue(values[i]);
             }
         }

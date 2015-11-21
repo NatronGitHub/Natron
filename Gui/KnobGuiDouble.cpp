@@ -477,27 +477,30 @@ KnobGuiDouble::onDecimalsChanged(int deci,
     _spinBoxes[index].first->decimals(deci);
 }
 
+#pragma message WARN("TODO: rework as in KnobGuiColor::updateGUI and KnobGuiInt::updateGUI")
 void
 KnobGuiDouble::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    
-    assert(dimension == -1 || (dimension >= 0 && dimension < knob->getDimension()));
+    const int knobDim = knob->getDimension();
+    assert(dimension == -1 || (dimension >= 0 && dimension < knobDim));
     
     double values[3];
     double refValue;
     if (dimension == -1) {
         values[0] = knob->getValue(0);
         valueAccordingToType(false, dimension, &values[0]);
+#pragma message WARN("Value stored to 'refValue' is never read'")
         refValue = values[0];
     } else {
         values[dimension] = knob->getValue(dimension);
         valueAccordingToType(false, dimension, &values[dimension]);
+#pragma message WARN("Value stored to 'refValue' is never read'")
         refValue = values[dimension];
     }
     bool valuesDifferent = false;
     /*
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knobDim; ++i) {
         
         if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
             ///Already processed
@@ -511,9 +514,8 @@ KnobGuiDouble::updateGUI(int dimension)
     }
      */
     double firstDimensionValue;
-    int dim = knob->getDimension();
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    for (int i = 0; i < dim ; ++i) {
+    for (int i = 0; i < knobDim ; ++i) {
         double v = knob->getValue(i);
         if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
             knob->denormalize(i, time, &v);
@@ -542,7 +544,7 @@ KnobGuiDouble::updateGUI(int dimension)
                 }
                 _spinBoxes[dimension].first->setValue(values[dimension]);
                 if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-                    for (int i = 1; i < knob->getDimension(); ++i) {
+                    for (int i = 1; i < knobDim; ++i) {
                         _spinBoxes[i].first->setValue(values[dimension]);
                     }
                 }
@@ -562,11 +564,11 @@ KnobGuiDouble::updateGUI(int dimension)
         }
         _spinBoxes[0].first->setValue(values[0]);
         if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
-            for (int i = 1; i < knob->getDimension(); ++i) {
+            for (int i = 1; i < knobDim; ++i) {
                 _spinBoxes[i].first->setValue(values[0]);
             }
         } else {
-            for (int i = 1; i < knob->getDimension(); ++i) {
+            for (int i = 1; i < knobDim; ++i) {
                 _spinBoxes[i].first->setValue(values[i]);
             }
         }

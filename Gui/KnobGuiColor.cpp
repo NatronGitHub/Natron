@@ -646,36 +646,34 @@ KnobGuiColor::updateGUI(int dimension)
         }
         updateLabel(r, g, b, a);
     } else {
-        assert(dimension == -1 || (dimension < _dimension && dimension >= 0 && dimension <= 3));
+        const int knobDim = _dimension;
+        assert(1 <= knobDim && knobDim <= 4);
+        assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
         double values[4];
         double refValue;
+        for (int i = 0; i < knobDim; ++i) {
+            values[i] = knob->getValue(i);
+        }
         if (dimension == -1) {
-            values[0] = knob->getValue(0);
             refValue = values[0];
         } else {
-            values[dimension] = knob->getValue(dimension);
             refValue = values[dimension];
         }
-        bool allValuesDifferent = false;
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            
-            if ((dimension != -1 && i == dimension) || (dimension == -1 && i == 0)) {
-                ///Already processed
-                continue;
-            }
-            values[i] = knob->getValue(i);
+        bool allValuesNotEqual = false;
+        for (int i = 0; i < knobDim; ++i) {
             if (values[i] != refValue) {
-                allValuesDifferent = true;
+                allValuesNotEqual = true;
             }
         }
-        if (!knob->areAllDimensionsEnabled() && allValuesDifferent) {
+        if (!knob->areAllDimensionsEnabled() && allValuesNotEqual) {
             expandAllDimensions();
-        } else if (knob->areAllDimensionsEnabled() && !allValuesDifferent) {
+        } else if (knob->areAllDimensionsEnabled() && !allValuesNotEqual) {
             foldAllDimensions();
         }
         
         switch (dimension) {
             case 0: {
+                assert(knobDim >= 1);
                 _rBox->setValue(values[0]);
                 _slider->seekScalePosition(values[0]);
                 if ( !knob->areAllDimensionsEnabled() ) {
@@ -688,12 +686,15 @@ KnobGuiColor::updateGUI(int dimension)
                 break;
             }
             case 1:
+                assert(knobDim >= 2);
                 _gBox->setValue(values[1]);
                 break;
             case 2:
+                assert(knobDim >= 3);
                 _bBox->setValue(values[2]);
                 break;
             case 3:
+                assert(knobDim >= 4);
                 _aBox->setValue(values[3]);
                 break;
             case -1:
@@ -709,11 +710,13 @@ KnobGuiColor::updateGUI(int dimension)
                     }
                 } else {
                     _rBox->setValue(values[0]);
-                    if (_dimension > 1) {
+                    if (knobDim > 1) {
                         _gBox->setValue(values[1]);
-                        _bBox->setValue(values[2]);
-                        if (_dimension >= 4) {
-                            _aBox->setValue(values[3]);
+                        if (knobDim > 2) {
+                            _bBox->setValue(values[2]);
+                            if (knobDim > 3) {
+                                _aBox->setValue(values[3]);
+                            }
                         }
                     }
                 }

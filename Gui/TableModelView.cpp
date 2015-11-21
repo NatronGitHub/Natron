@@ -322,7 +322,7 @@ TableModel::setTable(const QVector<TableItem*>& items)
         QModelIndex tl = QAbstractTableModel::index(0, 0);
         int cols = columnCount();
         int lastTableIndex = items.size() - 1;
-        int lastIndexRow = (lastTableIndex - (cols - 1)) / cols;
+        int lastIndexRow = cols == 0 ? lastTableIndex : (lastTableIndex - (cols - 1)) / cols;
         QModelIndex br = QAbstractTableModel::index(lastIndexRow, cols -1);
         Q_EMIT dataChanged(tl, br);
     }

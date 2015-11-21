@@ -2999,6 +2999,7 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
                 Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == Natron::eViewerCompositingOperatorNone) {
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+#pragma message WARN("Value stored to 'op' is never read'")
                     op = Natron::eViewerCompositingOperatorWipe;
                 }
                 _imp->activeInputs[1] = inputNbChanged;
