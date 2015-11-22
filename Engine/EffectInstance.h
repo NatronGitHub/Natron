@@ -463,7 +463,7 @@ public:
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically
      * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
      **/
-    virtual std::string getDescription() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
 
 
     /**

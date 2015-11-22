@@ -50,7 +50,7 @@ BackDrop::~BackDrop()
 }
 
 std::string
-BackDrop::getDescription() const
+BackDrop::getPluginDescription() const
 {
     return QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
               "move all the nodes inside the backdrop.").toStdString() ;

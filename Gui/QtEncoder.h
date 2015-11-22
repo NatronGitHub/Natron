@@ -77,7 +77,7 @@ public:
     virtual std::string getPluginID() const OVERRIDE;
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getDescription() const OVERRIDE;
+    virtual std::string getPluginDescription() const OVERRIDE;
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {

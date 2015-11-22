@@ -608,7 +608,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    std::string getDescription() const;
+    std::string getPluginDescription() const;
     
     /**
      * @brief Returns the absolute file-path to the plug-in icon.

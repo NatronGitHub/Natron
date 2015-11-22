@@ -60,7 +60,7 @@ public:
 
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
@@ -173,7 +173,7 @@ public:
     
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };

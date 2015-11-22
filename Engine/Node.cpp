@@ -2621,8 +2621,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
             if (!disableNatronKnobs || isWriter) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
-                    if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
-                        (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
+                    if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
+                        (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
                         mainPage = p;
                         break;
                     }
@@ -3035,7 +3035,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
             infoDisclaimer->setAnimationEnabled(false);
             infoDisclaimer->setIsPersistant(false);
             infoDisclaimer->setAsLabel();
-            infoDisclaimer->hideDescription();
             infoDisclaimer->setEvaluateOnChange(false);
             infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
             infoPage->addKnob(infoDisclaimer);
@@ -3049,7 +3048,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 inputInfo->setIsPersistant(false);
                 inputInfo->setEvaluateOnChange(false);
                 inputInfo->setSecretByDefault(true);
-                inputInfo->hideDescription();
                 inputInfo->setAsLabel();
                 _imp->inputFormats.push_back(inputInfo);
                 infoPage->addKnob(inputInfo);
@@ -3061,7 +3059,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
             outputFormat->setAnimationEnabled(false);
             outputFormat->setIsPersistant(false);
             outputFormat->setEvaluateOnChange(false);
-            outputFormat->hideDescription();
             outputFormat->setAsLabel();
             infoPage->addKnob(outputFormat);
             _imp->outputFormat = outputFormat;
@@ -3072,7 +3069,6 @@ Node::initializeKnobs(int renderScaleSupportPref)
             cacheOccupancy->setAnimationEnabled(false);
             cacheOccupancy->setIsPersistant(false);
             cacheOccupancy->setEvaluateOnChange(false);
-            cacheOccupancy->hideDescription();
             cacheOccupancy->setAsLabel();
             infoPage->addKnob(cacheOccupancy);
             _imp->cacheMemInfo = cacheOccupancy;
@@ -3407,7 +3403,6 @@ Node::initializeInputs()
             inputInfo->setIsPersistant(false);
             inputInfo->setEvaluateOnChange(false);
             inputInfo->setSecretByDefault(true);
-            inputInfo->hideDescription();
             inputInfo->setAsLabel();
             _imp->inputFormats.push_back(inputInfo);
             infoPage->insertKnob(1 + i,inputInfo);
@@ -4980,10 +4975,10 @@ Node::getPluginLabel() const
 }
 
 std::string
-Node::getDescription() const
+Node::getPluginDescription() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->getDescription();
+    return _imp->liveInstance->getPluginDescription();
 }
 
 int
@@ -6522,7 +6517,7 @@ Node::refreshEnabledKnobsLabel(const Natron::ImageComponents& comp)
             enabled->setSecret(true);
         } else {
             enabled->setSecret(false);
-            enabled->setDescription(channels[i]);
+            enabled->setLabel(channels[i]);
         }
         enabled->setValue(true, 0);
     }

@@ -76,7 +76,7 @@ QtWriter::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string
-QtWriter::getDescription() const
+QtWriter::getPluginDescription() const
 {
     return QObject::tr("The QtWriter node can render on disk the output of a node graph using the QImage (Qt) library.").toStdString();
 }

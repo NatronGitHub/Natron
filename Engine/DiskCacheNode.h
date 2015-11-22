@@ -68,7 +68,7 @@ public:
         return "DiskCache";
     }
 
-    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
     "When an image is found in the cache, " NATRON_APPLICATION_NAME " will then not request the input branch to render out that image. "

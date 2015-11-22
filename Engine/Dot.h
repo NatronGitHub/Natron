@@ -58,7 +58,7 @@ public:
         return "Dot";
     }
 
-    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return "";

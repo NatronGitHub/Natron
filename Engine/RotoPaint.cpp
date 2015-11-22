@@ -54,7 +54,7 @@ struct RotoPaintPrivate
 };
 
 std::string
-RotoPaint::getDescription() const
+RotoPaint::getPluginDescription() const
 {
     return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
 }
@@ -102,7 +102,7 @@ RotoNode::getPluginLabel() const
 }
 
 std::string
-RotoNode::getDescription() const
+RotoNode::getPluginDescription() const
 {
     return "Create masks and shapes";
 }

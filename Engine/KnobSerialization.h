@@ -739,7 +739,7 @@ public:
         }
         
         _isUserKnob = knob->isUserKnob();
-        _label = knob->getDescription();
+        _label = knob->getLabel();
         _triggerNewLine = knob->isNewLineActivated();
         _evaluatesOnChange = knob->getEvaluateOnChange();
         _isPersistent = knob->getIsPersistant();
@@ -933,7 +933,7 @@ public:
         assert(isGrp || isPage);
         
         _name = knob->getName();
-        _label = knob->getDescription();
+        _label = knob->getLabel();
         _secret = _knob->getIsSecret();
         
         if (isGrp) {

@@ -29,7 +29,7 @@
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
 
 std::string
-GroupInput::getDescription() const
+GroupInput::getPluginDescription() const
 {
     return "This node can only be used within a Group. It adds an input arrow to the group.";
 }

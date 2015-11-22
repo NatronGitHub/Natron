@@ -1433,7 +1433,7 @@ DSNode::DSNode(DopeSheet *model,
         }
 
         if (knob->getDimension() <= 1) {
-            QTreeWidgetItem * nameItem = createKnobNameItem(knob->getDescription().c_str(),
+            QTreeWidgetItem * nameItem = createKnobNameItem(knob->getLabel().c_str(),
                                                             Natron::eDopeSheetItemTypeKnobDim,
                                                             0,
                                                             _imp->nameItem);
@@ -1442,7 +1442,7 @@ DSNode::DSNode(DopeSheet *model,
             _imp->itemKnobMap.insert(TreeItemAndDSKnob(nameItem, dsKnob));
         }
         else {
-            QTreeWidgetItem *multiDimRootItem = createKnobNameItem(knob->getDescription().c_str(),
+            QTreeWidgetItem *multiDimRootItem = createKnobNameItem(knob->getLabel().c_str(),
                                                                    Natron::eDopeSheetItemTypeKnobRoot,
                                                                    -1,
                                                                    _imp->nameItem);
