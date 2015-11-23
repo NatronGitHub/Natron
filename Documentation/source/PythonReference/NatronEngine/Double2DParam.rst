@@ -60,7 +60,7 @@ Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the g
 
     :param x: :class:`float<PySide.QtCore.double>`
     :param y: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 
 Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.

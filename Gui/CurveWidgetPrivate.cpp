@@ -1109,12 +1109,12 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         } else {
             BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve.get());
             assert(bezierCurve);
-            std::set<int> keyframes;
+            std::set<double> keyframes;
             bezierCurve->getBezier()->getKeyframeTimes(&keyframes);
-            std::set<int>::iterator found = keyframes.find((*it)->key.getTime());
+            std::set<double>::iterator found = keyframes.find((*it)->key.getTime());
             assert(found != keyframes.end());
             if (found != keyframes.begin()) {
-                std::set<int>::iterator prev = found;
+                std::set<double>::iterator prev = found;
                 --prev;
                 if (!_widget->isSelectedKey((*it)->curve, *prev)) {
                     double diff = *prev  - *found + epsilon;
@@ -1122,11 +1122,13 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
                 }
             }
             if (found != keyframes.end()) {
-                std::set<int>::iterator next = found;
+                std::set<double>::iterator next = found;
                 ++next;
-                if (!_widget->isSelectedKey((*it)->curve, *next)) {
-                    double diff = *next - *found - epsilon;
-                    maxRight = std::max(0.,std::min(diff, maxRight));
+                if (next != keyframes.end()) {
+                    if (!_widget->isSelectedKey((*it)->curve, *next)) {
+                        double diff = *next - *found - epsilon;
+                        maxRight = std::max(0.,std::min(diff, maxRight));
+                    }
                 }
             }
         }

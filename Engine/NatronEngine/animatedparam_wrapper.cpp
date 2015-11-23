@@ -62,12 +62,12 @@ static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObjec
 
 
     // Overloaded function decisor
-    // 0: deleteValueAtTime(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: deleteValueAtTime(double,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // deleteValueAtTime(int,int)
+            overloadId = 0; // deleteValueAtTime(double,int)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // deleteValueAtTime(int,int)
+            overloadId = 0; // deleteValueAtTime(double,int)
         }
     }
 
@@ -87,13 +87,13 @@ static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObjec
                     goto Sbk_AnimatedParamFunc_deleteValueAtTime_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // deleteValueAtTime(int,int)
+            // deleteValueAtTime(double,int)
             cppSelf->deleteValueAtTime(cppArg0, cppArg1);
         }
     }
@@ -104,7 +104,7 @@ static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_AnimatedParamFunc_deleteValueAtTime_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.AnimatedParam.deleteValueAtTime", overloads);
         return 0;
 }
@@ -450,12 +450,12 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* arg
 
 
     // Overloaded function decisor
-    // 0: getKeyIndex(int,int)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+    // 0: getKeyIndex(double,int)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // getKeyIndex(int,int)const
+            overloadId = 0; // getKeyIndex(double,int)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // getKeyIndex(int,int)const
+            overloadId = 0; // getKeyIndex(double,int)const
         }
     }
 
@@ -475,13 +475,13 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* arg
                     goto Sbk_AnimatedParamFunc_getKeyIndex_TypeError;
             }
         }
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getKeyIndex(int,int)const
+            // getKeyIndex(double,int)const
             int cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getKeyIndex(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
@@ -494,7 +494,7 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_AnimatedParamFunc_getKeyIndex_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
+        const char* overloads[] = {"float, int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.AnimatedParam.getKeyIndex", overloads);
         return 0;
 }

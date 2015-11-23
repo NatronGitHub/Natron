@@ -113,6 +113,12 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         
         if (serializeInputs) {
             n->getInputNames(_inputs);
+            if (_nodeScriptName == "Premult1") {
+                assert(true);
+                for (std::map<std::string,std::string>::iterator it = _inputs.begin(); it != _inputs.end(); ++it) {
+                    qDebug() << it->first.c_str() << it->second.c_str();
+                }
+            }
         }
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();

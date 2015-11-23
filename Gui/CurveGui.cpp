@@ -247,10 +247,10 @@ CurveGui::drawCurve(int curveIndex,
     }
     
     if (isBezier) {
-        std::set<int> keys;
+        std::set<double> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
-        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
+        for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert(KeyFrame(*it,i));
         }
     } else {
@@ -632,12 +632,12 @@ BezierCPCurveGui::~BezierCPCurveGui()
 double
 BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
 {
-    std::list<std::pair<int,Natron::KeyframeTypeEnum> > keys;
+    std::list<std::pair<double,Natron::KeyframeTypeEnum> > keys;
     _bezier->getKeyframeTimesAndInterpolation(&keys);
     
-    std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
+    std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
+    for (std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -649,7 +649,7 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     } else if (upb == keys.begin()) {
         return 0;
     } else {
-        std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
+        std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator prev = upb;
         if (prev != keys.begin()) {
             --prev;
         }
@@ -674,10 +674,10 @@ KeyFrameSet
 BezierCPCurveGui::getKeyFrames() const
 {
     KeyFrameSet ret;
-    std::set<int> keys;
+    std::set<double> keys;
     _bezier->getKeyframeTimes(&keys);
     int i = 0;
-    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
+    for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
         ret.insert(KeyFrame(*it,i));
     }
     return ret;

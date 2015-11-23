@@ -398,7 +398,7 @@ public:
 
     void emitRefreshViewerOverlays();
 
-    void getBeziersKeyframeTimes(std::list<int> *times) const;
+    void getBeziersKeyframeTimes(std::list<double> *times) const;
 
     /**
      * @brief Returns the name of the node holding this item

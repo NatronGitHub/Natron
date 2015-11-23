@@ -1310,7 +1310,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
         return;
     }
     
-    int time = getApp()->getTimeLine()->currentFrame();
+    double time = getApp()->getTimeLine()->currentFrame();
     
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
@@ -2176,7 +2176,7 @@ TrackerPanel::clearAllAnimationForSelection()
 void
 TrackerPanel::clearBackwardAnimationForSelection()
 {
-    int time = getApp()->getTimeLine()->currentFrame();
+    double time = getApp()->getTimeLine()->currentFrame();
     std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
@@ -2193,7 +2193,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
 void
 TrackerPanel::clearForwardAnimationForSelection()
 {
-    int time = getApp()->getTimeLine()->currentFrame();
+    double time = getApp()->getTimeLine()->currentFrame();
     std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
@@ -2353,7 +2353,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
     boost::shared_ptr<KnobDouble> toPoints[4];
     boost::shared_ptr<KnobDouble>  fromPoints[4];
     
-    int timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
+    double timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
 
     for (unsigned int i = 0; i < selection.size(); ++i) {
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);

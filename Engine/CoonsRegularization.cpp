@@ -67,7 +67,7 @@ using namespace Natron;
 #endif
 
 
-static Point getPointAt(const BezierCPs& cps, int time, double t)
+static Point getPointAt(const BezierCPs& cps, double time, double t)
 {
     int ncps = (int)cps.size();
     assert(ncps);
@@ -111,7 +111,7 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
     return ret;
 }
 
-static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
+static Point getLeftPointAt(const BezierCPs& cps, double time, double t)
 {
     int ncps = (int)cps.size();
     assert(ncps);
@@ -169,7 +169,7 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
     }
 }
 
-static Point getRightPointAt(const BezierCPs& cps, int time, double t)
+static Point getRightPointAt(const BezierCPs& cps, double time, double t)
 {
     int ncps = cps.size();
     assert(ncps);
@@ -236,7 +236,7 @@ static double norm(const Point& z0, const Point& c0, const Point& c1, const Poin
     return fuzz2 * std::max(p1_p1p2Norm,std::max(p1_p2p1Norm,p1_p2Norm));
 }
 
-static Point predir(const BezierCPs& cps, int time, double t)
+static Point predir(const BezierCPs& cps, double time, double t)
 {
     //Compute the unit vector in the direction of the bysector angle
     Point dir;
@@ -282,7 +282,7 @@ static Point predir(const BezierCPs& cps, int time, double t)
     return ret;
 }
 
-static Point postdir(const BezierCPs& cps, int time, double t)
+static Point postdir(const BezierCPs& cps, double time, double t)
 {
     Point dir;
     Point p2,p3,p2p3,p3p2;
@@ -326,7 +326,7 @@ static Point postdir(const BezierCPs& cps, int time, double t)
     return ret;
 }
 
-static Point dirVect(const BezierCPs& cps, int time, double t, int sign)
+static Point dirVect(const BezierCPs& cps, double time, double t, int sign)
 {
     Point ret;
     if (sign == 0) {
@@ -348,7 +348,7 @@ static Point dirVect(const BezierCPs& cps, int time, double t, int sign)
     return ret;
 }
 
-static Point dirVect(const BezierCPs& cps, int time, double t)
+static Point dirVect(const BezierCPs& cps, double time, double t)
 {
     int t_i = std::floor(t);
     t -= t_i;
@@ -423,7 +423,7 @@ static boost::shared_ptr<BezierCP> makeBezierCPFromPoint(const Point& p, const P
 }
 
 static void findIntersection(const BezierCPs& cps,
-                             int time,
+                             double time,
                              const Point& p,
                              const Point& q,
                              boost::shared_ptr<BezierCP>* newPoint,
@@ -525,7 +525,7 @@ static void findIntersection(const BezierCPs& cps,
     *before = std::distance(cps.begin(), inter.second.first);
 }
 
-static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCPs>* ret)
+static bool splitAt(const BezierCPs &cps, double time, double t, std::list<BezierCPs>* ret)
 {
     Point dir = dirVect(cps, time, t);
     if (dir.x != 0. || dir.y != 0.) {
@@ -617,7 +617,7 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
  * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
  * along the bysector angle and separate the patch.
  **/
-static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time, int sign, std::list<BezierCPs>* ret)
+static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, double time, int sign, std::list<BezierCPs>* ret)
 {
     int ncps = (int)cps.size();
     assert(ncps >= 3);
@@ -640,7 +640,7 @@ static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time, int sign
     
 }
 
-static void tensor(const BezierCPs& p, int time, const Point* internal, Point ret[4][4])
+static void tensor(const BezierCPs& p, double time, const Point* internal, Point ret[4][4])
 {
     ret[0][0] = getPointAt(p, time, 0);
     ret[0][1] = getLeftPointAt(p, time, 0);
@@ -663,7 +663,7 @@ static void tensor(const BezierCPs& p, int time, const Point* internal, Point re
     ret[3][3] = getPointAt(p, time, 2);
 }
 
-static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
+static void coonsPatch(const BezierCPs& p, double time, Point ret[4][4])
 {
     assert(p.size() >= 3);
     Point internal[4];
@@ -783,7 +783,7 @@ double normal(const Point P[4][4], double u, double v)
 }
 
 static
-Point findPointInside(const BezierCPs& cps, int time)
+Point findPointInside(const BezierCPs& cps, double time)
 {
     /*
      Given a simple polygon, find some point inside it. Here is a method based on the proof that
@@ -1198,7 +1198,7 @@ bool checkCurve(const Point& z0, const Point& c0, const Point& z1, const Point& 
 // Return the winding number of the region bounded by the (cyclic) path
 // relative to the point z, or the largest odd integer if the point lies on
 // the path.
-static int computeWindingNumber(const BezierCPs& patch, int time, const Point& z) {
+static int computeWindingNumber(const BezierCPs& patch, double time, const Point& z) {
     
     assert(patch.size() >= 3);
     
@@ -1228,7 +1228,7 @@ static int computeWindingNumber(const BezierCPs& patch, int time, const Point& z
     return count;
 }
 
-void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *fixedPatch)
+void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 3) {
         fixedPatch->push_back(patch);

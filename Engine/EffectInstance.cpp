@@ -161,7 +161,7 @@ EffectInstance::clearPluginMemoryChunks()
 }
 
 void
-EffectInstance::setParallelRenderArgsTLS(int time,
+EffectInstance::setParallelRenderArgsTLS(double time,
                                          int view,
                                          bool isRenderUserInteraction,
                                          bool isSequential,

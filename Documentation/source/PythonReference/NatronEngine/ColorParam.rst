@@ -25,10 +25,8 @@ Functions
 *    def :meth:`getValue<NatronEngine.ColorParam.getValue>` ([dimension=0])
 *    def :meth:`getValueAtTime<NatronEngine.ColorParam.getValueAtTime>` (time[, dimension=0])
 *    def :meth:`restoreDefaultValue<NatronEngine.ColorParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b)
 *    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a)
 *    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a, frame)
-*    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, frame)
 *    def :meth:`setDefaultValue<NatronEngine.ColorParam.setDefaultValue>` (value[, dimension=0])
 *    def :meth:`setDisplayMaximum<NatronEngine.ColorParam.setDisplayMaximum>` (maximum[, dimension=0])
 *    def :meth:`setDisplayMinimum<NatronEngine.ColorParam.setDisplayMinimum>` (minimum[, dimension=0])
@@ -177,21 +175,10 @@ to be the default value.
     :param g: :class:`float<PySide.QtCore.double>`
     :param b: :class:`float<PySide.QtCore.double>`
     :param a: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 Set a keyframe on each of the 4 animations curves at [r,g,b,a] for the given *frame*.
 If this parameter is 3-dimensional, the *a* value is ignored.
-
-.. method:: NatronEngine.ColorParam.set(r, g, b, frame)
-
-
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`int<PySide.QtCore.int>`
-
-Same as :func:`set(r,g,b,1,frame)<NatronEngine.ColorParam.set>`
-
 
 
 .. method:: NatronEngine.ColorParam.set(r, g, b, a)
@@ -206,17 +193,6 @@ Same as :func:`set(r,g,b,1,frame)<NatronEngine.ColorParam.set>`
 Set the value of this parameter to be [*r*,*g*,*b*,*a*].
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
-
-
-
-.. method:: NatronEngine.ColorParam.set(r, g, b)
-
-
-    :param r: :class:`PySide.QtCore.double`
-    :param g: :class:`PySide.QtCore.double`
-    :param b: :class:`PySide.QtCore.double`
-
-Same as :func:`set(r,g,b,1)<Natron.ColorParam.set>`
 
 
 

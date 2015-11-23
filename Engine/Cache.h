@@ -994,7 +994,7 @@ public:
     /**
      * @brief To be called by a CacheEntry on allocation.
      **/
-    virtual void notifyEntryAllocated(int time,
+    virtual void notifyEntryAllocated(double time,
                                       std::size_t size,
                                       Natron::StorageModeEnum storage) const OVERRIDE FINAL
     {
@@ -1016,7 +1016,7 @@ public:
     /**
      * @brief To be called by a CacheEntry on destruction.
      **/
-    virtual void notifyEntryDestroyed(int time,
+    virtual void notifyEntryDestroyed(double time,
                                       std::size_t size,
                                       Natron::StorageModeEnum storage) const OVERRIDE FINAL
     {
@@ -1051,7 +1051,7 @@ public:
      **/
     virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,
                                            Natron::StorageModeEnum newStorage,
-                                           int time,
+                                           double time,
                                            std::size_t size) const OVERRIDE FINAL
     {
         if (_tearingDown) {

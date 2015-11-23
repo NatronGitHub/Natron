@@ -56,7 +56,7 @@ Member functions description
 .. method:: NatronEngine.AnimatedParam.deleteValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
 
 Removes a keyframe at the given *time* and *dimension* for this parameter, if such
@@ -129,7 +129,7 @@ This returns true if the underlying animation curve has 1 or more keyframes.
 .. method:: NatronEngine.AnimatedParam.getKeyIndex(time[, dimension=0])
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`int<PySide.QtCore.int>`
 

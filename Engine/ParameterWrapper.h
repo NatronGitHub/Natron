@@ -207,7 +207,7 @@ public:
      * @brief Returns the index of the keyframe at the given time for the given dimension.
      * Returns -1 if no keyframe could be found at the given time.
      **/
-    int getKeyIndex(int time,int dimension = 0) const;
+    int getKeyIndex(double time,int dimension = 0) const;
     
     /**
      * @brief Set in 'time' the time of the keyframe at the given index for the given dimension.
@@ -218,7 +218,7 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    void deleteValueAtTime(int time,int dimension = 0);
+    void deleteValueAtTime(double time,int dimension = 0);
     
     /**
      * @brief Removes all animation for the given dimension.
@@ -295,7 +295,7 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(int x);
-    void set(int x, int frame);
+    void set(int x, double frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -319,7 +319,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value,int time,int dimension = 0);
+    void setValueAtTime(int value,double time,int dimension = 0);
     
     /**
      * @brief Set the default value for the given dimension
@@ -400,7 +400,7 @@ public:
     Int2DTuple get() const;
     Int2DTuple get(double frame) const;
     void set(int x, int y);
-    void set(int x, int y, int frame);
+    void set(int x, int y, double frame);
 };
 
 class Int3DParam : public Int2DParam
@@ -414,7 +414,7 @@ public:
     Int3DTuple get() const;
     Int3DTuple get(double frame) const;
     void set(int x, int y, int z);
-    void set(int x, int y, int z, int frame);
+    void set(int x, int y, int z, double frame);
 };
 
 
@@ -440,7 +440,7 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(double x);
-    void set(double x, int frame);
+    void set(double x, double frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -464,7 +464,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value,int time,int dimension = 0);
+    void setValueAtTime(double value,double time,int dimension = 0);
     
     /**
      * @brief Set the default value for the given dimension
@@ -545,7 +545,7 @@ public:
     Double2DTuple get() const;
     Double2DTuple get(double frame) const;
     void set(double x, double y);
-    void set(double x, double y, int frame);
+    void set(double x, double y, double frame);
     
     void setUsePointInteract(bool use);
 };
@@ -561,7 +561,7 @@ public:
     Double3DTuple get() const;
     Double3DTuple get(double frame) const;
     void set(double x, double y, double z);
-    void set(double x, double y, double z, int frame);
+    void set(double x, double y, double z, double frame);
 };
 
 
@@ -586,10 +586,8 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(double r, double g, double b, double a);
-    void set(double r, double g, double b, double a, int frame);
-    
-    void set(double r, double g, double b);
-    void set(double r, double g, double b, int frame);
+    void set(double r, double g, double b, double a, double frame);
+
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -613,7 +611,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value,int time,int dimension = 0);
+    void setValueAtTime(double value,double time,int dimension = 0);
     
     /**
      * @brief Set the default value for the given dimension
@@ -704,7 +702,7 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(int x);
-    void set(int x, int frame);
+    void set(int x, double frame);
     
     /*
      * @brief Set the value from label if it exists. 
@@ -734,7 +732,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value,int time);
+    void setValueAtTime(int value,double time);
     
     /**
      * @brief Set the default value for the given dimension
@@ -811,7 +809,7 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(bool x);
-    void set(bool x, int frame);
+    void set(bool x, double frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -835,7 +833,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(bool value,int time);
+    void setValueAtTime(bool value,double time);
     
     /**
      * @brief Set the default value for the given dimension
@@ -884,7 +882,7 @@ public:
      * @brief Convenience functions for multi-dimensional setting of values
      **/
     void set(const std::string& x);
-    void set(const std::string& x, int frame);
+    void set(const std::string& x, double frame);
     
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
@@ -908,7 +906,7 @@ public:
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(const std::string& value,int time);
+    void setValueAtTime(const std::string& value,double time);
     
     /**
      * @brief Set the default value for the given dimension

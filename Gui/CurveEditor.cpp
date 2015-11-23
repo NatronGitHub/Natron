@@ -1177,13 +1177,13 @@ RotoItemEditorContext::onNameChanged(const QString & name)
 void
 RotoItemEditorContext::onKeyframeAdded()
 {
-    _imp->widget->update();
+    _imp->widget->getCurveWidget()->onCurveChanged();
 }
 
 void
 RotoItemEditorContext::onKeyframeRemoved()
 {
-    _imp->widget->update();
+    _imp->widget->getCurveWidget()->onCurveChanged();
 }
 
 static void recursiveSelectElement(const std::list<NodeCurveEditorElement*>& elements,

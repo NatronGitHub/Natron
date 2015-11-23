@@ -215,7 +215,7 @@ public:
     template<typename T>
     void setValueAtTime(int dimension,
                         const T & v,
-                        int time,
+                        double time,
                         KeyFrame* newKey,
                         bool refreshGui,
                         Natron::ValueChangedReasonEnum reason)

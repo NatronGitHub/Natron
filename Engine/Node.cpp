@@ -778,7 +778,7 @@ Node::load(const std::string & parentMultiInstanceName,
     
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
     
-    if (!getApp()->getProject()->isLoadingProject() && !isLoadingPyPlug) {
+    if (!getApp()->isCreatingNodeTree()) {
         refreshAllInputRelatedData(serialization.isNull());
     }
 
@@ -787,7 +787,7 @@ Node::load(const std::string & parentMultiInstanceName,
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
-    int time = getLiveInstance()->getCurrentTime();
+    double time = getLiveInstance()->getCurrentTime();
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         if (knob) {
@@ -957,7 +957,7 @@ Node::getPaintStrokeRoD_duringPainting() const
 }
 
 void
-Node::getPaintStrokeRoD(int time, RectD* bbox) const
+Node::getPaintStrokeRoD(double time, RectD* bbox) const
 {
     bool duringPaintStroke = _imp->liveInstance->isDuringPaintStrokeCreationThreadLocal();
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
@@ -998,7 +998,7 @@ Node::clearLastPaintStrokeRoD()
 }
 
 void
-Node::getLastPaintStrokePoints(int time,
+Node::getLastPaintStrokePoints(double time,
                                std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
                                int* strokeIndex) const
 {
@@ -5276,7 +5276,7 @@ Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
-static void refreshPreviewsRecursivelyUpstreamInternal(int time,Node* node,std::list<Node*>& marked)
+static void refreshPreviewsRecursivelyUpstreamInternal(double time,Node* node,std::list<Node*>& marked)
 {
     if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
         return;
@@ -5299,13 +5299,13 @@ static void refreshPreviewsRecursivelyUpstreamInternal(int time,Node* node,std::
 }
 
 void
-Node::refreshPreviewsRecursivelyUpstream(int time)
+Node::refreshPreviewsRecursivelyUpstream(double time)
 {
     std::list<Node*> marked;
     refreshPreviewsRecursivelyUpstreamInternal(time,this,marked);
 }
 
-static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std::list<Node*>& marked)
+static void refreshPreviewsRecursivelyDownstreamInternal(double time,Node* node,std::list<Node*>& marked)
 {
     if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
         return;
@@ -5327,7 +5327,7 @@ static void refreshPreviewsRecursivelyDownstreamInternal(int time,Node* node,std
 }
 
 void
-Node::refreshPreviewsRecursivelyDownstream(int time)
+Node::refreshPreviewsRecursivelyDownstream(double time)
 {
     if (!getNodeGui()) {
         return;
@@ -5633,7 +5633,7 @@ Node::unlock(const boost::shared_ptr<Natron::Image> & image)
 }
 
 boost::shared_ptr<Natron::Image>
-Node::getImageBeingRendered(int time,
+Node::getImageBeingRendered(double time,
                             unsigned int mipMapLevel,
                             int view)
 {
@@ -5669,7 +5669,7 @@ Node::endInputEdition(bool triggerRender)
         _imp->inputsModified.clear();
 
         if (hasChanged) {
-            if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+            if (!getApp()->isCreatingNodeTree()) {
                 forceRefreshAllInputRelatedData();
             }
             refreshDynamicProperties();
@@ -5708,7 +5708,7 @@ Node::onInputChanged(int inputNb)
         isViewer->refreshActiveInputs(inputNb);
     }
     
-    bool shouldDoInputChanged = (!getApp()->getProject()->isProjectClosing() && !getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) ||
+    bool shouldDoInputChanged = (!getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree()) ||
     _imp->liveInstance->isRotoPaintNode();
     
     if (shouldDoInputChanged) {
@@ -8206,7 +8206,7 @@ Node::refreshChannelSelectors(bool setValues)
     }
     _imp->liveInstance->setComponentsAvailableDirty(true);
     
-    int time = getApp()->getTimeLine()->currentFrame();
+    double time = getApp()->getTimeLine()->currentFrame();
     
     bool hasChanged = false;
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
@@ -8544,7 +8544,7 @@ Node::getUserCreatedComponents(std::list<Natron::ImageComponents>* comps)
 }
 
 double
-Node::getHostMixingValue(int time) const
+Node::getHostMixingValue(double time) const
 {
     boost::shared_ptr<KnobDouble> mix = _imp->mixWithSource.lock();
     return mix ? mix->getValueAtTime(time) : 1.;

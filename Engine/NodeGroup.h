@@ -242,7 +242,7 @@ public:
      * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage
      **/
-    void setParallelRenderArgs(int time,
+    void setParallelRenderArgs(double time,
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
@@ -323,7 +323,7 @@ public:
      * expressions.
      **/
     ParallelRenderArgsSetter(NodeCollection* n,
-                             int time,
+                             double time,
                              int view,
                              bool isRenderUserInteraction,
                              bool isSequential,

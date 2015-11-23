@@ -246,12 +246,13 @@ Gui::closeEvent(QCloseEvent* e)
 }
 
 boost::shared_ptr<NodeGui>
-Gui::createNodeGUI( boost::shared_ptr<Node> node,
-                    bool requestedByLoad,
-                    bool pushUndoRedoCommand)
+Gui::createNodeGUI(boost::shared_ptr<Node> node,
+                   bool requestedByLoad,
+                   bool userEdited,
+                   bool pushUndoRedoCommand)
 {
     assert(_imp->_nodeGraphArea);
-
+    
     boost::shared_ptr<NodeCollection> group = node->getGroup();
     NodeGraph* graph;
     if (group) {
@@ -265,7 +266,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     if (!graph) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,pushUndoRedoCommand);
+    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad, userEdited, pushUndoRedoCommand);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 

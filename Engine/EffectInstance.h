@@ -548,7 +548,7 @@ public:
      * @brief Sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
-    void setParallelRenderArgsTLS(int time,
+    void setParallelRenderArgsTLS(double time,
                                   int view,
                                   bool isRenderUserInteraction,
                                   bool isSequential,

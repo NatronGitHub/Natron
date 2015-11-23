@@ -773,7 +773,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,int)">
+        <modify-function signature="set(int,double)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
@@ -783,7 +783,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
         </modify-function>
-        <modify-function signature="setValueAtTime(int,int,int)">
+        <modify-function signature="setValueAtTime(int,double,int)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
@@ -821,7 +821,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,int,int)">
+        <modify-function signature="set(int,int,double)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
@@ -857,7 +857,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,int,int,int)">
+        <modify-function signature="set(int,int,int,double)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
             </inject-code>
@@ -918,7 +918,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(double,double,double,int)">
+        <modify-function signature="set(double,double,double,double)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
             </inject-code>
@@ -1129,7 +1129,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createBezier(double,double,int)">
+        <modify-function signature="createBezier(double,double,double)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1138,7 +1138,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createEllipse(double,double,double,bool,int)">
+        <modify-function signature="createEllipse(double,double,double,bool,double)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1147,7 +1147,7 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="createRectangle(double,double,double,int)">
+        <modify-function signature="createRectangle(double,double,double,double)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

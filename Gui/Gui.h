@@ -143,6 +143,7 @@ public:
 
     boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
                                              bool requestedByLoad,
+                                             bool userEdited,
                                              bool pushUndoRedoCommand);
 
     void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);

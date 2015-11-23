@@ -98,7 +98,7 @@ public:
 
     void removeKeyframe(bool useGuiCurves,double time);
     
-    void removeAnimation(bool useGuiCurves,int currentTime);
+    void removeAnimation(bool useGuiCurves,double currentTime);
 
     ///returns true if a keyframe was set
     bool cuspPoint(bool useGuiCurves,double time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
@@ -122,15 +122,15 @@ public:
 
     bool hasKeyFrameAtTime(bool useGuiCurves,double time) const;
 
-    void getKeyframeTimes(bool useGuiCurves,std::set<int>* times) const;
+    void getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const;
     
-    void getKeyFrames(bool useGuiCurves,std::list<std::pair<int,Natron::KeyframeTypeEnum> >* keys) const;
+    void getKeyFrames(bool useGuiCurves,std::list<std::pair<double,Natron::KeyframeTypeEnum> >* keys) const;
     
     int getKeyFrameIndex(bool useGuiCurves,double time) const;
     
     void setKeyFrameInterpolation(bool useGuiCurves,Natron::KeyframeTypeEnum interp,int index);
 
-    int getKeyframeTime(bool useGuiCurves,int index) const;
+    double getKeyframeTime(bool useGuiCurves,int index) const;
 
     int getKeyframesCount(bool useGuiCurves) const;
 

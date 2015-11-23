@@ -374,7 +374,7 @@ struct RotoGui::RotoGuiPrivate
 
     void handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & p, QMouseEvent* e);
 
-    void drawSelectedCp(int time,
+    void drawSelectedCp(double time,
                         const boost::shared_ptr<BezierCP> & cp,
                         double x,double y,
                         const Transform::Matrix3x3& transform);
@@ -1357,7 +1357,7 @@ RotoGui::getCurrentRole() const
 }
 
 void
-RotoGui::RotoGuiPrivate::drawSelectedCp(int time,
+RotoGui::RotoGuiPrivate::drawSelectedCp(double time,
                                         const boost::shared_ptr<BezierCP> & cp,
                                         double x,
                                         double y,
@@ -2198,7 +2198,7 @@ RotoGui::RotoGuiPrivate::removeItemFromSelection(const boost::shared_ptr<RotoDra
 }
 
 static void
-handleControlPointMaximum(int time,
+handleControlPointMaximum(double time,
                           const BezierCP & p,
                           double* l,
                           double *b,
@@ -2238,7 +2238,7 @@ RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
     if (n && !n->isActivated()) {
         return;
     }
-    int time = context->getTimelineCurrentTime();
+    double time = context->getTimelineCurrentTime();
     std::pair<double, double> pixelScale;
 
     viewer->getPixelScale(pixelScale.first,pixelScale.second);
@@ -3200,7 +3200,7 @@ RotoGui::moveSelectedCpsWithKeyArrows(int x,
     if ( !_imp->rotoData->selectedCps.empty() ) {
         std::pair<double,double> pixelScale;
         _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
-        int time = _imp->context->getTimelineCurrentTime();
+        double time = _imp->context->getTimelineCurrentTime();
         pushUndoCommand( new MoveControlPointsUndoCommand(this,_imp->rotoData->selectedCps,(double)x * pixelScale.first,
                                                           (double)y * pixelScale.second,time) );
         _imp->computeSelectedCpsBBOX();
@@ -3469,8 +3469,8 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     bool pressSize = pressureSizeButton->isDown();
     bool pressHarness = pressureHardnessButton->isDown();
     bool buildUp = buildUpButton->isDown();
-    int timeOffset = timeOffsetSpinbox->value();
-    int timeOffsetMode_i = timeOffsetMode->activeIndex();
+    double timeOffset = timeOffsetSpinbox->value();
+    double timeOffsetMode_i = timeOffsetMode->activeIndex();
     int sourceType_i = sourceTypeCombobox->activeIndex();
     
 
@@ -4243,7 +4243,7 @@ RotoGui::isStickySelectionEnabled() const
 void
 RotoGui::onAddKeyFrameClicked()
 {
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
 
     for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
@@ -4258,7 +4258,7 @@ RotoGui::onAddKeyFrameClicked()
 void
 RotoGui::onRemoveKeyFrameClicked()
 {
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
 
     for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
@@ -4586,7 +4586,7 @@ RotoGui::smoothSelectedCurve()
     
     std::pair<double,double> pixelScale;
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
     if (!_imp->rotoData->selectedCps.empty()) {
@@ -4624,7 +4624,7 @@ RotoGui::cuspSelectedCurve()
 {
     std::pair<double,double> pixelScale;
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
     
     if (!_imp->rotoData->selectedCps.empty()) {
@@ -4748,7 +4748,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     }
 
     QAction* ret = menu.exec(pos);
-    int time = _imp->context->getTimelineCurrentTime();
+    double time = _imp->context->getTimelineCurrentTime();
     if (ret == deleteCp) {
         pushUndoCommand( new RemovePointUndoCommand(this,curve,!cp.first->isFeatherPoint() ? cp.first : cp.second) );
         _imp->viewer->redraw();

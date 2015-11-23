@@ -359,10 +359,10 @@ struct BezierPrivate
     
     //updated whenever the Bezier is edited, this is used to determine if a point lies inside the bezier or not
     //it has a value for each keyframe
-    mutable std::map<int,bool> isClockwiseOriented;
+    mutable std::map<double,bool> isClockwiseOriented;
     mutable bool isClockwiseOrientedStatic; //< used when the bezier has no keyframes
     
-    mutable std::map<int,bool> guiIsClockwiseOriented;
+    mutable std::map<double,bool> guiIsClockwiseOriented;
     mutable bool guiIsClockwiseOrientedStatic; //< used when the bezier has no keyframes
     
     bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
@@ -408,7 +408,7 @@ struct BezierPrivate
         }
     }
 
-    void getKeyframeTimes(bool useGuiCurves, std::set<int>* times) const
+    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const
     {
         // PRIVATE - should not lock
 

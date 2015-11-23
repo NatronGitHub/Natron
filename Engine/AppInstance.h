@@ -336,6 +336,10 @@ public:
     
     bool isCreatingPythonGroup() const;
     
+    bool isCreatingNodeTree() const;
+    
+    void setIsCreatingNodeTree(bool b);
+    
     virtual void appendToScriptEditor(const std::string& str);
     
     virtual void printAutoDeclaredVariable(const std::string& str);
@@ -416,12 +420,13 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node, bool requestedByLoad);
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node, bool requestedByLoad, bool userEdited);
 
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
                                const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
                                bool /*loadRequest*/,
                                bool /*autoConnect*/,
+                               bool /*userEdited*/,
                                double /*xPosHint*/,
                                double /*yPosHint*/,
                                bool /*pushUndoRedoCommand*/)
@@ -452,10 +457,27 @@ private:
     boost::shared_ptr<Natron::Node> createNodeFromPythonModule(Natron::Plugin* plugin,
                                                                const boost::shared_ptr<NodeCollection>& group,
                                                                bool requestedByLoad,
+                                                               bool userEdited,
                                                                const NodeSerialization & serialization);
     
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
+class CreatingNodeTreeFlag_RAII
+{
+    AppInstance* _app;
+public:
+    
+    CreatingNodeTreeFlag_RAII(AppInstance* app)
+    : _app(app)
+    {
+        app->setIsCreatingNodeTree(true);
+    }
+    
+    ~CreatingNodeTreeFlag_RAII()
+    {
+        _app->setIsCreatingNodeTree(false);
+    }
+};
 
 #endif // APPINSTANCE_H

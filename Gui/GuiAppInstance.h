@@ -222,12 +222,13 @@ public:
     
 private:
 
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad,bool userEdited) OVERRIDE FINAL;
     
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                                const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
                                bool loadRequest,
                                bool autoConnect,
+                               bool userEdited,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
     

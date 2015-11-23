@@ -113,7 +113,7 @@ CustomParamInteract::paintGL()
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
         _imp->entryPoint->drawAction(time, scale);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
@@ -231,7 +231,7 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -250,7 +250,7 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -269,7 +269,7 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -288,7 +288,7 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale);
     if (stat == kOfxStatOK) {
         update();
@@ -301,7 +301,7 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale);
     if (stat == kOfxStatOK) {
         update();
@@ -314,7 +314,7 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
@@ -333,7 +333,7 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    int time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    double time = _imp->knob->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
     OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {

@@ -1433,7 +1433,7 @@ DockablePanel::onManageUserParametersActionTriggered()
 void
 DockablePanel::setKeyOnAllParameters()
 {
-    int time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     AddKeysCommand::KeysToAddList keys;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {

@@ -330,7 +330,7 @@ NodeCollection::refreshViewersAndPreviews()
     assert(QThread::currentThread() == qApp->thread());
     
     if ( !appPTR->isBackground() ) {
-        int time = _imp->app->getTimeLine()->currentFrame();
+        double time = _imp->app->getTimeLine()->currentFrame();
         
         NodeList nodes = getNodes();
         for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -352,7 +352,7 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
-    int time = _imp->app->getTimeLine()->currentFrame();
+    double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -369,7 +369,7 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
-    int time = _imp->app->getTimeLine()->currentFrame();
+    double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -941,7 +941,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 
 
 void
-NodeCollection::setParallelRenderArgs(int time,
+NodeCollection::setParallelRenderArgs(double time,
                                       int view,
                                       bool isRenderUserInteraction,
                                       bool isSequential,
@@ -1147,7 +1147,7 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
 
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
-                                                   int time,
+                                                   double time,
                                                    int view,
                                                    bool isRenderUserInteraction,
                                                    bool isSequential,
@@ -2177,7 +2177,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
 static void exportBezierPointAtTime(int indentLevel,
                                     const boost::shared_ptr<BezierCP>& point,
                                     bool isFeather,
-                                    int time,
+                                    double time,
                                     int idx,
                                     QTextStream& ts)
 {
@@ -2208,7 +2208,7 @@ static void exportRotoLayer(int indentLevel,
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         
         if (isBezier) {
-            int time;
+            double time;
             
             const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
             const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
@@ -2251,7 +2251,7 @@ static void exportRotoLayer(int indentLevel,
            
             assert(cps.size() == fps.size());
             
-            std::set<int> kf;
+            std::set<double> kf;
             isBezier->getKeyframeTimes(&kf);
             
             //the last python call already registered the first control point
@@ -2263,7 +2263,7 @@ static void exportRotoLayer(int indentLevel,
             int idx = 0;
             std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
             for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
-                for (std::set<int>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
+                for (std::set<double>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
                     exportBezierPointAtTime(indentLevel,*it2, false, *it3, idx, ts);
                     exportBezierPointAtTime(indentLevel,*fpIt, true, *it3, idx, ts);
                 }

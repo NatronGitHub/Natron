@@ -128,7 +128,7 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: set(double,double,double)
-    // 1: set(double,double,double,int)
+    // 1: set(double,double,double,double)
     if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
@@ -136,8 +136,8 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
         if (numArgs == 3) {
             overloadId = 0; // set(double,double,double)
         } else if (numArgs == 4
-            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
-            overloadId = 1; // set(double,double,double,int)
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
+            overloadId = 1; // set(double,double,double,double)
         }
     }
 
@@ -167,7 +167,7 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(double x, double y, double z, int frame)
+        case 1: // set(double x, double y, double z, double frame)
         {
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -175,11 +175,11 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[1](pyArgs[1], &cppArg1);
             double cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
-            int cppArg3;
+            double cppArg3;
             pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double,int)
+                // set(double,double,double,double)
                 // Begin code injection
 
                 cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
@@ -198,7 +198,7 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_Double3DParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float, float", "float, float, float, int", 0};
+        const char* overloads[] = {"float, float, float", "float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double3DParam.set", overloads);
         return 0;
 }

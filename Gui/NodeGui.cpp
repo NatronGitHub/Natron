@@ -212,8 +212,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( refreshEdgesGUI() ),this,SLOT( refreshEdges() ) );
     QObject::connect( internalNode.get(), SIGNAL( knobsInitialized() ),this,SLOT( initializeKnobs() ) );
     QObject::connect( internalNode.get(), SIGNAL( inputsInitialized() ),this,SLOT( initializeInputs() ) );
-    QObject::connect( internalNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( updatePreviewImage(int) ) );
-    QObject::connect( internalNode.get(), SIGNAL( previewRefreshRequested(int) ), this, SLOT( forceComputePreview(int) ) );
+    QObject::connect( internalNode.get(), SIGNAL( previewImageChanged(double) ), this, SLOT( updatePreviewImage(double) ) );
+    QObject::connect( internalNode.get(), SIGNAL( previewRefreshRequested(double) ), this, SLOT( forceComputePreview(double) ) );
     QObject::connect( internalNode.get(), SIGNAL( deactivated(bool) ),this,SLOT( deactivate(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( activated(bool) ), this, SLOT( activate(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( inputChanged(int) ), this, SLOT( connectEdge(int) ) );
@@ -1127,7 +1127,7 @@ NodeGui::markInputNull(Edge* e)
 }
 
 void
-NodeGui::updatePreviewImage(int time)
+NodeGui::updatePreviewImage(double time)
 {
     NodePtr node = getNode();
     if ( isVisible() && node->isPreviewEnabled()  && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
@@ -1144,7 +1144,7 @@ NodeGui::updatePreviewImage(int time)
 }
 
 void
-NodeGui::forceComputePreview(int time)
+NodeGui::forceComputePreview(double time)
 {
     NodePtr node = getNode();
     if (!node) {
@@ -1164,7 +1164,7 @@ NodeGui::forceComputePreview(int time)
 }
 
 void
-NodeGui::computePreviewImage(int time)
+NodeGui::computePreviewImage(double time)
 {
     NodePtr node = getNode();
     if ( node->isRenderingPreview() ) {

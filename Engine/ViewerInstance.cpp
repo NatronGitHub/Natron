@@ -372,7 +372,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
 public:
     
     ViewerParallelRenderArgsSetter(NodeCollection* n,
-                                   int time,
+                                   double time,
                                    int view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,

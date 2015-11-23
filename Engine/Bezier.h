@@ -354,7 +354,7 @@ public:
     /**
      * @brief Moves a keyframe
      **/
-    void moveKeyframe(int oldTime,int newTime);
+    void moveKeyframe(double oldTime,double newTime);
 
 
     /**
@@ -570,9 +570,9 @@ public:
      **/
     virtual void load(const RotoItemSerialization & obj) OVERRIDE;
 
-    void getKeyframeTimes(std::set<int> *times) const;
+    void getKeyframeTimes(std::set<double> *times) const;
     
-    void getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::KeyframeTypeEnum> > *keys) const;
+    void getKeyframeTimesAndInterpolation(std::list<std::pair<double,Natron::KeyframeTypeEnum> > *keys) const;
 
     /**
      * @brief Get the nearest previous keyframe from the given time.

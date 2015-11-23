@@ -152,41 +152,41 @@ public:
     
     void removeControlPointByIndex(int index);
     
-    void movePointByIndex(int index,int time,double dx,double dy);
+    void movePointByIndex(int index,double time,double dx,double dy);
     
-    void moveFeatherByIndex(int index,int time,double dx,double dy);
+    void moveFeatherByIndex(int index,double time,double dx,double dy);
     
-    void moveLeftBezierPoint(int index,int time,double dx,double dy);
+    void moveLeftBezierPoint(int index,double time,double dx,double dy);
     
-    void moveRightBezierPoint(int index,int time,double dx,double dy);
+    void moveRightBezierPoint(int index,double time,double dx,double dy);
     
-    void setPointAtIndex(int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    void setPointAtIndex(int index,double time,double x,double y,double lx,double ly,double rx,double ry);
     
-    void setFeatherPointAtIndex(int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    void setFeatherPointAtIndex(int index,double time,double x,double y,double lx,double ly,double rx,double ry);
     
-    void slavePointToTrack(int index, int trackTime,DoubleParam* trackCenter);
+    void slavePointToTrack(int index, double trackTime,DoubleParam* trackCenter);
     
     DoubleParam* getPointMasterTrack(int index) const;
     
     int getNumControlPoints() const;
     
-    void setActivated(int time, bool activated);
-    bool getIsActivated(int time);
+    void setActivated(double time, bool activated);
+    bool getIsActivated(double time);
     
-    void setOpacity(double opacity, int time);
-    double getOpacity(int time) const;
+    void setOpacity(double opacity, double time);
+    double getOpacity(double time) const;
     
     ColorTuple getOverlayColor() const;
     void setOverlayColor(double r,double g,double b);
     
-    double getFeatherDistance(int time) const;
-    void setFeatherDistance(double dist,int time);
+    double getFeatherDistance(double time) const;
+    void setFeatherDistance(double dist,double time);
     
-    double getFeatherFallOff(int time) const;
-    void setFeatherFallOff(double falloff,int time);
+    double getFeatherFallOff(double time) const;
+    void setFeatherFallOff(double falloff,double time);
     
-    ColorTuple getColor(int time);    
-    void setColor(int time,double r,double g, double b);
+    ColorTuple getColor(double time);
+    void setColor(double time,double r,double g, double b);
     
     void setCompositingOperator(CairoOperatorEnum op);
     CairoOperatorEnum getCompositingOperator() const;
@@ -218,11 +218,11 @@ public:
     
     Layer* createLayer();
     
-    BezierCurve* createBezier(double x,double y, int time);
+    BezierCurve* createBezier(double x,double y, double time);
     
-    BezierCurve* createEllipse(double x,double y,double diameter,bool fromCenter,int time);
+    BezierCurve* createEllipse(double x,double y,double diameter,bool fromCenter,double time);
     
-    BezierCurve* createRectangle(double x,double y,double size, int time);
+    BezierCurve* createRectangle(double x,double y,double size, double time);
     
 private:
     
