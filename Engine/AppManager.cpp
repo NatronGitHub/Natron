@@ -3119,6 +3119,9 @@ getGroupInfos(const std::string& modulePath,
                    "if hasattr(%1,\"getPluginDescription\") and hasattr(%1.getPluginDescription,\"__call__\"):\n"
                    "    global description\n"
                    "    description = %1.getPluginDescription()\n"
+                   "elif hasattr(%1,\"getDescription\") and hasattr(%1.getDescription,\"__call__\"):\n" // Check old function name for compat
+                   "    global description\n"
+                   "    description = %1.getDescription()\n"
                    "if hasattr(%1,\"getPluginID\") and hasattr(%1.getPluginID,\"__call__\"):\n"
                    "    pluginID = %1.getPluginID()\n"
                    "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(%1.getIconPath,\"__call__\"):\n"
