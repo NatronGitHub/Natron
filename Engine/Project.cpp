@@ -860,7 +860,8 @@ Project::initializeKnobs()
     _imp->projectName = Natron::createKnob<KnobString>(this, "Project Name");
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistant(false);
-    _imp->projectName->setAsLabel();
+//    _imp->projectName->setAsLabel();
+    _imp->projectName->setDefaultEnabled(0,false);
     _imp->projectName->setAnimationEnabled(false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
@@ -869,13 +870,15 @@ Project::initializeKnobs()
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
     _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setAsLabel();
+    _imp->projectPath->setDefaultEnabled(0,false);
+   // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
     
     _imp->natronVersion = Natron::createKnob<KnobString>(this, "Saved With");
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
-    _imp->natronVersion->setAsLabel();
+   // _imp->natronVersion->setAsLabel();
+    _imp->natronVersion->setDefaultEnabled(0, false);
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
     
@@ -885,7 +888,8 @@ Project::initializeKnobs()
     _imp->originalAuthorName = Natron::createKnob<KnobString>(this, "Original Author");
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
-    _imp->originalAuthorName->setAsLabel();
+    //_imp->originalAuthorName->setAsLabel();
+    _imp->originalAuthorName->setDefaultEnabled(0, false);
     _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
@@ -895,7 +899,8 @@ Project::initializeKnobs()
     _imp->lastAuthorName = Natron::createKnob<KnobString>(this, "Last Author");
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
-    _imp->lastAuthorName->setAsLabel();
+   // _imp->lastAuthorName->setAsLabel();
+    _imp->lastAuthorName->setDefaultEnabled(0, false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
@@ -905,7 +910,8 @@ Project::initializeKnobs()
     _imp->projectCreationDate = Natron::createKnob<KnobString>(this, "Created On");
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
-    _imp->projectCreationDate->setAsLabel();
+    //_imp->projectCreationDate->setAsLabel();
+    _imp->projectCreationDate->setDefaultEnabled(0, false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
@@ -914,7 +920,8 @@ Project::initializeKnobs()
     _imp->saveDate = Natron::createKnob<KnobString>(this, "Last Saved On");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
-    _imp->saveDate->setAsLabel();
+    //_imp->saveDate->setAsLabel();
+    _imp->saveDate->setDefaultEnabled(0, false);
     _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);

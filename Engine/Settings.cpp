@@ -1432,7 +1432,7 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
     
-    _echoVariableDeclarationToPython->setDefaultValue(true);
+    _echoVariableDeclarationToPython->setDefaultValue(false);
 
     
     _sunkenColor->setDefaultValue(0.12,0);
