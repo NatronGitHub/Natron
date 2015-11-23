@@ -1009,7 +1009,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
-                                    false,
+                                    true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
@@ -1027,7 +1027,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
-                                    false,
+                                    true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
