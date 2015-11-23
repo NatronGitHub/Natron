@@ -44,7 +44,7 @@ CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
-#include <QtConcurrentMap>
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -85,18 +85,18 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/OfxMemory.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/KnobTypes.h"
+#include "Engine/OfxMemory.h"
 #include "Engine/Plugin.h"
-#include "Engine/StandardPaths.h"
-#include "Engine/Settings.h"
-#include "Engine/Node.h"
-#include "Engine/AppInstance.h"
 #include "Engine/Project.h"
+#include "Engine/Settings.h"
+#include "Engine/StandardPaths.h"
 #include "Engine/ThreadStorage.h"
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf

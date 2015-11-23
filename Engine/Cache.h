@@ -43,7 +43,6 @@ GCC_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 #include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
-#include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

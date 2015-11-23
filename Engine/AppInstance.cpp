@@ -28,13 +28,12 @@
 #include <list>
 #include <stdexcept>
 
-#include <QDir>
-#include <QtConcurrentMap>
-#include <QThreadPool>
-#include <QUrl>
-#include <QFileInfo>
-#include <QEventLoop>
-#include <QSettings>
+#include <QtCore/QDir>
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtCore/QUrl>
+#include <QtCore/QFileInfo>
+#include <QtCore/QEventLoop>
+#include <QtCore/QSettings>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

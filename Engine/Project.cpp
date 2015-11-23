@@ -43,15 +43,15 @@
 #endif
 
 
-#include <QtConcurrentRun>
-#include <QCoreApplication>
-#include <QTimer>
-#include <QThreadPool>
-#include <QDir>
-#include <QTemporaryFile>
-#include <QHostInfo>
-#include <QFileInfo>
-#include <QDebug>
+#include <QtCore/QtConcurrentRun>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTimer>
+#include <QtCore/QThreadPool>
+#include <QtCore/QDir>
+#include <QtCore/QTemporaryFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QDebug>
+#include <QtNetwork/QHostInfo>
 
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString

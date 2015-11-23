@@ -104,6 +104,7 @@ public:
 
 
     typedef std::map<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
+    typedef std::list<std::pair<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > > ComponentsAvailableList;
     typedef std::map<int, std::vector<Natron::ImageComponents> > ComponentsNeededMap;
     typedef std::map<int, std::list< boost::shared_ptr<Natron::Image> > > InputImagesMap;
 
