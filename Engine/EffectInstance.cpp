@@ -2286,7 +2286,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
                 ImagePtr mappedOriginalInputImage = originalInputImage;
                 
-                if (originalInputImage->getMipMapLevel() != 0) {
+                if (originalInputImage && originalInputImage->getMipMapLevel() != 0) {
                     
                     bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnPorcessedChannels(processChannels);
                     if (mustCopyUnprocessedChannels || useMaskMix) {
@@ -2300,9 +2300,11 @@ EffectInstance::renderHandler(RenderArgs & args,
                     }
                 }
                 
-                it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, mappedOriginalInputImage);
-                if (useMaskMix) {
-                    it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
+                if (mappedOriginalInputImage) {
+                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, mappedOriginalInputImage);
+                    if (useMaskMix) {
+                        it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
+                    }
                 }
                 if ( ( it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
                     ( it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
@@ -4349,6 +4351,7 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
 
 
     checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    node->refreshIdentityState();
 
     if ( !node->duringInputChangedAction() ) {
         ///The channels selector refreshing is already taken care of in the inputChanged action

@@ -1193,7 +1193,11 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
     } else if (comp == kNatronOfxImageComponentXY) {
         ret.push_back(ImageComponents::getXYComponents());
     } else {
-        ret.push_back(ofxCustomCompToNatronComp(comp));
+        try {
+            ret.push_back(ofxCustomCompToNatronComp(comp));
+        } catch (...) {
+            
+        }
     }
     return ret;
 }
