@@ -656,7 +656,8 @@ NodeGui::ensurePreviewCreated()
         QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
         prev.fill(Qt::black);
         QPixmap prev_pixmap = QPixmap::fromImage(prev);
-        _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+        _previewPixmap = new NodeGraphPixmapItem(getDagGui(),this);
+        _previewPixmap->setPixmap(prev_pixmap);
         _previewPixmap->setZValue(getBaseDepth() + 1);
 
     }
